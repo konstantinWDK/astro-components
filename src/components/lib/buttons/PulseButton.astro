@@ -1,0 +1,111 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  color?: string;
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  variant = 'primary', 
+  size = 'md',
+  color = '#8b5cf6',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`pulse-btn pulse-btn--${variant} pulse-btn--${size}`}
+  style={`--pulse-color: ${color}`}
+>
+  <slot />
+</Tag>
+
+<style>
+  .pulse-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.6rem;
+    background: var(--pulse-color);
+    color: white;
+    border: none;
+    border-radius: var(--r-full, 9999px);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+    font-family: var(--font-sans, inherit);
+    isolation: isolate;
+    box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--pulse-color), black 10%);
+  }
+
+  .pulse-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 0 0 var(--pulse-color);
+    animation: pulse-ring 2s infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse-color), transparent 30%); }
+    70% { box-shadow: 0 0 0 15px color-mix(in srgb, var(--pulse-color), transparent 100%); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse-color), transparent 100%); }
+  }
+
+  .pulse-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    filter: brightness(110%);
+  }
+
+  .pulse-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .pulse-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    animation: none;
+    filter: grayscale(1);
+  }
+
+  .pulse-btn:disabled::after {
+    animation: none;
+    box-shadow: none;
+  }
+
+  /* Variants */
+  .pulse-btn--secondary {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 26px -20px rgba(15, 23, 42, 0.95);
+  }
+
+  .pulse-btn--ghost {
+    background: transparent;
+    border: 1px solid var(--pulse-color);
+    color: var(--pulse-color);
+    box-shadow: none;
+  }
+
+  /* Sizes */
+  .pulse-btn--sm { padding: 0.4rem 1.1rem; font-size: 0.8rem; }
+  .pulse-btn--md { padding: 0.7rem 1.6rem; font-size: 0.95rem; }
+  .pulse-btn--lg { padding: 1rem 2.2rem; font-size: 1.1rem; }
+</style>

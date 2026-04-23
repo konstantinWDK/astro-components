@@ -1,0 +1,137 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { href, type = 'button', variant = 'primary', size = 'md', disabled = false } = Astro.props;
+const Tag = href ? 'a' : 'button';
+---
+<Tag
+  href={href}
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`glass-btn glass-btn--${variant} glass-btn--${size}`}
+>
+  <span class="glass-btn__shimmer"></span>
+  <span class="glass-btn__content">
+    <slot />
+  </span>
+</Tag>
+
+<style>
+  .glass-btn {
+    --btn-bg: rgba(255, 255, 255, 0.05);
+    --btn-border: rgba(255, 255, 255, 0.1);
+    --btn-text: var(--c-text-1, #d4d4d4);
+    --btn-glow: rgba(184, 134, 11, 0);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    font-family: var(--font-sans, inherit);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: var(--r-md, 12px);
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+    overflow: hidden;
+    color: var(--btn-text);
+  }
+
+  .glass-btn__shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.15),
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+
+  .glass-btn:hover:not(:disabled) .glass-btn__shimmer {
+    transform: translateX(100%);
+  }
+
+  .glass-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent, rgba(255,255,255,0.05));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+
+  .glass-btn:hover:not(:disabled)::after {
+    opacity: 1;
+  }
+
+  .glass-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 30px -10px var(--btn-glow);
+  }
+
+  .glass-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .glass-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  .glass-btn--primary {
+    --btn-bg: linear-gradient(135deg, rgba(184, 134, 11, 0.7), rgba(212, 160, 23, 0.7));
+    --btn-text: #0a0a0a;
+    --btn-glow: rgba(184, 134, 11, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-btn--secondary {
+    --btn-bg: rgba(255, 255, 255, 0.03);
+    --btn-glow: rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-btn--ghost {
+    --btn-bg: transparent;
+    --btn-text: var(--c-primary-light, #d4a017);
+    --btn-border: rgba(184, 134, 11, 0.25);
+    --btn-glow: rgba(184, 134, 11, 0.15);
+    backdrop-filter: none;
+  }
+
+  .glass-btn--ghost:hover:not(:disabled) {
+    background: rgba(184, 134, 11, 0.08);
+    border-color: rgba(184, 134, 11, 0.4);
+  }
+
+  .glass-btn--sm { padding: 0.45rem 1.1rem; font-size: 0.85rem; }
+  .glass-btn--md { padding: 0.75rem 1.6rem; font-size: 0.95rem; }
+  .glass-btn--lg { padding: 1.1rem 2.4rem; font-size: 1.1rem; }
+</style>

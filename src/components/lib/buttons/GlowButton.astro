@@ -1,0 +1,119 @@
+---
+interface Props {
+  color?: string;
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { color = '#6366f1', href, type = 'button', size = 'md', disabled = false } = Astro.props;
+const Tag = href ? 'a' : 'button';
+---
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`glow-btn glow-btn--${size}`} 
+  style={`--btn-color: ${color}`}
+>
+  <span class="glow-btn__content"><slot /></span>
+</Tag>
+
+<style>
+  .glow-btn {
+    --glow-color: var(--btn-color);
+    --glow-opacity: 0.4;
+    
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans, inherit);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--btn-color);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+    z-index: 1;
+    
+    /* Layered Glow */
+    box-shadow: 
+      0 0 10px color-mix(in srgb, var(--glow-color), transparent 60%),
+      0 0 20px color-mix(in srgb, var(--glow-color), transparent 80%);
+  }
+
+  .glow-btn__content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .glow-btn::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: var(--btn-color);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    filter: blur(8px);
+    transition: opacity 0.3s ease;
+  }
+
+  .glow-btn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    background: var(--btn-color);
+    border-radius: 14px;
+    opacity: 0;
+    filter: blur(25px);
+    transition: opacity 0.4s ease;
+    z-index: -2;
+  }
+
+  .glow-btn:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 
+      0 0 20px color-mix(in srgb, var(--glow-color), transparent 40%),
+      0 0 40px color-mix(in srgb, var(--glow-color), transparent 70%);
+  }
+
+  .glow-btn:hover:not(:disabled)::before {
+    opacity: 0.4;
+  }
+
+  .glow-btn:hover:not(:disabled)::after {
+    opacity: 0.7;
+    animation: animate-glow 2.5s ease-in-out infinite;
+  }
+
+  .glow-btn:active:not(:disabled) {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  .glow-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+    box-shadow: none;
+  }
+
+  @keyframes animate-glow {
+    0%, 100% { opacity: 0.5; filter: blur(20px); transform: scale(1); }
+    50% { opacity: 0.8; filter: blur(30px); transform: scale(1.1); }
+  }
+
+  /* Sizes */
+  .glow-btn--sm { padding: 0.5rem 1.4rem; font-size: 0.75rem; }
+  .glow-btn--md { padding: 0.8rem 2.2rem; font-size: 0.875rem; }
+  .glow-btn--lg { padding: 1.1rem 3rem; font-size: 1rem; }
+</style>
+

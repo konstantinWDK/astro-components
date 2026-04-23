@@ -1,0 +1,112 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  color = '#6366f1',
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`draw-btn draw-btn--${size}`}
+  style={`--btn-color: ${color}`}
+>
+  <span class="draw-btn__text"><slot /></span>
+</Tag>
+
+<style>
+  .draw-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--c-text-2, #94a3b8);
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    user-select: none;
+    white-space: nowrap;
+    font-family: var(--font-sans, inherit);
+  }
+
+  .draw-btn__text {
+    position: relative;
+    z-index: 2;
+    transition: color 0.5s ease;
+  }
+
+  .draw-btn::before,
+  .draw-btn::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 2px solid transparent;
+    z-index: 1;
+    transition: width 0.2s 0.2s ease-out, height 0.2s ease-out, border-color 0.1s;
+  }
+
+  .draw-btn::before {
+    top: -2px;
+    left: -2px;
+  }
+
+  .draw-btn::after {
+    bottom: -2px;
+    right: -2px;
+  }
+
+  .draw-btn:hover:not(:disabled) {
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .draw-btn:hover:not(:disabled)::before {
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    border-top-color: var(--btn-color);
+    border-right-color: var(--btn-color);
+    transition: width 0.2s ease-out, height 0.2s 0.2s ease-out;
+  }
+
+  .draw-btn:hover:not(:disabled)::after {
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    border-bottom-color: var(--btn-color);
+    border-left-color: var(--btn-color);
+    transition: width 0.2s ease-out, height 0.2s 0.2s ease-out;
+  }
+
+  .draw-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .draw-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Sizes */
+  .draw-btn--sm { padding: 0.45rem 1.2rem; font-size: 0.85rem; }
+  .draw-btn--md { padding: 0.75rem 1.8rem; font-size: 1rem; }
+  .draw-btn--lg { padding: 1.1rem 2.5rem; font-size: 1.2rem; }
+</style>
+

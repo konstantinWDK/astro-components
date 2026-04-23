@@ -1,0 +1,136 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  color = '#6366f1',
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`push-btn push-btn--${size}`}
+  style={`--btn-color: ${color}`}
+>
+  <span class="push-btn__shadow"></span>
+  <span class="push-btn__edge"></span>
+  <span class="push-btn__front">
+    <slot />
+  </span>
+</Tag>
+
+<style>
+  .push-btn {
+    --depth: 8px;
+    position: relative;
+    display: inline-flex;
+    padding: 0;
+    padding-top: var(--depth); /* Space for the elevated front */
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    outline-offset: 4px;
+    transition: filter 250ms;
+    user-select: none;
+    text-decoration: none;
+    vertical-align: middle;
+  }
+
+  .push-btn__shadow {
+    position: absolute;
+    top: var(--depth); /* Align with base */
+    left: 0;
+    width: 100%;
+    height: calc(100% - var(--depth));
+    border-radius: var(--r-md, 12px);
+    background: rgba(0, 0, 0, 0.4);
+    transform: translateY(2px);
+    filter: blur(4px);
+    transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
+  }
+
+  .push-btn__edge {
+    position: absolute;
+    top: var(--depth); /* Align with base */
+    left: 0;
+    width: 100%;
+    height: calc(100% - var(--depth));
+    border-radius: var(--r-md, 12px);
+    background: linear-gradient(
+      to left,
+      color-mix(in srgb, var(--btn-color), black 30%) 0%,
+      color-mix(in srgb, var(--btn-color), black 15%) 8%,
+      color-mix(in srgb, var(--btn-color), black 15%) 92%,
+      color-mix(in srgb, var(--btn-color), black 30%) 100%
+    );
+  }
+
+  .push-btn__front {
+    display: block;
+    position: relative;
+    padding: 12px 32px;
+    border-radius: var(--r-md, 12px);
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    background: var(--btn-color);
+    transform: translateY(calc(var(--depth) * -1));
+    transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
+    font-family: var(--font-sans, inherit);
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .push-btn:hover:not(:disabled) {
+    filter: brightness(110%);
+  }
+
+  .push-btn:hover:not(:disabled) .push-btn__front {
+    transform: translateY(calc(var(--depth) * -1.2));
+    transition: transform 250ms cubic-bezier(.3, .7, .4, 1.5);
+  }
+
+  .push-btn:hover:not(:disabled) .push-btn__shadow {
+    transform: translateY(4px);
+    transition: transform 250ms cubic-bezier(.3, .7, .4, 1.5);
+  }
+
+  .push-btn:active:not(:disabled) .push-btn__front {
+    transform: translateY(-2px);
+    transition: transform 34ms;
+  }
+
+  .push-btn:active:not(:disabled) .push-btn__shadow {
+    transform: translateY(1px);
+    transition: transform 34ms;
+  }
+
+  .push-btn:disabled {
+    cursor: not-allowed;
+    filter: grayscale(1) opacity(0.5);
+    box-shadow: none;
+  }
+
+  /* Sizes */
+  .push-btn--sm { --depth: 5px; }
+  .push-btn--sm .push-btn__front { padding: 8px 18px; font-size: 0.85rem; }
+  
+  .push-btn--md { --depth: 8px; }
+  .push-btn--md .push-btn__front { padding: 12px 32px; font-size: 1rem; }
+  
+  .push-btn--lg { --depth: 12px; }
+  .push-btn--lg .push-btn__front { padding: 16px 42px; font-size: 1.15rem; }
+</style>

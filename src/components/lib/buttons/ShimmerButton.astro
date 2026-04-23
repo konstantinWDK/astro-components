@@ -1,0 +1,113 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  variant = 'primary', 
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`shimmer-btn shimmer-btn--${variant} shimmer-btn--${size}`}
+>
+  <span class="shimmer-btn__content"><slot /></span>
+</Tag>
+
+<style>
+  .shimmer-btn {
+    --shimmer-speed: 3s;
+    --shimmer-color: rgba(255, 255, 255, 0.3);
+    
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: var(--r-full, 9999px);
+    cursor: pointer;
+    text-decoration: none;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    user-select: none;
+    font-family: var(--font-sans, inherit);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .shimmer-btn__content {
+    display: block;
+    padding: 0.75rem 1.8rem;
+    z-index: 2;
+  }
+
+  .shimmer-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg, 
+      transparent 30%, 
+      var(--shimmer-color) 50%, 
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    transform: translateX(-100%);
+    animation: sweep var(--shimmer-speed) infinite;
+    z-index: 1;
+  }
+
+  @keyframes sweep {
+    0% { transform: translateX(-100%); }
+    40%, 100% { transform: translateX(100%); }
+  }
+
+  .shimmer-btn:hover:not(:disabled) {
+    transform: scale(1.02);
+  }
+
+  .shimmer-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Variants */
+  .shimmer-btn--primary {
+    background: var(--c-bg-2, #1e293b);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .shimmer-btn--secondary {
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+  }
+
+  .shimmer-btn--ghost {
+    background: transparent;
+    color: var(--c-primary-light, #818cf8);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    --shimmer-color: rgba(99, 102, 241, 0.2);
+  }
+
+  /* Sizes */
+  .shimmer-btn--sm .shimmer-btn__content { padding: 0.45rem 1.2rem; font-size: 0.8rem; }
+  .shimmer-btn--md .shimmer-btn__content { padding: 0.75rem 1.8rem; font-size: 0.95rem; }
+  .shimmer-btn--lg .shimmer-btn__content { padding: 1.1rem 2.6rem; font-size: 1.1rem; }
+</style>
+

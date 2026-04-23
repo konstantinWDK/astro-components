@@ -1,0 +1,131 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  variant = 'primary', 
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`double-border-btn double-border-btn--${variant} double-border-btn--${size}`}
+>
+  <span class="double-border-btn__content"><slot /></span>
+</Tag>
+
+<style>
+  .double-border-btn {
+    --offset: 5px;
+    --border-color: rgba(255, 255, 255, 0.4);
+    --hover-color: #fff;
+    
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--r-sm, 4px);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    user-select: none;
+    white-space: nowrap;
+    font-family: var(--font-sans, inherit);
+    font-weight: 500;
+  }
+
+  .double-border-btn__content {
+    display: block;
+    padding: 0.6rem 1.6rem;
+  }
+
+  .double-border-btn::before {
+    content: '';
+    position: absolute;
+    top: var(--offset);
+    left: var(--offset);
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: inherit;
+    z-index: -1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.5;
+  }
+
+  .double-border-btn:hover:not(:disabled) {
+    color: var(--hover-color);
+    border-color: var(--hover-color);
+    transform: translate(calc(var(--offset) * -0.5), calc(var(--offset) * -0.5));
+  }
+
+  .double-border-btn:hover:not(:disabled)::before {
+    top: calc(var(--offset) * 1.5);
+    left: calc(var(--offset) * 1.5);
+    border-color: var(--hover-color);
+    opacity: 1;
+  }
+
+  .double-border-btn:active:not(:disabled) {
+    transform: translate(0, 0);
+  }
+
+  .double-border-btn:active:not(:disabled)::before {
+    top: 0;
+    left: 0;
+  }
+
+  .double-border-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Variants */
+  .double-border-btn--primary {
+    --border-color: rgba(99, 102, 241, 0.5);
+    --hover-color: #818cf8;
+    color: #818cf8;
+  }
+
+  .double-border-btn--secondary {
+    --border-color: rgba(255, 255, 255, 0.3);
+    --hover-color: #fff;
+    color: #fff;
+  }
+
+  .double-border-btn--ghost {
+    --border-color: rgba(255, 255, 255, 0.1);
+    --hover-color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Sizes */
+  .double-border-btn--sm { --offset: 3px; }
+  .double-border-btn--sm .double-border-btn__content { padding: 0.45rem 1rem; font-size: 0.85rem; }
+  
+  .double-border-btn--md { --offset: 5px; }
+  .double-border-btn--md .double-border-btn__content { padding: 0.65rem 1.6rem; font-size: 1rem; }
+  
+  .double-border-btn--lg { --offset: 8px; }
+  .double-border-btn--lg .double-border-btn__content { padding: 0.85rem 2.2rem; font-size: 1.15rem; }
+</style>
+

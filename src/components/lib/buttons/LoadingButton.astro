@@ -1,0 +1,148 @@
+---
+interface Props {
+  isLoading?: boolean;
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  isLoading = false, 
+  href, 
+  type = 'button', 
+  variant = 'primary', 
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled || isLoading}
+  class:list={[
+    "load-btn", 
+    `load-btn--${variant}`, 
+    `load-btn--${size}`, 
+    { "is-loading": isLoading }
+  ]}
+>
+  <span class="load-btn__content">
+    <slot />
+  </span>
+  <span class="load-btn__spinner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    </svg>
+  </span>
+</Tag>
+
+<style>
+  .load-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans, inherit);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: var(--r-md, 12px);
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .load-btn__content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .load-btn__spinner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s ease;
+    pointer-events: none;
+  }
+
+  .load-btn__spinner svg {
+    width: 1.25em;
+    height: 1.25em;
+    animation: spin 1s linear infinite;
+  }
+
+  /* Loading State */
+  .load-btn.is-loading {
+    cursor: wait;
+  }
+  
+  .load-btn.is-loading .load-btn__content {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  .load-btn.is-loading .load-btn__spinner {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Variants */
+  .load-btn--primary {
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+  }
+  .load-btn--primary:hover:not(:disabled) {
+    background: var(--c-primary-light, #818cf8);
+    transform: translateY(-1px);
+  }
+
+  .load-btn--secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--c-text-1, #f8fafc);
+    border-color: var(--c-border, rgba(255, 255, 255, 0.1));
+  }
+  .load-btn--secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .load-btn--ghost {
+    background: transparent;
+    color: var(--c-primary-light, #818cf8);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  .load-btn--ghost:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.05);
+  }
+
+  /* Sizes / Layout */
+  .load-btn--sm { padding: 0.45rem 1rem; font-size: 0.825rem; min-width: 100px; }
+  .load-btn--md { padding: 0.75rem 1.6rem; font-size: 0.95rem; min-width: 140px; }
+  .load-btn--lg { padding: 1rem 2.2rem; font-size: 1.1rem; min-width: 180px; }
+
+  .load-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+</style>
+

@@ -1,0 +1,105 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'yellow' | 'red' | 'blue' | 'green';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  variant = 'yellow', 
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`retro-arcade-btn retro-arcade-btn--${variant} retro-arcade-btn--${size}`}
+>
+  <span class="retro-arcade-btn__inner">
+    <slot />
+  </span>
+</Tag>
+
+<style>
+  .retro-arcade-btn {
+    --pixel-size: 4px;
+    --main-color: #facc15;
+    --shadow-color: #a16207;
+    
+    position: relative;
+    display: inline-flex;
+    padding: 0;
+    background: #000;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 
+      var(--pixel-size) 0 #000, 
+      calc(var(--pixel-size) * -1) 0 #000, 
+      0 var(--pixel-size) #000, 
+      0 calc(var(--pixel-size) * -1) #000;
+    transition: transform 0.1s;
+    user-select: none;
+    margin: var(--pixel-size);
+    white-space: nowrap;
+  }
+
+  .retro-arcade-btn__inner {
+    display: block;
+    padding: 0.6rem 1.4rem;
+    background: var(--main-color);
+    color: #000;
+    font-family: 'Courier New', monospace;
+    font-weight: 900;
+    text-transform: uppercase;
+    box-shadow: 
+      inset calc(var(--pixel-size) * -1) calc(var(--pixel-size) * -1) var(--shadow-color);
+    transition: all 0.1s;
+  }
+
+  /* Interaction */
+  .retro-arcade-btn:hover:not(:disabled) .retro-arcade-btn__inner {
+    filter: brightness(110%);
+  }
+
+  .retro-arcade-btn:active:not(:disabled) {
+    transform: translate(calc(var(--pixel-size) / 2), calc(var(--pixel-size) / 2));
+  }
+
+  .retro-arcade-btn:active:not(:disabled) .retro-arcade-btn__inner {
+    box-shadow: 
+      inset var(--pixel-size) var(--pixel-size) var(--shadow-color);
+  }
+
+  .retro-arcade-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Variants */
+  .retro-arcade-btn--yellow { --main-color: #facc15; --shadow-color: #a16207; }
+  .retro-arcade-btn--red { --main-color: #ef4444; --shadow-color: #991b1b; }
+  .retro-arcade-btn--blue { --main-color: #3b82f6; --shadow-color: #1e3a8a; }
+  .retro-arcade-btn--green { --main-color: #22c55e; --shadow-color: #14532d; }
+
+  /* Sizes */
+  .retro-arcade-btn--sm { --pixel-size: 2px; }
+  .retro-arcade-btn--sm .retro-arcade-btn__inner { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+  
+  .retro-arcade-btn--md { --pixel-size: 4px; }
+  .retro-arcade-btn--md .retro-arcade-btn__inner { padding: 0.7rem 1.4rem; font-size: 0.9rem; }
+  
+  .retro-arcade-btn--lg { --pixel-size: 6px; }
+  .retro-arcade-btn--lg .retro-arcade-btn__inner { padding: 1rem 2rem; font-size: 1.1rem; }
+</style>
+

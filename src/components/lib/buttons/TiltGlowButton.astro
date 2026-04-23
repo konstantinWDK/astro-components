@@ -1,0 +1,145 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  primaryColor?: string;
+  secondaryColor?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  primaryColor = '#6366f1', 
+  secondaryColor = '#c084fc',
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<div class={`tilt-wrapper tilt-wrapper--${size}`}>
+  <Tag 
+    href={href} 
+    type={href ? undefined : type}
+    disabled={disabled}
+    class="tilt-card"
+    style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}
+  >
+    <div class="tilt-card__glow"></div>
+    <div class="tilt-card__content">
+      <slot />
+    </div>
+  </Tag>
+</div>
+
+<style>
+  .tilt-wrapper {
+    perspective: 1000px;
+    display: inline-block;
+  }
+
+  .tilt-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f172a;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 12px);
+    cursor: pointer;
+    text-decoration: none;
+    overflow: hidden;
+    transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+    user-select: none;
+    font-family: var(--font-sans, inherit);
+    font-weight: 600;
+  }
+
+  .tilt-card__glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      color-mix(in srgb, var(--primary-color), white 20%) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .tilt-card__content {
+    position: relative;
+    z-index: 2;
+    transform: translateZ(20px);
+    white-space: nowrap;
+  }
+
+  .tilt-card:hover {
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .tilt-card:hover .tilt-card__glow {
+    opacity: 0.15;
+  }
+
+  .tilt-card:active {
+    transform: scale(0.98) translateZ(0);
+  }
+
+  .tilt-card:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Sizes */
+  .tilt-wrapper--sm .tilt-card { padding: 0.5rem 1.4rem; font-size: 0.8rem; }
+  .tilt-wrapper--md .tilt-card { padding: 0.8rem 2rem; font-size: 0.95rem; }
+  .tilt-wrapper--lg .tilt-card { padding: 1.1rem 3rem; font-size: 1.1rem; }
+</style>
+
+<script>
+  function initTilt() {
+    const cards = document.querySelectorAll('.tilt-card:not([data-tilt-init])');
+    
+    cards.forEach(card => {
+      card.setAttribute('data-tilt-init', 'true');
+      const htmlCard = card as HTMLElement;
+
+      card.addEventListener('mousemove', (e: any) => {
+        const rect = htmlCard.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Calculate percentages for the glow highlight
+        const xPerc = (x / rect.width) * 100;
+        const yPerc = (y / rect.height) * 100;
+        htmlCard.style.setProperty('--mouse-x', `${xPerc}%`);
+        htmlCard.style.setProperty('--mouse-y', `${yPerc}%`);
+
+        // Calculate rotation
+        const rotateY = (x / rect.width - 0.5) * 25;
+        const rotateX = (y / rect.height - 0.5) * -25;
+        htmlCard.style.transform = `rotateY(${rotateY}deg) rotateX(${rotateX}deg)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        htmlCard.style.transform = 'rotateY(0deg) rotateX(0deg)';
+        htmlCard.style.setProperty('--mouse-x', '50%');
+        htmlCard.style.setProperty('--mouse-y', '50%');
+      });
+    });
+  }
+
+  initTilt();
+  document.addEventListener('astro:after-swap', initTilt);
+</script>
+

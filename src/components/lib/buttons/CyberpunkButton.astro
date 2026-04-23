@@ -1,0 +1,148 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  primaryColor?: string;
+  secondaryColor?: string;
+  size?: 'sm' | 'md' | 'lg';
+  label?: string; // Used for glitch effect text
+}
+
+const { 
+  href, 
+  type = 'button', 
+  primaryColor = '#ff003c', 
+  secondaryColor = '#00e0ff',
+  size = 'md',
+  label = "READY"
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  class={`cyber-btn cyber-btn--${size}`}
+  style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}
+  data-text={label}
+>
+  <span class="cyber-btn__inner">
+    <slot>{label}</slot>
+  </span>
+  <span class="cyber-btn__glitch"></span>
+  <span class="cyber-btn__tag">R25</span>
+</Tag>
+
+<style>
+  .cyber-btn {
+    --glitch-width: 4px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    font-family: var(--font-sans, 'Inter', sans-serif);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-style: italic;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    clip-path: polygon(-10% 0, 100% 0, 100% 65%, 90% 103%, 0 103%, -10% 70%);
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .cyber-btn__inner {
+    position: relative;
+    z-index: 2;
+    padding: 0.8rem 2.2rem;
+    display: block;
+  }
+
+  /* Glitch Layers */
+  .cyber-btn::before,
+  .cyber-btn::after,
+  .cyber-btn__glitch {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    z-index: 1;
+  }
+
+  .cyber-btn::before {
+    background: var(--secondary-color);
+    clip-path: polygon(0 0, 100% 0, 100% 5%, 0 5%);
+    transform: translate(-4px, -2px);
+  }
+
+  .cyber-btn::after {
+    background: #f3f3f3;
+    clip-path: polygon(0 95%, 100% 95%, 100% 100%, 0 100%);
+    transform: translate(4px, 2px);
+    color: #000;
+  }
+
+  .cyber-btn__tag {
+    position: absolute;
+    padding: 1px 4px;
+    letter-spacing: 1px;
+    line-height: 1;
+    bottom: -2px;
+    right: 5%;
+    font-weight: 400;
+    font-size: 0.6rem;
+    background: #000;
+    color: var(--secondary-color);
+    z-index: 3;
+    font-style: normal;
+  }
+
+  /* Hover Animations */
+  .cyber-btn:hover {
+    transform: scale(1.03);
+    background: var(--primary-color);
+    box-shadow: 10px 0px 0px var(--secondary-color);
+  }
+
+  .cyber-btn:hover::before,
+  .cyber-btn:hover::after,
+  .cyber-btn:hover .cyber-btn__glitch {
+    opacity: 1;
+    animation: glitch 0.3s infinite;
+  }
+
+  .cyber-btn:hover::before {
+    animation-direction: alternate-reverse;
+  }
+
+  .cyber-btn:active {
+    transform: scale(0.98);
+    filter: brightness(1.2);
+  }
+
+  @keyframes glitch {
+    0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); transform: translate(0); }
+    20% { clip-path: polygon(0 15%, 100% 15%, 100% 15%, 0 15%); transform: translate(-5px); }
+    40% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); transform: translate(5px); }
+    60% { clip-path: polygon(0 80%, 100% 80%, 100% 90%, 0 90%); transform: translate(-5px); }
+    80% { clip-path: polygon(0 50%, 100% 50%, 100% 55%, 0 55%); transform: translate(5px); }
+    100% { clip-path: polygon(0 70%, 100% 70%, 100% 80%, 0 80%); transform: translate(0); }
+  }
+
+  /* Sizes */
+  .cyber-btn--sm .cyber-btn__inner { padding: 0.5rem 1.4rem; font-size: 0.85rem; }
+  .cyber-btn--md .cyber-btn__inner { padding: 0.8rem 2.2rem; font-size: 1.05rem; }
+  .cyber-btn--lg .cyber-btn__inner { padding: 1.1rem 3rem; font-size: 1.25rem; }
+</style>
+

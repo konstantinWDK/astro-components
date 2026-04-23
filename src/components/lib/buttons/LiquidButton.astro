@@ -1,0 +1,167 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  color = '#6366f1',
+  size = 'md',
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+// Create a unique filter ID to avoid conflicts when multiple buttons are on screen
+const filterId = `gooey-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`liquid-btn liquid-btn--${size}`}
+  style={`--liquid-color: ${color}`}
+>
+  <span class="liquid-btn__text"><slot /></span>
+  
+  <div class="liquid-wrapper">
+    <div class="liquid-main"></div>
+    <div class="liquid-container">
+      <div class="liquid-blob"></div>
+      <div class="liquid-blob"></div>
+      <div class="liquid-blob"></div>
+      <div class="liquid-blob"></div>
+    </div>
+  </div>
+
+  <svg style="position: absolute; width: 0; height: 0; pointer-events: none;">
+    <defs>
+      <filter id={filterId}>
+        <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+        <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="goo" />
+        <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+      </filter>
+    </defs>
+  </svg>
+</Tag>
+
+<style define:vars={{ filterId: `url(#${filterId})` }}>
+  .liquid-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #080b14;
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md, 14px);
+    cursor: pointer;
+    text-decoration: none;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+    z-index: 1;
+    font-family: var(--font-sans, inherit);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    user-select: none;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .liquid-btn__text {
+    position: relative;
+    z-index: 10;
+    padding: 0 4px;
+    transition: color 0.4s ease;
+  }
+
+  .liquid-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    filter: var(--filterId);
+    border-radius: inherit;
+    /* Subtle base fill */
+    opacity: 0.95;
+  }
+
+  .liquid-main {
+    position: absolute;
+    bottom: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--liquid-color);
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+
+  .liquid-container {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+  }
+
+  .liquid-blob {
+    position: absolute;
+    top: 100%;
+    background: var(--liquid-color);
+    border-radius: 50%;
+    transition: transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+  }
+
+  .liquid-blob:nth-child(1) { left: 10%; width: 60px; height: 60px; transition-delay: 0s; }
+  .liquid-blob:nth-child(2) { left: 40%; width: 80px; height: 80px; transition-delay: 0.05s; }
+  .liquid-blob:nth-child(3) { left: 70%; width: 50px; height: 50px; transition-delay: 0.02s; }
+  .liquid-blob:nth-child(4) { left: 30%; width: 70px; height: 70px; transition-delay: 0.08s; }
+
+  /* Hover States */
+  .liquid-btn:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px color-mix(in srgb, var(--liquid-color), transparent 70%);
+  }
+
+  .liquid-btn:hover:not(:disabled) .liquid-main {
+    transform: translateY(-100%);
+  }
+
+  .liquid-btn:hover:not(:disabled) .liquid-blob {
+    transform: translateY(-180%) scale(1.4);
+  }
+
+  /* Movement animation for blobs when hovered */
+  .liquid-btn:hover:not(:disabled) .liquid-blob:nth-child(odd) {
+    animation: liquid-wiggle 3s ease-in-out infinite alternate;
+  }
+  .liquid-btn:hover:not(:disabled) .liquid-blob:nth-child(even) {
+    animation: liquid-wiggle 4s ease-in-out infinite alternate-reverse;
+  }
+
+  @keyframes liquid-wiggle {
+    0% { margin-left: -5px; }
+    100% { margin-left: 5px; }
+  }
+
+  .liquid-btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .liquid-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Sizes */
+  .liquid-btn--sm { padding: 0.6rem 1.6rem; font-size: 0.8rem; }
+  .liquid-btn--md { padding: 0.9rem 2.4rem; font-size: 0.95rem; }
+  .liquid-btn--lg { padding: 1.2rem 3.5rem; font-size: 1.1rem; }
+</style>
+

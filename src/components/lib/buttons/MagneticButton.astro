@@ -1,0 +1,134 @@
+---
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  strength?: number;
+  disabled?: boolean;
+}
+
+const { 
+  href, 
+  type = 'button', 
+  variant = 'secondary', 
+  size = 'md',
+  strength = 0.5,
+  disabled = false 
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag 
+  href={href} 
+  type={href ? undefined : type}
+  disabled={disabled}
+  class={`magnetic-btn magnetic-btn--${variant} magnetic-btn--${size}`}
+  data-strength={strength}
+>
+  <span class="magnetic-btn__inner">
+    <slot />
+  </span>
+</Tag>
+
+<style>
+  .magnetic-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: var(--r-full, 9999px);
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease;
+    user-select: none;
+    font-family: var(--font-sans, inherit);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .magnetic-btn__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    pointer-events: none;
+  }
+
+  /* Variants */
+  .magnetic-btn--primary {
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  }
+
+  .magnetic-btn--secondary {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    color: var(--c-text-1, #f8fafc);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .magnetic-btn--ghost {
+    background: transparent;
+    color: var(--c-primary-light, #818cf8);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  .magnetic-btn:hover:not(:disabled) {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .magnetic-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* Sizes */
+  .magnetic-btn--sm { min-width: 80px; min-height: 40px; }
+  .magnetic-btn--sm .magnetic-btn__inner { padding: 0.5rem 1.2rem; font-size: 0.8rem; }
+  
+  .magnetic-btn--md { min-width: 120px; min-height: 50px; }
+  .magnetic-btn--md .magnetic-btn__inner { padding: 0.8rem 1.8rem; font-size: 0.95rem; }
+  
+  .magnetic-btn--lg { min-width: 160px; min-height: 64px; }
+  .magnetic-btn--lg .magnetic-btn__inner { padding: 1.1rem 2.5rem; font-size: 1.1rem; }
+</style>
+
+<script>
+  function initMagnetic() {
+    const btns = document.querySelectorAll('.magnetic-btn:not([data-magnetic-init])');
+    
+    btns.forEach(btn => {
+      btn.setAttribute('data-magnetic-init', 'true');
+      const inner = btn.querySelector('.magnetic-btn__inner') as HTMLElement;
+      const strengthAttr = btn.getAttribute('data-strength');
+      const strength = strengthAttr ? parseFloat(strengthAttr) : 0.5;
+
+      btn.addEventListener('mousemove', (e: any) => {
+        const rect = btn.getBoundingClientRect();
+        const x = (e.clientX - rect.left - rect.width / 2) * strength;
+        const y = (e.clientY - rect.top - rect.height / 2) * strength;
+
+        (btn as HTMLElement).style.transform = `translate(${x}px, ${y}px)`;
+        if (inner) inner.style.transform = `translate(${x * 0.4}px, ${y * 0.4}px)`;
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        (btn as HTMLElement).style.transform = `translate(0px, 0px)`;
+        if (inner) inner.style.transform = `translate(0px, 0px)`;
+      });
+    });
+  }
+
+  // Initial and view transition support
+  initMagnetic();
+  document.addEventListener('astro:after-swap', initMagnetic);
+</script>
+
