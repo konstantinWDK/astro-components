@@ -202,25 +202,3 @@ export { default as ShadowRevealText } from './lib/typography/ShadowRevealText.a
 export { default as StrokeHeadingOutline } from './lib/typography/StrokeHeadingOutline.astro';
 export { default as Text3DLayer } from './lib/typography/Text3DLayer.astro';
 export { default as TypewriterText } from './lib/typography/TypewriterText.astro';
-
-// Utilities
-export { default as AspectRatioBox } from './lib/utilities/AspectRatioBox.astro';
-export { default as BackgroundDotPattern } from './lib/utilities/BackgroundDotPattern.astro';
-export { default as CircularMask } from './lib/utilities/CircularMask.astro';
-export { default as ClickRippleWrapper } from './lib/utilities/ClickRippleWrapper.astro';
-export { default as FadeInWrapper } from './lib/utilities/FadeInWrapper.astro';
-export { default as FixedRatioImage } from './lib/utilities/FixedRatioImage.astro';
-export { default as GlassBlurLayer } from './lib/utilities/GlassBlurLayer.astro';
-export { default as GradientBorderMask } from './lib/utilities/GradientBorderMask.astro';
-export { default as HoverLift } from './lib/utilities/HoverLift.astro';
-export { default as ResponsiveSpacer } from './lib/utilities/ResponsiveSpacer.astro';
-export { default as ResponsiveVisToggle } from './lib/utilities/ResponsiveVisToggle.astro';
-export { default as ScrollLockParent } from './lib/utilities/ScrollLockParent.astro';
-export { default as ScrollMarginTarget } from './lib/utilities/ScrollMarginTarget.astro';
-export { default as SlideUpReveal } from './lib/utilities/SlideUpReveal.astro';
-export { default as SmoothAnchorLink } from './lib/utilities/SmoothAnchorLink.astro';
-export { default as StackLayering } from './lib/utilities/StackLayering.astro';
-export { default as StickyObserver } from './lib/utilities/StickyObserver.astro';
-export { default as TextTruncate } from './lib/utilities/TextTruncate.astro';
-export { default as TruncateSingleLine } from './lib/utilities/TruncateSingleLine.astro';
-export { default as VisuallyHidden } from './lib/utilities/VisuallyHidden.astro';
