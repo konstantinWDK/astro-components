@@ -202,3 +202,6 @@ export { default as ShadowRevealText } from './lib/typography/ShadowRevealText.a
 export { default as StrokeHeadingOutline } from './lib/typography/StrokeHeadingOutline.astro';
 export { default as Text3DLayer } from './lib/typography/Text3DLayer.astro';
 export { default as TypewriterText } from './lib/typography/TypewriterText.astro';
+
+// Sections
+export * from './lib/sections';

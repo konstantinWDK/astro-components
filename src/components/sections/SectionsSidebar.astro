@@ -1,0 +1,207 @@
+---
+// src/components/sections/SectionsSidebar.astro
+import { sections } from '../../data/registry/sections';
+import { categories } from '../../data/registry/index';
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+
+// Group sections by category
+const sectionCategories = sections.reduce<Record<string, { category: string; icon: string; sections: typeof sections }>>((acc, section) => {
+  const catId = section.category;
+  if (!acc[catId]) {
+    const catInfo = categories.find(c => c.id === catId);
+    acc[catId] = {
+      category: catInfo?.name || catId,
+      icon: catInfo?.icon || '📐',
+      sections: [],
+    };
+  }
+  acc[catId].sections.push(section);
+  return acc;
+}, {});
+---
+
+<aside class="sidebar">
+  <div class="sidebar__search">
+    <input type="text" id="sections-sidebar-search" placeholder="Search sections..." aria-label="Search sections" />
+    <span class="search-icon">🔍</span>
+  </div>
+  <div class="sidebar__inner">
+    {Object.entries(sectionCategories).map(([catId, cat]) => {
+      const hasActive = cat.sections.some(s => `/sections/${s.slug}` === currentPath);
+      return (
+        <div class:list={['sidebar__group', { 'is-expanded': hasActive }]} data-category={catId}>
+          <button class="sidebar__group-header" aria-expanded={hasActive ? 'true' : 'false'}>
+            <span class="sidebar__group-icon">{cat.icon}</span>
+            <span class="sidebar__group-name">{cat.category}</span>
+            <svg class="sidebar__group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="sidebar__group-content">
+            <div class="sidebar__group-content-inner">
+              <ul class="sidebar__list">
+                {cat.sections.map((section) => {
+                  const href = `/sections/${section.slug}`;
+                  const isActive = currentPath.replace(/\/$/, '') === href;
+                  return (
+                    <li class="sidebar__item" data-name={section.name.toLowerCase()}>
+                      <a href={href} class={`sidebar__link${isActive ? ' sidebar__link--active' : ''}`} aria-current={isActive ? 'page' : undefined} data-sidebar-link>
+                        {section.name}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</aside>
+
+<script>
+  const sidebar = document.querySelector('.sidebar')!;
+
+  // Accordion toggle
+  document.querySelectorAll('.sidebar__group-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const group = header.closest('.sidebar__group')!;
+      const isExpanded = group.classList.contains('is-expanded');
+      group.classList.toggle('is-expanded');
+      header.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+    });
+  });
+
+  // Active link
+  const currentPath = window.location.pathname.replace(/\/$/, '');
+  document.querySelectorAll('[data-sidebar-link]').forEach(link => {
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('sidebar__link--active');
+      link.setAttribute('data-active', 'true');
+      setTimeout(() => link.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+    }
+  });
+
+  // Search
+  const search = document.getElementById('sections-sidebar-search') as HTMLInputElement;
+  search?.addEventListener('input', (e) => {
+    const query = (e.target as HTMLInputElement).value.toLowerCase();
+    document.querySelectorAll('.sidebar__group').forEach(group => {
+      let hasVisible = false;
+      group.querySelectorAll('.sidebar__item').forEach(item => {
+        const name = (item as HTMLElement).dataset.name || '';
+        const visible = name.includes(query);
+        (item as HTMLElement).style.display = visible ? 'block' : 'none';
+        if (visible) hasVisible = true;
+      });
+      (group as HTMLElement).style.display = hasVisible || !query ? 'flex' : 'none';
+      if (query && hasVisible) group.classList.add('is-expanded');
+    });
+  });
+</script>
+
+<style>
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    border-right: 1px solid var(--c-border);
+    padding: var(--sp-6) 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+  .sidebar__search {
+    padding: 0 var(--sp-4);
+    margin-bottom: var(--sp-6);
+    position: relative;
+  }
+  .sidebar__search input {
+    width: 100%;
+    padding: 0.7rem 2.2rem 0.7rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    color: var(--c-text-1);
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .sidebar__search input:focus {
+    border-color: var(--c-primary-light);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .search-icon {
+    position: absolute; right: 1.6rem; top: 50%; transform: translateY(-50%);
+    font-size: 0.8rem; opacity: 0.5; pointer-events: none;
+  }
+
+  .sidebar__inner { padding: 0 var(--sp-2); display: flex; flex-direction: column; gap: 0.25rem; }
+
+  .sidebar__group { display: flex; flex-direction: column; }
+
+  .sidebar__group-header {
+    display: flex; align-items: center; width: 100%;
+    padding: 0.6rem var(--sp-3);
+    background: rgba(8, 11, 20, 0.95);
+    backdrop-filter: blur(12px);
+    border: none; border-radius: var(--r-md);
+    cursor: pointer; text-align: left;
+    transition: all 0.2s; position: sticky; top: 0; z-index: 10;
+    border-bottom: 1px solid var(--c-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .sidebar__group-header:hover { background: rgba(255, 255, 255, 0.04); }
+  .sidebar__group-icon { font-size: 1rem; margin-right: var(--sp-2); opacity: 0.7; }
+  .sidebar__group-name {
+    flex: 1; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-2);
+  }
+  .sidebar__group-chevron {
+    opacity: 0.4; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .sidebar__group.is-expanded .sidebar__group-chevron { transform: rotate(180deg); opacity: 0.8; }
+  .sidebar__group.is-expanded .sidebar__group-name { color: var(--c-text-1); }
+
+  .sidebar__group-content {
+    display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+  .sidebar__group.is-expanded .sidebar__group-content { grid-template-rows: 1fr; }
+  .sidebar__group-content-inner { min-height: 0; }
+
+  .sidebar__list {
+    list-style: none; padding: 0.25rem 0 1rem var(--sp-8);
+    display: flex; flex-direction: column; gap: 1px;
+  }
+
+  .sidebar__link {
+    display: block; padding: 0.4rem var(--sp-3); font-size: 0.82rem;
+    color: var(--c-text-3); border-radius: var(--r-sm);
+    transition: all 0.15s ease; text-decoration: none;
+    position: relative; padding-left: var(--sp-4);
+  }
+  .sidebar__link:hover { color: var(--c-text-1); background: rgba(255,255,255,0.04); }
+  .sidebar__link--active {
+    color: var(--c-primary-light);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
+    font-weight: 600; border-radius: var(--r-sm);
+  }
+  .sidebar__link--active::before {
+    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 70%; background: var(--c-primary-light); border-radius: 0 2px 2px 0;
+  }
+
+  @media (max-width: 768px) { .sidebar { display: none; } }
+</style>
