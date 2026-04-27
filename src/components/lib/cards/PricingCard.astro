@@ -1,17 +1,55 @@
 ---
+/**
+ * PricingCard — Optimized card for showing product plans and features.
+ * 
+ * @param {string} plan - The plan name (e.g. "Pro").
+ * @param {string} price - The integer/decimal price value.
+ * @param {boolean} featured - Applies a highlighted styling variant if true.
+ */
 interface Props { plan: string; price: string; featured?: boolean; }
 const { plan, price, featured = false } = Astro.props;
 ---
 <div class:list={["price-card", { "featured": featured }]}>
-  <span class="plan">{plan}</span>
-  <div class="price"><span>$</span>{price}</div>
-  <ul class="features"><li>Unlimited Projects</li><li>24/7 Support</li><li>Custom Domain</li></ul>
-  <button>Choose Plan</button>
+  <span class="price-card__plan">{plan}</span>
+  <div class="price-card__price"><span>$</span>{price}</div>
+  <ul class="price-card__features">
+    <slot />
+  </ul>
+  <button class="price-card__btn" type="button">Choose Plan</button>
 </div>
+
 <style>
-  .price-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-  .featured { border-color: #6366f1; background: rgba(99,102,241,0.05); transform: scale(1.05); }
-  .price { font-size: 2.5rem; font-weight: 800; color: #fff; }
-  .features { list-style: none; padding: 0; font-size: 0.9rem; color: #94a3b8; }
-  button { background: #6366f1; color: #fff; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 700; cursor: pointer; }
+  .price-card { 
+    background: var(--c-bg-elev, rgba(255,255,255,0.03)); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-xl, 24px); 
+    padding: var(--sp-10, 2.5rem); 
+    display: flex; flex-direction: column; gap: var(--sp-6, 1.5rem); 
+  }
+  .featured { 
+    border-color: var(--c-primary, #6366f1); 
+    background: rgba(99,102,241,0.05); 
+    transform: scale(1.05); 
+  }
+  .price-card__plan { font-size: 1.1rem; font-weight: 600; color: var(--c-text-1, #fff); }
+  .price-card__price { font-size: 2.5rem; font-weight: 800; color: var(--c-text-1, #fff); }
+  .price-card__price span { font-size: 1.2rem; opacity: 0.7; margin-right: 2px; }
+  
+  .price-card__features { 
+    list-style: none; padding: 0; margin: 0;
+    font-size: 0.9rem; color: var(--c-text-2, #94a3b8); 
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  
+  /* Global sub-selector rule to style slotted list items cleanly */
+  .price-card__features :global(li) { position: relative; padding-left: 1.5rem; }
+  .price-card__features :global(li::before) { 
+    content: "✓"; position: absolute; left: 0; color: var(--c-primary, #6366f1); 
+  }
+  
+  .price-card__btn { 
+    background: var(--c-primary, #6366f1); color: #fff; 
+    border: none; padding: 0.8rem; border-radius: var(--r-md, 12px); 
+    font-weight: 700; cursor: pointer; transition: 0.2s;
+  }
 </style>

@@ -1,16 +1,53 @@
 ---
+/**
+ * GlowPortfolioCard — Card with a hovering background glow that follows the card edges.
+ * 
+ * @param {string} title - Project title heading.
+ * @param {string} subtitle - Project metadata (e.g. "Web design / 2024").
+ * @param {string} glowColor - Optional. Hex color for the animated border glow. Default is '#6366f1'.
+ */
+interface Props {
+  title: string;
+  subtitle: string;
+  glowColor?: string;
+}
+
+const { title, subtitle, glowColor = 'var(--c-primary, #6366f1)' } = Astro.props;
 ---
-<div class="glow-wrap">
+
+<div class="glow-wrap" style={`--glow-color: ${glowColor};`}>
   <div class="glow-content">
-    <h3>Project Title</h3>
-    <p>Web design / 2024</p>
+    <h3 class="glow-content__title">{title}</h3>
+    <p class="glow-content__subtitle">{subtitle}</p>
+    <slot />
   </div>
 </div>
+
 <style>
-  .glow-wrap { position: relative; padding: 2px; border-radius: 20px; background: rgba(255,255,255,0.1); overflow: hidden; }
-  .glow-wrap::before { content: ''; position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent, #6366f1, transparent); animation: rotate 4s linear infinite; }
-  .glow-content { position: relative; background: #080b14; padding: 2rem; border-radius: 18px; z-index: 1; text-align: center; }
-  h3 { margin: 0; color: #fff; }
-  p { color: #94a3b8; font-size: 0.9rem; }
-  @keyframes rotate { 100% { transform: rotate(360deg); } }
+  .glow-wrap { 
+    position: relative; 
+    padding: 2px; 
+    border-radius: var(--r-xl, 20px); 
+    background: var(--c-border, rgba(255,255,255,0.1)); 
+    overflow: hidden; 
+  }
+  .glow-wrap::before { 
+    content: ''; 
+    position: absolute; 
+    inset: -50%; 
+    background: conic-gradient(from 0deg, transparent, var(--glow-color), transparent); 
+    animation: rotate-glow 4s linear infinite; 
+  }
+  .glow-content { 
+    position: relative; 
+    background: var(--c-bg, #080b14); 
+    padding: var(--sp-8, 2rem); 
+    border-radius: calc(var(--r-xl, 20px) - 2px); 
+    z-index: 1; 
+    text-align: center; 
+  }
+  .glow-content__title { margin: 0; color: var(--c-text-1, #fff); font-size: 1.25rem; }
+  .glow-content__subtitle { color: var(--c-text-2, #94a3b8); font-size: 0.9rem; margin-top: 0.5rem; }
+  
+  @keyframes rotate-glow { 100% { transform: rotate(360deg); } }
 </style>
