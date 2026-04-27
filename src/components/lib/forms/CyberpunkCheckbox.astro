@@ -1,15 +1,71 @@
 ---
+/**
+ * CyberpunkCheckbox — A bold, neon-themed checkbox with angular borders and glitch-toggle effect.
+ * 
+ * @param {string} label - Text label displayed alongside the checkbox.
+ * @param {string} id - HTML ID for the checkbox.
+ * @param {string} name - HTML name binding.
+ * @param {boolean} checked - Initial toggle state.
+ */
+interface Props {
+  label: string;
+  id: string;
+  name?: string;
+  checked?: boolean;
+}
+
+const { label, id, name, checked = false } = Astro.props;
 ---
-<label class="cyber-check">
-  <input type="checkbox" />
-  <span class="checkmark"></span>
-  <slot />
+
+<label class="cyber-check" for={id}>
+  <input type="checkbox" {id} {name} {checked} />
+  <span class="checkmark" aria-hidden="true"></span>
+  <span class="cyber-text">{label}</span>
 </label>
+
 <style>
-  .cyber-check { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; color: #00e0ff; font-family: monospace; font-weight: 700; text-transform: uppercase; }
+  .cyber-check { 
+    display: flex; align-items: center; gap: var(--sp-4, 1rem); 
+    cursor: pointer; 
+    color: var(--c-primary-light, #00e0ff); 
+    font-family: 'Courier New', Courier, monospace; 
+    font-weight: 800; 
+    text-transform: uppercase;
+    user-select: none;
+    padding: var(--sp-2, 0.5rem);
+    transition: 0.2s;
+  }
+  
+  .cyber-check:hover .checkmark { border-color: var(--c-primary-light); }
+  
   .cyber-check input { display: none; }
-  .checkmark { width: 18px; height: 18px; border: 2px solid #ff003c; position: relative; transition: 0.2s; }
-  .cyber-check input:checked + .checkmark { background: #ff003c; box-shadow: 0 0 10px #ff003c; }
-  .checkmark::after { content: ''; position: absolute; display: none; left: 5px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  
+  .checkmark { 
+    width: 20px; height: 20px; 
+    border: 2px solid var(--c-primary, #ff003c); 
+    position: relative; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    flex-shrink: 0;
+    clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+  }
+  
+  .cyber-check input:checked + .checkmark { 
+    background: var(--c-primary, #ff003c); 
+    box-shadow: 0 0 15px var(--c-primary, #ff003c); 
+    transform: rotate(5deg) scale(1.1);
+  }
+  
+  .checkmark::after { 
+    content: ''; position: absolute; display: none; 
+    left: 7px; top: 2px; width: 4px; height: 10px; 
+    border: solid #fff; border-width: 0 3px 3px 0; 
+    transform: rotate(45deg); 
+  }
+  
   .cyber-check input:checked + .checkmark::after { display: block; }
+  
+  .cyber-text { letter-spacing: 0.05em; font-size: 0.9rem; }
+  
+  .cyber-check input:checked ~ .cyber-text {
+    text-shadow: 0 0 8px var(--c-primary-light);
+  }
 </style>

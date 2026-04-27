@@ -1,14 +1,68 @@
 ---
+/**
+ * FormGroupVertical — A structural wrapper component for grouping an input with its label and validation messaging.
+ * 
+ * @param {string} label - The descriptive title for the field.
+ * @param {string} forId - The target ID of the child input (for label association).
+ * @param {string} helpText - Optional secondary guidance text below the input.
+ * @param {string} error - Optional error message that applies error styling.
+ * @param {boolean} required - Displays a required indicator if true.
+ */
+interface Props {
+  label: string;
+  forId: string;
+  helpText?: string;
+  error?: string;
+  required?: boolean;
+}
+
+const { label, forId, helpText, error, required = false } = Astro.props;
 ---
-<div class="form-group">
-  <label>Company Name</label>
-  <input type="text" placeholder="e.g. Acme Corp" />
-  <p class="help-text">Visible on your public profile.</p>
+
+<div class:list={["form-group", { "form-group--error": error }]}>
+  <div class="form-group__header">
+    <label for={forId} class="form-group__label">
+      {label}
+      {required && <span class="form-group__req" aria-hidden="true">*</span>}
+    </label>
+  </div>
+  
+  <div class="form-group__content">
+    <slot />
+  </div>
+  
+  {error ? (
+    <p class="form-group__error" id={`${forId}-error`} role="alert">{error}</p>
+  ) : helpText ? (
+    <p class="form-group__help" id={`${forId}-help`}>{helpText}</p>
+  ) : null}
 </div>
+
 <style>
-  .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
-  label { font-size: 0.82rem; font-weight: 700; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.05em; }
-  input { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.8rem; border-radius: 8px; outline: none; }
-  input:focus { border-color: #6366f1; }
-  .help-text { font-size: 0.75rem; color: #64748b; }
+  .form-group { display: flex; flex-direction: column; gap: var(--sp-2, 0.5rem); width: 100%; margin-bottom: var(--sp-4, 1rem); }
+  
+  .form-group__label { 
+    font-size: 0.8rem; font-weight: 700; 
+    color: var(--c-text-1, #e2e8f0); 
+    text-transform: uppercase; 
+    letter-spacing: 0.05em; 
+    margin-left: 0.5rem;
+    cursor: pointer;
+  }
+  
+  .form-group__req { color: var(--c-error, #f87171); margin-left: 2px; }
+  
+  .form-group__content { width: 100%; }
+  
+  .form-group__help { font-size: 0.75rem; color: var(--c-text-2, #64748b); margin: 0 0 0 0.5rem; }
+  
+  .form-group__error { font-size: 0.75rem; color: var(--c-error, #f87171); font-weight: 600; margin: 0 0 0 0.5rem; }
+  
+  /* Deep selector to style any input nested inside the group content if it's in an error state */
+  .form-group--error :global(input), 
+  .form-group--error :global(textarea), 
+  .form-group--error :global(select) { 
+    border-color: var(--c-error, #ef4444) !important; 
+    background-color: rgba(239, 68, 68, 0.03) !important;
+  }
 </style>

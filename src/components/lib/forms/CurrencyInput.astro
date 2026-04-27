@@ -1,11 +1,64 @@
 ---
+/**
+ * CurrencyInput — A numeric input prefixed with a currency symbol for financial data entry.
+ * 
+ * @param {string} label - Input labeling title.
+ * @param {string} id - HTML ID for attribution.
+ * @param {string} symbol - Currency symbol to display (e.g. "$", "€"). Default is "$".
+ * @param {number} value - Pre-filled numeric value.
+ * @param {string} name - HTML name binding.
+ * @param {number} step - Numeric increment. Default is 0.01.
+ */
+interface Props {
+  label: string;
+  id: string;
+  symbol?: string;
+  value?: number;
+  name?: string;
+  step?: number;
+}
+
+const { label, id, symbol = "$", value = 0.00, name, step = 0.01 } = Astro.props;
 ---
-<div class="curr-wrap">
-  <span class="symbol">$</span>
-  <input type="number" step="0.01" value="0.00" />
+
+<div class="curr-input-container">
+  <label for={id} class="curr-label">{label}</label>
+  <div class="curr-wrap">
+    <span class="curr-symbol">{symbol}</span>
+    <input type="number" {id} {name} {step} value={value.toFixed(2)} class="curr-field" />
+  </div>
 </div>
+
 <style>
-  .curr-wrap { display: flex; align-items: center; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid var(--c-border); overflow: hidden; }
-  .symbol { padding: 0.8rem; background: rgba(255,255,255,0.05); color: #94a3b8; font-weight: 700; }
-  .curr-wrap input { background: none; border: none; padding: 0.8rem; color: #fff; font-size: 1.1rem; width: 100%; outline: none; }
+  .curr-input-container { display: flex; flex-direction: column; gap: var(--sp-2, 0.5rem); width: 100%; }
+  .curr-label { font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #94a3b8); margin-left: 0.5rem; }
+  
+  .curr-wrap { 
+    display: flex; align-items: center; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    border-radius: var(--r-md, 12px); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    overflow: hidden; 
+    transition: border-color 0.2s;
+  }
+  .curr-wrap:focus-within { border-color: var(--c-primary, #6366f1); }
+  
+  .curr-symbol { 
+    padding: 0.8rem 1rem; 
+    background: rgba(255,255,255,0.05); 
+    color: var(--c-text-2, #94a3b8); 
+    font-weight: 700; border-right: 1px solid var(--c-border, rgba(255,255,255,0.1));
+  }
+  
+  .curr-field { 
+    background: none; border: none; 
+    padding: 0.8rem 1rem; 
+    color: var(--c-text-1, #fff); 
+    font-size: 1.1rem; width: 100%; outline: none; 
+    font-family: inherit; font-weight: 600;
+  }
+  
+  /* Remove number spins */
+  .curr-field::-webkit-inner-spin-button, 
+  .curr-field::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 </style>

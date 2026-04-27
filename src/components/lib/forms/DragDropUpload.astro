@@ -1,12 +1,92 @@
 ---
+/**
+ * DragDropUpload — A prominent file upload zone with drag-and-drop support and visual feedback.
+ * 
+ * @param {string} label - Primary instruction text. Default is "Drag files here or browse".
+ * @param {string} id - HTML ID for the file input.
+ * @param {string} name - HTML name binding.
+ * @param {string} accept - Allowed file types (e.g. "image/*").
+ * @param {boolean} multiple - Enable multiple file selection.
+ */
+interface Props {
+  label?: string;
+  id: string;
+  name?: string;
+  accept?: string;
+  multiple?: boolean;
+}
+
+const { label = "Drag files here or browse", id, name, accept, multiple = false } = Astro.props;
 ---
-<div class="upload-zone">
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-  <p>Drag files here or <span>browse</span></p>
-  <input type="file" hidden />
+
+<div class="upload-zone" data-upload-zone>
+  <div class="upload-zone__icon" aria-hidden="true">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  </div>
+  <p class="upload-zone__text">
+    {label.split('browse').map((part, i) => (
+      i === 0 ? <span>{part} <span class="upload-zone__link">browse</span></span> : part
+    ))}
+  </p>
+  <input type="file" {id} {name} {accept} {multiple} hidden class="upload-zone__input" data-upload-input />
 </div>
+
 <style>
-  .upload-zone { border: 2px dashed rgba(255,255,255,0.1); border-radius: 20px; padding: 3rem; text-align: center; background: rgba(255,255,255,0.02); cursor: pointer; transition: 0.3s; color: #94a3b8; }
-  .upload-zone:hover { border-color: #6366f1; background: rgba(99, 102, 241, 0.05); color: #fff; }
-  .upload-zone span { color: #6366f1; font-weight: 600; text-decoration: underline; }
+  .upload-zone { 
+    border: 2px dashed var(--c-border, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-xl, 20px); 
+    padding: var(--sp-12, 3rem); 
+    text-align: center; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.02)); 
+    cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    color: var(--c-text-2, #94a3b8); 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+  }
+  
+  .upload-zone:hover, .upload-zone--dragging { 
+    border-color: var(--c-primary, #6366f1); 
+    background: rgba(99, 102, 241, 0.05); 
+    color: var(--c-text-1, #fff); 
+    transform: translateY(-2px);
+  }
+  
+  .upload-zone__icon { color: var(--c-primary, #6366f1); transition: transform 0.3s; }
+  .upload-zone:hover .upload-zone__icon { transform: translateY(-5px); }
+  
+  .upload-zone__text { font-size: 1rem; margin: 0; }
+  .upload-zone__link { color: var(--c-primary, #6366f1); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
 </style>
+
+<script>
+  document.querySelectorAll('[data-upload-zone]').forEach(zone => {
+    const input = zone.querySelector('[data-upload-input]') as HTMLInputElement;
+
+    zone.addEventListener('click', () => input.click());
+
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.classList.add('upload-zone--dragging');
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+      zone.addEventListener(evt, () => zone.classList.remove('upload-zone--dragging'));
+    });
+
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if ((e as DragEvent).dataTransfer?.files) {
+        input.files = (e as DragEvent).dataTransfer!.files;
+        // Trigger change
+        input.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+</script>

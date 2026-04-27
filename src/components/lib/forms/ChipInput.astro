@@ -1,13 +1,121 @@
 ---
+/**
+ * ChipInput — An interactive input for managing a list of tags or chips.
+ * 
+ * @param {string} label - Input labeling title.
+ * @param {string[]} initialChips - Optional array of strings to pre-populate.
+ * @param {string} name - HTML name for form submission.
+ * @param {string} placeholder - Placeholder text for the input area.
+ */
+interface Props {
+  label?: string;
+  initialChips?: string[];
+  name?: string;
+  placeholder?: string;
+}
+
+const { label, initialChips = [], name, placeholder = "Add tag..." } = Astro.props;
 ---
-<div class="chip-input">
-  <span class="chip">Astro <button>×</button></span>
-  <span class="chip">UI <button>×</button></span>
-  <input type="text" placeholder="Add tag..." />
+
+<div class="chip-input-container">
+  {label && <label class="chip-input-label">{label}</label>}
+  <div class="chip-input" data-chip-input>
+    <div class="chip-input__list" data-chip-list>
+      {initialChips.map(chip => (
+        <span class="chip">
+          {chip}
+          <button type="button" aria-label={`Remove ${chip}`} data-remove-chip>×</button>
+          <input type="hidden" name={`${name}[]`} value={chip} />
+        </span>
+      ))}
+    </div>
+    <input 
+      type="text" 
+      class="chip-input__field" 
+      placeholder={initialChips.length > 0 ? "" : placeholder} 
+      data-chip-field
+    />
+  </div>
 </div>
+
 <style>
-  .chip-input { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.1); border: 1px solid var(--c-border); border-radius: 10px; }
-  .chip { background: #6366f1; color: #fff; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
-  .chip button { background: none; border: none; color: #fff; cursor: pointer; font-size: 1rem; }
-  .chip-input input { background: none; border: none; outline: none; color: #fff; flex: 1; padding: 0.2rem; }
+  .chip-input-container { display: flex; flex-direction: column; gap: var(--sp-2, 0.5rem); width: 100%; }
+  .chip-input-label { font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #94a3b8); margin-left: 0.5rem; }
+  
+  .chip-input { 
+    display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem; 
+    background: var(--c-bg-elev, rgba(0,0,0,0.1)); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-md, 10px); 
+    transition: border-color 0.2s;
+  }
+  .chip-input:focus-within { border-color: var(--c-primary, #6366f1); }
+  
+  .chip-input__list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  
+  .chip { 
+    background: var(--c-primary, #6366f1); 
+    color: #fff; 
+    padding: 0.2rem 0.6rem; 
+    border-radius: var(--r-sm, 6px); 
+    font-size: 0.8rem; 
+    display: flex; align-items: center; gap: 0.4rem; 
+  }
+  .chip button { 
+    background: none; border: none; color: #fff; cursor: pointer; 
+    font-size: 1.1rem; line-height: 1; padding: 0; 
+    opacity: 0.8; transition: opacity 0.2s;
+  }
+  .chip button:hover { opacity: 1; }
+  
+  .chip-input__field { 
+    background: none; border: none; outline: none; 
+    color: var(--c-text-1, #fff); flex: 1; min-width: 100px;
+    padding: 0.2rem; font-family: inherit; font-size: 0.9rem;
+  }
 </style>
+
+<script>
+  // Simplified client-side logic for adding/removing chips
+  document.querySelectorAll('[data-chip-input]').forEach(container => {
+    const list = container.querySelector('[data-chip-list]');
+    const input = container.querySelector('[data-chip-field]') as HTMLInputElement;
+    const name = "tags"; // Should ideally be passed from props but hidden inputs solve this for now
+
+    const addChip = (value: string) => {
+      if (!value.trim() || !list) return;
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = `${value}<button type="button" aria-label="Remove ${value}" data-remove-chip>×</button>`;
+      
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'chips[]';
+      hidden.value = value;
+      chip.appendChild(hidden);
+      
+      list.appendChild(chip);
+      input.value = '';
+      input.placeholder = '';
+    };
+
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addChip(input.value);
+      }
+      if (e.key === 'Backspace' && !input.value && list?.lastElementChild) {
+        list.removeChild(list.lastElementChild);
+        if (list.children.length === 0) input.placeholder = "Add tag...";
+      }
+    });
+
+    container.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.hasAttribute('data-remove-chip')) {
+        target.closest('.chip')?.remove();
+        if (list?.children.length === 0) input.placeholder = "Add tag...";
+      }
+    });
+  });
+</script>

@@ -1,14 +1,106 @@
 ---
+/**
+ * StepperInput — A numeric input with increment and decrement buttons for precise control.
+ * 
+ * @param {string} label - Optional input label.
+ * @param {string} id - HTML ID for the number input.
+ * @param {string} name - HTML name binding.
+ * @param {number} value - Initial default value. Default is 1.
+ * @param {number} min - Minimum allowed value.
+ * @param {number} max - Maximum allowed value.
+ * @param {number} step - Numeric increment step. Default is 1.
+ */
+interface Props {
+  label?: string;
+  id: string;
+  name?: string;
+  value?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+const { label, id, name, value = 1, min, max, step = 1 } = Astro.props;
 ---
-<div class="stepper">
-  <button>-</button>
-  <input type="number" value="1" />
-  <button>+</button>
+
+<div class="stepper-container">
+  {label && <label class="stepper-label" for={id}>{label}</label>}
+  <div class="stepper" data-stepper>
+    <button type="button" class="stepper-btn stepper-btn--minus" data-step-minus aria-label="Decrease value">−</button>
+    <input 
+      type="number" 
+      {id} 
+      {name} 
+      {min} 
+      {max} 
+      {step} 
+      value={value} 
+      class="stepper-input"
+      data-step-input
+    />
+    <button type="button" class="stepper-btn stepper-btn--plus" data-step-plus aria-label="Increase value">+</button>
+  </div>
 </div>
+
 <style>
-  .stepper { display: flex; align-items: center; gap: 2px; }
-  .stepper button { width: 35px; height: 35px; background: #6366f1; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; transition: 0.2s; }
-  .stepper button:hover { background: #4f46e5; }
-  .stepper input { width: 50px; height: 35px; background: rgba(255,255,255,0.05); border: none; text-align: center; color: #fff; outline: none; -moz-appearance: textfield; }
-  .stepper input::-webkit-inner-spin-button { display: none; }
+  .stepper-container { display: flex; flex-direction: column; gap: var(--sp-2, 0.5rem); }
+  .stepper-label { font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #94a3b8); margin-left: 0.5rem; }
+  
+  .stepper { 
+    display: flex; align-items: center; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    border-radius: var(--r-md, 12px); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    overflow: hidden; 
+    width: fit-content;
+  }
+  
+  .stepper-btn { 
+    width: 40px; height: 40px; 
+    background: var(--c-primary, #6366f1); 
+    border: none; color: #fff; 
+    font-size: 1.25rem; font-weight: 600; 
+    cursor: pointer; transition: all 0.2s; 
+    display: grid; place-items: center;
+  }
+  
+  .stepper-btn:hover { background: var(--c-primary-light, #818cf8); }
+  .stepper-btn:active { transform: scale(0.95); }
+  
+  .stepper-input { 
+    width: 60px; height: 40px; 
+    background: transparent; 
+    border: none; text-align: center; 
+    color: var(--c-text-1, #fff); 
+    font-size: 1rem; font-weight: 700;
+    outline: none; -moz-appearance: textfield; 
+    font-family: inherit;
+  }
+  
+  .stepper-input::-webkit-inner-spin-button,
+  .stepper-input::-webkit-outer-spin-button { display: none; }
 </style>
+
+<script>
+  document.querySelectorAll('[data-stepper]').forEach(wrapper => {
+    const input = wrapper.querySelector('[data-step-input]') as HTMLInputElement;
+    const minus = wrapper.querySelector('[data-step-minus]');
+    const plus = wrapper.querySelector('[data-step-plus]');
+    
+    if (!input || !minus || !plus) return;
+
+    const step = parseFloat(input.step) || 1;
+    const min = input.min !== "" ? parseFloat(input.min) : -Infinity;
+    const max = input.max !== "" ? parseFloat(input.max) : Infinity;
+
+    minus.addEventListener('click', () => {
+      const current = parseFloat(input.value) || 0;
+      if (current - step >= min) input.value = (current - step).toString();
+    });
+
+    plus.addEventListener('click', () => {
+      const current = parseFloat(input.value) || 0;
+      if (current + step <= max) input.value = (current + step).toString();
+    });
+  });
+</script>

@@ -1,22 +1,94 @@
 ---
+/**
+ * OTPInput — A specialized input group for One-Time Password verification codes.
+ * 
+ * @param {string} label - Optional grouping label title.
+ * @param {string} id - Base HTML ID for the inputs.
+ * @param {number} length - Number of OTP digits. Default is 4.
+ * @param {string} name - Base name for form submission (will be indexed).
+ */
+interface Props {
+  label?: string;
+  id: string;
+  length?: number;
+  name?: string;
+}
+
+const { label, id, length = 4, name = "otp" } = Astro.props;
 ---
-<div class="otp-wrap">
-  <input type="text" maxlength="1" />
-  <input type="text" maxlength="1" />
-  <input type="text" maxlength="1" />
-  <input type="text" maxlength="1" />
+
+<div class="otp-container">
+  {label && <label class="otp-label">{label}</label>}
+  <div class="otp-wrap" data-otp-group>
+    {Array.from({ length }).map((_, i) => (
+      <input 
+        type="text" 
+        inputmode="numeric"
+        maxlength="1" 
+        pattern="[0-9]*"
+        autocomplete="one-time-code"
+        id={`${id}-${i}`}
+        name={`${name}[]`}
+        class="otp-field"
+        data-otp-index={i}
+      />
+    ))}
+  </div>
 </div>
+
 <style>
+  .otp-container { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4, 1rem); }
+  .otp-label { font-size: 0.9rem; font-weight: 600; color: var(--c-text-2, #94a3b8); }
+  
   .otp-wrap { display: flex; gap: 0.75rem; justify-content: center; }
-  .otp-wrap input { width: 45px; height: 55px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; text-align: center; color: #fff; font-size: 1.5rem; font-weight: 700; outline: none; transition: 0.2s; }
-  .otp-wrap input:focus { border-color: #6366f1; background: rgba(99, 102, 241, 0.1); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+  
+  .otp-field { 
+    width: 50px; height: 60px; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-md, 12px); 
+    text-align: center; color: var(--c-text-1, #fff); 
+    font-size: 1.75rem; font-weight: 800; 
+    outline: none; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+  }
+  
+  .otp-field:focus { 
+    border-color: var(--c-primary, #6366f1); 
+    background: rgba(99, 102, 241, 0.1); 
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3), 0 0 0 3px rgba(99, 102, 241, 0.15); 
+    transform: translateY(-2px);
+  }
 </style>
+
 <script>
-  document.querySelectorAll('.otp-wrap input').forEach((input, idx, inputs) => {
-    input.addEventListener('input', () => { 
-      if ((input as HTMLInputElement).value && idx < inputs.length - 1) {
-        (inputs[idx+1] as HTMLInputElement).focus(); 
-      }
+  document.querySelectorAll('[data-otp-group]').forEach(group => {
+    const inputs = group.querySelectorAll('input') as NodeListOf<HTMLInputElement>;
+    
+    inputs.forEach((input, idx) => {
+      // Auto-advance
+      input.addEventListener('input', (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        if (val && idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+        }
+      });
+
+      // Backspace logic
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          inputs[idx - 1].focus();
+        }
+      });
+
+      // Paste logic
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const data = e.clipboardData?.getData('text').slice(0, inputs.length).split('') || [];
+        data.forEach((val, i) => {
+          if (inputs[i]) inputs[i].value = val;
+        });
+        if (inputs[data.length - 1]) inputs[data.length - 1].focus();
+      });
     });
   });
 </script>

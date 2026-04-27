@@ -1,16 +1,72 @@
 ---
+/**
+ * ModernSelect — A styled dropdown selector with a custom arrow and glassmorphism styling.
+ * 
+ * @param {string} label - Input labeling title.
+ * @param {string} id - HTML ID for the select element.
+ * @param {string} name - HTML name binding.
+ * @param {Array<{label: string, value: string, disabled?: boolean}>} options - List of select options.
+ * @param {boolean} required - HTML required attribute.
+ */
+interface Props {
+  label: string;
+  id: string;
+  name?: string;
+  options: Array<{ label: string; value: string; disabled?: boolean }>;
+  required?: boolean;
+}
+
+const { label, id, name, options = [], required = false } = Astro.props;
 ---
-<div class="select-wrap">
-  <select class="custom-select">
-    <option>Select Option</option>
-    <option>Product Design</option>
-    <option>Web Development</option>
-    <option>Mobile Apps</option>
-  </select>
-  <div class="select-arrow"></div>
+
+<div class="select-container">
+  <label for={id} class="select-label">{label}</label>
+  <div class="select-wrap">
+    <select class="custom-select" {id} {name} {required}>
+      {options.map(opt => (
+        <option value={opt.value} disabled={opt.disabled}>{opt.label}</option>
+      ))}
+    </select>
+    <div class="select-arrow" aria-hidden="true">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </div>
+  </div>
 </div>
+
 <style>
+  .select-container { display: flex; flex-direction: column; gap: var(--sp-2, 0.5rem); width: 100%; }
+  .select-label { font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #94a3b8); margin-left: 0.5rem; }
+  
   .select-wrap { position: relative; width: 100%; }
-  .custom-select { width: 100%; padding: 0.8rem 1rem; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; appearance: none; cursor: pointer; outline: none; }
-  .select-arrow { position: absolute; top: 18px; right: 15px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid #64748b; pointer-events: none; }
+  
+  .custom-select { 
+    width: 100%; 
+    padding: 0.8rem 2.5rem 0.8rem 1rem; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.04)); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-md, 12px); 
+    color: var(--c-text-1, #fff); 
+    appearance: none; cursor: pointer; outline: none; 
+    font-family: inherit; font-size: 0.95rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  
+  .custom-select:focus { 
+    border-color: var(--c-primary, #6366f1); 
+    background: rgba(255,255,255,0.06);
+  }
+  
+  .select-arrow { 
+    position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); 
+    color: var(--c-text-2, #64748b); 
+    pointer-events: none; transition: transform 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  
+  .custom-select:focus + .select-arrow { 
+    transform: translateY(-50%) rotate(180deg); 
+    color: var(--c-primary, #6366f1); 
+  }
 </style>

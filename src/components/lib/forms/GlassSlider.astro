@@ -1,7 +1,88 @@
 ---
+/**
+ * GlassSlider — A translucent range slider with a glowing thumb and backdrop-blur track.
+ * 
+ * @param {string} label - Optional descriptive text title.
+ * @param {string} id - HTML ID for the range input.
+ * @param {string} name - HTML name binding.
+ * @param {number} min - Minimum value. Default is 0.
+ * @param {number} max - Maximum value. Default is 100.
+ * @param {number} value - Initial starting value. Default is 50.
+ * @param {number} step - Step increment. Default is 1.
+ */
+interface Props {
+  label?: string;
+  id: string;
+  name?: string;
+  min?: number;
+  max?: number;
+  value?: number;
+  step?: number;
+}
+
+const { label, id, name, min = 0, max = 100, value = 50, step = 1 } = Astro.props;
 ---
-<input type="range" class="glass-slider" min="0" max="100" />
+
+<div class="slider-container">
+  {label && <div class="slider-header"><label for={id}>{label}</label> <span data-slider-value>{value}</span></div>}
+  <input 
+    type="range" 
+    class="glass-slider" 
+    {id} 
+    {name} 
+    {min} 
+    {max} 
+    {step} 
+    {value}
+    data-slider-input
+  />
+</div>
+
 <style>
-  .glass-slider { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; outline: none; backdrop-filter: blur(5px); }
-  .glass-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #6366f1; cursor: pointer; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 0 10px rgba(99,102,241,0.5); }
+  .slider-container { width: 100%; display: flex; flex-direction: column; gap: var(--sp-3, 0.75rem); }
+  .slider-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #94a3b8); padding: 0 0.5rem; }
+  
+  .glass-slider { 
+    -webkit-appearance: none; 
+    width: 100%; height: 8px; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-full, 10px); 
+    outline: none; 
+    backdrop-filter: blur(5px); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.05));
+    cursor: pointer;
+  }
+  
+  /* Thumb Styling - Webkit */
+  .glass-slider::-webkit-slider-thumb { 
+    -webkit-appearance: none; 
+    width: 22px; height: 22px; 
+    border-radius: 50%; 
+    background: var(--c-primary, #6366f1); 
+    cursor: pointer; 
+    border: 3px solid rgba(255,255,255,0.6); 
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); 
+    transition: transform 0.2s;
+  }
+  
+  .glass-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  
+  /* Thumb Styling - Firefox */
+  .glass-slider::-moz-range-thumb { 
+    width: 18px; height: 18px; 
+    border-radius: 50%; 
+    background: var(--c-primary, #6366f1); 
+    cursor: pointer; 
+    border: 3px solid rgba(255,255,255,0.6); 
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); 
+  }
 </style>
+
+<script>
+  document.querySelectorAll('[data-slider-input]').forEach(slider => {
+    const display = slider.closest('.slider-container')?.querySelector('[data-slider-value]');
+    slider.addEventListener('input', (e) => {
+      if (display) display.textContent = (e.target as HTMLInputElement).value;
+    });
+  });
+</script>

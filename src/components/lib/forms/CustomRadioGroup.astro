@@ -1,13 +1,65 @@
 ---
+/**
+ * CustomRadioGroup — A group of styled radio buttons for vertical or horizontal options.
+ * 
+ * @param {string} label - Optional title for the fieldset.
+ * @param {string} name - Common HTML name for the radio group.
+ * @param {Array<{label: string, value: string, checked?: boolean}>} options - List of choices.
+ * @param {boolean} horizontal - Layout orientation. Default is false (vertical).
+ */
+interface Props {
+  label?: string;
+  name: string;
+  options: Array<{ label: string; value: string; checked?: boolean }>;
+  horizontal?: boolean;
+}
+
+const { label, name, options = [], horizontal = false } = Astro.props;
 ---
-<div class="radio-group">
-  <label class="radio-item"><input type="radio" name="opt" checked /><span>Option A</span></label>
-  <label class="radio-item"><input type="radio" name="opt" /><span>Option B</span></label>
-</div>
+
+<fieldset class:list={["radio-group", { "radio-group--horizontal": horizontal }]}>
+  {label && <legend class="radio-group-legend">{label}</legend>}
+  <div class="radio-items">
+    {options.map((opt, i) => (
+      <label class="radio-item">
+        <input type="radio" name={name} value={opt.value} checked={opt.checked} />
+        <span class="radio-circle" aria-hidden="true"></span>
+        <span class="radio-label">{opt.label}</span>
+      </label>
+    ))}
+  </div>
+</fieldset>
+
 <style>
-  .radio-group { display: flex; flex-direction: column; gap: 0.8rem; }
-  .radio-item { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; color: #94a3b8; }
-  .radio-item input { appearance: none; width: 20px; height: 20px; border: 2px solid #6366f1; border-radius: 50%; position: relative; cursor: pointer; }
-  .radio-item input:checked::after { content: ''; position: absolute; inset: 4px; background: #6366f1; border-radius: 50%; }
-  .radio-item input:checked + span { color: #fff; font-weight: 600; }
+  .radio-group { border: none; padding: 0; margin: 0; width: 100%; }
+  .radio-group-legend { font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #94a3b8); margin-bottom: var(--sp-3, 0.75rem); margin-left: 0.5rem; }
+  
+  .radio-items { display: flex; flex-direction: column; gap: var(--sp-3, 0.8rem); }
+  .radio-group--horizontal .radio-items { flex-direction: row; flex-wrap: wrap; gap: var(--sp-6, 1.5rem); }
+  
+  .radio-item { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; color: var(--c-text-2, #94a3b8); transition: 0.2s; user-select: none; }
+  
+  .radio-item input { appearance: none; display: none; }
+  
+  .radio-circle { 
+    width: 20px; height: 20px; 
+    border: 2px solid var(--c-border, #334155); 
+    border-radius: var(--r-full, 50%); 
+    position: relative; cursor: pointer; transition: 0.2s;
+    background: var(--c-bg-elev, rgba(255,255,255,0.02));
+  }
+  
+  .radio-item:hover .radio-circle { border-color: var(--c-primary-light, #818cf8); }
+  
+  .radio-circle::after { 
+    content: ''; position: absolute; inset: 4px; 
+    background: var(--c-primary, #6366f1); 
+    border-radius: 50%; opacity: 0; transform: scale(0.5); transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  
+  .radio-item input:checked + .radio-circle { border-color: var(--c-primary, #6366f1); box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+  .radio-item input:checked + .radio-circle::after { opacity: 1; transform: scale(1); }
+  
+  .radio-label { font-size: 0.95rem; }
+  .radio-item input:checked ~ .radio-label { color: var(--c-text-1, #fff); font-weight: 600; }
 </style>

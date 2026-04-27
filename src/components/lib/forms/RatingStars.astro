@@ -1,15 +1,71 @@
 ---
+/**
+ * RatingStars — A classic star-rating input for user reviews and feedback.
+ * 
+ * @param {string} name - HTML name for form submission. Default is "rating".
+ * @param {number} maxRating - Maximum number of stars. Default is 5.
+ * @param {string} idPrefix - Prefix used to generate unique IDs for radio buttons.
+ * @param {number} initialValue - Currently selected rating.
+ */
+interface Props {
+  name?: string;
+  maxRating?: number;
+  idPrefix?: string;
+  initialValue?: number;
+}
+
+const { name = "rating", maxRating = 5, idPrefix = "star", initialValue = 0 } = Astro.props;
 ---
-<div class="rating">
-  <input type="radio" name="star" id="star5" /><label for="star5"></label>
-  <input type="radio" name="star" id="star4" /><label for="star4"></label>
-  <input type="radio" name="star" id="star3" /><label for="star3"></label>
-  <input type="radio" name="star" id="star2" /><label for="star2"></label>
-  <input type="radio" name="star" id="star1" /><label for="star1"></label>
+
+<div class="rating-stars" data-rating-group>
+  {Array.from({ length: maxRating }).map((_, i) => {
+    const val = maxRating - i;
+    return (
+      <>
+        <input 
+          type="radio" 
+          name={name} 
+          id={`${idPrefix}-${val}`} 
+          value={val} 
+          checked={initialValue === val}
+          class="rating-stars__input"
+        />
+        <label for={`${idPrefix}-${val}`} class="rating-stars__star" aria-label={`${val} stars`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </label>
+      </>
+    );
+  })}
 </div>
+
 <style>
-  .rating { display: flex; flex-direction: row-reverse; gap: 5px; }
-  .rating input { display: none; }
-  .rating label { width: 24px; height: 24px; background: #334155; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); cursor: pointer; transition: 0.2s; }
-  .rating label:hover, .rating label:hover ~ label, .rating input:checked ~ label { background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+  .rating-stars { display: flex; flex-direction: row-reverse; gap: 4px; width: fit-content; }
+  
+  .rating-stars__input { display: none; }
+  
+  .rating-stars__star { 
+    width: 32px; height: 32px; 
+    cursor: pointer; transition: all 0.2s ease; 
+    color: var(--c-border, #334155);
+  }
+  
+  .rating-stars__star svg { width: 100%; height: 100%; fill: transparent; transition: all 0.2s; }
+  
+  /* Hover and check logic using sibling selectors (requires row-reverse) */
+  .rating-stars__star:hover, 
+  .rating-stars__star:hover ~ .rating-stars__star,
+  .rating-stars__input:checked ~ .rating-stars__star { 
+    color: #fbbf24; 
+  }
+  
+  .rating-stars__star:hover svg, 
+  .rating-stars__star:hover ~ .rating-stars__star svg,
+  .rating-stars__input:checked ~ .rating-stars__star svg { 
+    fill: #fbbf24;
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.4));
+  }
+  
+  .rating-stars__star:active { transform: scale(0.9); }
 </style>

@@ -1,13 +1,60 @@
 ---
+/**
+ * ColorPickerInput — A specialized input for selecting hex colors with a circular preview.
+ * 
+ * @param {string} label - Input labeling title.
+ * @param {string} id - HTML ID for the picker.
+ * @param {string} value - Default starting color value (hex). Default is '#6366f1'.
+ * @param {string} name - HTML name binding.
+ */
+interface Props {
+  label: string;
+  id: string;
+  value?: string;
+  name?: string;
+}
+
+const { label, id, value = "#6366f1", name } = Astro.props;
 ---
+
 <div class="color-picker-wrap">
-  <input type="color" class="color-input" id="picker" value="#6366f1" />
-  <label for="picker">Primary Accent</label>
+  <div class="color-input-container">
+    <input type="color" class="color-input" {id} {name} {value} />
+    <label for={id} class="color-label">{label}</label>
+  </div>
+  <span class="color-value" data-color-value>{value}</span>
 </div>
+
 <style>
-  .color-picker-wrap { display: flex; align-items: center; gap: 1rem; }
-  .color-input { -webkit-appearance: none; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; background: transparent; }
+  .color-picker-wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--c-bg-elev, rgba(255,255,255,0.03)); padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-radius: var(--r-md, 12px); border: 1px solid var(--c-border, rgba(255,255,255,0.1)); }
+  .color-input-container { display: flex; align-items: center; gap: 1rem; }
+  
+  .color-input { 
+    -webkit-appearance: none; 
+    border: none; 
+    width: 38px; height: 38px; 
+    border-radius: var(--r-full, 50%); 
+    cursor: pointer; 
+    background: transparent;
+    padding: 0;
+  }
   .color-input::-webkit-color-swatch-wrapper { padding: 0; }
-  .color-input::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; }
-  label { font-size: 0.9rem; color: #e2e8f0; font-weight: 500; }
+  .color-input::-webkit-color-swatch { 
+    border: 2px solid rgba(255,255,255,0.2); 
+    border-radius: 50%; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+  
+  .color-label { font-size: 0.9rem; color: var(--c-text-1, #e2e8f0); font-weight: 500; cursor: pointer; }
+  .color-value { font-size: 0.8rem; color: var(--c-text-2, #64748b); font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; }
 </style>
+
+<script>
+  document.querySelectorAll('.color-input').forEach(input => {
+    const parent = input.closest('.color-picker-wrap');
+    const display = parent?.querySelector('[data-color-value]');
+    input.addEventListener('input', (e) => {
+      if (display) display.textContent = (e.target as HTMLInputElement).value;
+    });
+  });
+</script>
