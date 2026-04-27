@@ -1,22 +1,65 @@
 ---
-interface Props { percent: number; }
-const { percent } = Astro.props;
-const radius = 30;
+/**
+ * CircleProgress — A circular chart indicating a percentage of completion.
+ * 
+ * @param {number} percent - Completion percentage (0 to 100).
+ * @param {number} size - Pixel size of the square SVG container. Default is 80.
+ * @param {string} color - Primary gauge color. Default is 'var(--c-primary)'.
+ */
+interface Props {
+  percent: number;
+  size?: number;
+  color?: string;
+}
+
+const { percent, size = 80, color = 'var(--c-primary, #6366f1)' } = Astro.props;
+
+const radius = (size / 2) - 10;
 const circum = 2 * Math.PI * radius;
-const offset = circum - (percent / 100) * circum;
+const offset = circum - (Math.min(100, Math.max(0, percent)) / 100) * circum;
 ---
-<div class="circle-box">
-  <svg width="80" height="80">
-    <circle class="bg" cx="40" cy="40" r={radius} />
-    <circle class="val" cx="40" cy="40" r={radius} stroke-dasharray={circum} stroke-dashoffset={offset} />
+
+<div class="circle-box" style={`--gauge-size: ${size}px; --gauge-color: ${color};`}>
+  <svg width={size} height={size}>
+    <circle class="circle-bg" cx={size/2} cy={size/2} r={radius} />
+    <circle 
+      class="circle-val" 
+      cx={size/2} cy={size/2} r={radius} 
+      stroke-dasharray={circum} 
+      stroke-dashoffset={offset} 
+      stroke={color}
+    />
   </svg>
-  <div class="label">{percent}%</div>
+  <div class="circle-label" role="presentation">{percent}%</div>
 </div>
+
 <style>
-  .circle-box { position: relative; width: 80px; height: 80px; display: grid; place-items: center; }
+  .circle-box { 
+    position: relative; 
+    width: var(--gauge-size); 
+    height: var(--gauge-size); 
+    display: grid; place-items: center; 
+  }
+  
   svg { transform: rotate(-90deg); }
+  
   circle { fill: transparent; stroke-width: 6; stroke-linecap: round; }
-  .bg { stroke: rgba(255,255,255,0.05); }
-  .val { stroke: #6366f1; transition: stroke-dashoffset 1s ease; }
-  .label { position: absolute; font-size: 0.8rem; font-weight: 800; color: #fff; }
+  
+  .circle-bg { 
+    stroke: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    stroke-width: 5;
+  }
+  
+  .circle-val { 
+    transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); 
+    filter: drop-shadow(0 0 3px var(--gauge-color));
+  }
+  
+  .circle-label { 
+    position: absolute; 
+    font-size: 0.85rem; 
+    font-weight: 800; 
+    color: var(--c-text-1, #fff); 
+    font-family: inherit;
+  }
 </style>

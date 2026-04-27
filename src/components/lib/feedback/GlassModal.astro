@@ -1,19 +1,104 @@
 ---
+/**
+ * GlassModal — A premium overlay dialog for critical confirmations or focused interactions.
+ * 
+ * @param {string} id - HTML ID for toggle and script and association.
+ * @param {string} title - Header text. Default is "Confirm Action".
+ * @param {string} confirmLabel - Label for the primary button. Default is "Confirm".
+ * @param {string} cancelLabel - Label for the secondary button. Default is "Cancel".
+ */
+interface Props {
+  id: string;
+  title?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
+const { 
+  id, 
+  title = "Confirm Action", 
+  confirmLabel = "Confirm", 
+  cancelLabel = "Cancel" 
+} = Astro.props;
 ---
-<div class="modal-overlay">
-  <div class="modal-box anim-scale-up">
-    <div class="modal-header"><h3>Confirm Action</h3></div>
-    <div class="modal-body"><p>Are you sure you want to delete this resource? This cannot be undone.</p></div>
-    <div class="modal-footer"><button class="btn-sec">Cancel</button><button class="btn-pri">Confirm</button></div>
+
+<dialog id={id} class="modal-dialog">
+  <div class="modal-box">
+    <div class="modal-header"><h3>{title}</h3></div>
+    <div class="modal-body">
+      <slot />
+    </div>
+    <div class="modal-footer">
+      <form method="dialog">
+        <button class="modal-btn modal-btn--sec" type="submit">{cancelLabel}</button>
+      </form>
+      <button class="modal-btn modal-btn--pri" data-modal-confirm>{confirmLabel}</button>
+    </div>
   </div>
-</div>
+</dialog>
+
 <style>
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(8px); display: grid; place-items: center; z-index: 2000; }
-  .modal-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 30px 100px rgba(0,0,0,0.5); }
-  .modal-header h3 { margin: 0; color: #fff; }
-  .modal-body p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
-  button { padding: 0.6rem 1.2rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
-  .btn-sec { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-  .btn-pri { background: #6366f1; color: #fff; }
+  .modal-dialog { 
+    background: transparent; 
+    border: none; 
+    padding: 0;
+    max-width: 400px;
+    width: 100%;
+    overflow: visible;
+  }
+  
+  .modal-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    animation: fade-in 0.3s forwards;
+  }
+  
+  .modal-box { 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    border-radius: var(--r-xl, 24px); 
+    padding: var(--sp-8, 2rem); 
+    box-shadow: 0 30px 100px rgba(0,0,0,0.6);
+    color: var(--c-text-1, #fff);
+  }
+  
+  .animate-open { animation: scale-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+  .modal-header h3 { margin: 0 0 var(--sp-4, 1rem); color: var(--c-text-1, #fff); font-size: 1.25rem; }
+  
+  .modal-body { color: var(--c-text-2, #94a3b8); font-size: 0.95rem; line-height: 1.6; }
+  
+  .modal-footer { display: flex; justify-content: flex-end; gap: var(--sp-4, 1rem); margin-top: var(--sp-8, 2rem); }
+  
+  .modal-btn { 
+    padding: 0.7rem 1.4rem; 
+    border-radius: var(--r-md, 12px); 
+    border: none; 
+    font-weight: 700; 
+    cursor: pointer; 
+    font-family: inherit;
+    transition: 0.2s;
+  }
+  
+  .modal-btn--sec { background: transparent; color: var(--c-text-1, #fff); border: 1px solid var(--c-border, rgba(255,255,255,0.1)); }
+  .modal-btn--sec:hover { background: rgba(255,255,255,0.05); }
+  
+  .modal-btn--pri { 
+    background: var(--c-primary, #6366f1); 
+    color: #fff; 
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  }
+  .modal-btn--pri:hover { transform: translateY(-2px); filter: brightness(1.1); }
+  
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scale-up { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 </style>
+
+<script>
+  // Add simple show/hide logic helper if needed, but <dialog> works natively
+  document.querySelectorAll('dialog').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.close();
+    });
+  });
+</script>

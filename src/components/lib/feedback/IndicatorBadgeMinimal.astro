@@ -1,10 +1,63 @@
 ---
+/**
+ * IndicatorBadgeMinimal — A small notification dot typically placed on the corner of an icon or avatar.
+ * 
+ * @param {string} color - CSS color for the indicator dot. Default is 'var(--c-primary)'.
+ * @param {string} position - Corner position (top-right|top-left|bottom-right|bottom-left). Default is 'top-right'.
+ * @param {boolean} pulse - If true, adds a glowing pulse animation.
+ */
+interface Props {
+  color?: string;
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  pulse?: boolean;
+}
+
+const { 
+  color = 'var(--c-primary, #6366f1)', 
+  position = 'top-right',
+  pulse = false 
+} = Astro.props;
+
+const positionStyles = {
+  'top-right': 'top: 0; right: 0; transform: translate(25%, -25%);',
+  'top-left': 'top: 0; left: 0; transform: translate(-25%, -25%);',
+  'bottom-right': 'bottom: 0; right: 0; transform: translate(25%, 25%);',
+  'bottom-left': 'bottom: 0; left: 0; transform: translate(-25%, 25%);'
+};
 ---
+
 <div class="indicator-wrap">
   <slot />
-  <span class="dot-indicator"></span>
+  <span 
+    class:list={['dot-indicator', { 'dot-indicator--pulse': pulse }]} 
+    style={`background: ${color}; ${positionStyles[position]}`}
+    aria-hidden="true"
+  ></span>
 </div>
+
 <style>
-  .indicator-wrap { position: relative; width: fit-content; }
-  .dot-indicator { position: absolute; top: 0; right: 0; width: 10px; height: 10px; background: #6366f1; border: 2px solid #080b14; border-radius: 50%; }
+  .indicator-wrap { position: relative; width: fit-content; display: inline-flex; }
+  .dot-indicator { 
+    position: absolute; 
+    width: 10px; height: 10px; 
+    border: 2px solid var(--c-bg, #080b14); 
+    border-radius: var(--r-full, 50%); 
+    z-index: 10;
+  }
+  
+  .dot-indicator--pulse::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid inherit;
+    background: inherit;
+    opacity: 0.6;
+    animation: indicator-pulse 2s infinite;
+  }
+  
+  @keyframes indicator-pulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
 </style>

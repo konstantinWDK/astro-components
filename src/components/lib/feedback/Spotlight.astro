@@ -1,9 +1,54 @@
 ---
+/**
+ * Spotlight — A visual emphasis component that dims the page and highlights its children.
+ * 
+ * @param {boolean} active - If true, the spotlight overlay is visible. Default is false.
+ * @param {number} opacity - Background overlay opacity (0 to 1). Default is 0.7.
+ */
+interface Props {
+  active?: boolean;
+  opacity?: number;
+}
+
+const { active = false, opacity = 0.7 } = Astro.props;
 ---
-<div class="spotlight">
-  <div class="focused-content"><slot /></div>
+
+<div class:list={["spotlight-wrap", { "spotlight-wrap--active": active }]} style={`--spotlight-opacity: ${opacity};`}>
+  <div class="spotlight-content">
+    <slot />
+  </div>
 </div>
+
 <style>
-  .spotlight { position: relative; z-index: 100; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); }
-  .focused-content { background: #fff; border-radius: inherit; overflow: hidden; }
+  .spotlight-wrap { 
+    position: relative; 
+    display: inline-block;
+    transition: z-index 0.3s;
+  }
+  
+  .spotlight-wrap--active { z-index: 2000; }
+  
+  .spotlight-wrap--active::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,var(--spotlight-opacity));
+    backdrop-filter: blur(4px);
+    z-index: -1;
+    animation: spotlight-fade 0.3s forwards;
+    pointer-events: none;
+  }
+  
+  .spotlight-content { 
+    position: relative;
+    border-radius: var(--r-md, 12px); 
+    transition: transform 0.3s;
+  }
+  
+  .spotlight-wrap--active .spotlight-content {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px rgba(255,255,255,0.1);
+  }
+
+  @keyframes spotlight-fade { from { opacity: 0; } to { opacity: 1; } }
 </style>

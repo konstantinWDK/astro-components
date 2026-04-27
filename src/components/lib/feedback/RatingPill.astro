@@ -1,13 +1,43 @@
 ---
-interface Props { score: number; }
-const { score } = Astro.props;
+/**
+ * RatingPill — A compact badge displaying a numeric score or rating stars.
+ * 
+ * @param {number} score - The rating value (0 to 5).
+ * @param {boolean} showStar - If true, displays a star icon suffix. Default is true.
+ */
+interface Props {
+  score: number;
+  showStar?: boolean;
+}
+
+const { score, showStar = true } = Astro.props;
+
+const status = score >= 4 ? 'high' : score >= 3 ? 'mid' : 'low';
 ---
-<div class:list={["rate-pill", { "high": score >= 4, "mid": score >= 3 && score < 4, "low": score < 3 }]}>
-  {score.toFixed(1)} ★
+
+<div class:list={["rate-pill", `rate-pill--${status}`]}>
+  <span class="rate-pill__val">{score.toFixed(1)}</span>
+  {showStar && <span class="rate-pill__star" aria-hidden="true">★</span>}
 </div>
+
 <style>
-  .rate-pill { padding: 4px 12px; border-radius: 100px; font-weight: 800; font-size: 0.75rem; color: #fff; width: fit-content; }
-  .high { background: #10b981; }
-  .mid { background: #f59e0b; }
-  .low { background: #ef4444; }
+  .rate-pill { 
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: var(--sp-1, 4px) var(--sp-3, 12px); 
+    border-radius: var(--r-full, 100px); 
+    font-weight: 800; 
+    font-size: 0.75rem; 
+    color: #fff; 
+    width: fit-content; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  
+  .rate-pill--high { background: #10b981; }
+  .rate-pill--mid { background: #f59e0b; }
+  .rate-pill--low { background: #ef4444; }
+  
+  .rate-pill__star { font-size: 0.8rem; margin-top: -1px; }
+  .rate-pill__val { font-family: inherit; }
 </style>

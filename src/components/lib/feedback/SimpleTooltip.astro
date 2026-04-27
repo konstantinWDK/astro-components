@@ -1,10 +1,59 @@
 ---
+/**
+ * SimpleTooltip — A lightweight hover-based hint for buttons or icons.
+ * 
+ * @param {string} text - The tooltip content text.
+ * @param {'top'|'bottom'|'left'|'right'} position - Preferred placement relative to the child. Default is 'top'.
+ */
+interface Props {
+  text: string;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+}
+
+const { text, position = 'top' } = Astro.props;
 ---
-<div class="tooltip-wrap" data-tip="Click to copy ID">
+
+<div class:list={["tooltip-wrap", `tooltip-wrap--${position}`]} data-tip={text}>
   <slot />
 </div>
+
 <style>
-  .tooltip-wrap { position: relative; display: inline-block; cursor: help; }
-  .tooltip-wrap::after { content: attr(data-tip); position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); padding: 5px 10px; background: #111; color: #fff; font-size: 0.75rem; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: 0.2s; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
-  .tooltip-wrap:hover::after { opacity: 1; bottom: 110%; }
+  .tooltip-wrap { 
+    position: relative; 
+    display: inline-flex; 
+    cursor: help; 
+  }
+  
+  .tooltip-wrap::after { 
+    content: attr(data-tip); 
+    position: absolute; 
+    padding: var(--sp-2, 6px) var(--sp-3, 12px); 
+    background: var(--c-bg-elev, #111); 
+    color: var(--c-text-1, #fff); 
+    font-size: 0.72rem; 
+    font-weight: 600;
+    border-radius: var(--r-sm, 6px); 
+    white-space: nowrap; 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    z-index: 100;
+  }
+  
+  /* Positions */
+  .tooltip-wrap--top::after { bottom: 125%; left: 50%; transform: translateX(-50%) translateY(5px); }
+  .tooltip-wrap--bottom::after { top: 125%; left: 50%; transform: translateX(-50%) translateY(-5px); }
+  .tooltip-wrap--left::after { right: 125%; top: 50%; transform: translateY(-50%) translateX(5px); }
+  .tooltip-wrap--right::after { left: 125%; top: 50%; transform: translateY(-50%) translateX(-5px); }
+
+  /* Hover States */
+  .tooltip-wrap:hover::after { 
+    opacity: 1; 
+  }
+  .tooltip-wrap--top:hover::after { transform: translateX(-50%) translateY(0); }
+  .tooltip-wrap--bottom:hover::after { transform: translateX(-50%) translateY(0); }
+  .tooltip-wrap--left:hover::after { transform: translateY(-50%) translateX(0); }
+  .tooltip-wrap--right:hover::after { transform: translateY(-50%) translateX(0); }
 </style>

@@ -1,12 +1,57 @@
 ---
+/**
+ * TypingIndicator — A classic three-dot animation indicating a message is being composed.
+ * 
+ * @param {string} dotColor - CSS color for the dots. Default is 'var(--c-primary)'.
+ * @param {string} label - Accessible ARIA label. Default is "Typing...".
+ */
+interface Props {
+  dotColor?: string;
+  label?: string;
+}
+
+const { 
+  dotColor = 'var(--c-primary, #6366f1)', 
+  label = "Someone is typing..." 
+} = Astro.props;
 ---
-<div class="typing">
-  <span></span><span></span><span></span>
+
+<div class="typing-wrap" role="status" aria-label={label}>
+  <div class="typing-dots" style={`--dot-color: ${dotColor};`}>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
 </div>
+
 <style>
-  .typing { display: flex; gap: 4px; padding: 10px 15px; background: rgba(255,255,255,0.05); border-radius: 15px; width: fit-content; }
-  .typing span { width: 6px; height: 6px; background: #64748b; border-radius: 50%; animation: type 1s infinite alternate; }
-  .typing span:nth-child(2) { animation-delay: 0.2s; }
-  .typing span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes type { to { transform: translateY(-5px); background: #6366f1; } }
+  .typing-wrap { 
+    display: flex; 
+    padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem); 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    border-radius: var(--r-xl, 20px); 
+    width: fit-content; 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1));
+  }
+  
+  .typing-dots { display: flex; gap: var(--sp-1, 4px); }
+  
+  .typing-dots span { 
+    width: 6px; 
+    height: 6px; 
+    background: var(--c-text-muted, #64748b); 
+    border-radius: var(--r-full, 50%); 
+    animation: typing-bounce 0.8s infinite alternate cubic-bezier(0.455, 0.03, 0.515, 0.955); 
+  }
+  
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  
+  @keyframes typing-bounce { 
+    to { 
+      transform: translateY(-4px); 
+      background: var(--dot-color); 
+      filter: drop-shadow(0 0 2px var(--dot-color));
+    } 
+  }
 </style>

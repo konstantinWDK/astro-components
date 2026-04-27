@@ -1,20 +1,66 @@
 ---
+/**
+ * SkeletonList — Shimmering loading placeholder for lists or feed items.
+ * 
+ * @param {number} count - Number of skeleton items to render. Default is 3.
+ */
+interface Props {
+  count?: number;
+}
+
+const { count = 3 } = Astro.props;
 ---
-<div class="skeleton-list">
-  {[1,2,3].map(() => (
-    <div class="skel-item">
-      <div class="skel-avatar"></div>
-      <div class="skel-lines"><div></div><div></div></div>
+
+<div class="skeleton-list" aria-hidden="true">
+  {Array.from({ length: count }).map(() => (
+    <div class="skeleton-item">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-line skeleton-line--title"></div>
+        <div class="skeleton-line skeleton-line--body"></div>
+      </div>
     </div>
   ))}
 </div>
+
 <style>
-  .skel-item { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  .skel-avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05); }
-  .skel-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-  .skel-lines div { height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; }
-  .skel-lines div:last-child { width: 60%; }
-  .skel-item div { position: relative; overflow: hidden; }
-  .skel-item div::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent); animation: shimmer 1.5s infinite; }
-  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .skeleton-list { display: flex; flex-direction: column; width: 100%; }
+  
+  .skeleton-item { 
+    display: flex; gap: var(--sp-4, 1rem); 
+    padding: var(--sp-4, 1rem) 0; 
+    border-bottom: 1px solid var(--c-border, rgba(255,255,255,0.05)); 
+  }
+  
+  .skeleton-avatar { 
+    width: 48px; height: 48px; 
+    border-radius: var(--r-full, 50%); 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    flex-shrink: 0;
+  }
+  
+  .skeleton-content { flex: 1; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+  
+  .skeleton-line { 
+    height: 12px; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    border-radius: var(--r-sm, 6px); 
+    position: relative; overflow: hidden;
+  }
+
+  .skeleton-line--title { width: 40%; height: 14px; }
+  .skeleton-line--body { width: 85%; }
+  
+  .skeleton-item div::after { 
+    content: ""; 
+    position: absolute; 
+    inset: 0; 
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent); 
+    animation: skeleton-shimmer 1.8s infinite; 
+    transform: translateX(-100%);
+  }
+  
+  @keyframes skeleton-shimmer { 
+    100% { transform: translateX(100%); } 
+  }
 </style>

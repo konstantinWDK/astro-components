@@ -1,14 +1,101 @@
 ---
+/**
+ * StepProgress — A multi-stage stepper indicating flow through several discrete points.
+ * 
+ * @param {Array<{label: string}>} steps - List of steps to represent.
+ * @param {number} activeIndex - The index (0-based) of the current step. Default is 0.
+ */
+interface Props {
+  steps?: Array<{ label: string }>;
+  activeIndex?: number;
+}
+
+const { 
+  steps = [
+    { label: 'Details' }, 
+    { label: 'Payment' }, 
+    { label: 'Finish' }
+  ], 
+  activeIndex = 0 
+} = Astro.props;
 ---
-<div class="steps">
-  <div class="step active">1<span>Details</span></div>
-  <div class="step">2<span>Payment</span></div>
-  <div class="step">3<span>Finish</span></div>
+
+<div class="steps-container">
+  <div class="steps-line" aria-hidden="true" style={`--progress: ${(activeIndex / (steps.length - 1)) * 100}%`}></div>
+  <div class="steps-list">
+    {steps.map((step, i) => (
+      <div 
+        class:list={['step-item', { 'step-item--active': i === activeIndex, 'step-item--complete': i < activeIndex }]}
+        aria-current={i === activeIndex ? "step" : undefined}
+      >
+        <div class="step-circle">{i + 1}</div>
+        <span class="step-label">{step.label}</span>
+      </div>
+    ))}
+  </div>
 </div>
+
 <style>
-  .steps { display: flex; justify-content: space-between; position: relative; margin-bottom: 2rem; }
-  .steps::before { content: ""; position: absolute; top: 15px; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.05); z-index: -1; }
-  .step { width: 32px; height: 32px; border-radius: 50%; background: #1e293b; color: #64748b; border: 2px solid rgba(255,255,255,0.1); display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; position: relative; }
-  .step.active { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 0 15px rgba(99,102,241,0.4); }
-  .step span { position: absolute; top: 100%; margin-top: 8px; font-size: 0.65rem; white-space: nowrap; color: inherit; }
+  .steps-container { position: relative; margin-bottom: var(--sp-8, 2rem); width: 100%; padding: 0 var(--sp-4, 1rem); box-sizing: border-box; }
+  
+  .steps-line { 
+    position: absolute; 
+    top: 16px; left: 0; right: 0; 
+    height: 3px; 
+    background: var(--c-bg-elev, rgba(255,255,255,0.05)); 
+    z-index: 0; 
+  }
+  
+  .steps-line::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0;
+    height: 100%;
+    width: var(--progress);
+    background: var(--c-primary, #6366f1);
+    transition: width 0.4s ease-in-out;
+    box-shadow: 0 0 10px rgba(99,102,241,0.3);
+  }
+
+  .steps-list { display: flex; justify-content: space-between; position: relative; z-index: 1; }
+  
+  .step-circle { 
+    width: 32px; height: 32px; 
+    border-radius: var(--r-full, 50%); 
+    background: var(--c-bg, #1e293b); 
+    color: var(--c-text-2, #64748b); 
+    border: 2px solid var(--c-border, rgba(255,255,255,0.1)); 
+    display: grid; place-items: center; 
+    font-size: 0.85rem; font-weight: 800; 
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .step-item--active .step-circle { 
+    background: var(--c-primary, #6366f1); 
+    border-color: var(--c-primary, #6366f1); 
+    color: #fff; 
+    box-shadow: 0 0 20px rgba(99,102,241,0.5); 
+    transform: scale(1.1);
+  }
+
+  .step-item--complete .step-circle {
+    background: var(--c-primary, #6366f1);
+    border-color: var(--c-primary, #6366f1);
+    color: #fff;
+  }
+  
+  .step-label { 
+    position: absolute; 
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px; 
+    font-size: 0.7rem; 
+    font-weight: 700;
+    white-space: nowrap; 
+    color: var(--c-text-2, #64748b); 
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .step-item--active .step-label, .step-item--complete .step-label { color: var(--c-text-1, #fff); }
 </style>

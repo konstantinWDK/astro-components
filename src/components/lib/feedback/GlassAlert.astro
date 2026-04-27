@@ -1,20 +1,66 @@
 ---
-interface Props { type?: 'info' | 'success' | 'warning' | 'error'; title: string; }
+/**
+ * GlassAlert — A translucent feedback bar for displaying situational messages.
+ * 
+ * @param {'info'|'success'|'warning'|'error'} type - The severity or nature of the alert. Default is 'info'.
+ * @param {string} title - Bold header text for the alert.
+ */
+interface Props { 
+  type?: 'info' | 'success' | 'warning' | 'error'; 
+  title: string; 
+}
+
 const { type = 'info', title } = Astro.props;
+
+const icons = {
+  info: "i",
+  success: "✓",
+  warning: "!",
+  error: "✕"
+};
 ---
-<div class:list={['alert', `alert--${type}` ]}>
-  <div class="alert-icon">!</div>
-  <div class="alert-content">
-    <div class="alert-title">{title}</div>
-    <div class="alert-body"><slot /></div>
+
+<div class:list={['glass-alert', `glass-alert--${type}` ]} role="alert">
+  <div class="glass-alert__icon" aria-hidden="true">{icons[type]}</div>
+  <div class="glass-alert__content">
+    <div class="glass-alert__title">{title}</div>
+    <div class="glass-alert__body"><slot /></div>
   </div>
 </div>
+
 <style>
-  .alert { display: flex; gap: 1rem; padding: 1.25rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); background: rgba(255,255,255,0.03); }
-  .alert--success { border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.05); }
-  .alert--warning { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05); }
-  .alert--error { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
-  .alert-icon { font-weight: 900; background: rgba(255,255,255,0.1); width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; font-size: 0.8rem; }
-  .alert-title { font-weight: 700; color: #fff; margin-bottom: 2px; }
-  .alert-body { font-size: 0.85rem; color: #94a3b8; }
+  .glass-alert { 
+    display: flex; 
+    gap: var(--sp-4, 1rem); 
+    padding: var(--sp-5, 1.25rem); 
+    border-radius: var(--r-md, 16px); 
+    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+    backdrop-filter: blur(12px); 
+    background: var(--c-bg-elev, rgba(255,255,255,0.03)); 
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .glass-alert--success { border-color: rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.05); }
+  .glass-alert--warning { border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); }
+  .glass-alert--error { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
+  
+  .glass-alert__icon { 
+    font-weight: 900; 
+    background: rgba(255, 255, 255, 0.1); 
+    width: 24px; height: 24px; 
+    display: grid; place-items: center; 
+    border-radius: var(--r-full, 50%); 
+    font-size: 0.8rem; 
+    flex-shrink: 0;
+    font-family: monospace;
+    color: var(--c-text-1, #fff);
+  }
+  
+  .glass-alert--success .glass-alert__icon { background: #10b981; color: #fff; }
+  .glass-alert--warning .glass-alert__icon { background: #f59e0b; color: #fff; }
+  .glass-alert--error .glass-alert__icon { background: #ef4444; color: #fff; }
+  
+  .glass-alert__title { font-weight: 700; color: var(--c-text-1, #fff); margin-bottom: 2px; font-size: 0.95rem; }
+  .glass-alert__body { font-size: 0.85rem; color: var(--c-text-2, #94a3b8); line-height: 1.5; }
 </style>

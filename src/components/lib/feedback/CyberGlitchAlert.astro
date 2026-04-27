@@ -1,11 +1,74 @@
 ---
+/**
+ * CyberGlitchAlert — A loud, high-contrast alert box with a CSS glitch animation effect.
+ * 
+ * @param {string} message - Primary alert text. Default is "CRITICAL ERROR".
+ * @param {string} accentColor - The secondary glitch shadow color. Default is '#00e0ff'.
+ */
+interface Props {
+  message?: string;
+  accentColor?: string;
+}
+
+const { message = "CRITICAL ERROR", accentColor = "#00e0ff" } = Astro.props;
 ---
-<div class="glitch-alert">
-  <span class="glitch-text" data-text="CRITICAL ERROR">CRITICAL ERROR</span>
+
+<div class="glitch-alert" role="alert" style={`--glitch-accent: ${accentColor}`}>
+  <span class="glitch-text" data-text={message}>{message}</span>
 </div>
+
 <style>
-  .glitch-alert { background: #ff003c; padding: 1.5rem; border: 2px solid #fff; position: relative; overflow: hidden; }
-  .glitch-text { font-family: monospace; font-weight: 900; color: #fff; font-size: 1.2rem; }
-  .glitch-text::before { content: attr(data-text); position: absolute; left: -2px; text-shadow: 2px 0 #00e0ff; animation: glitch-anim 1s infinite linear alternate-reverse; }
-  @keyframes glitch-anim { 0% { clip: rect(44px, 450px, 56px, 0); } 100% { clip: rect(12px, 450px, 80px, 0); } }
+  .glitch-alert { 
+    background: var(--c-primary, #ff003c); 
+    padding: var(--sp-6, 1.5rem); 
+    border: 3px solid var(--c-text-1, #fff); 
+    position: relative; 
+    overflow: hidden; 
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  }
+  
+  .glitch-text { 
+    font-family: 'Courier New', Courier, monospace; 
+    font-weight: 900; 
+    color: var(--c-text-1, #fff); 
+    font-size: 1.25rem; 
+    display: block;
+    text-align: center;
+    position: relative;
+    letter-spacing: 0.1em;
+  }
+  
+  .glitch-text::before,
+  .glitch-text::after { 
+    content: attr(data-text); 
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: var(--c-primary, #ff003c);
+  }
+
+  .glitch-text::before {
+    left: 2px;
+    text-shadow: -2px 0 var(--glitch-accent);
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim 2s infinite linear alternate-reverse;
+  }
+
+  .glitch-text::after {
+    left: -2px;
+    text-shadow: -2px 0 #fff;
+    clip: rect(12px, 450px, 80px, 0);
+    animation: glitch-anim 3s infinite linear alternate-reverse;
+  }
+  
+  @keyframes glitch-anim { 
+    0% { clip: rect(10px, 9999px, 30px, 0); }
+    20% { clip: rect(40px, 9999px, 60px, 0); }
+    40% { clip: rect(70px, 9999px, 10px, 0); }
+    60% { clip: rect(20px, 9999px, 50px, 0); }
+    80% { clip: rect(90px, 9999px, 20px, 0); }
+    100% { clip: rect(50px, 9999px, 80px, 0); }
+  }
 </style>

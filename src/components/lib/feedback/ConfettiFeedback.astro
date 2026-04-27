@@ -1,18 +1,81 @@
 ---
+/**
+ * ConfettiFeedback — A celebration component that triggers a falling confetti animation.
+ * 
+ * @param {string} label - Text to display briefly before/during confetti. Default is "Success!".
+ * @param {string} color - Primary color of the confetti pieces. Default is 'var(--c-primary)'.
+ * @param {boolean} active - If true, starts the animation immediately. Default is true.
+ */
+interface Props {
+  label?: string;
+  color?: string;
+  active?: boolean;
+}
+
+const { label = "Success!", color = 'var(--c-primary, #6366f1)', active = true } = Astro.props;
 ---
-<div class="confetti-btn-trigger">
-  <span>Success!</span>
-  <div class="confetti-container">
-    <div class="piece" style="--l: 10%; --d: 0.5s"></div>
-    <div class="piece" style="--l: 50%; --d: 1s"></div>
-    <div class="piece" style="--l: 80%; --d: 0.2s"></div>
+
+<div class:list={["confetti-trigger", { "confetti-trigger--active": active }]}>
+  <span class="confetti-label">{label}</span>
+  <div class="confetti-container" aria-hidden="true" style={`--confetti-color: ${color}`}>
+    {Array.from({ length: 12 }).map((_, i) => (
+      <div 
+        class="confetti-piece" 
+        style={`--l: ${Math.random() * 100}%; --d: ${Math.random() * 2}s; --r: ${Math.random() * 360}deg; --s: ${0.5 + Math.random()} `}
+      ></div>
+    ))}
   </div>
 </div>
+
 <style>
-  .confetti-container { position: absolute; inset: 0; pointer-events: none; }
-  .piece { position: absolute; left: var(--l); top: 0; width: 8px; height: 8px; background: #6366f1; border-radius: 2px; opacity: 0; animation: fall 2s infinite var(--d); }
-  @keyframes fall {
-    0% { transform: translateY(0) rotate(0); opacity: 1; }
-    100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+  .confetti-trigger { 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: var(--sp-4, 1rem);
+    width: fit-content;
+    overflow: hidden;
+  }
+  
+  .confetti-label { 
+    font-size: 1.25rem; 
+    font-weight: 800; 
+    color: var(--c-text-1, #fff); 
+    z-index: 1; 
+    text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  
+  .confetti-container { 
+    position: absolute; 
+    inset: 0; 
+    pointer-events: none; 
+    opacity: 0; 
+    transition: opacity 0.3s;
+  }
+  
+  .confetti-trigger--active .confetti-container { opacity: 1; }
+  
+  .confetti-piece { 
+    position: absolute; 
+    left: var(--l); 
+    top: -20px; 
+    width: 10px; height: 10px; 
+    background: var(--confetti-color); 
+    border-radius: 2px; 
+    transform: rotate(var(--r)) scale(var(--s));
+    opacity: 0; 
+  }
+  
+  .confetti-trigger--active .confetti-piece {
+    animation: confetti-fall 2.5s linear infinite var(--d); 
+  }
+  
+  @keyframes confetti-fall {
+    0% { transform: translateY(0) rotate(0deg) scale(var(--s)); opacity: 1; }
+    25% { transform: translateY(40px) rotate(90deg) translateX(10px); }
+    50% { transform: translateY(80px) rotate(180deg) translateX(-10px); }
+    75% { transform: translateY(120px) rotate(270deg) translateX(5px); }
+    100% { transform: translateY(160px) rotate(360deg); opacity: 0; }
   }
 </style>

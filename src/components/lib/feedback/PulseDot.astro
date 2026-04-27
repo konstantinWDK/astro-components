@@ -1,12 +1,56 @@
 ---
+/**
+ * PulseDot — A status indicator with a labeled text and a pulsing dot animation.
+ * 
+ * @param {string} label - Text label (e.g. "System Active").
+ * @param {string} color - CSS color for the pulse and text. Default is '#34d399' (Success).
+ */
+interface Props {
+  label: string;
+  color?: string;
+}
+
+const { label, color = '#34d399' } = Astro.props;
 ---
-<div class="status-wrap">
-  <div class="pulse-dot"></div>
-  <span>System Active</span>
+
+<div class="status-wrap" style={`--status-color: ${color};`}>
+  <div class="pulse-dot" aria-hidden="true"></div>
+  <span class="status-text">{label}</span>
 </div>
+
 <style>
-  .status-wrap { display: flex; align-items: center; gap: 0.6rem; color: #34d399; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; }
-  .pulse-dot { width: 8px; height: 8px; background: #34d399; border-radius: 50%; position: relative; }
-  .pulse-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #34d399; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 100% { opacity: 0; transform: scale(3.5); } }
+  .status-wrap { 
+    display: flex; 
+    align-items: center; 
+    gap: var(--sp-3, 0.6rem); 
+    color: var(--status-color); 
+    font-weight: 700; 
+    font-size: 0.75rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.05em;
+  }
+  
+  .pulse-dot { 
+    width: 8px; 
+    height: 8px; 
+    background: var(--status-color); 
+    border-radius: var(--r-full, 50%); 
+    position: relative; 
+  }
+  
+  .pulse-dot::after { 
+    content: ""; 
+    position: absolute; 
+    inset: 0; 
+    border-radius: 50%; 
+    border: 2px solid var(--status-color); 
+    animation: status-pulse 1.8s infinite; 
+  }
+  
+  @keyframes status-pulse { 
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(3.5); opacity: 0; } 
+  }
+  
+  .status-text { white-space: nowrap; }
 </style>
