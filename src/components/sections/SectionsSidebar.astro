@@ -65,6 +65,15 @@ const sectionCategories = sections.reduce<Record<string, { category: string; ico
   </div>
 </aside>
 
+<div class="mobile-filter-trigger">
+  <button id="mobile-sections-filter-btn" aria-label="Explore sections">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="filter-icon" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <span>Explore</span>
+  </button>
+</div>
+
+<div class="mobile-filter-backdrop" id="mobile-sections-filter-backdrop"></div>
+
 <script>
   const sidebar = document.querySelector('.sidebar')!;
 
@@ -102,6 +111,35 @@ const sectionCategories = sections.reduce<Record<string, { category: string; ico
       });
       (group as HTMLElement).style.display = hasVisible || !query ? 'flex' : 'none';
       if (query && hasVisible) group.classList.add('is-expanded');
+    });
+  });
+
+  // Mobile Bottom Sheet Logic
+  const mobileBtn = document.getElementById('mobile-sections-filter-btn');
+  const backdrop = document.getElementById('mobile-sections-filter-backdrop');
+
+  function openMobileFilter() {
+    sidebar.classList.add('is-open');
+    backdrop?.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileFilter() {
+    sidebar.classList.remove('is-open');
+    backdrop?.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  mobileBtn?.addEventListener('click', openMobileFilter);
+  backdrop?.addEventListener('click', closeMobileFilter);
+
+  // Close on mobile when navigating
+  const mobileLinks = sidebar.querySelectorAll('a');
+  mobileLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        closeMobileFilter();
+      }
     });
   });
 </script>
@@ -198,10 +236,46 @@ const sectionCategories = sections.reduce<Record<string, { category: string; ico
     background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
     font-weight: 600; border-radius: var(--r-sm);
   }
-  .sidebar__link--active::before {
-    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    width: 3px; height: 70%; background: var(--c-primary-light); border-radius: 0 2px 2px 0;
-  }
+  .mobile-filter-trigger { display: none; }
+  .mobile-filter-backdrop { display: none; }
 
-  @media (max-width: 768px) { .sidebar { display: none; } }
+  @media (max-width: 768px) {
+    .mobile-filter-trigger {
+       display: flex; position: fixed; bottom: var(--sp-6); left: 0; width: 100%;
+       justify-content: center; z-index: 40; pointer-events: none;
+    }
+    #mobile-sections-filter-btn {
+       pointer-events: auto; display: flex; align-items: center; gap: var(--sp-2);
+       background: rgba(184,134,11, 0.95); backdrop-filter: blur(10px);
+       color: #000; border: none; padding: 0.8rem 1.6rem;
+       border-radius: var(--r-full); font-weight: 700; font-size: 0.9rem;
+       box-shadow: 0 10px 25px rgba(184,134,11, 0.3), inset 0 1px 1px rgba(255,255,255,0.4);
+       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer;
+    }
+    #mobile-sections-filter-btn:active { transform: scale(0.95); }
+
+    .mobile-filter-backdrop {
+       display: none; position: fixed; inset: 0; z-index: 45;
+       background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    }
+    .mobile-filter-backdrop.is-open { display: block; }
+
+    .sidebar {
+      position: fixed; left: 0; bottom: 0; top: auto; width: 100%;
+      height: 85vh; background: var(--c-bg-1); border-right: none;
+      border-top: 1px solid var(--c-border);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      z-index: 50; transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      display: flex; flex-direction: column;
+      padding: var(--sp-8) var(--sp-2) var(--sp-12);
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+    .sidebar::before {
+      content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px;
+    }
+    .sidebar.is-open { transform: translateY(0); }
+    .sidebar__search input { font-size: 1rem; padding: 0.9rem 2.2rem 0.9rem 1.2rem; }
+  }
 </style>
