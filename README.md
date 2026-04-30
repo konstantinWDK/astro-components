@@ -73,7 +73,7 @@ import 'astro-component-kit/global.css';
 ### Option 3: Clone & Run Locally
 
 ```bash
-git clone https://github.com/konstantinWDK/astro-components.git
+git clone https://github.com/konstantinwdk/astro-components.git
 cd astro-component-kit
 npm install
 npm run dev
@@ -357,5 +357,5 @@ MIT © [konstantinwdk](https://github.com/konstantinwdk)
 
 - **Documentation**: [astrocomponents.dev](https://astrocomponents.dev)
 - **npm Package**: [npmjs.com/package/astro-component-kit](https://www.npmjs.com/package/astro-component-kit)
-- **GitHub**: [github.com/konstantinWDK/astro-components](https://github.com/konstantinWDK/astro-components)
+- **GitHub**: [github.com/konstantinwdk/astro-components](https://github.com/konstantinwdk/astro-components)
 - **Issues**: [GitHub Issues](https://github.com/konstantinWDK/astro-components/issues)
