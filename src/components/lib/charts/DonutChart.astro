@@ -1,0 +1,177 @@
+---
+/**
+ * DonutChart — A minimalist donut chart component.
+ */
+interface Props {
+  title?: string;
+  labels?: string[];
+  series?: number[];
+  height?: number | string;
+  colors?: string[];
+  centerLabel?: string;
+  pie?: boolean;
+  className?: string;
+}
+
+const {
+  title,
+  labels = ['Direct', 'Social', 'Referral'],
+  series = [44, 33, 23],
+  height = 350,
+  colors = ['var(--c-accent, #b8860b)', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+  centerLabel = 'Total',
+  pie = false,
+  className = '',
+} = Astro.props;
+
+const chartConfig = {
+  labels,
+  series,
+  height,
+  colors,
+  centerLabel,
+  pie,
+};
+---
+
+<div class={`premium-chart-card ${className}`} data-chart-type="donut" data-config={JSON.stringify(chartConfig)}>
+  {title && (
+    <div class="premium-chart-card__header">
+      <h3 class="premium-chart-card__title">{title}</h3>
+    </div>
+  )}
+  <div class="premium-chart-card__body">
+    <div class="chart-container"></div>
+    <div class="chart-fallback">Loading Chart...</div>
+  </div>
+</div>
+
+<style>
+  .premium-chart-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 24px);
+    padding: var(--sp-6, 24px);
+    width: 100%;
+    min-width: 300px;
+  }
+
+  .premium-chart-card__header {
+    margin-bottom: var(--sp-6, 24px);
+  }
+
+  .premium-chart-card__title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .premium-chart-card__body {
+    width: 100%;
+    position: relative;
+    min-height: 200px;
+  }
+
+  .chart-container {
+    width: 100%;
+    position: relative;
+    z-index: 2;
+  }
+
+  .chart-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--c-text-3, #64748b);
+    z-index: 1;
+  }
+</style>
+
+<script>
+  async function initCharts() {
+    const charts = document.querySelectorAll('.premium-chart-card[data-chart-type="donut"]');
+    if (charts.length === 0) return;
+
+    let ApexChartsModule;
+    try {
+      ApexChartsModule = await import('apexcharts');
+    } catch (e) {
+      console.error('ApexCharts failed to load:', e);
+      return;
+    }
+    
+    const ApexCharts = ApexChartsModule.default || ApexChartsModule;
+    
+    charts.forEach(container => {
+      if (container.getAttribute('data-initialized')) return;
+      
+      const configStr = container.getAttribute('data-config');
+      if (!configStr) return;
+      
+      const config = JSON.parse(configStr);
+      const target = container.querySelector('.chart-container');
+      const fallback = container.querySelector('.chart-fallback');
+      
+      if (!target) return;
+
+      const options = {
+        series: config.series,
+        labels: config.labels,
+        chart: {
+          type: config.pie ? 'pie' : 'donut',
+          height: config.height,
+          background: 'transparent',
+          fontFamily: 'Inter, sans-serif',
+        },
+        colors: config.colors,
+        stroke: { show: false },
+        dataLabels: { enabled: false },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: '75%',
+              labels: {
+                show: !config.pie,
+                name: { show: true, color: '#94a3b8', fontSize: '14px' },
+                value: { show: true, color: '#ffffff', fontSize: '24px', fontWeight: 800 },
+                total: {
+                  show: true,
+                  label: config.centerLabel,
+                  color: '#94a3b8',
+                  formatter: (w) => w.globals.seriesGlobals.reduce((a, b) => a + b, 0),
+                },
+              },
+            },
+          },
+        },
+        legend: {
+          show: true,
+          position: 'bottom',
+          labels: { colors: '#94a3b8' },
+        },
+        tooltip: { theme: 'dark' },
+        theme: { mode: 'dark' }
+      };
+
+      try {
+        const chart = new ApexCharts(target, options);
+        chart.render().then(() => {
+          if (fallback) (fallback as HTMLElement).style.display = 'none';
+        });
+        container.setAttribute('data-initialized', 'true');
+      } catch (err) {
+        console.error('Failed to render chart:', err);
+        if (fallback) fallback.textContent = 'Failed to load chart';
+      }
+    });
+  }
+
+  initCharts();
+  document.addEventListener('astro:page-load', initCharts);
+  document.addEventListener('astro:after-swap', initCharts);
+</script>

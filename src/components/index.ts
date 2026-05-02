@@ -205,3 +205,6 @@ export { default as TypewriterText } from './lib/typography/TypewriterText.astro
 
 // Sections
 export * from './lib/sections';
+
+// Charts
+export * from './lib/charts';
