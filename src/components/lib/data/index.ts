@@ -1,3 +1,6 @@
+// src/components/lib/data/index.ts
+// Barrel export for data display components
+
 export { default as AccordionGroupGlass } from './AccordionGroupGlass.astro';
 export { default as AvatarGroupStack } from './AvatarGroupStack.astro';
 export { default as CalendarGridView } from './CalendarGridView.astro';

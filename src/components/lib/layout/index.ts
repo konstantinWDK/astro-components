@@ -1,3 +1,6 @@
+// src/components/lib/layout/index.ts
+// Barrel export for layout components
+
 export { default as BentoGrid3 } from './BentoGrid3.astro';
 export { default as CenteredContainer } from './CenteredContainer.astro';
 export { default as CenterFixedBox } from './CenterFixedBox.astro';

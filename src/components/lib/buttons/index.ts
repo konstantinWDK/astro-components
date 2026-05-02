@@ -1,3 +1,6 @@
+// src/components/lib/buttons/index.ts
+// Barrel export for button components
+
 export { default as AnimatedIconButton } from './AnimatedIconButton.astro';
 export { default as BorderDrawButton } from './BorderDrawButton.astro';
 export { default as CyberpunkButton } from './CyberpunkButton.astro';

@@ -1,3 +1,6 @@
+// src/components/lib/typography/index.ts
+// Barrel export for typography components
+
 export { default as AnimatedUnderlineLink } from './AnimatedUnderlineLink.astro';
 export { default as BackgroundClipMask } from './BackgroundClipMask.astro';
 export { default as CodeInlineGlass } from './CodeInlineGlass.astro';

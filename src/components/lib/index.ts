@@ -1,6 +1,17 @@
-export { default as AnimatedInput } from './AnimatedInput.astro';
-export { default as Badge } from './Badge.astro';
-export { default as GlassButton } from './GlassButton.astro';
-export { default as GlassCard } from './GlassCard.astro';
-export { default as GlassNavbar } from './GlassNavbar.astro';
-export { default as GlowButton } from './GlowButton.astro';
+// Re-export all category components
+export * from './buttons/index';
+export * from './cards/index';
+export * from './charts/index';
+export * from './data/index';
+export * from './feedback/index';
+export * from './forms/index';
+export * from './layout/index';
+export * from './navigation/index';
+export * from './overlays/index';
+export * from './sections/index';
+export * from './typography/index';
+
+// Unique root-level components (no category folder)
+export { default as AnimatedGalaxy } from './AnimatedGalaxy.astro';
+export { default as Galaxy3D } from './Galaxy3D.astro';
+export { default as LogoWithGalaxy } from './LogoWithGalaxy.astro';

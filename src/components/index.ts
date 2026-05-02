@@ -5,13 +5,10 @@
 //   import { GlowButton, GlassCard, GlassNavbar } from '@/components';
 // ============================================================
 
-// Root-level components
-export { default as AnimatedInput } from './lib/AnimatedInput.astro';
-export { default as Badge } from './lib/Badge.astro';
-export { default as GlassButton } from './lib/GlassButton.astro';
-export { default as GlassCard } from './lib/GlassCard.astro';
-export { default as GlassNavbar } from './lib/GlassNavbar.astro';
-export { default as GlowButton } from './lib/GlowButton.astro';
+// Root-level unique components
+export { default as AnimatedGalaxy } from './lib/AnimatedGalaxy.astro';
+export { default as Galaxy3D } from './lib/Galaxy3D.astro';
+export { default as LogoWithGalaxy } from './lib/LogoWithGalaxy.astro';
 
 // Buttons
 export { default as ThreeDPushButton } from './lib/buttons/3dPushButton.astro';
@@ -20,6 +17,8 @@ export { default as BorderDrawButton } from './lib/buttons/BorderDrawButton.astr
 export { default as CyberpunkButton } from './lib/buttons/CyberpunkButton.astro';
 export { default as DoubleBorderButton } from './lib/buttons/DoubleBorderButton.astro';
 export { default as GhostOutlineButton } from './lib/buttons/GhostOutlineButton.astro';
+export { default as GlassButton } from './lib/buttons/GlassButton.astro';
+export { default as GlowButton } from './lib/buttons/GlowButton.astro';
 export { default as LiquidButton } from './lib/buttons/LiquidButton.astro';
 export { default as LoadingButton } from './lib/buttons/LoadingButton.astro';
 export { default as MagneticButton } from './lib/buttons/MagneticButton.astro';
@@ -36,6 +35,7 @@ export { default as TiltGlowButton } from './lib/buttons/TiltGlowButton.astro';
 export { default as BlogHorizontalCard } from './lib/cards/BlogHorizontalCard.astro';
 export { default as CyberFeatureCard } from './lib/cards/CyberFeatureCard.astro';
 export { default as EcommerceProductCard } from './lib/cards/EcommerceProductCard.astro';
+export { default as GlassCard } from './lib/cards/GlassCard.astro';
 export { default as GlassEventCard } from './lib/cards/GlassEventCard.astro';
 export { default as GlowPortfolioCard } from './lib/cards/GlowPortfolioCard.astro';
 export { default as InteractiveTiltCard } from './lib/cards/InteractiveTiltCard.astro';
@@ -76,6 +76,7 @@ export { default as VerticalTimeline } from './lib/data/VerticalTimeline.astro';
 
 // Feedback
 export { default as AnimatedCheckmark } from './lib/feedback/AnimatedCheckmark.astro';
+export { default as Badge } from './lib/feedback/Badge.astro';
 export { default as CircleProgress } from './lib/feedback/CircleProgress.astro';
 export { default as ConfettiFeedback } from './lib/feedback/ConfettiFeedback.astro';
 export { default as CyberGlitchAlert } from './lib/feedback/CyberGlitchAlert.astro';
@@ -96,6 +97,7 @@ export { default as ToastNotif } from './lib/feedback/ToastNotif.astro';
 export { default as TypingIndicator } from './lib/feedback/TypingIndicator.astro';
 
 // Forms
+export { default as AnimatedInput } from './lib/forms/AnimatedInput.astro';
 export { default as ChipInput } from './lib/forms/ChipInput.astro';
 export { default as ColorPickerInput } from './lib/forms/ColorPickerInput.astro';
 export { default as CurrencyInput } from './lib/forms/CurrencyInput.astro';
@@ -146,6 +148,7 @@ export { default as BurgerMorphIcon } from './lib/navigation/BurgerMorphIcon.ast
 export { default as CommandPaletteUI } from './lib/navigation/CommandPaletteUI.astro';
 export { default as DotNavigationSlider } from './lib/navigation/DotNavigationSlider.astro';
 export { default as FloatingTabBar } from './lib/navigation/FloatingTabBar.astro';
+export { default as GlassNavbar } from './lib/navigation/GlassNavbar.astro';
 export { default as LangSwitcherPill } from './lib/navigation/LangSwitcherPill.astro';
 export { default as MegaMenuGlass } from './lib/navigation/MegaMenuGlass.astro';
 export { default as MinimalSidebar } from './lib/navigation/MinimalSidebar.astro';

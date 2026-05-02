@@ -1,3 +1,6 @@
+// src/components/lib/overlays/index.ts
+// Barrel export for overlay components
+
 export { default as AgeVerificationOverlay } from './AgeVerificationOverlay.astro';
 export { default as BackdropBlurMask } from './BackdropBlurMask.astro';
 export { default as BottomSheetMobile } from './BottomSheetMobile.astro';

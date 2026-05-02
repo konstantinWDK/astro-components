@@ -1,3 +1,6 @@
+// src/components/lib/forms/index.ts
+// Barrel export for form components
+
 export { default as AnimatedInput } from './AnimatedInput.astro';
 export { default as ChipInput } from './ChipInput.astro';
 export { default as ColorPickerInput } from './ColorPickerInput.astro';

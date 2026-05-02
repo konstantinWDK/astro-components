@@ -1,3 +1,6 @@
+// src/components/lib/navigation/index.ts
+// Barrel export for navigation components
+
 export { default as AnchorSideNav } from './AnchorSideNav.astro';
 export { default as BottomNavMobile } from './BottomNavMobile.astro';
 export { default as BreadcrumbsMinimal } from './BreadcrumbsMinimal.astro';

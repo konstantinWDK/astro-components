@@ -1,3 +1,6 @@
+// src/components/lib/cards/index.ts
+// Barrel export for card components
+
 export { default as BlogHorizontalCard } from './BlogHorizontalCard.astro';
 export { default as CyberFeatureCard } from './CyberFeatureCard.astro';
 export { default as EcommerceProductCard } from './EcommerceProductCard.astro';

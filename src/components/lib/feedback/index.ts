@@ -1,3 +1,6 @@
+// src/components/lib/feedback/index.ts
+// Barrel export for feedback components
+
 export { default as AnimatedCheckmark } from './AnimatedCheckmark.astro';
 export { default as Badge } from './Badge.astro';
 export { default as CircleProgress } from './CircleProgress.astro';
