@@ -119,24 +119,12 @@ export { default as SimpleFileInput } from './lib/forms/SimpleFileInput.astro';
 export { default as StepperInput } from './lib/forms/StepperInput.astro';
 
 // Layout
-export { default as BentoGrid3 } from './lib/layout/BentoGrid3.astro';
 export { default as CenteredContainer } from './lib/layout/CenteredContainer.astro';
-export { default as CenterFixedBox } from './lib/layout/CenterFixedBox.astro';
-export { default as ClusterHorizontal } from './lib/layout/ClusterHorizontal.astro';
 export { default as FeatureHero } from './lib/layout/FeatureHero.astro';
 export { default as FooterCenteredMinimal } from './lib/layout/FooterCenteredMinimal.astro';
-export { default as FullBleedSection } from './lib/layout/FullBleedSection.astro';
-export { default as GalleryGrid4 } from './lib/layout/GalleryGrid4.astro';
-export { default as GlassCardGrid } from './lib/layout/GlassCardGrid.astro';
 export { default as GlassSectionHeader } from './lib/layout/GlassSectionHeader.astro';
-export { default as LandingSectionSplit } from './lib/layout/LandingSectionSplit.astro';
-export { default as MasonryGrid } from './lib/layout/MasonryGrid.astro';
-export { default as MinimalFooterGrid } from './lib/layout/MinimalFooterGrid.astro';
-export { default as ScrollSnapSection } from './lib/layout/ScrollSnapSection.astro';
 export { default as SectionDividerText } from './lib/layout/SectionDividerText.astro';
 export { default as SidebarLayoutWrapper } from './lib/layout/SidebarLayoutWrapper.astro';
-export { default as SplitScreenLayout } from './lib/layout/SplitScreenLayout.astro';
-export { default as StepLayoutVertical } from './lib/layout/StepLayoutVertical.astro';
 export { default as StickySidebarWrapper } from './lib/layout/StickySidebarWrapper.astro';
 export { default as VerticalStack } from './lib/layout/VerticalStack.astro';
 

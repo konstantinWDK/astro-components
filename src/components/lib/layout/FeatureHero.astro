@@ -1,81 +1,150 @@
 ---
-import AnimatedGalaxy from '@components/lib/AnimatedGalaxy.astro';
+/**
+ * FeatureHero — A visually striking hero section with animated gradient background and glassmorphism overlay.
+ *
+ * Features a full-screen hero with subtle gradient background, glass-effect card overlay,
+ * and customizable title, subtitle, and action slots. Designed for landing pages and
+ * product showcase sections.
+ *
+ * @param {string} title - Main headline text. Default: 'Experience the Next Dimension of Design'.
+ * @param {string} subtitle - Supporting description text. Default: 'Build stunning interfaces faster than ever with our premium component ecosystem.'.
+ * @param {string} gradientFrom - Start color of the background gradient. Default: 'rgba(99,102,241,0.15)'.
+ * @param {string} gradientTo - End color of the background gradient. Default: 'transparent'.
+ * @param {string} className - Additional CSS class to apply.
+ *
+ * @example
+ * ```astro
+ * <FeatureHero
+ *   title="Ship Faster with Premium Components"
+ *   subtitle="200+ production-ready UI components for Astro."
+ * >
+ *   <a href="/docs">Browse Components</a>
+ * </FeatureHero>
+ * ```
+ */
+interface Props {
+  title?: string;
+  subtitle?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  className?: string;
+}
+
+const {
+  title = 'Experience the Next Dimension of Design',
+  subtitle = 'Build stunning interfaces faster than ever with our premium component ecosystem.',
+  gradientFrom = 'rgba(99,102,241,0.15)',
+  gradientTo = 'transparent',
+  className = '',
+} = Astro.props;
 ---
-<section class="f-hero">
-  <div class="f-galaxy-bg">
-    <AnimatedGalaxy />
+
+<section class:list={['feature-hero', className]}>
+  <div class="feature-hero__bg" aria-hidden="true">
+    <div class="feature-hero__gradient" style={`--gradient-from: ${gradientFrom}; --gradient-to: ${gradientTo}`}></div>
   </div>
-  <div class="f-overlay"></div>
-  <div class="f-inner">
-    <h1>Experience the <span>Next Dimension</span> of Design</h1>
-    <p>Build stunning interfaces faster than ever with our premium component ecosystem.</p>
-    <div class="f-actions"><slot /></div>
+  <div class="feature-hero__overlay" aria-hidden="true"></div>
+  <div class="feature-hero__inner">
+    <h1 class="feature-hero__title">{title}</h1>
+    <p class="feature-hero__subtitle">{subtitle}</p>
+    <div class="feature-hero__actions">
+      <slot />
+    </div>
   </div>
 </section>
+
 <style>
-  .f-hero { 
+  .feature-hero {
     position: relative;
-    padding: 8rem 2rem; 
-    text-align: center; 
+    padding: var(--sp-16) var(--sp-6);
+    text-align: center;
     overflow: hidden;
-    background: radial-gradient(circle at top, rgba(99,102,241,0.15) 0%, transparent 70%);
+    background: radial-gradient(
+      circle at top,
+      var(--gradient-from, rgba(99,102,241,0.15)) 0%,
+      var(--gradient-to, transparent) 70%
+    );
   }
-  .f-galaxy-bg {
+
+  .feature-hero__bg {
     position: absolute;
     inset: 0;
     z-index: 0;
-    opacity: 0.5;
   }
-  .f-galaxy-bg svg {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+
+  .feature-hero__gradient {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      var(--gradient-from, rgba(99,102,241,0.15)) 0%,
+      var(--gradient-to, transparent) 60%
+    );
+    animation: hero-pulse 8s ease-in-out infinite alternate;
   }
-  .f-overlay {
+
+  @keyframes hero-pulse {
+    0% { opacity: 0.5; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.05); }
+  }
+
+  .feature-hero__overlay {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+    background: radial-gradient(
+      ellipse at center,
+      rgba(0,0,0,0.3) 0%,
+      rgba(0,0,0,0.6) 100%
+    );
     pointer-events: none;
   }
-  .f-inner { 
+
+  .feature-hero__inner {
     position: relative;
     z-index: 2;
-    max-width: 800px; 
-    margin: 0 auto; 
+    max-width: 800px;
+    margin: 0 auto;
   }
-  h1 { 
-    font-size: 4rem; 
-    font-weight: 900; 
-    line-height: 1.1; 
-    margin-bottom: 1.5rem; 
-    color: #fff;
-    text-shadow: 0 2px 20px rgba(0,0,0,0.5), 0 0 40px rgba(99,102,241,0.3);
+
+  .feature-hero__title {
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 900;
+    line-height: 1.1;
+    margin: 0 0 var(--sp-6);
+    color: var(--c-text-1);
+    text-shadow:
+      0 2px 20px rgba(0,0,0,0.5),
+      0 0 40px rgba(99,102,241,0.3);
   }
-  h1 span { 
-    background: linear-gradient(135deg, #6366f1, #c084fc); 
-    -webkit-background-clip: text; 
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(99,102,241,0.5));
+
+  .feature-hero__subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--c-text-2);
+    line-height: 1.6;
+    margin: 0 0 var(--sp-8);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
   }
-  p { 
-    font-size: 1.25rem; 
-    color: #e2e8f0; 
-    line-height: 1.6; 
-    margin-bottom: 2.5rem;
-    text-shadow: 0 1px 10px rgba(0,0,0,0.4);
-  }
-  .f-actions { 
-    display: flex; 
-    justify-content: center; 
-    gap: 1rem; 
+
+  .feature-hero__actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .f-galaxy-bg * {
+    .feature-hero__gradient {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .feature-hero {
+      padding: var(--sp-12) var(--sp-4);
     }
   }
 </style>

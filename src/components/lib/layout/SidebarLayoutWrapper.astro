@@ -1,11 +1,66 @@
 ---
+/**
+ * SidebarLayoutWrapper — A two-column layout with a sidebar and main content area.
+ *
+ * Creates a full-height page layout with a fixed-width sidebar column and a flexible main column.
+ * Stacks vertically on mobile screens (below 768px). Uses named slots for sidebar and main content.
+ *
+ * @param {string} sidebarWidth - Width of the sidebar column. Default: '280px'.
+ * @param {string} breakpoint - Screen width at which the layout stacks vertically. Default: '768px'.
+ * @param {string} className - Additional CSS class to apply.
+ *
+ * @example
+ * ```astro
+ * <SidebarLayoutWrapper sidebarWidth="260px">
+ *   <div slot="sidebar">
+ *     <nav>Navigation links</nav>
+ *   </div>
+ *   <div slot="main">
+ *     <h1>Main content</h1>
+ *   </div>
+ * </SidebarLayoutWrapper>
+ * ```
+ */
+interface Props {
+  sidebarWidth?: string;
+  breakpoint?: string;
+  className?: string;
+}
+
+const { sidebarWidth = '280px', breakpoint = '768px', className = '' } = Astro.props;
 ---
-<div class="side-page">
-  <aside class="side-col"><slot name="sidebar" /></aside>
-  <main class="main-col"><slot name="main" /></main>
+
+<div class:list={['sidebar-layout', className]} style={`--sidebar-w: ${sidebarWidth}; --breakpoint: ${breakpoint}`}>
+  <aside class="sidebar-layout__sidebar">
+    <slot name="sidebar" />
+  </aside>
+  <main class="sidebar-layout__main">
+    <slot name="main" />
+  </main>
 </div>
+
 <style>
-  .side-page { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-  .side-col { border-right: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0,0,0,0.1); }
-  .main-col { padding: 2rem; }
+  .sidebar-layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    min-height: 100vh;
+  }
+  .sidebar-layout__sidebar {
+    border-right: 1px solid var(--c-border);
+    background: var(--c-bg-1);
+    overflow-y: auto;
+  }
+  .sidebar-layout__main {
+    padding: var(--sp-6);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar-layout {
+      grid-template-columns: 1fr;
+    }
+    .sidebar-layout__sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--c-border);
+    }
+  }
 </style>

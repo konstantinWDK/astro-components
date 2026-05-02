@@ -1,10 +1,73 @@
 ---
+/**
+ * StickySidebarWrapper — A two-column layout where the sidebar content stays visible while scrolling.
+ *
+ * Creates a main + sidebar layout where the sidebar column uses CSS sticky positioning
+ * to remain visible as the user scrolls through the main content. Stacks vertically on mobile.
+ *
+ * @param {string} sidebarWidth - Width of the sidebar. Default: '280px'.
+ * @param {string} stickyTop - Distance from the top when sticky. Default: '100px'.
+ * @param {string} gap - Gap between main and sidebar columns. Default: '2rem'.
+ * @param {string} className - Additional CSS class to apply.
+ *
+ * @example
+ * ```astro
+ * <StickySidebarWrapper sidebarWidth="260px" stickyTop="120px">
+ *   <div slot="main">
+ *     <p>Long scrolling content...</p>
+ *   </div>
+ *   <div slot="sidebar">
+ *     <TableOfContents />
+ *   </div>
+ * </StickySidebarWrapper>
+ * ```
+ */
+interface Props {
+  sidebarWidth?: string;
+  stickyTop?: string;
+  gap?: string;
+  className?: string;
+}
+
+const { sidebarWidth = '280px', stickyTop = '100px', gap = '2rem', className = '' } = Astro.props;
 ---
-<div class="stick-lay">
-  <main><slot name="main" /></main>
-  <aside><slot name="sidebar" /></aside>
+
+<div class:list=['sticky-sidebar', className]} style={`--sidebar-w: ${sidebarWidth}; --sticky-top: ${stickyTop}; --col-gap: ${gap}`}>
+  <main class="sticky-sidebar__main">
+    <slot name="main" />
+  </main>
+  <aside class="sticky-sidebar__aside">
+    <div class="sticky-sidebar__inner">
+      <slot name="sidebar" />
+    </div>
+  </aside>
 </div>
+
 <style>
-  .stick-lay { display: grid; grid-template-columns: 1fr 280px; gap: 2rem; }
-  aside :global(> *) { position: sticky; top: 100px; }
+  .sticky-sidebar {
+    display: grid;
+    grid-template-columns: 1fr var(--sidebar-w, 280px);
+    gap: var(--col-gap, 2rem);
+    align-items: start;
+  }
+  .sticky-sidebar__main {
+    min-width: 0;
+  }
+  .sticky-sidebar__aside {
+    min-width: 0;
+  }
+  .sticky-sidebar__inner {
+    position: sticky;
+    top: var(--sticky-top, 100px);
+  }
+
+  @media (max-width: 768px) {
+    .sticky-sidebar {
+      grid-template-columns: 1fr;
+      gap: var(--sp-6);
+    }
+    .sticky-sidebar__inner {
+      position: static;
+    }
+  }
 </style>
