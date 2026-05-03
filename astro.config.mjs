@@ -1,8 +1,10 @@
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 import path from 'path';
 
 export default defineConfig({
-  site: 'https://astro-components.dev',
+  site: 'https://astrocomponents.dev',
+  integrations: [sitemap()],
   vite: {
     resolve: {
       alias: {
