@@ -1,0 +1,307 @@
+---
+// src/components/layout/GitHubStarPrompt.astro
+interface Props {
+  repoUrl?: string;
+  delayMs?: number;
+}
+
+const {
+  repoUrl = "https://github.com/konstantinWDK/astro-components",
+  delayMs = 4000
+} = Astro.props;
+---
+
+<aside 
+  id="githubStarPrompt" 
+  class="gh-prompt" 
+  role="dialog" 
+  aria-labelledby="gh-prompt-title" 
+  aria-hidden="true"
+  data-delay={delayMs}
+>
+  <div class="gh-prompt__glow" aria-hidden="true"></div>
+
+  <button type="button" class="gh-prompt__close" id="ghPromptClose" aria-label="Close star prompt">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+
+  <div class="gh-prompt__header">
+    <div class="gh-prompt__icon-wrap">
+      <svg class="gh-star-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+    </div>
+    <div class="gh-prompt__titles">
+      <span class="gh-prompt__badge">Open Source · MIT</span>
+      <h4 id="gh-prompt-title" class="gh-prompt__title">Support on GitHub</h4>
+    </div>
+  </div>
+
+  <p class="gh-prompt__desc">
+    If you find these components useful, a star on GitHub helps us grow and keep building more! ⭐
+  </p>
+
+  <div class="gh-prompt__actions">
+    <a 
+      href={repoUrl} 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="gh-prompt__btn gh-prompt__btn--star" 
+      id="ghPromptStarBtn"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      <span>Star on GitHub</span>
+    </a>
+    <button type="button" class="gh-prompt__btn gh-prompt__btn--later" id="ghPromptLaterBtn">
+      Maybe later
+    </button>
+  </div>
+</aside>
+
+<script is:inline>
+  (function () {
+    const STORAGE_KEY = 'ack_github_star_prompt_dismissed';
+    const DISMISS_DAYS = 7; // Show again after 7 days if dismissed
+
+    const prompt = document.getElementById('githubStarPrompt');
+    if (!prompt) return;
+
+    // Check if dismissed previously
+    const dismissedAt = localStorage.getItem(STORAGE_KEY);
+    if (dismissedAt) {
+      const now = Date.now();
+      const elapsedDays = (now - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
+      if (elapsedDays < DISMISS_DAYS) {
+        return; // Don't show
+      }
+    }
+
+    const delay = parseInt(prompt.getAttribute('data-delay') || '4000', 10);
+
+    function showPrompt() {
+      if (prompt.classList.contains('is-visible')) return;
+      prompt.classList.add('is-visible');
+      prompt.setAttribute('aria-hidden', 'false');
+    }
+
+    function hidePrompt(persist = true) {
+      prompt.classList.remove('is-visible');
+      prompt.setAttribute('aria-hidden', 'true');
+      if (persist) {
+        localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      }
+    }
+
+    // Trigger after delay
+    const timer = setTimeout(showPrompt, delay);
+
+    // Or trigger on scroll
+    function onScroll() {
+      if (window.scrollY > 350) {
+        clearTimeout(timer);
+        showPrompt();
+        window.removeEventListener('scroll', onScroll);
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Close buttons
+    const closeBtn = document.getElementById('ghPromptClose');
+    const laterBtn = document.getElementById('ghPromptLaterBtn');
+    const starBtn = document.getElementById('ghPromptStarBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', () => hidePrompt(true));
+    if (laterBtn) laterBtn.addEventListener('click', () => hidePrompt(true));
+    if (starBtn) {
+      starBtn.addEventListener('click', () => {
+        // Dismiss permanently (e.g. 90 days)
+        localStorage.setItem(STORAGE_KEY, String(Date.now() + 1000 * 60 * 60 * 24 * 90));
+        setTimeout(() => hidePrompt(false), 800);
+      });
+    }
+
+    // Dismiss on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && prompt.classList.contains('is-visible')) {
+        hidePrompt(true);
+      }
+    });
+  })();
+</script>
+
+<style>
+  .gh-prompt {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: min(360px, calc(100vw - 2rem));
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(234, 179, 8, 0.35);
+    border-radius: 18px;
+    padding: 1.25rem 1.35rem;
+    box-shadow: 
+      0 20px 45px -10px rgba(0, 0, 0, 0.8),
+      0 0 30px -10px rgba(234, 179, 8, 0.25);
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(25px) scale(0.96);
+    transition: 
+      opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 0.4s;
+    overflow: hidden;
+  }
+
+  .gh-prompt.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .gh-prompt__glow {
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(234, 179, 8, 0.2), transparent 70%);
+    pointer-events: none;
+    filter: blur(20px);
+  }
+
+  .gh-prompt__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .gh-prompt__close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .gh-prompt__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .gh-prompt__icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(217, 119, 6, 0.1));
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    display: grid;
+    place-items: center;
+    color: #facc15;
+    flex-shrink: 0;
+  }
+
+  .gh-star-icon {
+    animation: starPulse 2.5s infinite ease-in-out;
+  }
+
+  @keyframes starPulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.15) rotate(10deg); filter: drop-shadow(0 0 6px #eab308); }
+  }
+
+  .gh-prompt__titles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .gh-prompt__badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #eab308;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .gh-prompt__title {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .gh-prompt__desc {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0 0 1rem;
+  }
+
+  .gh-prompt__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .gh-prompt__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .gh-prompt__btn--star {
+    flex: 1;
+    background: linear-gradient(135deg, #eab308, #d97706);
+    color: #000;
+    box-shadow: 0 3px 12px rgba(234, 179, 8, 0.3);
+  }
+
+  .gh-prompt__btn--star:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(234, 179, 8, 0.45);
+  }
+
+  .gh-prompt__btn--later {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+  }
+
+  .gh-prompt__btn--later:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  @media (max-width: 480px) {
+    .gh-prompt {
+      bottom: 1rem;
+      right: 1rem;
+      left: 1rem;
+      width: auto;
+    }
+  }
+</style>
