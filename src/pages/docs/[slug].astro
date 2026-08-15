@@ -1,0 +1,319 @@
+---
+// src/pages/docs/[slug].astro
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/docs/CodeBlock.astro';
+import PreviewRenderer from '../../components/docs/PreviewRenderer.astro';
+import { components, getComponentBySlug, categories } from '../../data/registry/index';
+
+export function getStaticPaths() {
+  return (components || []).filter(c => c).map((comp) => ({ params: { slug: comp.slug } }));
+}
+
+const { slug = '' } = Astro.params;
+const comp = getComponentBySlug(slug);
+
+if (!comp) {
+  return Astro.redirect('/');
+}
+
+const category = categories.find((c) => c.id === comp.category);
+
+// Find prev/next components for navigation
+const currentIndex = components.findIndex((c) => c.slug === slug);
+const prevComp = currentIndex > 0 ? components[currentIndex - 1] : null;
+const nextComp = currentIndex < components.length - 1 ? components[currentIndex + 1] : null;
+
+// Ensure usage has imports
+let displayUsage = comp.usage;
+if (!displayUsage.includes('import')) {
+  const componentName = comp.name.replace(/\s/g, '');
+  displayUsage = `---
+import { ${componentName} } from 'astro-component-kit';
+---
+
+${displayUsage}`;
+}
+---
+
+<DocsLayout title={comp.name} description={comp.description}>
+  <div class="doc-page anim-fade-in">
+    <!-- Prev/Next subtle navigation at top -->
+    <nav class="doc-nav" aria-label="Component navigation">
+      {prevComp ? (
+        <a href={`/docs/${prevComp.slug}`} class="doc-nav-link doc-nav-link--prev">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>{prevComp.name}</span>
+        </a>
+      ) : <span></span>}
+      {nextComp ? (
+        <a href={`/docs/${nextComp.slug}`} class="doc-nav-link doc-nav-link--next">
+          <span>{nextComp.name}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      ) : <span></span>}
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__sep">›</span>
+      <span>{category?.name}</span>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">{comp.name}</span>
+    </nav>
+
+    <!-- Component header -->
+    <header class="doc-header">
+      <div class="doc-header__meta">
+        <span class="doc-category-badge">{category?.name}</span>
+        {comp.tags.map((tag) => (
+          <span class="doc-tag">{tag}</span>
+        ))}
+      </div>
+      <h1 class="doc-title">{comp.name}</h1>
+      <p class="doc-description">{comp.description}</p>
+    </header>
+
+    <!-- 1. Live Preview -->
+    <section class="doc-section anim-slide-up" id="section-preview">
+      <h2 class="doc-section__title visually-hidden">Preview</h2>
+      <div class="preview-container">
+        <PreviewRenderer slug={slug} />
+      </div>
+    </section>
+
+    <!-- 2. Usage Section -->
+    <section class="doc-section anim-slide-up" id="section-usage" style="animation-delay: 0.1s">
+      <div class="usage-header">
+        <h2 class="doc-section__title" style="margin-bottom: 0; border-bottom: none;">Usage</h2>
+        <p class="doc-section__subtitle">Copy the full block below to use this component with its imports.</p>
+      </div>
+
+      <div class="usage-code-wrapper">
+        <CodeBlock code={displayUsage} lang="astro" id={`usage-${slug}`} />
+      </div>
+    </section>
+
+    <!-- 3. Manual Installation (The code of the component itself) -->
+    <section class="doc-section anim-slide-up" id="section-code" style="animation-delay: 0.2s">
+      <h2 class="doc-section__title">Manual Installation</h2>
+      <div class="manual-box">
+        <p>If you are not using the npm package, create a new file <code>src/components/lib/{comp.name.replace(/\s/g, '')}.astro</code> and paste the following code:</p>
+      </div>
+      <div style="margin-top: var(--sp-4)">
+        <CodeBlock code={comp.code} lang="astro" id={`code-${slug}`} />
+      </div>
+    </section>
+
+    <!-- Properties section (auto-generated from code) -->
+    <section class="doc-section" id="section-info">
+      <h2 class="doc-section__title">Quick Info</h2>
+      <dl class="props-list">
+        <div class="props-row">
+          <dt>Category</dt>
+          <dd>{category?.name}</dd>
+        </div>
+        <div class="props-row">
+          <dt>Filename</dt>
+          <dd><code>{comp.name.replace(/\s/g, '')}.astro</code></dd>
+        </div>
+        <div class="props-row">
+          <dt>Dependencies</dt>
+          <dd>{comp.category === 'charts' ? 'apexcharts (peer)' : (comp.category === 'sections' && comp.slug === 'galaxy-3d' ? 'three.js (peer)' : 'None — pure Astro + CSS')}</dd>
+        </div>
+        <div class="props-row">
+          <dt>Tags</dt>
+          <dd class="tags-row">
+            {comp.tags.map((tag) => <span class="doc-tag">{tag}</span>)}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+</DocsLayout>
+<script>
+  // Copy buttons
+  const copyBtns = document.querySelectorAll('.copy-btn');
+  copyBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.getAttribute('data-copy');
+      if (text) {
+        navigator.clipboard.writeText(text);
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerHTML = originalHtml;
+          btn.classList.remove('copied');
+        }, 2000);
+      }
+    });
+  });
+</script>
+
+<style>
+  .doc-page { max-width: 800px; }
+
+  /* Prev/Next subtle nav at top */
+  .doc-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sp-4);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .doc-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--c-text-3);
+    text-decoration: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--r-sm);
+    transition: color 0.15s, background 0.15s;
+  }
+  .doc-nav-link:hover {
+    color: var(--c-primary-light);
+    background: rgba(255,255,255,0.04);
+  }
+  .doc-nav-link svg {
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+  .doc-nav-link:hover svg { opacity: 1; }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+    font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6);
+  }
+  .breadcrumb a { color: var(--c-text-3); } .breadcrumb a:hover { color: var(--c-text-2); }
+  .breadcrumb__sep { color: var(--c-text-3); opacity: 0.5; }
+  .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
+
+  /* Header */
+  .doc-header { margin-bottom: var(--sp-8); }
+  .doc-header__meta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+
+  .doc-category-badge {
+    padding: 0.25rem 0.65rem; border-radius: var(--r-full);
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    background: rgba(99,102,241,0.12); color: var(--c-primary-light); border: 1px solid rgba(99,102,241,0.25);
+  }
+  .doc-tag {
+    padding: 0.2rem 0.5rem; border-radius: var(--r-full);
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    background: rgba(255,255,255,0.04); color: var(--c-text-3); border: 1px solid var(--c-border);
+  }
+
+  .doc-title {
+    font-size: 2.2rem; font-weight: 900; color: var(--c-text-1);
+    letter-spacing: -0.03em; margin-bottom: var(--sp-3);
+  }
+  .doc-description { font-size: 1rem; color: var(--c-text-2); line-height: 1.7; max-width: 600px; }
+
+  /* Info boxes */
+  .info-box {
+    display: flex; align-items: flex-start; gap: var(--sp-3);
+    padding: var(--sp-4); border-radius: var(--r-md); margin-bottom: var(--sp-6);
+    background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.2);
+    color: var(--c-text-2); font-size: 0.875rem; line-height: 1.6;
+  }
+  .info-box svg { color: var(--c-primary-light); flex-shrink: 0; margin-top: 2px; }
+  .info-box code {
+    background: rgba(255,255,255,0.08); padding: 0.1rem 0.35rem;
+    border-radius: 4px; font-size: 0.82em; color: var(--c-primary-light);
+  }
+  .info-box--tip {
+    background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.2);
+  }
+  .info-box--tip svg { color: #34d399; }
+
+  /* Preview container */
+  .preview-container {
+    padding: var(--sp-12);
+    background: rgba(255, 255, 255, 0.02);
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+  }
+
+  /* Tabs */
+  .tabs { margin-bottom: var(--sp-6); }
+  .tabs__bar {
+    display: flex; gap: 2px;
+    padding: 4px; background: rgba(255,255,255,0.03);
+    border: 1px solid var(--c-border); border-radius: var(--r-md);
+    margin-bottom: var(--sp-4); width: fit-content;
+  }
+  .tabs__tab {
+    padding: 0.4rem 1rem; font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500;
+    color: var(--c-text-2); background: transparent; border: none;
+    border-radius: calc(var(--r-md) - 4px); cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .tabs__tab:hover { color: var(--c-text-1); background: rgba(255,255,255,0.05); }
+  .tabs__tab.active { color: var(--c-text-1); background: rgba(255,255,255,0.12); font-weight: 600; }
+  .tabs__panel { display: none; padding-top: var(--sp-4); }
+  .tabs__panel.active { display: block; }
+  .tabs__panel-info {
+    display: flex; align-items: center; gap: var(--sp-2);
+    font-size: 0.85rem; color: var(--c-text-3); margin-bottom: var(--sp-4);
+    font-weight: 500;
+  }
+  .tabs__panel-info svg { color: var(--c-primary-light); opacity: 0.8; }
+  .manual-box { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .manual-box p { font-size: 0.95rem; color: var(--c-text-2); line-height: 1.6; margin: 0; }
+  .manual-box code { color: var(--c-primary-light); background: rgba(255,255,255,0.05); padding: 0.1rem 0.3rem; border-radius: 4px; }
+
+  /* Animations */
+  .anim-slide-up {
+    opacity: 0; transform: translateY(10px);
+    animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes slide-up { to { opacity: 1; transform: translateY(0); } }
+
+  /* Doc section */
+  .doc-section { margin-top: var(--sp-8); }
+  .doc-section__title {
+    font-size: 1.1rem; font-weight: 700; color: var(--c-text-1);
+    margin-bottom: var(--sp-4); padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .doc-section__subtitle {
+    font-size: 0.9rem; color: var(--c-text-3); margin-bottom: var(--sp-4);
+    margin-top: calc(var(--sp-4) * -1);
+  }
+
+  .usage-header {
+    display: flex; flex-direction: column; gap: var(--sp-2);
+    margin-bottom: var(--sp-6);
+    padding-bottom: var(--sp-4);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .usage-header .doc-section__subtitle { margin: 0; }
+  .usage-code-wrapper { margin-top: var(--sp-4); }
+
+  /* Props list */
+  .props-list { display: flex; flex-direction: column; gap: 0; }
+  .props-row {
+    display: grid; grid-template-columns: 150px 1fr;
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--c-border); font-size: 0.875rem;
+  }
+  .props-row dt { color: var(--c-text-3); font-weight: 500; }
+  .props-row dd { color: var(--c-text-1); }
+  .props-row dd code {
+    background: rgba(255,255,255,0.06); padding: 0.1rem 0.4rem;
+    border-radius: 4px; font-size: 0.82em; color: var(--c-primary-light);
+  }
+  .tags-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+</style>

@@ -1,0 +1,439 @@
+---
+// src/components/docs/Sidebar.astro
+import { components } from '../../data/registry/index';
+
+interface Props {
+  categories: { id: string; name: string; icon: string; description: string }[];
+  currentPath: string;
+}
+
+const { categories, currentPath } = Astro.props;
+
+// Server-side: determine which categories should be expanded
+// The category containing the current component is always expanded
+const expandedCategories = new Set<string>();
+categories.forEach((cat) => {
+  const catComponents = components.filter((c) => c.category === cat.id);
+  const isSections = cat.id === 'sections';
+  const pathPrefix = isSections ? '/sections' : '/docs';
+  const hasActive = catComponents.some(comp => `${pathPrefix}/${comp.slug}` === currentPath);
+  if (hasActive) {
+    expandedCategories.add(cat.id);
+  }
+});
+---
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__search">
+    <svg class="sidebar__search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="sidebar-search" placeholder="Search components..." aria-label="Search components" />
+  </div>
+  <nav class="sidebar__inner" aria-label="Component categories">
+    {categories.map((cat) => {
+      const catComponents = components.filter((c) => c.category === cat.id);
+      if (catComponents.length === 0) return null;
+
+      const isSections = cat.id === 'sections';
+      const pathPrefix = isSections ? '/sections' : '/docs';
+
+      const isExpanded = expandedCategories.has(cat.id);
+
+      return (
+        <div class:list={['sidebar__group', { 'is-expanded': isExpanded }]} data-category={cat.id}>
+          <button class="sidebar__group-header" aria-expanded={isExpanded ? 'true' : 'false'}>
+            <span class="sidebar__group-icon" set:html={cat.icon}></span>
+            <span class="sidebar__group-name">{cat.name}</span>
+            <span class="sidebar__group-count">{catComponents.length}</span>
+            <svg class="sidebar__group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div class="sidebar__group-content">
+            <div class="sidebar__group-content-inner">
+              <ul class="sidebar__list">
+                {catComponents.map((comp) => {
+                  const href = `${pathPrefix}/${comp.slug}`;
+                  const isActive = currentPath.replace(/\/$/, '') === href;
+                  return (
+                    <li class="sidebar__item" data-name={comp.name.toLowerCase()}>
+                      <a
+                        href={href}
+                        class:list={['sidebar__link', { 'sidebar__link--active': isActive }]}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        {comp.name}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </nav>
+</aside>
+
+<div class="mobile-filter-trigger">
+  <button id="mobile-filter-btn" aria-label="Explore components">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <span>Explore</span>
+  </button>
+</div>
+
+<div class="mobile-filter-backdrop" id="mobile-filter-backdrop"></div>
+
+<script is:inline>
+  (function () {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    const SCROLL_KEY = 'sidebar-scroll-pos';
+    const EXPANDED_KEY = 'sidebar-expanded-cats';
+
+    // Restore scroll position
+    const savedScroll = sessionStorage.getItem(SCROLL_KEY);
+    if (savedScroll !== null) {
+      requestAnimationFrame(function () {
+        sidebar.scrollTop = parseInt(savedScroll, 10);
+      });
+    }
+
+    // Save scroll position
+    let saveTimeout;
+    sidebar.addEventListener('scroll', function () {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(function () {
+        sessionStorage.setItem(SCROLL_KEY, String(sidebar.scrollTop));
+      }, 50);
+    });
+
+    // Restore expanded state from localStorage
+    try {
+      const stored = localStorage.getItem(EXPANDED_KEY);
+      if (stored) {
+        const expanded = JSON.parse(stored);
+        expanded.forEach(function (catId) {
+          const group = document.querySelector('.sidebar__group[data-category="' + catId + '"]');
+          if (group && !group.classList.contains('is-expanded')) {
+            group.classList.add('is-expanded');
+            var header = group.querySelector('.sidebar__group-header');
+            if (header) header.setAttribute('aria-expanded', 'true');
+          }
+        });
+      }
+    } catch (e) { /* ignore */ }
+
+    // Save expanded state on toggle
+    function saveExpandedState() {
+      var expanded = [];
+      document.querySelectorAll('.sidebar__group.is-expanded').forEach(function (g) {
+        var catId = g.getAttribute('data-category');
+        if (catId) expanded.push(catId);
+      });
+      try {
+        localStorage.setItem(EXPANDED_KEY, JSON.stringify(expanded));
+      } catch (e) { /* ignore */ }
+    }
+
+    // Accordion toggle
+    document.querySelectorAll('.sidebar__group-header').forEach(function (header) {
+      header.addEventListener('click', function () {
+        var group = header.closest('.sidebar__group');
+        if (!group) return;
+        var isExpanded = group.classList.contains('is-expanded');
+        if (isExpanded) {
+          group.classList.remove('is-expanded');
+          header.setAttribute('aria-expanded', 'false');
+        } else {
+          group.classList.add('is-expanded');
+          header.setAttribute('aria-expanded', 'true');
+        }
+        saveExpandedState();
+      });
+    });
+
+    // Scroll active link into view
+    var currentPath = window.location.pathname.replace(/\/$/, '');
+    var allLinks = document.querySelectorAll('[aria-current="page"]');
+    if (allLinks.length > 0 && savedScroll === null) {
+      setTimeout(function () {
+        allLinks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+
+    // Search logic
+    var searchInput = document.getElementById('sidebar-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        var query = searchInput.value.toLowerCase();
+        document.querySelectorAll('.sidebar__group').forEach(function (group) {
+          var hasVisible = false;
+          group.querySelectorAll('.sidebar__item').forEach(function (item) {
+            var name = item.getAttribute('data-name') || '';
+            var visible = name.includes(query);
+            item.style.display = visible ? '' : 'none';
+            if (visible) hasVisible = true;
+          });
+          if (query.length > 0) {
+            group.style.display = hasVisible ? '' : 'none';
+            if (hasVisible) {
+              group.classList.add('is-expanded');
+              group.querySelector('.sidebar__group-header').setAttribute('aria-expanded', 'true');
+            }
+          } else {
+            group.style.display = '';
+          }
+        });
+      });
+    }
+
+    // Mobile filter
+    var mobileBtn = document.getElementById('mobile-filter-btn');
+    var backdrop = document.getElementById('mobile-filter-backdrop');
+
+    function openMobileFilter() {
+      sidebar.classList.add('is-open');
+      if (backdrop) backdrop.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileFilter() {
+      sidebar.classList.remove('is-open');
+      if (backdrop) backdrop.classList.remove('is-open');
+      document.body.style.overflow = '';
+    }
+
+    if (mobileBtn) mobileBtn.addEventListener('click', openMobileFilter);
+    if (backdrop) backdrop.addEventListener('click', closeMobileFilter);
+
+    sidebar.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (window.innerWidth <= 768) closeMobileFilter();
+      });
+    });
+  })();
+</script>
+
+<style>
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    border-right: 1px solid var(--c-border);
+    padding: var(--sp-6) 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+
+  .sidebar__search {
+    padding: 0 var(--sp-4);
+    margin-bottom: var(--sp-6);
+    position: relative;
+  }
+  .sidebar__search input {
+    width: 100%;
+    padding: 0.65rem 0.75rem 0.65rem 2.4rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    color: var(--c-text-1);
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: var(--font-sans);
+  }
+  .sidebar__search input::placeholder { color: var(--c-text-3); }
+  .sidebar__search input:focus {
+    border-color: rgba(184,134,11,0.4);
+    background: rgba(255,255,255,0.05);
+  }
+  .sidebar__search-icon {
+    position: absolute;
+    left: 2.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c-text-3);
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .sidebar__inner {
+    padding: 0 var(--sp-2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .sidebar__group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar__group-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.5rem var(--sp-3);
+    background: transparent;
+    border: none;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+    gap: var(--sp-2);
+  }
+  .sidebar__group-header:hover {
+    background: rgba(255,255,255,0.04);
+  }
+
+  .sidebar__group-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--c-text-3);
+    transition: color 0.2s;
+  }
+  .sidebar__group.is-expanded .sidebar__group-icon {
+    color: var(--c-primary-light);
+  }
+
+  .sidebar__group-name {
+    flex: 1;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-text-2);
+    transition: color 0.2s;
+  }
+  .sidebar__group.is-expanded .sidebar__group-name {
+    color: var(--c-text-1);
+  }
+
+  .sidebar__group-count {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--c-text-3);
+    background: rgba(255,255,255,0.04);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--r-full);
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .sidebar__group-chevron {
+    opacity: 0.5;
+    transition: transform 0.25s ease, opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .sidebar__group.is-expanded .sidebar__group-chevron {
+    transform: rotate(180deg);
+    opacity: 1;
+    color: var(--c-primary-light);
+  }
+
+  .sidebar__group-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+  .sidebar__group.is-expanded .sidebar__group-content {
+    grid-template-rows: 1fr;
+  }
+  .sidebar__group-content-inner { min-height: 0; }
+
+  .sidebar__list {
+    list-style: none;
+    padding: 0.2rem 0 0.75rem var(--sp-3);
+    margin-left: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border-left: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .sidebar__link {
+    display: block;
+    padding: 0.35rem var(--sp-3);
+    font-size: 0.8rem;
+    color: var(--c-text-3);
+    border-radius: var(--r-sm);
+    transition: all 0.15s ease;
+    text-decoration: none;
+    position: relative;
+  }
+  .sidebar__link:hover {
+    color: var(--c-text-1);
+    background: rgba(255,255,255,0.04);
+  }
+  .sidebar__link--active {
+    color: var(--c-primary-light);
+    background: linear-gradient(90deg, rgba(184,134,11,0.08), transparent);
+    font-weight: 600;
+  }
+  .sidebar__link--active::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 60%;
+    background: var(--c-primary-light);
+    border-radius: 0 1px 1px 0;
+  }
+
+  /* Mobile */
+  .mobile-filter-trigger { display: none; }
+  .mobile-filter-backdrop { display: none; }
+
+  @media (max-width: 768px) {
+    .mobile-filter-trigger {
+      display: flex; position: fixed; bottom: var(--sp-6); left: 0; width: 100%;
+      justify-content: center; z-index: 40; pointer-events: none;
+    }
+    #mobile-filter-btn {
+      pointer-events: auto; display: flex; align-items: center; gap: var(--sp-2);
+      background: rgba(184,134,11,0.95); backdrop-filter: blur(10px);
+      color: #000; border: none; padding: 0.8rem 1.6rem;
+      border-radius: var(--r-full); font-weight: 700; font-size: 0.9rem;
+      box-shadow: 0 10px 25px rgba(184,134,11,0.3);
+      transition: transform 0.2s; cursor: pointer;
+    }
+    #mobile-filter-btn:active { transform: scale(0.95); }
+    .mobile-filter-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 45;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    }
+    .mobile-filter-backdrop.is-open { display: block; }
+    .sidebar {
+      position: fixed; left: 0; bottom: 0; top: auto; width: 100%;
+      height: 85vh; background: var(--c-bg-1); border-right: none;
+      border-top: 1px solid var(--c-border);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      z-index: 50; transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      display: flex; flex-direction: column;
+      padding: var(--sp-8) var(--sp-2) var(--sp-12);
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+    .sidebar::before {
+      content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px;
+    }
+    .sidebar.is-open { transform: translateY(0); }
+    .sidebar__search input { font-size: 1rem; padding: 0.9rem 0.9rem 0.9rem 2.4rem; }
+  }
+</style>

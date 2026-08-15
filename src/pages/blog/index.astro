@@ -1,0 +1,92 @@
+---
+// src/pages/blog/index.astro
+import BlogLayout from '../../layouts/BlogLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+  (a: any, b: any) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
+);
+---
+
+<BlogLayout title="Blog" description="News, updates, and insights about AstroComponents.dev">
+  <div class="blog-page anim-fade-in">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">Blog</span>
+    </nav>
+
+    <header class="blog-page__header">
+      <span class="blog-page__badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        {posts.length} {posts.length === 1 ? 'Post' : 'Posts'}
+      </span>
+      <h1 class="blog-page__title">Blog</h1>
+      <p class="blog-page__desc">News, updates, and insights about AstroComponents.dev and building with Astro.</p>
+    </header>
+
+    <div class="blog-posts">
+      {posts.map((post: any) => {
+        const { title, description, date, tag } = post.data;
+        const formattedDate = new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        return (
+          <a href={`/blog/${post.id}`} class="blog-post-card">
+            <div class="blog-post-card__body">
+              <div class="blog-post-card__top">
+                <span class="blog-post-card__tag">{tag}</span>
+                <time class="blog-post-card__date" datetime={date}>{formattedDate}</time>
+              </div>
+              <h2 class="blog-post-card__title">{title}</h2>
+              <p class="blog-post-card__desc">{description}</p>
+            </div>
+            <div class="blog-post-card__footer">
+              <span class="blog-post-card__read">Read more</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+
+    {posts.length === 0 && (
+      <div class="blog-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <h3>No posts yet</h3>
+        <p>Check back soon for new content!</p>
+      </div>
+    )}
+  </div>
+</BlogLayout>
+
+<style>
+  .blog-page { max-width: 700px; }
+  .anim-fade-in { opacity: 0; animation: fade-in 0.6s ease forwards; }
+  @keyframes fade-in { to { opacity: 1; } }
+  .breadcrumb { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6); }
+  .breadcrumb a { color: var(--c-text-3); text-decoration: none; } .breadcrumb a:hover { color: var(--c-text-2); }
+  .breadcrumb__sep { color: var(--c-text-3); opacity: 0.5; } .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
+  .blog-page__header { margin-bottom: var(--sp-10); }
+  .blog-page__badge { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 0.3rem 0.8rem; border-radius: var(--r-full); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: rgba(99,102,241,0.12); color: var(--c-primary-light); border: 1px solid rgba(99,102,241,0.25); margin-bottom: var(--sp-4); }
+  .blog-page__title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900; color: var(--c-text-1); letter-spacing: -0.03em; margin: 0 0 var(--sp-3); }
+  .blog-page__desc { font-size: 1rem; color: var(--c-text-2); line-height: 1.7; max-width: 600px; margin: 0; }
+  .blog-posts { display: flex; flex-direction: column; gap: var(--sp-4); }
+  .blog-post-card { display: flex; flex-direction: column; padding: var(--sp-6); background: rgba(255,255,255,0.02); border: 1px solid var(--c-border); border-radius: var(--r-lg); text-decoration: none; transition: all 0.25s ease; position: relative; overflow: hidden; }
+  .blog-post-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 0; background: var(--c-primary-light); border-radius: 0 0 2px 2px; transition: height 0.3s ease; }
+  .blog-post-card:hover::before { height: 100%; }
+  .blog-post-card:hover { border-color: rgba(184,134,11,0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); background: rgba(255,255,255,0.03); }
+  .blog-post-card__top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+  .blog-post-card__tag { display: inline-block; padding: 0.2rem 0.6rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-primary-light); background: rgba(184,134,11,0.1); border-radius: var(--r-full); }
+  .blog-post-card__date { font-size: 0.75rem; color: var(--c-text-3); white-space: nowrap; }
+  .blog-post-card__title { font-size: 1.15rem; font-weight: 800; color: var(--c-text-1); margin: 0 0 var(--sp-2); line-height: 1.3; transition: color 0.2s; }
+  .blog-post-card:hover .blog-post-card__title { color: var(--c-primary-light); }
+  .blog-post-card__desc { font-size: 0.88rem; color: var(--c-text-3); line-height: 1.6; margin: 0; flex: 1; }
+  .blog-post-card__footer { display: flex; align-items: center; justify-content: space-between; margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid rgba(255,255,255,0.04); }
+  .blog-post-card__read { font-size: 0.8rem; font-weight: 600; color: var(--c-primary-light); }
+  .blog-post-card__footer svg { color: var(--c-primary-light); opacity: 0.5; transition: transform 0.2s, opacity 0.2s; }
+  .blog-post-card:hover .blog-post-card__read { transform: translateX(3px); }
+  .blog-post-card:hover .blog-post-card__footer svg { transform: translateX(4px); opacity: 1; }
+  .blog-empty { text-align: center; padding: var(--sp-12) var(--sp-6); color: var(--c-text-3); }
+  .blog-empty svg { opacity: 0.3; margin-bottom: var(--sp-4); }
+  .blog-empty h3 { font-size: 1.1rem; color: var(--c-text-2); margin: 0 0 var(--sp-2); }
+  .blog-empty p { font-size: 0.9rem; margin: 0; }
+</style>

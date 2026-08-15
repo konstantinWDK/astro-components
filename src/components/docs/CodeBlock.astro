@@ -1,0 +1,126 @@
+---
+// src/components/docs/CodeBlock.astro
+import { Code } from 'astro:components';
+
+interface Props {
+  code: string;
+  lang?: any;
+  id?: string;
+}
+
+const { code, lang = 'astro', id = 'code-block' } = Astro.props;
+---
+
+<div class="code-block" id={id}>
+  <div class="code-block__header">
+    <span class="code-block__lang">{lang}</span>
+    <button class="code-block__copy" data-target={id} type="button" aria-label="Copy code">
+      <svg class="icon-copy" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <svg class="icon-check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span class="copy-label">Copy</span>
+    </button>
+  </div>
+  <div class="code-block__pre">
+    <Code code={code} lang={lang} theme="github-dark" />
+    <span class="code-block__code sr-only">{code}</span>
+  </div>
+</div>
+
+<style>
+  .code-block {
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    border: 1px solid var(--c-border);
+    background: #0d1117;
+  }
+
+  .code-block__header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 0.65rem var(--sp-4);
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+
+  .code-block__lang {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+    flex: 1;
+  }
+
+  .code-block__copy {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--c-text-2);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+
+  .code-block__copy:hover { color: var(--c-text-1); background: rgba(255,255,255,0.09); }
+  .code-block__copy.copied { color: #34d399; border-color: rgba(52,211,153,0.3); }
+  .code-block__copy.copy-failed { color: #f87171; border-color: rgba(239,68,68,0.3); }
+
+  .code-block__pre :global(pre) {
+    margin: 0;
+    padding: var(--sp-6);
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    background: transparent !important;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.code-block__copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const targetId = btn.dataset.target!;
+      const block = document.getElementById(targetId);
+      const code = block?.querySelector('.code-block__code')?.textContent ?? '';
+
+      try {
+        await navigator.clipboard.writeText(code);
+        const copy = btn.querySelector<SVGElement>('.icon-copy')!;
+        const check = btn.querySelector<SVGElement>('.icon-check')!;
+        const label = btn.querySelector('.copy-label')!;
+
+        copy.style.display = 'none';
+        check.style.display = 'block';
+        label.textContent = 'Copied!';
+        btn.classList.add('copied');
+
+        setTimeout(() => {
+          copy.style.display = 'block';
+          check.style.display = 'none';
+          label.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy code to clipboard:', err);
+        const label = btn.querySelector('.copy-label')!;
+        label.textContent = 'Failed';
+        btn.classList.add('copy-failed');
+        setTimeout(() => {
+          label.textContent = 'Copy';
+          btn.classList.remove('copy-failed');
+        }, 2000);
+      }
+    });
+  });
+</script>

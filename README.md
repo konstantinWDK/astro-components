@@ -321,11 +321,11 @@ Every component is built with accessibility as a first-class concern:
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start the docs site dev server |
-| `npm run build` | Build the docs site for production |
+| `npm run dev` | Start the docs site dev server (`http://localhost:4321`) |
+| `npm run build` | Build the docs site for production (generates `dist/` for Coolify/deployment) |
 | `npm run preview` | Preview the built docs site locally |
-| `npm run deploy:ftp` | Deploy docs to astrocomponents.dev via FTP |
-| `npm run typecheck` | Run TypeScript type checking |
+| `npm run typecheck` | Run Astro & TypeScript type checking |
+| `npm run registry:generate` | Automatically regenerate component registry data |
 
 ### Adding a New Component
 

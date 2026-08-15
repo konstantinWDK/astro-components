@@ -1,0 +1,340 @@
+---
+// src/layouts/DocsLayout.astro
+import BaseLayout from './BaseLayout.astro';
+import Sidebar from '../components/docs/Sidebar.astro';
+import { categories } from '../data/registry/index';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="docs-shell">
+    <!-- Top Header -->
+    <header class="docs-header">
+      <div class="docs-header__inner">
+        <a href="/" class="docs-header__brand">
+          <img src="/logo-animated.svg" alt="Astro Kit Components" class="brand-logo" />
+        </a>
+        <button class="site-menu-toggle" id="site-menu-toggle" aria-label="Toggle site menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+        </button>
+        <nav class="docs-header__nav" id="site-nav">
+          <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
+          <a href="/install" class:list={{ active: currentPath.startsWith('/install') }}>Installation</a>
+          <a href="/docs/glass-button" class:list={{ active: currentPath.startsWith('/docs') }}>Components</a>
+          <a href="/sections" class:list={{ active: currentPath.startsWith('/sections') }}>Sections</a>
+          <a href="/blog" class:list={{ active: currentPath.startsWith('/blog') }}>Blog</a>
+          <a href="https://github.com/konstantinWDK/astro-components" target="_blank" rel="noopener" class="gh-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            GitHub
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="docs-body">
+      <!-- Sidebar -->
+      <Sidebar categories={categories} currentPath={currentPath} />
+
+      <!-- Main content -->
+      <main class="docs-main">
+        <div class="docs-content">
+          <slot />
+        </div>
+      </main>
+
+      <!-- Right Sidebar: On this page (scrollspy) -->
+      <aside class="toc" id="toc" aria-label="On this page">
+        <span class="toc__title">On this page</span>
+        <nav class="toc__nav" id="toc-nav"></nav>
+      </aside>
+    </div>
+  </div>
+  <script is:inline>
+    // Mobile menu toggle
+    const siteToggle = document.getElementById('site-menu-toggle');
+    const siteNav = document.getElementById('site-nav');
+    if (siteToggle && siteNav) {
+      siteToggle.addEventListener('click', () => {
+        siteNav.classList.toggle('is-open');
+      });
+    }
+
+    // Scrollspy + smooth scroll for TOC
+    const tocNav = document.getElementById('toc-nav');
+    const headings = document.querySelectorAll('.docs-content h2[id], .doc-section h2[id], .doc-section[id] h2');
+
+    if (tocNav && headings.length > 0) {
+      headings.forEach((h2, i) => {
+        if (!h2.id) h2.id = 'section-' + (i + 1);
+
+        const link = document.createElement('a');
+        link.href = '#' + h2.id;
+        link.className = 'toc__link';
+        link.setAttribute('data-target', h2.id);
+        link.textContent = h2.textContent;
+        tocNav.appendChild(link);
+
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          h2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
+      const tocLinks = tocNav.querySelectorAll('.toc__link');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tocLinks.forEach(l => l.classList.remove('toc__link--active'));
+            const activeLink = tocNav.querySelector(`.toc__link[data-target="${entry.target.id}"]`);
+            if (activeLink) activeLink.classList.add('toc__link--active');
+          }
+        });
+      }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+      headings.forEach(h => observer.observe(h));
+    }
+  </script>
+</BaseLayout>
+
+<style>
+  .docs-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .docs-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--header-h);
+    background: rgba(8, 11, 20, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .docs-header__inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--sp-6);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+  }
+
+  .docs-header__brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .brand-logo {
+    height: 75px;
+    width: auto;
+  }
+
+  .docs-header__nav {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    margin-left: auto;
+  }
+
+  .docs-header__nav a {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--c-text-2);
+    text-decoration: none;
+    border-radius: var(--r-sm);
+    transition: color 0.2s, background 0.2s;
+  }
+
+  .docs-header__nav a:hover,
+  .docs-header__nav a.active {
+    color: var(--c-text-1);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .gh-link {
+    display: flex !important;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  /* Body / Sidebar layout */
+  .docs-body {
+    display: flex;
+    flex: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .docs-main {
+    flex: 1;
+    min-width: 0;
+    padding: var(--sp-8) var(--sp-12);
+    max-width: 1140px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .docs-content {
+    width: 100%;
+  }
+
+  .docs-content h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: var(--sp-4);
+    color: var(--c-text-1);
+  }
+
+  .docs-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: var(--sp-8);
+    margin-bottom: var(--sp-4);
+    color: var(--c-text-1);
+  }
+
+  .docs-content p {
+    margin-bottom: var(--sp-4);
+    line-height: 1.7;
+    color: var(--c-text-2);
+  }
+
+  .docs-content ul,
+  .docs-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: var(--sp-4);
+    list-style-position: outside;
+  }
+
+  .docs-content ul:last-child,
+  .docs-content ol:last-child {
+    margin-bottom: 0;
+  }
+
+  .docs-content ul {
+    list-style: disc;
+  }
+
+  .docs-content ol {
+    list-style: decimal;
+  }
+
+  .docs-content li {
+    margin-bottom: 0.5rem;
+    line-height: 1.7;
+    color: var(--c-text-2);
+    padding-left: 0.25rem;
+  }
+
+  .docs-content li:last-child {
+    margin-bottom: 0;
+  }
+
+  .docs-content li > ul,
+  .docs-content li > ol {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .docs-content ul ul {
+    list-style-type: circle;
+  }
+
+  .docs-content ul ul ul {
+    list-style-type: square;
+  }
+
+  .site-menu-toggle { display: none; }
+
+  /* Right sidebar: TOC / scrollspy */
+  :global(.toc) {
+    width: 200px;
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+    padding: var(--sp-8) var(--sp-4) var(--sp-8) 0;
+    border-left: 1px solid var(--c-border);
+  }
+  :global(.toc__title) {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--c-text-3);
+    margin-bottom: var(--sp-3);
+    padding-left: var(--sp-3);
+  }
+  :global(.toc__nav) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 2px solid rgba(255,255,255,0.06);
+    margin-left: var(--sp-1);
+    padding-left: 0;
+  }
+  :global(.toc__link) {
+    display: block;
+    padding: 0.35rem var(--sp-3);
+    font-size: 0.78rem;
+    color: var(--c-text-3);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    margin-left: -2px;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+  }
+  :global(.toc__link:hover) {
+    color: var(--c-text-1);
+  }
+  :global(.toc__link--active) {
+    color: var(--c-primary-light);
+    border-left-color: var(--c-primary-light);
+    font-weight: 600;
+  }
+
+  @media (max-width: 1024px) {
+    :global(.toc) { display: none; }
+  }
+
+  @media (max-width: 768px) {
+    .docs-body { max-width: 100%; }
+    .docs-main { padding: var(--sp-6) var(--sp-4); max-width: 100%; }
+
+    .site-menu-toggle {
+       display: flex; align-items: center; justify-content: center;
+       background: transparent; border: none; color: var(--c-text-1); cursor: pointer;
+       margin-left: auto;
+    }
+    .docs-header__nav {
+       display: none;
+       position: absolute; top: var(--header-h); left: 0; width: 100%;
+       background: rgba(8, 11, 20, 0.98); backdrop-filter: blur(20px);
+       border-bottom: 1px solid var(--c-border);
+       flex-direction: column; padding: var(--sp-6); gap: var(--sp-4);
+       align-items: stretch;
+    }
+    .docs-header__nav.is-open { display: flex; }
+    .docs-header__nav a { text-align: center; padding: 0.8rem; font-size: 1.1rem; }
+  }
+</style>
