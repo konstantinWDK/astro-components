@@ -1,0 +1,468 @@
+---
+/**
+ * PricingComparisonMatrix — Full-page interactive pricing matrix with billing toggle and feature comparison.
+ * 
+ * @param {string} badge - Eyebrow badge text.
+ * @param {string} title - Section main heading.
+ * @param {string} subtitle - Supporting description text.
+ */
+interface Props {
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  badge = "Flexible Plans",
+  title = "Transparent Pricing for High-Growth Teams",
+  subtitle = "Choose the right plan to scale your digital products. No hidden fees, cancel anytime.",
+  className = ""
+} = Astro.props;
+---
+
+<section class={`pricing-section ${className}`} aria-labelledby="pricing-title">
+  <div class="pricing-bg" aria-hidden="true">
+    <div class="pricing-glow"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="section-header">
+      {badge && <span class="section-badge">{badge}</span>}
+      <h2 id="pricing-title" class="section-title">{title}</h2>
+      <p class="section-subtitle">{subtitle}</p>
+
+      <!-- Interactive Billing Toggle -->
+      <div class="billing-toggle-wrap">
+        <span class="toggle-label" id="label-monthly">Monthly</span>
+        <button 
+          type="button" 
+          class="billing-toggle" 
+          id="billingToggleBtn" 
+          role="switch" 
+          aria-checked="false" 
+          aria-label="Toggle annual billing"
+        >
+          <span class="toggle-slider"></span>
+        </button>
+        <span class="toggle-label" id="label-annual">
+          Annual <span class="discount-pill">Save 20%</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Pricing Cards Grid -->
+    <div class="pricing-cards">
+      <!-- 1. Starter Tier -->
+      <div class="plan-card">
+        <div class="plan-card__header">
+          <span class="plan-name">Starter</span>
+          <p class="plan-desc">For indie developers and personal experiments.</p>
+          <div class="plan-price">
+            <span class="price-currency">$</span>
+            <span class="price-val" data-monthly="19" data-annual="15">19</span>
+            <span class="price-period">/mo</span>
+          </div>
+          <a href="#get-started" class="plan-btn plan-btn--ghost">Get Started</a>
+        </div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features" aria-label="Starter Plan Features">
+          <li><span class="check-icon">✓</span> Up to 3 Astro Projects</li>
+          <li><span class="check-icon">✓</span> All 200+ UI Components</li>
+          <li><span class="check-icon">✓</span> Community Discord Support</li>
+          <li class="feature-disabled"><span class="cross-icon">✕</span> Private Component Registry</li>
+          <li class="feature-disabled"><span class="cross-icon">✕</span> Dedicated Priority Support</li>
+        </ul>
+      </div>
+
+      <!-- 2. Pro Tier (Featured / Most Popular) -->
+      <div class="plan-card plan-card--popular">
+        <div class="popular-ribbon">Most Popular</div>
+        <div class="plan-card__header">
+          <span class="plan-name plan-name--popular">Professional</span>
+          <p class="plan-desc">For fast-moving teams and production web applications.</p>
+          <div class="plan-price">
+            <span class="price-currency">$</span>
+            <span class="price-val" data-monthly="49" data-annual="39">49</span>
+            <span class="price-period">/mo</span>
+          </div>
+          <a href="#get-pro" class="plan-btn plan-btn--primary">Start 14-Day Free Trial</a>
+        </div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features" aria-label="Professional Plan Features">
+          <li><span class="check-icon">✓</span> Unlimited Astro Projects</li>
+          <li><span class="check-icon">✓</span> All 200+ UI & 3D Components</li>
+          <li><span class="check-icon">✓</span> Figma UI Kit & Design Tokens</li>
+          <li><span class="check-icon">✓</span> Private NPM Team Access</li>
+          <li><span class="check-icon">✓</span> Priority Email & Chat Support</li>
+        </ul>
+      </div>
+
+      <!-- 3. Enterprise Tier -->
+      <div class="plan-card">
+        <div class="plan-card__header">
+          <span class="plan-name">Enterprise</span>
+          <p class="plan-desc">For organizations requiring custom SLAs and bespoke design systems.</p>
+          <div class="plan-price">
+            <span class="price-currency">$</span>
+            <span class="price-val" data-monthly="149" data-annual="119">149</span>
+            <span class="price-period">/mo</span>
+          </div>
+          <a href="#contact-sales" class="plan-btn plan-btn--ghost">Contact Sales</a>
+        </div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features" aria-label="Enterprise Plan Features">
+          <li><span class="check-icon">✓</span> Everything in Pro Plan</li>
+          <li><span class="check-icon">✓</span> Custom Component Engineering</li>
+          <li><span class="check-icon">✓</span> 99.99% Guaranteed SLA</li>
+          <li><span class="check-icon">✓</span> Dedicated Security Audit Support</li>
+          <li><span class="check-icon">✓</span> Dedicated Account Manager</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Money-back guarantee footer note -->
+    <div class="pricing-footer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="guarantee-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>30-Day unconditional money-back guarantee. No questions asked.</span>
+    </div>
+  </div>
+</section>
+
+<script>
+  const toggleBtn = document.getElementById('billingToggleBtn');
+  const priceVals = document.querySelectorAll('.price-val');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const isAnnual = toggleBtn.getAttribute('aria-checked') === 'true';
+      const newState = !isAnnual;
+      toggleBtn.setAttribute('aria-checked', String(newState));
+
+      priceVals.forEach((el) => {
+        const val = newState ? el.getAttribute('data-annual') : el.getAttribute('data-monthly');
+        if (val) el.textContent = val;
+      });
+    });
+  }
+</script>
+
+<style>
+  .pricing-section {
+    position: relative;
+    padding: var(--sp-20, 5rem) var(--sp-6, 1.5rem);
+    background: var(--c-bg-primary, #030712);
+    overflow: hidden;
+  }
+
+  .pricing-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pricing-glow {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(184, 134, 11, 0.12), transparent 70%);
+    filter: blur(100px);
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto var(--sp-12, 3rem);
+  }
+
+  .section-badge {
+    display: inline-flex;
+    padding: 0.35rem 0.9rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: rgba(184, 134, 11, 0.12);
+    color: #eab308;
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--sp-4, 1rem);
+  }
+
+  .section-subtitle {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0 0 2rem;
+  }
+
+  /* Billing Toggle */
+  .billing-toggle-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+  }
+
+  .toggle-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  .discount-pill {
+    padding: 0.15rem 0.5rem;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .billing-toggle {
+    width: 44px;
+    height: 24px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    position: relative;
+    cursor: pointer;
+    padding: 2px;
+    transition: background 0.3s ease;
+  }
+
+  .toggle-slider {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .billing-toggle[aria-checked="true"] {
+    background: #eab308;
+  }
+
+  .billing-toggle[aria-checked="true"] .toggle-slider {
+    transform: translateX(20px);
+  }
+
+  /* Pricing Cards */
+  .pricing-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  .plan-card {
+    position: relative;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    padding: 2.25rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .plan-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .plan-card--popular {
+    background: rgba(20, 25, 45, 0.85);
+    border-color: rgba(234, 179, 8, 0.4);
+    box-shadow: 0 0 30px -10px rgba(234, 179, 8, 0.25);
+    transform: scale(1.03);
+  }
+
+  .plan-card--popular:hover {
+    transform: scale(1.03) translateY(-4px);
+  }
+
+  .popular-ribbon {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.25rem 0.85rem;
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+    color: #000;
+    font-weight: 800;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 9999px;
+    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);
+  }
+
+  .plan-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .plan-name--popular {
+    color: #facc15;
+  }
+
+  .plan-desc {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0.4rem 0 1.5rem;
+    min-height: 40px;
+  }
+
+  .plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .price-currency {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+
+  .price-val {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .price-period {
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+
+  .plan-btn {
+    display: block;
+    text-align: center;
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--r-md, 10px);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+
+  .plan-btn--primary {
+    background: linear-gradient(135deg, #eab308, #d97706);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(234, 179, 8, 0.3);
+  }
+
+  .plan-btn--primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.45);
+  }
+
+  .plan-btn--ghost {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .plan-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .plan-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 1.5rem 0;
+  }
+
+  .plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .plan-features li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.88rem;
+    color: #cbd5e1;
+  }
+
+  .check-icon {
+    color: #10b981;
+    font-weight: 900;
+  }
+
+  .cross-icon {
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  .feature-disabled {
+    color: #64748b;
+  }
+
+  .pricing-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 3rem;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .guarantee-icon {
+    color: #10b981;
+  }
+
+  @media (max-width: 960px) {
+    .pricing-cards {
+      grid-template-columns: 1fr;
+    }
+    .plan-card--popular {
+      transform: none;
+    }
+    .plan-card--popular:hover {
+      transform: translateY(-4px);
+    }
+  }
+</style>

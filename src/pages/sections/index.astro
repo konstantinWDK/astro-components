@@ -4,10 +4,21 @@ import DocsLayout from '../../layouts/DocsLayout.astro';
 import { sections } from '../../data/registry/sections';
 
 const allSections = sections;
-const sectionCategories = [...new Set(allSections.map(s => s.category))];
+const subCategories = [
+  { id: 'all', name: 'All Sections', count: allSections.length },
+  { id: 'hero', name: 'Heroes', count: allSections.filter(s => s.tags.includes('hero') || s.slug.startsWith('hero')).length },
+  { id: 'features', name: 'Features', count: allSections.filter(s => s.tags.includes('features') || s.slug.startsWith('feature')).length },
+  { id: 'pricing', name: 'Pricing', count: allSections.filter(s => s.tags.includes('pricing')).length },
+  { id: 'testimonials', name: 'Testimonials', count: allSections.filter(s => s.tags.includes('testimonials')).length },
+  { id: 'cta', name: 'Call to Action', count: allSections.filter(s => s.tags.includes('cta')).length },
+  { id: 'faq', name: 'FAQ', count: allSections.filter(s => s.tags.includes('faq')).length },
+  { id: 'stats', name: 'Stats', count: allSections.filter(s => s.tags.includes('stats')).length },
+  { id: 'team', name: 'Team', count: allSections.filter(s => s.tags.includes('team')).length },
+  { id: 'contact', name: 'Contact', count: allSections.filter(s => s.tags.includes('contact')).length },
+];
 ---
 
-<DocsLayout title="Sections" description="Complete page sections: heroes, features, pricing, CTAs, and more.">
+<DocsLayout title="Section Templates" description="Complete page sections: heroes, features, pricing, CTAs, testimonials, and more.">
   <div class="doc-page">
     <!-- Breadcrumb -->
     <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -20,231 +31,354 @@ const sectionCategories = [...new Set(allSections.map(s => s.category))];
     <header class="sections-header">
       <span class="sections-header__badge">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-        {allSections.length} Sections
+        {allSections.length} Production Sections
       </span>
-      <h1 class="sections-header__title">Section Templates</h1>
+      <h1 class="sections-header__title">Complete Page Sections</h1>
       <p class="sections-header__desc">
-        Complete, production-ready page sections — heroes, features, pricing, CTAs, and more.
-        Copy and paste into your Astro project.
+        Full-page landing templates designed with glassmorphism, fluid typography, dark mode, and zero runtime dependencies.
+        Copy and paste directly into your Astro projects.
       </p>
     </header>
 
-    <!-- Sections grid -->
-    <div class="sections-grid">
-      {allSections.map((section) => (
-        <a href={`/sections/${section.slug}`} class="section-card">
-          <div class="section-card__preview">
-            <div class="section-card__preview-inner">
-              {section.category === 'heroes' && (
-                <div class="preview-hero">
-                  <div class="preview-hero__badge">Hero</div>
-                  <div class="preview-hero__lines">
-                    <div class="preview-hero__line preview-hero__line--title"></div>
-                    <div class="preview-hero__line preview-hero__line--subtitle"></div>
-                    <div class="preview-hero__btns">
-                      <div class="preview-hero__btn"></div>
-                      <div class="preview-hero__btn preview-hero__btn--secondary"></div>
+    <!-- Category Filter Tabs -->
+    <div class="category-filters" role="tablist" aria-label="Filter sections by type">
+      {subCategories.map((sub, i) => (
+        <button 
+          type="button" 
+          class={`filter-tab ${i === 0 ? 'filter-tab--active' : ''}`} 
+          data-filter={sub.id}
+        >
+          {sub.name}
+          <span class="filter-count">{sub.count}</span>
+        </button>
+      ))}
+    </div>
+
+    <!-- Sections Grid -->
+    <div class="sections-grid" id="sectionsGrid">
+      {allSections.map((section) => {
+        const mainTag = section.tags[0] || 'section';
+        return (
+          <a 
+            href={`/sections/${section.slug}`} 
+            class="section-card" 
+            data-tags={section.tags.join(' ')}
+            data-slug={section.slug}
+          >
+            <div class="section-card__preview">
+              <div class="section-card__preview-inner">
+                <div class={`preview-art preview-art--${mainTag}`}>
+                  <span class="preview-tag">{mainTag.toUpperCase()}</span>
+                  <div class="preview-skeleton-box">
+                    <div class="skel-line skel-line--title"></div>
+                    <div class="skel-line skel-line--sub"></div>
+                    <div class="skel-blocks">
+                      <div class="skel-block"></div>
+                      <div class="skel-block"></div>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-          <div class="section-card__content">
-            <h3 class="section-card__name">{section.name}</h3>
-            <p class="section-card__desc">{section.description}</p>
-            <div class="section-card__tags">
-              {section.tags.slice(0, 3).map((tag) => (
-                <span class="section-card__tag">{tag}</span>
-              ))}
+            <div class="section-card__content">
+              <div class="section-card__meta">
+                <h3 class="section-card__name">{section.name}</h3>
+              </div>
+              <p class="section-card__desc">{section.description}</p>
+              <div class="section-card__tags">
+                {section.tags.slice(0, 3).map((tag) => (
+                  <span class="section-card__tag">{tag}</span>
+                ))}
+              </div>
             </div>
-          </div>
-          <div class="section-card__arrow">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </div>
-        </a>
-      ))}
+            <div class="section-card__arrow">
+              <span>View Section</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        );
+      })}
     </div>
   </div>
 </DocsLayout>
 
+<script>
+  const filterTabs = document.querySelectorAll('.filter-tab');
+  const sectionCards = document.querySelectorAll<HTMLElement>('.section-card');
+
+  filterTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      filterTabs.forEach((t) => t.classList.remove('filter-tab--active'));
+      tab.classList.add('filter-tab--active');
+
+      const filter = tab.getAttribute('data-filter');
+
+      sectionCards.forEach((card) => {
+        const tags = (card.getAttribute('data-tags') || '').toLowerCase();
+        const slug = (card.getAttribute('data-slug') || '').toLowerCase();
+
+        if (filter === 'all' || tags.includes(filter!) || slug.includes(filter!)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
+
 <style>
   .doc-page {
-    max-width: 1100px;
+    max-width: 1200px;
   }
 
   /* Breadcrumb */
   .breadcrumb {
-    display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
-    font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    color: var(--c-text-3);
+    margin-bottom: var(--sp-6);
   }
-  .breadcrumb a { color: var(--c-text-3); } .breadcrumb a:hover { color: var(--c-text-2); }
+  .breadcrumb a { color: var(--c-text-3); text-decoration: none; }
+  .breadcrumb a:hover { color: #fff; }
   .breadcrumb__sep { color: var(--c-text-3); opacity: 0.5; }
   .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
 
   /* Header */
   .sections-header {
-    margin-bottom: var(--sp-10);
+    margin-bottom: 2.5rem;
   }
   .sections-header__badge {
-    display: inline-flex; align-items: center; gap: var(--sp-2);
-    padding: 0.3rem 0.8rem; border-radius: var(--r-full);
-    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-    background: rgba(99,102,241,0.12); color: var(--c-primary-light); border: 1px solid rgba(99,102,241,0.25);
-    margin-bottom: var(--sp-4);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--r-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(234, 179, 8, 0.12);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    margin-bottom: 1rem;
   }
   .sections-header__title {
-    font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900;
-    color: var(--c-text-1); letter-spacing: -0.03em; margin: 0 0 var(--sp-3);
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.75rem;
   }
   .sections-header__desc {
-    font-size: 1rem; color: var(--c-text-2); line-height: 1.7; max-width: 650px; margin: 0;
+    font-size: 1.05rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    max-width: 750px;
+    margin: 0;
+  }
+
+  /* Filter Tabs */
+  .category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-tab:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .filter-tab--active {
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+    border-color: rgba(234, 179, 8, 0.4);
+  }
+
+  .filter-count {
+    padding: 0.1rem 0.45rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   /* Grid */
   .sections-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: var(--sp-4);
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
   }
 
-  /* Section card */
+  /* Section Card */
   .section-card {
     display: flex;
     flex-direction: column;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid var(--c-border);
-    border-radius: var(--r-lg);
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
     text-decoration: none;
-    transition: all 0.25s ease;
+    transition: all 0.3s ease;
     overflow: hidden;
   }
+
   .section-card:hover {
-    border-color: rgba(184,134,11,0.3);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+    border-color: rgba(234, 179, 8, 0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6), 0 0 25px -10px rgba(234, 179, 8, 0.15);
   }
 
   .section-card__preview {
     height: 160px;
-    background: rgba(0,0,0,0.3);
-    border-bottom: 1px solid var(--c-border);
+    background: rgba(5, 10, 25, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     overflow: hidden;
   }
+
   .section-card__preview-inner {
     width: 90%;
-    height: 85%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: 80%;
   }
 
-  /* Preview hero */
-  .preview-hero {
+  .preview-art {
     width: 100%;
     height: 100%;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 0.75rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-3);
-    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(184,134,11,0.05));
-    border-radius: var(--r-md);
-    padding: var(--sp-3);
+    justify-content: space-between;
+    position: relative;
   }
-  .preview-hero__badge {
-    font-size: 0.55rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    padding: 0.2rem 0.6rem;
-    background: rgba(184,134,11,0.2);
-    color: var(--c-primary-light);
-    border-radius: var(--r-full);
+
+  .preview-tag {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #eab308;
   }
-  .preview-hero__lines {
+
+  .preview-skeleton-box {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-    width: 80%;
+    gap: 0.4rem;
   }
-  .preview-hero__line {
+
+  .skel-line {
     height: 4px;
     border-radius: 2px;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
   }
-  .preview-hero__line--title { width: 70%; }
-  .preview-hero__line--subtitle { width: 50%; height: 3px; }
-  .preview-hero__btns {
-    display: flex; gap: 0.4rem; margin-top: 0.3rem;
+  .skel-line--title { width: 70%; }
+  .skel-line--sub { width: 45%; height: 3px; }
+
+  .skel-blocks {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.3rem;
   }
-  .preview-hero__btn {
-    width: 40px; height: 10px; border-radius: 2px;
-    background: var(--c-primary-light);
-    opacity: 0.5;
-  }
-  .preview-hero__btn--secondary {
-    background: rgba(255,255,255,0.15);
-    opacity: 0.3;
+
+  .skel-block {
+    flex: 1;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
   }
 
   .section-card__content {
-    padding: var(--sp-4);
+    padding: 1.5rem;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-2);
+    gap: 0.5rem;
   }
+
   .section-card__name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--c-text-1);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
     margin: 0;
   }
+
   .section-card__desc {
-    font-size: 0.8rem;
-    color: var(--c-text-3);
+    font-size: 0.88rem;
+    color: #94a3b8;
     line-height: 1.5;
     margin: 0;
     flex: 1;
   }
+
   .section-card__tags {
-    display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-top: var(--sp-1);
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
   }
+
   .section-card__tag {
-    font-size: 0.65rem;
+    font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 0.15rem 0.45rem;
-    background: rgba(255,255,255,0.04);
-    color: var(--c-text-3);
-    border-radius: var(--r-full);
-    border: 1px solid rgba(255,255,255,0.06);
+    padding: 0.2rem 0.55rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: #94a3b8;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .section-card__arrow {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    padding: var(--sp-3) var(--sp-4);
-    border-top: 1px solid var(--c-border);
-    color: var(--c-text-3);
+    justify-content: space-between;
+    padding: 0.85rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
     transition: all 0.2s ease;
   }
+
   .section-card:hover .section-card__arrow {
-    color: var(--c-primary-light);
+    color: #facc15;
   }
+
   .section-card:hover .section-card__arrow svg {
-    transform: translateX(3px);
+    transform: translateX(4px);
     transition: transform 0.2s ease;
   }
 
-  @media (max-width: 768px) {
-    .sections-grid { grid-template-columns: 1fr; }
+  @media (max-width: 640px) {
+    .sections-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
