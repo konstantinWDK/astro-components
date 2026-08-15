@@ -310,7 +310,7 @@ const { href } = Astro.props;
     usage: `<MinimalListMarkers>Content</MinimalListMarkers>`,
   },
   {
-    slug: '3d-text-layer',
+    slug: 'text-3d-layer',
     name: '3D Stacked Text',
     description: 'Text layers that create a three-dimensional depth effect.',
     category: 'typography',
@@ -323,7 +323,7 @@ const { href } = Astro.props;
   @media (max-width: 768px) { .stack-3d { font-size: 2.5rem; } }
 </style>
 `,
-    usage: `<3dTextLayer>Content</3dTextLayer>`,
+    usage: `<Text3DLayer>3D TEXT</Text3DLayer>`,
   },
   {
     slug: 'gradient-underline-link',

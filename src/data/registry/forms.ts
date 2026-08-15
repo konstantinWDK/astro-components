@@ -1159,8 +1159,8 @@ const { label, id, name, checked = false } = Astro.props;
     usage: `<NeumorphicSwitch id="notify" label="Enable Notifications" checked />`,
   },
   {
-    slug: 'otpinput',
-    name: 'OTPInput',
+    slug: 'otp-input',
+    name: 'OTP Input',
     description: 'Professional form control.',
     category: 'forms',
     tags: ["form"],

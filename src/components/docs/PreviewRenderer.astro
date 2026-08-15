@@ -21,13 +21,25 @@ const { slug } = Astro.props;
 const componentMeta = getComponentBySlug(slug);
 const isButton = componentMeta?.category === 'buttons';
 
-// Dynamic lookup fallback
+// Dynamic lookup fallback with robust case/hyphen normalization
+const cleanSlug = slug.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 const pascalSlug = slug.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
 let DynamicComponent = null;
 
 // Use Object.keys for a safer loop
 const componentPaths = Object.keys(allComponents);
-const componentPath = componentPaths.find(path => path.endsWith(`/${pascalSlug}.astro`));
+const componentPath = componentPaths.find(path => {
+  const fileName = path.split('/').pop()?.replace('.astro', '') || '';
+  const cleanFileName = fileName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  return (
+    path.endsWith(`/${pascalSlug}.astro`) ||
+    cleanFileName === cleanSlug ||
+    cleanFileName.replace(/^threed/, '3d') === cleanSlug.replace(/^threed/, '3d') ||
+    fileName.toLowerCase() === slug.replace(/-/g, '').toLowerCase() ||
+    cleanFileName.replace('ui', '') === cleanSlug.replace('ui', '') ||
+    (slug.includes('3d') && (cleanFileName.includes('3d') || cleanFileName.includes('threed')))
+  );
+});
 
 if (componentPath) {
   DynamicComponent = (allComponents[componentPath] as any).default;

@@ -19,4 +19,4 @@ export { default as RetroShadowButton } from './RetroShadowButton.astro';
 export { default as ShimmerButton } from './ShimmerButton.astro';
 export { default as ShinyButton } from './ShinyButton.astro';
 export { default as TiltGlowButton } from './TiltGlowButton.astro';
-export { default as ThreeDPushButton } from './3dPushButton.astro';
+export { default as ThreeDPushButton } from './ThreeDPushButton.astro';
