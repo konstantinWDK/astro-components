@@ -244,8 +244,8 @@ const { className = '' } = Astro.props;
     const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const intersection = new THREE.Vector3();
 
-    const MOUSE_RADIUS = 2.0;
-    const MOUSE_FORCE = 1.2;
+    const MOUSE_RADIUS = 0.8;
+    const MOUSE_FORCE = 0.25;
 
     container.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -265,9 +265,9 @@ const { className = '' } = Astro.props;
       requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
 
-      // Smooth mouse interpolation
-      mouse.x += (targetMouse.x - mouse.x) * 0.08;
-      mouse.y += (targetMouse.y - mouse.y) * 0.08;
+      // Ultra-smooth mouse interpolation
+      mouse.x += (targetMouse.x - mouse.x) * 0.03;
+      mouse.y += (targetMouse.y - mouse.y) * 0.03;
 
       // Convert screen mouse to world coordinates
       mouseVec.set(mouse.x, mouse.y);
@@ -276,10 +276,10 @@ const { className = '' } = Astro.props;
       mouse.worldX = intersection.x;
       mouse.worldY = intersection.y;
 
-      // Rotate galaxy
-      galaxyPoints.rotation.y = elapsed * 0.04;
+      // Rotate galaxy gently
+      galaxyPoints.rotation.y = elapsed * 0.025;
 
-      // Animate galaxy particles with mouse interaction
+      // Animate galaxy particles with gentle mouse interaction
       const pos = galaxyGeometry.attributes.position.array;
       for (let i = 0; i < GALAXY_COUNT; i++) {
         const i3 = i * 3;
@@ -296,7 +296,7 @@ const { className = '' } = Astro.props;
         const baseZ = ox * sinR + oz * cosR;
         const baseY = oy;
 
-        // Mouse repulsion
+        // Subtle mouse deflection
         const dx = baseX - mouse.worldX;
         const dy = baseY - mouse.worldY;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -309,14 +309,14 @@ const { className = '' } = Astro.props;
           const ny = dy / dist;
           pushX = nx * force;
           pushY = ny * force;
-          pushZ = (nx * ny) * force * 0.3;
+          pushZ = (nx * ny) * force * 0.15;
         }
 
         const targetX = baseX + pushX;
         const targetY = baseY + pushY;
         const targetZ = baseZ + pushZ;
 
-        const spring = 0.06;
+        const spring = 0.03;
         pos[i3] += (targetX - pos[i3]) * spring;
         pos[i3 + 1] += (targetY - pos[i3 + 1]) * spring;
         pos[i3 + 2] += (targetZ - pos[i3 + 2]) * spring;
@@ -327,9 +327,9 @@ const { className = '' } = Astro.props;
       const dustPos = dustGeometry.attributes.position.array;
       for (let i = 0; i < DUST_COUNT; i++) {
         const i3 = i * 3;
-        dustPos[i3] += dustVelocities[i3] * 0.003 + Math.sin(elapsed * 0.5 + i) * 0.0002;
-        dustPos[i3 + 1] += dustVelocities[i3 + 1] * 0.003 + Math.cos(elapsed * 0.4 + i) * 0.0002;
-        dustPos[i3 + 2] += dustVelocities[i3 + 2] * 0.003;
+        dustPos[i3] += dustVelocities[i3] * 0.002 + Math.sin(elapsed * 0.3 + i) * 0.0001;
+        dustPos[i3 + 1] += dustVelocities[i3 + 1] * 0.002 + Math.cos(elapsed * 0.3 + i) * 0.0001;
+        dustPos[i3 + 2] += dustVelocities[i3 + 2] * 0.002;
 
         if (dustPos[i3] > 4) dustPos[i3] = -4;
         if (dustPos[i3] < -4) dustPos[i3] = 4;
@@ -339,17 +339,17 @@ const { className = '' } = Astro.props;
       dustGeometry.attributes.position.needsUpdate = true;
 
       // Central glow pulse
-      const pulseScale = 1 + Math.sin(elapsed * 1.5) * 0.08;
+      const pulseScale = 1 + Math.sin(elapsed * 1.2) * 0.04;
       glow.scale.set(pulseScale, pulseScale, pulseScale);
-      glowMat.opacity = 0.1 + Math.sin(elapsed * 1.5) * 0.03;
+      glowMat.opacity = 0.12 + Math.sin(elapsed * 1.2) * 0.02;
 
       // Ring rotation
-      ring.rotation.z = elapsed * 0.15;
-      ringMat.opacity = 0.05 + Math.sin(elapsed * 2) * 0.02;
+      ring.rotation.z = elapsed * 0.08;
+      ringMat.opacity = 0.06 + Math.sin(elapsed * 1.5) * 0.015;
 
-      // Camera mouse follow
-      camera.position.x += (mouse.x * 0.4 - camera.position.x) * 0.03;
-      camera.position.y += (mouse.y * 0.4 - camera.position.y) * 0.03;
+      // Gentle camera mouse parallax
+      camera.position.x += (mouse.x * 0.15 - camera.position.x) * 0.015;
+      camera.position.y += (mouse.y * 0.1 - camera.position.y) * 0.015;
       camera.lookAt(0, 0, 0);
 
       renderer.render(scene, camera);
