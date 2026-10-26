@@ -1,20 +1,16 @@
 ---
 // src/pages/sections/index.astro
 import DocsLayout from '../../layouts/DocsLayout.astro';
-import { sections } from '../../data/registry/sections';
+import { sections, sectionCategories, getSectionCategoryById } from '../../data/registry/sections';
 
 const allSections = sections;
 const subCategories = [
   { id: 'all', name: 'All Sections', count: allSections.length },
-  { id: 'hero', name: 'Heroes', count: allSections.filter(s => s.tags.includes('hero') || s.slug.startsWith('hero')).length },
-  { id: 'features', name: 'Features', count: allSections.filter(s => s.tags.includes('features') || s.slug.startsWith('feature')).length },
-  { id: 'pricing', name: 'Pricing', count: allSections.filter(s => s.tags.includes('pricing')).length },
-  { id: 'testimonials', name: 'Testimonials', count: allSections.filter(s => s.tags.includes('testimonials')).length },
-  { id: 'cta', name: 'Call to Action', count: allSections.filter(s => s.tags.includes('cta')).length },
-  { id: 'faq', name: 'FAQ', count: allSections.filter(s => s.tags.includes('faq')).length },
-  { id: 'stats', name: 'Stats', count: allSections.filter(s => s.tags.includes('stats')).length },
-  { id: 'team', name: 'Team', count: allSections.filter(s => s.tags.includes('team')).length },
-  { id: 'contact', name: 'Contact', count: allSections.filter(s => s.tags.includes('contact')).length },
+  ...sectionCategories.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    count: allSections.filter((s) => s.sectionCategory === cat.id).length,
+  })),
 ];
 ---
 
@@ -31,17 +27,17 @@ const subCategories = [
     <header class="sections-header">
       <span class="sections-header__badge">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-        {allSections.length} Production Sections
+        {allSections.length} Production Sections · {sectionCategories.length} Categories
       </span>
       <h1 class="sections-header__title">Complete Page Sections</h1>
       <p class="sections-header__desc">
         Full-page landing templates designed with glassmorphism, fluid typography, dark mode, and zero runtime dependencies.
-        Copy and paste directly into your Astro projects.
+        Organized by purpose: Heroes, Features, Pricing, Testimonials, CTAs, Stats, Team, FAQ, Contact, and Logos.
       </p>
     </header>
 
     <!-- Category Filter Tabs -->
-    <div class="category-filters" role="tablist" aria-label="Filter sections by type">
+    <div class="category-filters" role="tablist" aria-label="Filter sections by category">
       {subCategories.map((sub, i) => (
         <button 
           type="button" 
@@ -57,18 +53,21 @@ const subCategories = [
     <!-- Sections Grid -->
     <div class="sections-grid" id="sectionsGrid">
       {allSections.map((section) => {
+        const catInfo = getSectionCategoryById(section.sectionCategory || '');
+        const categoryLabel = catInfo ? catInfo.name : 'Section';
         const mainTag = section.tags[0] || 'section';
         return (
           <a 
             href={`/sections/${section.slug}`} 
             class="section-card" 
+            data-category={section.sectionCategory || ''}
             data-tags={section.tags.join(' ')}
             data-slug={section.slug}
           >
             <div class="section-card__preview">
               <div class="section-card__preview-inner">
                 <div class={`preview-art preview-art--${mainTag}`}>
-                  <span class="preview-tag">{mainTag.toUpperCase()}</span>
+                  <span class="preview-tag">{categoryLabel.toUpperCase()}</span>
                   <div class="preview-skeleton-box">
                     <div class="skel-line skel-line--title"></div>
                     <div class="skel-line skel-line--sub"></div>
@@ -82,6 +81,7 @@ const subCategories = [
             </div>
             <div class="section-card__content">
               <div class="section-card__meta">
+                <span class="section-card__cat-badge">{categoryLabel}</span>
                 <h3 class="section-card__name">{section.name}</h3>
               </div>
               <p class="section-card__desc">{section.description}</p>
@@ -114,10 +114,11 @@ const subCategories = [
       const filter = tab.getAttribute('data-filter');
 
       sectionCards.forEach((card) => {
+        const cat = card.getAttribute('data-category') || '';
         const tags = (card.getAttribute('data-tags') || '').toLowerCase();
         const slug = (card.getAttribute('data-slug') || '').toLowerCase();
 
-        if (filter === 'all' || tags.includes(filter!) || slug.includes(filter!)) {
+        if (filter === 'all' || cat === filter || tags.includes(filter!) || slug.includes(filter!)) {
           card.style.display = 'flex';
         } else {
           card.style.display = 'none';
@@ -321,6 +322,25 @@ const subCategories = [
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .section-card__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .section-card__cat-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--r-full);
   }
 
   .section-card__name {

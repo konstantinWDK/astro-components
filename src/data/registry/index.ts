@@ -8,11 +8,12 @@ import { layout } from './layout';
 import { overlays } from './overlays';
 import { data } from './data';
 import { typography } from './typography';
-import { sections } from './sections';
+import { sections, sectionCategories, getSectionsByCategory, getSectionCategoryById } from './sections';
 import { charts } from './charts';
 
-import { type ComponentDoc, type Category } from './types';
-export type { ComponentDoc, Category };
+import { type ComponentDoc, type Category, type SectionCategory } from './types';
+export type { ComponentDoc, Category, SectionCategory };
+export { sectionCategories, getSectionsByCategory, getSectionCategoryById };
 
 export const categories: Category[] = [
   { id: 'buttons', name: 'Buttons', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="12" cy="12" r="1"/></svg>`, description: 'Interactive button components with premium styles and animations.' },

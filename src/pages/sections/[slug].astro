@@ -2,7 +2,7 @@
 // src/pages/sections/[slug].astro
 import DocsLayout from '../../layouts/DocsLayout.astro';
 import CodeBlock from '../../components/docs/CodeBlock.astro';
-import { sections, getSectionBySlug } from '../../data/registry/sections';
+import { sections, getSectionBySlug, getSectionCategoryById } from '../../data/registry/sections';
 import { categories } from '../../data/registry/index';
 
 // Import all section components
@@ -36,7 +36,7 @@ if (!section) {
 }
 
 const category = categories.find((c) => c.id === section.category);
-const currentPath = `/sections/${slug}`;
+const sectionCategory = getSectionCategoryById(section.sectionCategory || '');
 
 const componentMap: Record<string, any> = {
   'hero-gradient': HeroGradient,
@@ -100,13 +100,19 @@ ${displayUsage}`;
       <a href="/">Home</a>
       <span class="breadcrumb__sep">›</span>
       <a href="/sections">Sections</a>
+      {sectionCategory && (
+        <>
+          <span class="breadcrumb__sep">›</span>
+          <span class="breadcrumb__current">{sectionCategory.name}</span>
+        </>
+      )}
       <span class="breadcrumb__sep">›</span>
       <span class="breadcrumb__current">{section.name}</span>
     </nav>
 
     <!-- Section header -->
     <header class="section-header">
-      <span class="section-header__badge">{category?.name}</span>
+      <span class="section-header__badge">{sectionCategory ? sectionCategory.name : (category?.name || 'Section')}</span>
       <h1 class="section-header__title">{section.name}</h1>
       <p class="section-header__desc">{section.description}</p>
       <div class="section-header__tags">

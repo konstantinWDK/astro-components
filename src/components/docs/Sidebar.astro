@@ -1,6 +1,6 @@
 ---
 // src/components/docs/Sidebar.astro
-import { components } from '../../data/registry/index';
+import { components, sectionCategories } from '../../data/registry/index';
 
 interface Props {
   categories: { id: string; name: string; icon: string; description: string }[];
@@ -51,23 +51,57 @@ categories.forEach((cat) => {
 
           <div class="sidebar__group-content">
             <div class="sidebar__group-content-inner">
-              <ul class="sidebar__list">
-                {catComponents.map((comp) => {
-                  const href = `${pathPrefix}/${comp.slug}`;
-                  const isActive = currentPath.replace(/\/$/, '') === href;
-                  return (
-                    <li class="sidebar__item" data-name={comp.name.toLowerCase()}>
-                      <a
-                        href={href}
-                        class:list={['sidebar__link', { 'sidebar__link--active': isActive }]}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        {comp.name}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
+              {isSections ? (
+                <div class="sidebar__subgroups">
+                  {sectionCategories.map((subCat) => {
+                    const subComps = catComponents.filter((c) => c.sectionCategory === subCat.id);
+                    if (subComps.length === 0) return null;
+                    return (
+                      <div class="sidebar__subgroup" data-subgroup={subCat.id}>
+                        <div class="sidebar__subgroup-title">
+                          <span class="sidebar__subgroup-name">{subCat.name}</span>
+                          <span class="sidebar__subgroup-count">{subComps.length}</span>
+                        </div>
+                        <ul class="sidebar__list sidebar__list--sub">
+                          {subComps.map((comp) => {
+                            const href = `${pathPrefix}/${comp.slug}`;
+                            const isActive = currentPath.replace(/\/$/, '') === href;
+                            return (
+                              <li class="sidebar__item" data-name={comp.name.toLowerCase()}>
+                                <a
+                                  href={href}
+                                  class:list={['sidebar__link', { 'sidebar__link--active': isActive }]}
+                                  aria-current={isActive ? 'page' : undefined}
+                                >
+                                  {comp.name}
+                                </a>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <ul class="sidebar__list">
+                  {catComponents.map((comp) => {
+                    const href = `${pathPrefix}/${comp.slug}`;
+                    const isActive = currentPath.replace(/\/$/, '') === href;
+                    return (
+                      <li class="sidebar__item" data-name={comp.name.toLowerCase()}>
+                        <a
+                          href={href}
+                          class:list={['sidebar__link', { 'sidebar__link--active': isActive }]}
+                          aria-current={isActive ? 'page' : undefined}
+                        >
+                          {comp.name}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
         </div>
@@ -177,6 +211,17 @@ categories.forEach((cat) => {
             item.style.display = visible ? '' : 'none';
             if (visible) hasVisible = true;
           });
+
+          // Manage subgroup headers if present
+          group.querySelectorAll('.sidebar__subgroup').forEach(function (subgroup) {
+            var items = subgroup.querySelectorAll('.sidebar__item');
+            var anyVisible = false;
+            items.forEach(function (it) {
+              if (it.style.display !== 'none') anyVisible = true;
+            });
+            subgroup.style.display = (query.length > 0 && !anyVisible) ? 'none' : '';
+          });
+
           if (query.length > 0) {
             group.style.display = hasVisible ? '' : 'none';
             if (hasVisible) {
@@ -185,6 +230,9 @@ categories.forEach((cat) => {
             }
           } else {
             group.style.display = '';
+            group.querySelectorAll('.sidebar__subgroup').forEach(function (subgroup) {
+              subgroup.style.display = '';
+            });
           }
         });
       });
@@ -354,6 +402,46 @@ categories.forEach((cat) => {
   }
   .sidebar__group-content-inner { min-height: 0; }
 
+  .sidebar__subgroups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: 0.25rem 0 0.5rem var(--sp-3);
+    margin-left: 0.7rem;
+    border-left: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .sidebar__subgroup {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar__subgroup-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem var(--sp-2);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-primary-light);
+    opacity: 0.85;
+  }
+
+  .sidebar__subgroup-name {
+    flex: 1;
+  }
+
+  .sidebar__subgroup-count {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--c-text-3);
+    background: rgba(255,255,255,0.05);
+    padding: 0.05rem 0.35rem;
+    border-radius: var(--r-full);
+  }
+
   .sidebar__list {
     list-style: none;
     padding: 0.2rem 0 0.75rem var(--sp-3);
@@ -362,6 +450,12 @@ categories.forEach((cat) => {
     flex-direction: column;
     gap: 1px;
     border-left: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .sidebar__list--sub {
+    margin-left: 0.25rem;
+    padding: 0.1rem 0 0.3rem var(--sp-2);
+    border-left: 1px dashed rgba(255,255,255,0.06);
   }
 
   .sidebar__link {

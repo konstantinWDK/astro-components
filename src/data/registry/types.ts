@@ -4,6 +4,7 @@ export interface ComponentDoc {
   name: string;
   description: string;
   category: string;
+  sectionCategory?: string;
   tags: string[];
   featured?: boolean;
   code: string;
@@ -19,4 +20,11 @@ export interface Category {
   name: string;
   icon: string;
   description: string;
+}
+
+export interface SectionCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
 }
