@@ -1,0 +1,145 @@
+---
+/**
+ * PhoneCountryInput — Accessible phone input with country dial code selector and dark glass styling.
+ * 
+ * @param {string} id - HTML ID for the phone input.
+ * @param {string} label - Input label text. Default is 'Phone Number'.
+ * @param {string} name - Form field name. Default is 'phone'.
+ * @param {string} placeholder - Phone placeholder. Default is '612 345 678'.
+ * @param {boolean} required - HTML required field attribute.
+ */
+interface Props {
+  id: string;
+  label?: string;
+  name?: string;
+  placeholder?: string;
+  required?: boolean;
+}
+
+const {
+  id = 'phone-number-input',
+  label = 'Phone Number',
+  name = 'phone',
+  placeholder = '612 345 678',
+  required = false,
+} = Astro.props;
+
+const countries = [
+  { code: '+34', flag: '🇪🇸', name: 'ES' },
+  { code: '+1', flag: '🇺🇸', name: 'US' },
+  { code: '+44', flag: '🇬🇧', name: 'UK' },
+  { code: '+49', flag: '🇩🇪', name: 'DE' },
+  { code: '+33', flag: '🇫🇷', name: 'FR' },
+  { code: '+52', flag: '🇲🇽', name: 'MX' },
+  { code: '+54', flag: '🇦🇷', name: 'AR' },
+];
+---
+
+<div class="phone-group">
+  <label for={id} class="phone-group__label">{label}</label>
+
+  <div class="phone-group__wrap">
+    <div class="phone-group__prefix">
+      <select class="phone-group__select" aria-label="Country calling code" name={`${name}_country`}>
+        {countries.map((c) => (
+          <option value={c.code}>
+            {c.flag} {c.code}
+          </option>
+        ))}
+      </select>
+      <span class="phone-group__arrow" aria-hidden="true">▾</span>
+    </div>
+
+    <input
+      type="tel"
+      id={id}
+      name={name}
+      placeholder={placeholder}
+      required={required}
+      class="phone-group__input"
+      autocomplete="tel-national"
+    />
+  </div>
+</div>
+
+<style>
+  .phone-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    max-width: 380px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .phone-group__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .phone-group__wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 12px);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .phone-group__wrap:focus-within {
+    border-color: rgba(184, 134, 11, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+  }
+
+  .phone-group__prefix {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .phone-group__select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 0.75rem 1.6rem 0.75rem 0.85rem;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .phone-group__select option {
+    background: #111116;
+    color: #ffffff;
+  }
+
+  .phone-group__arrow {
+    position: absolute;
+    right: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--c-text-3, #737373);
+    pointer-events: none;
+  }
+
+  .phone-group__input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 0.75rem 1rem;
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.92rem;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .phone-group__input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+</style>

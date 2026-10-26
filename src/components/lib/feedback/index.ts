@@ -21,3 +21,5 @@ export { default as Spotlight } from './Spotlight.astro';
 export { default as StepProgress } from './StepProgress.astro';
 export { default as ToastNotif } from './ToastNotif.astro';
 export { default as TypingIndicator } from './TypingIndicator.astro';
+export { default as ProgressRingCounter } from './ProgressRingCounter.astro';
+export { default as ToastNotificationGroup } from './ToastNotificationGroup.astro';

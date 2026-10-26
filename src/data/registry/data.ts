@@ -521,4 +521,466 @@ export const data: ComponentDoc[] = [
 `,
     usage: `<GanttChartMinimal>Content</GanttChartMinimal>`,
   },
+  {
+    slug: 'metric-comparison-row',
+    name: 'Metric Comparison Row',
+    description: 'Compact horizontal metric row comparing Current vs Previous periods or A/B performance with ratio progress bars.',
+    category: 'data',
+    tags: ["data","metric","comparison","kpi","analytics"],
+    featured: true,
+    code: `---
+/**
+ * MetricComparisonRow — Horizontal gauge comparing actual performance vs target benchmark with percentage badge.
+ * 
+ * @param {string} title - Benchmark description (e.g. 'Monthly Revenue Target').
+ * @param {number} current - Current numeric value figure.
+ * @param {number} target - Goal target value.
+ * @param {string} unit - Unit prefix or suffix (e.g. '$', 'ms', 'users'). Default is '$'.
+ * @param {string} color - Progress bar accent color. Default is '#d4a017'.
+ */
+interface Props {
+  title: string;
+  current: number;
+  target: number;
+  unit?: string;
+  color?: string;
+}
+
+const {
+  title,
+  current,
+  target,
+  unit = '$',
+  color = '#d4a017',
+} = Astro.props;
+
+const percent = Math.min(100, Math.round((current / target) * 100));
+---
+
+<div class="metric-row" style={\`--metric-accent: \${color};\`}>
+  <div class="metric-row__header">
+    <div class="metric-row__title-wrap">
+      <h5 class="metric-row__title">{title}</h5>
+      <span class="metric-row__ratio">{unit}{current.toLocaleString()} of {unit}{target.toLocaleString()}</span>
+    </div>
+    <span class="metric-row__badge">{percent}%</span>
+  </div>
+
+  <div class="metric-row__track" role="progressbar" aria-valuenow={current} aria-valuemax={target} aria-valuemin="0">
+    <div class="metric-row__fill" style={\`width: \${percent}%;\`}></div>
+  </div>
+</div>
+
+<style>
+  .metric-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 440px;
+    padding: var(--sp-4, 1rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-md, 14px);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .metric-row__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .metric-row__title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .metric-row__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .metric-row__ratio {
+    font-size: 0.75rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .metric-row__badge {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--metric-accent);
+    background: rgba(184, 134, 11, 0.12);
+    border: 1px solid rgba(184, 134, 11, 0.3);
+    padding: 2px 8px;
+    border-radius: var(--r-full, 9999px);
+  }
+
+  .metric-row__track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-full, 9999px);
+    overflow: hidden;
+  }
+
+  .metric-row__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #b8860b, var(--metric-accent));
+    border-radius: inherit;
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.4);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+</style>
+`,
+    usage: `<MetricComparisonRow label="Conversion Rate" currentValue="4.82%" previousValue="3.15%" change="+53.0%" />`,
+  },
+  {
+    slug: 'activity-heatmap-grid',
+    name: 'Activity Heatmap Grid',
+    description: 'GitHub-styled commit/activity frequency matrix visualizing contribution density across days and weeks.',
+    category: 'data',
+    tags: ["data","heatmap","activity","github","matrix"],
+    featured: true,
+    code: `---
+/**
+ * ActivityHeatmapGrid — GitHub-style activity contribution matrix with intensity color levels and month labels.
+ * 
+ * @param {string} title - Section header label. Default is 'Commit Activity'.
+ * @param {number} totalCount - Total activity events recorded. Default is 1428.
+ */
+interface Props {
+  title?: string;
+  totalCount?: number;
+}
+
+const {
+  title = 'Contribution Activity',
+  totalCount = 1428,
+} = Astro.props;
+
+// Mock 16 weeks of 7 days
+const weeks = Array.from({ length: 16 }, (_, w) =>
+  Array.from({ length: 7 }, (_, d) => {
+    // Generate pseudo-random intensity 0 to 4
+    const seed = (w * 7 + d * 13 + 5) % 17;
+    if (seed < 4) return 0;
+    if (seed < 8) return 1;
+    if (seed < 12) return 2;
+    if (seed < 15) return 3;
+    return 4;
+  })
+);
+
+const months = ['Jul', 'Aug', 'Sep', 'Oct'];
+---
+
+<div class="heatmap-card">
+  <div class="heatmap-card__head">
+    <div class="heatmap-card__title-wrap">
+      <h5 class="heatmap-card__title">{title}</h5>
+      <span class="heatmap-card__total">{totalCount.toLocaleString()} events in the last 4 months</span>
+    </div>
+
+    <div class="heatmap-card__legend" aria-hidden="true">
+      <span class="legend-text">Less</span>
+      <span class="cell cell--0"></span>
+      <span class="cell cell--1"></span>
+      <span class="cell cell--2"></span>
+      <span class="cell cell--3"></span>
+      <span class="cell cell--4"></span>
+      <span class="legend-text">More</span>
+    </div>
+  </div>
+
+  <div class="heatmap-card__matrix">
+    <div class="heatmap-card__months">
+      {months.map((m) => (
+        <span class="month-label">{m}</span>
+      ))}
+    </div>
+
+    <div class="heatmap-card__grid">
+      {weeks.map((week) => (
+        <div class="heatmap-col">
+          {week.map((level) => (
+            <span class:list={['cell', \`cell--\${level}\`]}></span>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .heatmap-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    width: 100%;
+    max-width: 480px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .heatmap-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .heatmap-card__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0 0 2px 0;
+  }
+
+  .heatmap-card__total {
+    font-size: 0.75rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .heatmap-card__legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .heatmap-card__matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .heatmap-card__months {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+    font-size: 0.68rem;
+    color: var(--c-text-3, #737373);
+    font-weight: 600;
+  }
+
+  .heatmap-card__grid {
+    display: flex;
+    gap: 4px;
+  }
+
+  .heatmap-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    transition: transform 0.15s ease;
+  }
+
+  .heatmap-card__grid .cell:hover {
+    transform: scale(1.3);
+  }
+
+  .cell--0 { background: rgba(255, 255, 255, 0.05); }
+  .cell--1 { background: rgba(184, 134, 11, 0.25); }
+  .cell--2 { background: rgba(184, 134, 11, 0.55); }
+  .cell--3 { background: rgba(212, 160, 23, 0.85); }
+  .cell--4 { background: #fef3c7; box-shadow: 0 0 6px rgba(254, 243, 199, 0.6); }
+</style>
+`,
+    usage: `<ActivityHeatmapGrid title="Contribution Activity" weeks={16} />`,
+  },
+  {
+    slug: 'status-timeline-feed',
+    name: 'Status Timeline Feed',
+    description: 'Rich operational audit and incident log timeline feed with status color badges, author tags, and relative timestamps.',
+    category: 'data',
+    tags: ["data","timeline","status","audit","feed"],
+    featured: false,
+    code: `---
+/**
+ * StatusTimelineFeed — Chronological event audit feed with status icons, timestamps, and detail lines.
+ * 
+ * @param {Array<{title: string, desc: string, time: string, status: 'done' | 'active' | 'pending'}>} events - Timeline events.
+ */
+interface Props {
+  events?: Array<{
+    title: string;
+    desc: string;
+    time: string;
+    status: 'done' | 'active' | 'pending';
+  }>;
+}
+
+const {
+  events = [
+    {
+      title: 'Production Deployment #104',
+      desc: 'Container vtzmu4t7 synchronized with latest Git commit.',
+      time: 'Just now',
+      status: 'done',
+    },
+    {
+      title: 'Automated Playwright Audits',
+      desc: 'All 214 pages verified with 0 visual regressions.',
+      time: '12 mins ago',
+      status: 'done',
+    },
+    {
+      title: 'Edge Cache Invalidation',
+      desc: 'Purging stale Cloudflare and Traefik edge routes.',
+      time: 'In progress',
+      status: 'active',
+    },
+    {
+      title: 'Global CDN Replication',
+      desc: 'Waiting for European and US west points of presence.',
+      time: 'Queued',
+      status: 'pending',
+    },
+  ],
+} = Astro.props;
+---
+
+<div class="status-feed">
+  <div class="status-feed__line" aria-hidden="true"></div>
+  {events.map((evt) => (
+    <div class:list={['status-feed__item', \`status-feed__item--\${evt.status}\`]}>
+      <div class="status-feed__bullet">
+        {evt.status === 'done' && '✓'}
+        {evt.status === 'active' && '●'}
+        {evt.status === 'pending' && '○'}
+      </div>
+      <div class="status-feed__content">
+        <div class="status-feed__header">
+          <h5 class="status-feed__title">{evt.title}</h5>
+          <span class="status-feed__time">{evt.time}</span>
+        </div>
+        <p class="status-feed__desc">{evt.desc}</p>
+      </div>
+    </div>
+  ))}
+</div>
+
+<style>
+  .status-feed {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 440px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    padding: 4px 0;
+  }
+
+  .status-feed__line {
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 12px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+  }
+
+  .status-feed__item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .status-feed__bullet {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #0a0a0e;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.75rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    color: var(--c-text-3, #737373);
+  }
+
+  .status-feed__item--done .status-feed__bullet {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .status-feed__item--active .status-feed__bullet {
+    background: rgba(212, 160, 23, 0.2);
+    border-color: var(--c-primary-light, #d4a017);
+    color: var(--c-primary-light, #d4a017);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
+    animation: status-pulse 2s infinite ease-in-out;
+  }
+
+  .status-feed__content {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-md, 12px);
+    transition: border-color 0.2s ease;
+  }
+
+  .status-feed__content:hover {
+    border-color: rgba(184, 134, 11, 0.3);
+  }
+
+  .status-feed__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  .status-feed__title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .status-feed__time {
+    font-size: 0.7rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .status-feed__desc {
+    font-size: 0.78rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  @keyframes status-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+</style>
+`,
+    usage: `<StatusTimelineFeed events={[{ title: 'Deployment Success', timestamp: '10m ago', status: 'success', description: 'Production bundle compiled with 0 errors.' }]} />`,
+  },
 ];

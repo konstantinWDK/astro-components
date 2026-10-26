@@ -1,0 +1,249 @@
+---
+/**
+ * TagsAutocompleteInput — Tag entry field with pill badges, keyboard deletion, and suggestion dropdown.
+ * 
+ * @param {string} id - HTML ID for the tag input.
+ * @param {string} label - Input label. Default is 'Tags'.
+ * @param {string[]} initialTags - Pre-populated list of tags. Default is ['Astro', 'TypeScript'].
+ * @param {string[]} suggestions - Autocomplete candidate options.
+ * @param {string} placeholder - Input placeholder. Default is 'Add tag & press Enter...'.
+ */
+interface Props {
+  id: string;
+  label?: string;
+  initialTags?: string[];
+  suggestions?: string[];
+  placeholder?: string;
+}
+
+const {
+  id = 'tags-autocomplete',
+  label = 'Tags',
+  initialTags = ['Astro', 'TypeScript'],
+  suggestions = ['React', 'Tailwind', 'Three.js', 'SSR', 'Vite', 'GraphQL'],
+  placeholder = 'Add tag & press Enter...',
+} = Astro.props;
+---
+
+<div class="tags-field" data-tags-root>
+  <label for={id} class="tags-field__label">{label}</label>
+
+  <div class="tags-field__box" data-tags-box>
+    <div class="tags-field__list" data-tags-list>
+      {initialTags.map((tag) => (
+        <span class="tag-pill" data-tag={tag}>
+          <span class="tag-pill__name">{tag}</span>
+          <button type="button" class="tag-pill__remove" aria-label={`Remove tag ${tag}`} data-tag-remove>×</button>
+        </span>
+      ))}
+    </div>
+
+    <input
+      type="text"
+      id={id}
+      placeholder={placeholder}
+      class="tags-field__input"
+      data-tags-input
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="tags-field__suggestions" data-tags-suggestions hidden>
+    {suggestions.map((sug) => (
+      <button type="button" class="sug-item" data-sug-val={sug}>
+        + {sug}
+      </button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .tags-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    max-width: 440px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    position: relative;
+  }
+
+  .tags-field__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .tags-field__box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 12px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-height: 44px;
+  }
+
+  .tags-field__box:focus-within {
+    border-color: rgba(184, 134, 11, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+  }
+
+  .tags-field__list {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.65rem;
+    background: rgba(184, 134, 11, 0.15);
+    border: 1px solid rgba(184, 134, 11, 0.35);
+    border-radius: var(--r-full, 9999px);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-accent, #fef3c7);
+    user-select: none;
+    animation: pill-pop 0.2s ease-out;
+  }
+
+  @keyframes pill-pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .tag-pill__remove {
+    background: transparent;
+    border: none;
+    color: var(--c-accent, #fef3c7);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .tag-pill__remove:hover {
+    opacity: 1;
+    color: #ef4444;
+  }
+
+  .tags-field__input {
+    flex: 1;
+    min-width: 140px;
+    background: transparent;
+    border: none;
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.88rem;
+    outline: none;
+    padding: 0.2rem 0;
+  }
+
+  .tags-field__input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .tags-field__suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 0.4rem;
+    background: rgba(12, 12, 16, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-sm, 8px);
+  }
+
+  .sug-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-full, 9999px);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .sug-item:hover {
+    background: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--c-text-1, #ffffff);
+  }
+</style>
+
+<script>
+  function setupTagsFields() {
+    document.querySelectorAll('[data-tags-root]').forEach((root) => {
+      const input = root.querySelector('[data-tags-input]') as HTMLInputElement;
+      const list = root.querySelector('[data-tags-list]') as HTMLElement;
+      const suggestions = root.querySelector('[data-tags-suggestions]') as HTMLElement;
+      if (!input || !list) return;
+
+      function addTag(text: string) {
+        const clean = text.trim();
+        if (!clean) return;
+
+        // Check duplicate
+        const exists = Array.from(list.querySelectorAll('.tag-pill__name')).some(
+          (el) => el.textContent?.toLowerCase() === clean.toLowerCase()
+        );
+        if (exists) return;
+
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill';
+        pill.setAttribute('data-tag', clean);
+        pill.innerHTML = `
+          <span class="tag-pill__name">${clean}</span>
+          <button type="button" class="tag-pill__remove" aria-label="Remove tag ${clean}" data-tag-remove>×</button>
+        `;
+        list.appendChild(pill);
+        input.value = '';
+      }
+
+      list.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.matches('[data-tag-remove]')) {
+          const pill = target.closest('.tag-pill');
+          if (pill) pill.remove();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          addTag(input.value);
+        } else if (e.key === 'Backspace' && !input.value) {
+          const last = list.querySelector('.tag-pill:last-child');
+          if (last) last.remove();
+        }
+      });
+
+      input.addEventListener('focus', () => {
+        if (suggestions) suggestions.hidden = false;
+      });
+
+      if (suggestions) {
+        suggestions.addEventListener('click', (e) => {
+          const btn = (e.target as HTMLElement).closest('[data-sug-val]') as HTMLElement;
+          if (btn) {
+            const val = btn.getAttribute('data-sug-val');
+            if (val) addTag(val);
+          }
+        });
+      }
+    });
+  }
+
+  setupTagsFields();
+  document.addEventListener('astro:page-load', setupTagsFields);
+</script>

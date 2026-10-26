@@ -21,3 +21,8 @@ export { default as SearchReveal } from './SearchReveal.astro';
 export { default as SegmentedControl } from './SegmentedControl.astro';
 export { default as SimpleFileInput } from './SimpleFileInput.astro';
 export { default as StepperInput } from './StepperInput.astro';
+export { default as GlassInlineToggleGroup } from './GlassInlineToggleGroup.astro';
+export { default as PasswordStrengthInput } from './PasswordStrengthInput.astro';
+export { default as PhoneCountryInput } from './PhoneCountryInput.astro';
+export { default as TagsAutocompleteInput } from './TagsAutocompleteInput.astro';
+

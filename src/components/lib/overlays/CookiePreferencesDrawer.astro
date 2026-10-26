@@ -1,0 +1,226 @@
+---
+/**
+ * CookiePreferencesDrawer — GDPR/CCPA consent drawer with frosted glass styling and category toggles.
+ * 
+ * @param {string} title - Header text. Default is 'Privacy Preferences'.
+ * @param {string} description - Explanation text for user privacy consent.
+ */
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Privacy & Cookie Settings',
+  description = 'We use cookies and telemetry to improve performance, analyze usage, and customize your experience.',
+} = Astro.props;
+
+const categories = [
+  { id: 'necessary', name: 'Strictly Necessary', desc: 'Required for core authentication and security.', locked: true },
+  { id: 'analytics', name: 'Performance & Analytics', desc: 'Anonymous traffic data to improve component reliability.', locked: false },
+  { id: 'marketing', name: 'Targeted Experience', desc: 'Personalized recommendations based on library interactions.', locked: false },
+];
+---
+
+<aside class="cookie-drawer" role="dialog" aria-modal="true" aria-label={title} data-cookie-drawer>
+  <div class="cookie-drawer__header">
+    <div class="cookie-drawer__icon">🍪</div>
+    <div class="cookie-drawer__titles">
+      <h4 class="cookie-drawer__title">{title}</h4>
+      <p class="cookie-drawer__desc">{description}</p>
+    </div>
+  </div>
+
+  <div class="cookie-drawer__categories">
+    {categories.map((cat) => (
+      <div class="cookie-cat">
+        <div class="cookie-cat__info">
+          <span class="cookie-cat__name">{cat.name}</span>
+          <span class="cookie-cat__desc">{cat.desc}</span>
+        </div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            checked={cat.locked}
+            disabled={cat.locked}
+            name={cat.id}
+          />
+          <span class="slider"></span>
+        </label>
+      </div>
+    ))}
+  </div>
+
+  <div class="cookie-drawer__actions">
+    <button type="button" class="btn btn--secondary" data-cookie-reject>Reject All</button>
+    <button type="button" class="btn btn--primary" data-cookie-accept>Accept Selected</button>
+  </div>
+</aside>
+
+<style>
+  .cookie-drawer {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    max-width: 520px;
+    z-index: 100;
+    margin: 0 auto;
+    padding: 1.4rem;
+    background: rgba(12, 12, 16, 0.94);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--r-xl, 24px);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .cookie-drawer__header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .cookie-drawer__icon {
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+
+  .cookie-drawer__title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--c-text-1, #ffffff);
+    margin: 0 0 4px 0;
+  }
+
+  .cookie-drawer__desc {
+    font-size: 0.8rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .cookie-drawer__categories {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .cookie-cat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cookie-cat__name {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .cookie-cat__desc {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  /* Switch toggle */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 34px;
+    transition: 0.25s;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.25s;
+  }
+  input:checked + .slider {
+    background-color: var(--c-primary-light, #d4a017);
+  }
+  input:checked + .slider:before {
+    transform: translateX(16px);
+  }
+  input:disabled + .slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .cookie-drawer__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .btn {
+    padding: 0.55rem 1.2rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border-radius: var(--r-md, 10px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn--secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .btn--secondary:hover {
+    color: var(--c-text-1, #ffffff);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn--primary {
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    border: none;
+    color: #050505;
+    box-shadow: 0 4px 14px rgba(184, 134, 11, 0.35);
+  }
+  .btn--primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.45);
+  }
+</style>
+
+<script>
+  function setupCookieDrawers() {
+    document.querySelectorAll('[data-cookie-drawer]').forEach((drawer) => {
+      const dismiss = () => {
+        (drawer as HTMLElement).style.transform = 'translateY(120%)';
+        (drawer as HTMLElement).style.opacity = '0';
+        setTimeout(() => drawer.remove(), 350);
+      };
+
+      drawer.querySelector('[data-cookie-reject]')?.addEventListener('click', dismiss);
+      drawer.querySelector('[data-cookie-accept]')?.addEventListener('click', dismiss);
+    });
+  }
+
+  setupCookieDrawers();
+  document.addEventListener('astro:page-load', setupCookieDrawers);
+</script>

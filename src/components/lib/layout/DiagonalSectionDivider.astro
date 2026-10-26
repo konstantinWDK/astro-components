@@ -1,0 +1,69 @@
+---
+/**
+ * DiagonalSectionDivider — Angled SVG/clip-path section divider creating fluid diagonal page transitions.
+ * 
+ * @param {'top' | 'bottom'} position - Attachment position. Default is 'bottom'.
+ * @param {'left-to-right' | 'right-to-left'} direction - Slant angle direction. Default is 'left-to-right'.
+ * @param {string} height - Height of the diagonal incline in pixels. Default is '60px'.
+ * @param {string} fillColor - Fill color for the divider polygon. Default is '#050505'.
+ */
+interface Props {
+  position?: 'top' | 'bottom';
+  direction?: 'left-to-right' | 'right-to-left';
+  height?: string;
+  fillColor?: string;
+}
+
+const {
+  position = 'bottom',
+  direction = 'left-to-right',
+  height = '60px',
+  fillColor = '#050505',
+} = Astro.props;
+
+const isLtr = direction === 'left-to-right';
+const points = isLtr
+  ? position === 'bottom' ? '0,100 100,0 100,100' : '0,0 100,0 100,100'
+  : position === 'bottom' ? '0,0 0,100 100,100' : '0,0 100,0 0,100';
+---
+
+<div
+  class:list={['diagonal-divider', `diagonal-divider--${position}`]}
+  style={`--div-height: ${height}; --div-color: ${fillColor};`}
+  aria-hidden="true"
+>
+  <svg
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    class="diagonal-divider__svg"
+  >
+    <polygon points={points} fill={fillColor} />
+  </svg>
+</div>
+
+<style>
+  .diagonal-divider {
+    position: relative;
+    width: 100%;
+    height: var(--div-height);
+    overflow: hidden;
+    line-height: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .diagonal-divider--bottom {
+    margin-bottom: calc(-1 * var(--div-height));
+  }
+
+  .diagonal-divider--top {
+    margin-top: calc(-1 * var(--div-height));
+  }
+
+  .diagonal-divider__svg {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>

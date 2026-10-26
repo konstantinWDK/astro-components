@@ -21,3 +21,6 @@ export { default as SimpleFooterGlass } from './SimpleFooterGlass.astro';
 export { default as TabUnderline } from './TabUnderline.astro';
 export { default as UserProfileNav } from './UserProfileNav.astro';
 export { default as VerticalTabs } from './VerticalTabs.astro';
+export { default as SubNavbarPills } from './SubNavbarPills.astro';
+export { default as QuickJumpDock } from './QuickJumpDock.astro';
+export { default as StepBreadcrumbBar } from './StepBreadcrumbBar.astro';

@@ -21,3 +21,7 @@ export { default as ShadowRevealText } from './ShadowRevealText.astro';
 export { default as StrokeHeadingOutline } from './StrokeHeadingOutline.astro';
 export { default as Text3DLayer } from './Text3DLayer.astro';
 export { default as TypewriterText } from './TypewriterText.astro';
+export { default as AnimatedCounterText } from './AnimatedCounterText.astro';
+export { default as GradientTextMarquee } from './GradientTextMarquee.astro';
+export { default as CurvedPathHeading } from './CurvedPathHeading.astro';
+export { default as HackerDecodeText } from './HackerDecodeText.astro';

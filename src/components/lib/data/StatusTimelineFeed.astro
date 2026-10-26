@@ -1,0 +1,168 @@
+---
+/**
+ * StatusTimelineFeed — Chronological event audit feed with status icons, timestamps, and detail lines.
+ * 
+ * @param {Array<{title: string, desc: string, time: string, status: 'done' | 'active' | 'pending'}>} events - Timeline events.
+ */
+interface Props {
+  events?: Array<{
+    title: string;
+    desc: string;
+    time: string;
+    status: 'done' | 'active' | 'pending';
+  }>;
+}
+
+const {
+  events = [
+    {
+      title: 'Production Deployment #104',
+      desc: 'Container vtzmu4t7 synchronized with latest Git commit.',
+      time: 'Just now',
+      status: 'done',
+    },
+    {
+      title: 'Automated Playwright Audits',
+      desc: 'All 214 pages verified with 0 visual regressions.',
+      time: '12 mins ago',
+      status: 'done',
+    },
+    {
+      title: 'Edge Cache Invalidation',
+      desc: 'Purging stale Cloudflare and Traefik edge routes.',
+      time: 'In progress',
+      status: 'active',
+    },
+    {
+      title: 'Global CDN Replication',
+      desc: 'Waiting for European and US west points of presence.',
+      time: 'Queued',
+      status: 'pending',
+    },
+  ],
+} = Astro.props;
+---
+
+<div class="status-feed">
+  <div class="status-feed__line" aria-hidden="true"></div>
+  {events.map((evt) => (
+    <div class:list={['status-feed__item', `status-feed__item--${evt.status}`]}>
+      <div class="status-feed__bullet">
+        {evt.status === 'done' && '✓'}
+        {evt.status === 'active' && '●'}
+        {evt.status === 'pending' && '○'}
+      </div>
+      <div class="status-feed__content">
+        <div class="status-feed__header">
+          <h5 class="status-feed__title">{evt.title}</h5>
+          <span class="status-feed__time">{evt.time}</span>
+        </div>
+        <p class="status-feed__desc">{evt.desc}</p>
+      </div>
+    </div>
+  ))}
+</div>
+
+<style>
+  .status-feed {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 440px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    padding: 4px 0;
+  }
+
+  .status-feed__line {
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 12px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+  }
+
+  .status-feed__item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .status-feed__bullet {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #0a0a0e;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.75rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    color: var(--c-text-3, #737373);
+  }
+
+  .status-feed__item--done .status-feed__bullet {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .status-feed__item--active .status-feed__bullet {
+    background: rgba(212, 160, 23, 0.2);
+    border-color: var(--c-primary-light, #d4a017);
+    color: var(--c-primary-light, #d4a017);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
+    animation: status-pulse 2s infinite ease-in-out;
+  }
+
+  .status-feed__content {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-md, 12px);
+    transition: border-color 0.2s ease;
+  }
+
+  .status-feed__content:hover {
+    border-color: rgba(184, 134, 11, 0.3);
+  }
+
+  .status-feed__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  .status-feed__title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .status-feed__time {
+    font-size: 0.7rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .status-feed__desc {
+    font-size: 0.78rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  @keyframes status-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+</style>

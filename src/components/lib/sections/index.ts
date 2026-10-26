@@ -26,3 +26,6 @@ export { default as FaqAccordionSection } from './FaqAccordionSection.astro';
 export { default as StatsMetricShowcase } from './StatsMetricShowcase.astro';
 export { default as TeamGridSection } from './TeamGridSection.astro';
 export { default as ContactGlassForm } from './ContactGlassForm.astro';
+export { default as TestimonialGridSection } from './TestimonialGridSection.astro';
+export { default as LogoCloudSection } from './LogoCloudSection.astro';
+export { default as HeroShowcaseSplit } from './HeroShowcaseSplit.astro';

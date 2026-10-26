@@ -20,3 +20,6 @@ export { default as StatCard } from './StatCard.astro';
 export { default as TaskKanbanCard } from './TaskKanbanCard.astro';
 export { default as TestimonialCardClean } from './TestimonialCardClean.astro';
 export { default as WeatherWidgetCard } from './WeatherWidgetCard.astro';
+export { default as PricingCompareMiniCard } from './PricingCompareMiniCard.astro';
+export { default as GithubRepoCard } from './GithubRepoCard.astro';
+export { default as StatsTrendCard } from './StatsTrendCard.astro';

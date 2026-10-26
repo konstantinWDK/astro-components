@@ -1,0 +1,151 @@
+---
+/**
+ * StepBreadcrumbBar — Stepped workflow breadcrumb indicator for checkout, multi-step forms, or wizards.
+ * 
+ * @param {Array<{step: number, label: string, status: 'complete' | 'active' | 'upcoming', href?: string}>} steps - Step definitions.
+ */
+interface Props {
+  steps?: Array<{
+    step: number;
+    label: string;
+    status: 'complete' | 'active' | 'upcoming';
+    href?: string;
+  }>;
+}
+
+const {
+  steps = [
+    { step: 1, label: 'Account', status: 'complete', href: '#step-1' },
+    { step: 2, label: 'Plan & Billing', status: 'active', href: '#step-2' },
+    { step: 3, label: 'Preferences', status: 'upcoming', href: '#step-3' },
+    { step: 4, label: 'Review', status: 'upcoming', href: '#step-4' },
+  ],
+} = Astro.props;
+---
+
+<nav class="step-nav" aria-label="Workflow progress">
+  <ol class="step-nav__list">
+    {steps.map((st, i) => (
+      <li class:list={['step-nav__item', `step-nav__item--${st.status}`]}>
+        <a href={st.href || '#'} class="step-nav__link" aria-current={st.status === 'active' ? 'step' : undefined}>
+          <span class="step-nav__circle">
+            {st.status === 'complete' ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              st.step
+            )}
+          </span>
+          <span class="step-nav__label">{st.label}</span>
+        </a>
+        {i < steps.length - 1 && (
+          <div class="step-nav__line" aria-hidden="true"></div>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  .step-nav {
+    width: 100%;
+    max-width: 680px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .step-nav__list {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+
+  .step-nav__item {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+
+  .step-nav__item:last-child {
+    flex: 0 0 auto;
+  }
+
+  .step-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--c-text-3, #737373);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .step-nav__link:hover {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .step-nav__circle {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+  }
+
+  /* Status modifiers */
+  .step-nav__item--complete .step-nav__circle {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .step-nav__item--complete .step-nav__label {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .step-nav__item--active .step-nav__circle {
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    border-color: #d4a017;
+    color: #050505;
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.4);
+  }
+
+  .step-nav__item--active .step-nav__label {
+    color: var(--c-primary-light, #d4a017);
+    font-weight: 700;
+  }
+
+  .step-nav__line {
+    flex: 1;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0 12px;
+  }
+
+  .step-nav__item--complete .step-nav__line {
+    background: #10b981;
+    opacity: 0.5;
+  }
+
+  @media (max-width: 640px) {
+    .step-nav__label {
+      display: none;
+    }
+    .step-nav__line {
+      margin: 0 6px;
+    }
+  }
+</style>

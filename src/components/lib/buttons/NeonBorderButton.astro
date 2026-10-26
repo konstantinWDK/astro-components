@@ -1,0 +1,162 @@
+---
+/**
+ * NeonBorderButton — Futuristic button wrapped in an animated rotating neon conic-gradient border.
+ * 
+ * @param {string} color - Primary neon hue (e.g. '#fbbf24', '#38bdf8', '#a855f7'). Default is '#d4a017'.
+ * @param {'sm' | 'md' | 'lg'} size - Button size variant. Default is 'md'.
+ * @param {string} href - Optional link destination.
+ * @param {boolean} disabled - Whether the button is disabled.
+ * @param {string} className - Additional CSS class names.
+ */
+interface Props {
+  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+const {
+  color = '#d4a017',
+  size = 'md',
+  href,
+  disabled = false,
+  className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={['neon-border-btn', `neon-border-btn--${size}`, className]}
+  style={`--neon-accent: ${color};`}
+>
+  <span class="neon-border-btn__glow" aria-hidden="true"></span>
+  <span class="neon-border-btn__border" aria-hidden="true"></span>
+  <span class="neon-border-btn__content">
+    <slot />
+  </span>
+</Tag>
+
+<style>
+  .neon-border-btn {
+    --neon-speed: 4s;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    border-radius: var(--r-md, 12px);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.25s ease;
+  }
+
+  .neon-border-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .neon-border-btn:focus-visible {
+    outline: 2px solid var(--neon-accent);
+    outline-offset: 4px;
+  }
+
+  .neon-border-btn[disabled],
+  .neon-border-btn[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Sizes */
+  .neon-border-btn--sm .neon-border-btn__content {
+    padding: 0.45rem 1rem;
+    font-size: 0.8rem;
+  }
+  .neon-border-btn--md .neon-border-btn__content {
+    padding: 0.75rem 1.6rem;
+    font-size: 0.92rem;
+  }
+  .neon-border-btn--lg .neon-border-btn__content {
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+  }
+
+  /* Border track & animated beam */
+  .neon-border-btn__border {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 90deg,
+      var(--neon-accent) 180deg,
+      transparent 270deg,
+      transparent 360deg
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    animation: neon-spin var(--neon-speed) linear infinite;
+    pointer-events: none;
+  }
+
+  .neon-border-btn__glow {
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: radial-gradient(circle, var(--neon-accent), transparent 70%);
+    opacity: 0;
+    filter: blur(14px);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .neon-border-btn:hover .neon-border-btn__glow {
+    opacity: 0.5;
+  }
+
+  .neon-border-btn__content {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 12, 0.95);
+    border-radius: inherit;
+    color: var(--c-text-1, #ffffff);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    backdrop-filter: blur(16px);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .neon-border-btn:hover .neon-border-btn__content {
+    background: rgba(16, 16, 20, 0.98);
+    color: var(--neon-accent);
+  }
+
+  @keyframes neon-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .neon-border-btn__border {
+      animation: none;
+      background: var(--neon-accent);
+    }
+  }
+</style>

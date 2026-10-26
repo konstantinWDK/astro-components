@@ -1,0 +1,173 @@
+---
+/**
+ * ToastNotificationGroup — Stackable notification banner with auto-timed progress bar, icon, and dismiss action.
+ * 
+ * @param {'success' | 'warning' | 'error' | 'info'} type - Alert status variant. Default is 'success'.
+ * @param {string} title - Notification title headline. Default is 'Changes Saved'.
+ * @param {string} message - Explanatory message text.
+ * @param {string} actionText - Optional action link text (e.g. 'Undo').
+ */
+interface Props {
+  type?: 'success' | 'warning' | 'error' | 'info';
+  title?: string;
+  message?: string;
+  actionText?: string;
+}
+
+const {
+  type = 'success',
+  title = 'Changes Saved',
+  message = 'Your project settings were synchronized with production.',
+  actionText = 'Undo',
+} = Astro.props;
+
+const icons = {
+  success: '✓',
+  warning: '!',
+  error: '✕',
+  info: 'ℹ',
+};
+---
+
+<div class:list={['toast-item', `toast-item--${type}`]} role="alert" data-toast-item>
+  <div class="toast-item__body">
+    <span class="toast-item__icon" aria-hidden="true">{icons[type]}</span>
+    <div class="toast-item__content">
+      <h5 class="toast-item__title">{title}</h5>
+      <p class="toast-item__msg">{message}</p>
+    </div>
+    {actionText && (
+      <button type="button" class="toast-item__action">
+        {actionText}
+      </button>
+    )}
+    <button type="button" class="toast-item__close" aria-label="Dismiss alert" data-toast-close>
+      ✕
+    </button>
+  </div>
+  <div class="toast-item__progress" aria-hidden="true"></div>
+</div>
+
+<style>
+  .toast-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 380px;
+    background: rgba(14, 14, 18, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 14px);
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .toast-item--success { --toast-accent: #10b981; }
+  .toast-item--warning { --toast-accent: #f59e0b; }
+  .toast-item--error   { --toast-accent: #ef4444; }
+  .toast-item--info    { --toast-accent: #38bdf8; }
+
+  .toast-item__body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 1rem 1.15rem;
+  }
+
+  .toast-item__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--toast-accent);
+    color: var(--toast-accent);
+    display: grid;
+    place-items: center;
+    font-size: 0.75rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .toast-item__content {
+    flex: 1;
+  }
+
+  .toast-item__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0 0 2px 0;
+  }
+
+  .toast-item__msg {
+    font-size: 0.78rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .toast-item__action {
+    background: transparent;
+    border: none;
+    color: var(--toast-accent);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .toast-item__action:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .toast-item__close {
+    background: transparent;
+    border: none;
+    color: var(--c-text-3, #737373);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.2rem;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .toast-item__close:hover {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .toast-item__progress {
+    height: 3px;
+    background: var(--toast-accent);
+    width: 100%;
+    animation: toast-timer 5s linear forwards;
+  }
+
+  @keyframes toast-timer {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+</style>
+
+<script>
+  function setupToasts() {
+    document.querySelectorAll('[data-toast-item]').forEach((toast) => {
+      const closeBtn = toast.querySelector('[data-toast-close]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          (toast as HTMLElement).style.opacity = '0';
+          (toast as HTMLElement).style.transform = 'translateY(10px) scale(0.95)';
+          setTimeout(() => toast.remove(), 250);
+        });
+      }
+    });
+  }
+
+  setupToasts();
+  document.addEventListener('astro:page-load', setupToasts);
+</script>

@@ -1,0 +1,85 @@
+---
+/**
+ * HackerDecodeText — Cyberpunk Matrix-style randomized character deciphering effect on hover.
+ * 
+ * @param {string} text - Final decoded text string. Default is 'CYBERNETIC SYSTEM READY'.
+ * @param {string} tag - HTML heading or paragraph tag. Default is 'h3'.
+ * @param {string} className - Optional CSS class names.
+ */
+interface Props {
+  text?: string;
+  tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'span';
+  className?: string;
+}
+
+const {
+  text = 'CYBERNETIC PROTOCOL ONLINE',
+  tag: Tag = 'h3',
+  className = '',
+} = Astro.props;
+---
+
+<Tag
+  class:list={['hacker-text', className]}
+  data-hacker-text={text}
+  title="Hover to decode"
+>
+  {text}
+</Tag>
+
+<style>
+  .hacker-text {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 800;
+    color: var(--c-primary-light, #d4a017);
+    letter-spacing: 0.08em;
+    cursor: default;
+    user-select: none;
+    transition: text-shadow 0.2s ease;
+  }
+
+  .hacker-text:hover {
+    text-shadow: 0 0 12px rgba(212, 160, 23, 0.7);
+  }
+</style>
+
+<script>
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+  function setupHackerText() {
+    document.querySelectorAll('[data-hacker-text]').forEach((el) => {
+      if (el.getAttribute('data-hacker-init')) return;
+      el.setAttribute('data-hacker-init', 'true');
+
+      const original = el.getAttribute('data-hacker-text') || el.textContent || '';
+      let interval: any = null;
+
+      el.addEventListener('pointerenter', () => {
+        let iteration = 0;
+        clearInterval(interval);
+
+        interval = setInterval(() => {
+          el.textContent = original
+            .split('')
+            .map((char, index) => {
+              if (char === ' ') return ' ';
+              if (index < iteration) {
+                return original[index];
+              }
+              return chars[Math.floor(Math.random() * chars.length)];
+            })
+            .join('');
+
+          if (iteration >= original.length) {
+            clearInterval(interval);
+          }
+          iteration += 1 / 2;
+        }, 30);
+      });
+    });
+  }
+
+  setupHackerText();
+  document.addEventListener('astro:page-load', setupHackerText);
+</script>

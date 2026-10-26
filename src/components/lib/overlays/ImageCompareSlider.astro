@@ -1,0 +1,172 @@
+---
+/**
+ * ImageCompareSlider — Interactive dual-image split compare slider with draggable separator bar.
+ * 
+ * @param {string} beforeImage - URL of original / before image.
+ * @param {string} afterImage - URL of modified / after image.
+ * @param {string} beforeLabel - Label tag. Default is 'Before'.
+ * @param {string} afterLabel - Label tag. Default is 'After'.
+ * @param {number} initialPosition - Starting separator position (0 to 100). Default is 50.
+ */
+interface Props {
+  beforeImage?: string;
+  afterImage?: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+  initialPosition?: number;
+}
+
+const {
+  beforeImage = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+  afterImage = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80',
+  beforeLabel = 'Before (Wireframe)',
+  afterLabel = 'After (Production)',
+  initialPosition = 50,
+} = Astro.props;
+---
+
+<div class="img-compare" data-img-compare style={`--pos: ${initialPosition}%;`}>
+  <div class="img-compare__layer img-compare__layer--after">
+    <img src={afterImage} alt={afterLabel} loading="lazy" />
+    <span class="img-compare__tag img-compare__tag--after">{afterLabel}</span>
+  </div>
+
+  <div class="img-compare__layer img-compare__layer--before" data-compare-before>
+    <img src={beforeImage} alt={beforeLabel} loading="lazy" />
+    <span class="img-compare__tag img-compare__tag--before">{beforeLabel}</span>
+  </div>
+
+  <div class="img-compare__handle" data-compare-handle aria-hidden="true">
+    <div class="handle-line"></div>
+    <div class="handle-button">
+      <span>‹</span>
+      <span>›</span>
+    </div>
+  </div>
+
+  <input
+    type="range"
+    min="0"
+    max="100"
+    value={initialPosition}
+    class="img-compare__range"
+    aria-label="Drag to compare images"
+    data-compare-range
+  />
+</div>
+
+<style>
+  .img-compare {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: var(--r-xl, 20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    user-select: none;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .img-compare__layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .img-compare__layer img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+
+  .img-compare__layer--before {
+    clip-path: polygon(0 0, var(--pos) 0, var(--pos) 100%, 0 100%);
+  }
+
+  .img-compare__tag {
+    position: absolute;
+    top: 14px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: var(--r-full, 9999px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+  }
+
+  .img-compare__tag--before { left: 14px; }
+  .img-compare__tag--after { right: 14px; }
+
+  .img-compare__handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .handle-line {
+    width: 2px;
+    height: 100%;
+    background: #ffffff;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  }
+
+  .handle-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #050505;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.95rem;
+    font-weight: 900;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  }
+
+  .img-compare__range {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: ew-resize;
+    z-index: 10;
+  }
+</style>
+
+<script>
+  function setupImageCompare() {
+    document.querySelectorAll('[data-img-compare]').forEach((comp) => {
+      const range = comp.querySelector('[data-compare-range]') as HTMLInputElement;
+      if (!range) return;
+
+      range.addEventListener('input', () => {
+        (comp as HTMLElement).style.setProperty('--pos', `${range.value}%`);
+      });
+    });
+  }
+
+  setupImageCompare();
+  document.addEventListener('astro:page-load', setupImageCompare);
+</script>

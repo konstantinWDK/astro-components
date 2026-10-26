@@ -2725,5 +2725,555 @@ const Tag = href ? 'a' : 'button';
 
 `,
     usage: `<TiltGlowButton href="#" type="button" variant="primary" size="md">Click Me</TiltGlowButton>`,
+  },
+  {
+    slug: 'ripple-button',
+    name: 'Ripple Button',
+    description: 'A sleek interactive button that triggers localized expanding ripple rings on click.',
+    category: 'buttons',
+    tags: ["button","ripple","interactive","micro-interaction"],
+    featured: true,
+    code: `---
+/**
+ * RippleButton — Interactive button featuring an expanding click ripple effect with glass styling.
+ * 
+ * @param {'primary' | 'secondary' | 'ghost'} variant - Visual style variant. Default is 'primary'.
+ * @param {'sm' | 'md' | 'lg'} size - Button size variant. Default is 'md'.
+ * @param {string} href - Optional link destination.
+ * @param {boolean} disabled - Whether the button is disabled.
+ * @param {string} className - Additional CSS class names.
+ */
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  href,
+  disabled = false,
+  className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={['ripple-btn', \`ripple-btn--\${variant}\`, \`ripple-btn--\${size}\`, className]}
+  data-ripple-btn
+>
+  <span class="ripple-btn__label"><slot /></span>
+  <span class="ripple-btn__container" aria-hidden="true"></span>
+</Tag>
+
+<style>
+  .ripple-btn {
+    --btn-primary-bg: linear-gradient(135deg, rgba(184, 134, 11, 0.9), rgba(212, 160, 23, 0.9));
+    --btn-primary-color: #050505;
+    --btn-secondary-bg: rgba(255, 255, 255, 0.05);
+    --btn-secondary-color: var(--c-text-1, #ffffff);
+    --btn-ghost-bg: transparent;
+    --btn-ghost-color: var(--c-primary-light, #d4a017);
+
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
   }
+
+  .ripple-btn:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 3px;
+  }
+
+  .ripple-btn[disabled],
+  .ripple-btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Variants */
+  .ripple-btn--primary {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    box-shadow: 0 4px 20px rgba(184, 134, 11, 0.25);
+  }
+  .ripple-btn--primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(184, 134, 11, 0.4);
+    border-color: rgba(254, 243, 199, 0.4);
+  }
+
+  .ripple-btn--secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-color);
+    backdrop-filter: blur(12px);
+  }
+  .ripple-btn--secondary:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(184, 134, 11, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .ripple-btn--ghost {
+    background: var(--btn-ghost-bg);
+    color: var(--btn-ghost-color);
+    border-color: transparent;
+  }
+  .ripple-btn--ghost:hover {
+    background: rgba(184, 134, 11, 0.1);
+    border-color: rgba(184, 134, 11, 0.2);
+  }
+
+  /* Sizes */
+  .ripple-btn--sm {
+    padding: 0.45rem 1rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+  .ripple-btn--md {
+    padding: 0.75rem 1.6rem;
+    font-size: 0.92rem;
+    letter-spacing: 0.02em;
+  }
+  .ripple-btn--lg {
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+  }
+
+  .ripple-btn__label {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    pointer-events: none;
+  }
+
+  .ripple-btn__container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  :global(.ripple-effect) {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple-grow 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+    background: rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+  }
+
+  @keyframes ripple-grow {
+    to {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ripple-btn { transition: none; }
+    :global(.ripple-effect) { display: none; }
+  }
+</style>
+
+<script>
+  function setupRipples() {
+    const buttons = document.querySelectorAll('[data-ripple-btn]');
+    buttons.forEach((btn) => {
+      if (btn.getAttribute('data-ripple-init')) return;
+      btn.setAttribute('data-ripple-init', 'true');
+
+      btn.addEventListener('pointerdown', (e: Event) => {
+        const mouseEvent = e as MouseEvent;
+        const target = mouseEvent.currentTarget as HTMLElement;
+        const container = target.querySelector('.ripple-btn__container');
+        if (!container) return;
+
+        const rect = target.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = mouseEvent.clientX - rect.left - size / 2;
+        const y = mouseEvent.clientY - rect.top - size / 2;
+
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple-effect';
+        ripple.style.width = \`\${size}px\`;
+        ripple.style.height = \`\${size}px\`;
+        ripple.style.left = \`\${x}px\`;
+        ripple.style.top = \`\${y}px\`;
+
+        container.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 650);
+      });
+    });
+  }
+
+  setupRipples();
+  document.addEventListener('astro:page-load', setupRipples);
+</script>
+`,
+    usage: `<RippleButton variant="primary" size="md">Click Ripple</RippleButton>`,
+  },
+  {
+    slug: 'neon-border-button',
+    name: 'Neon Border Button',
+    description: 'A futuristic cyber button with rotating conical neon laser border and glow reflection.',
+    category: 'buttons',
+    tags: ["button","neon","cyberpunk","glow","border"],
+    featured: true,
+    code: `---
+/**
+ * NeonBorderButton — Futuristic button wrapped in an animated rotating neon conic-gradient border.
+ * 
+ * @param {string} color - Primary neon hue (e.g. '#fbbf24', '#38bdf8', '#a855f7'). Default is '#d4a017'.
+ * @param {'sm' | 'md' | 'lg'} size - Button size variant. Default is 'md'.
+ * @param {string} href - Optional link destination.
+ * @param {boolean} disabled - Whether the button is disabled.
+ * @param {string} className - Additional CSS class names.
+ */
+interface Props {
+  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+const {
+  color = '#d4a017',
+  size = 'md',
+  href,
+  disabled = false,
+  className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={['neon-border-btn', \`neon-border-btn--\${size}\`, className]}
+  style={\`--neon-accent: \${color};\`}
+>
+  <span class="neon-border-btn__glow" aria-hidden="true"></span>
+  <span class="neon-border-btn__border" aria-hidden="true"></span>
+  <span class="neon-border-btn__content">
+    <slot />
+  </span>
+</Tag>
+
+<style>
+  .neon-border-btn {
+    --neon-speed: 4s;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    border-radius: var(--r-md, 12px);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.25s ease;
+  }
+
+  .neon-border-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .neon-border-btn:focus-visible {
+    outline: 2px solid var(--neon-accent);
+    outline-offset: 4px;
+  }
+
+  .neon-border-btn[disabled],
+  .neon-border-btn[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Sizes */
+  .neon-border-btn--sm .neon-border-btn__content {
+    padding: 0.45rem 1rem;
+    font-size: 0.8rem;
+  }
+  .neon-border-btn--md .neon-border-btn__content {
+    padding: 0.75rem 1.6rem;
+    font-size: 0.92rem;
+  }
+  .neon-border-btn--lg .neon-border-btn__content {
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+  }
+
+  /* Border track & animated beam */
+  .neon-border-btn__border {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 90deg,
+      var(--neon-accent) 180deg,
+      transparent 270deg,
+      transparent 360deg
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    animation: neon-spin var(--neon-speed) linear infinite;
+    pointer-events: none;
+  }
+
+  .neon-border-btn__glow {
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: radial-gradient(circle, var(--neon-accent), transparent 70%);
+    opacity: 0;
+    filter: blur(14px);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .neon-border-btn:hover .neon-border-btn__glow {
+    opacity: 0.5;
+  }
+
+  .neon-border-btn__content {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 12, 0.95);
+    border-radius: inherit;
+    color: var(--c-text-1, #ffffff);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    backdrop-filter: blur(16px);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .neon-border-btn:hover .neon-border-btn__content {
+    background: rgba(16, 16, 20, 0.98);
+    color: var(--neon-accent);
+  }
+
+  @keyframes neon-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .neon-border-btn__border {
+      animation: none;
+      background: var(--neon-accent);
+    }
+  }
+</style>
+`,
+    usage: `<NeonBorderButton variant="cyan" size="md">Neon Action</NeonBorderButton>`,
+  },
+  {
+    slug: 'slide-reveal-button',
+    name: 'Slide Reveal Button',
+    description: 'A dual-state button that slides primary text out and reveals hidden secondary action text or icons.',
+    category: 'buttons',
+    tags: ["button","slide","reveal","animation","action"],
+    featured: false,
+    code: `---
+/**
+ * SlideRevealButton — Interactive action button with a sliding icon drawer and kinetic typography transition.
+ * 
+ * @param {'primary' | 'secondary' | 'accent'} variant - Visual tone variant. Default is 'primary'.
+ * @param {'sm' | 'md' | 'lg'} size - Button size variant. Default is 'md'.
+ * @param {string} href - Optional link destination.
+ * @param {string} icon - SVG or character icon. Default is '→'.
+ * @param {boolean} disabled - Whether the button is disabled.
+ * @param {string} className - Additional CSS class names.
+ */
+interface Props {
+  variant?: 'primary' | 'secondary' | 'accent';
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  icon?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  href,
+  icon = '→',
+  disabled = false,
+  className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={['slide-reveal-btn', \`slide-reveal-btn--\${variant}\`, \`slide-reveal-btn--\${size}\`, className]}
+>
+  <span class="slide-reveal-btn__text">
+    <slot />
+  </span>
+  <span class="slide-reveal-btn__icon" aria-hidden="true">
+    {icon}
+  </span>
+</Tag>
+
+<style>
+  .slide-reveal-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .slide-reveal-btn:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 3px;
+  }
+
+  .slide-reveal-btn[disabled],
+  .slide-reveal-btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Variants */
+  .slide-reveal-btn--primary {
+    background: rgba(184, 134, 11, 0.15);
+    color: var(--c-accent, #fef3c7);
+    border-color: rgba(184, 134, 11, 0.35);
+  }
+  .slide-reveal-btn--primary:hover {
+    background: linear-gradient(135deg, #b8860b, #d4a017);
+    color: #050505;
+    box-shadow: 0 8px 24px rgba(184, 134, 11, 0.3);
+  }
+
+  .slide-reveal-btn--secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--c-text-1, #ffffff);
+    backdrop-filter: blur(12px);
+  }
+  .slide-reveal-btn--secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .slide-reveal-btn--accent {
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    border-color: rgba(56, 189, 248, 0.3);
+  }
+  .slide-reveal-btn--accent:hover {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+  }
+
+  /* Sizes */
+  .slide-reveal-btn--sm {
+    padding: 0.45rem 1.1rem;
+    font-size: 0.8rem;
+  }
+  .slide-reveal-btn--sm .slide-reveal-btn__icon {
+    font-size: 0.9rem;
+  }
+
+  .slide-reveal-btn--md {
+    padding: 0.75rem 1.6rem;
+    font-size: 0.92rem;
+  }
+  .slide-reveal-btn--md .slide-reveal-btn__icon {
+    font-size: 1.05rem;
+  }
+
+  .slide-reveal-btn--lg {
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+  }
+  .slide-reveal-btn--lg .slide-reveal-btn__icon {
+    font-size: 1.25rem;
+  }
+
+  /* Text & sliding icon */
+  .slide-reveal-btn__text {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .slide-reveal-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 1.2rem;
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+  }
+
+  .slide-reveal-btn:hover .slide-reveal-btn__text {
+    transform: translateX(-12px);
+  }
+
+  .slide-reveal-btn:hover .slide-reveal-btn__icon {
+    opacity: 1;
+    transform: translateX(0);
+  }
+</style>
+`,
+    usage: `<SlideRevealButton label="Download File" revealText="Start (.zip)" variant="primary" />`,
+  },
 ];

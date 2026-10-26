@@ -499,4 +499,635 @@ import { SideDrawerRight } from 'astro-component-kit';
 `,
     usage: `<SpotlightIndicator>Content</SpotlightIndicator>`,
   },
+  {
+    slug: 'cookie-preferences-drawer',
+    name: 'Cookie Preferences Drawer',
+    description: 'Full GDPR-compliant cookie consent bottom drawer with category toggles for essential, analytics, and marketing cookies.',
+    category: 'overlays',
+    tags: ["overlays","cookie","gdpr","privacy","drawer"],
+    featured: true,
+    code: `---
+/**
+ * CookiePreferencesDrawer — GDPR/CCPA consent drawer with frosted glass styling and category toggles.
+ * 
+ * @param {string} title - Header text. Default is 'Privacy Preferences'.
+ * @param {string} description - Explanation text for user privacy consent.
+ */
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Privacy & Cookie Settings',
+  description = 'We use cookies and telemetry to improve performance, analyze usage, and customize your experience.',
+} = Astro.props;
+
+const categories = [
+  { id: 'necessary', name: 'Strictly Necessary', desc: 'Required for core authentication and security.', locked: true },
+  { id: 'analytics', name: 'Performance & Analytics', desc: 'Anonymous traffic data to improve component reliability.', locked: false },
+  { id: 'marketing', name: 'Targeted Experience', desc: 'Personalized recommendations based on library interactions.', locked: false },
+];
+---
+
+<aside class="cookie-drawer" role="dialog" aria-modal="true" aria-label={title} data-cookie-drawer>
+  <div class="cookie-drawer__header">
+    <div class="cookie-drawer__icon">🍪</div>
+    <div class="cookie-drawer__titles">
+      <h4 class="cookie-drawer__title">{title}</h4>
+      <p class="cookie-drawer__desc">{description}</p>
+    </div>
+  </div>
+
+  <div class="cookie-drawer__categories">
+    {categories.map((cat) => (
+      <div class="cookie-cat">
+        <div class="cookie-cat__info">
+          <span class="cookie-cat__name">{cat.name}</span>
+          <span class="cookie-cat__desc">{cat.desc}</span>
+        </div>
+        <label class="switch">
+          <input
+            type="checkbox"
+            checked={cat.locked}
+            disabled={cat.locked}
+            name={cat.id}
+          />
+          <span class="slider"></span>
+        </label>
+      </div>
+    ))}
+  </div>
+
+  <div class="cookie-drawer__actions">
+    <button type="button" class="btn btn--secondary" data-cookie-reject>Reject All</button>
+    <button type="button" class="btn btn--primary" data-cookie-accept>Accept Selected</button>
+  </div>
+</aside>
+
+<style>
+  .cookie-drawer {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    max-width: 520px;
+    z-index: 100;
+    margin: 0 auto;
+    padding: 1.4rem;
+    background: rgba(12, 12, 16, 0.94);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--r-xl, 24px);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .cookie-drawer__header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .cookie-drawer__icon {
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+
+  .cookie-drawer__title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--c-text-1, #ffffff);
+    margin: 0 0 4px 0;
+  }
+
+  .cookie-drawer__desc {
+    font-size: 0.8rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .cookie-drawer__categories {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .cookie-cat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cookie-cat__name {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .cookie-cat__desc {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  /* Switch toggle */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 34px;
+    transition: 0.25s;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.25s;
+  }
+  input:checked + .slider {
+    background-color: var(--c-primary-light, #d4a017);
+  }
+  input:checked + .slider:before {
+    transform: translateX(16px);
+  }
+  input:disabled + .slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .cookie-drawer__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .btn {
+    padding: 0.55rem 1.2rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border-radius: var(--r-md, 10px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn--secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .btn--secondary:hover {
+    color: var(--c-text-1, #ffffff);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn--primary {
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    border: none;
+    color: #050505;
+    box-shadow: 0 4px 14px rgba(184, 134, 11, 0.35);
+  }
+  .btn--primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.45);
+  }
+</style>
+
+<script>
+  function setupCookieDrawers() {
+    document.querySelectorAll('[data-cookie-drawer]').forEach((drawer) => {
+      const dismiss = () => {
+        (drawer as HTMLElement).style.transform = 'translateY(120%)';
+        (drawer as HTMLElement).style.opacity = '0';
+        setTimeout(() => drawer.remove(), 350);
+      };
+
+      drawer.querySelector('[data-cookie-reject]')?.addEventListener('click', dismiss);
+      drawer.querySelector('[data-cookie-accept]')?.addEventListener('click', dismiss);
+    });
+  }
+
+  setupCookieDrawers();
+  document.addEventListener('astro:page-load', setupCookieDrawers);
+</script>
+`,
+    usage: `<CookiePreferencesDrawer title="Cookie Preferences" description="Manage your privacy and data sharing settings." />`,
+  },
+  {
+    slug: 'image-compare-slider',
+    name: 'Image Compare Slider',
+    description: 'Interactive before-and-after visual comparison slider with draggable separator handle and touch support.',
+    category: 'overlays',
+    tags: ["overlays","image","compare","slider","before-after"],
+    featured: true,
+    code: `---
+/**
+ * ImageCompareSlider — Interactive dual-image split compare slider with draggable separator bar.
+ * 
+ * @param {string} beforeImage - URL of original / before image.
+ * @param {string} afterImage - URL of modified / after image.
+ * @param {string} beforeLabel - Label tag. Default is 'Before'.
+ * @param {string} afterLabel - Label tag. Default is 'After'.
+ * @param {number} initialPosition - Starting separator position (0 to 100). Default is 50.
+ */
+interface Props {
+  beforeImage?: string;
+  afterImage?: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+  initialPosition?: number;
+}
+
+const {
+  beforeImage = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+  afterImage = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80',
+  beforeLabel = 'Before (Wireframe)',
+  afterLabel = 'After (Production)',
+  initialPosition = 50,
+} = Astro.props;
+---
+
+<div class="img-compare" data-img-compare style={\`--pos: \${initialPosition}%;\`}>
+  <div class="img-compare__layer img-compare__layer--after">
+    <img src={afterImage} alt={afterLabel} loading="lazy" />
+    <span class="img-compare__tag img-compare__tag--after">{afterLabel}</span>
+  </div>
+
+  <div class="img-compare__layer img-compare__layer--before" data-compare-before>
+    <img src={beforeImage} alt={beforeLabel} loading="lazy" />
+    <span class="img-compare__tag img-compare__tag--before">{beforeLabel}</span>
+  </div>
+
+  <div class="img-compare__handle" data-compare-handle aria-hidden="true">
+    <div class="handle-line"></div>
+    <div class="handle-button">
+      <span>‹</span>
+      <span>›</span>
+    </div>
+  </div>
+
+  <input
+    type="range"
+    min="0"
+    max="100"
+    value={initialPosition}
+    class="img-compare__range"
+    aria-label="Drag to compare images"
+    data-compare-range
+  />
+</div>
+
+<style>
+  .img-compare {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: var(--r-xl, 20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    user-select: none;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .img-compare__layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .img-compare__layer img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+
+  .img-compare__layer--before {
+    clip-path: polygon(0 0, var(--pos) 0, var(--pos) 100%, 0 100%);
+  }
+
+  .img-compare__tag {
+    position: absolute;
+    top: 14px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: var(--r-full, 9999px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+  }
+
+  .img-compare__tag--before { left: 14px; }
+  .img-compare__tag--after { right: 14px; }
+
+  .img-compare__handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .handle-line {
+    width: 2px;
+    height: 100%;
+    background: #ffffff;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  }
+
+  .handle-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #050505;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.95rem;
+    font-weight: 900;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  }
+
+  .img-compare__range {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: ew-resize;
+    z-index: 10;
+  }
+</style>
+
+<script>
+  function setupImageCompare() {
+    document.querySelectorAll('[data-img-compare]').forEach((comp) => {
+      const range = comp.querySelector('[data-compare-range]') as HTMLInputElement;
+      if (!range) return;
+
+      range.addEventListener('input', () => {
+        (comp as HTMLElement).style.setProperty('--pos', \`\${range.value}%\`);
+      });
+    });
+  }
+
+  setupImageCompare();
+  document.addEventListener('astro:page-load', setupImageCompare);
+</script>
+`,
+    usage: `<ImageCompareSlider beforeImage="/assets/before.webp" afterImage="/assets/after.webp" beforeLabel="Before" afterLabel="After" />`,
+  },
+  {
+    slug: 'floating-feedback-widget',
+    name: 'Floating Feedback Widget',
+    description: 'Fixed bottom-right collapsible feedback trigger with emoji satisfaction ratings and text submission textarea.',
+    category: 'overlays',
+    tags: ["overlays","feedback","floating","widget","survey"],
+    featured: false,
+    code: `---
+/**
+ * FloatingFeedbackWidget — Fixed corner floating pill that expands into an interactive feedback survey card.
+ * 
+ * @param {string} title - Widget title. Default is 'Was this helpful?'.
+ * @param {string} position - Screen anchor ('bottom-right' | 'bottom-left'). Default is 'bottom-right'.
+ */
+interface Props {
+  title?: string;
+  position?: 'bottom-right' | 'bottom-left';
+}
+
+const {
+  title = 'Send Feedback',
+  position = 'bottom-right',
+} = Astro.props;
+---
+
+<div class:list={['fb-widget', \`fb-widget--\${position}\`]} data-feedback-widget>
+  <button type="button" class="fb-widget__trigger" aria-label="Open feedback modal" data-fb-trigger>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span>Feedback</span>
+  </button>
+
+  <div class="fb-widget__card" data-fb-card hidden>
+    <div class="fb-widget__head">
+      <h5 class="fb-widget__title">{title}</h5>
+      <button type="button" class="fb-widget__close" aria-label="Close" data-fb-close>×</button>
+    </div>
+
+    <div class="fb-widget__emojis">
+      <button type="button" class="emoji-btn" aria-label="Sad">🙁</button>
+      <button type="button" class="emoji-btn" aria-label="Neutral">😐</button>
+      <button type="button" class="emoji-btn emoji-btn--selected" aria-label="Happy">😊</button>
+      <button type="button" class="emoji-btn" aria-label="Love it">🤩</button>
+    </div>
+
+    <textarea
+      placeholder="Any details to share? (optional)"
+      class="fb-widget__textarea"
+      rows="2"
+    ></textarea>
+
+    <button type="button" class="fb-widget__send" data-fb-send>
+      Send Feedback
+    </button>
+  </div>
+</div>
+
+<style>
+  .fb-widget {
+    position: fixed;
+    z-index: 90;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .fb-widget--bottom-right { bottom: 1.5rem; right: 1.5rem; }
+  .fb-widget--bottom-left  { bottom: 1.5rem; left: 1.5rem; }
+
+  .fb-widget__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.6rem 1.1rem;
+    background: rgba(14, 14, 18, 0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--r-full, 9999px);
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .fb-widget__trigger:hover {
+    transform: translateY(-2px);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--c-primary-light, #d4a017);
+  }
+
+  .fb-widget__card {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 280px;
+    padding: 1.2rem;
+    background: rgba(12, 12, 16, 0.95);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--r-xl, 20px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .fb-widget__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .fb-widget__title {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .fb-widget__close {
+    background: transparent;
+    border: none;
+    color: var(--c-text-3, #737373);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .fb-widget__emojis {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .emoji-btn {
+    flex: 1;
+    font-size: 1.4rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-md, 10px);
+    padding: 6px 0;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .emoji-btn:hover,
+  .emoji-btn--selected {
+    transform: scale(1.15);
+    background: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+  }
+
+  .fb-widget__textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-sm, 8px);
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.8rem;
+    padding: 8px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .fb-widget__send {
+    padding: 0.6rem;
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    border: none;
+    border-radius: var(--r-sm, 8px);
+    color: #050505;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .fb-widget__send:hover {
+    opacity: 0.9;
+  }
+</style>
+
+<script>
+  function setupFeedbackWidgets() {
+    document.querySelectorAll('[data-feedback-widget]').forEach((widget) => {
+      const trigger = widget.querySelector('[data-fb-trigger]');
+      const card = widget.querySelector('[data-fb-card]') as HTMLElement;
+      const close = widget.querySelector('[data-fb-close]');
+      const send = widget.querySelector('[data-fb-send]');
+      if (!trigger || !card) return;
+
+      trigger.addEventListener('click', () => {
+        card.hidden = !card.hidden;
+      });
+
+      close?.addEventListener('click', () => {
+        card.hidden = true;
+      });
+
+      send?.addEventListener('click', () => {
+        card.innerHTML = \`<p style="text-align:center;font-size:0.85rem;color:#10b981;font-weight:700;margin:1rem 0;">✓ Thank you for your feedback!</p>\`;
+        setTimeout(() => { card.hidden = true; }, 2000);
+      });
+    });
+  }
+
+  setupFeedbackWidgets();
+  document.addEventListener('astro:page-load', setupFeedbackWidgets);
+</script>
+`,
+    usage: `<FloatingFeedbackWidget placeholder="How can we improve this experience?" />`,
+  },
 ];

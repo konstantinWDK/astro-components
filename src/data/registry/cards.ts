@@ -170,7 +170,7 @@ const {
   <div class="prod-card__image" style={imageUrl ? \`background-image: url('\${imageUrl}'); background-size: cover;\` : ''}></div>
   <div class="prod-card__info">
     <div class="prod-card__meta">
-      {tag ? <span>{tag}</span> : <span></span>}
+      {tag ? <span>{tag}</span> : <span></span>},
       {rating ? <span>{rating}</span> : null}
     </div>
     <h4 class="prod-card__title">{title}</h4>
@@ -500,7 +500,7 @@ const { title, priority, tag } = Astro.props;
 <div class="k-item">
   <p class="k-item__title">{title}</p>
   <div class="k-item__badges">
-    {priority && <span class="k-item__badge k-item__badge--prio">{priority}</span>}
+    {priority && <span class="k-item__badge k-item__badge--prio">{priority}</span>},
     {tag && <span class="k-item__badge k-item__badge--opt">{tag}</span>}
   </div>
 </div>
@@ -1198,5 +1198,556 @@ const { temp, city, condition, icon } = Astro.props;
 </style>
 `,
     usage: `<WeatherWidgetCard temp="24°" city="Sunnyvale" condition="Clear" icon="☀️" />`,
+  },
+  {
+    slug: 'pricing-compare-mini-card',
+    name: 'Pricing Compare Mini Card',
+    description: 'A compact pricing tier card with gradient spotlight highlight, feature checkmarks, and CTA.',
+    category: 'cards',
+    tags: ["cards","pricing","tier","plan","commerce"],
+    featured: true,
+    code: `---
+/**
+ * PricingCompareMiniCard — High-conversion mini pricing card with plan perks, price tier, and action button.
+ * 
+ * @param {string} planName - Plan name (e.g. 'Pro Developer').
+ * @param {string} price - Price figure (e.g. '$29').
+ * @param {string} period - Frequency string (e.g. '/month').
+ * @param {string} description - Plan highlight subtitle.
+ * @param {string[]} features - List of plan feature bullet points.
+ * @param {boolean} featured - Whether the card is visually emphasized.
+ * @param {string} ctaText - Label for the call to action button. Default is 'Get Started'.
+ * @param {string} ctaHref - Link URL for the button.
+ */
+interface Props {
+  planName: string;
+  price: string;
+  period?: string;
+  description?: string;
+  features?: string[];
+  featured?: boolean;
+  ctaText?: string;
+  ctaHref?: string;
+}
+
+const {
+  planName,
+  price,
+  period = '/month',
+  description = 'For growing teams and fast production workflows.',
+  features = [
+    'Unlimited UI components',
+    'Full source code access',
+    'Commercial license',
+    'Community Discord support',
+  ],
+  featured = false,
+  ctaText = 'Get Started',
+  ctaHref = '#',
+} = Astro.props;
+---
+
+<div class:list={['mini-price-card', { 'mini-price-card--featured': featured }]}>
+  {featured && <span class="mini-price-card__badge">Most Popular</span>}
+
+  <div class="mini-price-card__header">
+    <h3 class="mini-price-card__plan">{planName}</h3>
+    <p class="mini-price-card__desc">{description}</p>
+    <div class="mini-price-card__amount">
+      <span class="val">{price}</span>
+      <span class="period">{period}</span>
+    </div>
+  </div>
+
+  <ul class="mini-price-card__features">
+    {features.map((feat) => (
+      <li class="mini-price-card__feature">
+        <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        <span>{feat}</span>
+      </li>
+    ))}
+  </ul>
+
+  <a href={ctaHref} class="mini-price-card__btn">
+    {ctaText}
+    <span aria-hidden="true">→</span>
+  </a>
+</div>
+
+<style>
+  .mini-price-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 24px);
+    width: 100%;
+    max-width: 320px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .mini-price-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(184, 134, 11, 0.3);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .mini-price-card--featured {
+    border-color: rgba(184, 134, 11, 0.5);
+    background: radial-gradient(circle at top, rgba(184, 134, 11, 0.12), rgba(255, 255, 255, 0.02) 60%);
+    box-shadow: 0 12px 36px rgba(184, 134, 11, 0.15);
+  }
+
+  .mini-price-card__badge {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    color: #050505;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--r-full, 9999px);
+    box-shadow: 0 4px 12px rgba(184, 134, 11, 0.4);
+  }
+
+  .mini-price-card__plan {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .mini-price-card__desc {
+    font-size: 0.8rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 4px 0 16px 0;
+    line-height: 1.45;
+  }
+
+  .mini-price-card__amount {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: var(--sp-4, 1rem);
+    padding-bottom: var(--sp-4, 1rem);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .mini-price-card__amount .val {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--c-text-1, #ffffff);
+    letter-spacing: -0.03em;
+  }
+
+  .mini-price-card__amount .period {
+    font-size: 0.82rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .mini-price-card__features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 24px 0;
+    padding: 0;
+    flex: 1;
+  }
+
+  .mini-price-card__feature {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: var(--c-text-2, #a3a3a3);
+  }
+
+  .check-icon {
+    color: var(--c-primary-light, #d4a017);
+    flex-shrink: 0;
+  }
+
+  .mini-price-card__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.25s ease;
+  }
+
+  .mini-price-card--featured .mini-price-card__btn,
+  .mini-price-card__btn:hover {
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    color: #050505;
+    border-color: transparent;
+    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.35);
+  }
+</style>
+`,
+    usage: `<PricingCompareMiniCard title="Pro Plan" price="$29" period="/month" description="For scaling teams" features={['Unlimited components', 'Priority support', 'Commercial license']} isPopular={true} ctaText="Upgrade to Pro" />`,
+  },
+  {
+    slug: 'github-repo-card',
+    name: 'Github Repo Card',
+    description: 'Clean developer portfolio card displaying GitHub repository name, description, language dot, star count, and fork stats.',
+    category: 'cards',
+    tags: ["cards","github","repo","developer","portfolio"],
+    featured: true,
+    code: `---
+/**
+ * GithubRepoCard — Dark glass card highlighting repository statistics, language dot, license, and stars.
+ * 
+ * @param {string} repoName - Repository name (e.g. 'astro-components').
+ * @param {string} owner - Repo owner or organization (e.g. 'konstantinWDK').
+ * @param {string} description - Brief summary of the repo.
+ * @param {string} language - Primary programming language. Default is 'TypeScript'.
+ * @param {string} languageColor - Hex color for the language dot. Default is '#3178c6'.
+ * @param {number} stars - Star count figure. Default is 248.
+ * @param {number} forks - Fork count figure. Default is 32.
+ * @param {string} href - Link to the GitHub repository.
+ */
+interface Props {
+  repoName: string;
+  owner?: string;
+  description?: string;
+  language?: string;
+  languageColor?: string;
+  stars?: number;
+  forks?: number;
+  href?: string;
+}
+
+const {
+  repoName,
+  owner = 'konstantinWDK',
+  description = 'Premium open-source UI component library for Astro with glassmorphism and accessibility.',
+  language = 'TypeScript',
+  languageColor = '#3178c6',
+  stars = 248,
+  forks = 32,
+  href = '#',
+} = Astro.props;
+---
+
+<a href={href} target="_blank" rel="noopener noreferrer" class="gh-repo-card">
+  <div class="gh-repo-card__head">
+    <svg class="gh-repo-card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+      <path d="M6 6h10"/>
+      <path d="M6 10h10"/>
+    </svg>
+    <div class="gh-repo-card__title-wrap">
+      <span class="owner">{owner}/</span>
+      <h4 class="name">{repoName}</h4>
+    </div>
+    <span class="gh-repo-card__badge">Public</span>
+  </div>
+
+  <p class="gh-repo-card__desc">{description}</p>
+
+  <div class="gh-repo-card__meta">
+    <div class="gh-repo-card__lang">
+      <span class="lang-dot" style={\`background-color: \${languageColor};\`}></span>
+      <span>{language}</span>
+    </div>
+
+    <div class="gh-repo-card__stat">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      <span>{stars.toLocaleString()}</span>
+    </div>
+
+    <div class="gh-repo-card__stat">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="3" x2="6" y2="15"/>
+        <circle cx="18" cy="6" r="3"/>
+        <circle cx="6" cy="18" r="3"/>
+        <path d="M18 9a9 9 0 0 1-9 9"/>
+      </svg>
+      <span>{forks.toLocaleString()}</span>
+    </div>
+  </div>
+</a>
+
+<style>
+  .gh-repo-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    text-decoration: none;
+    width: 100%;
+    max-width: 360px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .gh-repo-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(184, 134, 11, 0.4);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .gh-repo-card__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .gh-repo-card__icon {
+    color: var(--c-primary-light, #d4a017);
+    flex-shrink: 0;
+  }
+
+  .gh-repo-card__title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .gh-repo-card__title-wrap .owner {
+    font-size: 0.82rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .gh-repo-card__title-wrap .name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-primary-light, #d4a017);
+    margin: 0;
+  }
+
+  .gh-repo-card__badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--c-text-2, #a3a3a3);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: var(--r-full, 9999px);
+  }
+
+  .gh-repo-card__desc {
+    font-size: 0.82rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .gh-repo-card__meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.78rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .gh-repo-card__lang {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .lang-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .gh-repo-card__stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--c-text-2, #a3a3a3);
+  }
+</style>
+`,
+    usage: `<GithubRepoCard repoName="astro-components" repoOwner="konstantinwdk" description="Accessible glassmorphic Astro UI component library" language="TypeScript" languageColor="#3178c6" stars={482} forks={64} />`,
+  },
+  {
+    slug: 'stats-trend-card',
+    name: 'Stats Trend Card',
+    description: 'Modern analytics KPI metric card displaying values, positive/negative delta trend badge, and mini sparkline bar visual.',
+    category: 'cards',
+    tags: ["cards","stats","analytics","kpi","dashboard"],
+    featured: false,
+    code: `---
+/**
+ * StatsTrendCard — Compact KPI metric card featuring delta percentages, trend directions, and mini activity bars.
+ * 
+ * @param {string} label - Metric name (e.g. 'Active Users').
+ * @param {string} value - Formatted value figure (e.g. '42,850').
+ * @param {string} change - Delta percentage string (e.g. '+18.4%').
+ * @param {'up' | 'down' | 'neutral'} trend - Direction of the trend. Default is 'up'.
+ * @param {string} timeframe - Timeframe subtitle (e.g. 'vs last month').
+ */
+interface Props {
+  label: string;
+  value: string;
+  change: string;
+  trend?: 'up' | 'down' | 'neutral';
+  timeframe?: string;
+}
+
+const {
+  label,
+  value,
+  change,
+  trend = 'up',
+  timeframe = 'vs last 30 days',
+} = Astro.props;
+
+const bars = [35, 55, 40, 75, 60, 90, 80, 100];
+---
+
+<div class="trend-card">
+  <div class="trend-card__top">
+    <span class="trend-card__label">{label}</span>
+    <span class:list={['trend-card__badge', \`trend-card__badge--\${trend}\`]}>
+      {trend === 'up' && '↑'}
+      {trend === 'down' && '↓'}
+      {change}
+    </span>
+  </div>
+
+  <div class="trend-card__value">{value}</div>
+
+  <div class="trend-card__bottom">
+    <span class="trend-card__timeframe">{timeframe}</span>
+    <div class="trend-card__chart" aria-hidden="true">
+      {bars.map((h) => (
+        <span class="bar" style={\`height: \${h}%;\`}></span>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .trend-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    width: 100%;
+    max-width: 280px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+
+  .trend-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(184, 134, 11, 0.3);
+  }
+
+  .trend-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .trend-card__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-2, #a3a3a3);
+  }
+
+  .trend-card__badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--r-full, 9999px);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .trend-card__badge--up {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .trend-card__badge--down {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .trend-card__badge--neutral {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--c-text-2, #a3a3a3);
+  }
+
+  .trend-card__value {
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: var(--c-text-1, #ffffff);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .trend-card__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .trend-card__timeframe {
+    font-size: 0.74rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .trend-card__chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 24px;
+    width: 60px;
+  }
+
+  .bar {
+    flex: 1;
+    background: rgba(184, 134, 11, 0.35);
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .trend-card:hover .bar {
+    background: var(--c-primary-light, #d4a017);
+  }
+</style>
+`,
+    usage: `<StatsTrendCard title="Active Subscriptions" value="14,290" change="+12.8%" isPositive={true} subtitle="Compared to previous 30 days" />`,
   },
 ];

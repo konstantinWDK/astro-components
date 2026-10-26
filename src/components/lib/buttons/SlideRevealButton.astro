@@ -1,0 +1,159 @@
+---
+/**
+ * SlideRevealButton — Interactive action button with a sliding icon drawer and kinetic typography transition.
+ * 
+ * @param {'primary' | 'secondary' | 'accent'} variant - Visual tone variant. Default is 'primary'.
+ * @param {'sm' | 'md' | 'lg'} size - Button size variant. Default is 'md'.
+ * @param {string} href - Optional link destination.
+ * @param {string} icon - SVG or character icon. Default is '→'.
+ * @param {boolean} disabled - Whether the button is disabled.
+ * @param {string} className - Additional CSS class names.
+ */
+interface Props {
+  variant?: 'primary' | 'secondary' | 'accent';
+  size?: 'sm' | 'md' | 'lg';
+  href?: string;
+  icon?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  href,
+  icon = '→',
+  disabled = false,
+  className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={['slide-reveal-btn', `slide-reveal-btn--${variant}`, `slide-reveal-btn--${size}`, className]}
+>
+  <span class="slide-reveal-btn__text">
+    <slot />
+  </span>
+  <span class="slide-reveal-btn__icon" aria-hidden="true">
+    {icon}
+  </span>
+</Tag>
+
+<style>
+  .slide-reveal-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .slide-reveal-btn:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 3px;
+  }
+
+  .slide-reveal-btn[disabled],
+  .slide-reveal-btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Variants */
+  .slide-reveal-btn--primary {
+    background: rgba(184, 134, 11, 0.15);
+    color: var(--c-accent, #fef3c7);
+    border-color: rgba(184, 134, 11, 0.35);
+  }
+  .slide-reveal-btn--primary:hover {
+    background: linear-gradient(135deg, #b8860b, #d4a017);
+    color: #050505;
+    box-shadow: 0 8px 24px rgba(184, 134, 11, 0.3);
+  }
+
+  .slide-reveal-btn--secondary {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--c-text-1, #ffffff);
+    backdrop-filter: blur(12px);
+  }
+  .slide-reveal-btn--secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .slide-reveal-btn--accent {
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    border-color: rgba(56, 189, 248, 0.3);
+  }
+  .slide-reveal-btn--accent:hover {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+  }
+
+  /* Sizes */
+  .slide-reveal-btn--sm {
+    padding: 0.45rem 1.1rem;
+    font-size: 0.8rem;
+  }
+  .slide-reveal-btn--sm .slide-reveal-btn__icon {
+    font-size: 0.9rem;
+  }
+
+  .slide-reveal-btn--md {
+    padding: 0.75rem 1.6rem;
+    font-size: 0.92rem;
+  }
+  .slide-reveal-btn--md .slide-reveal-btn__icon {
+    font-size: 1.05rem;
+  }
+
+  .slide-reveal-btn--lg {
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+  }
+  .slide-reveal-btn--lg .slide-reveal-btn__icon {
+    font-size: 1.25rem;
+  }
+
+  /* Text & sliding icon */
+  .slide-reveal-btn__text {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .slide-reveal-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 1.2rem;
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+  }
+
+  .slide-reveal-btn:hover .slide-reveal-btn__text {
+    transform: translateX(-12px);
+  }
+
+  .slide-reveal-btn:hover .slide-reveal-btn__icon {
+    opacity: 1;
+    transform: translateX(0);
+  }
+</style>

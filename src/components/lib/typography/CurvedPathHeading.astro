@@ -1,0 +1,86 @@
+---
+/**
+ * CurvedPathHeading — Typographic heading flowing along an SVG circular or arched trajectory.
+ * 
+ * @param {string} text - Headline text content. Default is 'ASTRO COMPONENTS KIT • ZERO RUNTIME DEPENDENCIES •'.
+ * @param {number} size - Pixel container diameter. Default is 260.
+ * @param {boolean} animate - Whether the badge rotates continuously. Default is true.
+ */
+interface Props {
+  text?: string;
+  size?: number;
+  animate?: boolean;
+}
+
+const {
+  text = 'ASTRO COMPONENTS KIT • ZERO RUNTIME • PURE CSS •',
+  size = 260,
+  animate = true,
+} = Astro.props;
+
+const pathId = `curve-path-${Math.random().toString(36).substring(2, 8)}`;
+---
+
+<div class:list={['curved-heading', { 'is-animated': animate }]} style={`--curved-size: ${size}px;`}>
+  <svg viewBox="0 0 300 300" width={size} height={size}>
+    <defs>
+      <path
+        id={pathId}
+        d="M 150, 150 m -110, 0 a 110,110 0 1,1 220,0 a 110,110 0 1,1 -220,0"
+      />
+    </defs>
+    <text class="curved-heading__text">
+      <textPath href={`#${pathId}`} startOffset="0%">
+        {text}
+      </textPath>
+    </text>
+  </svg>
+  <div class="curved-heading__core">✦</div>
+</div>
+
+<style>
+  .curved-heading {
+    position: relative;
+    width: var(--curved-size);
+    height: var(--curved-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    user-select: none;
+  }
+
+  .curved-heading.is-animated svg {
+    animation: curved-spin 20s linear infinite;
+  }
+
+  .curved-heading__text {
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    fill: var(--c-primary-light, #d4a017);
+  }
+
+  .curved-heading__core {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(184, 134, 11, 0.12);
+    border: 1px solid rgba(184, 134, 11, 0.3);
+    color: var(--c-accent, #fef3c7);
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+  }
+
+  @keyframes curved-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .curved-heading.is-animated svg { animation: none; }
+  }
+</style>

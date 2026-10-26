@@ -1,0 +1,161 @@
+---
+/**
+ * GlassInlineToggleGroup — Segmented glassmorphism pill toggle for multi-option selection.
+ * 
+ * @param {string} name - HTML radio group name.
+ * @param {Array<{label: string, value: string, icon?: string}>} options - Selectable options list.
+ * @param {string} defaultValue - Value of the active option.
+ * @param {'sm' | 'md' | 'lg'} size - Pill size scale. Default is 'md'.
+ */
+interface Props {
+  name: string;
+  options?: Array<{ label: string; value: string; icon?: string }>;
+  defaultValue?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  name = 'toggle-options',
+  options = [
+    { label: 'Weekly', value: 'week' },
+    { label: 'Monthly', value: 'month' },
+    { label: 'Yearly', value: 'year' },
+  ],
+  defaultValue = 'month',
+  size = 'md',
+} = Astro.props;
+---
+
+<div class:list={['glass-toggle-group', `glass-toggle-group--${size}`]} role="radiogroup" data-toggle-group>
+  <div class="glass-toggle-group__slider" data-toggle-slider aria-hidden="true"></div>
+  {options.map((opt) => {
+    const isChecked = opt.value === defaultValue;
+    return (
+      <label class="glass-toggle-group__item">
+        <input
+          type="radio"
+          name={name}
+          value={opt.value}
+          checked={isChecked}
+          class="glass-toggle-group__radio"
+          data-toggle-radio
+        />
+        <span class="glass-toggle-group__label">
+          {opt.icon && <span class="glass-toggle-group__icon" set:html={opt.icon} />}
+          {opt.label}
+        </span>
+      </label>
+    );
+  })}
+</div>
+
+<style>
+  .glass-toggle-group {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-full, 9999px);
+    padding: 4px;
+    user-select: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-toggle-group--sm {
+    padding: 3px;
+  }
+  .glass-toggle-group--sm .glass-toggle-group__label {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .glass-toggle-group--md .glass-toggle-group__label {
+    padding: 0.5rem 1.15rem;
+    font-size: 0.88rem;
+  }
+
+  .glass-toggle-group--lg .glass-toggle-group__label {
+    padding: 0.7rem 1.6rem;
+    font-size: 1rem;
+  }
+
+  .glass-toggle-group__item {
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .glass-toggle-group__radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .glass-toggle-group__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 600;
+    color: var(--c-text-2, #a3a3a3);
+    border-radius: var(--r-full, 9999px);
+    transition: color 0.25s ease;
+  }
+
+  .glass-toggle-group__item:hover .glass-toggle-group__label {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .glass-toggle-group__radio:checked + .glass-toggle-group__label {
+    color: #050505;
+  }
+
+  /* Sliding backdrop element */
+  .glass-toggle-group__slider {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    border-radius: var(--r-full, 9999px);
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    box-shadow: 0 4px 16px rgba(184, 134, 11, 0.4);
+    z-index: 1;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  function setupGlassToggleGroups() {
+    document.querySelectorAll('[data-toggle-group]').forEach((group) => {
+      const slider = group.querySelector('[data-toggle-slider]') as HTMLElement;
+      const radios = group.querySelectorAll('[data-toggle-radio]') as NodeListOf<HTMLInputElement>;
+      if (!slider || radios.length === 0) return;
+
+      function updateSlider() {
+        const checked = group.querySelector('[data-toggle-radio]:checked') as HTMLInputElement;
+        if (!checked) return;
+        const label = checked.closest('.glass-toggle-group__item') as HTMLElement;
+        if (!label) return;
+
+        const groupRect = group.getBoundingClientRect();
+        const labelRect = label.getBoundingClientRect();
+
+        const offsetLeft = labelRect.left - groupRect.left;
+        slider.style.width = `${labelRect.width}px`;
+        slider.style.transform = `translateX(${offsetLeft - 4}px)`;
+      }
+
+      radios.forEach((r) => r.addEventListener('change', updateSlider));
+      updateSlider();
+      window.addEventListener('resize', updateSlider);
+    });
+  }
+
+  setupGlassToggleGroups();
+  document.addEventListener('astro:page-load', setupGlassToggleGroups);
+</script>

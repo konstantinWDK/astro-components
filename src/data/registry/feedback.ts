@@ -1510,4 +1510,315 @@ const {
 `,
     usage: `<TypingIndicator />`,
   },
+  {
+    slug: 'progress-ring-counter',
+    name: 'Progress Ring Counter',
+    description: 'Circular SVG progress gauge with smooth stroke dashoffset transition, customizable track colors, and centered value readout.',
+    category: 'feedback',
+    tags: ["feedback","progress","ring","circular","meter"],
+    featured: true,
+    code: `---
+/**
+ * ProgressRingCounter — Circular SVG progress ring with centered countdown or metric value.
+ * 
+ * @param {number} value - Current counter or progress value. Default is 75.
+ * @param {number} max - Maximum value threshold. Default is 100.
+ * @param {number} size - Pixel diameter of the ring. Default is 96.
+ * @param {number} strokeWidth - Thickness of the ring stroke. Default is 6.
+ * @param {string} color - Primary gauge fill color. Default is '#d4a017'.
+ * @param {string} label - Subtitle label beneath figure. Default is 'COMPLETED'.
+ */
+interface Props {
+  value?: number;
+  max?: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+  label?: string;
+}
+
+const {
+  value = 75,
+  max = 100,
+  size = 96,
+  strokeWidth = 6,
+  color = '#d4a017',
+  label = 'COMPLETED',
+} = Astro.props;
+
+const radius = (size - strokeWidth) / 2;
+const circumference = 2 * Math.PI * radius;
+const percent = Math.min(100, Math.max(0, (value / max) * 100));
+const strokeDashoffset = circumference - (percent / 100) * circumference;
+---
+
+<div class="ring-counter" style={\`--ring-size: \${size}px; --ring-color: \${color};\`}>
+  <svg width={size} height={size} class="ring-counter__svg">
+    <circle
+      class="ring-counter__bg"
+      cx={size / 2}
+      cy={size / 2}
+      r={radius}
+      stroke-width={strokeWidth}
+    />
+    <circle
+      class="ring-counter__meter"
+      cx={size / 2}
+      cy={size / 2}
+      r={radius}
+      stroke-width={strokeWidth}
+      stroke-dasharray={circumference}
+      stroke-dashoffset={strokeDashoffset}
+    />
+  </svg>
+
+  <div class="ring-counter__center">
+    <span class="val">{Math.round(percent)}%</span>
+    {label && <span class="lbl">{label}</span>}
+  </div>
+</div>
+
+<style>
+  .ring-counter {
+    position: relative;
+    width: var(--ring-size);
+    height: var(--ring-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    user-select: none;
+  }
+
+  .ring-counter__svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+  }
+
+  .ring-counter__bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+  }
+
+  .ring-counter__meter {
+    fill: none;
+    stroke: var(--ring-color);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    filter: drop-shadow(0 0 6px rgba(212, 160, 23, 0.35));
+  }
+
+  .ring-counter__center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .ring-counter__center .val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--c-text-1, #ffffff);
+    line-height: 1;
+  }
+
+  .ring-counter__center .lbl {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--c-text-3, #737373);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+</style>
+`,
+    usage: `<ProgressRingCounter value={78} max={100} size={110} strokeWidth={8} color="var(--c-primary)" label="Score" />`,
+  },
+  {
+    slug: 'toast-notification-group',
+    name: 'Toast Notification Group',
+    description: 'A modern stacked toast notification tray supporting success, error, warning, and info alert toasts with dismiss actions.',
+    category: 'feedback',
+    tags: ["feedback","toast","notification","alert","stack"],
+    featured: true,
+    code: `---
+/**
+ * ToastNotificationGroup — Stackable notification banner with auto-timed progress bar, icon, and dismiss action.
+ * 
+ * @param {'success' | 'warning' | 'error' | 'info'} type - Alert status variant. Default is 'success'.
+ * @param {string} title - Notification title headline. Default is 'Changes Saved'.
+ * @param {string} message - Explanatory message text.
+ * @param {string} actionText - Optional action link text (e.g. 'Undo').
+ */
+interface Props {
+  type?: 'success' | 'warning' | 'error' | 'info';
+  title?: string;
+  message?: string;
+  actionText?: string;
+}
+
+const {
+  type = 'success',
+  title = 'Changes Saved',
+  message = 'Your project settings were synchronized with production.',
+  actionText = 'Undo',
+} = Astro.props;
+
+const icons = {
+  success: '✓',
+  warning: '!',
+  error: '✕',
+  info: 'ℹ',
+};
+---
+
+<div class:list={['toast-item', \`toast-item--\${type}\`]} role="alert" data-toast-item>
+  <div class="toast-item__body">
+    <span class="toast-item__icon" aria-hidden="true">{icons[type]}</span>
+    <div class="toast-item__content">
+      <h5 class="toast-item__title">{title}</h5>
+      <p class="toast-item__msg">{message}</p>
+    </div>
+    {actionText && (
+      <button type="button" class="toast-item__action">
+        {actionText}
+      </button>
+    )}
+    <button type="button" class="toast-item__close" aria-label="Dismiss alert" data-toast-close>
+      ✕
+    </button>
+  </div>
+  <div class="toast-item__progress" aria-hidden="true"></div>
+</div>
+
+<style>
+  .toast-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 380px;
+    background: rgba(14, 14, 18, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 14px);
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .toast-item--success { --toast-accent: #10b981; }
+  .toast-item--warning { --toast-accent: #f59e0b; }
+  .toast-item--error   { --toast-accent: #ef4444; }
+  .toast-item--info    { --toast-accent: #38bdf8; }
+
+  .toast-item__body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 1rem 1.15rem;
+  }
+
+  .toast-item__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--toast-accent);
+    color: var(--toast-accent);
+    display: grid;
+    place-items: center;
+    font-size: 0.75rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .toast-item__content {
+    flex: 1;
+  }
+
+  .toast-item__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0 0 2px 0;
+  }
+
+  .toast-item__msg {
+    font-size: 0.78rem;
+    color: var(--c-text-2, #a3a3a3);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .toast-item__action {
+    background: transparent;
+    border: none;
+    color: var(--toast-accent);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .toast-item__action:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .toast-item__close {
+    background: transparent;
+    border: none;
+    color: var(--c-text-3, #737373);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.2rem;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .toast-item__close:hover {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .toast-item__progress {
+    height: 3px;
+    background: var(--toast-accent);
+    width: 100%;
+    animation: toast-timer 5s linear forwards;
+  }
+
+  @keyframes toast-timer {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+</style>
+
+<script>
+  function setupToasts() {
+    document.querySelectorAll('[data-toast-item]').forEach((toast) => {
+      const closeBtn = toast.querySelector('[data-toast-close]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          (toast as HTMLElement).style.opacity = '0';
+          (toast as HTMLElement).style.transform = 'translateY(10px) scale(0.95)';
+          setTimeout(() => toast.remove(), 250);
+        });
+      }
+    });
+  }
+
+  setupToasts();
+  document.addEventListener('astro:page-load', setupToasts);
+</script>
+`,
+    usage: `<ToastNotificationGroup toasts={[{ id: '1', title: 'Saved', message: 'Project configurations synchronized.', variant: 'success' }]} />`,
+  },
 ];

@@ -1,0 +1,149 @@
+---
+/**
+ * StatsTrendCard — Compact KPI metric card featuring delta percentages, trend directions, and mini activity bars.
+ * 
+ * @param {string} label - Metric name (e.g. 'Active Users').
+ * @param {string} value - Formatted value figure (e.g. '42,850').
+ * @param {string} change - Delta percentage string (e.g. '+18.4%').
+ * @param {'up' | 'down' | 'neutral'} trend - Direction of the trend. Default is 'up'.
+ * @param {string} timeframe - Timeframe subtitle (e.g. 'vs last month').
+ */
+interface Props {
+  label: string;
+  value: string;
+  change: string;
+  trend?: 'up' | 'down' | 'neutral';
+  timeframe?: string;
+}
+
+const {
+  label = 'Monthly Active Builders',
+  value = '14,290',
+  change = '+18.4%',
+  trend = 'up',
+  timeframe = 'vs last 30 days',
+} = Astro.props;
+
+const bars = [35, 55, 40, 75, 60, 90, 80, 100];
+---
+
+<div class="trend-card">
+  <div class="trend-card__top">
+    <span class="trend-card__label">{label}</span>
+    <span class:list={['trend-card__badge', `trend-card__badge--${trend}`]}>
+      {trend === 'up' && '↑'}
+      {trend === 'down' && '↓'}
+      {change}
+    </span>
+  </div>
+
+  <div class="trend-card__value">{value}</div>
+
+  <div class="trend-card__bottom">
+    <span class="trend-card__timeframe">{timeframe}</span>
+    <div class="trend-card__chart" aria-hidden="true">
+      {bars.map((h) => (
+        <span class="bar" style={`height: ${h}%;`}></span>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .trend-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    width: 100%;
+    max-width: 280px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+
+  .trend-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(184, 134, 11, 0.3);
+  }
+
+  .trend-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .trend-card__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-2, #a3a3a3);
+  }
+
+  .trend-card__badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--r-full, 9999px);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .trend-card__badge--up {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .trend-card__badge--down {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .trend-card__badge--neutral {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--c-text-2, #a3a3a3);
+  }
+
+  .trend-card__value {
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: var(--c-text-1, #ffffff);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .trend-card__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .trend-card__timeframe {
+    font-size: 0.74rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .trend-card__chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 24px;
+    width: 60px;
+  }
+
+  .bar {
+    flex: 1;
+    background: rgba(184, 134, 11, 0.35);
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .trend-card:hover .bar {
+    background: var(--c-primary-light, #d4a017);
+  }
+</style>

@@ -1,0 +1,136 @@
+---
+/**
+ * LinearProgressGauge — Multi-segmented horizontal memory or budget progress bar with breakdown legend.
+ * 
+ * @param {string} title - Gauge header label. Default is 'Resource Allocation'.
+ * @param {Array<{label: string, value: number, color: string}>} segments - Proportion breakdown chunks.
+ * @param {string} total - Formatted total capacity string (e.g. '16 GB', '100%'). Default is '100%'.
+ */
+interface Props {
+  title?: string;
+  segments?: Array<{ label: string; value: number; color: string }>;
+  total?: string;
+}
+
+const {
+  title = 'System Resource Allocation',
+  segments = [
+    { label: 'SSR Execution', value: 45, color: '#d4a017' },
+    { label: 'Asset Caching', value: 25, color: '#38bdf8' },
+    { label: 'Edge Worker', value: 15, color: '#a855f7' },
+    { label: 'Free Headroom', value: 15, color: 'rgba(255,255,255,0.1)' },
+  ],
+  total = '100%',
+} = Astro.props;
+
+const totalSum = segments.reduce((acc, s) => acc + s.value, 0) || 100;
+---
+
+<div class="linear-gauge">
+  <div class="linear-gauge__header">
+    <span class="linear-gauge__title">{title}</span>
+    <span class="linear-gauge__total">{total}</span>
+  </div>
+
+  <div class="linear-gauge__bar" role="progressbar" aria-valuemax="100" aria-valuemin="0">
+    {segments.map((seg) => {
+      const pct = (seg.value / totalSum) * 100;
+      return (
+        <div
+          class="linear-gauge__chunk"
+          style={`width: ${pct}%; background-color: ${seg.color};`}
+          title={`${seg.label}: ${seg.value}%`}
+        />
+      );
+    })}
+  </div>
+
+  <div class="linear-gauge__legend">
+    {segments.map((seg) => (
+      <div class="legend-item">
+        <span class="legend-item__dot" style={`background-color: ${seg.color};`}></span>
+        <span class="legend-item__name">{seg.label}</span>
+        <span class="legend-item__val">{seg.value}%</span>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .linear-gauge {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 440px;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .linear-gauge__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .linear-gauge__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .linear-gauge__total {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--c-primary-light, #d4a017);
+  }
+
+  .linear-gauge__bar {
+    display: flex;
+    height: 10px;
+    border-radius: var(--r-full, 9999px);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .linear-gauge__chunk {
+    height: 100%;
+    transition: width 0.4s ease;
+  }
+
+  .linear-gauge__legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+    margin-top: 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+  }
+
+  .legend-item__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-item__name {
+    color: var(--c-text-2, #a3a3a3);
+    flex: 1;
+  }
+
+  .legend-item__val {
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+  }
+</style>

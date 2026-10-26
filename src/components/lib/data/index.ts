@@ -21,3 +21,6 @@ export { default as TimelineHorizSteps } from './TimelineHorizSteps.astro';
 export { default as TreeItemInteractive } from './TreeItemInteractive.astro';
 export { default as UserDirectoryItem } from './UserDirectoryItem.astro';
 export { default as VerticalTimeline } from './VerticalTimeline.astro';
+export { default as MetricComparisonRow } from './MetricComparisonRow.astro';
+export { default as ActivityHeatmapGrid } from './ActivityHeatmapGrid.astro';
+export { default as StatusTimelineFeed } from './StatusTimelineFeed.astro';

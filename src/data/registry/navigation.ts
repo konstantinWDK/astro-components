@@ -525,4 +525,412 @@ import { BreadcrumbsMinimal } from 'astro-component-kit';
 `,
     usage: `<SimpleFooterGlass>Content</SimpleFooterGlass>`,
   },
+  {
+    slug: 'sub-navbar-pills',
+    name: 'Sub Navbar Pills',
+    description: 'A secondary sub-navigation pill bar with active glow background, badge indicators, and smooth scroll overflow for dashboards.',
+    category: 'navigation',
+    tags: ["navigation","navbar","pills","subnav","tabs"],
+    featured: true,
+    code: `---
+/**
+ * SubNavbarPills — Secondary horizontal sub-navigation bar with scrollable pill links and badge counters.
+ * 
+ * @param {Array<{label: string, href: string, count?: number, active?: boolean}>} items - Nav links list.
+ * @param {string} className - Optional CSS class.
+ */
+interface Props {
+  items?: Array<{ label: string; href: string; count?: number; active?: boolean }>;
+  className?: string;
+}
+
+const {
+  items = [
+    { label: 'All Items', href: '#all', count: 124, active: true },
+    { label: 'Components', href: '#components', count: 86 },
+    { label: 'Templates', href: '#templates', count: 18 },
+    { label: 'Icons', href: '#icons', count: 20 },
+    { label: 'Guides', href: '#guides' },
+  ],
+  className = '',
+} = Astro.props;
+---
+
+<nav class:list={['subnav-pills', className]} aria-label="Sub navigation">
+  <div class="subnav-pills__track">
+    {items.map((item) => (
+      <a
+        href={item.href}
+        class:list={['subnav-pills__link', { 'is-active': item.active }]}
+        aria-current={item.active ? 'page' : undefined}
+      >
+        <span>{item.label}</span>
+        {item.count !== undefined && (
+          <span class="subnav-pills__count">{item.count}</span>
+        )}
+      </a>
+    ))}
+  </div>
+</nav>
+
+<style>
+  .subnav-pills {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .subnav-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .subnav-pills__track {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px;
+  }
+
+  .subnav-pills__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.45rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-full, 9999px);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .subnav-pills__link:hover {
+    color: var(--c-text-1, #ffffff);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .subnav-pills__link.is-active {
+    background: linear-gradient(135deg, rgba(184, 134, 11, 0.25), rgba(212, 160, 23, 0.25));
+    border-color: rgba(184, 134, 11, 0.5);
+    color: var(--c-accent, #fef3c7);
+  }
+
+  .subnav-pills__count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 7px;
+    border-radius: var(--r-full, 9999px);
+    color: inherit;
+  }
+</style>
+`,
+    usage: `<SubNavbarPills items={[{ label: 'Overview', href: '#overview', active: true }, { label: 'Deployments', href: '#deploy', badge: '3' }, { label: 'Settings', href: '#settings' }]} />`,
+  },
+  {
+    slug: 'quick-jump-dock',
+    name: 'Quick Jump Dock',
+    description: 'Floating macOS inspired dock navigation featuring hover scale expansion, tooltips, and fast route shortcuts.',
+    category: 'navigation',
+    tags: ["navigation","dock","floating","shortcuts","macos"],
+    featured: true,
+    code: `---
+/**
+ * QuickJumpDock — Floating desktop navigation dock bar with hover magnification and tooltips.
+ * 
+ * @param {Array<{label: string, icon: string, href: string}>} items - List of dock actions.
+ */
+interface Props {
+  items?: Array<{ label: string; icon: string; href: string }>;
+}
+
+const {
+  items = [
+    {
+      label: 'Home',
+      href: '/',
+      icon: \`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>\`,
+    },
+    {
+      label: 'Components',
+      href: '/docs/glass-button',
+      icon: \`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>\`,
+    },
+    {
+      label: 'Sections',
+      href: '/sections',
+      icon: \`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>\`,
+    },
+    {
+      label: 'Search',
+      href: '#search',
+      icon: \`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>\`,
+    },
+    {
+      label: 'GitHub',
+      href: 'https://github.com/konstantinWDK/astro-components',
+      icon: \`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/></svg>\`,
+    },
+  ],
+} = Astro.props;
+---
+
+<nav class="quick-dock" aria-label="Quick dock navigation" data-dock>
+  {items.map((item) => (
+    <a href={item.href} class="quick-dock__item" aria-label={item.label}>
+      <span class="quick-dock__tooltip" aria-hidden="true">{item.label}</span>
+      <span class="quick-dock__icon" set:html={item.icon} />
+    </a>
+  ))}
+</nav>
+
+<style>
+  .quick-dock {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(14, 14, 18, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-full, 9999px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .quick-dock__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--c-text-2, #a3a3a3);
+    text-decoration: none;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, color 0.2s ease;
+  }
+
+  .quick-dock__item:hover {
+    transform: translateY(-8px) scale(1.15);
+    background: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--c-primary-light, #d4a017);
+  }
+
+  .quick-dock__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .quick-dock__tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    padding: 4px 10px;
+    background: #000000;
+    color: #ffffff;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .quick-dock__tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 4px;
+    border-style: solid;
+    border-color: #000 transparent transparent transparent;
+  }
+
+  .quick-dock__item:hover .quick-dock__tooltip {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+`,
+    usage: `<QuickJumpDock items={[{ label: 'Home', href: '/', icon: 'home' }, { label: 'Docs', href: '/docs', icon: 'file' }, { label: 'Settings', href: '/settings', icon: 'settings' }]} />`,
+  },
+  {
+    slug: 'step-breadcrumb-bar',
+    name: 'Step Breadcrumb Bar',
+    description: 'Multi-step workflow progress breadcrumb indicating completed, current, and upcoming stages.',
+    category: 'navigation',
+    tags: ["navigation","breadcrumb","steps","workflow","wizard"],
+    featured: false,
+    code: `---
+/**
+ * StepBreadcrumbBar — Stepped workflow breadcrumb indicator for checkout, multi-step forms, or wizards.
+ * 
+ * @param {Array<{step: number, label: string, status: 'complete' | 'active' | 'upcoming', href?: string}>} steps - Step definitions.
+ */
+interface Props {
+  steps?: Array<{
+    step: number;
+    label: string;
+    status: 'complete' | 'active' | 'upcoming';
+    href?: string;
+  }>;
+}
+
+const {
+  steps = [
+    { step: 1, label: 'Account', status: 'complete', href: '#step-1' },
+    { step: 2, label: 'Plan & Billing', status: 'active', href: '#step-2' },
+    { step: 3, label: 'Preferences', status: 'upcoming', href: '#step-3' },
+    { step: 4, label: 'Review', status: 'upcoming', href: '#step-4' },
+  ],
+} = Astro.props;
+---
+
+<nav class="step-nav" aria-label="Workflow progress">
+  <ol class="step-nav__list">
+    {steps.map((st, i) => (
+      <li class:list={['step-nav__item', \`step-nav__item--\${st.status}\`]}>
+        <a href={st.href || '#'} class="step-nav__link" aria-current={st.status === 'active' ? 'step' : undefined}>
+          <span class="step-nav__circle">
+            {st.status === 'complete' ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              st.step
+            )}
+          </span>
+          <span class="step-nav__label">{st.label}</span>
+        </a>
+        {i < steps.length - 1 && (
+          <div class="step-nav__line" aria-hidden="true"></div>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  .step-nav {
+    width: 100%;
+    max-width: 680px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .step-nav__list {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+
+  .step-nav__item {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+
+  .step-nav__item:last-child {
+    flex: 0 0 auto;
+  }
+
+  .step-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--c-text-3, #737373);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .step-nav__link:hover {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .step-nav__circle {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+  }
+
+  /* Status modifiers */
+  .step-nav__item--complete .step-nav__circle {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .step-nav__item--complete .step-nav__label {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .step-nav__item--active .step-nav__circle {
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    border-color: #d4a017;
+    color: #050505;
+    box-shadow: 0 0 12px rgba(212, 160, 23, 0.4);
+  }
+
+  .step-nav__item--active .step-nav__label {
+    color: var(--c-primary-light, #d4a017);
+    font-weight: 700;
+  }
+
+  .step-nav__line {
+    flex: 1;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0 12px;
+  }
+
+  .step-nav__item--complete .step-nav__line {
+    background: #10b981;
+    opacity: 0.5;
+  }
+
+  @media (max-width: 640px) {
+    .step-nav__label {
+      display: none;
+    }
+    .step-nav__line {
+      margin: 0 6px;
+    }
+  }
+</style>
+`,
+    usage: `<StepBreadcrumbBar steps={[{ label: 'Cart', status: 'completed' }, { label: 'Shipping', status: 'current' }, { label: 'Payment', status: 'upcoming' }]} />`,
+  },
 ];

@@ -393,4 +393,218 @@ const { title, subtitle } = Astro.props;
 `,
     usage: `<FooterCenteredMinimal>Content</FooterCenteredMinimal>`,
   },
+  {
+    slug: 'holy-grail-grid',
+    name: 'Holy Grail Grid',
+    description: 'Modern CSS grid-based responsive layout with header, collapsible left sidebar, dynamic main content area, right aside, and footer.',
+    category: 'layout',
+    tags: ["layout","grid","holygrail","dashboard","structure"],
+    featured: true,
+    code: `---
+/**
+ * HolyGrailGrid — Production-grade CSS grid layout container with sticky header, dual sidebars, fluid content, and footer.
+ * 
+ * @param {string} leftWidth - Left sidebar width. Default is '240px'.
+ * @param {string} rightWidth - Right sidebar width. Default is '220px'.
+ * @param {string} gap - Spacing gap between grid regions. Default is '1.5rem'.
+ * @param {string} className - Optional CSS class.
+ */
+interface Props {
+  leftWidth?: string;
+  rightWidth?: string;
+  gap?: string;
+  className?: string;
+}
+
+const {
+  leftWidth = '240px',
+  rightWidth = '220px',
+  gap = '1.5rem',
+  className = '',
+} = Astro.props;
+---
+
+<div
+  class:list={['holy-grail', className]}
+  style={\`--hg-left: \${leftWidth}; --hg-right: \${rightWidth}; --hg-gap: \${gap};\`}
+>
+  <header class="holy-grail__header">
+    <slot name="header" />
+  </header>
+
+  <div class="holy-grail__middle">
+    <aside class="holy-grail__left">
+      <slot name="left" />
+    </aside>
+
+    <main class="holy-grail__main">
+      <slot />
+    </main>
+
+    <aside class="holy-grail__right">
+      <slot name="right" />
+    </aside>
+  </div>
+
+  <footer class="holy-grail__footer">
+    <slot name="footer" />
+  </footer>
+</div>
+
+<style>
+  .holy-grail {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    color: var(--c-text-1, #ffffff);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .holy-grail__header {
+    width: 100%;
+    padding: var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    background: rgba(10, 10, 14, 0.8);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .holy-grail__middle {
+    display: grid;
+    grid-template-columns: var(--hg-left) 1fr var(--hg-right);
+    gap: var(--hg-gap);
+    flex: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+    padding: var(--sp-6, 1.5rem);
+  }
+
+  .holy-grail__left,
+  .holy-grail__right {
+    padding: var(--sp-4, 1rem);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-lg, 16px);
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .holy-grail__main {
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-lg, 16px);
+    min-height: 400px;
+  }
+
+  .holy-grail__footer {
+    width: 100%;
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(10, 10, 14, 0.9);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: auto;
+  }
+
+  @media (max-width: 1024px) {
+    .holy-grail__middle {
+      grid-template-columns: var(--hg-left) 1fr;
+    }
+    .holy-grail__right {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .holy-grail__middle {
+      grid-template-columns: 1fr;
+    }
+    .holy-grail__left {
+      position: static;
+    }
+  }
+</style>
+`,
+    usage: `<HolyGrailGrid><div slot="header">Header</div><div slot="left">Sidebar</div><div slot="main">Content</div><div slot="footer">Footer</div></HolyGrailGrid>`,
+  },
+  {
+    slug: 'diagonal-section-divider',
+    name: 'Diagonal Section Divider',
+    description: 'SVG slant angle section separator creating dynamic non-rectangular transitions between landing page sections.',
+    category: 'layout',
+    tags: ["layout","divider","diagonal","slant","separator"],
+    featured: false,
+    code: `---
+/**
+ * DiagonalSectionDivider — Angled SVG/clip-path section divider creating fluid diagonal page transitions.
+ * 
+ * @param {'top' | 'bottom'} position - Attachment position. Default is 'bottom'.
+ * @param {'left-to-right' | 'right-to-left'} direction - Slant angle direction. Default is 'left-to-right'.
+ * @param {string} height - Height of the diagonal incline in pixels. Default is '60px'.
+ * @param {string} fillColor - Fill color for the divider polygon. Default is '#050505'.
+ */
+interface Props {
+  position?: 'top' | 'bottom';
+  direction?: 'left-to-right' | 'right-to-left';
+  height?: string;
+  fillColor?: string;
+}
+
+const {
+  position = 'bottom',
+  direction = 'left-to-right',
+  height = '60px',
+  fillColor = '#050505',
+} = Astro.props;
+
+const isLtr = direction === 'left-to-right';
+const points = isLtr
+  ? position === 'bottom' ? '0,100 100,0 100,100' : '0,0 100,0 100,100'
+  : position === 'bottom' ? '0,0 0,100 100,100' : '0,0 100,0 0,100';
+---
+
+<div
+  class:list={['diagonal-divider', \`diagonal-divider--\${position}\`]}
+  style={\`--div-height: \${height}; --div-color: \${fillColor};\`}
+  aria-hidden="true"
+>
+  <svg
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    class="diagonal-divider__svg"
+  >
+    <polygon points={points} fill={fillColor} />
+  </svg>
+</div>
+
+<style>
+  .diagonal-divider {
+    position: relative;
+    width: 100%;
+    height: var(--div-height);
+    overflow: hidden;
+    line-height: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .diagonal-divider--bottom {
+    margin-bottom: calc(-1 * var(--div-height));
+  }
+
+  .diagonal-divider--top {
+    margin-top: calc(-1 * var(--div-height));
+  }
+
+  .diagonal-divider__svg {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+`,
+    usage: `<DiagonalSectionDivider angle="slant-down" fill="var(--c-bg-subtle)" height={60} />`,
+  },
 ];

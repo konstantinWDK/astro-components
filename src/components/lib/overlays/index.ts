@@ -21,3 +21,6 @@ export { default as SplashIntroOverlay } from './SplashIntroOverlay.astro';
 export { default as SpotlightIndicator } from './SpotlightIndicator.astro';
 export { default as ToastStackOverlay } from './ToastStackOverlay.astro';
 export { default as TooltipActionTray } from './TooltipActionTray.astro';
+export { default as CookiePreferencesDrawer } from './CookiePreferencesDrawer.astro';
+export { default as ImageCompareSlider } from './ImageCompareSlider.astro';
+export { default as FloatingFeedbackWidget } from './FloatingFeedbackWidget.astro';

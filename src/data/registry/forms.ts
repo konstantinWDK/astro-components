@@ -781,7 +781,7 @@ const { label, forId, helpText, error, required = false } = Astro.props;
 <div class:list={["form-group", { "form-group--error": error }]}>
   <div class="form-group__header">
     <label for={forId} class="form-group__label">
-      {label}
+      {label},
       {required && <span class="form-group__req" aria-hidden="true">*</span>}
     </label>
   </div>
@@ -865,7 +865,7 @@ const { label, id, name, min = 0, max = 100, value = 50, step = 1 } = Astro.prop
   <input 
     type="range" 
     class="glass-slider" 
-    {id} 
+    {id}, 
     {name} 
     {min} 
     {max} 
@@ -1591,7 +1591,7 @@ const { label, id, name, value = 1, min, max, step = 1 } = Astro.props;
     <button type="button" class="stepper-btn stepper-btn--minus" data-step-minus aria-label="Decrease value">−</button>
     <input 
       type="number" 
-      {id} 
+      {id}, 
       {name} 
       {min} 
       {max} 
@@ -1668,5 +1668,842 @@ const { label, id, name, value = 1, min, max, step = 1 } = Astro.props;
 </script>
 `,
     usage: `<StepperInput id="qty" label="Quantity" value={1} min={1} max={10} />`,
+  },
+  {
+    slug: 'password-strength-input',
+    name: 'Password Strength Input',
+    description: 'Interactive password input with dynamic real-time entropy calculation, strength meter bar, and visibility toggle.',
+    category: 'forms',
+    tags: ["form","input","password","security","validation"],
+    featured: true,
+    code: `---
+/**
+ * PasswordStrengthInput — Secure password input field with visual strength estimator bar and eye toggle.
+ * 
+ * @param {string} id - HTML ID for the password input.
+ * @param {string} label - Input label text. Default is 'Password'.
+ * @param {string} name - Form field name. Default is 'password'.
+ * @param {string} placeholder - Placeholder text. Default is 'Enter secure password'.
+ * @param {boolean} required - HTML required field attribute.
+ */
+interface Props {
+  id: string;
+  label?: string;
+  name?: string;
+  placeholder?: string;
+  required?: boolean;
+}
+
+const {
+  id,
+  label = 'Password',
+  name = 'password',
+  placeholder = 'Enter secure password',
+  required = false,
+} = Astro.props;
+---
+
+<div class="pwd-group" data-pwd-group>
+  <div class="pwd-group__header">
+    <label for={id} class="pwd-group__label">{label}</label>
+    <span class="pwd-group__status" data-pwd-status>Too weak</span>
+  </div>
+
+  <div class="pwd-group__field">
+    <input
+      type="password"
+      id={id}
+      name={name}
+      placeholder={placeholder}
+      required={required}
+      class="pwd-group__input"
+      data-pwd-input
+      autocomplete="new-password"
+    />
+    <button
+      type="button"
+      class="pwd-group__toggle"
+      aria-label="Toggle password visibility"
+      data-pwd-toggle
+    >
+      <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+        <line x1="2" x2="22" y1="2" y2="22" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- 4-segment strength meter -->
+  <div class="pwd-group__meter" aria-hidden="true">
+    <div class="pwd-group__segment" data-seg="1"></div>
+    <div class="pwd-group__segment" data-seg="2"></div>
+    <div class="pwd-group__segment" data-seg="3"></div>
+    <div class="pwd-group__segment" data-seg="4"></div>
+  </div>
+</div>
+
+<style>
+  .pwd-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    max-width: 360px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .pwd-group__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.2rem;
+  }
+
+  .pwd-group__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .pwd-group__status {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #ef4444;
+    transition: color 0.3s ease;
+  }
+
+  .pwd-group__field {
+    position: relative;
+    width: 100%;
+  }
+
+  .pwd-group__input {
+    width: 100%;
+    padding: 0.75rem 2.8rem 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 12px);
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.92rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .pwd-group__input:focus {
+    border-color: rgba(184, 134, 11, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+  }
+
+  .pwd-group__input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .pwd-group__toggle {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--c-text-3, #737373);
+    cursor: pointer;
+    padding: 0.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm, 6px);
+    transition: color 0.2s ease;
+  }
+
+  .pwd-group__toggle:hover {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .pwd-group__meter {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    height: 4px;
+    margin-top: 4px;
+  }
+
+  .pwd-group__segment {
+    height: 100%;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Dynamic levels */
+  .pwd-group[data-level="1"] .pwd-group__segment[data-seg="1"] {
+    background: #ef4444;
+  }
+  .pwd-group[data-level="1"] .pwd-group__status {
+    color: #ef4444;
+  }
+
+  .pwd-group[data-level="2"] .pwd-group__segment[data-seg="1"],
+  .pwd-group[data-level="2"] .pwd-group__segment[data-seg="2"] {
+    background: #f59e0b;
+  }
+  .pwd-group[data-level="2"] .pwd-group__status {
+    color: #f59e0b;
+  }
+
+  .pwd-group[data-level="3"] .pwd-group__segment[data-seg="1"],
+  .pwd-group[data-level="3"] .pwd-group__segment[data-seg="2"],
+  .pwd-group[data-level="3"] .pwd-group__segment[data-seg="3"] {
+    background: #3b82f6;
+  }
+  .pwd-group[data-level="3"] .pwd-group__status {
+    color: #3b82f6;
+  }
+
+  .pwd-group[data-level="4"] .pwd-group__segment {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  }
+  .pwd-group[data-level="4"] .pwd-group__status {
+    color: #10b981;
+  }
+</style>
+
+<script>
+  function initPasswordGroups() {
+    document.querySelectorAll('[data-pwd-group]').forEach((group) => {
+      const input = group.querySelector('[data-pwd-input]') as HTMLInputElement;
+      const toggle = group.querySelector('[data-pwd-toggle]') as HTMLButtonElement;
+      const status = group.querySelector('[data-pwd-status]') as HTMLElement;
+      if (!input || !toggle) return;
+
+      const eyeOpen = toggle.querySelector('.eye-open') as HTMLElement;
+      const eyeClosed = toggle.querySelector('.eye-closed') as HTMLElement;
+
+      toggle.addEventListener('click', () => {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        if (eyeOpen && eyeClosed) {
+          eyeOpen.style.display = isPassword ? 'none' : 'block';
+          eyeClosed.style.display = isPassword ? 'block' : 'none';
+        }
+      });
+
+      input.addEventListener('input', () => {
+        const val = input.value;
+        let score = 0;
+        if (val.length >= 6) score++;
+        if (val.length >= 10) score++;
+        if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        group.setAttribute('data-level', String(score));
+
+        const labels = ['Too weak', 'Weak', 'Fair', 'Strong', 'Secure & Robust'];
+        if (status) {
+          status.textContent = labels[score] || 'Too weak';
+        }
+      });
+    });
+  }
+
+  initPasswordGroups();
+  document.addEventListener('astro:page-load', initPasswordGroups);
+</script>
+`,
+    usage: `<PasswordStrengthInput id="user-password" label="Create Password" minLength={8} />`,
+  },
+  {
+    slug: 'tags-autocomplete-input',
+    name: 'Tags Autocomplete Input',
+    description: 'Multi-tag pill input component with keyboard tag addition, pill removal, and suggestion dropdown.',
+    category: 'forms',
+    tags: ["form","tags","input","autocomplete","pills"],
+    featured: true,
+    code: `---
+/**
+ * TagsAutocompleteInput — Tag entry field with pill badges, keyboard deletion, and suggestion dropdown.
+ * 
+ * @param {string} id - HTML ID for the tag input.
+ * @param {string} label - Input label. Default is 'Tags'.
+ * @param {string[]} initialTags - Pre-populated list of tags. Default is ['Astro', 'TypeScript'].
+ * @param {string[]} suggestions - Autocomplete candidate options.
+ * @param {string} placeholder - Input placeholder. Default is 'Add tag & press Enter...'.
+ */
+interface Props {
+  id: string;
+  label?: string;
+  initialTags?: string[];
+  suggestions?: string[];
+  placeholder?: string;
+}
+
+const {
+  id,
+  label = 'Tags',
+  initialTags = ['Astro', 'TypeScript'],
+  suggestions = ['React', 'Tailwind', 'Three.js', 'SSR', 'Vite', 'GraphQL'],
+  placeholder = 'Add tag & press Enter...',
+} = Astro.props;
+---
+
+<div class="tags-field" data-tags-root>
+  <label for={id} class="tags-field__label">{label}</label>
+
+  <div class="tags-field__box" data-tags-box>
+    <div class="tags-field__list" data-tags-list>
+      {initialTags.map((tag) => (
+        <span class="tag-pill" data-tag={tag}>
+          <span class="tag-pill__name">{tag}</span>
+          <button type="button" class="tag-pill__remove" aria-label={\`Remove tag \${tag}\`} data-tag-remove>×</button>
+        </span>
+      ))}
+    </div>
+
+    <input
+      type="text"
+      id={id}
+      placeholder={placeholder}
+      class="tags-field__input"
+      data-tags-input
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="tags-field__suggestions" data-tags-suggestions hidden>
+    {suggestions.map((sug) => (
+      <button type="button" class="sug-item" data-sug-val={sug}>
+        + {sug}
+      </button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .tags-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    max-width: 440px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    position: relative;
+  }
+
+  .tags-field__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .tags-field__box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 12px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-height: 44px;
+  }
+
+  .tags-field__box:focus-within {
+    border-color: rgba(184, 134, 11, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+  }
+
+  .tags-field__list {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.65rem;
+    background: rgba(184, 134, 11, 0.15);
+    border: 1px solid rgba(184, 134, 11, 0.35);
+    border-radius: var(--r-full, 9999px);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-accent, #fef3c7);
+    user-select: none;
+    animation: pill-pop 0.2s ease-out;
+  }
+
+  @keyframes pill-pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .tag-pill__remove {
+    background: transparent;
+    border: none;
+    color: var(--c-accent, #fef3c7);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .tag-pill__remove:hover {
+    opacity: 1;
+    color: #ef4444;
+  }
+
+  .tags-field__input {
+    flex: 1;
+    min-width: 140px;
+    background: transparent;
+    border: none;
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.88rem;
+    outline: none;
+    padding: 0.2rem 0;
+  }
+
+  .tags-field__input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .tags-field__suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 0.4rem;
+    background: rgba(12, 12, 16, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-sm, 8px);
+  }
+
+  .sug-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-full, 9999px);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .sug-item:hover {
+    background: rgba(184, 134, 11, 0.2);
+    border-color: rgba(184, 134, 11, 0.4);
+    color: var(--c-text-1, #ffffff);
+  }
+</style>
+
+<script>
+  function setupTagsFields() {
+    document.querySelectorAll('[data-tags-root]').forEach((root) => {
+      const input = root.querySelector('[data-tags-input]') as HTMLInputElement;
+      const list = root.querySelector('[data-tags-list]') as HTMLElement;
+      const suggestions = root.querySelector('[data-tags-suggestions]') as HTMLElement;
+      if (!input || !list) return;
+
+      function addTag(text: string) {
+        const clean = text.trim();
+        if (!clean) return;
+
+        // Check duplicate
+        const exists = Array.from(list.querySelectorAll('.tag-pill__name')).some(
+          (el) => el.textContent?.toLowerCase() === clean.toLowerCase()
+        );
+        if (exists) return;
+
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill';
+        pill.setAttribute('data-tag', clean);
+        pill.innerHTML = \`
+          <span class="tag-pill__name">\${clean}</span>
+          <button type="button" class="tag-pill__remove" aria-label="Remove tag \${clean}" data-tag-remove>×</button>
+        \`;
+        list.appendChild(pill);
+        input.value = '';
+      }
+
+      list.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.matches('[data-tag-remove]')) {
+          const pill = target.closest('.tag-pill');
+          if (pill) pill.remove();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          addTag(input.value);
+        } else if (e.key === 'Backspace' && !input.value) {
+          const last = list.querySelector('.tag-pill:last-child');
+          if (last) last.remove();
+        }
+      });
+
+      input.addEventListener('focus', () => {
+        if (suggestions) suggestions.hidden = false;
+      });
+
+      if (suggestions) {
+        suggestions.addEventListener('click', (e) => {
+          const btn = (e.target as HTMLElement).closest('[data-sug-val]') as HTMLElement;
+          if (btn) {
+            const val = btn.getAttribute('data-sug-val');
+            if (val) addTag(val);
+          }
+        });
+      }
+    });
+  }
+
+  setupTagsFields();
+  document.addEventListener('astro:page-load', setupTagsFields);
+</script>
+`,
+    usage: `<TagsAutocompleteInput id="article-tags" label="Article Tags" initialTags={['astro', 'design']} />`,
+  },
+  {
+    slug: 'glass-inline-toggle-group',
+    name: 'Glass Inline Toggle Group',
+    description: 'An iOS/macOS styled segmented control toggle group with glass sliding indicator and keyboard navigation.',
+    category: 'forms',
+    tags: ["form","toggle","segmented","control","switch"],
+    featured: false,
+    code: `---
+/**
+ * GlassInlineToggleGroup — Segmented glassmorphism pill toggle for multi-option selection.
+ * 
+ * @param {string} name - HTML radio group name.
+ * @param {Array<{label: string, value: string, icon?: string}>} options - Selectable options list.
+ * @param {string} defaultValue - Value of the active option.
+ * @param {'sm' | 'md' | 'lg'} size - Pill size scale. Default is 'md'.
+ */
+interface Props {
+  name: string;
+  options?: Array<{ label: string; value: string; icon?: string }>;
+  defaultValue?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  name,
+  options = [
+    { label: 'Weekly', value: 'week' },
+    { label: 'Monthly', value: 'month' },
+    { label: 'Yearly', value: 'year' },
+  ],
+  defaultValue = 'month',
+  size = 'md',
+} = Astro.props;
+---
+
+<div class:list={['glass-toggle-group', \`glass-toggle-group--\${size}\`]} role="radiogroup" data-toggle-group>
+  <div class="glass-toggle-group__slider" data-toggle-slider aria-hidden="true"></div>
+  {options.map((opt) => {
+    const isChecked = opt.value === defaultValue;
+    return (
+      <label class="glass-toggle-group__item">
+        <input
+          type="radio"
+          name={name}
+          value={opt.value}
+          checked={isChecked}
+          class="glass-toggle-group__radio"
+          data-toggle-radio
+        />
+        <span class="glass-toggle-group__label">
+          {opt.icon && <span class="glass-toggle-group__icon" set:html={opt.icon} />},
+          {opt.label}
+        </span>
+      </label>
+    );
+  })}
+</div>
+
+<style>
+  .glass-toggle-group {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-full, 9999px);
+    padding: 4px;
+    user-select: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-toggle-group--sm {
+    padding: 3px;
+  }
+  .glass-toggle-group--sm .glass-toggle-group__label {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .glass-toggle-group--md .glass-toggle-group__label {
+    padding: 0.5rem 1.15rem;
+    font-size: 0.88rem;
+  }
+
+  .glass-toggle-group--lg .glass-toggle-group__label {
+    padding: 0.7rem 1.6rem;
+    font-size: 1rem;
+  }
+
+  .glass-toggle-group__item {
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .glass-toggle-group__radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .glass-toggle-group__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-weight: 600;
+    color: var(--c-text-2, #a3a3a3);
+    border-radius: var(--r-full, 9999px);
+    transition: color 0.25s ease;
+  }
+
+  .glass-toggle-group__item:hover .glass-toggle-group__label {
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .glass-toggle-group__radio:checked + .glass-toggle-group__label {
+    color: #050505;
+  }
+
+  /* Sliding backdrop element */
+  .glass-toggle-group__slider {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    border-radius: var(--r-full, 9999px);
+    background: linear-gradient(135deg, #d4a017, #b8860b);
+    box-shadow: 0 4px 16px rgba(184, 134, 11, 0.4);
+    z-index: 1;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  function setupGlassToggleGroups() {
+    document.querySelectorAll('[data-toggle-group]').forEach((group) => {
+      const slider = group.querySelector('[data-toggle-slider]') as HTMLElement;
+      const radios = group.querySelectorAll('[data-toggle-radio]') as NodeListOf<HTMLInputElement>;
+      if (!slider || radios.length === 0) return;
+
+      function updateSlider() {
+        const checked = group.querySelector('[data-toggle-radio]:checked') as HTMLInputElement;
+        if (!checked) return;
+        const label = checked.closest('.glass-toggle-group__item') as HTMLElement;
+        if (!label) return;
+
+        const groupRect = group.getBoundingClientRect();
+        const labelRect = label.getBoundingClientRect();
+
+        const offsetLeft = labelRect.left - groupRect.left;
+        slider.style.width = \`\${labelRect.width}px\`;
+        slider.style.transform = \`translateX(\${offsetLeft - 4}px)\`;
+      }
+
+      radios.forEach((r) => r.addEventListener('change', updateSlider));
+      updateSlider();
+      window.addEventListener('resize', updateSlider);
+    });
+  }
+
+  setupGlassToggleGroups();
+  document.addEventListener('astro:page-load', setupGlassToggleGroups);
+</script>
+`,
+    usage: `<GlassInlineToggleGroup name="billing" options={[{ value: 'monthly', label: 'Monthly' }, { value: 'yearly', label: 'Yearly' }]} defaultValue="monthly" />`,
+  },
+  {
+    slug: 'phone-country-input',
+    name: 'Phone Country Input',
+    description: 'Clean phone number input featuring a country dial code selector and auto-formatting.',
+    category: 'forms',
+    tags: ["form","phone","input","country-code","international"],
+    featured: false,
+    code: `---
+/**
+ * PhoneCountryInput — Accessible phone input with country dial code selector and dark glass styling.
+ * 
+ * @param {string} id - HTML ID for the phone input.
+ * @param {string} label - Input label text. Default is 'Phone Number'.
+ * @param {string} name - Form field name. Default is 'phone'.
+ * @param {string} placeholder - Phone placeholder. Default is '612 345 678'.
+ * @param {boolean} required - HTML required field attribute.
+ */
+interface Props {
+  id: string;
+  label?: string;
+  name?: string;
+  placeholder?: string;
+  required?: boolean;
+}
+
+const {
+  id,
+  label = 'Phone Number',
+  name = 'phone',
+  placeholder = '612 345 678',
+  required = false,
+} = Astro.props;
+
+const countries = [
+  { code: '+34', flag: '🇪🇸', name: 'ES' },
+  { code: '+1', flag: '🇺🇸', name: 'US' },
+  { code: '+44', flag: '🇬🇧', name: 'UK' },
+  { code: '+49', flag: '🇩🇪', name: 'DE' },
+  { code: '+33', flag: '🇫🇷', name: 'FR' },
+  { code: '+52', flag: '🇲🇽', name: 'MX' },
+  { code: '+54', flag: '🇦🇷', name: 'AR' },
+];
+---
+
+<div class="phone-group">
+  <label for={id} class="phone-group__label">{label}</label>
+
+  <div class="phone-group__wrap">
+    <div class="phone-group__prefix">
+      <select class="phone-group__select" aria-label="Country calling code" name={\`\${name}_country\`}>
+        {countries.map((c) => (
+          <option value={c.code}>
+            {c.flag} {c.code}
+          </option>
+        ))}
+      </select>
+      <span class="phone-group__arrow" aria-hidden="true">▾</span>
+    </div>
+
+    <input
+      type="tel"
+      id={id}
+      name={name}
+      placeholder={placeholder}
+      required={required}
+      class="phone-group__input"
+      autocomplete="tel-national"
+    />
+  </div>
+</div>
+
+<style>
+  .phone-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    max-width: 380px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .phone-group__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .phone-group__wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md, 12px);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .phone-group__wrap:focus-within {
+    border-color: rgba(184, 134, 11, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.15);
+  }
+
+  .phone-group__prefix {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .phone-group__select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 0.75rem 1.6rem 0.75rem 0.85rem;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .phone-group__select option {
+    background: #111116;
+    color: #ffffff;
+  }
+
+  .phone-group__arrow {
+    position: absolute;
+    right: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--c-text-3, #737373);
+    pointer-events: none;
+  }
+
+  .phone-group__input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 0.75rem 1rem;
+    color: var(--c-text-1, #ffffff);
+    font-size: 0.92rem;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .phone-group__input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+</style>
+`,
+    usage: `<PhoneCountryInput id="phone-number" label="Mobile Number" defaultCountry="+34" />`,
   },
 ];

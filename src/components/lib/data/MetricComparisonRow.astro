@@ -1,0 +1,109 @@
+---
+/**
+ * MetricComparisonRow — Horizontal gauge comparing actual performance vs target benchmark with percentage badge.
+ * 
+ * @param {string} title - Benchmark description (e.g. 'Monthly Revenue Target').
+ * @param {number} current - Current numeric value figure.
+ * @param {number} target - Goal target value.
+ * @param {string} unit - Unit prefix or suffix (e.g. '$', 'ms', 'users'). Default is '$'.
+ * @param {string} color - Progress bar accent color. Default is '#d4a017'.
+ */
+interface Props {
+  title: string;
+  current: number;
+  target: number;
+  unit?: string;
+  color?: string;
+}
+
+const {
+  title = 'Quarterly Revenue Target',
+  current = 8450,
+  target = 10000,
+  unit = '$',
+  color = '#d4a017',
+} = Astro.props;
+
+const safeCurrent = current ?? 0;
+const safeTarget = (target && target > 0) ? target : 1;
+const percent = Math.min(100, Math.round((safeCurrent / safeTarget) * 100));
+---
+
+<div class="metric-row" style={`--metric-accent: ${color};`}>
+  <div class="metric-row__header">
+    <div class="metric-row__title-wrap">
+      <h5 class="metric-row__title">{title}</h5>
+      <span class="metric-row__ratio">{unit}{safeCurrent.toLocaleString()} of {unit}{safeTarget.toLocaleString()}</span>
+    </div>
+    <span class="metric-row__badge">{percent}%</span>
+  </div>
+
+  <div class="metric-row__track" role="progressbar" aria-valuenow={safeCurrent} aria-valuemax={safeTarget} aria-valuemin="0">
+    <div class="metric-row__fill" style={`width: ${percent}%;`}></div>
+  </div>
+</div>
+
+<style>
+  .metric-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 440px;
+    padding: var(--sp-4, 1rem);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-md, 14px);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .metric-row__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .metric-row__title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .metric-row__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--c-text-1, #ffffff);
+    margin: 0;
+  }
+
+  .metric-row__ratio {
+    font-size: 0.75rem;
+    color: var(--c-text-3, #737373);
+  }
+
+  .metric-row__badge {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--metric-accent);
+    background: rgba(184, 134, 11, 0.12);
+    border: 1px solid rgba(184, 134, 11, 0.3);
+    padding: 2px 8px;
+    border-radius: var(--r-full, 9999px);
+  }
+
+  .metric-row__track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--r-full, 9999px);
+    overflow: hidden;
+  }
+
+  .metric-row__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #b8860b, var(--metric-accent));
+    border-radius: inherit;
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.4);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+</style>

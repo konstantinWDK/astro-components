@@ -1,0 +1,105 @@
+---
+/**
+ * GradientTextMarquee — Continuous kinetic typographic marquee banner with background-clip gold gradient.
+ * 
+ * @param {string[]} phrases - Array of words or slogans to scroll continuously.
+ * @param {string} speed - Animation duration string (e.g. '25s'). Default is '20s'.
+ * @param {boolean} reverse - Whether the marquee moves in reverse direction.
+ */
+interface Props {
+  phrases?: string[];
+  speed?: string;
+  reverse?: boolean;
+}
+
+const {
+  phrases = [
+    'PERFORMANCE FIRST',
+    'ZERO DEPENDENCIES',
+    'ACCESSIBLE WCAG AA',
+    'ASTRO 5 READY',
+    'DARK GLASS MORPHISM',
+  ],
+  speed = '20s',
+  reverse = false,
+} = Astro.props;
+---
+
+<div class="grad-marquee" style={`--marquee-speed: ${speed};`} aria-label="Animated slogan marquee">
+  <div class:list={['grad-marquee__track', { 'is-reverse': reverse }]}>
+    {phrases.map((phrase) => (
+      <span class="grad-marquee__item">
+        <span class="text">{phrase}</span>
+        <span class="dot" aria-hidden="true">✦</span>
+      </span>
+    ))}
+    {/* Duplicate loop */}
+    {phrases.map((phrase) => (
+      <span class="grad-marquee__item" aria-hidden="true">
+        <span class="text">{phrase}</span>
+        <span class="dot" aria-hidden="true">✦</span>
+      </span>
+    ))}
+  </div>
+</div>
+
+<style>
+  .grad-marquee {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding: var(--sp-4, 1rem) 0;
+    user-select: none;
+    mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .grad-marquee__track {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    width: max-content;
+    animation: marquee-roll var(--marquee-speed) linear infinite;
+  }
+
+  .grad-marquee__track:hover {
+    animation-play-state: paused;
+  }
+
+  .grad-marquee__track.is-reverse {
+    animation-direction: reverse;
+  }
+
+  .grad-marquee__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .grad-marquee__item .text {
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #ffffff 0%, #fef3c7 40%, #d4a017 80%, #b8860b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+  }
+
+  .grad-marquee__item .dot {
+    color: var(--c-primary-light, #d4a017);
+    font-size: 1.2rem;
+  }
+
+  @keyframes marquee-roll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grad-marquee__track { animation: none; overflow-x: auto; }
+  }
+</style>

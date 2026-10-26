@@ -1,0 +1,102 @@
+---
+/**
+ * AnimatedCounterText — Kinetic statistic counter display with animated number progression and unit suffixes.
+ * 
+ * @param {number} target - Numerical target value (e.g. 99, 120, 2400). Default is 120.
+ * @param {string} prefix - Optional string prefix (e.g. '$', '+').
+ * @param {string} suffix - Optional string suffix (e.g. '%', 'k', '+'). Default is '+'.
+ * @param {string} label - Descriptive text below the counter.
+ * @param {string} color - Text accent color. Default is '#d4a017'.
+ */
+interface Props {
+  target?: number;
+  prefix?: string;
+  suffix?: string;
+  label?: string;
+  color?: string;
+}
+
+const {
+  target = 120,
+  prefix = '',
+  suffix = '+',
+  label = 'Components Ready to Ship',
+  color = '#d4a017',
+} = Astro.props;
+---
+
+<div class="stat-counter" data-counter-wrap style={`--counter-color: ${color};`}>
+  <div class="stat-counter__number">
+    {prefix && <span class="affix">{prefix}</span>}
+    <span class="value" data-counter-target={target}>0</span>
+    {suffix && <span class="affix">{suffix}</span>}
+  </div>
+  {label && <p class="stat-counter__label">{label}</p>}
+</div>
+
+<style>
+  .stat-counter {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    user-select: none;
+  }
+
+  .stat-counter__number {
+    display: inline-flex;
+    align-items: baseline;
+    font-size: clamp(2.5rem, 6vw, 4.2rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--counter-color);
+    text-shadow: 0 0 24px rgba(212, 160, 23, 0.35);
+  }
+
+  .stat-counter__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-2, #a3a3a3);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+
+<script>
+  function setupCounters() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const targetEl = entry.target.querySelector('[data-counter-target]') as HTMLElement;
+        if (!targetEl || targetEl.getAttribute('data-counted')) return;
+
+        targetEl.setAttribute('data-counted', 'true');
+        const finalVal = parseInt(targetEl.getAttribute('data-counter-target') || '0', 10);
+        const duration = 1500;
+        const start = performance.now();
+
+        function step(now: number) {
+          const progress = Math.min((now - start) / duration, 1);
+          // Ease out cubic
+          const eased = 1 - Math.pow(1 - progress, 3);
+          targetEl.textContent = Math.floor(eased * finalVal).toLocaleString();
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            targetEl.textContent = finalVal.toLocaleString();
+          }
+        }
+
+        requestAnimationFrame(step);
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('[data-counter-wrap]').forEach((el) => observer.observe(el));
+  }
+
+  setupCounters();
+  document.addEventListener('astro:page-load', setupCounters);
+</script>

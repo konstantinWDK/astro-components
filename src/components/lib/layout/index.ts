@@ -21,3 +21,5 @@ export { default as GalleryGrid4 } from './GalleryGrid4.astro';
 export { default as StepLayoutVertical } from './StepLayoutVertical.astro';
 export { default as LandingSectionSplit } from './LandingSectionSplit.astro';
 export { default as FooterCenteredMinimal } from './FooterCenteredMinimal.astro';
+export { default as HolyGrailGrid } from './HolyGrailGrid.astro';
+export { default as DiagonalSectionDivider } from './DiagonalSectionDivider.astro';
