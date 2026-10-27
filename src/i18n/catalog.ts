@@ -46,6 +46,16 @@ export const categoryTranslations: Record<string, Record<Locale, LocalizedMeta>>
     es: { name: 'Modales & Capas', description: 'Ventanas modales, paneles deslizantes, avisos de cookies, hojas inferiores y visores lightbox.' },
     ru: { name: 'Модальные окна', description: 'Всплывающие окна, выезжающие панели, баннеры куки, мобильные шторки и просмотрщики.' },
   },
+  overlays: {
+    en: { name: 'Overlays', description: 'Modals, slide-in drawers, cookie banners, bottom sheets, and lightboxes.' },
+    es: { name: 'Modales & Capas', description: 'Ventanas modales, paneles deslizantes, avisos de cookies, hojas inferiores y visores lightbox.' },
+    ru: { name: 'Модальные окна', description: 'Всплывающие окна, выезжающие панели, баннеры куки, мобильные шторки и просмотрщики.' },
+  },
+  data: {
+    en: { name: 'Data Display', description: 'Timelines, stat cards, tables, heatmaps, accordions, and tag clouds.' },
+    es: { name: 'Visualización de Datos', description: 'Líneas de tiempo, tarjetas de métricas, tablas, mapas de calor, acordeones y nubes de etiquetas.' },
+    ru: { name: 'Отображение данных', description: 'Таймлайны, карточки статистики, таблицы, тепловые карты, аккордеоны и облака тегов.' },
+  },
   'data-display': {
     en: { name: 'Data Display', description: 'Timelines, stat cards, tables, heatmaps, accordions, and tag clouds.' },
     es: { name: 'Visualización de Datos', description: 'Líneas de tiempo, tarjetas de métricas, tablas, mapas de calor, acordeones y nubes de etiquetas.' },
@@ -127,15 +137,19 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
 /**
  * Returns localized category object
  */
-export function getLocalizedCategory(cat: Category, lang: Locale): Category {
-  if (lang === 'en') return cat;
-  const translation = categoryTranslations[cat.id]?.[lang];
-  if (!translation) return cat;
+export function getLocalizedCategory(catOrId: Category | string, lang: Locale): { id: string; name: string; description: string; icon?: string } {
+  const catId = typeof catOrId === 'string' ? catOrId : catOrId.id;
+  const originalName = typeof catOrId === 'string' ? catOrId : catOrId.name;
+  const originalDesc = typeof catOrId === 'string' ? '' : catOrId.description;
+  const icon = typeof catOrId === 'string' ? '' : catOrId.icon;
+
+  const translation = categoryTranslations[catId]?.[lang];
 
   return {
-    ...cat,
-    name: translation.name || cat.name,
-    description: translation.description || cat.description,
+    id: catId,
+    name: translation?.name || originalName,
+    description: translation?.description || originalDesc,
+    icon,
   };
 }
 
