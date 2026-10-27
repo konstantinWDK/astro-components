@@ -6,7 +6,7 @@ import PreviewRenderer from './PreviewRenderer.astro';
 import { components, getComponentBySlug, categories } from '../../data/registry/index';
 import type { Locale } from '../../config/site';
 import { useTranslations, getLocalizedPath } from '../../i18n/translations';
-import { getLocalizedCategory, getLocalizedComponent } from '../../i18n/catalog';
+import { getLocalizedCategory, getLocalizedComponent, getComponentSeoMeta } from '../../i18n/catalog';
 
 interface Props {
   slug: string;
@@ -22,6 +22,7 @@ if (!rawComp) {
 }
 
 const comp = getLocalizedComponent(rawComp, lang);
+const seo = getComponentSeoMeta(rawComp, lang);
 const rawCategory = categories.find((c) => c.id === comp.category);
 const category = rawCategory ? getLocalizedCategory(rawCategory, lang) : null;
 
@@ -46,7 +47,7 @@ const depText = comp.category === 'charts'
   : (comp.category === 'sections' && comp.slug === 'galaxy-3d' ? 'three.js (peer)' : t('doc.depsNone'));
 ---
 
-<DocsLayout title={comp.name} description={comp.description} lang={lang}>
+<DocsLayout title={seo.title} description={seo.description} lang={lang}>
   <div class="doc-page anim-fade-in">
     <!-- Prev/Next navigation at top -->
     <nav class="doc-nav" aria-label={t('nav.components')}>
@@ -100,7 +101,7 @@ const depText = comp.category === 'charts'
         <p class="doc-section__subtitle">{t('doc.usageDesc')}</p>
       </div>
 
-      <div class="usage-code-wrapper">
+      <div class="usage-code-wrapper" data-nosnippet>
         <CodeBlock code={displayUsage} lang="astro" id={`usage-${slug}`} />
       </div>
     </section>
@@ -111,7 +112,7 @@ const depText = comp.category === 'charts'
       <div class="manual-box">
         <p>{t('doc.manualInstallDesc')} <code>src/components/lib/{rawComp.name.replace(/\s/g, '')}.astro</code>:</p>
       </div>
-      <div style="margin-top: var(--sp-4)">
+      <div data-nosnippet style="margin-top: var(--sp-4)">
         <CodeBlock code={rawComp.code} lang="astro" id={`code-${slug}`} />
       </div>
     </section>

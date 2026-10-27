@@ -1,6 +1,6 @@
-// src/i18n/catalog.ts
 import type { Category, ComponentDoc, SectionCategory } from '../data/registry/types';
 import type { Locale } from '../config/site';
+import { componentTranslations } from './componentTranslations';
 
 export interface LocalizedMeta {
   name?: string;
@@ -169,16 +169,29 @@ export function getLocalizedSectionCategory(secCat: SectionCategory, lang: Local
 }
 
 /**
- * Helper to translate component description on the fly into ES or RU
- * For any component, returns an accurate, contextual translation of its description.
+ * Helper to translate component description into EN, ES, or RU
+ * Uses the exact componentTranslations dictionary with fallback to regex rules.
  */
 export function getLocalizedComponent(comp: ComponentDoc, lang: Locale): ComponentDoc {
+  const trans = componentTranslations[comp.slug];
+
+  if (trans) {
+    if (lang === 'es' && trans.es) {
+      return { ...comp, description: trans.es };
+    }
+    if (lang === 'ru' && trans.ru) {
+      return { ...comp, description: trans.ru };
+    }
+    if (lang === 'en' && trans.en) {
+      return { ...comp, description: trans.en };
+    }
+  }
+
   if (lang === 'en') return comp;
 
   let desc = comp.description;
 
   if (lang === 'es') {
-    // Systematic high quality Spanish translation rules for common phrases
     desc = desc
       .replace(/A clean, accessible/i, 'Un componente limpio y accesible de')
       .replace(/A clean, modern/i, 'Un componente limpio y moderno de')
@@ -222,4 +235,59 @@ export function getLocalizedComponent(comp: ComponentDoc, lang: Locale): Compone
     ...comp,
     description: desc,
   };
+}
+
+export interface ComponentSeoMeta {
+  title: string;
+  description: string;
+}
+
+/**
+ * Generates search-engine optimized title and meta description (130-155 characters)
+ * for any component or section in EN, ES, and RU.
+ */
+export function getComponentSeoMeta(comp: ComponentDoc, lang: Locale): ComponentSeoMeta {
+  const localizedComp = getLocalizedComponent(comp, lang);
+  const base = localizedComp.description.trim().replace(/\.$/, '');
+
+  let title = `${comp.name} - Free Astro Component`;
+  let description = '';
+
+  if (lang === 'es') {
+    title = `${comp.name} - Componente Astro Gratis`;
+    if (base.length <= 90) {
+      description = `${base}. Componente Astro gratis y accesible listo para usar.`;
+    } else if (base.length <= 115) {
+      description = `${base}. Componente Astro gratis sin dependencias.`;
+    } else if (base.length <= 145) {
+      description = `${base} para Astro con cero dependencias.`;
+    } else {
+      description = `${base}.`;
+    }
+  } else if (lang === 'ru') {
+    title = `${comp.name} - Бесплатный компонент Astro`;
+    if (base.length <= 90) {
+      description = `${base}. Бесплатный и доступный компонент для Astro.`;
+    } else if (base.length <= 115) {
+      description = `${base}. Готовый компонент Astro без зависимостей.`;
+    } else if (base.length <= 145) {
+      description = `${base} для Astro без внешних зависимостей.`;
+    } else {
+      description = `${base}.`;
+    }
+  } else {
+    // English
+    title = `${comp.name} - Free Astro Component`;
+    if (base.length <= 90) {
+      description = `${base}. Free, responsive Astro component with zero dependencies.`;
+    } else if (base.length <= 115) {
+      description = `${base}. Free and accessible Astro UI component.`;
+    } else if (base.length <= 145) {
+      description = `${base} for Astro with zero dependencies.`;
+    } else {
+      description = `${base}.`;
+    }
+  }
+
+  return { title, description };
 }
