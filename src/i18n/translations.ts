@@ -8,7 +8,8 @@ export const ui = {
     'nav.install': 'Installation',
     'nav.components': 'Components',
     'nav.sections': 'Sections',
-    'nav.blog': 'Blog',
+    'nav.blog': 'Notes',
+    'nav.notes': 'Notes',
     'nav.github': 'GitHub',
     'nav.docs': 'Documentation',
 
@@ -53,7 +54,8 @@ export const ui = {
     'nav.install': 'Instalación',
     'nav.components': 'Componentes',
     'nav.sections': 'Secciones',
-    'nav.blog': 'Blog',
+    'nav.blog': 'Notas',
+    'nav.notes': 'Notas',
     'nav.github': 'GitHub',
     'nav.docs': 'Documentación',
 
@@ -98,7 +100,8 @@ export const ui = {
     'nav.install': 'Установка',
     'nav.components': 'Компоненты',
     'nav.sections': 'Секции',
-    'nav.blog': 'Блог',
+    'nav.blog': 'Заметки',
+    'nav.notes': 'Заметки',
     'nav.github': 'GitHub',
     'nav.docs': 'Документация',
 
