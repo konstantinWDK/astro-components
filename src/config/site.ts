@@ -70,18 +70,18 @@ export const siteConfig = {
   seo: {
     en: {
       title: 'Astro Components Kit — 236+ Free Production-Ready Astro UI Components',
-      description: 'The ultimate open-source Astro 5 component library. 236+ copy-paste accessible, dark mode & glassmorphism UI components and complete landing page sections. Zero dependencies.',
-      keywords: 'astro, astro 5, components, ui library, open source, astro components, glassmorphism, accessible, web development, frontend, design system',
+      description: 'The ultimate free open-source Astro 5 component library. 236+ free, accessible, dark mode & glassmorphism UI components and complete landing page sections. Zero dependencies. MIT licensed.',
+      keywords: 'astro, astro 5, components, free components, ui library, open source, astro components, glassmorphism, accessible, web development, frontend, design system',
     },
     es: {
-      title: 'Astro Components Kit — 236+ Componentes UI Listos para Producción en Astro',
-      description: 'La librería definitiva de componentes para Astro 5. Más de 236 componentes UI accesibles con modo oscuro y glassmorphism, listos para copiar y pegar, y secciones completas. Cero dependencias.',
-      keywords: 'astro, astro 5, componentes, libreria ui, codigo abierto, componentes astro, glassmorphism, accesible, desarrollo web, frontend, sistema de diseño',
+      title: 'Astro Components Kit — 236+ Componentes UI Gratis y Open-Source para Astro',
+      description: 'La librería open-source definitiva para Astro 5. Más de 236 componentes UI 100% gratuitos y accesibles, con modo oscuro y glassmorphism, listos para copiar y pegar, y secciones completas. Cero dependencias. Licencia MIT.',
+      keywords: 'astro, astro 5, componentes gratis, componentes, libreria ui, codigo abierto, componentes astro, glassmorphism, accesible, desarrollo web, frontend, sistema de diseño',
     },
     ru: {
-      title: 'Astro Components Kit — 236+ Готовых UI Компонентов для Astro',
-      description: 'Современная библиотека компонентов для Astro 5 с открытым исходным кодом. Более 236 доступных UI-компонентов с темной темой и глассморфизмом, готовых к копированию, и целые секции страниц. Без внешних зависимостей.',
-      keywords: 'astro, astro 5, компоненты, ui библиотека, открытый исходный код, компоненты astro, глассморфизм, доступность, веб-разработка, фронтенд, дизайн-система',
+      title: 'Astro Components Kit — 236+ Бесплатных UI Компонентов для Astro',
+      description: 'Современная бесплатная библиотека компонентов для Astro 5 с открытым исходным кодом. Более 236 бесплатных и доступных UI-компонентов с темной темой и глассморфизмом, готовых к копированию, и целые секции страниц. Без внешних зависимостей. Лицензия MIT.',
+      keywords: 'astro, astro 5, компоненты, бесплатные компоненты, ui библиотека, открытый исходный код, компоненты astro, глассморфизм, доступность, веб-разработка, фронтенд, дизайн-система',
     },
   },
 };

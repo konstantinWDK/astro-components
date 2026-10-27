@@ -1,6 +1,6 @@
 # ⬇ Astro Component Kit
 
-> A premium, open-source accessible UI component library built for [Astro 5.x](https://astro.build).
+> A free, open-source accessible UI component library built for [Astro 5.x](https://astro.build).
 > **🌐 Browse & copy components** at [astrocomponents.dev](https://astrocomponents.dev)
 > **📦 Install via npm** or **copy-paste** — your choice!
 
