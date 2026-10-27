@@ -1,0 +1,192 @@
+---
+// src/components/layout/LanguagePicker.astro
+import { LOCALES, SUPPORTED_LOCALES } from '../../config/site';
+import { getLangFromUrl, getLocalizedPath } from '../../i18n/translations';
+
+const currentPath = Astro.url.pathname;
+const currentLang = getLangFromUrl(Astro.url);
+const currentLocale = LOCALES[currentLang];
+---
+
+<div class="lang-picker" id="lang-picker">
+  <button
+    class="lang-picker__trigger"
+    id="lang-picker-btn"
+    type="button"
+    aria-expanded="false"
+    aria-haspopup="true"
+    aria-label="Select language"
+  >
+    <span class="lang-picker__flag">{currentLocale.flag}</span>
+    <span class="lang-picker__code">{currentLocale.code.toUpperCase()}</span>
+    <svg class="lang-picker__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </button>
+
+  <div class="lang-picker__menu" id="lang-picker-menu" role="menu">
+    {SUPPORTED_LOCALES.map((localeCode) => {
+      const locale = LOCALES[localeCode];
+      const isSelected = localeCode === currentLang;
+      const targetHref = getLocalizedPath(currentPath, localeCode);
+
+      return (
+        <a
+          href={targetHref}
+          class:list={['lang-picker__item', { 'is-active': isSelected }]}
+          role="menuitem"
+          hreflang={localeCode}
+        >
+          <span class="lang-picker__flag">{locale.flag}</span>
+          <span class="lang-picker__name">{locale.nativeName}</span>
+          {isSelected && (
+            <svg class="lang-picker__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          )}
+        </a>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  .lang-picker {
+    position: relative;
+    display: inline-block;
+  }
+
+  .lang-picker__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--r-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--c-text-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: var(--font-sans);
+  }
+
+  .lang-picker__trigger:hover {
+    color: var(--c-text-1);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(234, 179, 8, 0.35);
+  }
+
+  .lang-picker__trigger:focus-visible {
+    box-shadow: 0 0 0 2px var(--c-primary-light);
+  }
+
+  .lang-picker__flag {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  .lang-picker__code {
+    letter-spacing: 0.05em;
+  }
+
+  .lang-picker__arrow {
+    transition: transform 0.2s ease;
+    opacity: 0.7;
+  }
+
+  .lang-picker.is-open .lang-picker__arrow {
+    transform: rotate(180deg);
+  }
+
+  .lang-picker__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 140px;
+    padding: 4px;
+    background: rgba(15, 18, 28, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-md);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 100;
+  }
+
+  .lang-picker.is-open .lang-picker__menu {
+    display: flex;
+    animation: lang-dropdown-fade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes lang-dropdown-fade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .lang-picker__item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.65rem;
+    border-radius: calc(var(--r-md) - 4px);
+    color: var(--c-text-2);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+
+  .lang-picker__item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--c-text-1);
+  }
+
+  .lang-picker__item.is-active {
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.12);
+    font-weight: 700;
+  }
+
+  .lang-picker__name {
+    flex: 1;
+  }
+
+  .lang-picker__check {
+    color: #facc15;
+  }
+</style>
+
+<script is:inline>
+  (function initLangPicker() {
+    const picker = document.getElementById('lang-picker');
+    const trigger = document.getElementById('lang-picker-btn');
+    if (!picker || !trigger) return;
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = picker.classList.toggle('is-open');
+      trigger.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!picker.contains(e.target)) {
+        picker.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && picker.classList.contains('is-open')) {
+        picker.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.focus();
+      }
+    });
+  })();
+</script>

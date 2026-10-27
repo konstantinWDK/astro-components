@@ -1,0 +1,108 @@
+---
+// src/components/blog/BlogPostPage.astro
+import BlogLayout from '../../layouts/BlogLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
+
+interface Props {
+  slug: string;
+  lang?: 'en' | 'es' | 'ru';
+}
+
+const { slug, lang = 'en' } = Astro.props;
+const t = useTranslations(lang);
+
+const posts = await getCollection('blog');
+const post = posts.find((p: any) => p.id === slug);
+
+if (!post) {
+  return Astro.redirect(getLocalizedPath('/blog', lang));
+}
+
+const { title, description, date, tag } = post.data;
+const { Content } = await render(post);
+
+const localeCode = lang === 'es' ? 'es-ES' : lang === 'ru' ? 'ru-RU' : 'en-US';
+const formattedDate = new Date(date).toLocaleDateString(localeCode, { year: 'numeric', month: 'long', day: 'numeric' });
+
+const sorted = [...posts].sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+const currentIndex = sorted.findIndex((p) => p.id === slug);
+const prevPost = currentIndex > 0 ? sorted[currentIndex - 1] : null;
+const nextPost = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : null;
+
+const blogTitle = lang === 'es' ? 'Blog' : lang === 'ru' ? 'Блог' : 'Blog';
+---
+
+<BlogLayout title={title} description={description}>
+  <article class="blog-post anim-fade-in">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+      <span class="breadcrumb__sep">›</span>
+      <a href={getLocalizedPath('/blog', lang)}>{blogTitle}</a>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">{title}</span>
+    </nav>
+
+    <header class="blog-post__header">
+      <div class="blog-post__meta-top">
+        <span class="blog-post__tag">{tag}</span>
+        <time class="blog-post__date" datetime={date}>{formattedDate}</time>
+      </div>
+      <h1 class="blog-post__title">{title}</h1>
+      <p class="blog-post__subtitle">{description}</p>
+      <div class="blog-post__divider" aria-hidden="true"></div>
+    </header>
+
+    <div class="blog-post__content">
+      <Content />
+    </div>
+
+    <nav class="blog-post__nav" aria-label="Post navigation">
+      {prevPost ? (
+        <a href={getLocalizedPath(`/blog/${prevPost.id}`, lang)} class="blog-post__nav-link blog-post__nav-link--prev">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>{prevPost.data.title}</span>
+        </a>
+      ) : <span></span>}
+      {nextPost ? (
+        <a href={getLocalizedPath(`/blog/${nextPost.id}`, lang)} class="blog-post__nav-link blog-post__nav-link--next">
+          <span>{nextPost.data.title}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      ) : <span></span>}
+    </nav>
+  </article>
+</BlogLayout>
+
+<style>
+  .blog-post { max-width: 700px; }
+  .anim-fade-in { opacity: 0; animation: fade-in 0.6s ease forwards; }
+  @keyframes fade-in { to { opacity: 1; } }
+  .breadcrumb { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6); }
+  .breadcrumb a { color: var(--c-text-3); text-decoration: none; } .breadcrumb a:hover { color: var(--c-text-2); }
+  .breadcrumb__sep { color: var(--c-text-3); opacity: 0.5; } .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
+  .blog-post__header { margin-bottom: var(--sp-12); }
+  .blog-post__meta-top { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-5); }
+  .blog-post__tag { display: inline-block; padding: 0.2rem 0.6rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-primary-light); background: rgba(184,134,11,0.1); border-radius: var(--r-full); }
+  .blog-post__date { font-size: 0.75rem; color: var(--c-text-3); }
+  .blog-post__title { font-size: clamp(2rem, 4.5vw, 2.75rem); font-weight: 900; color: var(--c-text-1); letter-spacing: -0.03em; line-height: 1.15; margin: 0 0 var(--sp-4); }
+  .blog-post__subtitle { font-size: 1.15rem; color: var(--c-text-2); line-height: 1.6; margin: 0; }
+  .blog-post__divider { height: 1px; background: linear-gradient(90deg, var(--c-border) 0%, transparent 100%); margin-top: var(--sp-8); }
+  .blog-post__content { font-size: 0.95rem; line-height: 1.8; color: var(--c-text-2); }
+  .blog-post__content :global(h2) { font-size: 1.5rem; font-weight: 800; color: var(--c-text-1); margin: var(--sp-10) 0 var(--sp-4); letter-spacing: -0.02em; }
+  .blog-post__content :global(h3) { font-size: 1.2rem; font-weight: 700; color: var(--c-text-1); margin: var(--sp-8) 0 var(--sp-3); }
+  .blog-post__content :global(p) { margin: 0 0 var(--sp-5); }
+  .blog-post__content :global(ul), .blog-post__content :global(ol) { margin: 0 0 var(--sp-5); padding-left: var(--sp-6); }
+  .blog-post__content :global(li) { margin-bottom: var(--sp-2); }
+  .blog-post__content :global(a) { color: var(--c-primary-light); text-decoration: underline; text-underline-offset: 3px; }
+  .blog-post__content :global(code) { font-family: var(--font-mono, monospace); font-size: 0.85em; background: rgba(255,255,255,0.06); padding: 0.15em 0.4em; border-radius: var(--r-sm); border: 1px solid var(--c-border); color: #f59e0b; }
+  .blog-post__content :global(pre) { background: #0a0b10 !important; border: 1px solid var(--c-border); border-radius: var(--r-md); padding: var(--sp-4) var(--sp-5); margin: 0 0 var(--sp-6); overflow-x: auto; }
+  .blog-post__content :global(pre code) { background: transparent; border: none; padding: 0; color: inherit; font-size: 0.85rem; }
+  .blog-post__content :global(hr) { border: none; height: 1px; background: var(--c-border); margin: var(--sp-10) 0; }
+  .blog-post__content :global(blockquote) { border-left: 3px solid var(--c-primary); margin: 0 0 var(--sp-5); padding: var(--sp-2) 0 var(--sp-2) var(--sp-4); color: var(--c-text-3); font-style: italic; }
+  .blog-post__nav { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-4); margin-top: var(--sp-12); padding-top: var(--sp-8); border-top: 1px solid var(--c-border); }
+  .blog-post__nav-link { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: 0.85rem; font-weight: 600; color: var(--c-text-2); text-decoration: none; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--c-border); border-radius: var(--r-md); transition: all 0.2s; max-width: 48%; }
+  .blog-post__nav-link:hover { color: var(--c-primary-light); border-color: rgba(184,134,11,0.3); background: rgba(255,255,255,0.02); }
+  .blog-post__nav-link svg { flex-shrink: 0; }
+  .blog-post__nav-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>

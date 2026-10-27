@@ -2,72 +2,153 @@
 // src/layouts/BaseLayout.astro
 import '../styles/global.css';
 import GitHubStarPrompt from '../components/layout/GitHubStarPrompt.astro';
+import { siteConfig, LOCALES, DEFAULT_LOCALE, type Locale } from '../config/site';
+import { getLangFromUrl, getAlternateHreflangs } from '../i18n/translations';
 
 interface Props {
   title: string;
   description?: string;
   image?: string;
+  lang?: Locale;
 }
 
+const currentUrl = Astro.url;
+const detectedLang = getLangFromUrl(currentUrl);
 const {
   title,
-  description = 'Astro Components Kit — A premium open-source Astro component library with 200+ beautiful, accessible, copy-paste ready UI components. Zero dependencies.',
-  image = '/og-image.png',
+  lang = detectedLang,
+  description = siteConfig.seo[lang]?.description || siteConfig.seo[DEFAULT_LOCALE].description,
+  image = siteConfig.ogImage,
 } = Astro.props;
 
-const siteUrl = 'https://astrocomponents.dev';
+const localeConfig = LOCALES[lang] || LOCALES[DEFAULT_LOCALE];
+const siteUrl = siteConfig.url;
 const imageUrl = image.startsWith('http') ? image : `${siteUrl}${image}`;
+const canonicalUrl = `${siteUrl}${currentUrl.pathname}`;
+const hreflangs = getAlternateHreflangs(currentUrl.pathname, siteUrl);
+
+const gtmId = siteConfig.googleTagManagerId;
+const gaId = siteConfig.googleAnalyticsId;
+const gscVerification = siteConfig.googleSearchConsoleVerification;
+
+// SEO Keywords localized
+const keywords = siteConfig.seo[lang]?.keywords || siteConfig.seo[DEFAULT_LOCALE].keywords;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={localeConfig.htmlLang} dir={localeConfig.dir}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
-    <meta name="author" content="Astro Components Kit" />
-    <meta name="keywords" content="astro, components, ui library, open source, ui components, astro components, web development, frontend, design system" />
+    <meta name="author" content={siteConfig.author} />
+    <meta name="keywords" content={keywords} />
+
+    <!-- Google Search Console Verification -->
+    {gscVerification && (
+      <meta name="google-site-verification" content={gscVerification} />
+    )}
+
+    <!-- Google Tag Manager -->
+    {gtmId && (
+      <script is:inline define:vars={{ gtmId }}>
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer',gtmId);
+      </script>
+    )}
+
+    <!-- Google Analytics (GA4) -->
+    {gaId && !gtmId && (
+      <>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+        <script is:inline define:vars={{ gaId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', gaId);
+        </script>
+      </>
+    )}
 
     <!-- Canonical URL -->
-    <link rel="canonical" href={Astro.url.href} />
+    <link rel="canonical" href={canonicalUrl} />
 
-    <!-- Open Graph -->
+    <!-- Multilingual Alternate Hreflang Tags (Search Console / i18n SEO) -->
+    {hreflangs.map((h) => (
+      <link rel="alternate" hreflang={h.lang} href={h.href} />
+    ))}
+
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={Astro.url.href} />
-    <meta property="og:title" content={`${title} — Astro Components Kit`} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={`${title} — ${siteConfig.name}`} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={imageUrl} />
-    <meta property="og:site_name" content="Astro Components Kit" />
+    <meta property="og:site_name" content={siteConfig.name} />
+    <meta property="og:locale" content={localeConfig.ogLocale} />
+    {Object.values(LOCALES).filter(l => l.code !== lang).map(l => (
+      <meta property="og:locale:alternate" content={l.ogLocale} />
+    ))}
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content={Astro.url.href} />
-    <meta name="twitter:title" content={`${title} — Astro Components Kit`} />
+    <meta name="twitter:url" content={canonicalUrl} />
+    <meta name="twitter:title" content={`${title} — ${siteConfig.name}`} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
 
-    <!-- Structured Data -->
-    <script type="application/ld+json" define:vars={{ title, description }}>
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Astro Components Kit",
-        "description": description,
-        "url": "https://astrocomponents.dev",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://astrocomponents.dev/docs/{search_term_string}",
-          "query-input": "required name=search_term_string"
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": `${siteUrl}/#website`,
+          "url": siteUrl,
+          "name": siteConfig.name,
+          "description": description,
+          "inLanguage": localeConfig.htmlLang,
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": `${siteUrl}/docs/{search_term_string}`,
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": `${siteUrl}/#organization`,
+          "name": siteConfig.name,
+          "url": siteUrl,
+          "logo": `${siteUrl}/logo.svg`,
+          "sameAs": [
+            siteConfig.github
+          ]
         }
-      }
-    </script>
+      ]
+    })} />
 
-    <title>{title} — Astro Components Kit</title>
+    <title>{title} — {siteConfig.name}</title>
   </head>
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    {gtmId && (
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+          height="0"
+          width="0"
+          style="display:none;visibility:hidden"
+        ></iframe>
+      </noscript>
+    )}
+
     <slot />
     <GitHubStarPrompt />
   </body>

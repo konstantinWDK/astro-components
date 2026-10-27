@@ -1,0 +1,430 @@
+---
+// src/components/docs/SectionsCatalogPage.astro
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import { sections, sectionCategories, getSectionCategoryById } from '../../data/registry/sections';
+import type { Locale } from '../../config/site';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
+import { getLocalizedSectionCategory, getLocalizedComponent } from '../../i18n/catalog';
+
+interface Props {
+  lang?: Locale;
+}
+
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang);
+
+const allSections = sections.map((s) => getLocalizedComponent(s as any, lang));
+const localizedSectionCats = sectionCategories.map((c) => getLocalizedSectionCategory(c, lang));
+
+const allLabel = lang === 'es' ? 'Todas las secciones' : (lang === 'ru' ? 'Все секции' : 'All Sections');
+const subCategories = [
+  { id: 'all', name: allLabel, count: allSections.length },
+  ...localizedSectionCats.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    count: allSections.filter((s) => s.sectionCategory === cat.id).length,
+  })),
+];
+
+const pageTitle = lang === 'es' ? 'Secciones de Página' : (lang === 'ru' ? 'Секции страниц' : 'Section Templates');
+const pageDesc = lang === 'es' 
+  ? 'Bloques completos listos para landing pages: héroes, bento grids, precios, testimonios, llamadas a la acción y preguntas frecuentes.' 
+  : (lang === 'ru' 
+    ? 'Полноразмерные секции страниц: главные экраны, бенто-сетки, тарифы, отзывы, призывы к действию и FAQ.'
+    : 'Complete page sections: heroes, features, pricing, CTAs, testimonials, and more.');
+---
+
+<DocsLayout title={pageTitle} description={pageDesc} lang={lang}>
+  <div class="doc-page">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">{t('nav.sections')}</span>
+    </nav>
+
+    <!-- Header -->
+    <header class="sections-header">
+      <span class="sections-header__badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        {allSections.length} {lang === 'es' ? 'Secciones' : (lang === 'ru' ? 'Секций' : 'Sections')} · {sectionCategories.length} {lang === 'es' ? 'Categorías' : (lang === 'ru' ? 'Категорий' : 'Categories')}
+      </span>
+      <h1 class="sections-header__title">{pageTitle}</h1>
+      <p class="sections-header__desc">{pageDesc}</p>
+    </header>
+
+    <!-- Category Filter Tabs -->
+    <div class="category-filters" role="tablist" aria-label="Filter sections by category">
+      {subCategories.map((sub, i) => (
+        <button 
+          type="button" 
+          class={`filter-tab ${i === 0 ? 'filter-tab--active' : ''}`} 
+          data-filter={sub.id}
+        >
+          {sub.name}
+          <span class="filter-count">{sub.count}</span>
+        </button>
+      ))}
+    </div>
+
+    <!-- Sections Grid -->
+    <div class="sections-grid" id="sectionsGrid">
+      {allSections.map((section) => {
+        const rawCatInfo = getSectionCategoryById(section.sectionCategory || '');
+        const catInfo = rawCatInfo ? getLocalizedSectionCategory(rawCatInfo, lang) : null;
+        const categoryLabel = catInfo ? catInfo.name : 'Section';
+        const mainTag = section.tags[0] || 'section';
+        const targetHref = getLocalizedPath(`/sections/${section.slug}`, lang);
+
+        return (
+          <a 
+            href={targetHref} 
+            class="section-card" 
+            data-category={section.sectionCategory || ''}
+            data-tags={section.tags.join(' ')}
+            data-slug={section.slug}
+          >
+            <div class="section-card__preview">
+              <div class="section-card__preview-inner">
+                <div class="preview-mockup">
+                  <div class="mockup-header">
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-dot"></span>
+                    <span class="mockup-title">{section.slug}</span>
+                  </div>
+                  <div class="mockup-body">
+                    <div class="mockup-hero-line"></div>
+                    <div class="mockup-sub-line"></div>
+                    <div class="mockup-boxes">
+                      <div class="mockup-box"></div>
+                      <div class="mockup-box"></div>
+                      <div class="mockup-box"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="section-card__content">
+              <div class="section-card__meta">
+                <span class="section-card__cat-badge">{categoryLabel}</span>
+                <h3 class="section-card__name">{section.name}</h3>
+              </div>
+              <p class="section-card__desc">{section.description}</p>
+              <div class="section-card__tags">
+                {section.tags.slice(0, 3).map((tag) => (
+                  <span class="section-card__tag">{tag}</span>
+                ))}
+              </div>
+            </div>
+            <div class="section-card__arrow">
+              <span>{t('doc.viewSection')}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</DocsLayout>
+
+<script is:inline>
+  const filterTabs = document.querySelectorAll('.filter-tab');
+  const sectionCards = document.querySelectorAll('.section-card');
+
+  filterTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      filterTabs.forEach((t) => t.classList.remove('filter-tab--active'));
+      tab.classList.add('filter-tab--active');
+
+      const filter = tab.getAttribute('data-filter');
+
+      sectionCards.forEach((card) => {
+        const cat = card.getAttribute('data-category') || '';
+        const tags = (card.getAttribute('data-tags') || '').toLowerCase();
+        const slug = (card.getAttribute('data-slug') || '').toLowerCase();
+
+        if (filter === 'all' || cat === filter || tags.includes(filter) || slug.includes(filter)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .doc-page {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+  }
+  .breadcrumb a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .breadcrumb a:hover {
+    color: #facc15;
+  }
+  .breadcrumb__sep {
+    color: #475569;
+  }
+  .breadcrumb__current {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  .sections-header {
+    margin-bottom: 2.5rem;
+  }
+  .sections-header__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--r-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(234, 179, 8, 0.12);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    margin-bottom: 1rem;
+  }
+  .sections-header__title {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.75rem;
+  }
+  .sections-header__desc {
+    font-size: 1.05rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .filter-tab:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .filter-tab--active {
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+    border-color: rgba(234, 179, 8, 0.4);
+  }
+  .filter-count {
+    padding: 0.1rem 0.45rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .sections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .section-card {
+    display: flex;
+    flex-direction: column;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  .section-card:hover {
+    border-color: rgba(234, 179, 8, 0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6), 0 0 25px -10px rgba(234, 179, 8, 0.15);
+  }
+
+  .section-card__preview {
+    height: 160px;
+    background: rgba(5, 10, 25, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .section-card__preview-inner {
+    width: 90%;
+    height: 80%;
+  }
+
+  .preview-mockup {
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .mockup-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .mockup-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .mockup-title {
+    font-size: 0.65rem;
+    font-family: monospace;
+    color: #64748b;
+    margin-left: 6px;
+  }
+  .mockup-body {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+  .mockup-hero-line {
+    width: 60%;
+    height: 8px;
+    background: linear-gradient(90deg, #facc15, #f59e0b);
+    border-radius: 4px;
+    opacity: 0.8;
+  }
+  .mockup-sub-line {
+    width: 40%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+  .mockup-boxes {
+    display: flex;
+    gap: 6px;
+    margin-top: auto;
+  }
+  .mockup-box {
+    flex: 1;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+  }
+
+  .section-card__content {
+    padding: 1.25rem 1.25rem 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .section-card__meta {
+    margin-bottom: 0.5rem;
+  }
+  .section-card__cat-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+  }
+  .section-card__name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0.5rem 0 0;
+  }
+  .section-card__desc {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0 0 1rem;
+    flex: 1;
+  }
+  .section-card__tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+  .section-card__tag {
+    font-size: 0.7rem;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+  }
+  .section-card__arrow {
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.01);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+  }
+  .section-card:hover .section-card__arrow {
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.06);
+  }
+  .section-card:hover .section-card__arrow svg {
+    transform: translateX(4px);
+  }
+  .section-card__arrow svg {
+    transition: transform 0.2s ease;
+  }
+</style>

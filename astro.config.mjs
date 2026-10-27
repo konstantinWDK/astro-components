@@ -4,6 +4,13 @@ import path from 'path';
 
 export default defineConfig({
   site: 'https://astrocomponents.dev',
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'es', 'ru'],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   integrations: [sitemap()],
   vite: {
     resolve: {

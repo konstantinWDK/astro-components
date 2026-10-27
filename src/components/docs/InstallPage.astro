@@ -1,0 +1,521 @@
+---
+// src/components/docs/InstallPage.astro
+import InstallLayout from '../../layouts/InstallLayout.astro';
+import CodeBlock from './CodeBlock.astro';
+import type { Locale } from '../../config/site';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
+
+interface Props {
+  lang?: Locale;
+}
+
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang);
+
+const npmInstall = 'npm install astro-component-kit';
+const yarnInstall = 'yarn add astro-component-kit';
+const pnpmInstall = 'pnpm add astro-component-kit';
+
+const importAll = `---
+// Import all components
+import { GlassButton, GlassCard, GlassNavbar, AnimatedInput } from 'astro-component-kit';
+---
+
+<GlassButton>Click me</GlassButton>
+<GlassCard title="Welcome">Content</GlassCard>`;
+
+const importCategory = `---
+// Import by category (recommended for smaller bundles)
+import { GlassButton, GlowButton } from 'astro-component-kit/buttons';
+import { GlassCard, ProfileCard } from 'astro-component-kit/cards';
+import { AnimatedInput, OTPInput } from 'astro-component-kit/forms';
+import { GlassAlert, Badge } from 'astro-component-kit/feedback';
+import { GlassNavbar } from 'astro-component-kit/navigation';
+import { GlassModal } from 'astro-component-kit/overlays';
+import { MasonryGrid } from 'astro-component-kit/layout';
+import { GradientHeading } from 'astro-component-kit/typography';
+---`;
+
+const importGlobalCSS = `---
+// Import global design tokens (optional but recommended)
+import 'astro-component-kit/global.css';
+---`;
+
+const astroNewProject = `# 1. Create a new Astro project
+npm create astro@latest my-project
+
+# 2. Navigate into the project
+cd my-project
+
+# 3. Install the component library
+npm install astro-component-kit
+
+# 4. Start the dev server
+npm run dev`;
+
+const chartsInstall = `# Only if you need chart components
+npm install apexcharts`;
+
+const threeInstall = `# Only if you need 3D components
+npm install three`;
+
+const texts = {
+  en: {
+    pageTitle: 'Installation Guide',
+    pageDesc: 'Step-by-step guide to install Astro Components Kit in any Astro project. Choose npm, yarn, or pnpm.',
+    badge: 'Getting Started',
+    title: 'Installation Guide',
+    desc: 'Add 236+ premium, accessible UI components to your Astro project in under 2 minutes. Zero runtime dependencies. MIT licensed — free forever.',
+    step1Title: 'Prerequisites',
+    step1Desc: "You need an existing Astro project (v5.0+). If you don't have one yet, create it:",
+    nodeReq: 'Node.js 22.12+ required.',
+    step2Title: 'Install the library',
+    step2Desc: 'Choose your preferred package manager:',
+    step3Title: 'Install peer dependencies (if needed)',
+    step3Badge: 'Optional',
+    step3Desc: 'Most components work with zero extra dependencies. But if you plan to use charts or 3D components, install these:',
+    step4Title: 'Import and use components',
+    step4Desc: 'You have two import styles — import everything or import by category (recommended for better tree-shaking):',
+    optionA: 'Option A: Root import (simple)',
+    optionB: 'Option B: Category imports (recommended)',
+    designTokensTitle: 'Import global design tokens',
+    designTokensDesc: 'This gives you access to the unified color palette, spacing scale, typography, and border radii that all components use.',
+    step5Title: 'Build your first page',
+    step5Desc: "Here's a complete example putting everything together — a simple page with a navbar and a card:",
+    quickRef: 'Quick reference',
+    readyTitle: 'Ready to build?',
+    readyDesc: 'Browse the full component library and start copying components into your project.',
+    browseBtn: 'Browse Components',
+    viewSectionsBtn: 'View Sections',
+  },
+  es: {
+    pageTitle: 'Guía de Instalación',
+    pageDesc: 'Guía paso a paso para instalar Astro Components Kit en cualquier proyecto Astro con npm, yarn o pnpm.',
+    badge: 'Primeros Pasos',
+    title: 'Guía de Instalación',
+    desc: 'Añade más de 236 componentes UI prémium y accesibles a tu proyecto Astro en menos de 2 minutos. Cero dependencias en tiempo de ejecución. Licencia MIT — libre para siempre.',
+    step1Title: 'Requisitos Previos',
+    step1Desc: 'Necesitas un proyecto existente de Astro (v5.0+). Si aún no tienes uno, créalo fácilmente:',
+    nodeReq: 'Se requiere Node.js 22.12+.',
+    step2Title: 'Instalar la librería',
+    step2Desc: 'Elige tu gestor de paquetes favorito:',
+    step3Title: 'Instalar dependencias opcionales (peer dependencies)',
+    step3Badge: 'Opcional',
+    step3Desc: 'La gran mayoría de componentes funcionan con 0 dependencias. Solo si usas gráficos o 3D instala:',
+    step4Title: 'Importar y usar componentes',
+    step4Desc: 'Puedes importar todo desde la raíz o importar por categorías (recomendado para un menor bundle):',
+    optionA: 'Opción A: Importación raíz (simple)',
+    optionB: 'Opción B: Importación por categoría (recomendado)',
+    designTokensTitle: 'Importar tokens de diseño globales',
+    designTokensDesc: 'Te da acceso a la paleta de colores unificada, escala de espaciado, tipografía y radios de borde.',
+    step5Title: 'Crea tu primera página',
+    step5Desc: 'Un ejemplo completo integrando barra de navegación y tarjeta interactiva:',
+    quickRef: 'Referencia rápida',
+    readyTitle: '¿Listo para construir?',
+    readyDesc: 'Explora toda la biblioteca de componentes y empieza a copiarlos en tu proyecto.',
+    browseBtn: 'Explorar Componentes',
+    viewSectionsBtn: 'Ver Secciones',
+  },
+  ru: {
+    pageTitle: 'Руководство по установке',
+    pageDesc: 'Пошаговое руководство по установке Astro Components Kit в любой проект Astro через npm, yarn или pnpm.',
+    badge: 'Начало работы',
+    title: 'Руководство по установке',
+    desc: 'Добавьте более 236 качественных и доступных UI-компонентов в ваш проект Astro менее чем за 2 минуты. Без лишних зависимостей. Лицензия MIT — бесплатно навсегда.',
+    step1Title: 'Требования',
+    step1Desc: 'Вам потребуется проект Astro (v5.0+). Если его еще нет, создайте новый:',
+    nodeReq: 'Требуется Node.js 22.12+.',
+    step2Title: 'Установка библиотеки',
+    step2Desc: 'Выберите удобный пакетный менеджер:',
+    step3Title: 'Установка дополнительных зависимостей',
+    step3Badge: 'Опционально',
+    step3Desc: 'Большинство компонентов работают с 0 зависимостей. Только для графиков или 3D установите:',
+    step4Title: 'Импорт и использование компонентов',
+    step4Desc: 'Доступны два стиля импорта — корневой или по категориям (рекомендуется для минимального бандла):',
+    optionA: 'Вариант А: Корневой импорт (быстро)',
+    optionB: 'Вариант Б: Импорт по категориям (рекомендуется)',
+    designTokensTitle: 'Импорт дизайн-токенов',
+    designTokensDesc: 'Предоставляет единую палитру цветов, сетку отступов, шрифты и радиусы скругления.',
+    step5Title: 'Создание первой страницы',
+    step5Desc: 'Полный пример сборки простой страницы с навигацией и карточкой:',
+    quickRef: 'Быстрая справка',
+    readyTitle: 'Готовы к разработке?',
+    readyDesc: 'Изучите каталог компонентов и используйте их в своих проектах прямо сейчас.',
+    browseBtn: 'Каталог компонентов',
+    viewSectionsBtn: 'Секции страниц',
+  },
+};
+
+const currentText = texts[lang] || texts.en;
+---
+
+<InstallLayout
+  title={currentText.pageTitle}
+  description={currentText.pageDesc}
+  lang={lang}
+>
+  <div class="install-page">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">{t('nav.install')}</span>
+    </nav>
+
+    <!-- Header -->
+    <header class="install-header">
+      <span class="install-header__badge">{currentText.badge}</span>
+      <h1 class="install-header__title">{currentText.title}</h1>
+      <p class="install-header__desc">{currentText.desc}</p>
+    </header>
+
+    <!-- Step 1: Prerequisites -->
+    <section class="install-section anim-slide-up" id="step-1">
+      <div class="step-badge">Step 1</div>
+      <h2 class="step-title">{currentText.step1Title}</h2>
+      <p class="step-desc">{currentText.step1Desc}</p>
+
+      <div class="code-block-wrap">
+        <CodeBlock code={astroNewProject} lang="bash" id="prereq-new-project" />
+      </div>
+
+      <div class="info-box info-box--tip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div>
+          <strong>{currentText.nodeReq}</strong> Check with <code>node --version</code>.
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: Install the package -->
+    <section class="install-section anim-slide-up" id="step-2" style="animation-delay: 0.1s">
+      <div class="step-badge">Step 2</div>
+      <h2 class="step-title">{currentText.step2Title}</h2>
+      <p class="step-desc">{currentText.step2Desc}</p>
+
+      <!-- Tabbed install -->
+      <div class="install-tabs">
+        <div class="install-tabs__bar" role="tablist">
+          <button class="install-tabs__tab active" role="tab" data-tab="npm" aria-selected="true">npm</button>
+          <button class="install-tabs__tab" role="tab" data-tab="yarn" aria-selected="false">yarn</button>
+          <button class="install-tabs__tab" role="tab" data-tab="pnpm" aria-selected="false">pnpm</button>
+        </div>
+        <div class="install-tabs__panels">
+          <div class="install-tabs__panel active" data-panel="npm">
+            <div class="code-block-wrap">
+              <CodeBlock code={npmInstall} lang="bash" id="install-npm" />
+            </div>
+          </div>
+          <div class="install-tabs__panel" data-panel="yarn">
+            <div class="code-block-wrap">
+              <CodeBlock code={yarnInstall} lang="bash" id="install-yarn" />
+            </div>
+          </div>
+          <div class="install-tabs__panel" data-panel="pnpm">
+            <div class="code-block-wrap">
+              <CodeBlock code={pnpmInstall} lang="bash" id="install-pnpm" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: Optional peer dependencies -->
+    <section class="install-section anim-slide-up" id="step-3" style="animation-delay: 0.2s">
+      <div class="step-badge">Step 3 <span class="step-badge__optional">{currentText.step3Badge}</span></div>
+      <h2 class="step-title">{currentText.step3Title}</h2>
+      <p class="step-desc">{currentText.step3Desc}</p>
+
+      <div class="dep-grid">
+        <div class="dep-card">
+          <div class="dep-card__header">
+            <span class="dep-card__icon dep-card__icon--chart">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <div>
+              <h3 class="dep-card__name">Charts</h3>
+              <p class="dep-card__desc">ApexCharts (Area, Bar, Donut)</p>
+            </div>
+          </div>
+          <div class="code-block-wrap code-block-wrap--small">
+            <CodeBlock code={chartsInstall} lang="bash" id="install-charts" />
+          </div>
+        </div>
+
+        <div class="dep-card">
+          <div class="dep-card__header">
+            <span class="dep-card__icon dep-card__icon--3d">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </span>
+            <div>
+              <h3 class="dep-card__name">3D</h3>
+              <p class="dep-card__desc">Three.js (Galaxy3D, AnimatedGalaxy)</p>
+            </div>
+          </div>
+          <div class="code-block-wrap code-block-wrap--small">
+            <CodeBlock code={threeInstall} lang="bash" id="install-three" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: Import and use -->
+    <section class="install-section anim-slide-up" id="step-4" style="animation-delay: 0.3s">
+      <div class="step-badge">Step 4</div>
+      <h2 class="step-title">{currentText.step4Title}</h2>
+      <p class="step-desc">{currentText.step4Desc}</p>
+
+      <h3 class="step-subtitle">{currentText.optionA}</h3>
+      <div class="code-block-wrap">
+        <CodeBlock code={importAll} lang="astro" id="usage-import-all" />
+      </div>
+
+      <h3 class="step-subtitle" style="margin-top: var(--sp-6)">{currentText.optionB}</h3>
+      <div class="code-block-wrap">
+        <CodeBlock code={importCategory} lang="astro" id="usage-import-category" />
+      </div>
+
+      <h3 class="step-subtitle" style="margin-top: var(--sp-6)">{currentText.designTokensTitle}</h3>
+      <p class="step-desc step-desc--muted">{currentText.designTokensDesc}</p>
+      <div class="code-block-wrap">
+        <CodeBlock code={importGlobalCSS} lang="astro" id="usage-import-css" />
+      </div>
+    </section>
+
+    <!-- Summary table -->
+    <section class="install-section anim-slide-up" id="quick-reference" style="animation-delay: 0.5s">
+      <h2 class="step-title">{currentText.quickRef}</h2>
+
+      <div class="ref-table">
+        <table>
+          <thead>
+            <tr>
+              <th>{lang === 'es' ? 'Tarea' : (lang === 'ru' ? 'Задача' : 'Task')}</th>
+              <th>{lang === 'es' ? 'Comando / Import' : (lang === 'ru' ? 'Команда / Импорт' : 'Command / Import')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{lang === 'es' ? 'Instalar librería' : (lang === 'ru' ? 'Установка библиотеки' : 'Install library')}</td>
+              <td><code>npm install astro-component-kit</code></td>
+            </tr>
+            <tr>
+              <td>{lang === 'es' ? 'Soporte de gráficos' : (lang === 'ru' ? 'Поддержка графиков' : 'Charts support')}</td>
+              <td><code>npm install apexcharts</code></td>
+            </tr>
+            <tr>
+              <td>{lang === 'es' ? 'Soporte 3D' : (lang === 'ru' ? 'Поддержка 3D' : '3D support')}</td>
+              <td><code>npm install three</code></td>
+            </tr>
+            <tr>
+              <td>{lang === 'es' ? 'Importar tokens globales' : (lang === 'ru' ? 'Импорт глобальных токенов' : 'Import design tokens')}</td>
+              <td><code>import 'astro-component-kit/global.css'</code></td>
+            </tr>
+            <tr>
+              <td>{lang === 'es' ? 'Ver componentes' : (lang === 'ru' ? 'Все компоненты' : 'Browse components')}</td>
+              <td><a href={getLocalizedPath('/docs/glass-button', lang)}>{t('nav.components')} →</a></td>
+            </tr>
+            <tr>
+              <td>{lang === 'es' ? 'Ver secciones' : (lang === 'ru' ? 'Все секции' : 'Browse sections')}</td>
+              <td><a href={getLocalizedPath('/sections', lang)}>{t('nav.sections')} →</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="install-cta anim-slide-up">
+      <h2>{currentText.readyTitle}</h2>
+      <p>{currentText.readyDesc}</p>
+      <div class="install-cta__actions">
+        <a href={getLocalizedPath('/docs/glass-button', lang)} class="cta-btn cta-btn--primary">
+          {currentText.browseBtn}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href={getLocalizedPath('/sections', lang)} class="cta-btn cta-btn--secondary">
+          {currentText.viewSectionsBtn}
+        </a>
+      </div>
+    </div>
+  </div>
+</InstallLayout>
+
+<script is:inline>
+  const tabBar = document.querySelector('.install-tabs__bar');
+  if (tabBar) {
+    tabBar.addEventListener('click', (e) => {
+      const tab = e.target?.closest('[data-tab]');
+      if (!tab) return;
+      const tabId = tab.getAttribute('data-tab');
+      tabBar.querySelectorAll('.install-tabs__tab').forEach((t) => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      document.querySelectorAll('.install-tabs__panel').forEach((p) => {
+        p.classList.remove('active');
+      });
+      document.querySelector(`[data-panel="${tabId}"]`)?.classList.add('active');
+    });
+  }
+</script>
+
+<style>
+  .install-page { max-width: 100%; }
+  .breadcrumb {
+    display: flex; align-items: center; gap: var(--sp-2);
+    font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6);
+  }
+  .breadcrumb a { color: var(--c-text-3); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--c-text-1); }
+  .breadcrumb__sep { color: var(--c-text-3); opacity: 0.5; }
+  .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
+
+  .install-header { margin-bottom: var(--sp-10); }
+  .install-header__badge {
+    display: inline-block; padding: 0.25rem 0.65rem; border-radius: var(--r-full);
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    background: rgba(234, 179, 8, 0.12); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);
+    margin-bottom: var(--sp-3);
+  }
+  .install-header__title {
+    font-size: clamp(2rem, 3.5vw, 2.75rem); font-weight: 900; color: var(--c-text-1);
+    letter-spacing: -0.03em; margin-bottom: var(--sp-3);
+  }
+  .install-header__desc { font-size: 1.05rem; color: var(--c-text-2); line-height: 1.7; max-width: 100%; }
+
+  .install-section {
+    margin-bottom: var(--sp-12); padding-bottom: var(--sp-10);
+    border-bottom: 1px solid var(--c-border);
+  }
+  .install-section:last-of-type { border-bottom: none; }
+
+  .step-badge {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    font-size: 0.75rem; font-weight: 700; font-family: var(--font-mono);
+    color: var(--c-primary-light); margin-bottom: var(--sp-2);
+  }
+  .step-badge__optional {
+    font-size: 0.65rem; font-weight: 500; font-family: var(--font-sans);
+    padding: 0.1rem 0.4rem; border-radius: 4px;
+    background: rgba(255,255,255,0.06); color: var(--c-text-3);
+  }
+
+  .step-title {
+    font-size: 1.5rem; font-weight: 800; color: var(--c-text-1);
+    letter-spacing: -0.02em; margin-bottom: var(--sp-3);
+  }
+  .step-subtitle {
+    font-size: 1.05rem; font-weight: 700; color: var(--c-text-1);
+    margin-bottom: var(--sp-3);
+  }
+  .step-desc {
+    font-size: 0.95rem; color: var(--c-text-2); line-height: 1.65;
+    margin-bottom: var(--sp-4); max-width: 100%;
+  }
+  .step-desc--muted { color: var(--c-text-3); font-size: 0.88rem; }
+
+  .code-block-wrap { margin-bottom: var(--sp-4); }
+  .code-block-wrap--small { margin-top: var(--sp-3); margin-bottom: 0; }
+
+  .info-box {
+    display: flex; align-items: flex-start; gap: var(--sp-3);
+    padding: var(--sp-4); border-radius: var(--r-md);
+    font-size: 0.875rem; line-height: 1.6; color: var(--c-text-2);
+  }
+  .info-box--tip {
+    background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.25);
+  }
+  .info-box--tip svg { color: #facc15; flex-shrink: 0; margin-top: 2px; }
+  .info-box code {
+    background: rgba(255,255,255,0.08); padding: 0.1rem 0.35rem;
+    border-radius: 4px; font-size: 0.85em; color: var(--c-text-1);
+  }
+
+  .install-tabs { margin-bottom: var(--sp-4); }
+  .install-tabs__bar {
+    display: flex; gap: 2px; padding: 4px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--c-border);
+    border-radius: var(--r-md); width: fit-content; margin-bottom: var(--sp-3);
+  }
+  .install-tabs__tab {
+    padding: 0.35rem 0.9rem; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
+    color: var(--c-text-3); background: transparent; border: none;
+    border-radius: calc(var(--r-md) - 4px); cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .install-tabs__tab:hover { color: var(--c-text-1); background: rgba(255,255,255,0.05); }
+  .install-tabs__tab.active { color: #facc15; background: rgba(234, 179, 8, 0.15); }
+  .install-tabs__panel { display: none; }
+  .install-tabs__panel.active { display: block; }
+
+  .dep-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--sp-4); margin-top: var(--sp-4);
+  }
+  .dep-card {
+    padding: var(--sp-5); border-radius: var(--r-lg);
+    background: rgba(255,255,255,0.02); border: 1px solid var(--c-border);
+  }
+  .dep-card__header {
+    display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-3);
+  }
+  .dep-card__icon {
+    width: 36px; height: 36px; border-radius: var(--r-sm);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .dep-card__icon--chart { background: rgba(245,158,11,0.12); color: #f59e0b; }
+  .dep-card__icon--3d { background: rgba(168,85,247,0.12); color: #a855f7; }
+  .dep-card__name { font-size: 0.95rem; font-weight: 700; color: var(--c-text-1); margin: 0 0 2px; }
+  .dep-card__desc { font-size: 0.78rem; color: var(--c-text-3); margin: 0; }
+
+  .ref-table {
+    overflow-x: auto; margin-top: var(--sp-4);
+    border: 1px solid var(--c-border); border-radius: var(--r-lg);
+  }
+  .ref-table table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .ref-table th {
+    text-align: left; padding: var(--sp-3) var(--sp-4);
+    background: rgba(255,255,255,0.03); color: var(--c-text-3);
+    font-weight: 600; font-size: 0.75rem; text-transform: uppercase;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .ref-table td {
+    padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--c-border);
+    color: var(--c-text-2);
+  }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table code {
+    font-family: var(--font-mono); font-size: 0.82em;
+    background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem;
+    border-radius: 4px; color: #facc15;
+  }
+  .ref-table a { color: #facc15; text-decoration: none; font-weight: 500; }
+  .ref-table a:hover { text-decoration: underline; }
+
+  .install-cta {
+    text-align: center; padding: var(--sp-12) var(--sp-6);
+    background: radial-gradient(circle at 50% 50%, rgba(234, 179, 8, 0.08), transparent 70%);
+    border: 1px solid rgba(234, 179, 8, 0.25); border-radius: var(--r-xl);
+    margin-top: var(--sp-8);
+  }
+  .install-cta h2 { font-size: 1.75rem; font-weight: 900; color: var(--c-text-1); margin-bottom: var(--sp-2); }
+  .install-cta p { font-size: 1rem; color: var(--c-text-3); margin-bottom: var(--sp-6); }
+  .install-cta__actions { display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap; }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    padding: 0.65rem 1.4rem; border-radius: var(--r-md);
+    font-size: 0.88rem; font-weight: 600; text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .cta-btn--primary {
+    background: linear-gradient(135deg, #facc15, #eab308); color: #000; font-weight: 700;
+  }
+  .cta-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(234, 179, 8, 0.4); }
+  .cta-btn--secondary {
+    background: rgba(255,255,255,0.05); color: var(--c-text-1); border: 1px solid var(--c-border);
+  }
+  .cta-btn--secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+</style>

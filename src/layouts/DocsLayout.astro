@@ -2,34 +2,42 @@
 // src/layouts/DocsLayout.astro
 import BaseLayout from './BaseLayout.astro';
 import Sidebar from '../components/docs/Sidebar.astro';
+import LanguagePicker from '../components/layout/LanguagePicker.astro';
 import { categories } from '../data/registry/index';
+import type { Locale } from '../config/site';
+import { getLangFromUrl, useTranslations, getLocalizedPath, cleanPath } from '../i18n/translations';
 
 interface Props {
   title: string;
   description?: string;
+  lang?: Locale;
 }
 
-const { title, description } = Astro.props;
+const detectedLang = getLangFromUrl(Astro.url);
+const { title, description, lang = detectedLang } = Astro.props;
 const currentPath = Astro.url.pathname;
+const normalizedPath = cleanPath(currentPath).replace(/\/$/, '') || '/';
+const t = useTranslations(lang);
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} lang={lang}>
   <div class="docs-shell">
     <!-- Top Header -->
     <header class="docs-header">
       <div class="docs-header__inner">
-        <a href="/" class="docs-header__brand">
+        <a href={getLocalizedPath('/', lang)} class="docs-header__brand">
           <img src="/logo-animated.svg" alt="Astro Kit Components" class="brand-logo" />
         </a>
         <button class="site-menu-toggle" id="site-menu-toggle" aria-label="Toggle site menu">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
         </button>
         <nav class="docs-header__nav" id="site-nav">
-          <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
-          <a href="/install" class:list={{ active: currentPath.startsWith('/install') }}>Installation</a>
-          <a href="/docs/glass-button" class:list={{ active: currentPath.startsWith('/docs') }}>Components</a>
-          <a href="/sections" class:list={{ active: currentPath.startsWith('/sections') }}>Sections</a>
-          <a href="/blog" class:list={{ active: currentPath.startsWith('/blog') }}>Blog</a>
+          <a href={getLocalizedPath('/', lang)} class:list={{ active: normalizedPath === '/' }}>{t('nav.home')}</a>
+          <a href={getLocalizedPath('/install', lang)} class:list={{ active: normalizedPath.startsWith('/install') }}>{t('nav.install')}</a>
+          <a href={getLocalizedPath('/docs/glass-button', lang)} class:list={{ active: normalizedPath.startsWith('/docs') }}>{t('nav.components')}</a>
+          <a href={getLocalizedPath('/sections', lang)} class:list={{ active: normalizedPath.startsWith('/sections') }}>{t('nav.sections')}</a>
+          <a href={getLocalizedPath('/blog', lang)} class:list={{ active: normalizedPath.startsWith('/blog') }}>{t('nav.blog')}</a>
+          <LanguagePicker />
           <a href="https://github.com/konstantinWDK/astro-components" target="_blank" rel="noopener" class="gh-link">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub">
               <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
@@ -42,7 +50,7 @@ const currentPath = Astro.url.pathname;
 
     <div class="docs-body">
       <!-- Sidebar -->
-      <Sidebar categories={categories} currentPath={currentPath} />
+      <Sidebar categories={categories} currentPath={currentPath} lang={lang} />
 
       <!-- Main content -->
       <main class="docs-main">
@@ -52,8 +60,8 @@ const currentPath = Astro.url.pathname;
       </main>
 
       <!-- Right Sidebar: On this page (scrollspy) -->
-      <aside class="toc" id="toc" aria-label="On this page">
-        <span class="toc__title">On this page</span>
+      <aside class="toc" id="toc" aria-label={t('sidebar.onThisPage')}>
+        <span class="toc__title">{t('sidebar.onThisPage')}</span>
         <nav class="toc__nav" id="toc-nav"></nav>
       </aside>
     </div>
