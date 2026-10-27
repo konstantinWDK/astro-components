@@ -178,6 +178,64 @@ const t = useTranslations(lang);
       </div>
     </section>
 
+    <!-- ==================== CATEGORIES (BELOW HERO) ==================== -->
+    <section class="section section--categories" id="categories">
+      <div class="container">
+        <div class="section__header-row">
+          <div>
+            <span class="section__eyebrow">{lang === 'es' ? 'Explora la Colección' : lang === 'ru' ? 'Обзор коллекции' : 'Explore the Collection'}</span>
+            <h2 class="section__title">{lang === 'es' ? 'Explorar por categoría' : lang === 'ru' ? 'Обзор по категориям' : 'Browse by category'}</h2>
+            <p class="section__subtitle section__subtitle--wide">
+              {lang === 'es'
+                ? 'Encuentra componentes y secciones listos para usar en tus proyectos Astro. Copia el código o instala vía npm.'
+                : lang === 'ru'
+                ? 'Найдите компоненты и секции, готовые к использованию в проектах Astro. Копируйте код или устанавливайте через npm.'
+                : 'Find production-ready UI components and landing sections tailored for Astro 5. Copy the code or install via npm.'}
+            </p>
+          </div>
+          <div class="categories-count-pill" aria-hidden="true">
+            <span class="categories-count-pill__number">{categories.length}</span>
+            <span class="categories-count-pill__text">{lang === 'es' ? 'Categorías disponibles' : lang === 'ru' ? 'Доступных категорий' : 'Categories Available'}</span>
+          </div>
+        </div>
+
+        <div class="category-grid">
+          {categories.map((cat) => {
+            const locCat = getLocalizedCategory(cat.id as any, lang);
+            const catComponents = components.filter(c => c.category === cat.id);
+            const count = catComponents.length;
+            const firstSlug = catComponents[0]?.slug;
+            const href = cat.id === 'sections' 
+              ? getLocalizedPath('/sections', lang) 
+              : (firstSlug ? getLocalizedPath(`/docs/${firstSlug}`, lang) : '#');
+            
+            const countLabel = cat.id === 'sections'
+              ? `${count} ${lang === 'es' ? 'secciones' : lang === 'ru' ? 'секций' : 'sections'}`
+              : `${count} ${lang === 'es' ? 'componentes' : lang === 'ru' ? 'компонентов' : 'components'}`;
+
+            return (
+              <a href={href} class="category-card">
+                <div class="category-card__header">
+                  <div class="category-card__icon-box">
+                    <span class="category-card__icon" set:html={cat.icon}></span>
+                  </div>
+                  <span class="category-card__count">{countLabel}</span>
+                </div>
+                <h3 class="category-card__name">{locCat.name}</h3>
+                <p class="category-card__desc">{locCat.description}</p>
+                <div class="category-card__footer">
+                  <span>{cat.id === 'sections' ? (lang === 'es' ? 'Ver secciones' : lang === 'ru' ? 'Все секции' : 'View sections') : (lang === 'es' ? 'Ver componentes' : lang === 'ru' ? 'Все компоненты' : 'View components')}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== WHY ASTRO COMPONENTS KIT ==================== -->
     <section class="section section--why" id="why">
       <div class="container">
@@ -1079,27 +1137,7 @@ const t = useTranslations(lang);
       </div>
     </section>
 
-    <!-- ==================== CATEGORIES ==================== -->
-    <section class="section" id="categories">
-      <div class="container">
-        <span class="section__eyebrow">{lang === 'es' ? 'Categorías' : lang === 'ru' ? 'Категории' : 'Categories'}</span>
-        <h2 class="section__title">{lang === 'es' ? 'Explorar por categoría' : lang === 'ru' ? 'Обзор по категориям' : 'Browse by category'}</h2>
-        <div class="category-grid">
-          {categories.map((cat) => {
-            const locCat = getLocalizedCategory(cat.id as any, lang);
-            const firstSlug = components.find(c => c.category === cat.id)?.slug;
-            const href = cat.id === 'sections' ? getLocalizedPath('/sections', lang) : (firstSlug ? getLocalizedPath(`/docs/${firstSlug}`, lang) : '#');
-            return (
-              <a href={href} class="category-card">
-                <span class="category-card__icon" set:html={cat.icon}></span>
-                <h3 class="category-card__name">{locCat.name}</h3>
-                <p class="category-card__desc">{locCat.description}</p>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </section>
+    
 
     <!-- ==================== INSTALL ==================== -->
     <section class="section section--install" id="install">
@@ -2535,21 +2573,159 @@ const t = useTranslations(lang);
   /* ============================================
      CATEGORY GRID
      ============================================ */
+  .section--categories {
+    padding-top: var(--sp-12);
+    padding-bottom: var(--sp-16);
+    position: relative;
+    z-index: 2;
+  }
+  .categories-count-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 0.5rem 1rem;
+    background: rgba(212, 160, 23, 0.08);
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    border-radius: var(--r-full);
+    align-self: flex-start;
+  }
+  .categories-count-pill__number {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--c-primary-light);
+  }
+  .categories-count-pill__text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
   .category-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-4);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--sp-5);
+    margin-top: var(--sp-8);
   }
   .category-card {
-    padding: var(--sp-6); border-radius: var(--r-lg); text-decoration: none;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--c-border);
-    transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6);
+    border-radius: var(--r-xl);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--c-border);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                background 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .category-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at top left, rgba(212, 160, 23, 0.12), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
   }
   .category-card:hover {
-    transform: translateY(-4px); border-color: rgba(255,255,255,0.1);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    transform: translateY(-4px);
+    border-color: rgba(212, 160, 23, 0.38);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 24px rgba(212, 160, 23, 0.08);
+    background: rgba(255, 255, 255, 0.035);
   }
-  .category-card__icon { font-size: 1.8rem; display: block; margin-bottom: var(--sp-3); }
-  .category-card__name { font-size: 1rem; font-weight: 700; color: var(--c-text-1); margin-bottom: var(--sp-2); }
-  .category-card__desc { font-size: 0.82rem; color: var(--c-text-2); line-height: 1.5; }
+  .category-card:hover::before {
+    opacity: 1;
+  }
+  .category-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .category-card__icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    background: rgba(212, 160, 23, 0.1);
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-primary-light);
+    transition: transform 0.25s ease, background 0.25s ease;
+  }
+  .category-card:hover .category-card__icon-box {
+    transform: scale(1.08);
+    background: rgba(212, 160, 23, 0.18);
+    border-color: rgba(212, 160, 23, 0.45);
+  }
+  .category-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .category-card__icon svg {
+    width: 22px !important;
+    height: 22px !important;
+    stroke: var(--c-primary-light) !important;
+  }
+  .category-card__count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--c-border);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full);
+  }
+  .category-card:hover .category-card__count {
+    color: var(--c-primary-light);
+    border-color: rgba(212, 160, 23, 0.3);
+  }
+  .category-card__name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+    margin: 0 0 var(--sp-2) 0;
+    transition: color 0.2s ease;
+  }
+  .category-card:hover .category-card__name {
+    color: #fff;
+  }
+  .category-card__desc {
+    font-size: 0.86rem;
+    color: var(--c-text-2);
+    line-height: 1.6;
+    margin: 0 0 var(--sp-5) 0;
+    flex: 1;
+  }
+  .category-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--c-border);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-primary-light);
+    transition: color 0.2s ease;
+  }
+  .category-card__footer svg {
+    transition: transform 0.2s ease;
+  }
+  .category-card:hover .category-card__footer svg {
+    transform: translateX(4px);
+  }
 
   /* ============================================
      INSTALL
@@ -2732,11 +2908,9 @@ const t = useTranslations(lang);
     .advantage-item__number { font-size: 2rem; }
 
     /* Category grid */
-    .category-grid { grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
-    .category-card { padding: var(--sp-4); }
-    .category-card__icon { font-size: 1.4rem; }
-    .category-card__name { font-size: 0.9rem; }
-    .category-card__desc { font-size: 0.75rem; }
+    .category-grid { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .categories-count-pill { display: none; }
+    .category-card { padding: var(--sp-5); }
 
     /* Install */
     .install-code-block { padding: 0.8rem 1rem; }
