@@ -11,7 +11,17 @@ export default defineConfig({
       prefixDefaultLocale: false,
     },
   },
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // `/blog/*` are legacy redirects to `/notes/*`; keep them out of the sitemap.
+      filter: (page) => !/^\/(es\/|ru\/)?blog\//.test(new URL(page).pathname),
+      // Emit hreflang alternates so search engines link the en/es/ru versions of each page.
+      i18n: {
+        defaultLocale: 'en',
+        locales: { en: 'en', es: 'es', ru: 'ru' },
+      },
+    }),
+  ],
   vite: {
     resolve: {
       alias: {
