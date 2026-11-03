@@ -14,12 +14,12 @@ export const ui = {
     'nav.docs': 'Documentation',
 
     // Search & Sidebar
-    'search.placeholder': 'Search 236+ components & sections...',
+    'search.placeholder': 'Search 290+ components & sections...',
     'search.noResults': 'No components found',
     'sidebar.components': 'UI Components',
     'sidebar.sections': 'Page Sections',
-    'sidebar.componentsCount': '219 Components',
-    'sidebar.sectionsCount': '17 Sections',
+    'sidebar.componentsCount': '252 Components',
+    'sidebar.sectionsCount': '41 Sections',
     'sidebar.explore': 'Explore',
     'sidebar.onThisPage': 'On this page',
 
@@ -60,12 +60,12 @@ export const ui = {
     'nav.docs': 'Documentación',
 
     // Search & Sidebar
-    'search.placeholder': 'Buscar entre 236+ componentes y secciones...',
+    'search.placeholder': 'Buscar entre 290+ componentes y secciones...',
     'search.noResults': 'No se encontraron componentes',
     'sidebar.components': 'Componentes UI',
     'sidebar.sections': 'Secciones de Página',
-    'sidebar.componentsCount': '219 Componentes',
-    'sidebar.sectionsCount': '17 Secciones',
+    'sidebar.componentsCount': '252 Componentes',
+    'sidebar.sectionsCount': '41 Secciones',
     'sidebar.explore': 'Explorar',
     'sidebar.onThisPage': 'En esta página',
 
@@ -106,12 +106,12 @@ export const ui = {
     'nav.docs': 'Документация',
 
     // Search & Sidebar
-    'search.placeholder': 'Поиск среди 236+ компонентов и секций...',
+    'search.placeholder': 'Поиск среди 290+ компонентов и секций...',
     'search.noResults': 'Компоненты не найдены',
     'sidebar.components': 'UI Компоненты',
     'sidebar.sections': 'Секции Страниц',
-    'sidebar.componentsCount': '219 Компонентов',
-    'sidebar.sectionsCount': '17 Секций',
+    'sidebar.componentsCount': '252 Компонентов',
+    'sidebar.sectionsCount': '41 Секция',
     'sidebar.explore': 'Обзор',
     'sidebar.onThisPage': 'На этой странице',
 
