@@ -1,7 +1,8 @@
 ---
 // src/components/blog/BlogPostPage.astro
 import BlogLayout from '../../layouts/BlogLayout.astro';
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
+import { getNotes } from './notes';
 import { useTranslations, getLocalizedPath } from '../../i18n/translations';
 
 interface Props {
@@ -12,20 +13,20 @@ interface Props {
 const { slug, lang = 'en' } = Astro.props;
 const t = useTranslations(lang);
 
-const posts = await getCollection('blog');
-const post = posts.find((p: any) => p.id === slug);
+const posts = await getNotes(lang);
+const post = posts.find((p) => p.id === slug);
 
 if (!post) {
   return Astro.redirect(getLocalizedPath('/notes', lang));
 }
 
 const { title, description, date, tag } = post.data;
-const { Content } = await render(post);
+const { Content } = await render(post.entry);
 
 const localeCode = lang === 'es' ? 'es-ES' : lang === 'ru' ? 'ru-RU' : 'en-US';
 const formattedDate = new Date(date).toLocaleDateString(localeCode, { year: 'numeric', month: 'long', day: 'numeric' });
 
-const sorted = [...posts].sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+const sorted = posts;
 const currentIndex = sorted.findIndex((p) => p.id === slug);
 const prevPost = currentIndex > 0 ? sorted[currentIndex - 1] : null;
 const nextPost = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : null;

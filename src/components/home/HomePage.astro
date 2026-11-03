@@ -14,6 +14,7 @@ import GlassSlider from '../lib/forms/GlassSlider.astro';
 import SparklineChart from '../lib/charts/SparklineChart.astro';
 import RadialBarChart from '../lib/charts/RadialBarChart.astro';
 import Galaxy3D from '../lib/Galaxy3D.astro';
+import pkg from '../../../package.json';
 
 // Carousel & Showcase demo components
 import ShimmerButton from '../lib/buttons/ShimmerButton.astro';
@@ -160,6 +161,7 @@ const exploreLabel = lang === 'es' ? 'Ver código de la plantilla' : lang === 'r
 
         <!-- Center: Title overlay -->
         <div class="hero__content">
+          <div class="hero__title-wrap">
           <h1 class="hero__title">
             <span class="hero__title-row">
               <span class="hero__title-main" data-title-line="1">
@@ -172,6 +174,19 @@ const exploreLabel = lang === 'es' ? 'Ver código de la plantilla' : lang === 'r
               </span>
             </span>
           </h1>
+          <a
+            class="hero-version"
+            href="https://www.npmjs.com/package/astro-component-kit"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${lang === 'es' ? 'Versión actual' : lang === 'ru' ? 'Текущая версия' : 'Current version'} v${pkg.version} — npm`}
+          >
+            <span class="hero-version__bubble">
+              <span class="hero-version__dot" aria-hidden="true"></span>
+              v{pkg.version}
+            </span>
+          </a>
+          </div>
 
           <p class="hero__subtitle">
             {lang === 'es' ? 'Componentes UI gratuitos y de código abierto para Astro. Cero dependencias. Copia, pega y publica.' : lang === 'ru' ? 'Бесплатные open-source UI компоненты для Astro. Без зависимостей. Копируй, вставляй и публикуй.' : 'Free open-source UI components for Astro. Zero dependencies. Copy, paste, ship.'}
@@ -772,6 +787,77 @@ const exploreLabel = lang === 'es' ? 'Ver código de la plantilla' : lang === 'r
     align-items: center; text-align: center; pointer-events: none;
   }
   .hero__content > * { pointer-events: auto; }
+  /* Floating version bubble: an outer drift (wander) and an inner breath
+     (scale + glow) run on different periods so the motion never repeats in sync. */
+  .hero__title-wrap { position: relative; display: inline-block; }
+  /* Sits under the last "S" of COMPONENTS, slightly overlapping like a sticker. */
+  .hero-version {
+    position: absolute;
+    top: calc(100% - 0.5rem);
+    right: -1.75rem;
+    z-index: 2;
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 999px;
+    animation: hero-version-drift 11s ease-in-out infinite;
+  }
+  .hero-version:focus-visible { outline: 2px solid #ff8a1f; outline-offset: 4px; }
+  .hero-version__bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 36px;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 25%, #ffb357, #ff7a00 55%, #e45d00);
+    color: #0a0a0a;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    box-shadow:
+      0 0 0 1px rgba(255, 170, 80, 0.55) inset,
+      0 8px 24px -6px rgba(255, 122, 0, 0.55),
+      0 0 32px rgba(255, 122, 0, 0.25);
+    animation: hero-version-breathe 3.6s ease-in-out infinite;
+    transition: filter 0.2s ease;
+  }
+  .hero-version:hover .hero-version__bubble { filter: brightness(1.08); }
+  .hero-version__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #0a0a0a;
+    animation: hero-version-blink 3.6s ease-in-out infinite;
+  }
+  @keyframes hero-version-drift {
+    0%, 100% { transform: translate(0, 0) rotate(-2deg); }
+    25% { transform: translate(10px, -8px) rotate(1.5deg); }
+    50% { transform: translate(-4px, -14px) rotate(-1deg); }
+    75% { transform: translate(-10px, -4px) rotate(2deg); }
+  }
+  @keyframes hero-version-breathe {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 1px rgba(255, 170, 80, 0.55) inset, 0 8px 24px -6px rgba(255, 122, 0, 0.55), 0 0 24px rgba(255, 122, 0, 0.2);
+    }
+    50% {
+      transform: scale(1.07);
+      box-shadow: 0 0 0 1px rgba(255, 190, 110, 0.7) inset, 0 12px 32px -6px rgba(255, 122, 0, 0.7), 0 0 48px rgba(255, 122, 0, 0.45);
+    }
+  }
+  @keyframes hero-version-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+  @media (max-width: 640px) {
+    .hero__title-wrap { margin-bottom: 1.5rem; }
+    .hero-version { right: -0.25rem; top: calc(100% - 0.25rem); }
+    .hero-version__bubble { min-height: 30px; padding: 0.25rem 0.75rem; font-size: 0.75rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-version, .hero-version__bubble, .hero-version__dot { animation: none; }
+  }
   .hero__title {
     display: flex; flex-direction: column; gap: 0.05em; line-height: 1;
   }
