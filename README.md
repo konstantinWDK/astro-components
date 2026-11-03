@@ -105,21 +105,40 @@ Open [http://localhost:4321](http://localhost:4321) to browse components locally
 
 ## 📚 Component & Section Library
 
-**210+ components & full-page sections** across 11 categories:
+**290+ components & full-page sections** across 11 categories:
 
 | Category | Components | Description |
 |----------|:----------:|-------------|
-| **Sections** | 14 | Full landing sections: Heroes, Bento Grids, Pricing Matrices, Testimonials, CTAs, FAQs, Teams, Contact |
-| **Buttons** | 19 | Glass, glow, neumorphic, 3D push, magnetic, cyberpunk, and animated |
-| **Cards** | 19 | Ecommerce, profile, pricing, weather, tilt, portfolio, kanban |
-| **Layout** | 19 | Bento grids, masonry, split screens, sticky sidebars, card grids, full-bleed sections |
-| **Forms** | 18 | Floating inputs, OTP, currency, tags, custom select, color picker, rating stars |
-| **Navigation** | 17 | Glass navbars, mega menus, breadcrumbs, vertical tabs, command palettes |
-| **Overlays** | 20 | Modals, drawers, lightboxes, popovers, bottom sheets, age verifications |
-| **Feedback** | 17 | Alerts, modal dialogs, toasts, spinners, progress bars, confetti |
-| **Data Display** | 19 | Tables, vertical/horizontal timelines, stats grids, sparklines, tree views |
-| **Typography** | 19 | Gradient headings, glitch text, typewriter, 3D text layers, drop caps |
-| **Charts** | 3 | Area, bar, and donut charts with ApexCharts integration |
+| **Charts & Stats** | 47 | 41 zero-dependency SVG charts rendered at build time (line, area, bars, waterfall, pie, gauge, treemap, sankey, radar, heatmap, candlestick, KPI tiles…) plus 3 ApexCharts wrappers |
+| **Sections** | 41 | Heroes, features, pricing, testimonials, CTAs, stats dashboards, careers, FAQs, contact, logo walls, blog, changelog, footers |
+| **Buttons** | 22 | Glass, glow, neumorphic, 3D push, magnetic, cyberpunk, and animated |
+| **Cards** | 22 | Ecommerce, profile, pricing, weather, tilt, portfolio, kanban |
+| **Layout** | 22 | Bento grids, masonry, split screens, sticky sidebars, card grids, full-bleed sections |
+| **Forms** | 24 | Floating inputs, OTP, currency, tags, custom select, color picker, rating stars |
+| **Navigation** | 23 | Glass navbars, mega menus, breadcrumbs, vertical tabs, command palettes |
+| **Overlays** | 23 | Modals, drawers, lightboxes, popovers, bottom sheets, age verifications |
+| **Feedback** | 22 | Alerts, modal dialogs, toasts, spinners, progress bars, confetti |
+| **Data Display** | 23 | Tables, vertical/horizontal timelines, stats grids, sparklines, tree views |
+| **Typography** | 24 | Gradient headings, glitch text, typewriter, 3D text layers, drop caps |
+
+### SVG charts — zero dependencies
+
+```astro
+---
+import 'astro-component-kit/global.css';
+import { LineChart, PieChart, KpiStatTile } from 'astro-component-kit/charts';
+---
+
+<KpiStatTile label="Revenue" value="$48.2k" change={24} period="vs last month" />
+<LineChart
+  title="Monthly active users"
+  categories={['Jan', 'Feb', 'Mar', 'Apr']}
+  series={[{ name: 'Web', data: [120, 180, 160, 240] }]}
+/>
+<PieChart />
+```
+
+Every chart ships with a legend, keyboard-focusable marks with tooltips and a "View data" table fallback for screen readers. Colors come from the `--chart-1…8` tokens in `global.css`.
 
 ---
 
@@ -228,7 +247,7 @@ import { Badge } from 'astro-component-kit/feedback';
 astro-component-kit/
 ├── src/
 │   ├── components/
-│   │   ├── lib/                 ← 210+ component source files
+│   │   ├── lib/                 ← 290+ component source files
 │   │   │   ├── sections/        ← 14 full-page landing sections
 │   │   │   ├── buttons/         ← 19 button components
 │   │   │   ├── cards/           ← 19 card components
