@@ -1,6 +1,7 @@
 import type { Category, ComponentDoc, SectionCategory } from '../data/registry/types';
 import type { Locale } from '../config/site';
 import { componentTranslations } from './componentTranslations';
+import { componentTranslationsExtra } from './componentTranslationsExtra';
 
 export interface LocalizedMeta {
   name?: string;
@@ -67,9 +68,9 @@ export const categoryTranslations: Record<string, Record<Locale, LocalizedMeta>>
     ru: { name: 'Типографика', description: 'Градиентные заголовки, глитч-эффекты, анимации печатной машинки и акценты кода.' },
   },
   charts: {
-    en: { name: 'Charts', description: 'Interactive area, bar, radar, and donut visualizations powered by ApexCharts.' },
-    es: { name: 'Gráficos', description: 'Gráficos interactivos de área, barras, radar y dona impulsados por ApexCharts.' },
-    ru: { name: 'Графики', description: 'Интерактивные графики областей, столбчатые диаграммы, радар и пончики на ApexCharts.' },
+    en: { name: 'Charts & Stats', description: '45 charts and statistics: zero-dependency SVG lines, bars, pies, funnels, heatmaps, KPI tiles and more.' },
+    es: { name: 'Gráficos y Estadísticas', description: '45 gráficos y estadísticas: líneas, barras, tartas, embudos, mapas de calor y KPIs en SVG sin dependencias.' },
+    ru: { name: 'Графики и статистика', description: '45 графиков и статистики: линии, столбцы, круговые, воронки, тепловые карты и KPI на SVG без зависимостей.' },
   },
   sections: {
     en: { name: 'Page Sections', description: 'Complete drop-in landing page blocks including Heros, Bento grids, Pricing, and FAQs.' },
@@ -127,6 +128,16 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Contacto & Soporte', description: 'Formularios de contacto accesibles con etiquetas flotantes y canales de soporte directo.' },
     ru: { name: 'Контакты и поддержка', description: 'Доступные формы обратной связи с плавающими метками и каналами связи.' },
   },
+  content: {
+    en: { name: 'Blog & Content', description: 'Article grids, featured posts and release-notes changelog timelines.' },
+    es: { name: 'Blog y Contenido', description: 'Cuadrículas de artículos, posts destacados y líneas de tiempo de novedades.' },
+    ru: { name: 'Блог и контент', description: 'Сетки статей, избранные публикации и таймлайны изменений.' },
+  },
+  footer: {
+    en: { name: 'Footers', description: 'Complete site footers with link columns, newsletter signup and social links.' },
+    es: { name: 'Pies de Página', description: 'Pies de página completos con columnas de enlaces, newsletter y redes sociales.' },
+    ru: { name: 'Футеры', description: 'Полные подвалы сайта с колонками ссылок, подпиской и соцсетями.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },
@@ -173,7 +184,7 @@ export function getLocalizedSectionCategory(secCat: SectionCategory, lang: Local
  * Uses the exact componentTranslations dictionary with fallback to regex rules.
  */
 export function getLocalizedComponent(comp: ComponentDoc, lang: Locale): ComponentDoc {
-  const trans = componentTranslations[comp.slug];
+  const trans = componentTranslations[comp.slug] ?? componentTranslationsExtra[comp.slug];
 
   if (trans) {
     if (lang === 'es' && trans.es) {

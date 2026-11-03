@@ -1,0 +1,122 @@
+---
+/**
+ * StatsCounterBand — Full-width band of headline numbers that count up when
+ * scrolled into view. Final values are in the HTML, so no-JS and screen
+ * readers always get the real number; motion respects reduced-motion.
+ *
+ * @param {string} title - Optional heading (visually hidden when `hideTitle`).
+ * @param {boolean} hideTitle - Visually hide the heading.
+ * @param {Array<{value: number, prefix?: string, suffix?: string, label: string, decimals?: number}>} stats - Numbers.
+ * @param {string} variant - Band style (divided|cards|plain).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Stat { value: number; prefix?: string; suffix?: string; label: string; decimals?: number }
+interface Props {
+  title?: string;
+  hideTitle?: boolean;
+  stats?: Stat[];
+  variant?: 'divided' | 'cards' | 'plain';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Trusted at scale',
+  hideTitle = false,
+  stats = [
+    { value: 12000, suffix: '+', label: 'Developers using the kit' },
+    { value: 250, suffix: '+', label: 'Components & sections' },
+    { value: 99.98, suffix: '%', label: 'CDN uptime last 12 months', decimals: 2 },
+    { value: 48, prefix: '<', suffix: 'ms', label: 'Median time to first byte' },
+  ],
+  variant = 'divided',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `scb-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (s: Stat) => `${s.prefix ?? ''}${s.value.toLocaleString('en-US', { minimumFractionDigits: s.decimals ?? 0, maximumFractionDigits: s.decimals ?? 0 })}${s.suffix ?? ''}`;
+---
+
+<section class={`scb scb--${variant} scb--${size} ${className}`} aria-labelledby={id}>
+  <div class="scb__inner">
+    <h2 id={id} class:list={['scb__title', { 'scb__sr': hideTitle }]}>{title}</h2>
+    <dl class="scb__grid">
+      {stats.map((s) => (
+        <div class="scb__item">
+          <dt class="scb__label">{s.label}</dt>
+          <dd class="scb__value" data-count={s.value} data-decimals={s.decimals ?? 0} data-prefix={s.prefix ?? ''} data-suffix={s.suffix ?? ''}>{fmt(s)}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>
+
+<script>
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const els = document.querySelectorAll<HTMLElement>('.scb__value[data-count]');
+  if (!reduce && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target as HTMLElement;
+        io.unobserve(el);
+        const target = Number(el.dataset.count);
+        const dec = Number(el.dataset.decimals);
+        const pre = el.dataset.prefix || '';
+        const suf = el.dataset.suffix || '';
+        const final = el.textContent;
+        el.setAttribute('aria-label', final || '');
+        const start = performance.now();
+        const dur = 1400;
+        const tick = (now: number) => {
+          const t = Math.min(1, (now - start) / dur);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const v = target * eased;
+          el.textContent = `${pre}${v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })}${suf}`;
+          if (t < 1) requestAnimationFrame(tick);
+          else el.textContent = final;
+        };
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.4 });
+    els.forEach((el) => io.observe(el));
+  }
+</script>
+
+<style>
+  .scb {
+    --scb-py: 4.5rem;
+    padding: var(--scb-py) var(--sp-6, 1.5rem);
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.02) 50%, transparent), var(--c-bg, #050505);
+  }
+  .scb--sm { --scb-py: 3rem; }
+  .scb--lg { --scb-py: 6.5rem; }
+  .scb__inner { max-width: 1180px; margin: 0 auto; }
+  .scb__title { margin: 0 0 2.5rem; text-align: center; font-size: 0.875rem; font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .scb__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+  .scb__grid { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .scb__item { display: flex; flex-direction: column-reverse; align-items: center; gap: 0.5rem; padding: 1.5rem 1rem; text-align: center; }
+  .scb--divided .scb__item + .scb__item { border-left: 1px solid rgba(255, 255, 255, 0.08); }
+  .scb--cards .scb__grid { gap: 1rem; }
+  .scb--cards .scb__item { border-radius: var(--r-lg, 20px); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); }
+  .scb__value {
+    margin: 0;
+    font-size: clamp(2.25rem, 5vw, 3.25rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(180deg, #fff, rgba(255, 255, 255, 0.65));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .scb__label { font-size: 0.9375rem; color: var(--c-text-2, #a3a3a3); max-width: 220px; }
+  @media (max-width: 640px) {
+    .scb__grid { grid-template-columns: 1fr 1fr; }
+    .scb--divided .scb__item + .scb__item { border-left: 0; }
+    .scb--divided .scb__item:nth-child(even) { border-left: 1px solid rgba(255, 255, 255, 0.08); }
+  }
+</style>

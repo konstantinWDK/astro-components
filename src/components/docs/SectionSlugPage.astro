@@ -68,7 +68,10 @@ const componentMap: Record<string, any> = {
   'hero-showcase-split': HeroShowcaseSplit,
 };
 
-const Component = componentMap[rawSection.slug] || null;
+// Fallback: resolve any other section by its PascalCase file name.
+const sectionModules = import.meta.glob('../lib/sections/*.astro', { eager: true }) as Record<string, { default: any }>;
+const pascalName = rawSection.slug.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+const Component = componentMap[rawSection.slug] || sectionModules[`../lib/sections/${pascalName}.astro`]?.default || null;
 
 // Find prev/next for navigation
 const currentIndex = sections.findIndex((s) => s.slug === slug);

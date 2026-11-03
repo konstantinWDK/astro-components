@@ -1,0 +1,60 @@
+---
+/**
+ * KpiTrendGrid — Responsive grid of KPI stat tiles with sparklines; the classic
+ * top row of an analytics dashboard.
+ *
+ * @param {Array<{label: string, value: string, change: number, trend?: number[], invert?: boolean}>} metrics - Tiles.
+ * @param {string} period - Shared comparison label.
+ * @param {string} variant - Tile style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+import KpiStatTile from './KpiStatTile.astro';
+
+interface Props {
+  title?: string;
+  metrics?: Array<{ label: string; value: string; change: number; trend?: number[]; invert?: boolean }>;
+  period?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Overview',
+  metrics = [
+    { label: 'Revenue', value: '$128.4k', change: 9.2, trend: [80, 84, 90, 88, 96, 102, 110, 118, 128] },
+    { label: 'Active users', value: '24,812', change: 4.1, trend: [20, 21, 21.5, 22, 22.8, 23.1, 23.9, 24.2, 24.8] },
+    { label: 'Churn', value: '2.3%', change: -0.6, invert: true, trend: [3.1, 3, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.3] },
+    { label: 'Avg. response', value: '182ms', change: 7.8, invert: true, trend: [150, 160, 158, 170, 165, 175, 172, 180, 182] },
+  ],
+  period = 'vs previous 30 days',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+---
+
+<section class={`kg ${className}`} aria-label={title}>
+  {title && <h2 class="kg__title">{title}</h2>}
+  <div class="kg__grid">
+    {metrics.map((mt) => (
+      <KpiStatTile label={mt.label} value={mt.value} change={mt.change} trend={mt.trend} invert={mt.invert} period={period} variant={variant} size={size} />
+    ))}
+  </div>
+</section>
+
+<style>
+  .kg { width: 100%; }
+  .kg__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-size: 1rem;
+    font-weight: 650;
+    color: var(--c-text-1, #fff);
+  }
+  .kg__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--sp-4, 1rem);
+  }
+</style>

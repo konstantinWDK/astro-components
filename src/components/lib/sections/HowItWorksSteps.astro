@@ -1,0 +1,178 @@
+---
+/**
+ * HowItWorksSteps — Numbered process section ("How it works") with a connecting
+ * line between steps. Horizontal on desktop, vertical on mobile.
+ *
+ * @param {string} eyebrow - Small label above the heading.
+ * @param {string} title - Section heading.
+ * @param {Array<{title: string, text: string, time?: string}>} steps - Ordered steps.
+ * @param {{label: string, href: string}} cta - Optional CTA under the steps.
+ * @param {string} variant - Step marker style (numbers|dots|cards).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Step { title: string; text: string; time?: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  steps?: Step[];
+  cta?: { label: string; href: string };
+  variant?: 'numbers' | 'dots' | 'cards';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  eyebrow = 'How it works',
+  title = 'Ship a polished page in four steps',
+  steps = [
+    { title: 'Pick sections', text: 'Browse heroes, features, pricing and more in the catalog.', time: '2 min' },
+    { title: 'Copy the code', text: 'Paste components into your Astro project. No install needed.', time: '1 min' },
+    { title: 'Customize props', text: 'Change copy, colors and data through typed props and tokens.', time: '10 min' },
+    { title: 'Deploy', text: 'Build static HTML and ship to any CDN or edge host.', time: '30 s' },
+  ],
+  cta = { label: 'Start building', href: '#' },
+  variant = 'numbers',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `hiw-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`hiw hiw--${variant} hiw--${size} ${className}`} aria-labelledby={id} style={`--hiw-n:${steps.length}`}>
+  <div class="hiw__inner">
+    <header class="hiw__head">
+      <p class="hiw__eyebrow">{eyebrow}</p>
+      <h2 id={id} class="hiw__title">{title}</h2>
+    </header>
+    <ol class="hiw__steps">
+      {steps.map((s, i) => (
+        <li class="hiw__step" style={`--i:${i}`}>
+          <span class="hiw__marker" aria-hidden="true">{variant === 'dots' ? '' : String(i + 1).padStart(2, '0')}</span>
+          <div class="hiw__body">
+            <h3 class="hiw__step-title"><span class="hiw__sr">Step {i + 1}: </span>{s.title}</h3>
+            <p class="hiw__text">{s.text}</p>
+            {s.time && (
+              <span class="hiw__time">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                {s.time}
+              </span>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+    {cta && (
+      <div class="hiw__cta">
+        <a href={cta.href}>{cta.label}</a>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .hiw {
+    --hiw-py: 5.5rem;
+    padding: var(--hiw-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .hiw--sm { --hiw-py: 3.5rem; }
+  .hiw--lg { --hiw-py: 7.5rem; }
+  .hiw__inner { max-width: 1180px; margin: 0 auto; }
+  .hiw__head { text-align: center; margin-bottom: 3.5rem; }
+  .hiw__eyebrow { margin: 0 0 0.75rem; font-size: 0.8125rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .hiw__title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); text-wrap: balance; }
+  .hiw__steps {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--hiw-n), minmax(0, 1fr));
+    gap: 2rem;
+  }
+  .hiw__steps::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: calc(100% / var(--hiw-n) / 2);
+    right: calc(100% / var(--hiw-n) / 2);
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 160, 23, 0.6), rgba(255, 255, 255, 0.1));
+  }
+  .hiw--cards .hiw__steps::before { display: none; }
+  .hiw__step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: hiw-in 0.6s ease both;
+    animation-delay: calc(var(--i) * 120ms);
+  }
+  .hiw--cards .hiw__step {
+    align-items: flex-start;
+    text-align: left;
+    padding: 1.5rem;
+    border-radius: var(--r-lg, 20px);
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07));
+  }
+  @keyframes hiw-in { from { opacity: 0; transform: translateY(10px); } }
+  .hiw__marker {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1.25rem;
+    border-radius: 50%;
+    background: var(--c-bg-1, #0a0a0a);
+    border: 1px solid rgba(212, 160, 23, 0.45);
+    color: var(--c-primary-light, #d4a017);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.875rem;
+    font-weight: 700;
+    box-shadow: 0 0 0 6px var(--c-bg, #050505);
+  }
+  .hiw--dots .hiw__marker { width: 16px; height: 16px; margin: 16px 0 1.5rem; background: var(--c-primary-light, #d4a017); }
+  .hiw__step-title { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 650; color: var(--c-text-1, #fff); }
+  .hiw__text { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .hiw__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.85rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 0.75rem;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .hiw__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .hiw__cta { text-align: center; margin-top: 3rem; }
+  .hiw__cta a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 1.5rem;
+    border-radius: var(--r-md, 12px);
+    background: var(--c-primary-light, #d4a017);
+    color: #0a0a0a;
+    font-weight: 650;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+  .hiw__cta a:hover { background: var(--c-accent, #fef3c7); color: #0a0a0a; }
+  .hiw__cta a:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  @media (max-width: 820px) {
+    .hiw__steps { grid-template-columns: 1fr; gap: 1.75rem; }
+    .hiw__steps::before { top: 24px; bottom: 24px; left: 24px; right: auto; width: 1px; height: auto; background: linear-gradient(180deg, rgba(212, 160, 23, 0.6), rgba(255, 255, 255, 0.1)); }
+    .hiw__step { flex-direction: row; align-items: flex-start; text-align: left; gap: 1.25rem; }
+    .hiw__marker { flex-shrink: 0; margin-bottom: 0; }
+    .hiw--dots .hiw__marker { margin: 16px 16px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .hiw__step { animation: none; } }
+</style>

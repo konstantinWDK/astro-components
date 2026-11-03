@@ -1,0 +1,229 @@
+---
+/**
+ * HeroWaitlist — Pre-launch hero with an accessible email capture form,
+ * inline validation, success state and avatar-stack social proof.
+ *
+ * @param {string} badge - Status pill text (e.g. 'Private beta').
+ * @param {string} title - Headline.
+ * @param {string} subtitle - Supporting paragraph.
+ * @param {string} action - Form action URL (posts `email`).
+ * @param {string} buttonLabel - Submit button text.
+ * @param {string} successMessage - Message after a valid submission.
+ * @param {number} count - Number of people already on the list.
+ * @param {string} variant - Background treatment (default|aurora|minimal).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Props {
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  action?: string;
+  buttonLabel?: string;
+  successMessage?: string;
+  count?: number;
+  variant?: 'default' | 'aurora' | 'minimal';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  badge = 'Private beta · Spring 2027',
+  title = 'Analytics that respect your users',
+  subtitle = 'Cookieless, privacy-first insights with beautiful dashboards. Join the waitlist for early access and founder pricing.',
+  action = '#',
+  buttonLabel = 'Join waitlist',
+  successMessage = "You're on the list! Check your inbox to confirm.",
+  count = 4280,
+  variant = 'aurora',
+  size = 'lg',
+  className = '',
+} = Astro.props;
+
+const id = `hw-${Math.random().toString(36).slice(2, 8)}`;
+const initials = ['AK', 'MR', 'JS', 'LP', 'TW'];
+const hues = ['var(--chart-1, #3987e5)', 'var(--chart-2, #d95926)', 'var(--chart-3, #199e70)', 'var(--chart-5, #d55181)', 'var(--chart-7, #9085e9)'];
+---
+
+<section class={`hw hw--${variant} hw--${size} ${className}`} aria-labelledby={id}>
+  <div class="hw__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="hw__inner">
+    <span class="hw__badge"><span class="hw__pulse" aria-hidden="true"></span>{badge}</span>
+    <h1 id={id} class="hw__title">{title}</h1>
+    <p class="hw__subtitle">{subtitle}</p>
+
+    <form class="hw__form" action={action} method="post" novalidate data-success={successMessage}>
+      <label for={`${id}-email`} class="hw__sr">Email address</label>
+      <input id={`${id}-email`} class="hw__input" type="email" name="email" placeholder="you@company.com" autocomplete="email" required aria-describedby={`${id}-msg`} />
+      <button class="hw__btn" type="submit">
+        <span>{buttonLabel}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </button>
+    </form>
+    <p id={`${id}-msg`} class="hw__msg" role="status" aria-live="polite"></p>
+
+    <div class="hw__proof">
+      <div class="hw__avatars" aria-hidden="true">
+        {initials.map((ini, i) => <span style={`background:${hues[i]}`}>{ini}</span>)}
+      </div>
+      <p><strong>{count.toLocaleString('en-US')}+</strong> builders already joined</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('.hw__form').forEach((form) => {
+    const input = form.querySelector<HTMLInputElement>('input[type="email"]');
+    const msg = document.getElementById(input?.getAttribute('aria-describedby') || '');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!input || !msg) return;
+      if (!input.value || !input.checkValidity()) {
+        input.setAttribute('aria-invalid', 'true');
+        msg.dataset.state = 'error';
+        msg.textContent = 'Please enter a valid email address.';
+        input.focus();
+        return;
+      }
+      input.removeAttribute('aria-invalid');
+      msg.dataset.state = 'success';
+      msg.textContent = form.dataset.success || 'Thanks!';
+      form.classList.add('is-done');
+      input.value = '';
+    });
+    input?.addEventListener('input', () => {
+      input.removeAttribute('aria-invalid');
+      if (msg && msg.dataset.state === 'error') msg.textContent = '';
+    });
+  });
+</script>
+
+<style>
+  .hw {
+    --hw-py: 6rem;
+    position: relative;
+    overflow: hidden;
+    padding: var(--hw-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+    text-align: center;
+  }
+  .hw--sm { --hw-py: 4rem; }
+  .hw--lg { --hw-py: 8.5rem; }
+  .hw__aurora { position: absolute; inset: 0; pointer-events: none; display: none; }
+  .hw--aurora .hw__aurora { display: block; }
+  .hw__aurora span {
+    position: absolute;
+    width: 40vw;
+    height: 40vw;
+    max-width: 520px;
+    max-height: 520px;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.22;
+    animation: hw-float 16s ease-in-out infinite alternate;
+  }
+  .hw__aurora span:nth-child(1) { background: var(--chart-7, #9085e9); top: -10%; left: 10%; }
+  .hw__aurora span:nth-child(2) { background: var(--chart-1, #3987e5); top: 10%; right: 5%; animation-delay: -5s; }
+  .hw__aurora span:nth-child(3) { background: var(--c-primary, #b8860b); bottom: -25%; left: 35%; animation-delay: -10s; }
+  @keyframes hw-float { to { transform: translate(6%, 8%) scale(1.1); } }
+  .hw__inner { position: relative; max-width: 680px; margin: 0 auto; }
+  .hw__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    font-size: 0.8125rem;
+    color: var(--c-text-1, #fff);
+  }
+  .hw__pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--chart-pos, #34c38f); box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.6); animation: hw-pulse 2s infinite; }
+  @keyframes hw-pulse { 70% { box-shadow: 0 0 0 8px rgba(52, 195, 143, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0); } }
+  .hw__title {
+    margin: 1.5rem 0 1rem;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    color: var(--c-text-1, #fff);
+    text-wrap: balance;
+  }
+  .hw__subtitle { margin: 0 auto 2.25rem; max-width: 560px; font-size: 1.0625rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .hw__form {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0.4rem;
+    border-radius: var(--r-lg, 16px);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s ease;
+  }
+  .hw__form:focus-within { border-color: rgba(255, 255, 255, 0.28); }
+  .hw__input {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 0.9rem;
+    border: 0;
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font-size: 1rem;
+    font-family: inherit;
+  }
+  .hw__input::placeholder { color: var(--c-text-3, #737373); }
+  .hw__input:focus { outline: none; }
+  .hw__input[aria-invalid='true'] { box-shadow: inset 0 -2px 0 var(--chart-neg, #f06a6a); }
+  .hw__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 48px;
+    padding: 0 1.25rem;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--c-text-1, #fff);
+    color: #0a0a0a;
+    font-weight: 650;
+    font-size: 0.9375rem;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .hw__btn:hover { background: var(--c-accent, #fef3c7); }
+  .hw__btn:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .hw__form.is-done .hw__btn { background: var(--chart-pos, #34c38f); }
+  .hw__msg { min-height: 1.5rem; margin: 0.75rem 0 0; font-size: 0.875rem; }
+  .hw__msg[data-state='error'] { color: #ff9b9b; }
+  .hw__msg[data-state='success'] { color: #7ee2b8; }
+  .hw__proof { display: inline-flex; align-items: center; gap: 0.85rem; margin-top: 1.5rem; }
+  .hw__proof p { margin: 0; font-size: 0.875rem; color: var(--c-text-2, #a3a3a3); }
+  .hw__proof strong { color: var(--c-text-1, #fff); }
+  .hw__avatars { display: flex; }
+  .hw__avatars span {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin-left: -8px;
+    border-radius: 50%;
+    border: 2px solid var(--c-bg, #050505);
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .hw__avatars span:first-child { margin-left: 0; }
+  .hw__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 520px) {
+    .hw__form { flex-direction: column; }
+    .hw__btn { justify-content: center; }
+    .hw__proof { flex-direction: column; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hw__aurora span, .hw__pulse { animation: none; }
+  }
+</style>

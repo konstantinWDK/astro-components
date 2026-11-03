@@ -1,0 +1,103 @@
+---
+/**
+ * SunburstChart — Two-level hierarchical donut: inner ring for parents, outer
+ * ring for children (shaded variants of the parent hue).
+ *
+ * @param {Array<{label: string, children: Array<{label: string, value: number}>}>} data - Hierarchy.
+ * @param {string} centerLabel - Caption in the middle.
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string[]} colors - Optional per-parent colors.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { arcPath, colorAt, formatValue, sum } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  data?: Array<{ label: string; children: Array<{ label: string; value: number }> }>;
+  centerLabel?: string;
+  prefix?: string;
+  suffix?: string;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Cloud spend breakdown',
+  subtitle = 'Service → resource',
+  data = [
+    { label: 'Compute', children: [{ label: 'VMs', value: 4200 }, { label: 'Functions', value: 1800 }, { label: 'Containers', value: 2600 }] },
+    { label: 'Storage', children: [{ label: 'Object', value: 1900 }, { label: 'Block', value: 1100 }] },
+    { label: 'Network', children: [{ label: 'CDN', value: 1400 }, { label: 'Egress', value: 900 }] },
+    { label: 'Data', children: [{ label: 'Postgres', value: 1600 }, { label: 'Redis', value: 500 }] },
+  ],
+  centerLabel = 'Monthly spend',
+  prefix = '$',
+  suffix = '',
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const S = 300;
+const c = S / 2;
+const total = sum(data.flatMap((d) => d.children.map((ch) => ch.value))) || 1;
+const GAP = 0.01;
+let a = 0;
+const parents = data.slice(0, 8).map((d, pi) => {
+  const pv = sum(d.children.map((ch) => ch.value));
+  const a0 = a;
+  const sweep = (pv / total) * Math.PI * 2;
+  a += sweep;
+  const color = colorAt(pi, colors);
+  let ca = a0;
+  const kids = d.children.map((ch, ci) => {
+    const s = (ch.value / total) * Math.PI * 2;
+    const k0 = ca;
+    ca += s;
+    const mix = 100 - ci * (40 / Math.max(1, d.children.length - 1));
+    return { ...ch, d: arcPath(c, c, 146, 104, k0 + GAP / 2, k0 + s - GAP / 2), color: `color-mix(in srgb, ${color} ${mix}%, #0d0d0f)` };
+  });
+  return { label: d.label, value: pv, color, d: arcPath(c, c, 100, 62, a0 + GAP / 2, a0 + sweep - GAP / 2), kids };
+});
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+const pct = (v: number) => `${((v / total) * 100).toFixed(1)}%`;
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={parents.map((p) => ({ label: p.label, color: p.color }))}
+  table={{ headers: ['Group', 'Item', 'Value', 'Share'], rows: parents.flatMap((p) => p.kids.map((k) => [p.label, k.label, fmt(k.value), pct(k.value)])) }}
+>
+  <div class="sbt">
+    <svg viewBox={`0 0 ${S} ${S}`} role="img" aria-label={`${title}: sunburst chart, total ${fmt(total)}`}>
+      {parents.map((p) => (
+        <g>
+          <path class="cf-mark cf-dim" d={p.d} fill={p.color} tabindex="0" role="img" aria-label={`${p.label}: ${fmt(p.value)} (${pct(p.value)})`}
+            data-tip-title={p.label} data-tip={`${p.color}::${fmt(p.value)} · ${pct(p.value)}`} />
+          {p.kids.map((k) => (
+            <path class="cf-mark cf-dim" d={k.d} fill={k.color} tabindex="0" role="img" aria-label={`${p.label} / ${k.label}: ${fmt(k.value)}`}
+              data-tip-title={`${p.label} › ${k.label}`} data-tip={`${k.color}::${fmt(k.value)} · ${pct(k.value)}`} />
+          ))}
+        </g>
+      ))}
+      <text x={c} y={c + 2} text-anchor="middle" class="sbt__total">{fmt(total)}</text>
+      <text x={c} y={c + 20} text-anchor="middle" class="cf-label">{centerLabel}</text>
+    </svg>
+  </div>
+</ChartFrame>
+
+<style>
+  .sbt { max-width: 340px; margin: 0 auto; }
+  .sbt__total { fill: var(--c-text-1, #fff); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+</style>

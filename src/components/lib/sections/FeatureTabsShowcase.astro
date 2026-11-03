@@ -1,0 +1,180 @@
+---
+/**
+ * FeatureTabsShowcase — Interactive feature section using the WAI-ARIA tabs
+ * pattern (arrow keys, Home/End) to switch between product capabilities.
+ *
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{label: string, title: string, text: string, points: string[], stat: string, statLabel: string}>} tabs - Tab panels.
+ * @param {string} variant - Tab style (pills|underline|cards).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Tab { label: string; title: string; text: string; points: string[]; stat: string; statLabel: string }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  tabs?: Tab[];
+  variant?: 'pills' | 'underline' | 'cards';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'One platform, every workflow',
+  subtitle = 'Switch between capabilities to see how teams use the kit.',
+  tabs = [
+    { label: 'Marketing', title: 'Launch pages in an afternoon', text: 'Assemble hero, features, pricing and FAQ sections into conversion-ready landing pages.', points: ['24 new section blocks', 'SEO-friendly markup', 'Instant static builds'], stat: '3.4×', statLabel: 'faster page launches' },
+    { label: 'Product', title: 'In-app analytics without a chart library', text: 'Render KPI tiles, funnels and cohort tables straight from your data at build time.', points: ['45 SVG charts', 'Tooltips & table view', 'Zero client JS'], stat: '0 kB', statLabel: 'chart runtime shipped' },
+    { label: 'Engineering', title: 'Accessible components you can trust', text: 'Every component is keyboard navigable and screen-reader tested, with visible focus states.', points: ['WCAG 2.2 AA', 'Typed props', 'Reduced-motion aware'], stat: '100', statLabel: 'Lighthouse accessibility' },
+  ],
+  variant = 'pills',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const uid = Math.random().toString(36).slice(2, 8);
+const id = `fts-${uid}`;
+---
+
+<section class={`fts fts--${variant} fts--${size} ${className}`} aria-labelledby={id}>
+  <div class="fts__inner">
+    <header class="fts__head">
+      <h2 id={id} class="fts__title">{title}</h2>
+      <p class="fts__subtitle">{subtitle}</p>
+    </header>
+
+    <div class="fts__tabs" data-fts>
+      <div class="fts__list" role="tablist" aria-label={title}>
+        {tabs.map((t, i) => (
+          <button
+            type="button"
+            role="tab"
+            class="fts__tab"
+            id={`${id}-tab-${i}`}
+            aria-controls={`${id}-panel-${i}`}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            tabindex={i === 0 ? 0 : -1}
+          >{t.label}</button>
+        ))}
+      </div>
+
+      {tabs.map((t, i) => (
+        <div class="fts__panel" role="tabpanel" id={`${id}-panel-${i}`} aria-labelledby={`${id}-tab-${i}`} tabindex="0" hidden={i !== 0}>
+          <div class="fts__copy">
+            <h3 class="fts__panel-title">{t.title}</h3>
+            <p class="fts__text">{t.text}</p>
+            <ul class="fts__points">
+              {t.points.map((p) => (
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>{p}</li>
+              ))}
+            </ul>
+          </div>
+          <div class="fts__stat">
+            <span class="fts__stat-value">{t.stat}</span>
+            <span class="fts__stat-label">{t.statLabel}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-fts]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const select = (next: HTMLButtonElement, focus = true) => {
+      tabs.forEach((t) => {
+        const on = t === next;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById(t.getAttribute('aria-controls') || '');
+        if (panel) panel.hidden = !on;
+      });
+      if (focus) next.focus();
+    };
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab, false));
+      tab.addEventListener('keydown', (e) => {
+        const map: Record<string, number> = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 };
+        if (!(e.key in map)) return;
+        e.preventDefault();
+        select(tabs[(map[e.key] + tabs.length) % tabs.length]);
+      });
+    });
+  });
+</script>
+
+<style>
+  .fts {
+    --fts-py: 5.5rem;
+    padding: var(--fts-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .fts--sm { --fts-py: 3.5rem; }
+  .fts--lg { --fts-py: 7.5rem; }
+  .fts__inner { max-width: 1080px; margin: 0 auto; }
+  .fts__head { text-align: center; max-width: 640px; margin: 0 auto 2.5rem; }
+  .fts__title { margin: 0 0 0.75rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .fts__subtitle { margin: 0; font-size: 1.0625rem; color: var(--c-text-2, #a3a3a3); }
+  .fts__list { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
+  .fts__tab {
+    min-height: 44px;
+    padding: 0 1.25rem;
+    border: 1px solid transparent;
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .fts__tab:hover { color: var(--c-text-1, #fff); }
+  .fts__tab:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .fts--pills .fts__list { width: fit-content; margin-inline: auto; padding: 0.35rem; border-radius: var(--r-full, 999px); background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.07); }
+  .fts--pills .fts__tab[aria-selected='true'] { background: var(--c-text-1, #fff); color: #0a0a0a; }
+  .fts--underline .fts__list { border-bottom: 1px solid rgba(255, 255, 255, 0.08); gap: 1.5rem; }
+  .fts--underline .fts__tab { border-radius: 0; padding: 0 0.25rem; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .fts--underline .fts__tab[aria-selected='true'] { color: var(--c-text-1, #fff); border-bottom-color: var(--c-primary-light, #d4a017); }
+  .fts--cards .fts__tab { border-radius: var(--r-md, 12px); border-color: rgba(255, 255, 255, 0.08); }
+  .fts--cards .fts__tab[aria-selected='true'] { border-color: var(--c-primary-light, #d4a017); color: var(--c-text-1, #fff); background: var(--c-primary-glow, rgba(184, 134, 11, 0.12)); }
+
+  .fts__panel {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2rem;
+    align-items: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border-radius: var(--r-xl, 24px);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07));
+    animation: fts-in 0.35s ease;
+  }
+  .fts__panel[hidden] { display: none; }
+  .fts__panel:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  @keyframes fts-in { from { opacity: 0; transform: translateY(6px); } }
+  .fts__panel-title { margin: 0 0 0.75rem; font-size: clamp(1.4rem, 3vw, 1.875rem); font-weight: 750; letter-spacing: -0.02em; color: var(--c-text-1, #fff); }
+  .fts__text { margin: 0 0 1.25rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .fts__points { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+  .fts__points li { display: flex; align-items: center; gap: 0.55rem; color: var(--c-text-1, #fff); font-size: 0.9375rem; }
+  .fts__points svg { color: var(--chart-pos, #34c38f); }
+  .fts__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 200px;
+    border-radius: var(--r-lg, 20px);
+    background: radial-gradient(circle at 50% 30%, var(--c-primary-glow, rgba(184, 134, 11, 0.16)), transparent 70%), rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .fts__stat-value { font-size: clamp(2.75rem, 6vw, 4rem); font-weight: 800; letter-spacing: -0.04em; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; line-height: 1; }
+  .fts__stat-label { font-size: 0.875rem; color: var(--c-text-2, #a3a3a3); }
+  @media (max-width: 760px) { .fts__panel { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .fts__panel { animation: none; } }
+</style>

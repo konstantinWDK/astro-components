@@ -1,0 +1,167 @@
+---
+/**
+ * IntegrationsGrid — Integrations directory with category filter chips
+ * (progressively enhanced), monogram tiles and connection status badges.
+ *
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{name: string, category: string, description: string, status?: 'available'|'beta'|'soon'}>} items - Integrations.
+ * @param {string} variant - Tile style (card|compact|outline).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Item { name: string; category: string; description: string; status?: 'available' | 'beta' | 'soon' }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Item[];
+  variant?: 'card' | 'compact' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Plays well with your stack',
+  subtitle = 'Connect the tools your team already uses. New integrations every month.',
+  items = [
+    { name: 'Slack', category: 'Messaging', description: 'Post alerts and weekly digests to channels.', status: 'available' },
+    { name: 'GitHub', category: 'Developer', description: 'Annotate charts with deploys and releases.', status: 'available' },
+    { name: 'Stripe', category: 'Payments', description: 'Sync MRR, churn and invoices automatically.', status: 'available' },
+    { name: 'Linear', category: 'Developer', description: 'Turn insights into issues in one click.', status: 'beta' },
+    { name: 'Notion', category: 'Docs', description: 'Embed live charts in your team wiki.', status: 'available' },
+    { name: 'HubSpot', category: 'CRM', description: 'Attribute revenue to campaigns and deals.', status: 'beta' },
+    { name: 'Postgres', category: 'Data', description: 'Query your warehouse with zero ETL.', status: 'available' },
+    { name: 'Discord', category: 'Messaging', description: 'Community metrics and bot notifications.', status: 'soon' },
+  ],
+  variant = 'card',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `ig-${Math.random().toString(36).slice(2, 8)}`;
+const categories = ['All', ...new Set(items.map((i) => i.category))];
+const hues = ['var(--chart-1, #3987e5)', 'var(--chart-2, #d95926)', 'var(--chart-3, #199e70)', 'var(--chart-4, #c98500)', 'var(--chart-5, #d55181)', 'var(--chart-7, #9085e9)'];
+const statusLabel = { available: 'Available', beta: 'Beta', soon: 'Coming soon' };
+---
+
+<section class={`ig ig--${variant} ig--${size} ${className}`} aria-labelledby={id} data-ig>
+  <div class="ig__inner">
+    <header class="ig__head">
+      <h2 id={id} class="ig__title">{title}</h2>
+      <p class="ig__subtitle">{subtitle}</p>
+    </header>
+
+    <div class="ig__filters" role="group" aria-label="Filter integrations by category">
+      {categories.map((c, i) => (
+        <button type="button" class="ig__chip" data-filter={c} aria-pressed={i === 0 ? 'true' : 'false'}>{c}</button>
+      ))}
+    </div>
+    <p class="ig__count" role="status" aria-live="polite">{items.length} integrations</p>
+
+    <ul class="ig__grid">
+      {items.map((it, i) => (
+        <li class="ig__tile" data-category={it.category}>
+          <span class="ig__logo" style={`--c:${hues[i % hues.length]}`} aria-hidden="true">{it.name.slice(0, 2)}</span>
+          <div class="ig__body">
+            <div class="ig__row">
+              <h3 class="ig__name">{it.name}</h3>
+              {it.status && <span class={`ig__status ig__status--${it.status}`}>{statusLabel[it.status]}</span>}
+            </div>
+            <p class="ig__desc">{it.description}</p>
+            <span class="ig__cat">{it.category}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-ig]').forEach((root) => {
+    const chips = root.querySelectorAll<HTMLButtonElement>('.ig__chip');
+    const tiles = root.querySelectorAll<HTMLElement>('.ig__tile');
+    const count = root.querySelector('.ig__count');
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const f = chip.dataset.filter;
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        let shown = 0;
+        tiles.forEach((t) => {
+          const on = f === 'All' || t.dataset.category === f;
+          t.hidden = !on;
+          if (on) shown += 1;
+        });
+        if (count) count.textContent = `${shown} integration${shown === 1 ? '' : 's'}${f === 'All' ? '' : ` in ${f}`}`;
+      });
+    });
+  });
+</script>
+
+<style>
+  .ig {
+    --ig-py: 5.5rem;
+    padding: var(--ig-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .ig--sm { --ig-py: 3.5rem; }
+  .ig--lg { --ig-py: 7.5rem; }
+  .ig__inner { max-width: 1180px; margin: 0 auto; }
+  .ig__head { text-align: center; max-width: 620px; margin: 0 auto 2rem; }
+  .ig__title { margin: 0 0 0.75rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .ig__subtitle { margin: 0; font-size: 1.0625rem; color: var(--c-text-2, #a3a3a3); }
+  .ig__filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+  .ig__chip {
+    min-height: 40px;
+    padding: 0 1rem;
+    border-radius: var(--r-full, 999px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 550;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .ig__chip:hover { color: var(--c-text-1, #fff); border-color: rgba(255, 255, 255, 0.25); }
+  .ig__chip[aria-pressed='true'] { background: var(--c-text-1, #fff); color: #0a0a0a; border-color: transparent; }
+  .ig__chip:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .ig__count { margin: 1rem 0 1.5rem; text-align: center; font-size: 0.8125rem; color: var(--c-text-3, #8a8a8a); }
+  .ig__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .ig__tile {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: var(--r-lg, 18px);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .ig__tile[hidden] { display: none; }
+  .ig--card .ig__tile { background: rgba(255, 255, 255, 0.025); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); }
+  .ig--outline .ig__tile { border: 1px solid rgba(255, 255, 255, 0.12); }
+  .ig--compact .ig__tile { padding: 0.75rem; }
+  .ig--compact .ig__desc { display: none; }
+  .ig__tile:hover { border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
+  .ig__logo {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--c) 22%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+    color: var(--c-text-1, #fff);
+    font-weight: 750;
+    font-size: 0.9rem;
+  }
+  .ig__body { min-width: 0; flex: 1; }
+  .ig__row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .ig__name { margin: 0; font-size: 1rem; font-weight: 650; color: var(--c-text-1, #fff); }
+  .ig__status { font-size: 0.6875rem; font-weight: 650; padding: 0.15rem 0.5rem; border-radius: var(--r-full, 999px); white-space: nowrap; }
+  .ig__status--available { background: rgba(52, 195, 143, 0.14); color: #7ee2b8; }
+  .ig__status--beta { background: rgba(201, 133, 0, 0.16); color: #f2c66a; }
+  .ig__status--soon { background: rgba(255, 255, 255, 0.06); color: var(--c-text-2, #a3a3a3); }
+  .ig__desc { margin: 0.35rem 0 0.6rem; font-size: 0.875rem; line-height: 1.5; color: var(--c-text-2, #a3a3a3); }
+  .ig__cat { font-size: 0.75rem; color: var(--c-text-3, #8a8a8a); }
+  @media (prefers-reduced-motion: reduce) { .ig__tile, .ig__chip { transition: none; } }
+</style>

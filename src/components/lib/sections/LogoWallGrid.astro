@@ -1,0 +1,91 @@
+---
+/**
+ * LogoWallGrid — Static grid of customer wordmarks with hairline dividers and
+ * an optional headline stat. Logos render as text wordmarks by default; pass
+ * image URLs to use real logos.
+ *
+ * @param {string} title - Small heading above the grid.
+ * @param {Array<{name: string, src?: string, href?: string}>} logos - Customers.
+ * @param {number} columns - Columns on desktop (3|4|6).
+ * @param {string} variant - Grid style (divided|cards|plain).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Logo { name: string; src?: string; href?: string }
+interface Props {
+  title?: string;
+  logos?: Logo[];
+  columns?: 3 | 4 | 6;
+  variant?: 'divided' | 'cards' | 'plain';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Powering 12,000+ teams, from startups to the Fortune 500',
+  logos = [
+    { name: 'Northwind' }, { name: 'Lumen' }, { name: 'Orbitly' }, { name: 'Civic' },
+    { name: 'Driftly' }, { name: 'Acme' }, { name: 'Helix' }, { name: 'Nimbus' },
+  ],
+  columns = 4,
+  variant = 'divided',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `lwg-${Math.random().toString(36).slice(2, 8)}`;
+const glyphs = [
+  '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>',
+  '<path d="M12 3 21 20H3z"/>',
+  '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 12h16"/>',
+  '<path d="M4 18 12 4l8 14M8 12h8"/>',
+];
+---
+
+<section class={`lwg lwg--${variant} lwg--${size} ${className}`} aria-labelledby={id} style={`--lwg-cols:${columns}`}>
+  <div class="lwg__inner">
+    <h2 id={id} class="lwg__title">{title}</h2>
+    <ul class="lwg__grid">
+      {logos.map((l, i) => {
+        const inner = l.src
+          ? <img src={l.src} alt={l.name} loading="lazy" decoding="async" />
+          : (
+            <span class="lwg__word">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" set:html={glyphs[i % glyphs.length]}></svg>
+              {l.name}
+            </span>
+          );
+        return (
+          <li class="lwg__cell">
+            {l.href ? <a href={l.href} class="lwg__link">{inner}</a> : inner}
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .lwg {
+    --lwg-py: 4.5rem;
+    padding: var(--lwg-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .lwg--sm { --lwg-py: 3rem; }
+  .lwg--lg { --lwg-py: 6.5rem; }
+  .lwg__inner { max-width: 1120px; margin: 0 auto; }
+  .lwg__title { margin: 0 auto 2.5rem; max-width: 560px; text-align: center; font-size: 1rem; font-weight: 550; line-height: 1.5; color: var(--c-text-2, #a3a3a3); text-wrap: balance; }
+  .lwg__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--lwg-cols), minmax(0, 1fr)); }
+  .lwg--divided .lwg__grid { gap: 1px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: var(--r-lg, 20px); overflow: hidden; }
+  .lwg--cards .lwg__grid { gap: 0.75rem; }
+  .lwg__cell { display: grid; place-items: center; min-height: 112px; padding: 1.25rem; background: var(--c-bg, #050505); }
+  .lwg--cards .lwg__cell { border-radius: var(--r-md, 14px); background: rgba(255, 255, 255, 0.025); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); }
+  .lwg--plain .lwg__cell { background: transparent; }
+  .lwg__word { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 750; letter-spacing: -0.03em; color: var(--c-text-2, #a3a3a3); transition: color 0.25s ease; }
+  .lwg__cell:hover .lwg__word { color: var(--c-text-1, #fff); }
+  .lwg__cell img { max-width: 140px; max-height: 40px; object-fit: contain; filter: grayscale(1) brightness(1.6); opacity: 0.75; transition: opacity 0.25s ease, filter 0.25s ease; }
+  .lwg__cell:hover img { opacity: 1; filter: none; }
+  .lwg__link { display: grid; place-items: center; width: 100%; height: 100%; min-height: 44px; text-decoration: none; border-radius: 8px; }
+  .lwg__link:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  @media (max-width: 760px) { .lwg__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>

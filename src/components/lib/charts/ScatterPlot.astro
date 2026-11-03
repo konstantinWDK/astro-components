@@ -1,0 +1,139 @@
+---
+/**
+ * ScatterPlot — X/Y relationship plot for up to 3 groups, with an optional
+ * least-squares trend line and per-point tooltips.
+ *
+ * @param {Array<{name: string, points: Array<{x: number, y: number, label?: string}>}>} groups - Point groups (max 3).
+ * @param {string} xLabel - X-axis title.
+ * @param {string} yLabel - Y-axis title.
+ * @param {boolean} trend - Draw a linear regression line across all points.
+ * @param {string[]} colors - Optional per-group colors.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, niceTicks, colorAt, formatCompact } from './chart-utils';
+
+interface Pt { x: number; y: number; label?: string }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  groups?: Array<{ name: string; points: Pt[] }>;
+  xLabel?: string;
+  yLabel?: string;
+  trend?: boolean;
+  height?: number;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const gen = (seed: number, n: number, slope: number, base: number, noise: number): Pt[] =>
+  Array.from({ length: n }, (_, i) => {
+    const r = Math.sin((i + 1) * seed) * 10000;
+    const j = r - Math.floor(r);
+    const xv = 5 + ((i * 37) % 95);
+    return { x: xv, y: Math.round(base + slope * xv + (j - 0.5) * noise) };
+  });
+
+const {
+  title = 'Ad spend vs signups',
+  subtitle = 'Per campaign',
+  groups = [
+    { name: 'Search', points: gen(3.1, 16, 2.1, 20, 60) },
+    { name: 'Social', points: gen(7.7, 14, 1.3, 10, 70) },
+    { name: 'Video', points: gen(5.3, 10, 0.8, 30, 50) },
+  ],
+  xLabel = 'Spend ($k)',
+  yLabel = 'Signups',
+  trend = true,
+  height = 300,
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const H = height;
+const m = { t: 12, r: 16, b: 40, l: 52 };
+const all = groups.flatMap((g) => g.points);
+const xt = niceTicks(Math.min(0, ...all.map((p) => p.x)), Math.max(...all.map((p) => p.x)), 5);
+const yt = niceTicks(Math.min(0, ...all.map((p) => p.y)), Math.max(...all.map((p) => p.y)), 4);
+const x = scaleLinear(xt[0], xt[xt.length - 1], m.l, W - m.r);
+const y = scaleLinear(yt[0], yt[yt.length - 1], H - m.b, m.t);
+
+// Ordinary least squares over all points.
+const n = all.length;
+const mx = all.reduce((a, p) => a + p.x, 0) / n;
+const my = all.reduce((a, p) => a + p.y, 0) / n;
+const slope = all.reduce((a, p) => a + (p.x - mx) * (p.y - my), 0) / (all.reduce((a, p) => a + (p.x - mx) ** 2, 0) || 1);
+const icpt = my - slope * mx;
+const r2 = (() => {
+  const ssTot = all.reduce((a, p) => a + (p.y - my) ** 2, 0) || 1;
+  const ssRes = all.reduce((a, p) => a + (p.y - (icpt + slope * p.x)) ** 2, 0);
+  return 1 - ssRes / ssTot;
+})();
+const shapes = ['circle', 'square', 'diamond'];
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={groups.slice(0, 3).map((g, i) => ({ label: g.name, color: colorAt(i, colors) }))}
+  table={{ headers: ['Group', xLabel, yLabel], rows: groups.flatMap((g) => g.points.map((p) => [p.label ? `${g.name} · ${p.label}` : g.name, p.x, p.y])) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: scatter plot of ${n} points${trend ? `, trend R² ${r2.toFixed(2)}` : ''}`}>
+    {yt.map((t) => (
+      <g>
+        <line class="cf-grid" x1={m.l} x2={W - m.r} y1={y(t)} y2={y(t)} />
+        <text class="cf-label" x={m.l - 8} y={y(t) + 4} text-anchor="end">{formatCompact(t)}</text>
+      </g>
+    ))}
+    {xt.map((t) => (
+      <g>
+        <line class="cf-grid" x1={x(t)} x2={x(t)} y1={m.t} y2={H - m.b} />
+        <text class="cf-label" x={x(t)} y={H - m.b + 16} text-anchor="middle">{formatCompact(t)}</text>
+      </g>
+    ))}
+    <text class="cf-label" x={(m.l + W - m.r) / 2} y={H - 4} text-anchor="middle">{xLabel}</text>
+    <text class="cf-label" transform={`translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)`} text-anchor="middle">{yLabel}</text>
+
+    {trend && (
+      <g aria-hidden="true">
+        <line x1={x(xt[0])} y1={y(icpt + slope * xt[0])} x2={x(xt[xt.length - 1])} y2={y(icpt + slope * xt[xt.length - 1])}
+          stroke="var(--c-text-1, #fff)" stroke-opacity="0.45" stroke-width="1.5" />
+        <text class="cf-label" x={W - m.r} y={y(icpt + slope * xt[xt.length - 1]) - 8} text-anchor="end">R² {r2.toFixed(2)}</text>
+      </g>
+    )}
+
+    {groups.slice(0, 3).map((g, gi) => {
+      const col = colorAt(gi, colors);
+      return g.points.map((p) => {
+        const px = x(p.x);
+        const py = y(p.y);
+        const common = {
+          class: 'cf-mark cf-dim',
+          fill: col,
+          'fill-opacity': 0.85,
+          stroke: 'var(--chart-surface, #0d0d0f)',
+          'stroke-width': 1.5,
+          tabindex: 0,
+          role: 'img' as const,
+          'aria-label': `${g.name}${p.label ? ` ${p.label}` : ''}: ${xLabel} ${p.x}, ${yLabel} ${p.y}`,
+          'data-tip-title': p.label ?? g.name,
+          'data-tip': `${col}::${g.name}|${xLabel}: ${p.x}|${yLabel}: ${p.y}`,
+        };
+        return shapes[gi] === 'square'
+          ? <rect {...common} x={px - 5} y={py - 5} width="10" height="10" rx="2" />
+          : shapes[gi] === 'diamond'
+            ? <path {...common} d={`M${px},${py - 6.5} L${px + 6.5},${py} L${px},${py + 6.5} L${px - 6.5},${py} Z`} />
+            : <circle {...common} cx={px} cy={py} r="5.5" />;
+      });
+    })}
+  </svg>
+</ChartFrame>

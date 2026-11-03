@@ -1,0 +1,94 @@
+---
+/**
+ * TreemapChart — Squarified treemap where each rectangle's area is proportional
+ * to its value. Labels appear on tiles large enough to hold them.
+ *
+ * @param {Array<{label: string, value: number, group?: number}>} items - Tiles (group = color slot index).
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {number} height - SVG height in viewBox units (width is 640).
+ * @param {string[]} colors - Optional color overrides.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { squarify, colorAt, formatValue, sum } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Array<{ label: string; value: number; group?: number }>;
+  groups?: string[];
+  prefix?: string;
+  suffix?: string;
+  height?: number;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Bundle size by module',
+  subtitle = 'Gzipped KB',
+  items = [
+    { label: 'react-dom', value: 42, group: 0 },
+    { label: 'astro runtime', value: 18, group: 1 },
+    { label: 'charts', value: 24, group: 2 },
+    { label: 'date-fns', value: 12, group: 0 },
+    { label: 'router', value: 9, group: 1 },
+    { label: 'icons', value: 15, group: 2 },
+    { label: 'i18n', value: 7, group: 1 },
+    { label: 'utils', value: 5, group: 2 },
+    { label: 'zod', value: 11, group: 0 },
+    { label: 'analytics', value: 6, group: 0 },
+  ],
+  groups = ['Vendor', 'Framework', 'App'],
+  prefix = '',
+  suffix = ' KB',
+  height = 320,
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const H = height;
+const rects = squarify(items.map((i) => i.value), { x: 0, y: 0, w: W, h: H });
+const total = sum(items.map((i) => i.value)) || 1;
+const fmt = (v: number) => formatValue(v, prefix, suffix, false);
+const GAP = 2;
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={groups.map((g, i) => ({ label: g, color: colorAt(i, colors) }))}
+  table={{ headers: ['Item', 'Group', 'Value', 'Share'], rows: items.map((i) => [i.label, groups[i.group ?? 0] ?? '—', fmt(i.value), `${((i.value / total) * 100).toFixed(1)}%`]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: treemap of ${items.length} items`}>
+    {items.map((it, i) => {
+      const r = rects[i];
+      const c = colorAt(it.group ?? 0, colors);
+      const w = Math.max(0, r.w - GAP);
+      const h = Math.max(0, r.h - GAP);
+      const showLabel = w > 64 && h > 34;
+      return (
+        <g class="cf-mark cf-dim" tabindex="0" role="img" aria-label={`${it.label}: ${fmt(it.value)}`}
+          data-tip-title={it.label} data-tip={`${c}::${fmt(it.value)} · ${((it.value / total) * 100).toFixed(1)}%`}>
+          <rect x={r.x + GAP / 2} y={r.y + GAP / 2} width={w} height={h} rx="6" fill={c} fill-opacity="0.85" />
+          {showLabel && (
+            <>
+              <text x={r.x + 10} y={r.y + 20} fill="#fff" font-size="12" font-weight="650">{it.label}</text>
+              <text x={r.x + 10} y={r.y + 36} fill="rgba(255,255,255,0.8)" font-size="11">{fmt(it.value)}</text>
+            </>
+          )}
+        </g>
+      );
+    })}
+  </svg>
+</ChartFrame>

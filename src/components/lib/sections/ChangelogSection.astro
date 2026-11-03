@@ -1,0 +1,144 @@
+---
+/**
+ * ChangelogSection — Release notes timeline with version tags, dates and
+ * categorised entries (new / improved / fixed), each labelled with text + icon.
+ *
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{version: string, date: string, title: string, changes: Array<{type: 'new'|'improved'|'fixed', text: string}>}>} releases - Releases, newest first.
+ * @param {{label: string, href: string}} subscribe - Optional RSS/updates link.
+ * @param {string} variant - Layout (timeline|cards|compact).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Change { type: 'new' | 'improved' | 'fixed'; text: string }
+interface Release { version: string; date: string; title: string; changes: Change[] }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  releases?: Release[];
+  subscribe?: { label: string; href: string };
+  variant?: 'timeline' | 'cards' | 'compact';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Changelog',
+  subtitle = 'New components, improvements and fixes, shipped every week.',
+  releases = [
+    { version: 'v0.4.0', date: '2026-11-03', title: 'SVG charts & 24 new sections', changes: [
+      { type: 'new', text: '40 zero-dependency SVG charts with tooltips and table fallbacks.' },
+      { type: 'new', text: 'Waitlist, terminal and dashboard hero sections.' },
+      { type: 'improved', text: 'Chart color tokens validated for color-vision deficiency.' },
+    ] },
+    { version: 'v0.3.1', date: '2026-10-27', title: 'Localized SEO', changes: [
+      { type: 'improved', text: 'Meta titles and descriptions in English, Spanish and Russian.' },
+      { type: 'fixed', text: 'Code blocks no longer appear in search snippets.' },
+    ] },
+    { version: 'v0.3.0', date: '2026-10-12', title: 'Notes & categories', changes: [
+      { type: 'new', text: 'Browse-by-category section on the home page.' },
+      { type: 'fixed', text: 'Category titles resolve correctly in every locale.' },
+    ] },
+  ],
+  subscribe = { label: 'Subscribe via RSS', href: '#' },
+  variant = 'timeline',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `cls-${Math.random().toString(36).slice(2, 8)}`;
+const typeLabel = { new: 'New', improved: 'Improved', fixed: 'Fixed' };
+const typeIcon = {
+  new: '<path d="M12 5v14M5 12h14"/>',
+  improved: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  fixed: '<path d="M20 6 9 17l-5-5"/>',
+};
+const fmtDate = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+---
+
+<section class={`cls cls--${variant} cls--${size} ${className}`} aria-labelledby={id}>
+  <div class="cls__inner">
+    <header class="cls__head">
+      <div>
+        <h2 id={id} class="cls__title">{title}</h2>
+        <p class="cls__subtitle">{subtitle}</p>
+      </div>
+      {subscribe && (
+        <a class="cls__subscribe" href={subscribe.href}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" fill="currentColor" /></svg>
+          {subscribe.label}
+        </a>
+      )}
+    </header>
+    <ol class="cls__list">
+      {releases.map((r) => (
+        <li class="cls__release">
+          <div class="cls__when">
+            <span class="cls__version">{r.version}</span>
+            <time datetime={r.date}>{fmtDate(r.date)}</time>
+          </div>
+          <article class="cls__body">
+            <h3 class="cls__release-title">{r.title}</h3>
+            <ul class="cls__changes">
+              {r.changes.map((c) => (
+                <li>
+                  <span class={`cls__type cls__type--${c.type}`}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={typeIcon[c.type]}></svg>
+                    {typeLabel[c.type]}
+                  </span>
+                  <span>{c.text}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .cls {
+    --cls-py: 5.5rem;
+    padding: var(--cls-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .cls--sm { --cls-py: 3.5rem; }
+  .cls--lg { --cls-py: 7.5rem; }
+  .cls__inner { max-width: 920px; margin: 0 auto; }
+  .cls__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 3rem; }
+  .cls__title { margin: 0 0 0.5rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .cls__subtitle { margin: 0; font-size: 1.0625rem; color: var(--c-text-2, #a3a3a3); }
+  .cls__subscribe { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; padding: 0 1rem; border-radius: var(--r-md, 12px); border: 1px solid rgba(255, 255, 255, 0.14); color: var(--c-text-1, #fff); font-size: 0.875rem; font-weight: 600; text-decoration: none; }
+  .cls__subscribe svg { color: #f59e0b; }
+  .cls__subscribe:hover { border-color: rgba(255, 255, 255, 0.3); color: var(--c-text-1, #fff); }
+  .cls__subscribe:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .cls__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2.5rem; }
+  .cls__release { display: grid; grid-template-columns: 180px 1fr; gap: 2rem; position: relative; }
+  .cls--timeline .cls__release::before { content: ''; position: absolute; left: 196px; top: 10px; bottom: -2.5rem; width: 1px; background: rgba(255, 255, 255, 0.08); }
+  .cls--timeline .cls__release:last-child::before { bottom: 0; }
+  .cls--timeline .cls__body { position: relative; padding-left: 2rem; }
+  .cls--timeline .cls__body::before { content: ''; position: absolute; left: -21px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--c-primary-light, #d4a017); box-shadow: 0 0 0 4px var(--c-bg, #050505); }
+  .cls--cards .cls__body { padding: 1.5rem; border-radius: var(--r-lg, 18px); background: rgba(255, 255, 255, 0.025); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); }
+  .cls--compact .cls__list { gap: 1.5rem; }
+  .cls--compact .cls__release { grid-template-columns: 1fr; gap: 0.5rem; }
+  .cls--compact .cls__when { flex-direction: row; align-items: center; }
+  .cls__when { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; }
+  .cls__version { padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); font-family: var(--font-mono, monospace); font-size: 0.8125rem; color: var(--c-text-1, #fff); }
+  .cls__when time { font-size: 0.8125rem; color: var(--c-text-2, #a3a3a3); }
+  .cls__release-title { margin: 0 0 1rem; font-size: 1.25rem; font-weight: 700; color: var(--c-text-1, #fff); letter-spacing: -0.015em; }
+  .cls__changes { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+  .cls__changes li { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.9375rem; line-height: 1.55; color: var(--c-text-2, #c4c4c4); }
+  .cls__type { display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0; min-width: 5.5rem; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 650; }
+  .cls__type--new { background: rgba(57, 135, 229, 0.14); color: #a9cdf7; }
+  .cls__type--improved { background: rgba(144, 133, 233, 0.16); color: #c9c3f5; }
+  .cls__type--fixed { background: rgba(52, 195, 143, 0.14); color: #7ee2b8; }
+  @media (max-width: 680px) {
+    .cls__release { grid-template-columns: 1fr; gap: 0.75rem; }
+    .cls--timeline .cls__release::before { display: none; }
+    .cls--timeline .cls__body { padding-left: 0; }
+    .cls--timeline .cls__body::before { display: none; }
+    .cls__when { flex-direction: row; align-items: center; }
+  }
+</style>

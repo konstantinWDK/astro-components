@@ -1,5 +1,6 @@
 // src/data/registry/sections.ts
 import type { ComponentDoc, SectionCategory } from './types';
+import { sectionsExtra } from './sections-extra';
 
 export const sectionCategories: SectionCategory[] = [
   {
@@ -55,6 +56,18 @@ export const sectionCategories: SectionCategory[] = [
     name: 'Contact & Support',
     description: 'Contact glass forms, support channels, and inquiries.',
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
+  },
+  {
+    id: 'content',
+    name: 'Blog & Content',
+    description: 'Article grids, featured posts and changelog timelines.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  },
+  {
+    id: 'footer',
+    name: 'Footers',
+    description: 'Complete site footers with link columns, newsletter and social links.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/></svg>`,
   },
   {
     id: 'logos',
@@ -1287,6 +1300,7 @@ const {
 `,
     usage: `<HeroShowcaseSplit />`,
   },
+  ...sectionsExtra,
 ];
 
 export function getSectionBySlug(slug: string) {

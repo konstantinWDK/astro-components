@@ -1,0 +1,116 @@
+---
+/**
+ * KpiStatTile — Hero-number statistic tile: label, big value, change vs previous
+ * period (icon + text, never color alone) and an optional sparkline.
+ *
+ * @param {string} label - Metric name.
+ * @param {string} value - Formatted value.
+ * @param {number} change - Percentage change vs comparison period.
+ * @param {string} period - Comparison period label (e.g. 'vs last month').
+ * @param {boolean} invert - Treat a decrease as good (e.g. churn, latency).
+ * @param {number[]} trend - Optional sparkline data.
+ * @param {string} variant - Visual style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+import SparklineChart from './SparklineChart.astro';
+
+interface Props {
+  label?: string;
+  value?: string;
+  change?: number;
+  period?: string;
+  invert?: boolean;
+  trend?: number[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  label = 'Monthly recurring revenue',
+  value = '$84,210',
+  change = 12.4,
+  period = 'vs last month',
+  invert = false,
+  trend = [52, 55, 54, 60, 63, 61, 68, 72, 70, 76, 80, 84],
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const up = change >= 0;
+const good = invert ? !up : up;
+---
+
+<article class={`kpi kpi--${variant} kpi--${size} ${className}`} aria-label={`${label}: ${value}, ${up ? 'up' : 'down'} ${Math.abs(change)}% ${period}`}>
+  <header class="kpi__head">
+    <h3 class="kpi__label">{label}</h3>
+    <span class={`kpi__chip ${good ? 'kpi__chip--good' : 'kpi__chip--bad'}`}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        {up ? <path d="M7 17 17 7M9 7h8v8" /> : <path d="M7 7l10 10M17 9v8H9" />}
+      </svg>
+      {up ? '+' : '−'}{Math.abs(change)}%
+    </span>
+  </header>
+  <p class="kpi__value">{value}</p>
+  <div class="kpi__foot">
+    <span class="kpi__period">{period}</span>
+    {trend.length > 1 && (
+      <SparklineChart data={trend} size={size === 'lg' ? 'lg' : 'md'} color={good ? 'var(--chart-pos, #34c38f)' : 'var(--chart-neg, #f06a6a)'} label={`${label} trend`} />
+    )}
+  </div>
+</article>
+
+<style>
+  .kpi {
+    --kpi-pad: var(--sp-6, 1.5rem);
+    --kpi-val: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: var(--kpi-pad);
+    border-radius: var(--r-lg, 20px);
+    min-width: 0;
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+  .kpi--glass {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07));
+    backdrop-filter: blur(14px);
+  }
+  .kpi--solid { background: var(--chart-surface, #0d0d0f); border: 1px solid rgba(255, 255, 255, 0.08); }
+  .kpi--ghost { background: transparent; border: 1px solid transparent; padding-inline: 0; }
+  .kpi--glass:hover, .kpi--solid:hover { border-color: rgba(255, 255, 255, 0.16); transform: translateY(-2px); }
+  .kpi--sm { --kpi-pad: var(--sp-4, 1rem); --kpi-val: 1.5rem; }
+  .kpi--lg { --kpi-pad: var(--sp-8, 2rem); --kpi-val: 2.5rem; }
+  .kpi__head { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+  .kpi__label { margin: 0; font-size: 0.8125rem; font-weight: 500; color: var(--c-text-2, #a3a3a3); letter-spacing: 0; }
+  .kpi__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--r-full, 999px);
+    font-size: 0.75rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-text-1, #fff);
+  }
+  .kpi__chip--good { background: color-mix(in srgb, var(--chart-pos, #34c38f) 18%, transparent); }
+  .kpi__chip--good svg { color: var(--chart-pos, #34c38f); }
+  .kpi__chip--bad { background: color-mix(in srgb, var(--chart-neg, #f06a6a) 18%, transparent); }
+  .kpi__chip--bad svg { color: var(--chart-neg, #f06a6a); }
+  .kpi__value {
+    margin: 0;
+    font-size: var(--kpi-val);
+    font-weight: 750;
+    color: var(--c-text-1, #fff);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .kpi__foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+  .kpi__period { font-size: 0.75rem; color: var(--c-text-3, #8a8a8a); }
+  @media (prefers-reduced-motion: reduce) { .kpi { transition: none; } }
+</style>

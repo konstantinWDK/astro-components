@@ -1,0 +1,97 @@
+---
+/**
+ * GoalProgressChart — Cumulative progress toward a goal over a period, versus
+ * the ideal linear pace, with an "ahead/behind pace" readout.
+ *
+ * @param {string[]} periods - X-axis labels for the whole period.
+ * @param {number[]} values - Per-period amounts achieved so far (may be shorter than periods).
+ * @param {number} goal - Target for the end of the period.
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string} color - Progress color.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, niceTicks, linePath, areaPath, formatValue, type Point } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  periods?: string[];
+  values?: number[];
+  goal?: number;
+  prefix?: string;
+  suffix?: string;
+  height?: number;
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Q4 bookings goal',
+  subtitle = 'Cumulative vs. linear pace',
+  periods = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11', 'W12', 'W13'],
+  values = [22, 31, 28, 40, 36, 44, 51, 39],
+  goal = 520,
+  prefix = '$',
+  suffix = 'k',
+  height = 270,
+  color = 'var(--chart-1, #3987e5)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const H = height;
+const m = { t: 14, r: 16, b: 28, l: 48 };
+const n = periods.length;
+const cum: number[] = [];
+values.forEach((v, i) => cum.push((cum[i - 1] ?? 0) + v));
+const achieved = cum[cum.length - 1] ?? 0;
+const pace = (goal / n) * values.length;
+const ahead = achieved >= pace;
+const ticks = niceTicks(0, Math.max(goal, achieved), 4);
+const y = scaleLinear(0, ticks[ticks.length - 1], H - m.b, m.t);
+const x = (i: number) => m.l + ((i + 1) / n) * (W - m.l - m.r);
+const x0 = m.l;
+const pts: Point[] = [[x0, y(0)], ...cum.map((v, i): Point => [x(i), y(v)])];
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+const pct = (achieved / goal) * 100;
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  value={`${fmt(achieved)} / ${fmt(goal)}`}
+  delta={`${ahead ? 'Ahead of' : 'Behind'} pace by ${fmt(Math.abs(achieved - pace))}`}
+  deltaPositive={ahead}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={[{ label: 'Achieved', color }, { label: 'Linear pace', color: 'var(--c-text-3, #8a8a8a)' }]}
+  table={{ headers: ['Period', 'Amount', 'Cumulative', 'Pace'], rows: periods.map((p, i) => [p, values[i] !== undefined ? fmt(values[i]) : '—', cum[i] !== undefined ? fmt(cum[i]) : '—', fmt((goal / n) * (i + 1))]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: ${fmt(achieved)} of ${fmt(goal)} (${pct.toFixed(0)}%), ${ahead ? 'ahead of' : 'behind'} pace`}>
+    {ticks.map((t) => (
+      <g>
+        <line class="cf-grid" x1={m.l} x2={W - m.r} y1={y(t)} y2={y(t)} />
+        <text class="cf-label" x={m.l - 8} y={y(t) + 4} text-anchor="end">{fmt(t)}</text>
+      </g>
+    ))}
+    {periods.map((p, i) => i % 2 === 0 && <text class="cf-label" x={x(i)} y={H - 8} text-anchor="middle">{p}</text>)}
+    <line x1={m.l} x2={W - m.r} y1={y(goal)} y2={y(goal)} stroke="var(--chart-4, #c98500)" stroke-width="1.5" aria-hidden="true" />
+    <text class="cf-label cf-label--strong" x={W - m.r} y={y(goal) - 6} text-anchor="end">Goal {fmt(goal)}</text>
+    <line x1={x0} y1={y(0)} x2={x(n - 1)} y2={y(goal)} stroke="var(--c-text-3, #8a8a8a)" stroke-width="1.5" stroke-dasharray="5 5" aria-hidden="true" />
+    <path d={areaPath(pts, y(0), 'linear')} fill={color} fill-opacity="0.15" aria-hidden="true" />
+    <path d={linePath(pts)} fill="none" stroke={color} stroke-width="2.5" stroke-linejoin="round" aria-hidden="true" />
+    {cum.map((v, i) => (
+      <circle class="cf-mark" cx={x(i)} cy={y(v)} r={i === cum.length - 1 ? 6 : 3.5} fill={color} stroke="var(--chart-surface, #0d0d0f)" stroke-width="2"
+        tabindex="0" role="img" aria-label={`${periods[i]}: cumulative ${fmt(v)}`}
+        data-tip-title={periods[i]} data-tip={`${color}::Cumulative: ${fmt(v)}|This period: ${fmt(values[i])}|Pace: ${fmt((goal / n) * (i + 1))}`} />
+    ))}
+  </svg>
+</ChartFrame>

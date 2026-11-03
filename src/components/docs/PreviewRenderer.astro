@@ -20,6 +20,8 @@ interface Props {
 const { slug } = Astro.props;
 const componentMeta = getComponentBySlug(slug);
 const isButton = componentMeta?.category === 'buttons';
+// Charts need the full stage width instead of a centered pill.
+const isWidePreview = componentMeta?.category === 'charts';
 
 // Dynamic lookup fallback with robust case/hyphen normalization
 const cleanSlug = slug.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -769,7 +771,7 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
 
   {!hasHardcoded && DynamicComponent && !isButton && (
     <div class="preview-demo preview-demo--row preview-demo--wrap">
-      <div class="dynamic-preview-container">
+      <div class:list={['dynamic-preview-container', { 'dynamic-preview-container--wide': isWidePreview }]}>
         <DynamicComponent>
           <span class="dynamic-preview-label">{fallbackLabel}</span>
         </DynamicComponent>
@@ -832,6 +834,12 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
     align-items: center;
     justify-content: center;
     min-width: min(100%, 20rem);
+  }
+  .dynamic-preview-container--wide {
+    display: block;
+    width: 100%;
+    max-width: 820px;
+    min-width: 0;
   }
   .dynamic-preview-label {
     display: inline-flex;

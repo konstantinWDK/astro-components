@@ -1,0 +1,92 @@
+---
+/**
+ * DumbbellChart — Two values per row connected by a bar, showing the gap between
+ * a "before" and "after" (or two groups) for each item.
+ *
+ * @param {Array<{label: string, a: number, b: number}>} items - Pairs to compare.
+ * @param {string} aLabel - Name of the first value.
+ * @param {string} bLabel - Name of the second value.
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, niceTicks, formatValue, colorAt } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Array<{ label: string; a: number; b: number }>;
+  aLabel?: string;
+  bLabel?: string;
+  prefix?: string;
+  suffix?: string;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Time to first value',
+  subtitle = 'Minutes, before vs after onboarding redesign',
+  items = [
+    { label: 'Solo devs', a: 34, b: 12 },
+    { label: 'Startups', a: 41, b: 18 },
+    { label: 'Agencies', a: 52, b: 26 },
+    { label: 'Mid-market', a: 63, b: 37 },
+    { label: 'Enterprise', a: 88, b: 54 },
+  ],
+  aLabel = 'Before',
+  bLabel = 'After',
+  prefix = '',
+  suffix = 'm',
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const rowH = 40;
+const m = { t: 8, r: 24, b: 26, l: 110 };
+const H = items.length * rowH + m.t + m.b;
+const ticks = niceTicks(0, Math.max(...items.flatMap((i) => [i.a, i.b])), 5);
+const x = scaleLinear(0, ticks[ticks.length - 1], m.l, W - m.r);
+const ca = colorAt(0, colors);
+const cb = colorAt(1, colors);
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={[{ label: aLabel, color: ca }, { label: bLabel, color: cb }]}
+  table={{ headers: ['Item', aLabel, bLabel, 'Difference'], rows: items.map((i) => [i.label, fmt(i.a), fmt(i.b), fmt(i.b - i.a)]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: dumbbell chart comparing ${aLabel} and ${bLabel}`}>
+    {ticks.map((t) => (
+      <g>
+        <line class="cf-grid" x1={x(t)} x2={x(t)} y1={m.t} y2={H - m.b} />
+        <text class="cf-label" x={x(t)} y={H - 8} text-anchor="middle">{fmt(t)}</text>
+      </g>
+    ))}
+    {items.map((it, i) => {
+      const cy = m.t + i * rowH + rowH / 2;
+      return (
+        <g class="cf-mark cf-dim" tabindex="0" role="img" aria-label={`${it.label}: ${aLabel} ${fmt(it.a)}, ${bLabel} ${fmt(it.b)}`}
+          data-tip-title={it.label} data-tip={`${ca}::${aLabel}: ${fmt(it.a)}|${cb}::${bLabel}: ${fmt(it.b)}|Δ ${fmt(it.b - it.a)}`}>
+          <rect x={m.l} y={cy - rowH / 2} width={W - m.l - m.r} height={rowH} fill="transparent" />
+          <text class="cf-label" x={m.l - 10} y={cy + 4} text-anchor="end">{it.label}</text>
+          <line x1={x(it.a)} x2={x(it.b)} y1={cy} y2={cy} stroke="rgba(255,255,255,0.22)" stroke-width="4" stroke-linecap="round" />
+          <circle cx={x(it.a)} cy={cy} r="7" fill={ca} stroke="var(--chart-surface, #0d0d0f)" stroke-width="2" />
+          <circle cx={x(it.b)} cy={cy} r="7" fill={cb} stroke="var(--chart-surface, #0d0d0f)" stroke-width="2" />
+        </g>
+      );
+    })}
+  </svg>
+</ChartFrame>

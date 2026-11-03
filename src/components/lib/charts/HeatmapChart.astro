@@ -1,0 +1,131 @@
+---
+/**
+ * HeatmapChart — Matrix of cells colored on a single-hue sequential ramp
+ * (light = low, saturated = high), with a scale legend.
+ *
+ * @param {string[]} rows - Row labels.
+ * @param {string[]} columns - Column labels.
+ * @param {number[][]} values - values[row][col].
+ * @param {boolean} showValues - Print values inside cells.
+ * @param {string} suffix - Value suffix.
+ * @param {string} color - Ramp hue.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  rows?: string[];
+  columns?: string[];
+  values?: number[][];
+  showValues?: boolean;
+  suffix?: string;
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Error rate by service',
+  subtitle = 'Per weekday, % of requests',
+  rows = ['auth', 'billing', 'search', 'uploads', 'webhooks'],
+  columns = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  values = [
+    [0.2, 0.3, 0.2, 0.4, 0.6, 0.1, 0.1],
+    [0.8, 1.2, 0.9, 1.6, 2.4, 0.4, 0.3],
+    [0.4, 0.5, 0.7, 0.6, 0.9, 0.3, 0.2],
+    [1.1, 1.4, 1.9, 2.8, 3.2, 0.9, 0.6],
+    [0.3, 0.2, 0.4, 0.5, 0.4, 0.2, 0.1],
+  ],
+  showValues = true,
+  suffix = '%',
+  color = 'var(--chart-1, #3987e5)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const flat = values.flat();
+const min = Math.min(...flat);
+const max = Math.max(...flat);
+const t = (v: number) => (max === min ? 1 : (v - min) / (max - min));
+const fill = (v: number) => `color-mix(in srgb, ${color} ${Math.round(12 + t(v) * 88)}%, #141416)`;
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['', ...columns], rows: rows.map((r, ri) => [r, ...values[ri].map((v) => `${v}${suffix}`)]) }}
+>
+  <div class="hm" style={`--hm-cols:${columns.length}`}>
+    <div class="hm__grid" role="grid" aria-label={title}>
+      <div class="hm__row" role="row">
+        <span class="hm__corner" role="columnheader"></span>
+        {columns.map((c) => <span class="hm__col" role="columnheader">{c}</span>)}
+      </div>
+      {rows.map((r, ri) => (
+        <div class="hm__row" role="row">
+          <span class="hm__rowlabel" role="rowheader">{r}</span>
+          {columns.map((c, ci) => {
+            const v = values[ri]?.[ci] ?? 0;
+            return (
+              <span class="hm__cell cf-mark" role="gridcell" tabindex="0" style={`background:${fill(v)}`}
+                aria-label={`${r}, ${c}: ${v}${suffix}`} data-tip-title={`${r} · ${c}`} data-tip={`${v}${suffix}`}>
+                {showValues && <span class={t(v) > 0.55 ? 'hm__v hm__v--strong' : 'hm__v'}>{v}</span>}
+              </span>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+    <div class="hm__scale" aria-hidden="true">
+      <span>{min}{suffix}</span>
+      <span class="hm__ramp" style={`background:linear-gradient(90deg, ${fill(min)}, ${fill(max)})`}></span>
+      <span>{max}{suffix}</span>
+    </div>
+  </div>
+</ChartFrame>
+
+<style>
+  .hm { overflow-x: auto; }
+  .hm__grid { display: grid; gap: 3px; min-width: calc(5rem + var(--hm-cols) * 2.4rem); }
+  .hm__row {
+    display: grid;
+    grid-template-columns: 5rem repeat(var(--hm-cols), minmax(2.2rem, 1fr));
+    gap: 3px;
+  }
+  .hm__col { text-align: center; font-size: 0.6875rem; color: var(--c-text-3, #8a8a8a); padding-bottom: 0.2rem; }
+  .hm__rowlabel {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--c-text-2, #a3a3a3);
+    font-family: var(--font-mono, monospace);
+  }
+  .hm__cell {
+    display: grid;
+    place-items: center;
+    min-height: 34px;
+    border-radius: 4px;
+    transition: transform 0.15s ease;
+  }
+  .hm__cell:hover { transform: scale(1.06); }
+  .hm__cell:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 1px; }
+  .hm__v { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.7); font-variant-numeric: tabular-nums; }
+  .hm__v--strong { color: #fff; font-weight: 650; }
+  .hm__scale {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    font-size: 0.6875rem;
+    color: var(--c-text-3, #8a8a8a);
+  }
+  .hm__ramp { flex: 0 1 160px; height: 8px; border-radius: 4px; }
+</style>

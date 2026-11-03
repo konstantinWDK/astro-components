@@ -1,0 +1,373 @@
+---
+/**
+ * ChartFrame — Shared accessible shell for every SVG chart in the kit.
+ * Renders the card surface, header, legend, hover tooltip and a
+ * "View data" table fallback so no chart relies on color or hover alone.
+ *
+ * @param {string} title - Chart heading (names the series when there is only one).
+ * @param {string} subtitle - Supporting description under the title.
+ * @param {string} value - Optional headline figure shown on the right of the header.
+ * @param {string} delta - Optional change label next to the headline figure.
+ * @param {boolean} deltaPositive - Good news (green ▲) or bad (red ▼); omit for a neutral caption.
+ * @param {Array<{label: string, color: string}>} legend - Legend items (shown when ≥ 2 series).
+ * @param {{headers: string[], rows: Array<Array<string|number>>}} table - Data for the table view.
+ * @param {string} variant - Surface style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ *
+ * Accessibility: the figure is labelled by its title, every mark is focusable via
+ * the chart itself, and a native <details> data table is always available.
+ */
+interface Props {
+  title?: string;
+  subtitle?: string;
+  value?: string;
+  delta?: string;
+  deltaPositive?: boolean;
+  legend?: Array<{ label: string; color: string }>;
+  table?: { headers: string[]; rows: Array<Array<string | number>> };
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title,
+  subtitle,
+  value,
+  delta,
+  deltaPositive,
+  legend = [],
+  table,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const titleId = `cf-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<figure
+  class={`cf cf--${variant} cf--${size} ${className}`}
+  data-chart
+  aria-labelledby={title ? titleId : undefined}
+>
+  {(title || value) && (
+    <header class="cf__header">
+      <div class="cf__heading">
+        {title && <figcaption id={titleId} class="cf__title">{title}</figcaption>}
+        {subtitle && <p class="cf__subtitle">{subtitle}</p>}
+      </div>
+      {value && (
+        <div class="cf__headline">
+          <span class="cf__value">{value}</span>
+          {delta && (
+            <span class:list={['cf__delta', { 'cf__delta--pos': deltaPositive === true, 'cf__delta--neg': deltaPositive === false, 'cf__delta--neutral': deltaPositive === undefined }]}>
+              {deltaPositive !== undefined && (
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+                  <path d={deltaPositive ? 'M5 1 L9 7 H1 Z' : 'M5 9 L9 3 H1 Z'} fill="currentColor" />
+                </svg>
+              )}
+              {delta}
+            </span>
+          )}
+        </div>
+      )}
+    </header>
+  )}
+
+  {legend.length > 1 && (
+    <ul class="cf__legend" aria-label="Legend">
+      {legend.map((item) => (
+        <li class="cf__legend-item">
+          <span class="cf__swatch" style={`background:${item.color}`} aria-hidden="true"></span>
+          {item.label}
+        </li>
+      ))}
+    </ul>
+  )}
+
+  <div class="cf__plot">
+    <slot />
+  </div>
+
+  <slot name="footer" />
+
+  {table && table.rows.length > 0 && (
+    <details class="cf__data">
+      <summary>View data</summary>
+      <div class="cf__table-wrap">
+        <table>
+          <thead>
+            <tr>{table.headers.map((h) => <th scope="col">{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row) => (
+              <tr>{row.map((cell, i) => (i === 0 ? <th scope="row">{cell}</th> : <td>{cell}</td>))}</tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  )}
+
+  <div class="cf__tip" data-chart-tip aria-hidden="true"></div>
+</figure>
+
+<script>
+  import './chart-tooltip';
+</script>
+
+<style>
+  .cf {
+    --cf-pad: var(--sp-6, 1.5rem);
+    --cf-title: 1.0625rem;
+    position: relative;
+    margin: 0;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: var(--cf-pad);
+    border-radius: var(--r-lg, 20px);
+    color: var(--c-text-2, #a3a3a3);
+    font-family: var(--font-sans, system-ui, sans-serif);
+  }
+  .cf--glass {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .cf--solid {
+    background: var(--chart-surface, #0d0d0f);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .cf--ghost {
+    background: transparent;
+    border: 1px solid transparent;
+    padding-inline: 0;
+  }
+  .cf--sm { --cf-pad: var(--sp-4, 1rem); --cf-title: 0.9375rem; }
+  .cf--lg { --cf-pad: var(--sp-8, 2rem); --cf-title: 1.25rem; }
+
+  .cf__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+  .cf__title {
+    margin: 0;
+    font-size: var(--cf-title);
+    font-weight: 650;
+    color: var(--c-text-1, #fff);
+    letter-spacing: -0.01em;
+  }
+  .cf__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--c-text-2, #a3a3a3);
+    line-height: 1.45;
+  }
+  .cf__headline {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+    flex-shrink: 0;
+  }
+  .cf__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--c-text-1, #fff);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .cf__delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-1, #fff);
+  }
+  .cf__delta--pos svg { color: var(--chart-pos, #34c38f); }
+  .cf__delta--neg svg { color: var(--chart-neg, #f06a6a); }
+  .cf__delta--neutral { color: var(--c-text-3, #8a8a8a); font-weight: 500; }
+
+  .cf__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    list-style: none;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    padding: 0;
+  }
+  .cf__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8125rem;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .cf__swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .cf__plot {
+    position: relative;
+    width: 100%;
+  }
+  /* Plot SVGs scale fluidly; small inline icons keep their explicit width/height. */
+  .cf__plot :global(svg:not([width])) {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* ── Shared mark vocabulary for every chart ───────────── */
+  .cf :global(.cf-grid) {
+    stroke: var(--chart-grid, rgba(255, 255, 255, 0.07));
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+  }
+  .cf :global(.cf-axis) {
+    stroke: var(--chart-axis, rgba(255, 255, 255, 0.18));
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+  }
+  .cf :global(.cf-label) {
+    fill: var(--c-text-3, #8a8a8a);
+    font-size: 11px;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-variant-numeric: tabular-nums;
+  }
+  .cf :global(.cf-label--strong) {
+    fill: var(--c-text-1, #fff);
+    font-weight: 600;
+  }
+  .cf :global(.cf-mark) {
+    transition: opacity 0.2s ease, filter 0.2s ease;
+    outline: none;
+  }
+  .cf :global(.cf-mark:focus-visible) {
+    stroke: var(--c-text-1, #fff);
+    stroke-width: 2px;
+  }
+  .cf :global(svg:hover .cf-dim),
+  .cf :global(svg:focus-within .cf-dim) {
+    opacity: 0.45;
+  }
+  .cf :global(svg .cf-dim:hover),
+  .cf :global(svg .cf-dim:focus-visible) {
+    opacity: 1;
+  }
+  .cf :global(.cf-hit) {
+    fill: transparent;
+    cursor: crosshair;
+    outline: none;
+  }
+  .cf :global(.cf-cross) {
+    stroke: rgba(255, 255, 255, 0.35);
+    stroke-width: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .cf :global(.cf-hit-group:hover .cf-cross),
+  .cf :global(.cf-hit-group:focus-within .cf-cross) {
+    opacity: 1;
+  }
+  .cf :global(.cf-hit:focus-visible) {
+    fill: rgba(255, 255, 255, 0.04);
+  }
+
+  /* ── Tooltip ─────────────────────────────────────────── */
+  .cf__tip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 7rem;
+    max-width: 16rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--r-sm, 8px);
+    background: rgba(12, 12, 14, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    font-size: 0.75rem;
+    color: var(--c-text-1, #fff);
+    transition: opacity 0.15s ease;
+  }
+  .cf__tip :global(strong) {
+    font-size: 0.75rem;
+    font-weight: 650;
+    margin-bottom: 0.15rem;
+  }
+  .cf__tip :global(span) {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--c-text-2, #c4c4c4);
+    font-variant-numeric: tabular-nums;
+  }
+  .cf__tip :global(i) {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Data table fallback ─────────────────────────────── */
+  .cf__data {
+    margin-top: var(--sp-3, 0.75rem);
+    font-size: 0.8125rem;
+  }
+  .cf__data summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    cursor: pointer;
+    color: var(--c-text-3, #8a8a8a);
+    border-radius: 6px;
+    list-style-position: inside;
+  }
+  .cf__data summary:hover { color: var(--c-text-1, #fff); }
+  .cf__data summary:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 2px;
+  }
+  .cf__table-wrap {
+    overflow-x: auto;
+    margin-top: 0.5rem;
+  }
+  .cf__data table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .cf__data th,
+  .cf__data td {
+    padding: 0.4rem 0.6rem;
+    text-align: right;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    white-space: nowrap;
+  }
+  .cf__data th:first-child { text-align: left; }
+  .cf__data thead th { color: var(--c-text-3, #8a8a8a); font-weight: 600; }
+  .cf__data tbody th { color: var(--c-text-1, #fff); font-weight: 500; }
+  .cf__data td { color: var(--c-text-2, #a3a3a3); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cf :global(*) { transition: none !important; animation: none !important; }
+  }
+</style>

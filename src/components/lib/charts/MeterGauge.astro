@@ -1,0 +1,122 @@
+---
+/**
+ * MeterGauge — Speedometer-style dial with labelled threshold zones and a
+ * needle. Zones use status colors and every zone is named in text.
+ *
+ * @param {number} value - Current reading.
+ * @param {number} min - Scale minimum.
+ * @param {number} max - Scale maximum.
+ * @param {Array<{to: number, label: string, tone: 'good'|'warn'|'bad'}>} zones - Ascending zones.
+ * @param {string} unit - Unit label.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { arcStroke, polar } from './chart-utils';
+
+interface Zone { to: number; label: string; tone: 'good' | 'warn' | 'bad' }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  value?: number;
+  min?: number;
+  max?: number;
+  zones?: Zone[];
+  unit?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'CPU load',
+  subtitle = 'Cluster average, live',
+  value = 68,
+  min = 0,
+  max = 100,
+  zones = [
+    { to: 60, label: 'Healthy', tone: 'good' },
+    { to: 85, label: 'Elevated', tone: 'warn' },
+    { to: 100, label: 'Critical', tone: 'bad' },
+  ],
+  unit = '%',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const toneColor = { good: 'var(--chart-pos, #34c38f)', warn: 'var(--chart-4, #c98500)', bad: 'var(--chart-neg, #f06a6a)' };
+const W = 280;
+const H = 170;
+const cx = W / 2;
+const cy = 150;
+const r = 112;
+const span = (Math.PI * 4) / 3; // 240°
+const start = -span / 2;
+const ang = (v: number) => start + ((Math.min(max, Math.max(min, v)) - min) / (max - min || 1)) * span;
+let prev = min;
+const arcs = zones.map((z) => {
+  const d = arcStroke(cx, cy - 20, r, ang(prev) + 0.015, ang(z.to) - 0.015);
+  prev = z.to;
+  return { ...z, d };
+});
+const current = zones.find((z) => value <= z.to) ?? zones[zones.length - 1];
+const [nx, ny] = polar(cx, cy - 20, r - 24, ang(value));
+const ticks = [min, min + (max - min) / 2, max];
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Zone', 'Up to'], rows: zones.map((z) => [z.label, `${z.to}${unit}`]) }}
+>
+  <div class="mg" role="meter" aria-valuemin={min} aria-valuemax={max} aria-valuenow={value} aria-valuetext={`${value}${unit}, ${current.label}`} aria-label={title}>
+    <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      {arcs.map((a) => <path d={a.d} fill="none" stroke={toneColor[a.tone]} stroke-width="14" stroke-linecap="butt" opacity={a.label === current.label ? 1 : 0.3} />)}
+      {ticks.map((t) => {
+        const [tx, ty] = polar(cx, cy - 20, r + 18, ang(t));
+        return <text class="cf-label" x={tx} y={ty + 4} text-anchor="middle">{t}</text>;
+      })}
+      <line class="mg__needle" x1={cx} y1={cy - 20} x2={nx} y2={ny} stroke="var(--c-text-1, #fff)" stroke-width="3" stroke-linecap="round" />
+      <circle cx={cx} cy={cy - 20} r="7" fill="var(--c-text-1, #fff)" />
+      <circle cx={cx} cy={cy - 20} r="3" fill="var(--chart-surface, #0d0d0f)" />
+    </svg>
+    <div class="mg__readout">
+      <span class="mg__value">{value}<small>{unit}</small></span>
+      <span class="mg__zone" style={`--mg-c:${toneColor[current.tone]}`}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+          {current.tone === 'good' ? <path d="M20 6 9 17l-5-5" /> : <><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></>}
+        </svg>
+        {current.label}
+      </span>
+    </div>
+  </div>
+</ChartFrame>
+
+<style>
+  .mg { max-width: 320px; margin: 0 auto; text-align: center; }
+  .mg__needle {
+    transform-origin: 140px 130px;
+    animation: mg-swing 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes mg-swing { from { transform: rotate(-120deg); } }
+  .mg__readout { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; margin-top: -0.75rem; }
+  .mg__value { font-size: 2rem; font-weight: 750; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; line-height: 1; }
+  .mg__value small { font-size: 1rem; color: var(--c-text-2, #a3a3a3); margin-left: 2px; }
+  .mg__zone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-1, #fff);
+    background: color-mix(in srgb, var(--mg-c) 20%, transparent);
+  }
+  .mg__zone svg { color: var(--mg-c); }
+  @media (prefers-reduced-motion: reduce) { .mg__needle { animation: none; } }
+</style>

@@ -1,0 +1,126 @@
+---
+/**
+ * RetentionCohortTable — Triangular cohort retention matrix. Each row is a
+ * signup cohort, each column a period since signup, shaded on a single-hue ramp.
+ *
+ * @param {Array<{cohort: string, size: number, retention: number[]}>} cohorts - Retention % per period (period 0 = 100).
+ * @param {string} periodLabel - Column prefix (e.g. 'Week', 'Month').
+ * @param {string} color - Ramp hue.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  cohorts?: Array<{ cohort: string; size: number; retention: number[] }>;
+  periodLabel?: string;
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'User retention',
+  subtitle = 'Monthly cohorts, % still active',
+  cohorts = [
+    { cohort: 'May', size: 1240, retention: [100, 62, 48, 41, 37, 35] },
+    { cohort: 'Jun', size: 1410, retention: [100, 65, 51, 44, 40] },
+    { cohort: 'Jul', size: 1580, retention: [100, 68, 55, 47] },
+    { cohort: 'Aug', size: 1720, retention: [100, 71, 57] },
+    { cohort: 'Sep', size: 1890, retention: [100, 73] },
+    { cohort: 'Oct', size: 2050, retention: [100] },
+  ],
+  periodLabel = 'M',
+  color = 'var(--chart-3, #199e70)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const periods = Math.max(...cohorts.map((c) => c.retention.length));
+const cols = Array.from({ length: periods }, (_, i) => `${periodLabel}${i}`);
+const shade = (v: number) => `color-mix(in srgb, ${color} ${Math.round(10 + (v / 100) * 85)}%, #141416)`;
+const avg = cols.map((_, i) => {
+  const vals = cohorts.map((c) => c.retention[i]).filter((v) => v !== undefined);
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+});
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+>
+  <div class="rc">
+    <table class="rc__table">
+      <caption class="sr-only">{title}: retention percentage by cohort and period</caption>
+      <thead>
+        <tr>
+          <th scope="col">Cohort</th>
+          <th scope="col">Users</th>
+          {cols.map((c) => <th scope="col">{c}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {cohorts.map((c) => (
+          <tr>
+            <th scope="row">{c.cohort}</th>
+            <td class="rc__size">{c.size.toLocaleString('en-US')}</td>
+            {cols.map((_, i) => {
+              const v = c.retention[i];
+              return v === undefined
+                ? <td class="rc__empty" aria-label="no data yet"></td>
+                : <td class="rc__cell" style={`background:${shade(v)}`} data-strong={v > 55 ? '' : undefined}>{v}%</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Average</th>
+          <td></td>
+          {avg.map((a) => <td class="rc__avg">{a.toFixed(0)}%</td>)}
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</ChartFrame>
+
+<style>
+  .rc { overflow-x: auto; }
+  .rc__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 3px;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .rc__table th {
+    padding: 0.4rem 0.5rem;
+    font-weight: 600;
+    color: var(--c-text-3, #8a8a8a);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .rc__table tbody th, .rc__table tfoot th { text-align: left; color: var(--c-text-1, #fff); }
+  .rc__size { color: var(--c-text-2, #a3a3a3); text-align: right; padding-right: 0.6rem; }
+  .rc__cell {
+    min-width: 3rem;
+    padding: 0.55rem 0.4rem;
+    text-align: center;
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .rc__cell[data-strong] { color: #fff; font-weight: 650; }
+  .rc__empty { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+  .rc__avg { text-align: center; color: var(--c-text-1, #fff); font-weight: 600; padding-top: 0.5rem; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+</style>

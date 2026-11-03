@@ -1,0 +1,155 @@
+---
+/**
+ * FeatureIconGrid — Classic 3-column feature grid with SVG icons, titles,
+ * descriptions and optional "learn more" links. Cards light up on hover/focus.
+ *
+ * @param {string} eyebrow - Small label above the heading.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{icon: string, title: string, text: string, href?: string}>} features - Feature cards.
+ *   `icon` is one of: bolt, shield, layers, chart, globe, code, sparkles, lock, users.
+ * @param {number} columns - Max columns on desktop (2|3|4).
+ * @param {string} variant - Card style (card|plain|bordered).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Feature { icon: string; title: string; text: string; href?: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  features?: Feature[];
+  columns?: 2 | 3 | 4;
+  variant?: 'card' | 'plain' | 'bordered';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const icons: Record<string, string> = {
+  bolt: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  layers: '<path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+  chart: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/>',
+  code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  sparkles: '<path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/><path d="M19 17v4M17 19h4"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+};
+
+const {
+  eyebrow = 'Features',
+  title = 'Everything you need, nothing you don’t',
+  subtitle = 'A focused toolkit that keeps your pages fast, accessible and on-brand.',
+  features = [
+    { icon: 'bolt', title: 'Zero runtime JS', text: 'Components render to static HTML and CSS. Interactivity is progressive and tiny.', href: '#' },
+    { icon: 'shield', title: 'Accessible by default', text: 'Semantic markup, focus rings, ARIA where it matters and 4.5:1 contrast everywhere.', href: '#' },
+    { icon: 'layers', title: 'Design tokens', text: 'Colors, spacing and radii come from CSS custom properties you can re-theme in one file.' },
+    { icon: 'chart', title: 'SVG charts', text: '45 dependency-free charts with tooltips, legends and data-table fallbacks.' },
+    { icon: 'globe', title: 'i18n ready', text: 'Every string is a prop. Ship English, Spanish and Russian docs out of the box.' },
+    { icon: 'code', title: 'Copy & paste', text: 'No package lock-in. Grab the source from the docs and own every line.' },
+  ],
+  columns = 3,
+  variant = 'card',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `fig-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`fig fig--${variant} fig--${size} ${className}`} aria-labelledby={id} style={`--fig-cols:${columns}`}>
+  <div class="fig__inner">
+    <header class="fig__head">
+      <p class="fig__eyebrow">{eyebrow}</p>
+      <h2 id={id} class="fig__title">{title}</h2>
+      <p class="fig__subtitle">{subtitle}</p>
+    </header>
+    <ul class="fig__grid">
+      {features.map((f) => (
+        <li class="fig__card">
+          <span class="fig__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={icons[f.icon] ?? icons.sparkles}></svg>
+          </span>
+          <h3 class="fig__card-title">{f.title}</h3>
+          <p class="fig__text">{f.text}</p>
+          {f.href && (
+            <a class="fig__link" href={f.href}>
+              Learn more<span class="fig__sr"> about {f.title}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .fig {
+    --fig-py: 5.5rem;
+    padding: var(--fig-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .fig--sm { --fig-py: 3.5rem; }
+  .fig--lg { --fig-py: 7.5rem; }
+  .fig__inner { max-width: 1180px; margin: 0 auto; }
+  .fig__head { max-width: 640px; margin: 0 auto 3.5rem; text-align: center; }
+  .fig__eyebrow { margin: 0 0 0.75rem; font-size: 0.8125rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .fig__title { margin: 0 0 1rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.12; color: var(--c-text-1, #fff); text-wrap: balance; }
+  .fig__subtitle { margin: 0; font-size: 1.0625rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .fig__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, calc((100% - (var(--fig-cols) - 1) * 1.25rem) / var(--fig-cols))), 1fr));
+    gap: 1.25rem;
+  }
+  .fig__card {
+    position: relative;
+    padding: 1.75rem;
+    border-radius: var(--r-lg, 20px);
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+  }
+  .fig--card .fig__card {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07));
+  }
+  .fig--bordered .fig__card { border: 1px solid rgba(255, 255, 255, 0.1); }
+  .fig--plain .fig__card { padding: 0.5rem 0; }
+  .fig--card .fig__card:hover, .fig--card .fig__card:focus-within,
+  .fig--bordered .fig__card:hover, .fig--bordered .fig__card:focus-within {
+    border-color: rgba(212, 160, 23, 0.35);
+    transform: translateY(-3px);
+  }
+  .fig__icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 1.25rem;
+    border-radius: var(--r-md, 12px);
+    background: var(--c-primary-glow, rgba(184, 134, 11, 0.12));
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    color: var(--c-primary-light, #d4a017);
+  }
+  .fig__card-title { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 650; color: var(--c-text-1, #fff); letter-spacing: -0.01em; }
+  .fig__text { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .fig__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--c-primary-light, #d4a017);
+    text-decoration: none;
+  }
+  .fig__link svg { transition: transform 0.2s ease; }
+  .fig__link:hover svg { transform: translateX(3px); }
+  .fig__link:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; border-radius: 4px; }
+  .fig__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .fig__card, .fig__link svg { transition: none; } }
+</style>

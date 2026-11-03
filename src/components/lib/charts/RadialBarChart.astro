@@ -1,0 +1,124 @@
+---
+/**
+ * RadialBarChart — Concentric progress arcs (one per item) sharing a 0–100%
+ * scale. Labels sit at each arc's start so identity never relies on color.
+ *
+ * @param {Array<{label: string, value: number, max?: number}>} items - Values (default max 100).
+ * @param {number} sweep - Arc sweep in degrees (180–360).
+ * @param {string[]} colors - Optional per-item colors.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { arcStroke, colorAt } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Array<{ label: string; value: number; max?: number }>;
+  sweep?: number;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Feature adoption',
+  subtitle = 'Share of active workspaces',
+  items = [
+    { label: 'Dashboards', value: 86 },
+    { label: 'Alerts', value: 64 },
+    { label: 'API', value: 47 },
+    { label: 'SSO', value: 29 },
+  ],
+  sweep = 270,
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const S = 300;
+const cx = S / 2;
+const cy = S / 2;
+const stroke = 16;
+const gap = 8;
+const outer = S / 2 - 14;
+const sweepRad = (Math.min(360, Math.max(180, sweep)) * Math.PI) / 180;
+const start = -sweepRad / 2 - (sweep === 360 ? 0 : 0);
+const rings = items.slice(0, 8).map((it, i) => {
+  const r = outer - i * (stroke + gap);
+  const pct = Math.max(0, Math.min(1, it.value / (it.max ?? 100)));
+  return { ...it, r, pct, color: colorAt(i, colors) };
+});
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Item', 'Value'], rows: items.map((i) => [i.label, `${i.value}${i.max ? ` / ${i.max}` : '%'}`]) }}
+>
+  <div class="rb">
+    <svg viewBox={`0 0 ${S} ${S}`} role="img" aria-label={`${title}: radial bar chart`}>
+      {rings.map((r) => (
+        <g class="cf-mark cf-dim" tabindex="0" role="img" aria-label={`${r.label}: ${Math.round(r.pct * 100)}%`}
+          data-tip-title={r.label} data-tip={`${r.color}::${r.value}${r.max ? ` / ${r.max}` : '%'}`}>
+          <path d={arcStroke(cx, cy, r.r, start, start + sweepRad)} fill="none" stroke="rgba(255,255,255,0.06)" stroke-width={stroke} stroke-linecap="round" />
+          {r.pct > 0 && (
+            <path class="rb__arc" d={arcStroke(cx, cy, r.r, start, start + sweepRad * r.pct)} fill="none" stroke={r.color} stroke-width={stroke} stroke-linecap="round" />
+          )}
+        </g>
+      ))}
+    </svg>
+    <ul class="rb__labels" aria-hidden="true">
+      {rings.map((r) => (
+        <li><span style={`background:${r.color}`}></span>{r.label}<b>{Math.round(r.pct * 100)}%</b></li>
+      ))}
+    </ul>
+  </div>
+</ChartFrame>
+
+<style>
+  .rb {
+    display: grid;
+    grid-template-columns: minmax(0, 300px) 1fr;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .rb__arc {
+    stroke-dasharray: 1200;
+    stroke-dashoffset: 1200;
+    animation: rb-draw 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes rb-draw { to { stroke-dashoffset: 0; } }
+  .rb__labels {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .rb__labels li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.875rem;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .rb__labels span { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .rb__labels b {
+    margin-left: auto;
+    color: var(--c-text-1, #fff);
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 560px) {
+    .rb { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rb__arc { animation: none; stroke-dashoffset: 0; }
+  }
+</style>

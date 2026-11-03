@@ -1,0 +1,180 @@
+---
+/**
+ * HeroDashboardPreview — SaaS hero with headline, CTAs and a live-rendered
+ * product dashboard mockup built from the kit's own SVG charts.
+ *
+ * @param {string} badge - Eyebrow badge.
+ * @param {string} title - Headline.
+ * @param {string} subtitle - Supporting paragraph.
+ * @param {{label: string, href: string}} primary - Primary CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA.
+ * @param {string} variant - Mockup frame (browser|floating|flat).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+import LineChart from '../charts/LineChart.astro';
+import KpiStatTile from '../charts/KpiStatTile.astro';
+
+interface Props {
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  variant?: 'browser' | 'floating' | 'flat';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  badge = 'Analytics, reimagined',
+  title = 'See every metric that matters, in real time',
+  subtitle = 'Unified revenue, product and infrastructure dashboards. Set up in minutes, no SQL required.',
+  primary = { label: 'Start free trial', href: '#' },
+  secondary = { label: 'Book a demo', href: '#' },
+  variant = 'browser',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `hdp-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`hdp hdp--${variant} hdp--${size} ${className}`} aria-labelledby={id}>
+  <div class="hdp__glow" aria-hidden="true"></div>
+  <div class="hdp__copy">
+    <span class="hdp__badge">{badge}</span>
+    <h1 id={id} class="hdp__title">{title}</h1>
+    <p class="hdp__subtitle">{subtitle}</p>
+    <div class="hdp__actions">
+      <a class="hdp__btn hdp__btn--primary" href={primary.href}>{primary.label}</a>
+      <a class="hdp__btn hdp__btn--ghost" href={secondary.href}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m10 8 6 4-6 4V8z" fill="currentColor" /></svg>
+        {secondary.label}
+      </a>
+    </div>
+  </div>
+
+  <div class="hdp__mock" role="group" aria-label="Product dashboard preview">
+    {variant === 'browser' && (
+      <div class="hdp__chrome" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <p>app.example.com/overview</p>
+      </div>
+    )}
+    <div class="hdp__screen">
+      <div class="hdp__kpis">
+        <KpiStatTile label="Revenue" value="$128.4k" change={9.2} period="vs last month" size="sm" variant="solid" trend={[80, 84, 90, 88, 96, 102, 110, 118, 128]} />
+        <KpiStatTile label="Active users" value="24,812" change={4.1} period="vs last month" size="sm" variant="solid" trend={[20, 21, 21.5, 22, 22.8, 23.1, 23.9, 24.2, 24.8]} />
+        <KpiStatTile label="Churn" value="2.3%" change={-0.6} invert period="vs last month" size="sm" variant="solid" trend={[3.1, 3, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4, 2.3]} />
+      </div>
+      <LineChart title="Revenue by channel" subtitle="Last 12 weeks" variant="solid" size="sm" height={220} />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hdp {
+    --hdp-py: 5.5rem;
+    position: relative;
+    overflow: hidden;
+    padding: var(--hdp-py) var(--sp-6, 1.5rem) 0;
+    background: var(--c-bg, #050505);
+  }
+  .hdp--sm { --hdp-py: 3.5rem; }
+  .hdp--lg { --hdp-py: 7.5rem; }
+  .hdp__glow {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    width: 900px;
+    height: 600px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(57, 135, 229, 0.16), transparent 65%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .hdp__copy { position: relative; max-width: 760px; margin: 0 auto 3.5rem; text-align: center; }
+  .hdp__badge {
+    display: inline-block;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(57, 135, 229, 0.12);
+    border: 1px solid rgba(57, 135, 229, 0.3);
+    color: #a9cdf7;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .hdp__title {
+    margin: 1.4rem 0 1rem;
+    font-size: clamp(2.25rem, 5.5vw, 3.75rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    color: var(--c-text-1, #fff);
+    text-wrap: balance;
+  }
+  .hdp__subtitle { margin: 0 auto 2rem; max-width: 560px; font-size: 1.0625rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .hdp__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  .hdp__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.5rem;
+    border-radius: var(--r-md, 12px);
+    font-weight: 650;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .hdp__btn:hover { transform: translateY(-1px); }
+  .hdp__btn:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .hdp__btn--primary { background: var(--chart-1, #3987e5); color: #fff; }
+  .hdp__btn--primary:hover { background: #5598e7; color: #fff; }
+  .hdp__btn--ghost { color: var(--c-text-1, #fff); border: 1px solid rgba(255, 255, 255, 0.14); }
+  .hdp__btn--ghost:hover { border-color: rgba(255, 255, 255, 0.3); color: var(--c-text-1, #fff); }
+
+  .hdp__mock {
+    position: relative;
+    max-width: 1080px;
+    margin: 0 auto;
+    border-radius: var(--r-xl, 24px) var(--r-xl, 24px) 0 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 0;
+    background: #0a0a0c;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  }
+  .hdp--floating .hdp__mock {
+    border-radius: var(--r-xl, 24px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: var(--hdp-py);
+    mask-image: none;
+    transform: perspective(1600px) rotateX(8deg);
+    box-shadow: 0 60px 120px -40px rgba(57, 135, 229, 0.35);
+  }
+  .hdp--flat .hdp__mock { background: transparent; border-color: transparent; }
+  .hdp__chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .hdp__chrome span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
+  .hdp__chrome p {
+    margin: 0 auto;
+    padding: 0.25rem 1rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 0.75rem;
+    color: var(--c-text-3, #737373);
+  }
+  .hdp__screen { display: grid; gap: 1rem; padding: 1.25rem; }
+  .hdp__kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  @media (max-width: 760px) {
+    .hdp__kpis { grid-template-columns: 1fr; }
+    .hdp__kpis > :global(*:nth-child(n + 2)) { display: none; }
+    .hdp--floating .hdp__mock { transform: none; }
+  }
+</style>

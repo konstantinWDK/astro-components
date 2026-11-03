@@ -1,0 +1,155 @@
+---
+/**
+ * HorizontalBarChart — Ranked horizontal bars with labels on the left and values
+ * on the right. One series → one color; optionally highlight a single bar.
+ *
+ * @param {Array<{label: string, value: number}>} items - Bars to draw.
+ * @param {boolean} sort - Sort descending by value.
+ * @param {string} highlight - Label to emphasise; other bars recede.
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string} color - Bar color.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { formatValue } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Array<{ label: string; value: number }>;
+  sort?: boolean;
+  highlight?: string;
+  prefix?: string;
+  suffix?: string;
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Top pages',
+  subtitle = 'Unique visitors, last 30 days',
+  items = [
+    { label: '/pricing', value: 18420 },
+    { label: '/docs/getting-started', value: 15210 },
+    { label: '/', value: 12980 },
+    { label: '/blog/astro-5', value: 9340 },
+    { label: '/components', value: 7120 },
+    { label: '/changelog', value: 4310 },
+  ],
+  sort = true,
+  highlight,
+  prefix = '',
+  suffix = '',
+  color = 'var(--chart-1, #3987e5)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const rows = sort ? [...items].sort((a, b) => b.value - a.value) : items;
+const max = Math.max(...rows.map((r) => r.value)) || 1;
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Item', 'Value'], rows: rows.map((r) => [r.label, fmt(r.value)]) }}
+>
+  <ol class="hb" aria-label={title}>
+    {rows.map((r, i) => {
+      const dim = highlight && highlight !== r.label;
+      return (
+        <li
+          class="hb__row cf-mark"
+          tabindex="0"
+          style={`--hb-w:${(r.value / max) * 100}%; --hb-c:${color}; --hb-o:${dim ? 0.35 : 1}; --hb-i:${i}`}
+          data-tip-title={r.label}
+          data-tip={`${color}::${fmt(r.value)} · ${((r.value / max) * 100).toFixed(0)}% of top`}
+          aria-label={`${i + 1}. ${r.label}: ${fmt(r.value)}`}
+        >
+          <span class="hb__label">{r.label}</span>
+          <span class="hb__track" aria-hidden="true"><span class="hb__bar"></span></span>
+          <span class="hb__value">{fmt(r.value)}</span>
+        </li>
+      );
+    })}
+  </ol>
+</ChartFrame>
+
+<style>
+  .hb {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .hb__row {
+    display: grid;
+    grid-template-columns: minmax(6rem, 34%) 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 32px;
+    padding: 0.15rem 0.35rem;
+    border-radius: 8px;
+    cursor: default;
+  }
+  .hb__row:hover,
+  .hb__row:focus-visible {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .hb__row:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 1px;
+  }
+  .hb__label {
+    font-size: 0.8125rem;
+    color: var(--c-text-2, #a3a3a3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hb__track {
+    height: 10px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+  }
+  .hb__bar {
+    display: block;
+    height: 100%;
+    width: var(--hb-w);
+    border-radius: 0 4px 4px 0;
+    background: var(--hb-c);
+    opacity: var(--hb-o);
+    transform-origin: left;
+    animation: hb-grow 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation-delay: calc(var(--hb-i) * 60ms);
+  }
+  .hb__value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--c-text-1, #fff);
+    font-variant-numeric: tabular-nums;
+    min-width: 3.5rem;
+    text-align: right;
+  }
+  @keyframes hb-grow {
+    from { transform: scaleX(0); }
+  }
+  @media (max-width: 480px) {
+    .hb__row { grid-template-columns: 1fr auto; }
+    .hb__track { grid-column: 1 / -1; grid-row: 2; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hb__bar { animation: none; }
+  }
+</style>

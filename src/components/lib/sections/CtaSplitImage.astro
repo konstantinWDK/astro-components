@@ -1,0 +1,147 @@
+---
+/**
+ * CtaSplitImage — Conversion banner split into copy + CTA and a decorative
+ * visual panel (CSS gradient mesh with floating stat chips). Optional real image.
+ *
+ * @param {string} title - Heading.
+ * @param {string} text - Supporting copy.
+ * @param {{label: string, href: string}} primary - Primary CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA.
+ * @param {string} image - Optional image URL (replaces the CSS visual).
+ * @param {string} imageAlt - Alt text when an image is used.
+ * @param {Array<{value: string, label: string}>} chips - Floating stat chips on the visual.
+ * @param {string} variant - Panel style (mesh|solid|outline).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Props {
+  title?: string;
+  text?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  image?: string;
+  imageAlt?: string;
+  chips?: Array<{ value: string; label: string }>;
+  variant?: 'mesh' | 'solid' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Ready to ship your best page yet?',
+  text = 'Join thousands of teams building fast, accessible Astro sites. Free forever for personal projects.',
+  primary = { label: 'Get started free', href: '#' },
+  secondary = { label: 'Talk to sales', href: '#' },
+  image,
+  imageAlt = '',
+  chips = [
+    { value: '99.9%', label: 'uptime' },
+    { value: '< 50ms', label: 'TTFB' },
+    { value: '100', label: 'Lighthouse' },
+  ],
+  variant = 'mesh',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `csi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`csi csi--${variant} csi--${size} ${className}`} aria-labelledby={id}>
+  <div class="csi__box">
+    <div class="csi__copy">
+      <h2 id={id} class="csi__title">{title}</h2>
+      <p class="csi__text">{text}</p>
+      <div class="csi__actions">
+        <a class="csi__btn csi__btn--primary" href={primary.href}>{primary.label}</a>
+        {secondary && <a class="csi__btn csi__btn--ghost" href={secondary.href}>{secondary.label}</a>}
+      </div>
+    </div>
+    <div class="csi__visual">
+      {image ? (
+        <img src={image} alt={imageAlt} loading="lazy" decoding="async" />
+      ) : (
+        <div class="csi__mesh" aria-hidden="true">
+          {chips.map((c, i) => (
+            <span class="csi__chip" style={`--i:${i}`}><strong>{c.value}</strong>{c.label}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .csi {
+    --csi-py: 5rem;
+    padding: var(--csi-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .csi--sm { --csi-py: 3rem; }
+  .csi--lg { --csi-py: 7rem; }
+  .csi__box {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: var(--r-xl, 28px);
+    overflow: hidden;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    background: var(--c-bg-1, #0a0a0a);
+  }
+  .csi--outline .csi__box { background: transparent; border-color: rgba(255, 255, 255, 0.15); }
+  .csi__copy { padding: clamp(2rem, 6vw, 4rem); display: flex; flex-direction: column; justify-content: center; }
+  .csi__title { margin: 0 0 1rem; font-size: clamp(1.75rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; color: var(--c-text-1, #fff); text-wrap: balance; }
+  .csi__text { margin: 0 0 2rem; font-size: 1.0625rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); max-width: 460px; }
+  .csi__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .csi__btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 1.5rem; border-radius: var(--r-md, 12px); font-weight: 650; text-decoration: none; transition: background 0.2s ease, border-color 0.2s ease; }
+  .csi__btn--primary { background: var(--c-primary-light, #d4a017); color: #0a0a0a; }
+  .csi__btn--primary:hover { background: var(--c-accent, #fef3c7); color: #0a0a0a; }
+  .csi__btn--ghost { border: 1px solid rgba(255, 255, 255, 0.15); color: var(--c-text-1, #fff); }
+  .csi__btn--ghost:hover { border-color: rgba(255, 255, 255, 0.32); color: var(--c-text-1, #fff); }
+  .csi__btn:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .csi__visual { position: relative; min-height: 320px; }
+  .csi__visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .csi__mesh {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+  }
+  .csi--mesh .csi__mesh {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(212, 160, 23, 0.55), transparent 45%),
+      radial-gradient(circle at 80% 30%, rgba(144, 133, 233, 0.55), transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(57, 135, 229, 0.5), transparent 50%),
+      #121218;
+  }
+  .csi--solid .csi__mesh { background: linear-gradient(135deg, #1a1408, #0c0c10); }
+  .csi--outline .csi__mesh { background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 12px, transparent 12px 24px); }
+  .csi__chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.75rem 1.1rem;
+    border-radius: var(--r-md, 14px);
+    background: rgba(10, 10, 12, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(12px);
+    color: var(--c-text-2, #c4c4c4);
+    font-size: 0.875rem;
+    animation: csi-float 6s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -2s);
+  }
+  .csi__chip:nth-child(2) { transform: translateX(2.5rem); }
+  .csi__chip:nth-child(3) { transform: translateX(-2rem); }
+  .csi__chip strong { font-size: 1.25rem; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  @keyframes csi-float { 50% { translate: 0 -8px; } }
+  @media (max-width: 820px) {
+    .csi__box { grid-template-columns: 1fr; }
+    .csi__visual { min-height: 240px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .csi__chip { animation: none; } }
+</style>

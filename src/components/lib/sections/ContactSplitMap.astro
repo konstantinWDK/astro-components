@@ -1,0 +1,139 @@
+---
+/**
+ * ContactSplitMap — Contact section with office cards and contact channels on
+ * one side and a stylised SVG dot-map with location pins on the other.
+ *
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{city: string, address: string, x: number, y: number}>} offices - Offices with map coords (0–100).
+ * @param {Array<{label: string, value: string, href: string, icon: 'mail'|'phone'|'chat'}>} channels - Contact channels.
+ * @param {string} variant - Map style (dots|grid|plain).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Office { city: string; address: string; x: number; y: number }
+interface Channel { label: string; value: string; href: string; icon: 'mail' | 'phone' | 'chat' }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  offices?: Office[];
+  channels?: Channel[];
+  variant?: 'dots' | 'grid' | 'plain';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Talk to a human',
+  subtitle = 'We’re distributed across three time zones, so someone is usually awake.',
+  offices = [
+    { city: 'San Francisco', address: '548 Market St, CA 94104', x: 17, y: 40 },
+    { city: 'Barcelona', address: 'Carrer de Pallars 99, 08018', x: 49, y: 36 },
+    { city: 'Singapore', address: '1 Raffles Place, 048616', x: 77, y: 58 },
+  ],
+  channels = [
+    { label: 'Email', value: 'hello@example.com', href: 'mailto:hello@example.com', icon: 'mail' },
+    { label: 'Phone', value: '+1 (555) 010-2030', href: 'tel:+15550102030', icon: 'phone' },
+    { label: 'Live chat', value: 'Mon–Fri, 9am–6pm', href: '#', icon: 'chat' },
+  ],
+  variant = 'dots',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `csm-${Math.random().toString(36).slice(2, 8)}`;
+const icon = {
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+};
+
+// Very rough continent silhouettes as a coarse dot grid (deterministic).
+const land = (x: number, y: number) =>
+  (x > 8 && x < 30 && y > 22 && y < 52) ||
+  (x > 22 && x < 34 && y > 52 && y < 88) ||
+  (x > 44 && x < 58 && y > 22 && y < 46) ||
+  (x > 46 && x < 60 && y > 46 && y < 80) ||
+  (x > 58 && x < 88 && y > 20 && y < 56) ||
+  (x > 78 && x < 92 && y > 68 && y < 84);
+const dots: Array<[number, number]> = [];
+for (let y = 6; y < 94; y += 3) for (let x = 2; x < 98; x += 2) if (land(x, y)) dots.push([x, y]);
+
+// The map box is 16:11, so the SVG uses the same aspect ratio and scales 0–100 coords onto it.
+const VW = 160;
+const VH = 110;
+const SX = VW / 100;
+const SY = VH / 100;
+---
+
+<section class={`csm csm--${variant} csm--${size} ${className}`} aria-labelledby={id}>
+  <div class="csm__inner">
+    <div class="csm__info">
+      <h2 id={id} class="csm__title">{title}</h2>
+      <p class="csm__subtitle">{subtitle}</p>
+      <ul class="csm__channels">
+        {channels.map((c) => (
+          <li>
+            <a class="csm__channel" href={c.href}>
+              <span class="csm__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={icon[c.icon]}></svg></span>
+              <span><span class="csm__label">{c.label}</span><span class="csm__value">{c.value}</span></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <ul class="csm__offices">
+        {offices.map((o) => (
+          <li><address><strong>{o.city}</strong>{o.address}</address></li>
+        ))}
+      </ul>
+    </div>
+    <div class="csm__map" role="img" aria-label={`Map showing offices in ${offices.map((o) => o.city).join(', ')}`}>
+      <svg viewBox={`0 0 ${VW} ${VH}`} aria-hidden="true">
+        {variant !== 'plain' && dots.map(([x, y]) => (
+          variant === 'grid'
+            ? <rect x={x * SX - 0.8} y={y * SY - 0.8} width="1.6" height="1.6" fill="rgba(255,255,255,0.14)" />
+            : <circle cx={x * SX} cy={y * SY} r="0.75" fill="rgba(255,255,255,0.18)" />
+        ))}
+        {offices.map((o) => (
+          <g>
+            <circle class="csm__ping" cx={o.x * SX} cy={o.y * SY} r="3" fill="none" stroke="var(--c-primary-light, #d4a017)" stroke-width="0.4" />
+            <circle cx={o.x * SX} cy={o.y * SY} r="1.6" fill="var(--c-primary-light, #d4a017)" />
+          </g>
+        ))}
+      </svg>
+      {offices.map((o) => (
+        <span class="csm__pin" style={`left:${o.x}%; top:${o.y}%`} aria-hidden="true">{o.city}</span>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .csm {
+    --csm-py: 5.5rem;
+    padding: var(--csm-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+  }
+  .csm--sm { --csm-py: 3.5rem; }
+  .csm--lg { --csm-py: 7.5rem; }
+  .csm__inner { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.3fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  .csm__title { margin: 0 0 0.75rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .csm__subtitle { margin: 0 0 2rem; font-size: 1.0625rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .csm__channels { list-style: none; margin: 0 0 2rem; padding: 0; display: grid; gap: 0.6rem; }
+  .csm__channel { display: flex; align-items: center; gap: 0.9rem; min-height: 60px; padding: 0.6rem 0.9rem; border-radius: var(--r-md, 14px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); background: rgba(255, 255, 255, 0.02); color: inherit; text-decoration: none; transition: border-color 0.2s ease, background 0.2s ease; }
+  .csm__channel:hover { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.04); }
+  .csm__channel:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .csm__icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--c-primary-glow, rgba(184, 134, 11, 0.14)); color: var(--c-primary-light, #d4a017); flex-shrink: 0; }
+  .csm__label { display: block; font-size: 0.75rem; color: var(--c-text-3, #8a8a8a); }
+  .csm__value { display: block; font-size: 0.9375rem; font-weight: 600; color: var(--c-text-1, #fff); }
+  .csm__offices { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+  .csm__offices address { font-style: normal; font-size: 0.8125rem; line-height: 1.5; color: var(--c-text-2, #a3a3a3); }
+  .csm__offices strong { display: block; font-size: 0.9375rem; color: var(--c-text-1, #fff); }
+  .csm__map { position: relative; aspect-ratio: 16 / 11; border-radius: var(--r-xl, 24px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.04), transparent 70%), var(--c-bg-1, #0a0a0a); overflow: hidden; }
+  .csm__map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .csm__ping { transform-box: fill-box; transform-origin: center; animation: csm-ping 2.4s ease-out infinite; }
+  @keyframes csm-ping { from { transform: scale(0.6); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+  .csm__pin { position: absolute; transform: translate(-50%, calc(-100% - 12px)); padding: 0.2rem 0.55rem; border-radius: 6px; background: rgba(10, 10, 12, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 0.6875rem; font-weight: 600; color: var(--c-text-1, #fff); white-space: nowrap; }
+  @media (max-width: 860px) { .csm__inner { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .csm__ping { animation: none; } }
+</style>

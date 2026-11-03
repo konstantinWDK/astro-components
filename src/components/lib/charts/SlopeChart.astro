@@ -1,0 +1,105 @@
+---
+/**
+ * SlopeChart — Before/after comparison of several items between two points in
+ * time. Rising lines use the positive status color, falling lines the negative.
+ *
+ * @param {string} fromLabel - Left column label.
+ * @param {string} toLabel - Right column label.
+ * @param {Array<{label: string, from: number, to: number}>} items - Items to compare.
+ * @param {string} highlight - Optional item label to emphasise (others dim).
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, formatValue, POSITIVE, NEGATIVE } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  fromLabel?: string;
+  toLabel?: string;
+  items?: Array<{ label: string; from: number; to: number }>;
+  highlight?: string;
+  prefix?: string;
+  suffix?: string;
+  height?: number;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Conversion rate by plan',
+  subtitle = 'Q1 vs Q2',
+  fromLabel = 'Q1',
+  toLabel = 'Q2',
+  items = [
+    { label: 'Enterprise', from: 7.8, to: 9.6 },
+    { label: 'Team', from: 6.1, to: 6.9 },
+    { label: 'Pro', from: 5.4, to: 4.6 },
+    { label: 'Starter', from: 3.2, to: 4.1 },
+    { label: 'Free trial', from: 2.4, to: 1.9 },
+  ],
+  highlight,
+  prefix = '',
+  suffix = '%',
+  height = 300,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const H = height;
+const m = { t: 34, b: 20 };
+const x0 = 190;
+const x1 = W - 190;
+const vals = items.flatMap((i) => [i.from, i.to]);
+const y = scaleLinear(Math.min(...vals), Math.max(...vals), H - m.b, m.t);
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{
+    headers: ['Item', fromLabel, toLabel, 'Change'],
+    rows: items.map((it) => [it.label, fmt(it.from), fmt(it.to), `${it.to >= it.from ? '+' : ''}${(it.to - it.from).toFixed(1)}`]),
+  }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: slope chart from ${fromLabel} to ${toLabel}`}>
+    <line class="cf-axis" x1={x0} x2={x0} y1={m.t - 8} y2={H - m.b + 8} />
+    <line class="cf-axis" x1={x1} x2={x1} y1={m.t - 8} y2={H - m.b + 8} />
+    <text class="cf-label cf-label--strong" x={x0} y={14} text-anchor="middle">{fromLabel}</text>
+    <text class="cf-label cf-label--strong" x={x1} y={14} text-anchor="middle">{toLabel}</text>
+
+    {items.map((it) => {
+      const up = it.to >= it.from;
+      const c = up ? POSITIVE : NEGATIVE;
+      const dim = highlight && highlight !== it.label;
+      return (
+        <g
+          class="cf-mark cf-dim"
+          tabindex="0"
+          role="img"
+          opacity={dim ? 0.35 : 1}
+          aria-label={`${it.label}: ${fmt(it.from)} to ${fmt(it.to)} (${up ? 'up' : 'down'})`}
+          data-tip-title={it.label}
+          data-tip={`${fromLabel}: ${fmt(it.from)}|${toLabel}: ${fmt(it.to)}|${c}::${up ? 'Up' : 'Down'} ${Math.abs(it.to - it.from).toFixed(1)}`}
+        >
+          <line x1={x0} y1={y(it.from)} x2={x1} y2={y(it.to)} stroke={c} stroke-width="2" />
+          <line x1={x0} y1={y(it.from)} x2={x1} y2={y(it.to)} stroke="transparent" stroke-width="14" />
+          <circle cx={x0} cy={y(it.from)} r="4.5" fill={c} stroke="var(--chart-surface, #0d0d0f)" stroke-width="2" />
+          <circle cx={x1} cy={y(it.to)} r="4.5" fill={c} stroke="var(--chart-surface, #0d0d0f)" stroke-width="2" />
+          <text class="cf-label" x={x0 - 12} y={y(it.from) + 4} text-anchor="end">{it.label} <tspan class="cf-label--strong">{fmt(it.from)}</tspan></text>
+          <text class="cf-label" x={x1 + 12} y={y(it.to) + 4}><tspan class="cf-label--strong">{fmt(it.to)}</tspan> {it.label}</text>
+        </g>
+      );
+    })}
+  </svg>
+</ChartFrame>

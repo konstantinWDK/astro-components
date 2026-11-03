@@ -1,0 +1,171 @@
+---
+/**
+ * PricingToggleCards — Three pricing tiers with an accessible monthly/yearly
+ * switch (role="switch"), savings badge and a highlighted recommended plan.
+ *
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{name: string, monthly: number, yearly: number, description: string, features: string[], cta: string, href: string, featured?: boolean}>} plans - Tiers.
+ * @param {string} currency - Currency symbol.
+ * @param {string} savingsLabel - Badge next to the yearly option.
+ * @param {string} variant - Card style (glass|solid|outline).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Plan { name: string; monthly: number; yearly: number; description: string; features: string[]; cta: string; href: string; featured?: boolean }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  plans?: Plan[];
+  currency?: string;
+  savingsLabel?: string;
+  variant?: 'glass' | 'solid' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Simple pricing that scales with you',
+  subtitle = 'Start free. Upgrade when your team grows. Cancel anytime.',
+  plans = [
+    { name: 'Starter', monthly: 0, yearly: 0, description: 'For side projects and prototypes.', features: ['All components', 'Community support', '1 project'], cta: 'Get started', href: '#' },
+    { name: 'Pro', monthly: 24, yearly: 19, description: 'For professionals shipping client work.', features: ['Everything in Starter', 'Premium sections', 'Unlimited projects', 'Priority support'], cta: 'Start 14-day trial', href: '#', featured: true },
+    { name: 'Team', monthly: 79, yearly: 63, description: 'For agencies and product teams.', features: ['Everything in Pro', '10 seats included', 'Figma kit', 'Private Discord'], cta: 'Contact sales', href: '#' },
+  ],
+  currency = '$',
+  savingsLabel = 'Save 20%',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `ptc-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`ptc ptc--${variant} ptc--${size} ${className}`} aria-labelledby={id} data-ptc data-period="monthly">
+  <div class="ptc__inner">
+    <header class="ptc__head">
+      <h2 id={id} class="ptc__title">{title}</h2>
+      <p class="ptc__subtitle">{subtitle}</p>
+      <div class="ptc__toggle">
+        <span class="ptc__period" id={`${id}-m`}>Monthly</span>
+        <button type="button" class="ptc__switch" role="switch" aria-checked="false" aria-labelledby={`${id}-y`}>
+          <span class="ptc__knob" aria-hidden="true"></span>
+        </button>
+        <span class="ptc__period" id={`${id}-y`}>Yearly <span class="ptc__save">{savingsLabel}</span></span>
+      </div>
+    </header>
+
+    <ul class="ptc__grid">
+      {plans.map((p) => (
+        <li class={`ptc__card ${p.featured ? 'ptc__card--featured' : ''}`}>
+          {p.featured && <span class="ptc__ribbon">Most popular</span>}
+          <h3 class="ptc__name">{p.name}</h3>
+          <p class="ptc__desc">{p.description}</p>
+          <p class="ptc__price">
+            <span class="ptc__amount" data-monthly={`${currency}${p.monthly}`} data-yearly={`${currency}${p.yearly}`}>{currency}{p.monthly}</span>
+            <span class="ptc__per">/ month<span class="ptc__billed" data-yearly-only>, billed yearly</span></span>
+          </p>
+          <a class="ptc__cta" href={p.href}>{p.cta}</a>
+          <ul class="ptc__features">
+            {p.features.map((f) => (
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>{f}</li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
+    <p class="ptc__live" role="status" aria-live="polite"></p>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-ptc]').forEach((root) => {
+    const sw = root.querySelector<HTMLButtonElement>('.ptc__switch');
+    const live = root.querySelector('.ptc__live');
+    sw?.addEventListener('click', () => {
+      const yearly = sw.getAttribute('aria-checked') !== 'true';
+      sw.setAttribute('aria-checked', String(yearly));
+      root.dataset.period = yearly ? 'yearly' : 'monthly';
+      root.querySelectorAll<HTMLElement>('.ptc__amount').forEach((el) => {
+        el.textContent = (yearly ? el.dataset.yearly : el.dataset.monthly) || '';
+      });
+      if (live) live.textContent = yearly ? 'Showing yearly prices' : 'Showing monthly prices';
+    });
+  });
+</script>
+
+<style>
+  .ptc {
+    --ptc-py: 5.5rem;
+    padding: var(--ptc-py) var(--sp-6, 1.5rem);
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, var(--c-primary-glow, rgba(184, 134, 11, 0.1)), transparent 70%), var(--c-bg, #050505);
+  }
+  .ptc--sm { --ptc-py: 3.5rem; }
+  .ptc--lg { --ptc-py: 7.5rem; }
+  .ptc__inner { max-width: 1120px; margin: 0 auto; }
+  .ptc__head { text-align: center; margin-bottom: 3rem; }
+  .ptc__title { margin: 0 0 0.75rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .ptc__subtitle { margin: 0 0 2rem; font-size: 1.0625rem; color: var(--c-text-2, #a3a3a3); }
+  .ptc__toggle { display: inline-flex; align-items: center; gap: 0.85rem; font-size: 0.9375rem; color: var(--c-text-2, #a3a3a3); }
+  .ptc__switch {
+    position: relative;
+    width: 52px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: background 0.25s ease;
+  }
+  .ptc__switch::after { content: ''; position: absolute; inset: -8px; }
+  .ptc__switch[aria-checked='true'] { background: var(--c-primary, #b8860b); border-color: transparent; }
+  .ptc__switch:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .ptc__knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+  .ptc__switch[aria-checked='true'] .ptc__knob { transform: translateX(22px); }
+  [data-period='monthly'] .ptc__period:first-child,
+  [data-period='yearly'] .ptc__period:last-child { color: var(--c-text-1, #fff); }
+  .ptc__save { margin-left: 0.35rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(52, 195, 143, 0.15); color: #7ee2b8; font-size: 0.75rem; font-weight: 650; }
+
+  .ptc__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: stretch; }
+  .ptc__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    border-radius: var(--r-xl, 24px);
+  }
+  .ptc--glass .ptc__card { background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); backdrop-filter: blur(12px); }
+  .ptc--solid .ptc__card { background: var(--c-bg-2, #111); border: 1px solid rgba(255, 255, 255, 0.06); }
+  .ptc--outline .ptc__card { border: 1px solid rgba(255, 255, 255, 0.12); }
+  .ptc__card--featured { border-color: rgba(212, 160, 23, 0.55) !important; box-shadow: 0 30px 80px -30px rgba(212, 160, 23, 0.35); }
+  .ptc__ribbon { position: absolute; top: -12px; left: 2rem; padding: 0.25rem 0.75rem; border-radius: 999px; background: var(--c-primary-light, #d4a017); color: #0a0a0a; font-size: 0.75rem; font-weight: 700; }
+  .ptc__name { margin: 0 0 0.35rem; font-size: 1.125rem; font-weight: 650; color: var(--c-text-1, #fff); }
+  .ptc__desc { margin: 0 0 1.5rem; font-size: 0.9rem; color: var(--c-text-2, #a3a3a3); }
+  .ptc__price { display: flex; align-items: baseline; gap: 0.4rem; margin: 0 0 1.5rem; }
+  .ptc__amount { font-size: 3rem; font-weight: 800; letter-spacing: -0.04em; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; line-height: 1; }
+  .ptc__per { font-size: 0.875rem; color: var(--c-text-3, #8a8a8a); }
+  .ptc__billed { display: none; }
+  [data-period='yearly'] .ptc__billed { display: inline; }
+  .ptc__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--c-text-1, #fff);
+    font-weight: 650;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .ptc__cta:hover { border-color: rgba(255, 255, 255, 0.3); color: var(--c-text-1, #fff); }
+  .ptc__card--featured .ptc__cta { background: var(--c-primary-light, #d4a017); color: #0a0a0a; border-color: transparent; }
+  .ptc__card--featured .ptc__cta:hover { background: var(--c-accent, #fef3c7); color: #0a0a0a; }
+  .ptc__cta:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .ptc__features { list-style: none; margin: 1.75rem 0 0; padding: 1.5rem 0 0; border-top: 1px solid rgba(255, 255, 255, 0.07); display: grid; gap: 0.7rem; }
+  .ptc__features li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; color: var(--c-text-1, #fff); }
+  .ptc__features svg { color: var(--c-primary-light, #d4a017); flex-shrink: 0; }
+  .ptc__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  @media (prefers-reduced-motion: reduce) { .ptc__knob, .ptc__switch { transition: none; } }
+</style>

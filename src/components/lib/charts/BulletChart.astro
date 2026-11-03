@@ -1,0 +1,160 @@
+---
+/**
+ * BulletChart — Compact KPI-vs-target bars with qualitative bands
+ * (poor / ok / good), a measure bar and a target tick. Stack several for a grid.
+ *
+ * @param {Array<{label: string, value: number, target: number, ranges: [number, number, number], unit?: string}>} metrics
+ *   - Each metric with its qualitative band thresholds (ascending).
+ * @param {string} color - Measure bar color.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+
+interface Metric {
+  label: string;
+  value: number;
+  target: number;
+  ranges: [number, number, number];
+  unit?: string;
+}
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  metrics?: Metric[];
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Quarterly targets',
+  subtitle = 'Measure vs target with performance bands',
+  metrics = [
+    { label: 'Revenue ($k)', value: 270, target: 250, ranges: [150, 225, 300] },
+    { label: 'Profit', value: 23, target: 26, ranges: [20, 25, 30], unit: '%' },
+    { label: 'New customers', value: 1650, target: 2100, ranges: [1400, 2000, 2500] },
+    { label: 'NPS', value: 54, target: 50, ranges: [30, 50, 70] },
+  ],
+  color = 'var(--c-text-1, #fff)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const pct = (v: number, max: number) => `${Math.min(100, (v / max) * 100)}%`;
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Metric', 'Value', 'Target', 'Status'], rows: metrics.map((mt) => [mt.label, `${mt.value}${mt.unit ?? ''}`, `${mt.target}${mt.unit ?? ''}`, mt.value >= mt.target ? 'On target' : 'Below target']) }}
+>
+  <div class="bc">
+    {metrics.map((mt) => {
+      const max = mt.ranges[2];
+      const met = mt.value >= mt.target;
+      return (
+        <div
+          class="bc__row cf-mark"
+          tabindex="0"
+          role="meter"
+          aria-valuemin={0}
+          aria-valuemax={max}
+          aria-valuenow={mt.value}
+          aria-label={`${mt.label}: ${mt.value}${mt.unit ?? ''} of target ${mt.target}${mt.unit ?? ''}`}
+          data-tip-title={mt.label}
+          data-tip={`Value: ${mt.value}${mt.unit ?? ''}|Target: ${mt.target}${mt.unit ?? ''}|${met ? 'var(--chart-pos)::On target' : 'var(--chart-neg)::Below target'}`}
+        >
+          <div class="bc__meta">
+            <span class="bc__label">{mt.label}</span>
+            <span class="bc__value">
+              {mt.value}{mt.unit ?? ''}
+              <span class={`bc__status ${met ? 'bc__status--ok' : 'bc__status--bad'}`}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                  {met ? <path d="M20 6 9 17l-5-5" /> : <><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></>}
+                </svg>
+                {met ? 'On target' : 'Below'}
+              </span>
+            </span>
+          </div>
+          <div class="bc__track" aria-hidden="true">
+            <span class="bc__band" style={`width:${pct(mt.ranges[2], max)}; opacity:0.07`}></span>
+            <span class="bc__band" style={`width:${pct(mt.ranges[1], max)}; opacity:0.11`}></span>
+            <span class="bc__band" style={`width:${pct(mt.ranges[0], max)}; opacity:0.16`}></span>
+            <span class="bc__measure" style={`width:${pct(mt.value, max)}; background:${color}`}></span>
+            <span class="bc__target" style={`left:${pct(mt.target, max)}`}></span>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</ChartFrame>
+
+<style>
+  .bc { display: grid; gap: 1rem; }
+  .bc__row {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.35rem;
+    border-radius: 8px;
+  }
+  .bc__row:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); }
+  .bc__meta { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .bc__label { font-size: 0.8125rem; color: var(--c-text-2, #a3a3a3); }
+  .bc__value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 650;
+    color: var(--c-text-1, #fff);
+    font-variant-numeric: tabular-nums;
+  }
+  .bc__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--c-text-2, #a3a3a3);
+    white-space: nowrap;
+  }
+  .bc__status--ok svg { color: var(--chart-pos, #34c38f); }
+  .bc__status--bad svg { color: var(--chart-neg, #f06a6a); }
+  .bc__track {
+    position: relative;
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bc__band {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: #fff;
+  }
+  .bc__measure {
+    position: absolute;
+    left: 0;
+    top: 7px;
+    height: 8px;
+    border-radius: 0 3px 3px 0;
+    transform-origin: left;
+    animation: bc-grow 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .bc__target {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    width: 3px;
+    margin-left: -1.5px;
+    border-radius: 2px;
+    background: var(--chart-4, #c98500);
+  }
+  @keyframes bc-grow { from { transform: scaleX(0); } }
+  @media (prefers-reduced-motion: reduce) { .bc__measure { animation: none; } }
+</style>

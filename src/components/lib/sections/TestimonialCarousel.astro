@@ -1,0 +1,165 @@
+---
+/**
+ * TestimonialCarousel — Scroll-snap testimonial carousel with previous/next
+ * buttons, keyboard support and no autoplay (respects user control).
+ *
+ * @param {string} title - Section heading.
+ * @param {Array<{quote: string, name: string, role: string, rating?: number}>} items - Testimonials.
+ * @param {string} variant - Card style (glass|solid|quote).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Item { quote: string; name: string; role: string; rating?: number }
+interface Props {
+  title?: string;
+  items?: Item[];
+  variant?: 'glass' | 'solid' | 'quote';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Loved by builders worldwide',
+  items = [
+    { quote: 'We rebuilt our marketing site in two days. The sections are gorgeous and Lighthouse went straight to 100.', name: 'Alicia Gómez', role: 'Head of Growth, Northwind', rating: 5 },
+    { quote: 'The SVG charts replaced a 200 kB library in our dashboard. Same features, zero runtime.', name: 'Marcus Lee', role: 'Staff Engineer, Lumen', rating: 5 },
+    { quote: 'Finally a component kit that takes accessibility seriously. Our audit came back clean.', name: 'Priya Natarajan', role: 'Accessibility Lead, Civic', rating: 5 },
+    { quote: 'Copy, paste, tweak tokens, done. It feels like a design system we built ourselves.', name: 'Tom Becker', role: 'Founder, Driftly', rating: 4 },
+    { quote: 'Our agency ships every client landing page on top of this kit now.', name: 'Sofía Ruiz', role: 'Creative Director, Studio Alba', rating: 5 },
+  ],
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `tc-${Math.random().toString(36).slice(2, 8)}`;
+const initials = (n: string) => n.split(' ').map((p) => p[0]).slice(0, 2).join('');
+const hues = ['var(--chart-1, #3987e5)', 'var(--chart-2, #d95926)', 'var(--chart-3, #199e70)', 'var(--chart-5, #d55181)', 'var(--chart-7, #9085e9)'];
+---
+
+<section class={`tc tc--${variant} tc--${size} ${className}`} aria-labelledby={id} aria-roledescription="carousel" data-tc>
+  <div class="tc__inner">
+    <header class="tc__head">
+      <h2 id={id} class="tc__title">{title}</h2>
+      <div class="tc__controls">
+        <button type="button" class="tc__btn" data-dir="-1" aria-label="Previous testimonials">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <button type="button" class="tc__btn" data-dir="1" aria-label="Next testimonials">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
+      </div>
+    </header>
+
+    <ul class="tc__track" tabindex="0" aria-label="Testimonials, scroll horizontally">
+      {items.map((t, i) => (
+        <li class="tc__slide" aria-roledescription="slide" aria-label={`${i + 1} of ${items.length}`}>
+          <figure class="tc__card">
+            {t.rating && (
+              <div class="tc__stars" role="img" aria-label={`${t.rating} out of 5 stars`}>
+                {Array.from({ length: 5 }, (_, s) => (
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" class={(t.rating ?? 0) > s ? 'is-on' : ''}><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" fill="currentColor" /></svg>
+                ))}
+              </div>
+            )}
+            <blockquote class="tc__quote"><p>“{t.quote}”</p></blockquote>
+            <figcaption class="tc__author">
+              <span class="tc__avatar" style={`background:${hues[i % hues.length]}`} aria-hidden="true">{initials(t.name)}</span>
+              <span><strong>{t.name}</strong><span class="tc__role">{t.role}</span></span>
+            </figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-tc]').forEach((root) => {
+    const track = root.querySelector<HTMLElement>('.tc__track');
+    const btns = root.querySelectorAll<HTMLButtonElement>('.tc__btn');
+    if (!track) return;
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth - 2;
+      btns[0].disabled = track.scrollLeft <= 2;
+      btns[1].disabled = track.scrollLeft >= max;
+    };
+    const step = () => (track.querySelector<HTMLElement>('.tc__slide')?.offsetWidth ?? 300) + 20;
+    btns.forEach((b) => b.addEventListener('click', () => {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      track.scrollBy({ left: Number(b.dataset.dir) * step(), behavior: reduce ? 'auto' : 'smooth' });
+    }));
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  });
+</script>
+
+<style>
+  .tc {
+    --tc-py: 5.5rem;
+    padding: var(--tc-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+    overflow: hidden;
+  }
+  .tc--sm { --tc-py: 3.5rem; }
+  .tc--lg { --tc-py: 7.5rem; }
+  .tc__inner { max-width: 1180px; margin: 0 auto; }
+  .tc__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 2rem; }
+  .tc__title { margin: 0; font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); max-width: 560px; }
+  .tc__controls { display: flex; gap: 0.5rem; flex-shrink: 0; }
+  .tc__btn {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--c-text-1, #fff);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  }
+  .tc__btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); }
+  .tc__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .tc__btn:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .tc__track {
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem 0 1rem;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: min(380px, 85%);
+    gap: 20px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .tc__track::-webkit-scrollbar { display: none; }
+  .tc__track:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 4px; border-radius: 12px; }
+  .tc__slide { scroll-snap-align: start; }
+  .tc__card {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.75rem;
+    border-radius: var(--r-lg, 20px);
+    box-sizing: border-box;
+  }
+  .tc--glass .tc__card { background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.07)); }
+  .tc--solid .tc__card { background: var(--c-bg-2, #111); border: 1px solid rgba(255, 255, 255, 0.05); }
+  .tc--quote .tc__card { border-left: 2px solid var(--c-primary-light, #d4a017); border-radius: 0; padding-left: 1.5rem; }
+  .tc__stars { display: flex; gap: 2px; color: rgba(255, 255, 255, 0.15); }
+  .tc__stars .is-on { color: var(--c-primary-light, #d4a017); }
+  .tc__quote { margin: 0; flex: 1; }
+  .tc__quote p { margin: 0; font-size: 1.0625rem; line-height: 1.6; color: var(--c-text-1, #fff); }
+  .tc__author { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; }
+  .tc__author strong { display: block; color: var(--c-text-1, #fff); font-weight: 650; }
+  .tc__role { display: block; color: var(--c-text-2, #a3a3a3); font-size: 0.8125rem; }
+  .tc__avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 0.8125rem; flex-shrink: 0; }
+  @media (max-width: 560px) {
+    .tc__head { flex-direction: column; align-items: flex-start; }
+  }
+</style>

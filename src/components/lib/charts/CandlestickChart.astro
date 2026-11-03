@@ -1,0 +1,105 @@
+---
+/**
+ * CandlestickChart — OHLC price chart. Bodies span open→close, wicks span
+ * low→high. Up candles are hollow, down candles filled, so direction is
+ * readable without color.
+ *
+ * @param {Array<{label: string, open: number, high: number, low: number, close: number}>} candles - OHLC data.
+ * @param {string} prefix - Price prefix.
+ * @param {number} height - SVG height in viewBox units (width is 640).
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, niceTicks, POSITIVE, NEGATIVE } from './chart-utils';
+
+interface Candle { label: string; open: number; high: number; low: number; close: number }
+interface Props {
+  title?: string;
+  subtitle?: string;
+  candles?: Candle[];
+  prefix?: string;
+  height?: number;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const demo: Candle[] = (() => {
+  let p = 182;
+  return Array.from({ length: 22 }, (_, i) => {
+    const r1 = Math.sin(i * 4.7) * 0.5 + Math.sin(i * 1.3) * 0.5;
+    const r2 = Math.abs(Math.sin(i * 9.1));
+    const open = p;
+    const close = Math.round((p + r1 * 6 + 0.6) * 100) / 100;
+    const high = Math.round((Math.max(open, close) + r2 * 3 + 0.4) * 100) / 100;
+    const low = Math.round((Math.min(open, close) - (1 - r2) * 3 - 0.4) * 100) / 100;
+    p = close;
+    return { label: `Oct ${i + 6}`, open, high, low, close };
+  });
+})();
+
+const {
+  title = 'ACME / USD',
+  subtitle = 'Daily candles',
+  candles = demo,
+  prefix = '$',
+  height = 300,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const H = height;
+const m = { t: 12, r: 52, b: 28, l: 12 };
+const ticks = niceTicks(Math.min(...candles.map((c) => c.low)), Math.max(...candles.map((c) => c.high)), 5);
+const y = scaleLinear(ticks[0], ticks[ticks.length - 1], H - m.b, m.t);
+const band = (W - m.l - m.r) / candles.length;
+const bw = Math.max(3, band * 0.6);
+const f = (v: number) => `${prefix}${v.toFixed(2)}`;
+const last = candles[candles.length - 1];
+const first = candles[0];
+const change = ((last.close - first.open) / first.open) * 100;
+const labelEvery = Math.ceil(candles.length / 6);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  value={f(last.close)}
+  delta={`${change >= 0 ? '+' : ''}${change.toFixed(2)}%`}
+  deltaPositive={change >= 0}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={[{ label: 'Up (hollow)', color: POSITIVE }, { label: 'Down (filled)', color: NEGATIVE }]}
+  table={{ headers: ['Date', 'Open', 'High', 'Low', 'Close'], rows: candles.map((c) => [c.label, f(c.open), f(c.high), f(c.low), f(c.close)]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: candlestick chart, ${candles.length} periods, ${change.toFixed(1)}% change`}>
+    {ticks.map((t) => (
+      <g>
+        <line class="cf-grid" x1={m.l} x2={W - m.r} y1={y(t)} y2={y(t)} />
+        <text class="cf-label" x={W - m.r + 8} y={y(t) + 4}>{f(t)}</text>
+      </g>
+    ))}
+    {candles.map((c, i) => {
+      const cx = m.l + i * band + band / 2;
+      const up = c.close >= c.open;
+      const col = up ? POSITIVE : NEGATIVE;
+      const top = y(Math.max(c.open, c.close));
+      const h = Math.max(1.5, Math.abs(y(c.open) - y(c.close)));
+      return (
+        <g class="cf-mark cf-dim" tabindex="0" role="img"
+          aria-label={`${c.label}: open ${f(c.open)}, high ${f(c.high)}, low ${f(c.low)}, close ${f(c.close)}`}
+          data-tip-title={c.label} data-tip={`${col}::${up ? 'Up' : 'Down'} ${(((c.close - c.open) / c.open) * 100).toFixed(2)}%|O ${f(c.open)} · H ${f(c.high)}|L ${f(c.low)} · C ${f(c.close)}`}>
+          <rect x={cx - band / 2} y={m.t} width={band} height={H - m.t - m.b} fill="transparent" />
+          <line x1={cx} x2={cx} y1={y(c.high)} y2={y(c.low)} stroke={col} stroke-width="1.5" />
+          <rect x={cx - bw / 2} y={top} width={bw} height={h} rx="1.5" fill={up ? 'var(--chart-surface, #0d0d0f)' : col} stroke={col} stroke-width="1.5" />
+          {i % labelEvery === 0 && <text class="cf-label" x={cx} y={H - 8} text-anchor="middle">{c.label}</text>}
+        </g>
+      );
+    })}
+    <line x1={m.l} x2={W - m.r} y1={y(last.close)} y2={y(last.close)} stroke="var(--c-text-1, #fff)" stroke-opacity="0.3" stroke-dasharray="3 4" aria-hidden="true" />
+  </svg>
+</ChartFrame>

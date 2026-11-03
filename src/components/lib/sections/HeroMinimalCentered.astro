@@ -1,0 +1,175 @@
+---
+/**
+ * HeroMinimalCentered — Typography-first centered hero with an announcement pill,
+ * two CTAs and a row of trust signals. No imagery, loads instantly.
+ *
+ * @param {string} announcement - Text in the top pill (empty to hide).
+ * @param {string} announcementHref - Link for the pill.
+ * @param {string} title - Main headline. Wrap a word in *asterisks* to highlight it.
+ * @param {string} subtitle - Supporting paragraph.
+ * @param {{label: string, href: string}} primary - Primary CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA.
+ * @param {string[]} trust - Short trust signals under the CTAs.
+ * @param {string} variant - Background treatment (default|glow|grid).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Props {
+  announcement?: string;
+  announcementHref?: string;
+  title?: string;
+  subtitle?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  trust?: string[];
+  variant?: 'default' | 'glow' | 'grid';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  announcement = 'New: 50 sections & 45 SVG charts',
+  announcementHref = '#',
+  title = 'Build landing pages that *feel* expensive',
+  subtitle = 'Accessible, zero-dependency Astro components with a dark, refined aesthetic. Copy, paste, ship.',
+  primary = { label: 'Browse components', href: '#' },
+  secondary = { label: 'Read the docs', href: '#' },
+  trust = ['MIT licensed', 'WCAG AA', 'No runtime JS required'],
+  variant = 'glow',
+  size = 'lg',
+  className = '',
+} = Astro.props;
+
+const id = `hmc-${Math.random().toString(36).slice(2, 8)}`;
+const parts = title.split(/\*(.+?)\*/);
+---
+
+<section class={`hmc hmc--${variant} hmc--${size} ${className}`} aria-labelledby={id}>
+  <div class="hmc__bg" aria-hidden="true"></div>
+  <div class="hmc__inner">
+    {announcement && (
+      <a class="hmc__pill" href={announcementHref}>
+        <span class="hmc__dot" aria-hidden="true"></span>
+        {announcement}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </a>
+    )}
+    <h1 id={id} class="hmc__title">
+      {parts.map((p, i) => (i % 2 ? <em>{p}</em> : p))}
+    </h1>
+    <p class="hmc__subtitle">{subtitle}</p>
+    <div class="hmc__actions">
+      <a class="hmc__btn hmc__btn--primary" href={primary.href}>{primary.label}</a>
+      <a class="hmc__btn hmc__btn--ghost" href={secondary.href}>{secondary.label}</a>
+    </div>
+    {trust.length > 0 && (
+      <ul class="hmc__trust">
+        {trust.map((t) => (
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+            {t}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</section>
+
+<style>
+  .hmc {
+    --hmc-py: 6rem;
+    position: relative;
+    overflow: hidden;
+    padding: var(--hmc-py) var(--sp-6, 1.5rem);
+    background: var(--c-bg, #050505);
+    text-align: center;
+  }
+  .hmc--sm { --hmc-py: 4rem; }
+  .hmc--lg { --hmc-py: 8rem; }
+  .hmc__bg { position: absolute; inset: 0; pointer-events: none; }
+  .hmc--glow .hmc__bg {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, var(--c-primary-glow, rgba(184, 134, 11, 0.14)), transparent 70%),
+      radial-gradient(ellipse 40% 30% at 50% 100%, rgba(57, 135, 229, 0.08), transparent 70%);
+  }
+  .hmc--grid .hmc__bg {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000, transparent);
+  }
+  .hmc__inner { position: relative; max-width: 820px; margin: 0 auto; }
+  .hmc__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 36px;
+    padding: 0.35rem 0.9rem;
+    border-radius: var(--r-full, 999px);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.8125rem;
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .hmc__pill:hover { border-color: rgba(255, 255, 255, 0.2); color: var(--c-text-1, #fff); }
+  .hmc__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-primary-light, #d4a017); box-shadow: 0 0 10px var(--c-primary-light, #d4a017); }
+  .hmc__title {
+    margin: 1.75rem 0 1.25rem;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    color: var(--c-text-1, #fff);
+    text-wrap: balance;
+  }
+  .hmc__title em {
+    font-style: normal;
+    background: linear-gradient(120deg, var(--c-accent, #fef3c7), var(--c-primary-light, #d4a017));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hmc__subtitle {
+    max-width: 600px;
+    margin: 0 auto 2.25rem;
+    font-size: clamp(1rem, 2vw, 1.1875rem);
+    line-height: 1.6;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .hmc__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  .hmc__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.5rem;
+    border-radius: var(--r-md, 12px);
+    font-weight: 650;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+  .hmc__btn:hover { transform: translateY(-1px); }
+  .hmc__btn:focus-visible, .hmc__pill:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .hmc__btn--primary { background: var(--c-primary-light, #d4a017); color: #0a0a0a; }
+  .hmc__btn--primary:hover { background: var(--c-accent, #fef3c7); color: #0a0a0a; }
+  .hmc__btn--ghost { border: 1px solid rgba(255, 255, 255, 0.14); color: var(--c-text-1, #fff); }
+  .hmc__btn--ghost:hover { border-color: rgba(255, 255, 255, 0.32); color: var(--c-text-1, #fff); }
+  .hmc__trust {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 1.75rem;
+    margin: 2.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .hmc__trust li { display: inline-flex; align-items: center; gap: 0.45rem; }
+  .hmc__trust svg { color: var(--chart-pos, #34c38f); }
+  @media (prefers-reduced-motion: reduce) { .hmc__btn { transition: none; } }
+</style>

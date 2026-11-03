@@ -1,0 +1,105 @@
+---
+/**
+ * ActivityRings — Concentric closed rings tracking daily goals (move, exercise,
+ * stand style). Values over 100% wrap with a stronger overlap stroke.
+ *
+ * @param {Array<{label: string, value: number, goal: number, unit?: string}>} rings - Up to 4 goals.
+ * @param {string[]} colors - Optional per-ring colors.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { arcStroke, colorAt } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  rings?: Array<{ label: string; value: number; goal: number; unit?: string }>;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Today',
+  subtitle = 'Daily goals',
+  rings = [
+    { label: 'Focus time', value: 5.2, goal: 6, unit: 'h' },
+    { label: 'Tasks done', value: 11, goal: 8 },
+    { label: 'Reviews', value: 3, goal: 5 },
+  ],
+  colors = ['var(--chart-5, #d55181)', 'var(--chart-3, #199e70)', 'var(--chart-1, #3987e5)'],
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const S = 220;
+const c = S / 2;
+const stroke = 20;
+const items = rings.slice(0, 4).map((r, i) => {
+  const radius = c - stroke / 2 - 4 - i * (stroke + 4);
+  const pct = r.value / (r.goal || 1);
+  return { ...r, radius, pct, color: colorAt(i, colors) };
+});
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Goal', 'Value', 'Target', 'Progress'], rows: items.map((r) => [r.label, `${r.value}${r.unit ?? ''}`, `${r.goal}${r.unit ?? ''}`, `${Math.round(r.pct * 100)}%`]) }}
+>
+  <div class="ar">
+    <svg viewBox={`0 0 ${S} ${S}`} role="img" aria-label={`${title}: ${items.map((r) => `${r.label} ${Math.round(r.pct * 100)}%`).join(', ')}`}>
+      {items.map((r) => {
+        const main = Math.min(r.pct, 0.9999);
+        const extra = r.pct > 1 ? Math.min(r.pct - 1, 0.9999) : 0;
+        return (
+          <g>
+            <circle cx={c} cy={c} r={r.radius} fill="none" stroke={r.color} stroke-opacity="0.16" stroke-width={stroke} />
+            {main > 0 && <path class="ar__arc" d={arcStroke(c, c, r.radius, 0, Math.PI * 2 * main)} fill="none" stroke={r.color} stroke-width={stroke} stroke-linecap="round" />}
+            {extra > 0 && <path d={arcStroke(c, c, r.radius, 0, Math.PI * 2 * extra)} fill="none" stroke={r.color} stroke-width={stroke} stroke-linecap="round" style="filter: drop-shadow(0 0 3px rgba(0,0,0,0.6)) brightness(1.15)" />}
+          </g>
+        );
+      })}
+    </svg>
+    <ul class="ar__list">
+      {items.map((r) => (
+        <li>
+          <span class="ar__label"><i style={`background:${r.color}`} aria-hidden="true"></i>{r.label}</span>
+          <span class="ar__value">{r.value}{r.unit ?? ''}<small>/{r.goal}{r.unit ?? ''}</small></span>
+          <span class="ar__pct">{Math.round(r.pct * 100)}%{r.pct >= 1 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-label="goal met"><path d="M20 6 9 17l-5-5" /></svg>}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</ChartFrame>
+
+<style>
+  .ar {
+    display: grid;
+    grid-template-columns: minmax(0, 220px) 1fr;
+    gap: 2rem;
+    align-items: center;
+  }
+  .ar__arc {
+    stroke-dasharray: 800;
+    stroke-dashoffset: 800;
+    animation: ar-draw 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes ar-draw { to { stroke-dashoffset: 0; } }
+  .ar__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+  .ar__list li { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 1rem; }
+  .ar__label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8125rem; color: var(--c-text-2, #a3a3a3); grid-column: 1 / -1; }
+  .ar__label i { width: 10px; height: 10px; border-radius: 50%; }
+  .ar__value { font-size: 1.25rem; font-weight: 700; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .ar__value small { font-size: 0.8rem; color: var(--c-text-3, #8a8a8a); font-weight: 500; }
+  .ar__pct { display: inline-flex; align-items: center; gap: 0.3rem; align-self: end; font-size: 0.8125rem; color: var(--c-text-2, #a3a3a3); font-variant-numeric: tabular-nums; }
+  .ar__pct svg { color: var(--chart-pos, #34c38f); }
+  @media (max-width: 520px) { .ar { grid-template-columns: 1fr; justify-items: center; } .ar__list { width: 100%; } .ar svg { max-width: 200px; } }
+  @media (prefers-reduced-motion: reduce) { .ar__arc { animation: none; stroke-dashoffset: 0; } }
+</style>

@@ -1,0 +1,251 @@
+---
+/**
+ * HeroTerminal — Developer-focused split hero with an animated terminal showing
+ * install and build commands, plus a copyable install snippet.
+ *
+ * @param {string} eyebrow - Small label above the title.
+ * @param {string} title - Headline.
+ * @param {string} subtitle - Supporting paragraph.
+ * @param {string} command - Install command shown in the copy field.
+ * @param {Array<{type: 'cmd'|'out'|'ok', text: string}>} lines - Terminal transcript.
+ * @param {{label: string, href: string}} primary - Primary CTA.
+ * @param {string} variant - Terminal style (default|glass|minimal).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+interface Line { type: 'cmd' | 'out' | 'ok'; text: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  command?: string;
+  lines?: Line[];
+  primary?: { label: string; href: string };
+  variant?: 'default' | 'glass' | 'minimal';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  eyebrow = 'For developers',
+  title = 'From zero to production in one command',
+  subtitle = 'Scaffold a fully accessible Astro site with sections, charts and design tokens already wired up.',
+  command = 'npm create astro@latest -- --template kit',
+  lines = [
+    { type: 'cmd', text: 'npm create astro@latest -- --template kit' },
+    { type: 'out', text: 'Scaffolding project in ./my-site …' },
+    { type: 'ok', text: '50 sections installed' },
+    { type: 'ok', text: '45 SVG charts installed' },
+    { type: 'cmd', text: 'npm run build' },
+    { type: 'out', text: '12 pages built in 1.84s' },
+    { type: 'ok', text: 'Lighthouse: 100 · 100 · 100 · 100' },
+  ],
+  primary = { label: 'Get started', href: '#' },
+  variant = 'default',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `ht-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`ht ht--${variant} ht--${size} ${className}`} aria-labelledby={id}>
+  <div class="ht__inner">
+    <div class="ht__copy">
+      <p class="ht__eyebrow">{eyebrow}</p>
+      <h1 id={id} class="ht__title">{title}</h1>
+      <p class="ht__subtitle">{subtitle}</p>
+      <div class="ht__install">
+        <code class="ht__cmd"><span aria-hidden="true">$ </span>{command}</code>
+        <button type="button" class="ht__copy-btn" data-copy={command} aria-label="Copy install command">
+          <svg class="ht__icon-copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          <svg class="ht__icon-ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+        </button>
+        <span class="ht__status" role="status" aria-live="polite"></span>
+      </div>
+      <a class="ht__btn" href={primary.href}>
+        {primary.label}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </a>
+    </div>
+
+    <div class="ht__terminal" role="img" aria-label={`Terminal transcript: ${lines.map((l) => l.text).join('. ')}`}>
+      <div class="ht__bar" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <p>~/my-site — zsh</p>
+      </div>
+      <ol class="ht__lines" aria-hidden="true">
+        {lines.map((l, i) => (
+          <li class={`ht__line ht__line--${l.type}`} style={`--i:${i}`}>
+            {l.type === 'cmd' && <span class="ht__prompt">❯</span>}
+            {l.type === 'ok' && <span class="ht__ok">✓</span>}
+            {l.text}
+          </li>
+        ))}
+        <li class="ht__line ht__cursor" style={`--i:${lines.length}`}><span class="ht__prompt">❯</span><span class="ht__caret"></span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.ht__copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const status = btn.parentElement?.querySelector('.ht__status');
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy || '');
+        btn.classList.add('is-copied');
+        if (status) status.textContent = 'Copied to clipboard';
+        setTimeout(() => {
+          btn.classList.remove('is-copied');
+          if (status) status.textContent = '';
+        }, 1800);
+      } catch {
+        if (status) status.textContent = 'Copy failed — select the text manually';
+      }
+    });
+  });
+</script>
+
+<style>
+  .ht {
+    --ht-py: 5.5rem;
+    padding: var(--ht-py) var(--sp-6, 1.5rem);
+    background: radial-gradient(ellipse 50% 60% at 85% 40%, rgba(57, 135, 229, 0.08), transparent 70%), var(--c-bg, #050505);
+  }
+  .ht--sm { --ht-py: 3.5rem; }
+  .ht--lg { --ht-py: 7.5rem; }
+  .ht__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 4rem;
+    align-items: center;
+  }
+  .ht__eyebrow {
+    margin: 0 0 1rem;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.8125rem;
+    color: var(--c-primary-light, #d4a017);
+    letter-spacing: 0.04em;
+  }
+  .ht__title {
+    margin: 0 0 1.25rem;
+    font-size: clamp(2.25rem, 4.5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    color: var(--c-text-1, #fff);
+    text-wrap: balance;
+  }
+  .ht__subtitle { margin: 0 0 2rem; font-size: 1.0625rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); max-width: 520px; }
+  .ht__install {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 520px;
+    padding: 0.4rem 0.4rem 0.4rem 1rem;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    background: rgba(255, 255, 255, 0.025);
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  .ht__cmd {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.875rem;
+    color: var(--c-text-1, #fff);
+  }
+  .ht__cmd span { color: var(--c-text-3, #737373); }
+  .ht__copy-btn {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--c-text-2, #a3a3a3);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .ht__copy-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--c-text-1, #fff); }
+  .ht__copy-btn:focus-visible, .ht__btn:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .ht__icon-ok { display: none; color: var(--chart-pos, #34c38f); }
+  .ht__copy-btn.is-copied .ht__icon-copy { display: none; }
+  .ht__copy-btn.is-copied .ht__icon-ok { display: block; }
+  .ht__status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ht__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.5rem;
+    border-radius: var(--r-md, 12px);
+    background: var(--c-text-1, #fff);
+    color: #0a0a0a;
+    font-weight: 650;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+  }
+  .ht__btn:hover { transform: translateY(-1px); color: #0a0a0a; }
+
+  .ht__terminal {
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: #0b0b0d;
+    box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    overflow: hidden;
+  }
+  .ht--glass .ht__terminal { background: rgba(14, 14, 18, 0.6); backdrop-filter: blur(18px); }
+  .ht--minimal .ht__terminal { box-shadow: none; }
+  .ht__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .ht__bar span { width: 11px; height: 11px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
+  .ht__bar p { margin: 0 auto; font-size: 0.75rem; color: var(--c-text-3, #737373); font-family: var(--font-mono, monospace); transform: translateX(-1.5rem); }
+  .ht__lines {
+    list-style: none;
+    margin: 0;
+    padding: 1.25rem 1.25rem 1.5rem;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.8125rem;
+    line-height: 1.9;
+    min-height: 260px;
+  }
+  .ht__line {
+    display: flex;
+    gap: 0.6rem;
+    opacity: 0;
+    animation: ht-in 0.35s ease forwards;
+    animation-delay: calc(var(--i) * 0.45s + 0.3s);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ht__line--cmd { color: var(--c-text-1, #fff); }
+  .ht__line--out { color: var(--c-text-3, #8a8a8a); padding-left: 1.2rem; }
+  .ht__line--ok { color: var(--c-text-2, #c4c4c4); padding-left: 1.2rem; }
+  .ht__prompt { color: var(--c-primary-light, #d4a017); }
+  .ht__ok { color: var(--chart-pos, #34c38f); }
+  .ht__caret { width: 8px; height: 1.1em; align-self: center; background: var(--c-text-1, #fff); animation: ht-blink 1s steps(1) infinite; }
+  @keyframes ht-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @keyframes ht-blink { 50% { opacity: 0; } }
+  @media (max-width: 900px) {
+    .ht__inner { grid-template-columns: minmax(0, 1fr); gap: 3rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ht__line { animation: none; opacity: 1; }
+    .ht__caret { animation: none; }
+  }
+</style>

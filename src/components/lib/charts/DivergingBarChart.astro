@@ -1,0 +1,98 @@
+---
+/**
+ * DivergingBarChart — Horizontal bars extending left (negative) or right
+ * (positive) from a zero line. Great for sentiment, variance and P&L deltas.
+ *
+ * @param {Array<{label: string, value: number}>} items - Signed values.
+ * @param {string} positiveLabel - Legend label for positive values.
+ * @param {string} negativeLabel - Legend label for negative values.
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, formatValue, niceTicks } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Array<{ label: string; value: number }>;
+  positiveLabel?: string;
+  negativeLabel?: string;
+  prefix?: string;
+  suffix?: string;
+  positiveColor?: string;
+  negativeColor?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Budget variance by team',
+  subtitle = 'Actual minus plan, Q3',
+  items = [
+    { label: 'Engineering', value: -42 },
+    { label: 'Marketing', value: 28 },
+    { label: 'Sales', value: 64 },
+    { label: 'Support', value: -12 },
+    { label: 'Design', value: 9 },
+    { label: 'Ops', value: -31 },
+  ],
+  positiveLabel = 'Under budget',
+  negativeLabel = 'Over budget',
+  prefix = '$',
+  suffix = 'k',
+  positiveColor = 'var(--chart-1, #3987e5)',
+  negativeColor = 'var(--chart-2, #d95926)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const rowH = 34;
+const m = { t: 8, r: 56, b: 26, l: 110 };
+const H = items.length * rowH + m.t + m.b;
+const ext = Math.max(...items.map((i) => Math.abs(i.value)));
+const ticks = niceTicks(-ext, ext, 4);
+const x = scaleLinear(ticks[0], ticks[ticks.length - 1], m.l, W - m.r);
+const fmt = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatValue(Math.abs(v), prefix, suffix)}`;
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={[{ label: positiveLabel, color: positiveColor }, { label: negativeLabel, color: negativeColor }]}
+  table={{ headers: ['Item', 'Value'], rows: items.map((i) => [i.label, fmt(i.value)]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: diverging bar chart`}>
+    {ticks.map((t) => (
+      <g>
+        <line class={t === 0 ? 'cf-axis' : 'cf-grid'} x1={x(t)} x2={x(t)} y1={m.t} y2={H - m.b} />
+        <text class="cf-label" x={x(t)} y={H - 8} text-anchor="middle">{t === 0 ? '0' : fmt(t)}</text>
+      </g>
+    ))}
+    {items.map((it, i) => {
+      const cy = m.t + i * rowH + rowH / 2;
+      const pos = it.value >= 0;
+      const x0 = x(0);
+      const x1 = x(it.value);
+      const c = pos ? positiveColor : negativeColor;
+      const w = Math.abs(x1 - x0);
+      return (
+        <g>
+          <text class="cf-label" x={m.l - 10} y={cy + 4} text-anchor="end">{it.label}</text>
+          <rect class="cf-mark cf-dim" x={Math.min(x0, x1)} y={cy - 9} width={Math.max(1, w)} height="18" rx="4" fill={c}
+            tabindex="0" role="img" aria-label={`${it.label}: ${fmt(it.value)}`} data-tip-title={it.label}
+            data-tip={`${c}::${pos ? positiveLabel : negativeLabel}: ${fmt(it.value)}`} />
+          <text class="cf-label cf-label--strong" x={pos ? x1 + 6 : x1 - 6} y={cy + 4} text-anchor={pos ? 'start' : 'end'}>{fmt(it.value)}</text>
+        </g>
+      );
+    })}
+  </svg>
+</ChartFrame>

@@ -1,0 +1,101 @@
+---
+/**
+ * BubbleChart — Three-variable scatter: x, y and bubble area (z). Larger
+ * bubbles are drawn first so small ones stay visible on top.
+ *
+ * @param {Array<{label: string, x: number, y: number, z: number, group?: number}>} items - Bubbles.
+ * @param {string[]} groups - Group names (max 3) mapped to color slots.
+ * @param {string} xLabel - X-axis title.
+ * @param {string} yLabel - Y-axis title.
+ * @param {string} zLabel - Bubble size meaning.
+ * @param {string[]} colors - Optional per-group colors.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { scaleLinear, niceTicks, colorAt, formatCompact } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  items?: Array<{ label: string; x: number; y: number; z: number; group?: number }>;
+  groups?: string[];
+  xLabel?: string;
+  yLabel?: string;
+  zLabel?: string;
+  height?: number;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Market opportunity',
+  subtitle = 'Growth vs margin, bubble = revenue',
+  items = [
+    { label: 'Analytics', x: 34, y: 62, z: 120, group: 0 },
+    { label: 'Payments', x: 18, y: 41, z: 260, group: 0 },
+    { label: 'CRM', x: 9, y: 55, z: 180, group: 1 },
+    { label: 'Hosting', x: 22, y: 28, z: 90, group: 1 },
+    { label: 'AI tools', x: 71, y: 48, z: 70, group: 2 },
+    { label: 'Security', x: 27, y: 72, z: 140, group: 2 },
+    { label: 'Email', x: 6, y: 66, z: 60, group: 1 },
+    { label: 'Design', x: 41, y: 58, z: 85, group: 0 },
+  ],
+  groups = ['Core', 'Mature', 'Emerging'],
+  xLabel = 'YoY growth (%)',
+  yLabel = 'Gross margin (%)',
+  zLabel = 'Revenue ($M)',
+  height = 320,
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const H = height;
+const m = { t: 20, r: 24, b: 40, l: 48 };
+const xt = niceTicks(0, Math.max(...items.map((i) => i.x)), 5);
+const yt = niceTicks(0, Math.max(...items.map((i) => i.y)), 4);
+const x = scaleLinear(xt[0], xt[xt.length - 1], m.l, W - m.r);
+const y = scaleLinear(yt[0], yt[yt.length - 1], H - m.b, m.t);
+const zMax = Math.max(...items.map((i) => i.z)) || 1;
+const r = (z: number) => 6 + Math.sqrt(z / zMax) * 30; // area-proportional radius
+const sorted = [...items].sort((a, b) => b.z - a.z);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={groups.slice(0, 3).map((g, i) => ({ label: g, color: colorAt(i, colors) }))}
+  table={{ headers: ['Item', 'Group', xLabel, yLabel, zLabel], rows: items.map((i) => [i.label, groups[i.group ?? 0] ?? '—', i.x, i.y, i.z]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: bubble chart of ${items.length} items`}>
+    {yt.map((t) => (
+      <g>
+        <line class="cf-grid" x1={m.l} x2={W - m.r} y1={y(t)} y2={y(t)} />
+        <text class="cf-label" x={m.l - 8} y={y(t) + 4} text-anchor="end">{formatCompact(t)}</text>
+      </g>
+    ))}
+    {xt.map((t) => <text class="cf-label" x={x(t)} y={H - m.b + 16} text-anchor="middle">{formatCompact(t)}</text>)}
+    <text class="cf-label" x={(m.l + W - m.r) / 2} y={H - 4} text-anchor="middle">{xLabel}</text>
+    <text class="cf-label" transform={`translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)`} text-anchor="middle">{yLabel}</text>
+
+    {sorted.map((it) => {
+      const col = colorAt(it.group ?? 0, colors);
+      const rad = r(it.z);
+      return (
+        <g class="cf-mark cf-dim" tabindex="0" role="img" aria-label={`${it.label}: ${xLabel} ${it.x}, ${yLabel} ${it.y}, ${zLabel} ${it.z}`}
+          data-tip-title={it.label} data-tip={`${col}::${groups[it.group ?? 0] ?? ''}|${xLabel}: ${it.x}|${yLabel}: ${it.y}|${zLabel}: ${it.z}`}>
+          <circle cx={x(it.x)} cy={y(it.y)} r={rad} fill={col} fill-opacity="0.55" stroke={col} stroke-width="1.5" />
+          {rad > 18 && <text x={x(it.x)} y={y(it.y) + 4} text-anchor="middle" fill="#fff" font-size="11" font-weight="600">{it.label}</text>}
+        </g>
+      );
+    })}
+  </svg>
+</ChartFrame>

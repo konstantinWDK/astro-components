@@ -1,0 +1,83 @@
+---
+/**
+ * StatsDashboardSection — Complete analytics section: heading, KPI tile row and
+ * two charts (trend + ranked breakdown) composed from the kit's SVG charts.
+ *
+ * @param {string} eyebrow - Small label above the heading.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section description.
+ * @param {Array<{label: string, value: string, change: number, trend?: number[], invert?: boolean}>} kpis - KPI tiles.
+ * @param {string} variant - Chart card style (glass|solid|ghost).
+ * @param {string} size - Vertical rhythm (sm|md|lg).
+ * @param {string} className - Extra CSS class.
+ */
+import KpiStatTile from '../charts/KpiStatTile.astro';
+import StackedAreaChart from '../charts/StackedAreaChart.astro';
+import HorizontalBarChart from '../charts/HorizontalBarChart.astro';
+
+interface Kpi { label: string; value: string; change: number; trend?: number[]; invert?: boolean }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  kpis?: Kpi[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  eyebrow = 'Live metrics',
+  title = 'Growth you can see',
+  subtitle = 'Real numbers from teams running on the kit, updated every build.',
+  kpis = [
+    { label: 'Monthly visitors', value: '1.2M', change: 18.4, trend: [60, 64, 70, 72, 80, 88, 95, 104, 120] },
+    { label: 'Conversion rate', value: '4.6%', change: 0.9, trend: [3.4, 3.6, 3.7, 3.9, 4, 4.2, 4.3, 4.5, 4.6] },
+    { label: 'Avg. load time', value: '0.8s', change: -22, invert: true, trend: [1.3, 1.25, 1.1, 1.05, 1, 0.95, 0.9, 0.85, 0.8] },
+    { label: 'Bounce rate', value: '31%', change: -4.2, invert: true, trend: [38, 37, 36, 35, 34, 33, 33, 32, 31] },
+  ],
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const id = `sds-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class={`sds sds--${size} ${className}`} aria-labelledby={id}>
+  <div class="sds__inner">
+    <header class="sds__head">
+      <p class="sds__eyebrow"><span class="sds__live" aria-hidden="true"></span>{eyebrow}</p>
+      <h2 id={id} class="sds__title">{title}</h2>
+      <p class="sds__subtitle">{subtitle}</p>
+    </header>
+    <div class="sds__kpis">
+      {kpis.map((k) => (
+        <KpiStatTile label={k.label} value={k.value} change={k.change} trend={k.trend} invert={k.invert} period="vs last quarter" variant={variant} size="sm" />
+      ))}
+    </div>
+    <div class="sds__charts">
+      <StackedAreaChart title="Sessions by channel" subtitle="Thousands per month" variant={variant} />
+      <HorizontalBarChart title="Top landing pages" subtitle="Visitors, last 30 days" variant={variant} />
+    </div>
+  </div>
+</section>
+
+<style>
+  .sds {
+    --sds-py: 5.5rem;
+    padding: var(--sds-py) var(--sp-6, 1.5rem);
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(57, 135, 229, 0.08), transparent 70%), var(--c-bg, #050505);
+  }
+  .sds--sm { --sds-py: 3.5rem; }
+  .sds--lg { --sds-py: 7.5rem; }
+  .sds__inner { max-width: 1180px; margin: 0 auto; display: grid; gap: 1.25rem; }
+  .sds__head { text-align: center; max-width: 640px; margin: 0 auto 1.75rem; }
+  .sds__eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 0 0.75rem; font-size: 0.8125rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .sds__live { width: 8px; height: 8px; border-radius: 50%; background: var(--chart-pos, #34c38f); box-shadow: 0 0 10px var(--chart-pos, #34c38f); }
+  .sds__title { margin: 0 0 0.75rem; font-size: clamp(1.9rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .sds__subtitle { margin: 0; font-size: 1.0625rem; color: var(--c-text-2, #a3a3a3); }
+  .sds__kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.25rem; }
+  .sds__charts { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; }
+  @media (max-width: 900px) { .sds__charts { grid-template-columns: 1fr; } }
+</style>

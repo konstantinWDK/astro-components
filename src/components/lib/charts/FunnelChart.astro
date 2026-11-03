@@ -1,0 +1,122 @@
+---
+/**
+ * FunnelChart — Conversion funnel with tapered stages, stage-to-stage drop-off
+ * and overall conversion. Uses an ordinal single-hue ramp (stages are ordered).
+ *
+ * @param {Array<{label: string, value: number}>} stages - Ordered stages, widest first.
+ * @param {string} color - Base hue for the ordinal ramp.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { formatValue } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  stages?: Array<{ label: string; value: number }>;
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Signup funnel',
+  subtitle = 'Last 30 days',
+  stages = [
+    { label: 'Visited site', value: 48200 },
+    { label: 'Viewed pricing', value: 19800 },
+    { label: 'Started trial', value: 6400 },
+    { label: 'Activated', value: 3900 },
+    { label: 'Paid', value: 1240 },
+  ],
+  color = 'var(--chart-1, #3987e5)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const top = stages[0]?.value || 1;
+const overall = ((stages[stages.length - 1]?.value ?? 0) / top) * 100;
+const fmt = (v: number) => formatValue(v);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  value={`${overall.toFixed(1)}%`}
+  delta="overall conversion"
+  variant={variant}
+  size={size}
+  className={className}
+  table={{
+    headers: ['Stage', 'Users', '% of top', 'Step conversion'],
+    rows: stages.map((s, i) => [s.label, fmt(s.value), `${((s.value / top) * 100).toFixed(1)}%`, i ? `${((s.value / stages[i - 1].value) * 100).toFixed(1)}%` : '—']),
+  }}
+>
+  <ol class="fn">
+    {stages.map((s, i) => {
+      const pct = (s.value / top) * 100;
+      const step = i ? (s.value / stages[i - 1].value) * 100 : 100;
+      const shade = 100 - i * (55 / Math.max(1, stages.length - 1));
+      return (
+        <li class="fn__stage">
+          <div class="fn__meta">
+            <span class="fn__label">{s.label}</span>
+            <span class="fn__value">{fmt(s.value)}</span>
+          </div>
+          <div class="fn__track">
+            <span
+              class="fn__bar cf-mark"
+              tabindex="0"
+              style={`width:${Math.max(2, pct)}%; background:color-mix(in srgb, ${color} ${shade}%, #0d0d0f)`}
+              aria-label={`${s.label}: ${fmt(s.value)}, ${pct.toFixed(1)}% of top${i ? `, ${step.toFixed(1)}% from previous stage` : ''}`}
+              data-tip-title={s.label}
+              data-tip={`${fmt(s.value)} users|${pct.toFixed(1)}% of top${i ? `|${step.toFixed(1)}% from previous` : ''}`}
+            ></span>
+          </div>
+          {i > 0 && (
+            <span class="fn__drop" aria-hidden="true">
+              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 9 L9 3 H1 Z" fill="currentColor" /></svg>
+              {(100 - step).toFixed(0)}% drop
+            </span>
+          )}
+        </li>
+      );
+    })}
+  </ol>
+</ChartFrame>
+
+<style>
+  .fn { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.85rem; }
+  .fn__stage {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'meta drop' 'track track';
+    gap: 0.35rem 1rem;
+  }
+  .fn__meta { grid-area: meta; display: flex; gap: 0.75rem; align-items: baseline; }
+  .fn__label { font-size: 0.8125rem; color: var(--c-text-2, #a3a3a3); }
+  .fn__value { font-size: 0.875rem; font-weight: 650; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .fn__drop {
+    grid-area: drop;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--c-text-3, #8a8a8a);
+  }
+  .fn__drop svg { color: var(--chart-neg, #f06a6a); }
+  .fn__track { grid-area: track; display: flex; justify-content: center; }
+  .fn__bar {
+    display: block;
+    height: 30px;
+    border-radius: 6px;
+    transform-origin: center;
+    animation: fn-grow 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .fn__bar:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 2px; }
+  @keyframes fn-grow { from { transform: scaleX(0.2); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .fn__bar { animation: none; } }
+</style>

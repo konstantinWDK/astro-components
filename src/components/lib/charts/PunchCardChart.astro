@@ -1,0 +1,89 @@
+---
+/**
+ * PunchCardChart — Day × hour dot matrix where dot area encodes volume.
+ * Classic "when are people active" view.
+ *
+ * @param {string[]} days - Row labels.
+ * @param {number[]} hours - Column hours (0–23).
+ * @param {number[][]} values - values[day][hourIndex].
+ * @param {string} unit - Unit noun for tooltips (e.g. 'commits').
+ * @param {string} color - Dot color.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  days?: string[];
+  hours?: number[];
+  values?: number[][];
+  unit?: string;
+  color?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const defaultHours = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+const shape = [0.1, 0.05, 0.02, 0.1, 0.6, 0.95, 0.8, 1, 0.9, 0.55, 0.35, 0.2];
+const dayW = [0.9, 1, 1, 0.95, 0.75, 0.25, 0.2];
+
+const {
+  title = 'Deploy activity',
+  subtitle = 'Deploys by weekday and hour (UTC)',
+  days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  hours = defaultHours,
+  values = dayW.map((d, di) => shape.map((s, hi) => Math.round(d * s * 42 + ((di * 7 + hi * 3) % 5)))),
+  unit = 'deploys',
+  color = 'var(--chart-3, #199e70)',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const W = 640;
+const m = { t: 10, r: 10, b: 26, l: 46 };
+const cols = hours.length;
+const cellW = (W - m.l - m.r) / cols;
+const cellH = 34;
+const H = m.t + days.length * cellH + m.b;
+const max = Math.max(...values.flat()) || 1;
+const rMax = Math.min(cellW, cellH) / 2 - 2;
+const pad = (h: number) => `${String(h).padStart(2, '0')}:00`;
+const total = values.flat().reduce((a, b) => a + b, 0);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  value={total.toLocaleString('en-US')}
+  delta={`total ${unit}`}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Day', ...hours.map(pad)], rows: days.map((d, di) => [d, ...values[di]]) }}
+>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: punch card of ${unit} by day and hour`}>
+    {days.map((d, di) => (
+      <g>
+        <line class="cf-grid" x1={m.l} x2={W - m.r} y1={m.t + di * cellH + cellH / 2} y2={m.t + di * cellH + cellH / 2} />
+        <text class="cf-label" x={m.l - 10} y={m.t + di * cellH + cellH / 2 + 4} text-anchor="end">{d}</text>
+      </g>
+    ))}
+    {hours.map((h, hi) => <text class="cf-label" x={m.l + hi * cellW + cellW / 2} y={H - 8} text-anchor="middle">{pad(h)}</text>)}
+    {days.map((d, di) => hours.map((h, hi) => {
+      const v = values[di]?.[hi] ?? 0;
+      const rad = v ? 2 + Math.sqrt(v / max) * (rMax - 2) : 0;
+      const cx = m.l + hi * cellW + cellW / 2;
+      const cy = m.t + di * cellH + cellH / 2;
+      return (
+        <g class="cf-mark cf-dim" tabindex="0" role="img" aria-label={`${d} ${pad(h)}: ${v} ${unit}`} data-tip-title={`${d} · ${pad(h)}`} data-tip={`${color}::${v} ${unit}`}>
+          <rect x={cx - cellW / 2} y={cy - cellH / 2} width={cellW} height={cellH} fill="transparent" />
+          {rad > 0 && <circle cx={cx} cy={cy} r={rad} fill={color} fill-opacity={0.35 + (v / max) * 0.65} />}
+        </g>
+      );
+    }))}
+  </svg>
+</ChartFrame>

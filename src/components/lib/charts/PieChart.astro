@@ -1,0 +1,135 @@
+---
+/**
+ * PieChart — Pure SVG pie or donut with a 2px surface gap between slices,
+ * centre total, and a side breakdown with values. Best for ≤ 6 slices.
+ *
+ * @param {Array<{label: string, value: number}>} slices - Parts of the whole.
+ * @param {boolean} donut - Render as a donut with centre label.
+ * @param {string} centerLabel - Caption under the centre total.
+ * @param {string} prefix - Value prefix.
+ * @param {string} suffix - Value suffix.
+ * @param {string[]} colors - Optional per-slice colors.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { arcPath, colorAt, formatValue, sum } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  slices?: Array<{ label: string; value: number }>;
+  donut?: boolean;
+  centerLabel?: string;
+  prefix?: string;
+  suffix?: string;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Revenue by plan',
+  subtitle = 'Share of MRR',
+  slices = [
+    { label: 'Enterprise', value: 48200 },
+    { label: 'Team', value: 31400 },
+    { label: 'Pro', value: 18900 },
+    { label: 'Starter', value: 7600 },
+  ],
+  donut = true,
+  centerLabel = 'Total MRR',
+  prefix = '$',
+  suffix = '',
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const S = 240;
+const c = S / 2;
+const rO = S / 2 - 4;
+const rI = donut ? rO * 0.62 : 0;
+const total = sum(slices.map((s) => s.value)) || 1;
+const GAP = 0.012; // radians of surface gap between slices
+let a = 0;
+const arcs = slices.slice(0, 8).map((s, i) => {
+  const sweep = (s.value / total) * Math.PI * 2;
+  const a0 = a + (slices.length > 1 ? GAP / 2 : 0);
+  const a1 = a + sweep - (slices.length > 1 ? GAP / 2 : 0);
+  a += sweep;
+  return { ...s, d: arcPath(c, c, rO, rI, a0, Math.max(a0, a1)), pct: (s.value / total) * 100, color: colorAt(i, colors) };
+});
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  table={{ headers: ['Slice', 'Value', 'Share'], rows: arcs.map((s) => [s.label, fmt(s.value), `${s.pct.toFixed(1)}%`]) }}
+>
+  <div class="pc">
+    <svg viewBox={`0 0 ${S} ${S}`} role="img" aria-label={`${title}: ${donut ? 'donut' : 'pie'} chart, total ${fmt(total)}`}>
+      {arcs.map((s) => (
+        <path class="cf-mark cf-dim pc__slice" d={s.d} fill={s.color} tabindex="0" role="img"
+          aria-label={`${s.label}: ${fmt(s.value)} (${s.pct.toFixed(1)}%)`}
+          data-tip-title={s.label} data-tip={`${s.color}::${fmt(s.value)} · ${s.pct.toFixed(1)}%`} />
+      ))}
+      {donut && (
+        <g aria-hidden="true">
+          <text x={c} y={c + 2} text-anchor="middle" class="pc__total">{fmt(total)}</text>
+          <text x={c} y={c + 22} text-anchor="middle" class="cf-label">{centerLabel}</text>
+        </g>
+      )}
+    </svg>
+    <ul class="pc__list">
+      {arcs.map((s) => (
+        <li>
+          <span class="pc__dot" style={`background:${s.color}`} aria-hidden="true"></span>
+          <span class="pc__name">{s.label}</span>
+          <span class="pc__pct">{s.pct.toFixed(0)}%</span>
+          <span class="pc__val">{fmt(s.value)}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</ChartFrame>
+
+<style>
+  .pc {
+    display: grid;
+    grid-template-columns: minmax(0, 240px) 1fr;
+    gap: 2rem;
+    align-items: center;
+  }
+  .pc__slice { transform-origin: center; transform-box: view-box; transition: transform 0.2s ease, opacity 0.2s ease; }
+  .pc__slice:hover, .pc__slice:focus-visible { transform: scale(1.03); }
+  .pc__total {
+    fill: var(--c-text-1, #fff);
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .pc__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+  .pc__list li {
+    display: grid;
+    grid-template-columns: 10px 1fr auto auto;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.875rem;
+  }
+  .pc__dot { width: 10px; height: 10px; border-radius: 3px; }
+  .pc__name { color: var(--c-text-2, #a3a3a3); }
+  .pc__pct { color: var(--c-text-3, #8a8a8a); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+  .pc__val { color: var(--c-text-1, #fff); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 4rem; text-align: right; }
+  @media (max-width: 560px) {
+    .pc { grid-template-columns: 1fr; justify-items: center; }
+    .pc svg { max-width: 220px; }
+    .pc__list { width: 100%; }
+  }
+</style>

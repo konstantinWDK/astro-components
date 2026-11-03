@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Charts & Stats (SVG, zero dependencies)
+- 41 new pure-SVG charts and statistics rendered at build time: line, stacked area, range area, forecast, slope, bump, sparkline, grouped/stacked/horizontal/diverging bars, waterfall, histogram, lollipop, dumbbell, bullet, population pyramid, radial bar, segmented bar, pie/donut, gauge, waffle, treemap, funnel, sunburst, activity rings, scatter, bubble, box plot, heatmap, punch card, polar area, radar, sankey, candlestick, KPI stat tile, KPI trend grid, meter gauge, goal progress, retention cohort table and metric delta table.
+- Shared `ChartFrame` shell (legend, hover/focus tooltip, "View data" table fallback), `chart-utils.ts` and `chart-tooltip.ts`.
+- `--chart-1…8`, `--chart-pos`, `--chart-neg`, `--chart-grid`, `--chart-axis` and `--chart-surface` tokens in `global.css`.
+
+### Added — Sections
+- 24 new full sections: HeroMinimalCentered, HeroTerminal, HeroWaitlist, HeroDashboardPreview, FeatureIconGrid, FeatureAlternatingRows, FeatureTabsShowcase, HowItWorksSteps, IntegrationsGrid, PricingToggleCards, PricingSinglePlan, TestimonialCarousel, TestimonialFeatured, CtaNewsletterSection, CtaSplitImage, StatsCounterBand, StatsDashboardSection, CareersOpenings, FaqTwoColumn, ContactSplitMap, LogoWallGrid, BlogGridSection, ChangelogSection and FooterMegaSection.
+- New section categories: "Blog & Content" and "Footers".
+
+### Changed
+- Registry `code` for the new entries is loaded from the component files (`?raw`), so docs never drift from the source.
+- Section pages resolve any section component by file name; chart previews use the full stage width.
+- ES/RU descriptions for every new component and section.
+
 ### Added
 - Initial release with 200+ accessible UI components
 - npm package support (`npm install astro-component-kit`)

@@ -1,0 +1,122 @@
+---
+/**
+ * PopulationPyramid — Back-to-back horizontal bars comparing two groups across
+ * ordered bands (age groups, tiers, price brackets).
+ *
+ * @param {string[]} bands - Row labels, top to bottom.
+ * @param {number[]} left - Values for the left group.
+ * @param {number[]} right - Values for the right group.
+ * @param {string} leftLabel - Left group name.
+ * @param {string} rightLabel - Right group name.
+ * @param {string} suffix - Value suffix.
+ * @param {string} variant - Card style (glass|solid|ghost).
+ * @param {string} size - Density (sm|md|lg).
+ */
+import ChartFrame from './ChartFrame.astro';
+import { formatValue, colorAt } from './chart-utils';
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  bands?: string[];
+  left?: number[];
+  right?: number[];
+  leftLabel?: string;
+  rightLabel?: string;
+  prefix?: string;
+  suffix?: string;
+  colors?: string[];
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Audience by age',
+  subtitle = 'Share of users per age band',
+  bands = ['65+', '55–64', '45–54', '35–44', '25–34', '18–24'],
+  left = [2.1, 4.8, 8.2, 12.6, 15.4, 7.9],
+  right = [1.7, 4.1, 7.4, 11.8, 16.2, 8.8],
+  leftLabel = 'Women',
+  rightLabel = 'Men',
+  prefix = '',
+  suffix = '%',
+  colors,
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const max = Math.max(...left, ...right) || 1;
+const cl = colorAt(0, colors);
+const cr = colorAt(1, colors);
+const fmt = (v: number) => formatValue(v, prefix, suffix);
+---
+
+<ChartFrame
+  title={title}
+  subtitle={subtitle}
+  variant={variant}
+  size={size}
+  className={className}
+  legend={[{ label: leftLabel, color: cl }, { label: rightLabel, color: cr }]}
+  table={{ headers: ['Band', leftLabel, rightLabel], rows: bands.map((b, i) => [b, fmt(left[i]), fmt(right[i])]) }}
+>
+  <div class="pp" role="list">
+    {bands.map((b, i) => (
+      <div class="pp__row" role="listitem">
+        <div class="pp__side pp__side--l">
+          <span class="pp__val">{fmt(left[i])}</span>
+          <span class="pp__bar cf-mark" tabindex="0" style={`width:${(left[i] / max) * 100}%; background:${cl}`}
+            aria-label={`${b}, ${leftLabel}: ${fmt(left[i])}`} data-tip-title={`${b} · ${leftLabel}`} data-tip={`${cl}::${fmt(left[i])}`}></span>
+        </div>
+        <span class="pp__band">{b}</span>
+        <div class="pp__side pp__side--r">
+          <span class="pp__bar cf-mark" tabindex="0" style={`width:${(right[i] / max) * 100}%; background:${cr}`}
+            aria-label={`${b}, ${rightLabel}: ${fmt(right[i])}`} data-tip-title={`${b} · ${rightLabel}`} data-tip={`${cr}::${fmt(right[i])}`}></span>
+          <span class="pp__val">{fmt(right[i])}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+</ChartFrame>
+
+<style>
+  .pp { display: grid; gap: 4px; }
+  .pp__row {
+    display: grid;
+    grid-template-columns: 1fr 4rem 1fr;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pp__side {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 24px;
+  }
+  .pp__side--l { justify-content: flex-end; }
+  .pp__bar {
+    height: 100%;
+    min-width: 2px;
+    max-width: calc(100% - 3rem);
+    transition: opacity 0.2s ease;
+  }
+  .pp__side--l .pp__bar { border-radius: 4px 0 0 4px; }
+  .pp__side--r .pp__bar { border-radius: 0 4px 4px 0; }
+  .pp__bar:hover { opacity: 0.85; }
+  .pp__bar:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 1px; }
+  .pp__band {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-1, #fff);
+  }
+  .pp__val {
+    font-size: 0.75rem;
+    color: var(--c-text-2, #a3a3a3);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.5rem;
+  }
+  .pp__side--l .pp__val { text-align: right; }
+</style>

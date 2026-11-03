@@ -1,0 +1,87 @@
+---
+/**
+ * SparklineChart — Compact inline trend line for tables, KPI tiles and text.
+ * Marks the last point and optionally the min/max.
+ *
+ * @param {number[]} data - Values to plot.
+ * @param {string} label - Accessible description (e.g. 'Revenue, last 30 days').
+ * @param {string} variant - Visual style (line|area|bars).
+ * @param {string} size - Dimensions (sm|md|lg).
+ * @param {string} color - Stroke/fill color; defaults to trend status color.
+ * @param {boolean} showExtremes - Mark the min and max points.
+ * @param {string} className - Extra CSS class.
+ */
+import { scaleLinear, smoothPath, areaPath, POSITIVE, NEGATIVE, type Point } from './chart-utils';
+
+interface Props {
+  data?: number[];
+  label?: string;
+  variant?: 'line' | 'area' | 'bars';
+  size?: 'sm' | 'md' | 'lg';
+  color?: string;
+  showExtremes?: boolean;
+  className?: string;
+}
+
+const {
+  data = [12, 15, 11, 18, 17, 22, 19, 25, 24, 29, 27, 33],
+  label = 'Trend, last 12 periods',
+  variant = 'area',
+  size = 'md',
+  color,
+  showExtremes = false,
+  className = '',
+} = Astro.props;
+
+const dims = { sm: [80, 24], md: [140, 36], lg: [220, 56] }[size];
+const [W, H] = dims;
+const pad = 3;
+const trendUp = data[data.length - 1] >= data[0];
+const stroke = color ?? (trendUp ? POSITIVE : NEGATIVE);
+const y = scaleLinear(Math.min(...data), Math.max(...data), H - pad, pad);
+const x = (i: number) => pad + (i / Math.max(1, data.length - 1)) * (W - pad * 2);
+const pts: Point[] = data.map((v, i) => [x(i), y(v)]);
+const last = pts[pts.length - 1];
+const minI = data.indexOf(Math.min(...data));
+const maxI = data.indexOf(Math.max(...data));
+const barW = (W - pad * 2) / data.length - 2;
+const change = data[0] ? (((data[data.length - 1] - data[0]) / Math.abs(data[0])) * 100).toFixed(0) : '0';
+---
+
+<svg
+  class={`spark spark--${size} ${className}`}
+  viewBox={`0 0 ${W} ${H}`}
+  width={W}
+  height={H}
+  role="img"
+  aria-label={`${label}: from ${data[0]} to ${data[data.length - 1]} (${trendUp ? '+' : ''}${change}%)`}
+>
+  {variant === 'bars' ? (
+    data.map((v, i) => {
+      const top = y(v);
+      return <rect x={pad + i * (barW + 2)} y={top} width={Math.max(1, barW)} height={Math.max(1, H - pad - top)} rx="1.5" fill={stroke} opacity={i === data.length - 1 ? 1 : 0.55} />;
+    })
+  ) : (
+    <>
+      {variant === 'area' && <path d={areaPath(pts, H)} fill={stroke} fill-opacity="0.16" />}
+      <path d={smoothPath(pts)} fill="none" stroke={stroke} stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+      {showExtremes && (
+        <>
+          <circle cx={pts[minI][0]} cy={pts[minI][1]} r="2.5" fill="var(--c-text-3, #8a8a8a)" />
+          <circle cx={pts[maxI][0]} cy={pts[maxI][1]} r="2.5" fill="var(--c-text-1, #fff)" />
+        </>
+      )}
+      <circle cx={last[0]} cy={last[1]} r="3" fill={stroke} stroke="var(--chart-surface, #0d0d0f)" stroke-width="1.5" />
+    </>
+  )}
+</svg>
+
+<style>
+  .spark {
+    display: inline-block;
+    vertical-align: middle;
+    overflow: visible;
+    max-width: 100%;
+    height: auto;
+  }
+</style>
