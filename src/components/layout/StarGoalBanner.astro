@@ -3,8 +3,9 @@
  * StarGoalBanner — Slim, dismissible announcement bar above the site header:
  * "1 GitHub star = 1 new component", with the live star count.
  *
- * The star count is fetched at build time (so it renders without JS) and refreshed
- * in the browser from the GitHub API, cached for an hour in sessionStorage.
+ * The star count is loaded only in the browser (GitHub API, cached for an hour in
+ * sessionStorage). Keeping it out of the static HTML avoids hitting the API's rate limit
+ * once per page at build time and keeps pages byte-stable between deploys (IndexNow).
  * Dismissing hides it for 14 days (localStorage); an inline script hides it before
  * paint for returning visitors, so there is no flash.
  *
@@ -18,17 +19,6 @@ interface Props {
 
 const { lang = 'en', repo = 'konstantinWDK/astro-components' } = Astro.props;
 const repoUrl = `https://github.com/${repo}`;
-
-let stars: number | null = null;
-try {
-  const res = await fetch(`https://api.github.com/repos/${repo}`, {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'astrocomponents.dev' },
-    signal: AbortSignal.timeout(4000),
-  });
-  if (res.ok) stars = (await res.json()).stargazers_count ?? null;
-} catch {
-  stars = null;
-}
 
 const copy = {
   en: {
@@ -54,9 +44,7 @@ const copy = {
   },
 }[lang];
 
-const plural = new Intl.PluralRules(lang);
 const labels = copy.labels as Record<string, string>;
-const labelFor = (n: number) => labels[plural.select(n)] ?? labels.other;
 const [countBefore, countAfter] = copy.count('__N__').split('__N__');
 ---
 
@@ -67,8 +55,8 @@ const [countBefore, countAfter] = copy.count('__N__').split('__N__');
     </svg>
     <p class="star-goal__text">
       <strong>{copy.lead}</strong>
-      <span class="star-goal__count" data-count-wrap hidden={stars === null}>
-        {countBefore}<b data-stars>{stars ?? ''}</b>&nbsp;<span data-label data-labels={JSON.stringify(labels)}>{stars === null ? labels.other : labelFor(stars)}</span>{countAfter}
+      <span class="star-goal__count" data-count-wrap hidden>
+        {countBefore}<b data-stars></b>&nbsp;<span data-label data-labels={JSON.stringify(labels)}>{labels.other}</span>{countAfter}
       </span>
     </p>
     <a class="star-goal__cta" href={repoUrl} target="_blank" rel="noopener noreferrer">
