@@ -13,6 +13,13 @@ interface Props {
 const { lang = 'en' } = Astro.props;
 const t = useTranslations(lang);
 
+// Real section components for the card miniatures (resolved by PascalCase file name).
+const sectionModules = import.meta.glob('../lib/sections/*.astro', { eager: true }) as Record<string, { default: any }>;
+const sectionComponentFor = (slug: string) => {
+  const pascal = slug.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+  return sectionModules[`../lib/sections/${pascal}.astro`]?.default ?? null;
+};
+
 const allSections = sections.map((s) => getLocalizedComponent(s as any, lang));
 const localizedSectionCats = sectionCategories.map((c) => getLocalizedSectionCategory(c, lang));
 
@@ -37,7 +44,7 @@ const pageDesc = lang === 'es'
 <DocsLayout title={pageTitle} description={pageDesc} lang={lang}>
   <div class="doc-page">
     <!-- Breadcrumb -->
-    <nav class="breadcrumb" aria-label="Breadcrumb">
+    <nav class="breadcrumb" aria-label={t('a11y.breadcrumb')}>
       <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
       <span class="breadcrumb__sep">›</span>
       <span class="breadcrumb__current">{t('nav.sections')}</span>
@@ -54,7 +61,7 @@ const pageDesc = lang === 'es'
     </header>
 
     <!-- Category Filter Tabs -->
-    <div class="category-filters" role="tablist" aria-label="Filter sections by category">
+    <div class="category-filters" role="tablist" aria-label={t('a11y.filterSections')}>
       {subCategories.map((sub, i) => (
         <button 
           type="button" 
@@ -75,40 +82,28 @@ const pageDesc = lang === 'es'
         const categoryLabel = catInfo ? catInfo.name : 'Section';
         const mainTag = section.tags[0] || 'section';
         const targetHref = getLocalizedPath(`/sections/${section.slug}`, lang);
+        const Preview = sectionComponentFor(section.slug);
 
         return (
-          <a 
-            href={targetHref} 
-            class="section-card" 
+          <article
+            class="section-card"
             data-category={section.sectionCategory || ''}
             data-tags={section.tags.join(' ')}
             data-slug={section.slug}
           >
             <div class="section-card__preview">
-              <div class="section-card__preview-inner">
-                <div class="preview-mockup">
-                  <div class="mockup-header">
-                    <span class="mockup-dot"></span>
-                    <span class="mockup-dot"></span>
-                    <span class="mockup-dot"></span>
-                    <span class="mockup-title">{section.slug}</span>
-                  </div>
-                  <div class="mockup-body">
-                    <div class="mockup-hero-line"></div>
-                    <div class="mockup-sub-line"></div>
-                    <div class="mockup-boxes">
-                      <div class="mockup-box"></div>
-                      <div class="mockup-box"></div>
-                      <div class="mockup-box"></div>
-                    </div>
-                  </div>
+              {Preview ? (
+                <div class="section-card__mini" inert aria-hidden="true" data-nosnippet>
+                  <div class="section-card__mini-scale"><Preview /></div>
                 </div>
-              </div>
+              ) : (
+                <div class="section-card__fallback" aria-hidden="true">{section.name}</div>
+              )}
             </div>
             <div class="section-card__content">
               <div class="section-card__meta">
                 <span class="section-card__cat-badge">{categoryLabel}</span>
-                <h3 class="section-card__name">{section.name}</h3>
+                <h3 class="section-card__name"><a class="section-card__link" href={targetHref}>{section.name}</a></h3>
               </div>
               <p class="section-card__desc">{section.description}</p>
               <div class="section-card__tags">
@@ -117,11 +112,11 @@ const pageDesc = lang === 'es'
                 ))}
               </div>
             </div>
-            <div class="section-card__arrow">
+            <div class="section-card__arrow" aria-hidden="true">
               <span>{t('doc.viewSection')}</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </div>
-          </a>
+          </article>
         );
       })}
     </div>
@@ -129,8 +124,19 @@ const pageDesc = lang === 'es'
 </DocsLayout>
 
 <script is:inline>
+  // Fit each miniature (rendered at 1280px) to its card width.
+  (function () {
+    var previews = document.querySelectorAll('#sectionsGrid > .section-card > .section-card__preview');
+    var fit = function (el) { el.style.setProperty('--mini-scale', String(el.clientWidth / 1280)); };
+    previews.forEach(fit);
+    if ('ResizeObserver' in window) {
+      var ro = new ResizeObserver(function (entries) { entries.forEach(function (e) { fit(e.target); }); });
+      previews.forEach(function (el) { ro.observe(el); });
+    }
+  })();
+
   const filterTabs = document.querySelectorAll('.filter-tab');
-  const sectionCards = document.querySelectorAll('.section-card');
+  const sectionCards = document.querySelectorAll('#sectionsGrid > .section-card');
 
   filterTabs.forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -265,6 +271,8 @@ const pageDesc = lang === 'es'
   }
 
   .section-card {
+    position: relative;
+    cursor: pointer;
     display: flex;
     flex-direction: column;
     background: rgba(15, 23, 42, 0.5);
@@ -281,81 +289,47 @@ const pageDesc = lang === 'es'
   }
 
   .section-card__preview {
-    height: 160px;
-    background: rgba(5, 10, 25, 0.7);
+    --mini-scale: 0.3;
+    height: 210px;
+    background: var(--c-bg, #050505);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
     overflow: hidden;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 210px;
   }
-  .section-card__preview-inner {
-    width: 90%;
-    height: 80%;
-  }
-
-  .preview-mockup {
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
+  /* The real section, rendered at desktop width and scaled to the card. */
+  .section-card__mini {
+    position: absolute;
+    inset: 0;
     overflow: hidden;
+    pointer-events: none;
+    user-select: none;
   }
-  .mockup-header {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    background: rgba(0, 0, 0, 0.4);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  .section-card__mini-scale {
+    width: 1280px;
+    transform: scale(var(--mini-scale));
+    transform-origin: top left;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .mockup-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+  .section-card:hover .section-card__mini-scale {
+    transform: scale(calc(var(--mini-scale) * 1.04));
   }
-  .mockup-title {
-    font-size: 0.65rem;
-    font-family: monospace;
+  .section-card__preview::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 48px;
+    background: linear-gradient(transparent, rgba(5, 8, 16, 0.85));
+    pointer-events: none;
+  }
+  .section-card__fallback {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.8rem;
     color: #64748b;
-    margin-left: 6px;
-  }
-  .mockup-body {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1;
-  }
-  .mockup-hero-line {
-    width: 60%;
-    height: 8px;
-    background: linear-gradient(90deg, #facc15, #f59e0b);
-    border-radius: 4px;
-    opacity: 0.8;
-  }
-  .mockup-sub-line {
-    width: 40%;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-  }
-  .mockup-boxes {
-    display: flex;
-    gap: 6px;
-    margin-top: auto;
-  }
-  .mockup-box {
-    flex: 1;
-    height: 35px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 4px;
   }
 
   .section-card__content {
@@ -405,6 +379,11 @@ const pageDesc = lang === 'es'
     padding: 0.15rem 0.45rem;
     border-radius: 4px;
   }
+  /* Stretched link: the title link covers the whole card (valid HTML, no nested <a>). */
+  .section-card__link { color: inherit; text-decoration: none; }
+  .section-card__link::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
+  .section-card__link:focus-visible { outline: none; }
+  .section-card:focus-within { outline: 2px solid #facc15; outline-offset: 3px; }
   .section-card__arrow {
     padding: 0.85rem 1.25rem;
     border-top: 1px solid rgba(255, 255, 255, 0.06);

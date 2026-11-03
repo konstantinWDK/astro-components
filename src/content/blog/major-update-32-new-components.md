@@ -22,68 +22,68 @@ Here is the complete list of all 32 newly introduced components, grouped by cate
 
 ### 🔘 Buttons
 Interactive buttons designed for micro-interactions, conversions, and tactile user feedback:
-- [Ripple Button](/docs/ripple-button) — Material-style click effect emitting smooth expanding ripple rings calculated at the exact cursor coordinate.
-- [Neon Border Button](/docs/neon-border-button) — Cyberpunk-inspired CTA with rotating conical neon laser gradient borders and subtle glow reflection.
-- [Slide Reveal Button](/docs/slide-reveal-button) — Dual-state action button that slides the primary label aside to reveal secondary confirmation icons or copy on hover.
+- [Ripple Button](/docs/ripple-button/) — Material-style click effect emitting smooth expanding ripple rings calculated at the exact cursor coordinate.
+- [Neon Border Button](/docs/neon-border-button/) — Cyberpunk-inspired CTA with rotating conical neon laser gradient borders and subtle glow reflection.
+- [Slide Reveal Button](/docs/slide-reveal-button/) — Dual-state action button that slides the primary label aside to reveal secondary confirmation icons or copy on hover.
 
 ### 📝 Forms & Inputs
 High-conversion inputs and controls with built-in client validation styles:
-- [Password Strength Input](/docs/password-strength-input) — Real-time entropy evaluator with segmented color strength bar and eye visibility toggle.
-- [Tags Autocomplete Input](/docs/tags-autocomplete-input) — Multi-tag pill editor supporting keyboard tag creation, chip removal, and autocomplete candidate dropdowns.
-- [Glass Inline Toggle Group](/docs/glass-inline-toggle-group) — macOS-style segmented toggle control with animated glass slider indicator and keyboard navigation.
-- [Phone Country Input](/docs/phone-country-input) — International telephone field featuring formatted dial code selectors and accessibility attributes.
+- [Password Strength Input](/docs/password-strength-input/) — Real-time entropy evaluator with segmented color strength bar and eye visibility toggle.
+- [Tags Autocomplete Input](/docs/tags-autocomplete-input/) — Multi-tag pill editor supporting keyboard tag creation, chip removal, and autocomplete candidate dropdowns.
+- [Glass Inline Toggle Group](/docs/glass-inline-toggle-group/) — macOS-style segmented toggle control with animated glass slider indicator and keyboard navigation.
+- [Phone Country Input](/docs/phone-country-input/) — International telephone field featuring formatted dial code selectors and accessibility attributes.
 
 ### 🃏 Cards
 Content containers optimized for SaaS pricing, open-source repositories, and KPIs:
-- [Pricing Compare Mini Card](/docs/pricing-compare-mini-card) — High-impact pricing tier card featuring spotlight glows, feature checkmarks, and CTA buttons.
-- [GitHub Repo Card](/docs/github-repo-card) — Developer showcase card displaying GitHub repository language badges, star counts, fork counters, and repository stats.
-- [Stats Trend Card](/docs/stats-trend-card) — KPI metric card displaying numeric values, positive/negative delta trend indicators, and mini sparkline bars.
+- [Pricing Compare Mini Card](/docs/pricing-compare-mini-card/) — High-impact pricing tier card featuring spotlight glows, feature checkmarks, and CTA buttons.
+- [GitHub Repo Card](/docs/github-repo-card/) — Developer showcase card displaying GitHub repository language badges, star counts, fork counters, and repository stats.
+- [Stats Trend Card](/docs/stats-trend-card/) — KPI metric card displaying numeric values, positive/negative delta trend indicators, and mini sparkline bars.
 
 ### 🔔 Feedback & Notifications
 Polished status indicators and user response elements:
-- [Progress Ring Counter](/docs/progress-ring-counter) — Circular SVG stroke gauge with animated dashoffset transitions and centered percentage readouts.
-- [Toast Notification Group](/docs/toast-notification-group) — Stacked toast alert container supporting success, warning, error, and informational messages with action triggers.
+- [Progress Ring Counter](/docs/progress-ring-counter/) — Circular SVG stroke gauge with animated dashoffset transitions and centered percentage readouts.
+- [Toast Notification Group](/docs/toast-notification-group/) — Stacked toast alert container supporting success, warning, error, and informational messages with action triggers.
 
 ### 🧭 Navigation
 Dock shortcuts, workflow indicators, and dashboard sub-navs:
-- [Sub Navbar Pills](/docs/sub-navbar-pills) — Secondary pill navigation bar with active glow background and badge counts for dashboard views.
-- [Quick Jump Dock](/docs/quick-jump-dock) — Floating macOS-inspired dock with interactive hover scale expansion, icons, and keyboard shortcuts.
-- [Step Breadcrumb Bar](/docs/step-breadcrumb-bar) — Multi-step wizard indicator showing completed, active, and upcoming workflow stages.
+- [Sub Navbar Pills](/docs/sub-navbar-pills/) — Secondary pill navigation bar with active glow background and badge counts for dashboard views.
+- [Quick Jump Dock](/docs/quick-jump-dock/) — Floating macOS-inspired dock with interactive hover scale expansion, icons, and keyboard shortcuts.
+- [Step Breadcrumb Bar](/docs/step-breadcrumb-bar/) — Multi-step wizard indicator showing completed, active, and upcoming workflow stages.
 
 ### 📐 Layout & Structure
 CSS Grid foundations and aesthetic transitions:
-- [Holy Grail Grid](/docs/holy-grail-grid) — Flexible 5-zone CSS Grid layout with sticky header, collapsible sidebars, dynamic content, and footer.
-- [Diagonal Section Divider](/docs/diagonal-section-divider) — Slanted SVG section separator creating dynamic non-rectangular transitions between landing page sections.
+- [Holy Grail Grid](/docs/holy-grail-grid/) — Flexible 5-zone CSS Grid layout with sticky header, collapsible sidebars, dynamic content, and footer.
+- [Diagonal Section Divider](/docs/diagonal-section-divider/) — Slanted SVG section separator creating dynamic non-rectangular transitions between landing page sections.
 
 ### 🪟 Overlays & Dialogs
 User consent drawers, comparative sliders, and micro-surveys:
-- [Cookie Preferences Drawer](/docs/cookie-preferences-drawer) — GDPR/CCPA compliant bottom sheet with granular category toggles for essential, analytics, and marketing cookies.
-- [Image Compare Slider](/docs/image-compare-slider) — Interactive before-and-after visual slider with draggable separator bar and touch/mouse event support.
-- [Floating Feedback Widget](/docs/floating-feedback-widget) — Fixed corner trigger with emoji satisfaction ratings and feedback submission textarea.
+- [Cookie Preferences Drawer](/docs/cookie-preferences-drawer/) — GDPR/CCPA compliant bottom sheet with granular category toggles for essential, analytics, and marketing cookies.
+- [Image Compare Slider](/docs/image-compare-slider/) — Interactive before-and-after visual slider with draggable separator bar and touch/mouse event support.
+- [Floating Feedback Widget](/docs/floating-feedback-widget/) — Fixed corner trigger with emoji satisfaction ratings and feedback submission textarea.
 
 ### 📊 Data Display
 Auditing logs, GitHub-style timelines, and performance rows:
-- [Metric Comparison Row](/docs/metric-comparison-row) — Horizontal benchmark comparison comparing actual vs target goals with progress bars.
-- [Activity Heatmap Grid](/docs/activity-heatmap-grid) — GitHub-style activity contribution grid visualizing frequencies across weeks and months.
-- [Status Timeline Feed](/docs/status-timeline-feed) — Operational incident log and audit trail feed with status pills, avatars, and timestamps.
+- [Metric Comparison Row](/docs/metric-comparison-row/) — Horizontal benchmark comparison comparing actual vs target goals with progress bars.
+- [Activity Heatmap Grid](/docs/activity-heatmap-grid/) — GitHub-style activity contribution grid visualizing frequencies across weeks and months.
+- [Status Timeline Feed](/docs/status-timeline-feed/) — Operational incident log and audit trail feed with status pills, avatars, and timestamps.
 
 ### ✍️ Typography & Text Effects
 Dynamic headlines, tickers, and cyber typography:
-- [Animated Counter Text](/docs/animated-counter-text) — Number odometer that smoothly animates upward from zero when scrolled into view.
-- [Gradient Text Marquee](/docs/gradient-text-marquee) — Continuous smooth looping horizontal marquee ribbon featuring metallic gradient typography.
-- [Curved Path Heading](/docs/curved-path-heading) — Circular SVG text-on-path headline for badges, seals, and artistic landing hero sections.
-- [Hacker Decode Text](/docs/hacker-decode-text) — Scrambled Matrix glyph decode animation that resolves into target text on scroll or hover.
+- [Animated Counter Text](/docs/animated-counter-text/) — Number odometer that smoothly animates upward from zero when scrolled into view.
+- [Gradient Text Marquee](/docs/gradient-text-marquee/) — Continuous smooth looping horizontal marquee ribbon featuring metallic gradient typography.
+- [Curved Path Heading](/docs/curved-path-heading/) — Circular SVG text-on-path headline for badges, seals, and artistic landing hero sections.
+- [Hacker Decode Text](/docs/hacker-decode-text/) — Scrambled Matrix glyph decode animation that resolves into target text on scroll or hover.
 
 ### 📈 Charts & Data Visualization
 Zero-dependency SVG charts for analytics:
-- [Radar Metric Chart](/docs/radar-metric-chart) — Multi-axis spider polygon chart visualizing audit scores (Speed, SEO, Accessibility, Security).
-- [Linear Progress Gauge](/docs/linear-progress-gauge) — Multi-segment quota meter with colored threshold indicators and capacity readouts.
+- [Radar Metric Chart](/docs/radar-metric-chart/) — Multi-axis spider polygon chart visualizing audit scores (Speed, SEO, Accessibility, Security).
+- [Linear Progress Gauge](/docs/linear-progress-gauge/) — Multi-segment quota meter with colored threshold indicators and capacity readouts.
 
 ### 🚀 Full Landing Page Sections
 Full-width, high-conversion section templates ready to drop into any page:
-- [Testimonial Grid Section](/sections/testimonial-grid-section) — Bento-style social proof section with verified badges, avatar quotes, and rating stars.
-- [Logo Cloud Section](/sections/logo-cloud-section) — Clean partner and client logo strip with hover illumination and infinite marquee scrolling.
-- [Hero Showcase Split](/sections/hero-showcase-split) — Split-column landing hero featuring glowing headline copy, primary/secondary CTAs, and live preview cards.
+- [Testimonial Grid Section](/sections/testimonial-grid-section/) — Bento-style social proof section with verified badges, avatar quotes, and rating stars.
+- [Logo Cloud Section](/sections/logo-cloud-section/) — Clean partner and client logo strip with hover illumination and infinite marquee scrolling.
+- [Hero Showcase Split](/sections/hero-showcase-split/) — Split-column landing hero featuring glowing headline copy, primary/secondary CTAs, and live preview cards.
 
 ---
 

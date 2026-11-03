@@ -47,6 +47,27 @@ export const ui = {
     'hero.badge': 'Astro 5 Ready • Zero Dependencies',
     'hero.copyInstall': 'Copy install command',
     'lang.select': 'Language',
+    // A11y, install steps, GitHub prompt
+    'a11y.breadcrumb': "Breadcrumb",
+    'a11y.selectLanguage': "Select language",
+    'a11y.menu': "Toggle site menu",
+    'a11y.postNav': "Post navigation",
+    'a11y.filterSections': "Filter sections by category",
+    'sidebar.exploreLabel': "Explore components",
+    'install.step': "Step",
+    'install.checkWith': "Check with",
+    'install.toc1': "Prerequisites",
+    'install.toc2': "Install the library",
+    'install.toc3': "Peer dependencies",
+    'install.toc4': "Import and use",
+    'install.toc5': "Build your first page",
+    'install.toc6': "Quick reference",
+    'gh.badge': "Open Source · MIT",
+    'gh.title': "Support on GitHub",
+    'gh.desc': "Every GitHub star = one new component. If the kit saves you time, a star helps us keep shipping more! ⭐",
+    'gh.star': "Star on GitHub",
+    'gh.later': "Maybe later",
+    'gh.close': "Close star prompt",
   },
   es: {
     // Nav
@@ -93,6 +114,27 @@ export const ui = {
     'hero.badge': 'Listo para Astro 5 • Cero Dependencias',
     'hero.copyInstall': 'Copiar comando de instalación',
     'lang.select': 'Idioma',
+    // A11y, install steps, GitHub prompt
+    'a11y.breadcrumb': "Ruta de navegación",
+    'a11y.selectLanguage': "Seleccionar idioma",
+    'a11y.menu': "Abrir o cerrar el menú",
+    'a11y.postNav': "Navegación entre notas",
+    'a11y.filterSections': "Filtrar secciones por categoría",
+    'sidebar.exploreLabel': "Explorar componentes",
+    'install.step': "Paso",
+    'install.checkWith': "Compruébalo con",
+    'install.toc1': "Requisitos previos",
+    'install.toc2': "Instalar la librería",
+    'install.toc3': "Dependencias peer",
+    'install.toc4': "Importar y usar",
+    'install.toc5': "Crea tu primera página",
+    'install.toc6': "Referencia rápida",
+    'gh.badge': "Código abierto · MIT",
+    'gh.title': "Apóyanos en GitHub",
+    'gh.desc': "Cada estrella en GitHub = un componente nuevo. Si el kit te ahorra tiempo, una estrella nos ayuda a seguir publicando más. ⭐",
+    'gh.star': "Dar una estrella",
+    'gh.later': "Quizás luego",
+    'gh.close': "Cerrar aviso de GitHub",
   },
   ru: {
     // Nav
@@ -139,6 +181,27 @@ export const ui = {
     'hero.badge': 'Готов к Astro 5 • Без зависимостей',
     'hero.copyInstall': 'Скопировать команду установки',
     'lang.select': 'Язык',
+    // A11y, install steps, GitHub prompt
+    'a11y.breadcrumb': "Навигационная цепочка",
+    'a11y.selectLanguage': "Выбрать язык",
+    'a11y.menu': "Открыть или закрыть меню",
+    'a11y.postNav': "Навигация по заметкам",
+    'a11y.filterSections': "Фильтр секций по категориям",
+    'sidebar.exploreLabel': "Обзор компонентов",
+    'install.step': "Шаг",
+    'install.checkWith': "Проверьте командой",
+    'install.toc1': "Требования",
+    'install.toc2': "Установка библиотеки",
+    'install.toc3': "Peer-зависимости",
+    'install.toc4': "Импорт и использование",
+    'install.toc5': "Первая страница",
+    'install.toc6': "Краткая справка",
+    'gh.badge': "Открытый код · MIT",
+    'gh.title': "Поддержите на GitHub",
+    'gh.desc': "Каждая звезда на GitHub = новый компонент. Если набор экономит вам время, звезда помогает нам выпускать больше! ⭐",
+    'gh.star': "Поставить звезду",
+    'gh.later': "Может, позже",
+    'gh.close': "Закрыть подсказку GitHub",
   },
 } as const;
 
@@ -187,12 +250,21 @@ export function cleanPath(pathname: string): string {
 export function getLocalizedPath(pathname: string, targetLang: Locale): string {
   const rawPath = cleanPath(pathname).replace(/\/$/, '');
   const cleanRoute = rawPath === '' ? '' : rawPath;
+  const localized = targetLang === DEFAULT_LOCALE
+    ? (cleanRoute === '' ? '/' : cleanRoute)
+    : `/${targetLang}${cleanRoute}`;
+  return withTrailingSlash(localized);
+}
 
-  if (targetLang === DEFAULT_LOCALE) {
-    return cleanRoute === '' ? '/' : cleanRoute;
-  }
-
-  return `/${targetLang}${cleanRoute}`;
+/**
+ * Pages are built as `<route>/index.html`, so the canonical URL ends with `/`.
+ * Linking without it costs a redirect per click/crawl and breaks hreflang ↔ canonical matching.
+ * Files (last segment with a dot), hashes and query strings are left untouched.
+ */
+function withTrailingSlash(path: string): string {
+  if (path.endsWith('/') || /[?#]/.test(path)) return path;
+  const last = path.split('/').pop() ?? '';
+  return last.includes('.') ? path : `${path}/`;
 }
 
 /**

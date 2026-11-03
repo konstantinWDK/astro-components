@@ -28,7 +28,7 @@ const t = useTranslations(lang);
         <a href={getLocalizedPath('/', lang)} class="docs-header__brand">
           <img src="/logo-animated.svg" alt="Astro Kit Components" class="brand-logo" />
         </a>
-        <button class="site-menu-toggle" id="site-menu-toggle" aria-label="Toggle site menu">
+        <button class="site-menu-toggle" id="site-menu-toggle" aria-label={t('a11y.menu')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
         </button>
         <nav class="docs-header__nav" id="site-nav">
@@ -78,7 +78,13 @@ const t = useTranslations(lang);
 
     // Scrollspy + smooth scroll for TOC
     const tocNav = document.getElementById('toc-nav');
-    const headings = document.querySelectorAll('.docs-content h2[id], .doc-section h2[id], .doc-section[id] h2');
+    // Skip headings that belong to rendered previews/miniatures (inert or hidden from AT).
+    const headings = Array.from(document.querySelectorAll('.docs-content h2[id], .doc-section h2[id], .doc-section[id] h2'))
+      .filter((h) => !h.closest('[inert], [aria-hidden="true"]'));
+
+    if (tocNav && headings.length === 0) {
+      document.getElementById('toc')?.setAttribute('hidden', '');
+    }
 
     if (tocNav && headings.length > 0) {
       headings.forEach((h2, i) => {
@@ -292,6 +298,7 @@ const t = useTranslations(lang);
     padding: var(--sp-6) var(--sp-4) var(--sp-6) var(--sp-3);
     border-left: 1px solid var(--c-border);
   }
+  :global(.toc[hidden]) { display: none; }
   :global(.toc__title) {
     display: block;
     font-size: 0.65rem;
