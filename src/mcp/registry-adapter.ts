@@ -29,7 +29,7 @@ export function getPackageMeta() {
     const pkgRaw = fs.readFileSync(PKG_PATH, 'utf8');
     return JSON.parse(pkgRaw);
   } catch {
-    return { name: 'astro-component-kit', version: '0.4.1' };
+    return { name: 'astro-component-kit', version: '0.5.0' };
   }
 }
 
@@ -265,7 +265,7 @@ export function getLibraryStats(): LibraryStats {
   const cats = listCategories();
   return {
     name: pkg.name || 'astro-component-kit',
-    version: pkg.version || '0.4.1',
+    version: pkg.version || '0.5.0',
     description: pkg.description || 'A free, open-source accessible UI component library for Astro',
     totalComponents: components.length,
     totalCategories: cats.length,

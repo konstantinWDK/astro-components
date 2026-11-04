@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-04
+
+### Added — Model Context Protocol (MCP) Server & AI Integrations
+- **Official Remote SSE MCP Server**: Live at `https://mcp.astrocomponents.dev/sse` with built-in rate-limiting (120 req/min), CORS protection, healthcheck monitoring, and Docker deployment configuration (`Dockerfile.mcp`).
+- **Interactive 21st.dev-style Landing Page**: Dedicated `/mcp` page (in English, Spanish `/es/mcp`, and Russian `/ru/mcp`) with 1-click install tabs, JSON previews, copy buttons, live stats, prompt examples, and tool catalog.
+- **1-Click CLI Installer (`bin/cli.js`)**: Executable via `npx astro-component-kit mcp install <client>` with zero dependencies for **Cursor**, **Claude**, **Codex**, **Lovable**, and universal **MCP**.
+- **8 Built-in MCP Tools**:
+  - `search_components`: Search 340+ components by name, category, and tags.
+  - `get_component`: Detailed props interface, accessibility guide, and usage examples.
+  - `get_component_code`: Complete raw `.astro` source code.
+  - `list_categories`: Browse 13 categories with real-time component counts.
+  - `list_templates`: Overview of complete multi-page templates.
+  - `get_template`: Template code, routing, and shared state architecture.
+  - `get_design_tokens`: Complete CSS tokens, dark/light theme variables, and color schemes.
+  - `get_library_info`: Total counts, versioning, and quickstart guide.
+- **Dynamic Registry Adapter (`src/mcp/registry-adapter.ts`)**: Auto-discovers newly added components and templates with zero drift.
+
 ## [0.4.1] - 2026-11-04
 
 ### Added — Templates

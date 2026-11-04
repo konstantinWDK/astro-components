@@ -176,3 +176,4 @@ export async function installMcpForClient(targetClient) {
     return false;
   }
 }
+

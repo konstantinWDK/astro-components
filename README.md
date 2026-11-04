@@ -13,6 +13,7 @@
 
 ## ✨ Features
 
+- 🤖 **Official MCP Server & AI development** — connect Cursor, Claude, Codex, Lovable, or any MCP client (`https://mcp.astrocomponents.dev/sse` or `npx astro-component-kit mcp install <client>`)
 - 🛍️ **Multi-page production templates** — 3 complete templates (E-commerce Store, Editorial Boutique, SaaS Hotel) with state management, cart persistence, and live previews
 - 🎨 **Dark & Light theme** — dark mode first with official `[data-theme="light"]` support, adaptive tokens, and glassmorphism
 - ⚡ **Full-page sections** — 41+ production-ready landing sections (Heroes, Bento Grids, Pricing Matrices, Testimonials, CTAs, FAQs, Teams, Footers)
@@ -274,7 +275,7 @@ import { MinimalFooterGrid } from 'astro-component-kit/layout';
 
 <!-- 2. Hero Header -->
 <HeroGradient 
-  badge="New Release v0.4.1"
+  badge="New Release v0.5.0"
   title="Build Production Websites at Lightning Speed"
   subtitle="Zero client JavaScript runtime, accessible UI, and modern dark glassmorphism."
 />
