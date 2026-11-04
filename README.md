@@ -275,7 +275,7 @@ import { MinimalFooterGrid } from 'astro-component-kit/layout';
 
 <!-- 2. Hero Header -->
 <HeroGradient 
-  badge="New Release v0.5.0"
+  badge="New Release v0.5.1"
   title="Build Production Websites at Lightning Speed"
   subtitle="Zero client JavaScript runtime, accessible UI, and modern dark glassmorphism."
 />

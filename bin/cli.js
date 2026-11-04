@@ -2,6 +2,7 @@
 // bin/cli.js
 // Direct CLI runner for astro-component-kit.
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installMcpForClient } from './installer.js';
@@ -31,7 +32,13 @@ async function main() {
   }
 
   // 2. Help command
-  if (!first || first === 'help' || first === '--help' || first === '-h') {
+  if (
+    !first ||
+    first === 'help' ||
+    first === '--help' ||
+    first === '-h' ||
+    (first === 'mcp' && (!args[1] || args[1] === 'help' || args[1] === '--help' || args[1] === '-h'))
+  ) {
     console.log(`
 🚀 Astro Components Kit (astro-component-kit)
 
@@ -52,9 +59,18 @@ Remote SSE Endpoint:
   }
 
   // 3. For serve / stdio modes, invoke MCP runner
-  const tsxPath = path.resolve(rootDir, 'node_modules/.bin/tsx');
+  const localTsx = path.resolve(rootDir, 'node_modules/.bin/tsx');
   const mcpEntry = path.resolve(rootDir, 'src/mcp/index.ts');
-  const proc = spawn(process.execPath, [tsxPath, mcpEntry, ...args], {
+
+  let execCmd = process.execPath;
+  let execArgs = [localTsx, mcpEntry, ...args];
+
+  if (!fs.existsSync(localTsx)) {
+    execCmd = 'npx';
+    execArgs = ['tsx', mcpEntry, ...args];
+  }
+
+  const proc = spawn(execCmd, execArgs, {
     stdio: 'inherit',
     cwd: process.cwd(),
   });
