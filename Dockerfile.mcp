@@ -4,6 +4,9 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
+# Install curl for healthchecks
+RUN apk add --no-cache curl
+
 # Production environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -12,8 +15,8 @@ ENV HOST=0.0.0.0
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies (including tsx for running TypeScript)
-RUN npm ci
+# Install production dependencies
+RUN npm ci --omit=dev
 
 # Copy TypeScript configuration and source files
 COPY tsconfig.json ./
@@ -23,9 +26,9 @@ COPY src/ ./src/
 EXPOSE 3000
 
 # Health check directive for Coolify monitoring
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
+HEALTHCHECK --interval=20s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://127.0.0.1:3000/health || exit 1
 
 # Start the MCP SSE server
-CMD ["npm", "run", "mcp:start"]
+CMD ["node_modules/.bin/tsx", "src/mcp/index.ts"]
 
