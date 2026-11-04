@@ -1,0 +1,30 @@
+# Dockerfile.mcp
+# Production container for Astro Components Kit MCP Server on Coolify.
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+# Production environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install dependencies (including tsx for running TypeScript)
+RUN npm ci
+
+# Copy TypeScript configuration and source files
+COPY tsconfig.json ./
+COPY src/ ./src/
+
+# Expose HTTP port
+EXPOSE 3000
+
+# Health check directive for Coolify monitoring
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/health || exit 1
+
+# Start the MCP SSE server
+CMD ["npm", "run", "mcp:start"]

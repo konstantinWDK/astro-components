@@ -106,6 +106,39 @@ Open [http://localhost:4321](http://localhost:4321) to browse components locally
 
 ---
 
+## 🤖 Build with AI via MCP (Model Context Protocol)
+
+Astro Components Kit provides an official **Model Context Protocol (MCP)** server. Connect it to **Cursor, Claude Desktop, Windsurf, or Antigravity** so your AI assistant can discover components, check TypeScript props, and generate production Astro code directly in your project.
+
+### Remote SSE Connection (Recommended — Zero install)
+
+Add this endpoint to your editor's MCP settings (`claude_desktop_config.json`, Cursor Settings -> Features -> MCP, etc.):
+
+```json
+{
+  "mcpServers": {
+    "astro-components": {
+      "url": "https://mcp.astrocomponents.dev/sse"
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `search_components` | Search by keyword, category, or tag (e.g. `"buy box"`, `"kpi chart"`, `"pricing"`) |
+| `get_component` | Detailed component metadata, TypeScript `Props`, import statements, and usage code |
+| `get_component_code` | Raw `.astro` source code ready to inject into your project |
+| `list_categories` | Overview of all 13 component categories with item counts |
+| `list_templates` | Overview of the 3 multi-page production templates (Nova Store, Forma Studio, The Lobby) |
+| `get_template` | Complete template architecture, pages, store configuration, and routing guide |
+| `get_design_tokens` | CSS tokens, color variables, spacing scale, and dark/light theme setup |
+| `get_library_info` | High-level overview, active version, total counts, and quickstart guide |
+
+---
+
 ## 📚 Component & Section Library
 
 **320+ components & full-page sections** across 13 categories plus 3 complete templates:
