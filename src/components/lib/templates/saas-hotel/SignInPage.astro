@@ -1,0 +1,50 @@
+---
+/**
+ * SignInPage — Split-screen sign-in (or sign-up) for the hotel SaaS using AuthCard.
+ *
+ * Usage (src/pages/sign-in.astro):
+ *   import { SignInPage } from 'astro-component-kit/templates/saas-hotel';
+ *   <SignInPage />
+ *
+ * @param {string} mode - 'signin' or 'signup'. Default 'signin'.
+ * @param {SaasRoutes} routes - Page URLs (demo sign-in goes to `routes.dashboard`).
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import '../../../../styles/global.css';
+import './lobby-theme.css';
+import AuthCard from '../../app/AuthCard.astro';
+import { saasRoutes, type SaasRoutes } from './data';
+
+interface Props {
+  mode?: 'signin' | 'signup';
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { mode = 'signin', routes = saasRoutes, theme = 'light', noindex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="theme-lobby" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{mode === 'signin' ? 'Sign in' : 'Start your free trial'} — Lobby</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="lobby">
+    <main>
+      <AuthCard mode={mode} brand="Lobby" successHref={routes.dashboard} switchHref={routes.landing} />
+    </main>
+  </body>
+</html>

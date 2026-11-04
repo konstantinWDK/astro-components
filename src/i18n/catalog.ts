@@ -67,6 +67,16 @@ export const categoryTranslations: Record<string, Record<Locale, LocalizedMeta>>
     es: { name: 'Tipografía', description: 'Títulos con degradados, texto con efecto glitch, animaciones de máquina de escribir y resaltado de código.' },
     ru: { name: 'Типографика', description: 'Градиентные заголовки, глитч-эффекты, анимации печатной машинки и акценты кода.' },
   },
+  app: {
+    en: { name: 'App & Dashboard', description: 'SaaS building blocks: app sidebar and topbar, data table, timeline and status boards, settings, team and auth.' },
+    es: { name: 'App y Dashboard', description: 'Piezas para SaaS: barra lateral y superior, tabla de datos, timeline y tableros de estado, ajustes, equipo y login.' },
+    ru: { name: 'Приложение и дашборд', description: 'Блоки для SaaS: боковое и верхнее меню, таблица данных, таймлайн и доски статусов, настройки, команда и вход.' },
+  },
+  ecommerce: {
+    en: { name: 'E-commerce', description: 'Shop building blocks: product cards, cart drawer, filters, product page and checkout — all sharing one cart.' },
+    es: { name: 'E-commerce', description: 'Piezas para tiendas: tarjetas de producto, carrito lateral, filtros, ficha de producto y checkout, con un carrito compartido.' },
+    ru: { name: 'E-commerce', description: 'Блоки для магазина: карточки товаров, корзина, фильтры, страница товара и оформление заказа с общей корзиной.' },
+  },
   charts: {
     en: { name: 'Charts & Stats', description: '45 charts and statistics: zero-dependency SVG lines, bars, pies, funnels, heatmaps, KPI tiles and more.' },
     es: { name: 'Gráficos y Estadísticas', description: '45 gráficos y estadísticas: líneas, barras, tartas, embudos, mapas de calor y KPIs en SVG sin dependencias.' },
@@ -137,6 +147,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     en: { name: 'Footers', description: 'Complete site footers with link columns, newsletter signup and social links.' },
     es: { name: 'Pies de Página', description: 'Pies de página completos con columnas de enlaces, newsletter y redes sociales.' },
     ru: { name: 'Футеры', description: 'Полные подвалы сайта с колонками ссылок, подпиской и соцсетями.' },
+  },
+  commerce: {
+    en: { name: 'E-commerce', description: 'Editorial store sections: shop header with mega menu, hero, collections, product rail, lookbook, reviews and footer.' },
+    es: { name: 'E-commerce', description: 'Secciones editoriales para tiendas: cabecera con mega menú, hero, colecciones, carrusel de productos, lookbook, reseñas y footer.' },
+    ru: { name: 'E-commerce', description: 'Редакционные секции магазина: шапка с мега-меню, hero, коллекции, карусель товаров, лукбук, отзывы и футер.' },
   },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },

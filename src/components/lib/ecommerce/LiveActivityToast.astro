@@ -1,0 +1,213 @@
+---
+/**
+ * LiveActivityToast — Rotating social-proof notice ("Lucía in Madrid bought Aurora Headphones
+ * · 3 min ago") that slides in, waits and hides, cycling through `items`.
+ *
+ * @param {Array} items - `{ name, city, product, href?, icon?, hue?, ago }` entries to cycle through.
+ * @param {string} verb - Action text between person and product. Default 'just bought'.
+ * @param {number} interval - Time between notices in ms. Default 9000.
+ * @param {number} visibleFor - How long each notice stays in ms. Default 5000.
+ * @param {number} delay - Wait before the first notice in ms. Default 4000.
+ * @param {string} position - Corner (bottom-left|bottom-right). Default 'bottom-left'.
+ * @param {string} storageKey - sessionStorage key that remembers "stop showing". Default 'ack-activity-off'.
+ * @param {boolean} demo - Render statically with the first item (docs/previews). Default false.
+ * @param {string} variant - Style (glass|solid). Default 'glass'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: not announced by screen readers (it is promotional, aria-live="off"), never
+ * steals focus, has a close button that stops it for the session, pauses on hover/focus and
+ * when the tab is hidden; respects prefers-reduced-motion.
+ */
+import { productIcon } from './product-icons';
+
+interface Activity { name: string; city: string; product: string; href?: string; icon?: string; hue?: number; ago: string }
+interface Props {
+  items?: Activity[];
+  verb?: string;
+  interval?: number;
+  visibleFor?: number;
+  delay?: number;
+  position?: 'bottom-left' | 'bottom-right';
+  storageKey?: string;
+  demo?: boolean;
+  variant?: 'glass' | 'solid';
+  className?: string;
+}
+
+const {
+  items = [
+    { name: 'Lucía', city: 'Madrid', product: 'Aurora Wireless Headphones', icon: 'headphones', hue: 38, ago: '2 min ago' },
+    { name: 'Tom', city: 'Berlin', product: 'Trail 24L Backpack', icon: 'backpack', hue: 150, ago: '6 min ago' },
+    { name: 'Aiko', city: 'Osaka', product: 'Orbit Smart Watch', icon: 'watch', hue: 205, ago: '11 min ago' },
+  ],
+  verb = 'just bought',
+  interval = 9000,
+  visibleFor = 5000,
+  delay = 4000,
+  position = 'bottom-left',
+  storageKey = 'ack-activity-off',
+  demo = false,
+  variant = 'glass',
+  className = '',
+} = Astro.props;
+
+const first = items[0];
+---
+
+<div
+  class:list={['live-activity', `live-activity--${position}`, `live-activity--${variant}`, { 'live-activity--demo is-visible': demo }, className]}
+  aria-live="off"
+  data-live-activity={demo ? undefined : JSON.stringify(items)}
+  data-verb={verb}
+  data-interval={interval}
+  data-visible={visibleFor}
+  data-delay={delay}
+  data-key={storageKey}
+  hidden={!demo}
+>
+  {first && (
+    <>
+      <span class="live-activity__media" style={`--h: ${first.hue ?? 40}`} aria-hidden="true" data-media>
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={productIcon(first.icon)} /></svg>
+      </span>
+      <a class="live-activity__body" href={first.href ?? '#'} data-link>
+        <span class="live-activity__line"><strong data-who>{first.name}</strong> <span data-city>in {first.city}</span> {verb}</span>
+        <span class="live-activity__product" data-product>{first.product}</span>
+        <span class="live-activity__ago"><span class="live-activity__dot" aria-hidden="true"></span><span data-ago>{first.ago}</span> · Verified</span>
+      </a>
+      <button class="live-activity__close" type="button" aria-label="Stop showing purchase notifications" data-close>×</button>
+    </>
+  )}
+</div>
+
+<script>
+  import { productIcon } from './product-icons';
+
+  document.querySelectorAll<HTMLElement>('[data-live-activity]:not([data-bound])').forEach((el) => {
+    el.dataset.bound = '';
+    const key = el.dataset.key || 'ack-activity-off';
+    try { if (window.sessionStorage.getItem(key)) return; } catch { /* storage blocked */ }
+    let items: Array<Record<string, any>> = [];
+    try { items = JSON.parse(el.dataset.liveActivity || '[]'); } catch { return; }
+    if (!items.length) return;
+
+    const q = (s: string) => el.querySelector<HTMLElement>(s);
+    const media = q('[data-media]');
+    const link = q('[data-link]') as HTMLAnchorElement | null;
+    const verb = el.dataset.verb || 'just bought';
+    const interval = Number(el.dataset.interval) || 9000;
+    const visibleFor = Number(el.dataset.visible) || 5000;
+    let index = 0;
+    let paused = false;
+    let stopped = false;
+    let hideTimer = 0;
+
+    function fill(item: Record<string, any>) {
+      q('[data-who]')!.textContent = item.name;
+      q('[data-city]')!.textContent = `in ${item.city}`;
+      q('[data-product]')!.textContent = item.product;
+      q('[data-ago]')!.textContent = item.ago;
+      if (link) link.href = item.href || '#';
+      if (media) {
+        media.style.setProperty('--h', String(item.hue ?? 40));
+        media.innerHTML = `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${productIcon(item.icon)}</svg>`;
+      }
+      const line = q('.live-activity__line');
+      if (line && line.lastChild) line.lastChild.textContent = ` ${verb}`;
+    }
+
+    function cycle() {
+      if (stopped) return;
+      if (paused || document.hidden) { window.setTimeout(cycle, 1500); return; }
+      fill(items[index % items.length]);
+      index++;
+      el.hidden = false;
+      requestAnimationFrame(() => el.classList.add('is-visible'));
+      hideTimer = window.setTimeout(hide, visibleFor);
+    }
+    function hide() {
+      if (paused) { hideTimer = window.setTimeout(hide, 1000); return; }
+      el.classList.remove('is-visible');
+      window.setTimeout(() => { el.hidden = true; }, 300);
+      window.setTimeout(cycle, Math.max(1000, interval - visibleFor));
+    }
+
+    el.addEventListener('mouseenter', () => { paused = true; });
+    el.addEventListener('mouseleave', () => { paused = false; });
+    el.addEventListener('focusin', () => { paused = true; });
+    el.addEventListener('focusout', () => { paused = false; });
+    q('[data-close]')?.addEventListener('click', () => {
+      stopped = true;
+      window.clearTimeout(hideTimer);
+      el.classList.remove('is-visible');
+      el.hidden = true;
+      try { window.sessionStorage.setItem(key, '1'); } catch { /* ignore */ }
+    });
+
+    window.setTimeout(cycle, Number(el.dataset.delay) || 4000);
+  });
+</script>
+
+<style>
+  .live-activity {
+    position: fixed;
+    bottom: 1rem;
+    z-index: 1050;
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    width: min(360px, calc(100vw - 2rem));
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    background: rgb(var(--paper-rgb, 5 5 5) / 0.86);
+    backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .live-activity[hidden] { display: none; }
+  .live-activity.is-visible { opacity: 1; transform: none; }
+  .live-activity--bottom-left { left: 1rem; }
+  .live-activity--bottom-right { right: 1rem; }
+  .live-activity--solid { background: var(--c-bg-1, #0a0a0a); backdrop-filter: none; }
+  .live-activity--demo { position: relative; inset: auto; margin: 0 auto; }
+
+  .live-activity__media {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--r-md, 12px);
+    color: hsl(var(--h) var(--pm-ink-s, 80%) var(--pm-ink-l, 80%));
+    background: radial-gradient(circle at 50% 40%, hsl(var(--h) 70% 50% / 0.3), transparent 70%), var(--c-bg-2, #111);
+  }
+  .live-activity__media :global(svg) { width: 60%; }
+  .live-activity__body { display: grid; gap: 1px; min-width: 0; color: inherit; text-decoration: none; border-radius: var(--r-sm, 8px); }
+  .live-activity__body:hover .live-activity__product { text-decoration: underline; }
+  .live-activity__body:focus-visible, .live-activity__close:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .live-activity__line { font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .live-activity__line strong { color: var(--c-text-1, #fff); }
+  .live-activity__product { font-size: 0.88rem; font-weight: 700; color: var(--c-text-1, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .live-activity__ago { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); }
+  .live-activity__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-success, #34d399); box-shadow: 0 0 8px var(--c-success, #34d399); }
+  .live-activity__close {
+    align-self: start;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .live-activity__close:hover { color: var(--c-text-1, #fff); background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live-activity { transition: none; transform: none; }
+  }
+</style>

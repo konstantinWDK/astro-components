@@ -1,0 +1,213 @@
+---
+/**
+ * LandingPage — Marketing site for the hotel SaaS: navbar, dashboard hero, customer logos,
+ * features, how it works, stats, pricing with monthly/yearly toggle, testimonials, FAQ and footer.
+ * Built entirely from existing library sections, themed with the Lobby tokens.
+ *
+ * Usage (src/pages/index.astro):
+ *   import { LandingPage } from 'astro-component-kit/templates/saas-hotel';
+ *   <LandingPage />
+ *
+ * @param {SaasRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import '../../../../styles/global.css';
+import './lobby-theme.css';
+import HeroDashboardPreview from '../../sections/HeroDashboardPreview.astro';
+import LogoWallGrid from '../../sections/LogoWallGrid.astro';
+import FeatureIconGrid from '../../sections/FeatureIconGrid.astro';
+import HowItWorksSteps from '../../sections/HowItWorksSteps.astro';
+import StatsCounterBand from '../../sections/StatsCounterBand.astro';
+import PricingToggleCards from '../../sections/PricingToggleCards.astro';
+import TestimonialCarousel from '../../sections/TestimonialCarousel.astro';
+import FaqTwoColumn from '../../sections/FaqTwoColumn.astro';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import { saasRoutes, type SaasRoutes } from './data';
+
+interface Props {
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = saasRoutes, theme = 'light', noindex = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="theme-lobby" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lobby — the operating system for independent hotels</title>
+    <meta name="description" content="Reservations, housekeeping, guest CRM and revenue reports in one calm workspace. Built for independent hotels." />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="lobby lobby--site">
+    <a class="lobby__skip" href="#main">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href={routes.landing}><span aria-hidden="true">L</span>Lobby</a>
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="#features">Product</a></li>
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </nav>
+        <div class="site-nav__cta">
+          <button type="button" class="site-nav__theme" aria-label="Switch theme" data-site-theme>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+          </button>
+          <a class="site-nav__link" href={routes.signIn}>Sign in</a>
+          <a class="site-nav__btn" href={routes.dashboard}>Open demo</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <HeroDashboardPreview
+        badge="New · AI rate suggestions"
+        title="The calm way to run an independent hotel"
+        subtitle="Reservations, housekeeping, guest profiles and revenue reports in one workspace your whole team will actually enjoy using."
+        primary={{ label: 'Start free trial', href: routes.signIn }}
+        secondary={{ label: 'Explore the demo', href: routes.dashboard }}
+        variant="browser"
+      />
+
+      <LogoWallGrid
+        title="Trusted by 2,400+ independent hotels"
+        columns={6}
+        variant="plain"
+        logos={[{ name: 'Casa Mirador' }, { name: 'Hotel Alba' }, { name: 'The Linden' }, { name: 'Nordlys Inn' }, { name: 'Villa Sole' }, { name: 'Harbour House' }]}
+      />
+
+      <div id="features">
+        <FeatureIconGrid
+          eyebrow="Everything in one place"
+          title="Built for the front desk, loved by the back office"
+          subtitle="Replace spreadsheets, sticky notes and three logins with one fast, accessible workspace."
+          columns={3}
+          features={[
+            { icon: 'layers', title: 'Room rack', text: 'Drag-free tape chart for the next 90 days with live occupancy per night.' },
+            { icon: 'users', title: 'Guest CRM', text: 'Preferences, stays and notes follow every guest — across every channel.' },
+            { icon: 'sparkles', title: 'Housekeeping board', text: 'Clean, dirty, inspecting: rooms update in real time on any device.' },
+            { icon: 'chart', title: 'Revenue reports', text: 'Forecasts, booking pace and channel mix without exporting a single CSV.' },
+            { icon: 'globe', title: 'Channel manager', text: 'Booking.com, Expedia and Airbnb in sync — no more overbookings.' },
+            { icon: 'shield', title: 'Secure by default', text: 'Role-based access, audit log and PCI-compliant payments.' },
+          ]}
+        />
+      </div>
+
+      <div id="how">
+        <HowItWorksSteps
+          eyebrow="Up and running in a day"
+          title="From signup to first check-in"
+          steps={[
+            { title: 'Import your rooms', text: 'Upload your room list or connect your current PMS — we map types and rates for you.', time: '10 min' },
+            { title: 'Connect your channels', text: 'Link Booking.com, Expedia and your website booking engine in a few clicks.', time: '20 min' },
+            { title: 'Invite your team', text: 'Give front desk, housekeeping and managers exactly the access they need.', time: '5 min' },
+          ]}
+          cta={{ label: 'Start your free trial', href: routes.signIn }}
+        />
+      </div>
+
+      <StatsCounterBand
+        title="What hotels see after three months"
+        stats={[
+          { value: 9, prefix: '+', suffix: '%', label: 'occupancy' },
+          { value: 38, suffix: '%', label: 'less admin time' },
+          { value: 2.4, prefix: '+€', suffix: 'k', decimals: 1, label: 'direct revenue / month' },
+          { value: 4.9, suffix: '/5', decimals: 1, label: 'support rating' },
+        ]}
+      />
+
+      <div id="pricing">
+        <PricingToggleCards
+          title="Simple pricing, per property"
+          subtitle="All plans include unlimited reservations, guest profiles and support in your language."
+          currency="€"
+          plans={[
+            { name: 'Starter', monthly: 69, yearly: 55, description: 'Up to 15 rooms', features: ['Room rack & reservations', 'Housekeeping board', 'Guest CRM', '2 channels'], cta: 'Start free', href: routes.signIn },
+            { name: 'Pro', monthly: 149, yearly: 119, description: 'Up to 50 rooms', features: ['Everything in Starter', 'Revenue reports', '5 channels', 'Team roles & audit log'], cta: 'Start free trial', href: routes.signIn, featured: true },
+            { name: 'Business', monthly: 299, yearly: 239, description: 'Unlimited rooms', features: ['Everything in Pro', 'Multi-property', 'API & webhooks', 'Dedicated success manager'], cta: 'Talk to sales', href: '#' },
+          ]}
+        />
+      </div>
+
+      <TestimonialCarousel
+        title="Hoteliers on Lobby"
+        items={[
+          { quote: 'We replaced three tools with Lobby. Check-in takes half the time and occupancy is up 9% this season.', name: 'Lucía Ortega', role: 'GM, Hotel Mirador', rating: 5 },
+          { quote: 'Housekeeping finally knows which rooms to prioritise. No more radio calls.', name: 'Rosa Jiménez', role: 'Head of housekeeping, Casa Alba', rating: 5 },
+          { quote: 'The reports alone paid for the subscription in the first month.', name: 'Daniel Kim', role: 'Revenue manager, The Linden', rating: 5 },
+        ]}
+      />
+
+      <div id="faq">
+        <FaqTwoColumn
+          title="Questions, answered"
+          subtitle="Can’t find what you need? Our team replies in under 2 hours."
+          support={{ label: 'Contact support', href: '#' }}
+          items={[
+            { q: 'Can I migrate from my current PMS?', a: 'Yes. We import rooms, rates, future reservations and guest profiles from the most common systems at no cost.' },
+            { q: 'Do you charge per booking?', a: 'No commissions, ever. You pay a flat monthly price per property.' },
+            { q: 'Does it work on tablets and phones?', a: 'Every screen is responsive and accessible, so housekeeping can update rooms from any device.' },
+            { q: 'Is my data safe?', a: 'Data is encrypted at rest and in transit, hosted in the EU, with daily backups and role-based access.' },
+          ]}
+        />
+      </div>
+    </main>
+
+    <FooterMegaSection
+      brand="Lobby"
+      tagline="The calm operating system for independent hotels."
+      columns={[
+        { title: 'Product', links: [{ label: 'Room rack', href: '#features' }, { label: 'Housekeeping', href: '#features' }, { label: 'Reports', href: '#features' }, { label: 'Pricing', href: '#pricing' }] },
+        { title: 'Company', links: [{ label: 'About', href: '#' }, { label: 'Careers', href: '#' }, { label: 'Contact', href: '#' }] },
+        { title: 'Resources', links: [{ label: 'Help center', href: '#' }, { label: 'API docs', href: '#' }, { label: 'Status', href: '#' }] },
+        { title: 'Legal', links: [{ label: 'Privacy', href: '#' }, { label: 'Terms', href: '#' }, { label: 'DPA', href: '#' }] },
+      ]}
+      copyright={`© ${new Date().getFullYear()} Lobby. Demo template built with Astro Components Kit.`}
+    />
+  </body>
+</html>
+
+<script>
+  document.querySelector('[data-site-theme]')?.addEventListener('click', () => {
+    const root = document.documentElement;
+    const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+    root.dataset.theme = next;
+    try { window.localStorage.setItem('ack-theme', next); } catch { /* ignore */ }
+  });
+</script>
+
+<style is:global>
+  .lobby--site main { position: relative; overflow-x: clip; outline: none; }
+  .lobby--site main > * , .lobby--site main > div > * { --c-primary: var(--app-accent); --c-primary-light: var(--app-accent); }
+  .site-nav { position: sticky; top: 0; z-index: 50; background: rgb(var(--paper-rgb) / 0.82); backdrop-filter: blur(14px) saturate(1.3); border-bottom: 1px solid var(--c-border); }
+  .site-nav__inner { display: flex; align-items: center; gap: var(--sp-6); max-width: 1200px; height: 64px; margin: 0 auto; padding: 0 var(--sp-5); }
+  .site-nav__brand { display: inline-flex; align-items: center; gap: var(--sp-2); font-weight: 800; font-size: 1.05rem; color: var(--c-text-1); }
+  .site-nav__brand span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--app-accent); color: var(--c-on-primary); }
+  .site-nav nav ul { display: flex; gap: var(--sp-1); margin: 0; padding: 0; list-style: none; }
+  .site-nav nav a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 0.75rem; border-radius: 8px; color: var(--c-text-2); font-size: 0.9rem; font-weight: 500; }
+  .site-nav nav a:hover { color: var(--c-text-1); background: rgb(var(--ink-rgb) / 0.05); }
+  .site-nav__cta { display: flex; align-items: center; gap: var(--sp-2); margin-left: auto; }
+  .site-nav__theme { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--c-text-2); cursor: pointer; }
+  .site-nav__theme:hover { background: rgb(var(--ink-rgb) / 0.06); color: var(--c-text-1); }
+  .site-nav__link { min-height: 40px; display: inline-flex; align-items: center; padding: 0 0.75rem; color: var(--c-text-1); font-weight: 600; font-size: 0.9rem; }
+  .site-nav__btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 1rem; border-radius: 10px; background: var(--app-accent); color: var(--c-on-primary); font-weight: 700; font-size: 0.88rem; }
+  .site-nav__btn:hover { color: var(--c-on-primary); filter: brightness(1.08); }
+  .site-nav :is(a, button):focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+  @media (max-width: 860px) { .site-nav nav { display: none; } }
+  @media (max-width: 420px) { .site-nav__link { display: none; } }
+</style>

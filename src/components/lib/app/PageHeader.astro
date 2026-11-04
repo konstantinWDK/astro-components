@@ -1,0 +1,157 @@
+---
+/**
+ * PageHeader — App page heading: breadcrumb, title, description, period switcher and action
+ * buttons, with optional underline tabs below.
+ *
+ * @param {string} title - Page title. Default 'Dashboard'.
+ * @param {string} description - Supporting text.
+ * @param {Array<{label: string, href?: string}>} breadcrumb - Trail (optional).
+ * @param {Array<{label: string, href?: string, icon?: string, primary?: boolean}>} actions - Buttons on the right.
+ * @param {string[]} periods - Segmented period options (e.g. ['Today','7d','30d']); empty hides it.
+ * @param {number} activePeriod - Selected period index. Default 0.
+ * @param {Array<{label: string, href: string, count?: number}>} tabs - Underline tabs (optional).
+ * @param {string} currentTab - href of the active tab.
+ * @param {string} size - Title scale (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: h1 title; the period switcher is a radio group (arrow keys) that dispatches
+ * `app:period` with `{ index, label }`; tabs are links with aria-current.
+ */
+import { appIcon } from './app-icons';
+
+interface Props {
+  title?: string;
+  description?: string;
+  breadcrumb?: Array<{ label: string; href?: string }>;
+  actions?: Array<{ label: string; href?: string; icon?: string; primary?: boolean }>;
+  periods?: string[];
+  activePeriod?: number;
+  tabs?: Array<{ label: string; href: string; count?: number }>;
+  currentTab?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  title = 'Dashboard',
+  description = 'Good morning, Lucía — here is what is happening at Hotel Mirador today.',
+  breadcrumb = [],
+  actions = [{ label: 'Export', icon: 'download' }, { label: 'New booking', icon: 'plus', primary: true, href: '#' }],
+  periods = ['Today', '7 days', '30 days', 'Year'],
+  activePeriod = 2,
+  tabs = [],
+  currentTab,
+  size = 'md',
+  className = '',
+} = Astro.props;
+---
+
+<div class:list={['app-ph', `app-ph--${size}`, className]}>
+  {breadcrumb.length > 0 && (
+    <nav class="app-ph__crumbs" aria-label="Breadcrumb">
+      <ol>{breadcrumb.map((b, i) => <li>{b.href && i < breadcrumb.length - 1 ? <a href={b.href}>{b.label}</a> : <span aria-current="page">{b.label}</span>}</li>)}</ol>
+    </nav>
+  )}
+  <div class="app-ph__row">
+    <div class="app-ph__text">
+      <h1 class="app-ph__title">{title}</h1>
+      {description && <p class="app-ph__desc">{description}</p>}
+    </div>
+    <div class="app-ph__tools">
+      {periods.length > 0 && (
+        <div class="app-ph__periods" role="radiogroup" aria-label="Period" data-periods>
+          {periods.map((p, i) => (
+            <button type="button" role="radio" aria-checked={i === activePeriod ? 'true' : 'false'} tabindex={i === activePeriod ? '0' : '-1'} data-i={i}>{p}</button>
+          ))}
+        </div>
+      )}
+      {actions.map((a) => {
+        const Tag = a.href ? 'a' : 'button';
+        return (
+          <Tag class:list={['app-ph__btn', { 'app-ph__btn--primary': a.primary }]} href={a.href} type={a.href ? undefined : 'button'}>
+            {a.icon && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon(a.icon)} /></svg>}
+            {a.label}
+          </Tag>
+        );
+      })}
+    </div>
+  </div>
+  {tabs.length > 0 && (
+    <nav class="app-ph__tabs" aria-label="Sections">
+      {tabs.map((tab) => (
+        <a href={tab.href} aria-current={tab.href === currentTab ? 'page' : undefined}>
+          {tab.label}{tab.count !== undefined && <span>{tab.count}</span>}
+        </a>
+      ))}
+    </nav>
+  )}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-periods]:not([data-bound])').forEach((group) => {
+    group.dataset.bound = '';
+    const radios = Array.from(group.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+    const select = (i: number, focus = false) => {
+      radios.forEach((r, n) => { r.setAttribute('aria-checked', String(n === i)); r.tabIndex = n === i ? 0 : -1; });
+      if (focus) radios[i].focus();
+      group.dispatchEvent(new CustomEvent('app:period', { bubbles: true, detail: { index: i, label: radios[i].textContent } }));
+    };
+    radios.forEach((r, i) => {
+      r.addEventListener('click', () => select(i));
+      r.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        select((i + d + radios.length) % radios.length, true);
+      });
+    });
+  });
+</script>
+
+<style>
+  .app-ph { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4, 1rem); }
+  .app-ph__crumbs ol { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 0.78rem; color: var(--c-text-3, #737373); }
+  .app-ph__crumbs li + li::before { content: '/'; margin-right: 6px; opacity: 0.6; }
+  .app-ph__crumbs a { color: inherit; text-decoration: none; }
+  .app-ph__crumbs a:hover, .app-ph__crumbs [aria-current] { color: var(--c-text-1, #fff); }
+  .app-ph__row { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4, 1rem); }
+  .app-ph__title { margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.025em; color: var(--c-text-1, #fff); }
+  .app-ph--sm .app-ph__title { font-size: 1.25rem; }
+  .app-ph--lg .app-ph__title { font-size: 2.1rem; }
+  .app-ph__desc { margin: 4px 0 0; font-size: 0.9rem; color: var(--c-text-2, #a3a3a3); }
+  .app-ph__tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-2, 0.5rem); }
+  .app-ph__periods { display: inline-flex; padding: 3px; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: rgb(var(--ink-rgb, 255 255 255) / 0.03); }
+  .app-ph__periods button { min-height: 34px; padding: 0 0.75rem; border: 0; border-radius: 7px; background: transparent; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .app-ph__periods [aria-checked='true'] { background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .app-ph__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 0.95rem;
+    border-radius: 10px;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1));
+    background: var(--c-bg-1, #0a0a0a);
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, filter 0.15s ease;
+  }
+  .app-ph__btn:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.06); color: var(--c-text-1, #fff); }
+  .app-ph__btn--primary { border-color: transparent; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .app-ph__btn--primary:hover { background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); filter: brightness(1.08); }
+  .app-ph :is(a, button):focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .app-ph__tabs { display: flex; gap: var(--sp-5, 1.25rem); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); overflow-x: auto; scrollbar-width: none; }
+  .app-ph__tabs a { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; border-bottom: 2px solid transparent; color: var(--c-text-2, #a3a3a3); font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .app-ph__tabs a:hover { color: var(--c-text-1, #fff); }
+  .app-ph__tabs a[aria-current] { color: var(--c-text-1, #fff); border-bottom-color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .app-ph__tabs span { padding: 0 6px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.08); font-size: 0.7rem; }
+
+  @container (max-width: 720px) {
+    .app-ph__row { flex-direction: column; align-items: stretch; }
+    .app-ph__tools { justify-content: flex-start; }
+  }
+</style>

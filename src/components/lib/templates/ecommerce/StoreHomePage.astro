@@ -1,0 +1,191 @@
+---
+/**
+ * StoreHomePage — E-commerce template home: hero, guarantees, categories, best sellers,
+ * editorial banner, new arrivals, press logos and newsletter.
+ *
+ * Usage (src/pages/index.astro):
+ *   import { StoreHomePage } from 'astro-component-kit/templates/ecommerce';
+ *   <StoreHomePage />
+ *
+ * @param {StoreConfig} store - Catalogue and settings. Default: demo store.
+ * @param {StoreRoutes} routes - Page URLs. Default: '/', '/shop/', '/product/', '/checkout/'.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import StoreLayout from './StoreLayout.astro';
+import StoreHero from '../../ecommerce/StoreHero.astro';
+import TrustBadges from '../../ecommerce/TrustBadges.astro';
+import CategoryTiles from '../../ecommerce/CategoryTiles.astro';
+import ProductGrid from '../../ecommerce/ProductGrid.astro';
+import ProductMedia from '../../ecommerce/ProductMedia.astro';
+import CountdownBanner from '../../ecommerce/CountdownBanner.astro';
+import LogoCloudSection from '../../sections/LogoCloudSection.astro';
+import CtaNewsletterSection from '../../sections/CtaNewsletterSection.astro';
+import { demoStore, defaultRoutes, productHref, categoryHref, categoryNames, pickProducts, type StoreConfig, type StoreRoutes } from './data';
+
+interface Props {
+  store?: StoreConfig;
+  routes?: StoreRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'dark' | 'light' | 'auto';
+}
+
+const { store = demoStore, routes = defaultRoutes, seedCart = false, noindex = false, theme = 'dark' } = Astro.props;
+
+const names = categoryNames(store);
+const best = pickProducts(store, store.bestSellers);
+const fresh = pickProducts(store, store.newArrivals);
+const heroProduct = best[0] ?? store.products[0];
+const tiles = store.categories.map((c) => ({
+  ...c,
+  href: categoryHref(routes, c.id),
+  count: store.products.filter((p) => p.category === c.id).length,
+}));
+const feature = store.products.find((p) => p.slug === 'storm-jacket') ?? store.products[store.products.length - 1];
+const shared = { productBase: routes.product, categoryNames: names, currency: store.currency, locale: store.locale, cartKey: store.cartKey, openCart: false };
+---
+
+<StoreLayout theme={theme} title={`${store.name} — ${store.tagline.split('.')[0]}`} description={store.tagline} store={store} routes={routes} currentHref={routes.home} seedCart={seedCart} noindex={noindex} liveActivity>
+  <StoreHero
+    eyebrow="New season · 2026"
+    title="Gear that feels"
+    highlight="made for you"
+    subtitle={`${store.tagline} Free shipping over ${new Intl.NumberFormat(store.locale, { style: 'currency', currency: store.currency, maximumFractionDigits: 0 }).format(store.freeShippingThreshold)}.`}
+    primary={{ label: 'Shop the collection', href: routes.shop }}
+    secondary={{ label: 'See best sellers', href: `${routes.shop}?sort=rating` }}
+    product={heroProduct}
+    productHref={productHref(routes, heroProduct.slug)}
+    currency={store.currency}
+    locale={store.locale}
+  />
+
+  <div class="store-container home-block home-block--tight">
+    <TrustBadges />
+  </div>
+
+  <div class="store-container home-block">
+    <CategoryTiles title="Shop by category" subtitle="Five small collections, each one obsessively edited." categories={tiles} columns={5} />
+  </div>
+
+  <section class="store-container home-block" aria-labelledby="best-title">
+    <div class="home-head">
+      <div>
+        <p class="home-eyebrow">Loved by 12k+ customers</p>
+        <h2 id="best-title">Best sellers</h2>
+      </div>
+      <a class="home-link" href={`${routes.shop}?sort=rating`}>View all <span aria-hidden="true">→</span></a>
+    </div>
+    <ProductGrid id="best-sellers" products={best} {...shared} />
+  </section>
+
+  <section class="store-container home-block" aria-labelledby="feature-title">
+    <div class="feature">
+      <div class="feature__copy">
+        <p class="home-eyebrow">The Storm edit</p>
+        <h2 id="feature-title">Built for weather you'd rather avoid</h2>
+        <p>Three-layer shells, sealed seams and recycled fabrics. Tested in the Scottish Highlands so you don't have to.</p>
+        <ul class="feature__list">
+          <li>Waterproof to 20,000 mm</li>
+          <li>Made from 100% recycled nylon</li>
+          <li>Lifetime repair programme</li>
+        </ul>
+        <a class="feature__cta" href={productHref(routes, feature.slug)}>Shop {feature.name}</a>
+      </div>
+      <div class="feature__art" aria-hidden="true">
+        <ProductMedia icon={feature.icon} hue={feature.hue} ratio="4 / 3" size="lg" />
+      </div>
+    </div>
+  </section>
+
+  <div class="store-container home-block">
+    <CountdownBanner
+      eyebrow="Flash sale · ends soon"
+      title="Up to 30% off the Storm collection"
+      text="Waterproof shells and insulated layers at their lowest price of the season. Free returns, as always."
+      cta={{ label: 'Shop the sale', href: productHref(routes, feature.slug) }}
+      hours={36}
+      storageKey={`${store.cartKey}-sale`}
+    />
+  </div>
+
+  <section class="store-container home-block" aria-labelledby="new-title">
+    <div class="home-head">
+      <div>
+        <p class="home-eyebrow">Just landed</p>
+        <h2 id="new-title">New arrivals</h2>
+      </div>
+      <a class="home-link" href={routes.shop}>Shop all <span aria-hidden="true">→</span></a>
+    </div>
+    <ProductGrid id="new-arrivals" products={fresh} {...shared} />
+  </section>
+
+  <LogoCloudSection
+    title="AS FEATURED IN"
+    logos={[
+      { name: 'Northwind', symbol: '◆' },
+      { name: 'Lumen Daily', symbol: '●' },
+      { name: 'Gearbox', symbol: '▲' },
+      { name: 'Field Notes', symbol: '✦' },
+      { name: 'Outpost', symbol: '◎' },
+      { name: 'Kinfolk Lab', symbol: '■' },
+    ]}
+  />
+
+  <div class="store-container home-block">
+    <CtaNewsletterSection
+      title="Get 10% off your first order"
+      subtitle="Join the list for early access to drops, restocks and members-only offers."
+      perks={['One email a week', 'Early access to new drops', 'Unsubscribe anytime']}
+      buttonLabel="Join the list"
+      privacy="By subscribing you agree to our privacy policy."
+      variant="glass"
+    />
+  </div>
+</StoreLayout>
+
+<style>
+  .home-block { padding-block: clamp(2.5rem, 6vw, 4.5rem) 0; }
+  .home-block--tight { padding-top: 0; }
+  .home-block:last-child { padding-bottom: clamp(3rem, 7vw, 5rem); }
+
+  .home-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .home-head h2, .feature h2 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 900; letter-spacing: -0.035em; color: var(--c-text-1); }
+  .home-eyebrow { margin: 0 0 var(--sp-2); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light); }
+  .home-link { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; font-weight: 700; white-space: nowrap; }
+
+  .feature {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border-radius: var(--r-xl);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.07);
+    background: radial-gradient(circle at 0% 0%, rgba(147, 51, 234, 0.12), transparent 50%), var(--c-surface);
+  }
+  .feature__copy p:not(.home-eyebrow) { margin: var(--sp-4) 0 0; max-width: 32rem; line-height: 1.7; }
+  .feature__list { display: grid; gap: var(--sp-2); margin: var(--sp-5) 0 0; padding: 0; list-style: none; }
+  .feature__list li { display: flex; align-items: center; gap: var(--sp-2); color: var(--c-text-1); font-size: 0.92rem; }
+  .feature__list li::before { content: ''; width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; background: rgba(212, 160, 23, 0.15) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4a017' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 11px no-repeat; }
+  .feature__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 50px;
+    margin-top: var(--sp-6);
+    padding: 0 var(--sp-6);
+    border-radius: var(--r-full);
+    background: var(--c-text-1);
+    color: var(--c-bg);
+    font-weight: 800;
+  }
+  .feature__cta:hover { color: var(--c-bg); background: var(--c-accent); }
+  .feature__cta:focus-visible, .home-link:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 3px; }
+  .feature__art { border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--c-border); }
+
+  @media (max-width: 800px) {
+    .feature { grid-template-columns: 1fr; }
+    .feature__art { order: -1; }
+  }
+</style>

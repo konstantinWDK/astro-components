@@ -1,0 +1,276 @@
+---
+/**
+ * CartToast — Stacked live notifications for the shop: "Added to cart" (with a View cart
+ * action) whenever an add-to-cart button skips the drawer, plus any custom notice sent with
+ * `document.dispatchEvent(new CustomEvent('ack:notify', { detail: { title, text, tone } }))`.
+ *
+ * @param {string} cartKey - Only react to this cart. Default 'ack-cart'.
+ * @param {string} position - Screen corner (bottom-right|bottom-left|top-right|top-center). Default 'bottom-right'.
+ * @param {number} duration - Auto-dismiss delay in ms (paused on hover/focus). Default 4500.
+ * @param {number} max - Maximum toasts visible at once. Default 3.
+ * @param {string} addedTitle - Title for cart notices. Default 'Added to cart'.
+ * @param {string} actionLabel - Cart action label. Default 'View cart'.
+ * @param {boolean} always - Also toast when the drawer opens on add. Default false.
+ * @param {boolean} demo - Render one static example toast (docs/previews). Default false.
+ * @param {string} variant - Style (glass|solid). Default 'glass'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: polite live region (role="status"), every toast has a close button,
+ * timers pause while hovered or focused, motion is removed with prefers-reduced-motion.
+ */
+interface Props {
+  cartKey?: string;
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-center';
+  duration?: number;
+  max?: number;
+  addedTitle?: string;
+  actionLabel?: string;
+  always?: boolean;
+  demo?: boolean;
+  variant?: 'glass' | 'solid';
+  className?: string;
+}
+
+const {
+  cartKey = 'ack-cart',
+  position = 'bottom-right',
+  duration = 4500,
+  max = 3,
+  addedTitle = 'Added to cart',
+  actionLabel = 'View cart',
+  always = false,
+  demo = false,
+  variant = 'glass',
+  className = '',
+} = Astro.props;
+---
+
+<div
+  class:list={['cart-toasts', `cart-toasts--${position}`, `cart-toasts--${variant}`, { 'cart-toasts--demo': demo }, className]}
+  role="status"
+  aria-live="polite"
+  data-cart-toasts
+  data-key={cartKey}
+  data-duration={duration}
+  data-max={max}
+  data-title={addedTitle}
+  data-action={actionLabel}
+  data-always={always ? '' : undefined}
+>
+  {demo && (
+    <div class="cart-toast cart-toast--success">
+      <span class="cart-toast__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <div class="cart-toast__body"><p class="cart-toast__title">{addedTitle}</p><p class="cart-toast__text">Aurora Wireless Headphones · Graphite</p></div>
+      <button class="cart-toast__action" type="button">{actionLabel}</button>
+      <button class="cart-toast__close" type="button" aria-label="Dismiss">×</button>
+      <span class="cart-toast__timer" aria-hidden="true"></span>
+    </div>
+    <div class="cart-toast cart-toast--warning">
+      <span class="cart-toast__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+      <div class="cart-toast__body"><p class="cart-toast__title">Only 2 left in stock</p><p class="cart-toast__text">Drift Everyday Sneakers · size 42</p></div>
+      <button class="cart-toast__close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  )}
+</div>
+
+<script>
+  import { ADDED_EVENT, NOTIFY_EVENT } from './cart-store';
+
+  const ICONS: Record<string, string> = {
+    success: '<path d="M20 6 9 17l-5-5"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+    warning: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+    danger: '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>',
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-cart-toasts]:not([data-bound])').forEach((region) => {
+    region.dataset.bound = '';
+    if (region.classList.contains('cart-toasts--demo')) return;
+    const duration = Number(region.dataset.duration) || 4500;
+    const max = Number(region.dataset.max) || 3;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function show(opts: { title: string; text?: string; tone?: string; action?: { label: string; run: () => void } }) {
+      const tone = ICONS[opts.tone || ''] ? opts.tone! : 'info';
+      const toast = document.createElement('div');
+      toast.className = `cart-toast cart-toast--${tone}`;
+      toast.style.setProperty('--toast-ms', `${duration}ms`);
+      toast.innerHTML = `<span class="cart-toast__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICONS[tone]}</svg></span>`;
+      const body = document.createElement('div');
+      body.className = 'cart-toast__body';
+      const title = document.createElement('p');
+      title.className = 'cart-toast__title';
+      title.textContent = opts.title;
+      body.append(title);
+      if (opts.text) {
+        const text = document.createElement('p');
+        text.className = 'cart-toast__text';
+        text.textContent = opts.text;
+        body.append(text);
+      }
+      toast.append(body);
+      if (opts.action) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cart-toast__action';
+        btn.textContent = opts.action.label;
+        btn.addEventListener('click', () => { opts.action!.run(); dismiss(); });
+        toast.append(btn);
+      }
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'cart-toast__close';
+      close.setAttribute('aria-label', 'Dismiss notification');
+      close.textContent = '×';
+      close.addEventListener('click', () => dismiss());
+      const bar = document.createElement('span');
+      bar.className = 'cart-toast__timer';
+      bar.setAttribute('aria-hidden', 'true');
+      toast.append(close, bar);
+
+      let left = duration;
+      let started = Date.now();
+      let timer = window.setTimeout(() => dismiss(), left);
+      const pause = () => { window.clearTimeout(timer); left -= Date.now() - started; toast.classList.add('is-paused'); };
+      const resume = () => { started = Date.now(); timer = window.setTimeout(() => dismiss(), Math.max(800, left)); toast.classList.remove('is-paused'); };
+      toast.addEventListener('mouseenter', pause);
+      toast.addEventListener('mouseleave', resume);
+      toast.addEventListener('focusin', pause);
+      toast.addEventListener('focusout', resume);
+
+      function dismiss() {
+        window.clearTimeout(timer);
+        if (!toast.isConnected) return;
+        toast.classList.add('is-leaving');
+        window.setTimeout(() => toast.remove(), reduced ? 0 : 220);
+      }
+
+      region.append(toast);
+      while (region.children.length > max) region.firstElementChild?.remove();
+    }
+
+    document.addEventListener(ADDED_EVENT, (e) => {
+      const d = (e as CustomEvent).detail || {};
+      if (d.key && d.key !== region.dataset.key) return;
+      if (d.openCart && !region.hasAttribute('data-always')) return;
+      const item = d.item || {};
+      show({
+        title: region.dataset.title || 'Added to cart',
+        text: [item.name, item.variant].filter(Boolean).join(' · ') + (item.qty > 1 ? ` × ${item.qty}` : ''),
+        tone: 'success',
+        action: {
+          label: region.dataset.action || 'View cart',
+          run: () => document.dispatchEvent(new CustomEvent('ack:cart-open', { detail: { key: region.dataset.key } })),
+        },
+      });
+    });
+
+    document.addEventListener(NOTIFY_EVENT, (e) => {
+      const d = (e as CustomEvent).detail || {};
+      if (d.title) show({ title: d.title, text: d.text, tone: d.tone });
+    });
+  });
+</script>
+
+<style>
+  .cart-toasts {
+    position: fixed;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: min(380px, calc(100vw - 2rem));
+    pointer-events: none;
+  }
+  .cart-toasts--bottom-right { right: 1rem; bottom: 1rem; }
+  .cart-toasts--bottom-left { left: 1rem; bottom: 1rem; }
+  .cart-toasts--top-right { right: 1rem; top: 1rem; flex-direction: column-reverse; }
+  .cart-toasts--top-center { left: 50%; top: 1rem; transform: translateX(-50%); flex-direction: column-reverse; }
+  .cart-toasts--demo { position: relative; inset: auto; transform: none; margin: 0 auto; }
+
+  .cart-toasts :global(.cart-toast) {
+    --tone: var(--c-primary-light, #d4a017);
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-3, 0.75rem) var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    background: rgb(var(--paper-rgb, 5 5 5) / 0.86);
+    backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+    color: var(--c-text-1, #fff);
+    overflow: hidden;
+    pointer-events: auto;
+    animation: ct-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cart-toasts--solid :global(.cart-toast) { background: var(--c-bg-1, #0a0a0a); backdrop-filter: none; }
+  .cart-toasts :global(.cart-toast--success) { --tone: var(--c-success, #34d399); }
+  .cart-toasts :global(.cart-toast--warning) { --tone: var(--c-warning, #fbbf24); }
+  .cart-toasts :global(.cart-toast--danger) { --tone: var(--c-danger, #f87171); }
+  .cart-toasts :global(.cart-toast--info) { --tone: var(--c-primary-light, #d4a017); }
+  .cart-toasts :global(.cart-toast.is-leaving) { animation: ct-out 0.22s ease forwards; }
+
+  .cart-toasts :global(.cart-toast__icon) {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 15%, transparent);
+  }
+  .cart-toasts :global(.cart-toast__body) { min-width: 0; }
+  .cart-toasts :global(.cart-toast__title) { margin: 0; font-size: 0.88rem; font-weight: 700; }
+  .cart-toasts :global(.cart-toast__text) { margin: 2px 0 0; font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-toasts :global(.cart-toast__action) {
+    min-height: 36px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.16);
+    border-radius: var(--r-full, 9999px);
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .cart-toasts :global(.cart-toast__action:hover) { background: rgb(var(--ink-rgb, 255 255 255) / 0.07); }
+  .cart-toasts :global(.cart-toast__close) {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .cart-toasts :global(.cart-toast__close:hover) { color: var(--c-text-1, #fff); background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+  .cart-toasts :global(.cart-toast button:focus-visible) { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .cart-toasts :global(.cart-toast__timer) {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--tone);
+    transform-origin: left;
+    animation: ct-timer var(--toast-ms, 4500ms) linear forwards;
+  }
+  .cart-toasts :global(.cart-toast.is-paused .cart-toast__timer) { animation-play-state: paused; }
+  .cart-toasts--demo :global(.cart-toast__timer) { animation: none; transform: scaleX(0.6); }
+
+  @keyframes ct-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } }
+  @keyframes ct-out { to { opacity: 0; transform: translateX(24px); } }
+  @keyframes ct-timer { to { transform: scaleX(0); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cart-toasts :global(.cart-toast), .cart-toasts :global(.cart-toast.is-leaving) { animation: none; }
+    .cart-toasts :global(.cart-toast__timer) { display: none; }
+  }
+</style>

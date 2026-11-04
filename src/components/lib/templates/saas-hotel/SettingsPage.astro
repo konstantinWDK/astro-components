@@ -1,0 +1,115 @@
+---
+/**
+ * SettingsPage — Account & workspace settings: profile, property details, notification switches,
+ * team management with roles and invites, and plan usage / billing.
+ *
+ * Usage (src/pages/app/settings.astro):
+ *   import { SettingsPage } from 'astro-component-kit/templates/saas-hotel';
+ *   <SettingsPage />
+ *
+ * @param {LobbyData} data - Workspace data.
+ * @param {SaasRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import AppLayout from './AppLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import SettingsSection from '../../app/SettingsSection.astro';
+import SwitchRow from '../../app/SwitchRow.astro';
+import TeamMembers from '../../app/TeamMembers.astro';
+import PlanUsageCard from '../../app/PlanUsageCard.astro';
+import AnimatedInput from '../../forms/AnimatedInput.astro';
+import ModernSelect from '../../forms/ModernSelect.astro';
+import { lobbyData, saasRoutes, type LobbyData, type SaasRoutes } from './data';
+
+interface Props {
+  data?: LobbyData;
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = lobbyData, routes = saasRoutes, theme = 'light' } = Astro.props;
+---
+
+<AppLayout title="Settings" current="settings" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Settings"
+    description="Manage your profile, property, team and billing."
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Settings' }]}
+    actions={[]}
+    periods={[]}
+    tabs={[
+      { label: 'Profile', href: '#profile' },
+      { label: 'Property', href: '#property' },
+      { label: 'Notifications', href: '#notifications' },
+      { label: 'Team', href: '#team', count: data.team.length },
+      { label: 'Billing', href: '#billing' },
+    ]}
+    currentTab="#profile"
+  />
+
+  <div class="settings">
+    <div id="profile">
+      <SettingsSection id="set-profile" title="Your profile" description="How you appear to your team and in guest messages.">
+        <div class="settings__row">
+          <AnimatedInput label="Full name" id="set-name" name="name" required autocomplete="name" placeholder=" " />
+          <AnimatedInput label="Email" id="set-email" name="email" type="email" required autocomplete="email" />
+        </div>
+        <div class="settings__row">
+          <AnimatedInput label="Job title" id="set-role" name="role" autocomplete="organization-title" />
+          <ModernSelect label="Language" id="set-lang" name="lang" options={[{ label: 'English', value: 'en' }, { label: 'Español', value: 'es' }, { label: 'Русский', value: 'ru' }]} />
+        </div>
+      </SettingsSection>
+    </div>
+
+    <div id="property">
+      <SettingsSection id="set-property" title="Property" description="Details used on invoices, confirmations and your booking engine.">
+        <div class="settings__row">
+          <AnimatedInput label="Property name" id="set-prop" name="property" required />
+          <ModernSelect label="Currency" id="set-cur" name="currency" options={[{ label: 'Euro (€)', value: 'EUR' }, { label: 'US dollar ($)', value: 'USD' }, { label: 'Pound (£)', value: 'GBP' }]} />
+        </div>
+        <div class="settings__row">
+          <ModernSelect label="Check-in time" id="set-in" name="checkin" options={[{ label: '14:00', value: '14' }, { label: '15:00', value: '15' }, { label: '16:00', value: '16' }]} />
+          <ModernSelect label="Check-out time" id="set-out" name="checkout" options={[{ label: '11:00', value: '11' }, { label: '12:00', value: '12' }]} />
+        </div>
+      </SettingsSection>
+    </div>
+
+    <div id="notifications">
+      <SettingsSection id="set-notes" title="Notifications" description="Choose what reaches your inbox and phone.">
+        <SwitchRow name="n-bookings" label="New bookings & cancellations" description="Instant email for every change from any channel." checked />
+        <SwitchRow name="n-house" label="Housekeeping alerts" description="Push notification when a room is out of order." checked />
+        <SwitchRow name="n-reviews" label="New guest reviews" description="Daily digest at 9:00." checked={false} />
+        <SwitchRow name="n-report" label="Weekly performance report" description="Occupancy, ADR and RevPAR every Monday." checked />
+      </SettingsSection>
+    </div>
+
+    <div id="team" class="settings__block">
+      <div class="settings__intro">
+        <h2>Team</h2>
+        <p>Invite colleagues and choose what each role can see and do.</p>
+      </div>
+      <TeamMembers members={data.team} seats={10} />
+    </div>
+
+    <div id="billing" class="settings__block">
+      <div class="settings__intro">
+        <h2>Plan & billing</h2>
+        <p>Your subscription renews automatically. Change or cancel any time.</p>
+      </div>
+      <PlanUsageCard variant="accent" upgrade={{ label: 'Upgrade to Business', href: routes.landing + '#pricing' }} />
+    </div>
+  </div>
+</AppLayout>
+
+<style>
+  .settings { display: grid; max-width: 1040px; }
+  .settings > div { scroll-margin-top: 84px; }
+  .settings__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+  .settings__block { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr); gap: var(--sp-6); padding-block: var(--sp-6); border-bottom: 1px solid var(--c-border); }
+  .settings__intro h2 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1); }
+  .settings__intro p { margin: 4px 0 0; font-size: 0.85rem; line-height: 1.55; }
+  @media (max-width: 900px) {
+    .settings__block { grid-template-columns: 1fr; }
+    .settings__row { grid-template-columns: 1fr; }
+  }
+</style>

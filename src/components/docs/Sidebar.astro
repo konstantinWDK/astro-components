@@ -1,6 +1,9 @@
 ---
 // src/components/docs/Sidebar.astro
+// Docs navigation: search → Get started → Components → Sections → Templates.
+// One scrollable list; only the group that contains the current page starts open.
 import { components, sectionCategories } from '../../data/registry/index';
+import { templates } from '../../data/registry/templates';
 import type { Locale } from '../../config/site';
 import { getLangFromUrl, useTranslations, getLocalizedPath, cleanPath } from '../../i18n/translations';
 import { getLocalizedCategory, getLocalizedSectionCategory } from '../../i18n/catalog';
@@ -15,418 +18,264 @@ const detectedLang = getLangFromUrl(Astro.url);
 const { categories, currentPath, lang = detectedLang } = Astro.props;
 const t = useTranslations(lang);
 
-// Path detection
-const normalizedCurrentPath = cleanPath(currentPath).replace(/\/$/, '') || '/';
-const isSectionsPath = normalizedCurrentPath.startsWith('/sections');
-const isComponentsPath = !isSectionsPath;
+const path = cleanPath(currentPath).replace(/\/$/, '') || '/';
+const NEW_CATEGORIES = new Set(['ecommerce']);
 
-// Component categories vs sections category
-const rawComponentCategories = categories.filter((c) => c.id !== 'sections');
-const componentCategories = rawComponentCategories.map((c) => getLocalizedCategory(c, lang));
-const localizedSectionCategories = sectionCategories.map((sc) => getLocalizedSectionCategory(sc, lang));
+const componentGroups = categories
+  .filter((c) => c.id !== 'sections')
+  .map((c) => {
+    const loc = getLocalizedCategory(c, lang);
+    const items = components
+      .filter((comp) => comp.category === c.id)
+      .map((comp) => ({ name: comp.name, raw: `/docs/${comp.slug}` }));
+    return { id: c.id, name: loc.name, icon: c.icon, items, isNew: NEW_CATEGORIES.has(c.id) };
+  })
+  .filter((g) => g.items.length > 0);
 
-const totalComponentsCount = components.filter((c) => c.category !== 'sections').length;
-const totalSectionsCount = components.filter((c) => c.category === 'sections').length;
+const sectionGroups = sectionCategories
+  .map((sc) => {
+    const loc = getLocalizedSectionCategory(sc, lang);
+    const items = components
+      .filter((comp) => comp.category === 'sections' && comp.sectionCategory === sc.id)
+      .map((comp) => ({ name: comp.name, raw: `/sections/${comp.slug}` }));
+    return { id: `s-${sc.id}`, name: loc.name, icon: sc.icon, items, isNew: false };
+  })
+  .filter((g) => g.items.length > 0);
 
-// Server-side: determine which component categories should be expanded
-const expandedCategories = new Set<string>();
-rawComponentCategories.forEach((cat) => {
-  const catComponents = components.filter((c) => c.category === cat.id);
-  const hasActive = catComponents.some(comp => `/docs/${comp.slug}` === normalizedCurrentPath);
-  if (hasActive) {
-    expandedCategories.add(cat.id);
-  }
-});
+const componentTotal = componentGroups.reduce((n, g) => n + g.items.length, 0);
+const sectionTotal = sectionGroups.reduce((n, g) => n + g.items.length, 0);
+const isOpen = (g: { items: { raw: string }[] }) => g.items.some((i) => i.raw === path);
+
+const icons = {
+  install: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  templates: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  notes: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  store: '<path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/>',
+};
+const getStarted = [
+  { label: t('nav.install'), raw: '/install', icon: icons.install, match: (p: string) => p.startsWith('/install') },
+  { label: t('nav.templates'), raw: '/templates', icon: icons.templates, match: (p: string) => p === '/templates', isNew: true },
+  { label: t('nav.notes'), raw: '/notes', icon: icons.notes, match: (p: string) => p.startsWith('/notes') || p.startsWith('/blog') },
+];
+const searchLabel = t('sidebar.search').replace('{n}', String(componentTotal + sectionTotal));
+const chevron = '<polyline points="6 9 12 15 18 9"></polyline>';
 ---
 
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar__search">
-    <svg class="sidebar__search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-    <input type="text" id="sidebar-search" placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
+<aside class="sidebar" id="sidebar" aria-label={t('sidebar.navLabel')}>
+  <div class="sidebar__search" role="search">
+    <svg class="sidebar__search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" id="sidebar-search" placeholder={searchLabel} aria-label={searchLabel} aria-describedby="sidebar-search-status" autocomplete="off" />
+    <kbd class="sidebar__kbd" aria-hidden="true">/</kbd>
+    <button type="button" class="sidebar__clear" id="sidebar-clear" aria-label={t('sidebar.clear')} hidden>×</button>
   </div>
+  <p class="sidebar__status" id="sidebar-search-status" aria-live="polite" data-results={t('sidebar.results')}></p>
 
-  <!-- Quick Switcher Tabs between Components and Sections -->
-  <div class="sidebar__tabs" role="tablist" aria-label="Library Section Switcher">
-    <button 
-      type="button" 
-      class:list={['sidebar__tab-btn', { 'sidebar__tab-btn--active': isComponentsPath }]}
-      id="tabBtnComponents"
-      data-target="components"
-      aria-label="Switch to UI Components"
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span>{t('nav.components')}</span>
-      <span class="sidebar__tab-count">{totalComponentsCount}</span>
-    </button>
-    <button 
-      type="button" 
-      class:list={['sidebar__tab-btn', { 'sidebar__tab-btn--active': isSectionsPath }]}
-      id="tabBtnSections"
-      data-target="sections"
-      aria-label="Switch to Page Sections"
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-      <span>{t('nav.sections')}</span>
-      <span class="sidebar__tab-count">{totalSectionsCount}</span>
-    </button>
-  </div>
+  <nav class="sidebar__nav" aria-label={t('sidebar.navLabel')}>
+    <!-- Get started -->
+    <section class="sb-section" data-sb-section>
+      <h2 class="sb-label">{t('sidebar.getStarted')}</h2>
+      <ul class="sb-quick">
+        {getStarted.map((item) => {
+          const active = item.match(path);
+          return (
+            <li class="sidebar__item" data-name={item.label.toLowerCase()}>
+              <a href={getLocalizedPath(item.raw, lang)} class:list={['sb-quick__link', { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
+                <span class="sb-quick__icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={item.icon} /></svg></span>
+                <span class="sb-quick__text">{item.label}</span>
+                {item.isNew && <span class="sb-new">{t('sidebar.new')}</span>}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
 
-  <nav class="sidebar__inner" aria-label="Component categories">
-    <!-- ==================== BUBBLE 1: UI COMPONENTS ==================== -->
-    <div 
-      class:list={['sidebar__bubble', 'sidebar__bubble--components', { 'is-expanded': isComponentsPath }]} 
-      id="bubble-components"
-      data-bubble="components"
-    >
-      <button type="button" class="sidebar__bubble-header" aria-expanded={isComponentsPath ? 'true' : 'false'}>
-        <div class="sidebar__bubble-meta">
-          <span class="sidebar__bubble-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-          </span>
-          <div class="sidebar__bubble-text">
-            <span class="sidebar__bubble-title">{t('sidebar.components')}</span>
-            <span class="sidebar__bubble-subtitle">{componentCategories.length} categories · {totalComponentsCount} items</span>
-          </div>
-        </div>
-        <div class="sidebar__bubble-right">
-          <span class="sidebar__bubble-badge">{totalComponentsCount}</span>
-          <svg class="sidebar__bubble-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-      </button>
-
-      <div class="sidebar__bubble-body">
-        <div class="sidebar__bubble-body-inner">
-          {componentCategories.map((cat) => {
-            const catComponents = components.filter((c) => c.category === cat.id);
-            if (catComponents.length === 0) return null;
-
-            const isExpanded = expandedCategories.has(cat.id);
-
-            return (
-              <div class:list={['sidebar__group', { 'is-expanded': isExpanded }]} data-category={cat.id}>
-                <button class="sidebar__group-header" aria-expanded={isExpanded ? 'true' : 'false'}>
-                  <span class="sidebar__group-icon" set:html={cat.icon}></span>
-                  <span class="sidebar__group-name">{cat.name}</span>
-                  <span class="sidebar__group-count">{catComponents.length}</span>
-                  <svg class="sidebar__group-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </button>
-
-                <div class="sidebar__group-content">
-                  <div class="sidebar__group-content-inner">
-                    <ul class="sidebar__list">
-                      {catComponents.map((comp) => {
-                        const rawHref = `/docs/${comp.slug}`;
-                        const href = getLocalizedPath(rawHref, lang);
-                        const isActive = normalizedCurrentPath === rawHref;
-                        return (
-                          <li class="sidebar__item" data-name={comp.name.toLowerCase()}>
-                            <a
-                              href={href}
-                              class:list={['sidebar__link', { 'sidebar__link--active': isActive }]}
-                              aria-current={isActive ? 'page' : undefined}
-                            >
-                              {comp.name}
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== BUBBLE 2: PAGE SECTIONS ==================== -->
-    <div 
-      class:list={['sidebar__bubble', 'sidebar__bubble--sections', { 'is-expanded': isSectionsPath }]} 
-      id="bubble-sections"
-      data-bubble="sections"
-    >
-      <button type="button" class="sidebar__bubble-header" aria-expanded={isSectionsPath ? 'true' : 'false'}>
-        <div class="sidebar__bubble-meta">
-          <span class="sidebar__bubble-icon sidebar__bubble-icon--sections">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-          </span>
-          <div class="sidebar__bubble-text">
-            <span class="sidebar__bubble-title">{t('sidebar.sections')}</span>
-            <span class="sidebar__bubble-subtitle">{localizedSectionCategories.length} categories · {totalSectionsCount} templates</span>
-          </div>
-        </div>
-        <div class="sidebar__bubble-right">
-          <span class="sidebar__bubble-badge sidebar__bubble-badge--sections">{totalSectionsCount}</span>
-          <svg class="sidebar__bubble-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-      </button>
-
-      <div class="sidebar__bubble-body">
-        <div class="sidebar__bubble-body-inner">
-          <div class="sidebar__subgroups">
-            {localizedSectionCategories.map((subCat) => {
-              const subComps = components.filter((c) => c.category === 'sections' && c.sectionCategory === subCat.id);
-              if (subComps.length === 0) return null;
-              return (
-                <div class="sidebar__subgroup" data-subgroup={subCat.id}>
-                  <div class="sidebar__subgroup-title">
-                    <span class="sidebar__subgroup-name">{subCat.name}</span>
-                    <span class="sidebar__subgroup-count">{subComps.length}</span>
-                  </div>
-                  <ul class="sidebar__list sidebar__list--sub">
-                    {subComps.map((comp) => {
-                      const rawHref = `/sections/${comp.slug}`;
-                      const href = getLocalizedPath(rawHref, lang);
-                      const isActive = normalizedCurrentPath === rawHref;
+    <!-- Components & Sections -->
+    {[
+      { key: 'components', label: t('nav.components'), total: componentTotal, groups: componentGroups, all: '/docs/glass-button' },
+      { key: 'sections', label: t('nav.sections'), total: sectionTotal, groups: sectionGroups, all: '/sections' },
+    ].map((block) => (
+      <section class="sb-section" data-sb-section data-block={block.key}>
+        <h2 class="sb-label">
+          <span>{block.label}</span>
+          <span class="sb-label__count">{block.total}</span>
+          {block.key === 'sections' && <a class="sb-label__link" href={getLocalizedPath(block.all, lang)}>{t('sidebar.viewAll')}</a>}
+        </h2>
+        {block.groups.map((g) => {
+          const open = isOpen(g);
+          return (
+            <div class:list={['sidebar__group', { 'is-expanded': open }]} data-group={g.id}>
+              <button type="button" class="sidebar__group-header" aria-expanded={open ? 'true' : 'false'} aria-controls={`sbg-${g.id}`}>
+                <span class="sidebar__group-icon" aria-hidden="true" set:html={g.icon}></span>
+                <span class="sidebar__group-name">{g.name}</span>
+                {g.isNew && <span class="sb-new">{t('sidebar.new')}</span>}
+                <span class="sidebar__group-count">{g.items.length}</span>
+                <svg class="sidebar__group-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={chevron} /></svg>
+              </button>
+              <div class="sidebar__group-content" id={`sbg-${g.id}`}>
+                <div class="sidebar__group-content-inner">
+                  <ul class="sidebar__list">
+                    {g.items.map((item) => {
+                      const active = item.raw === path;
                       return (
-                        <li class="sidebar__item" data-name={comp.name.toLowerCase()}>
-                          <a
-                            href={href}
-                            class:list={['sidebar__link', { 'sidebar__link--active': isActive }]}
-                            aria-current={isActive ? 'page' : undefined}
-                          >
-                            {comp.name}
-                          </a>
+                        <li class="sidebar__item" data-name={item.name.toLowerCase()}>
+                          <a href={getLocalizedPath(item.raw, lang)} class:list={['sidebar__link', { 'sidebar__link--active': active }]} aria-current={active ? 'page' : undefined} tabindex={open ? undefined : '-1'}>{item.name}</a>
                         </li>
                       );
                     })}
                   </ul>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+    ))}
+
+    <!-- Templates -->
+    <section class="sb-section" data-sb-section>
+      <h2 class="sb-label">
+        <span>{t('nav.templates')}</span>
+        <span class="sb-label__count">{templates.length}</span>
+      </h2>
+      <ul class="sb-quick">
+        {templates.map((tpl) => {
+          const raw = `/templates/${tpl.slug}`;
+          const active = path === raw;
+          return (
+            <li class="sidebar__item" data-name={`${tpl.name[lang]} ${tpl.slug} template`.toLowerCase()}>
+              <a href={getLocalizedPath(raw, lang)} class:list={['sb-quick__link', 'sb-quick__link--tpl', { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
+                <span class="sb-quick__icon sb-quick__icon--tpl" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={icons.store} /></svg></span>
+                <span class="sb-quick__text">
+                  {tpl.name[lang]}
+                  <small>{tpl.pages.length} {t('sidebar.pages')}</small>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+
+    <p class="sidebar__empty" id="sidebar-empty" data-prefix={t('sidebar.noResultsFor')} hidden></p>
   </nav>
 </aside>
 
 <div class="mobile-filter-trigger">
-  <button id="mobile-filter-btn" aria-label={t('sidebar.exploreLabel')}>
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <button id="mobile-filter-btn" type="button" aria-label={t('sidebar.exploreLabel')} aria-controls="sidebar" aria-expanded="false">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
     <span>{t('sidebar.explore')}</span>
   </button>
 </div>
-
 <div class="mobile-filter-backdrop" id="mobile-filter-backdrop"></div>
 
 <script is:inline>
   (function () {
-    const sidebar = document.getElementById('sidebar');
+    var sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
-    const SCROLL_KEY = 'sidebar-scroll-pos';
-
-    // Restore scroll position
-    const savedScroll = sessionStorage.getItem(SCROLL_KEY);
-    if (savedScroll !== null) {
-      requestAnimationFrame(function () {
-        sidebar.scrollTop = parseInt(savedScroll, 10);
-      });
-    }
-
-    // Save scroll position
-    let saveTimeout;
+    // ── Keep scroll position between pages ─────────────────────
+    var SCROLL_KEY = 'sidebar-scroll-pos';
+    var savedScroll = null;
+    try { savedScroll = sessionStorage.getItem(SCROLL_KEY); } catch (e) {}
+    if (savedScroll !== null) requestAnimationFrame(function () { sidebar.scrollTop = parseInt(savedScroll, 10); });
+    var saveTimeout;
     sidebar.addEventListener('scroll', function () {
       clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(function () {
-        sessionStorage.setItem(SCROLL_KEY, String(sidebar.scrollTop));
-      }, 50);
+      saveTimeout = setTimeout(function () { try { sessionStorage.setItem(SCROLL_KEY, String(sidebar.scrollTop)); } catch (e) {} }, 60);
     });
 
-    // Bubble Headers Click Toggle
-    document.querySelectorAll('.sidebar__bubble-header').forEach(function (header) {
+    // ── Group accordions ───────────────────────────────────────
+    function setGroup(group, open) {
+      group.classList.toggle('is-expanded', open);
+      var header = group.querySelector('.sidebar__group-header');
+      if (header) header.setAttribute('aria-expanded', open ? 'true' : 'false');
+      group.querySelectorAll('.sidebar__link').forEach(function (a) {
+        if (open) a.removeAttribute('tabindex'); else a.setAttribute('tabindex', '-1');
+      });
+    }
+    sidebar.querySelectorAll('.sidebar__group-header').forEach(function (header) {
       header.addEventListener('click', function () {
-        var bubble = header.closest('.sidebar__bubble');
-        if (!bubble) return;
-        var isExp = bubble.classList.contains('is-expanded');
-        if (isExp) {
-          bubble.classList.remove('is-expanded');
-          header.setAttribute('aria-expanded', 'false');
-        } else {
-          bubble.classList.add('is-expanded');
-          header.setAttribute('aria-expanded', 'true');
-        }
-        updateTabsState();
+        var group = header.closest('.sidebar__group');
+        if (group) setGroup(group, !group.classList.contains('is-expanded'));
       });
     });
 
-    // Quick Switcher Tabs
-    var tabComponents = document.getElementById('tabBtnComponents');
-    var tabSections = document.getElementById('tabBtnSections');
-    var bubbleComponents = document.getElementById('bubble-components');
-    var bubbleSections = document.getElementById('bubble-sections');
+    // Bring the current page into view on first visit
+    var current = sidebar.querySelector('[aria-current="page"]');
+    if (current && savedScroll === null) setTimeout(function () { current.scrollIntoView({ block: 'center' }); }, 150);
 
-    function selectBubble(target) {
-      if (target === 'components') {
-        if (tabComponents) tabComponents.classList.add('sidebar__tab-btn--active');
-        if (tabSections) tabSections.classList.remove('sidebar__tab-btn--active');
-        if (bubbleComponents) {
-          bubbleComponents.classList.add('is-expanded');
-          var h = bubbleComponents.querySelector('.sidebar__bubble-header');
-          if (h) h.setAttribute('aria-expanded', 'true');
-          bubbleComponents.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-        if (bubbleSections) {
-          bubbleSections.classList.remove('is-expanded');
-          var hs = bubbleSections.querySelector('.sidebar__bubble-header');
-          if (hs) hs.setAttribute('aria-expanded', 'false');
-        }
-      } else if (target === 'sections') {
-        if (tabSections) tabSections.classList.add('sidebar__tab-btn--active');
-        if (tabComponents) tabComponents.classList.remove('sidebar__tab-btn--active');
-        if (bubbleSections) {
-          bubbleSections.classList.add('is-expanded');
-          var hs = bubbleSections.querySelector('.sidebar__bubble-header');
-          if (hs) hs.setAttribute('aria-expanded', 'true');
-          bubbleSections.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-        if (bubbleComponents) {
-          bubbleComponents.classList.remove('is-expanded');
-          var h = bubbleComponents.querySelector('.sidebar__bubble-header');
-          if (h) h.setAttribute('aria-expanded', 'false');
-        }
+    // ── Search ─────────────────────────────────────────────────
+    var input = document.getElementById('sidebar-search');
+    var clearBtn = document.getElementById('sidebar-clear');
+    var status = document.getElementById('sidebar-search-status');
+    var empty = document.getElementById('sidebar-empty');
+    var groups = Array.prototype.slice.call(sidebar.querySelectorAll('.sidebar__group'));
+    var openBefore = groups.map(function (g) { return g.classList.contains('is-expanded'); });
+
+    function filter() {
+      var q = (input.value || '').toLowerCase().trim();
+      var total = 0;
+      sidebar.querySelectorAll('.sidebar__item').forEach(function (item) {
+        var ok = !q || (item.getAttribute('data-name') || '').indexOf(q) !== -1;
+        item.hidden = !ok;
+        if (ok && q) total++;
+      });
+      groups.forEach(function (g, i) {
+        if (!q) { g.hidden = false; setGroup(g, openBefore[i]); return; }
+        var any = g.querySelector('.sidebar__item:not([hidden])');
+        g.hidden = !any;
+        setGroup(g, Boolean(any));
+      });
+      sidebar.querySelectorAll('[data-sb-section]').forEach(function (sec) {
+        sec.hidden = Boolean(q) && !sec.querySelector('.sidebar__item:not([hidden])');
+      });
+      if (clearBtn) clearBtn.hidden = !q;
+      if (status) status.textContent = q ? (status.getAttribute('data-results') || '{n}').replace('{n}', String(total)) : '';
+      if (empty) {
+        empty.hidden = !q || total > 0;
+        empty.textContent = (empty.getAttribute('data-prefix') || '') + ' “' + input.value.trim() + '”';
       }
     }
-
-    function updateTabsState() {
-      var isCompOpen = bubbleComponents && bubbleComponents.classList.contains('is-expanded');
-      var isSecOpen = bubbleSections && bubbleSections.classList.contains('is-expanded');
-      if (tabComponents) tabComponents.classList.toggle('sidebar__tab-btn--active', isCompOpen && !isSecOpen);
-      if (tabSections) tabSections.classList.toggle('sidebar__tab-btn--active', isSecOpen && !isCompOpen);
-    }
-
-    if (tabComponents) {
-      tabComponents.addEventListener('click', function () {
-        selectBubble('components');
-      });
-    }
-
-    if (tabSections) {
-      tabSections.addEventListener('click', function () {
-        selectBubble('sections');
-      });
-    }
-
-    // Category Group Accordion Toggle inside components
-    document.querySelectorAll('.sidebar__group-header').forEach(function (header) {
-      header.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var group = header.closest('.sidebar__group');
-        if (!group) return;
-        var isExpanded = group.classList.contains('is-expanded');
-        if (isExpanded) {
-          group.classList.remove('is-expanded');
-          header.setAttribute('aria-expanded', 'false');
-        } else {
-          group.classList.add('is-expanded');
-          header.setAttribute('aria-expanded', 'true');
+    if (input) {
+      input.addEventListener('input', filter);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { input.value = ''; filter(); }
+        if (e.key === 'Enter') {
+          var first = sidebar.querySelector('.sidebar__item:not([hidden]) a');
+          if (first && input.value.trim()) first.click();
         }
       });
-    });
-
-    // Scroll active link into view
-    var allLinks = document.querySelectorAll('[aria-current="page"]');
-    if (allLinks.length > 0 && savedScroll === null) {
-      setTimeout(function () {
-        allLinks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    }
-
-    // Search logic across both bubbles
-    var searchInput = document.getElementById('sidebar-search');
-    if (searchInput) {
-      searchInput.addEventListener('input', function () {
-        var query = searchInput.value.toLowerCase().trim();
-
-        ['bubble-components', 'bubble-sections'].forEach(function (bubbleId) {
-          var bubble = document.getElementById(bubbleId);
-          if (!bubble) return;
-          var anyVisibleInBubble = false;
-
-          // Component groups
-          bubble.querySelectorAll('.sidebar__group').forEach(function (group) {
-            var hasVisible = false;
-            group.querySelectorAll('.sidebar__item').forEach(function (item) {
-              var name = item.getAttribute('data-name') || '';
-              var visible = name.includes(query);
-              item.style.display = visible ? '' : 'none';
-              if (visible) hasVisible = true;
-            });
-            if (query.length > 0) {
-              group.style.display = hasVisible ? '' : 'none';
-              if (hasVisible) {
-                group.classList.add('is-expanded');
-                var gh = group.querySelector('.sidebar__group-header');
-                if (gh) gh.setAttribute('aria-expanded', 'true');
-                anyVisibleInBubble = true;
-              }
-            } else {
-              group.style.display = '';
-            }
-          });
-
-          // Section subgroups
-          bubble.querySelectorAll('.sidebar__subgroup').forEach(function (subgroup) {
-            var items = subgroup.querySelectorAll('.sidebar__item');
-            var subHasVisible = false;
-            items.forEach(function (it) {
-              var name = it.getAttribute('data-name') || '';
-              var visible = name.includes(query);
-              it.style.display = visible ? '' : 'none';
-              if (visible) subHasVisible = true;
-            });
-            subgroup.style.display = (query.length > 0 && !subHasVisible) ? 'none' : '';
-            if (subHasVisible) anyVisibleInBubble = true;
-          });
-
-          if (query.length > 0) {
-            bubble.style.display = anyVisibleInBubble ? '' : 'none';
-            if (anyVisibleInBubble) {
-              bubble.classList.add('is-expanded');
-              var bh = bubble.querySelector('.sidebar__bubble-header');
-              if (bh) bh.setAttribute('aria-expanded', 'true');
-            }
-          } else {
-            bubble.style.display = '';
-            bubble.querySelectorAll('.sidebar__subgroup').forEach(function (sub) {
-              sub.style.display = '';
-            });
-          }
-        });
+      document.addEventListener('keydown', function (e) {
+        var tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(tag) && !(document.activeElement && document.activeElement.isContentEditable)) {
+          e.preventDefault();
+          input.focus();
+        }
       });
     }
+    if (clearBtn) clearBtn.addEventListener('click', function () { input.value = ''; filter(); input.focus(); });
 
-    // Mobile filter drawer
+    // ── Mobile drawer ──────────────────────────────────────────
     var mobileBtn = document.getElementById('mobile-filter-btn');
     var backdrop = document.getElementById('mobile-filter-backdrop');
-
-    function openMobileFilter() {
+    function openMobile() {
       sidebar.classList.add('is-open');
       if (backdrop) backdrop.classList.add('is-open');
+      if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'true');
       document.body.style.overflow = 'hidden';
     }
-
-    function closeMobileFilter() {
+    function closeMobile() {
       sidebar.classList.remove('is-open');
       if (backdrop) backdrop.classList.remove('is-open');
+      if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
     }
-
-    if (mobileBtn) mobileBtn.addEventListener('click', openMobileFilter);
-    if (backdrop) backdrop.addEventListener('click', closeMobileFilter);
-
+    if (mobileBtn) mobileBtn.addEventListener('click', openMobile);
+    if (backdrop) backdrop.addEventListener('click', closeMobile);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sidebar.classList.contains('is-open')) closeMobile(); });
     sidebar.querySelectorAll('a').forEach(function (link) {
-      link.addEventListener('click', function () {
-        if (window.innerWidth <= 768) closeMobileFilter();
-      });
+      link.addEventListener('click', function () { if (window.innerWidth <= 768) closeMobile(); });
     });
   })();
 </script>
@@ -440,401 +289,215 @@ rawComponentCategories.forEach((cat) => {
     height: calc(100vh - var(--header-h));
     overflow-y: auto;
     border-right: 1px solid var(--c-border);
-    padding: var(--sp-5) 0 var(--sp-10);
+    padding: 0 0 var(--sp-10);
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.08) transparent;
   }
   .sidebar::-webkit-scrollbar { width: 4px; }
   .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
 
-  /* Search bar */
+  /* ── Search (sticky) ── */
   .sidebar__search {
-    padding: 0 var(--sp-3);
-    margin-bottom: var(--sp-3);
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: var(--sp-5) var(--sp-3) var(--sp-3);
+    background: linear-gradient(var(--c-bg) 80%, transparent);
   }
   .sidebar__search input {
     width: 100%;
-    padding: 0.62rem 0.75rem 0.62rem 2.3rem;
+    min-height: 40px;
+    padding: 0.55rem 2.2rem 0.55rem 2.2rem;
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--c-border);
     border-radius: var(--r-md);
     color: var(--c-text-1);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
+    font-family: var(--font-sans);
     outline: none;
     transition: border-color 0.2s, background 0.2s;
-    font-family: var(--font-sans);
+    -webkit-appearance: none;
   }
+  .sidebar__search input::-webkit-search-cancel-button { display: none; }
   .sidebar__search input::placeholder { color: var(--c-text-3); }
-  .sidebar__search input:focus {
-    border-color: rgba(234,179,8,0.4);
-    background: rgba(255,255,255,0.05);
-  }
-  .sidebar__search-icon {
+  .sidebar__search input:focus { border-color: rgba(234,179,8,0.45); background: rgba(255,255,255,0.05); }
+  .sidebar__search-icon { position: absolute; left: calc(var(--sp-3) + 0.75rem); top: calc(var(--sp-5) + 20px); transform: translateY(-50%); color: var(--c-text-3); pointer-events: none; }
+  .sidebar__kbd, .sidebar__clear {
     position: absolute;
-    left: 2rem;
-    top: 50%;
+    right: calc(var(--sp-3) + 0.5rem);
+    top: calc(var(--sp-5) + 20px);
     transform: translateY(-50%);
-    color: var(--c-text-3);
-    pointer-events: none;
-    opacity: 0.6;
   }
-
-  /* Quick Switcher Tabs */
-  .sidebar__tabs {
-    display: flex;
-    gap: 6px;
-    padding: 0 var(--sp-3);
-    margin-bottom: var(--sp-4);
-  }
-  .sidebar__tab-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 0.45rem 0.4rem;
-    background: rgba(255, 255, 255, 0.03);
+  .sidebar__kbd {
+    padding: 0.05rem 0.4rem;
+    border-radius: 5px;
     border: 1px solid var(--c-border);
-    border-radius: var(--r-md);
+    background: rgba(255,255,255,0.04);
     color: var(--c-text-3);
-    font-size: 0.72rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
   }
-  .sidebar__tab-btn:hover {
-    color: var(--c-text-1);
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-  .sidebar__tab-btn--active {
-    color: #facc15;
-    background: rgba(234, 179, 8, 0.12);
-    border-color: rgba(234, 179, 8, 0.35);
-    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.1);
-  }
-  .sidebar__tab-count {
-    font-size: 0.6rem;
-    padding: 0.08rem 0.35rem;
-    border-radius: var(--r-full);
-    background: rgba(0, 0, 0, 0.4);
-    color: currentColor;
-    font-weight: 800;
-  }
-
-  /* Nav shell */
-  .sidebar__inner {
-    padding: 0 var(--sp-3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-  }
-
-  /* ==================== BUBBLE CONTAINERS ==================== */
-  .sidebar__bubble {
-    border-radius: 14px;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    overflow: hidden;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .sidebar__bubble:hover {
-    border-color: rgba(255, 255, 255, 0.14);
-  }
-
-  .sidebar__bubble.is-expanded {
-    background: rgba(15, 23, 42, 0.65);
-    border-color: rgba(234, 179, 8, 0.28);
-    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.5), 0 0 16px -4px rgba(234, 179, 8, 0.08);
-  }
-
-  .sidebar__bubble-header {
-    width: 100%;
-    padding: 0.75rem 0.85rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s ease;
-  }
-
-  .sidebar__bubble-header:hover {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  .sidebar__bubble-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-
-  .sidebar__bubble-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #94a3b8;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-  }
-
-  .sidebar__bubble.is-expanded .sidebar__bubble-icon {
-    background: rgba(234, 179, 8, 0.15);
-    border-color: rgba(234, 179, 8, 0.35);
-    color: #facc15;
-    box-shadow: 0 0 12px rgba(234, 179, 8, 0.15);
-  }
-
-  .sidebar__bubble-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-  }
-
-  .sidebar__bubble-title {
-    font-size: 0.8rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    color: #fff;
-  }
-
-  .sidebar__bubble-subtitle {
-    font-size: 0.62rem;
-    color: #94a3b8;
-  }
-
-  .sidebar__bubble-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .sidebar__bubble-badge {
-    font-size: 0.62rem;
-    font-weight: 700;
-    padding: 0.1rem 0.45rem;
-    border-radius: var(--r-full);
-    background: rgba(255, 255, 255, 0.06);
-    color: #94a3b8;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .sidebar__bubble.is-expanded .sidebar__bubble-badge {
-    background: rgba(234, 179, 8, 0.12);
-    color: #facc15;
-    border-color: rgba(234, 179, 8, 0.3);
-  }
-
-  .sidebar__bubble-chevron {
-    color: #64748b;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .sidebar__bubble.is-expanded .sidebar__bubble-chevron {
-    transform: rotate(180deg);
-    color: #facc15;
-  }
-
-  .sidebar__bubble-body {
+  .sidebar__search input:focus ~ .sidebar__kbd, .sidebar__clear:not([hidden]) ~ .sidebar__kbd { display: none; }
+  .sidebar__clear {
     display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    color: var(--c-text-1);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
   }
+  .sidebar__clear[hidden] { display: none; }
+  .sidebar__search input:not(:placeholder-shown) ~ .sidebar__kbd { display: none; }
+  .sidebar__status { margin: 0; padding: 0 var(--sp-4); font-size: 0.7rem; color: var(--c-text-3); }
+  .sidebar__status:empty { display: none; }
 
-  .sidebar__bubble.is-expanded .sidebar__bubble-body {
-    grid-template-rows: 1fr;
-  }
-
-  .sidebar__bubble-body-inner {
-    min-height: 0;
-    padding: 0.35rem 0.35rem 0.65rem;
+  /* ── Sections ── */
+  .sidebar__nav { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-1) var(--sp-3) 0; }
+  .sb-section[hidden] { display: none; }
+  .sb-label {
     display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: center;
+    gap: var(--sp-2);
+    margin: 0 0 var(--sp-1);
+    padding: 0 var(--sp-2);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+  }
+  .sb-label__count {
+    padding: 0.05rem 0.4rem;
+    border-radius: var(--r-full);
+    background: rgba(234,179,8,0.1);
+    color: #facc15;
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+  }
+  .sb-label__link { margin-left: auto; font-size: 0.66rem; letter-spacing: 0.04em; text-transform: none; color: var(--c-text-3); font-weight: 600; }
+  .sb-label__link:hover { color: #facc15; }
+
+  .sb-new {
+    padding: 0.05rem 0.4rem;
+    border-radius: var(--r-full);
+    background: rgba(52,211,153,0.12);
+    color: #34d399;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
-  /* ==================== GROUP ACCORDION (Inside Bubble 1) ==================== */
-  .sidebar__group {
+  /* Quick links (Get started, Templates) */
+  .sb-quick { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .sb-quick .sidebar__item[hidden] { display: none; }
+  .sb-quick__link {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 36px;
+    padding: 0.35rem var(--sp-2);
+    border-radius: var(--r-md);
+    color: var(--c-text-2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
   }
+  .sb-quick__link:hover { background: rgba(255,255,255,0.04); color: var(--c-text-1); }
+  .sb-quick__link.is-active { background: rgba(234,179,8,0.1); color: #facc15; }
+  .sb-quick__icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.04); color: var(--c-text-2); flex-shrink: 0; }
+  .sb-quick__link.is-active .sb-quick__icon, .sb-quick__icon--tpl { background: rgba(234,179,8,0.12); color: #facc15; }
+  .sb-quick__text { flex: 1; display: grid; line-height: 1.25; }
+  .sb-quick__text small { font-size: 0.68rem; font-weight: 500; color: var(--c-text-3); }
 
+  /* Groups (accordion) */
+  .sidebar__group { display: flex; flex-direction: column; }
+  .sidebar__group[hidden] { display: none; }
   .sidebar__group-header {
     display: flex;
     align-items: center;
+    gap: var(--sp-2);
     width: 100%;
-    padding: 0.45rem var(--sp-2);
-    background: transparent;
+    min-height: 34px;
+    padding: 0.3rem var(--sp-2);
     border: none;
     border-radius: var(--r-md);
-    cursor: pointer;
+    background: transparent;
     text-align: left;
+    cursor: pointer;
     transition: background 0.15s;
-    gap: var(--sp-2);
   }
-  .sidebar__group-header:hover {
-    background: rgba(255,255,255,0.04);
+  .sidebar__group-header:hover { background: rgba(255,255,255,0.04); }
+  .sidebar__group-header:focus-visible, .sidebar__link:focus-visible, .sb-quick__link:focus-visible, .sb-label__link:focus-visible, .sidebar__clear:focus-visible {
+    outline: 2px solid #facc15;
+    outline-offset: -2px;
   }
-
-  .sidebar__group-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    color: var(--c-text-3);
-    transition: color 0.2s;
-  }
-  .sidebar__group.is-expanded .sidebar__group-icon {
-    color: #facc15;
-  }
-
-  .sidebar__group-name {
-    flex: 1;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--c-text-2);
-    transition: color 0.2s;
-  }
-  .sidebar__group.is-expanded .sidebar__group-name {
-    color: var(--c-text-1);
-  }
-
+  .sidebar__group-icon { display: grid; place-items: center; width: 18px; height: 18px; flex-shrink: 0; color: var(--c-text-3); transition: color 0.2s; }
+  .sidebar__group-icon :global(svg) { width: 14px; height: 14px; }
+  .sidebar__group.is-expanded .sidebar__group-icon { color: #facc15; }
+  .sidebar__group-name { flex: 1; font-size: 0.82rem; font-weight: 600; color: var(--c-text-2); transition: color 0.2s; }
+  .sidebar__group-header:hover .sidebar__group-name, .sidebar__group.is-expanded .sidebar__group-name { color: var(--c-text-1); }
   .sidebar__group-count {
-    font-size: 0.62rem;
-    font-weight: 600;
-    color: var(--c-text-3);
-    background: rgba(255,255,255,0.04);
+    min-width: 22px;
     padding: 0.05rem 0.35rem;
     border-radius: var(--r-full);
-    min-width: 20px;
+    background: rgba(255,255,255,0.04);
+    color: var(--c-text-3);
+    font-size: 0.64rem;
+    font-weight: 600;
     text-align: center;
   }
-
-  .sidebar__group-chevron {
-    opacity: 0.5;
-    transition: transform 0.25s ease, opacity 0.2s;
-    flex-shrink: 0;
-  }
-  .sidebar__group.is-expanded .sidebar__group-chevron {
-    transform: rotate(180deg);
-    opacity: 1;
-    color: #facc15;
-  }
-
-  .sidebar__group-content {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-  }
-  .sidebar__group.is-expanded .sidebar__group-content {
-    grid-template-rows: 1fr;
-  }
+  .sidebar__group-chevron { flex-shrink: 0; opacity: 0.45; transition: transform 0.25s ease, opacity 0.2s; }
+  .sidebar__group.is-expanded .sidebar__group-chevron { transform: rotate(180deg); opacity: 1; color: #facc15; }
+  .sidebar__group-content { display: grid; grid-template-rows: 0fr; overflow: hidden; transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+  .sidebar__group.is-expanded .sidebar__group-content { grid-template-rows: 1fr; }
   .sidebar__group-content-inner { min-height: 0; }
 
-  /* Subgroups (Inside Bubble 2: Sections) */
-  .sidebar__subgroups {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-    padding: 0.2rem 0 0.4rem var(--sp-1);
-  }
-
-  .sidebar__subgroup {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sidebar__subgroup-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.35rem var(--sp-2);
-    font-size: 0.64rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #facc15;
-    opacity: 0.9;
-  }
-
-  .sidebar__subgroup-name {
-    flex: 1;
-  }
-
-  .sidebar__subgroup-count {
-    font-size: 0.58rem;
-    font-weight: 600;
-    color: var(--c-text-3);
-    background: rgba(255,255,255,0.05);
-    padding: 0.05rem 0.35rem;
-    border-radius: var(--r-full);
-  }
-
-  /* List & Links */
   .sidebar__list {
+    margin: 2px 0 6px calc(var(--sp-2) + 8px);
+    padding: 0 0 0 var(--sp-3);
     list-style: none;
-    padding: 0.15rem 0 0.5rem var(--sp-2);
-    margin-left: 0.6rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    border-left: 1px solid rgba(255,255,255,0.04);
+    border-left: 1px solid rgba(255,255,255,0.07);
   }
-
-  .sidebar__list--sub {
-    margin-left: 0.35rem;
-    padding: 0.1rem 0 0.25rem var(--sp-2);
-    border-left: 1px dashed rgba(255,255,255,0.06);
-  }
-
+  .sidebar__list .sidebar__item[hidden] { display: none; }
   .sidebar__link {
-    display: block;
-    padding: 0.3rem var(--sp-2);
-    font-size: 0.78rem;
-    color: var(--c-text-3);
-    border-radius: var(--r-sm);
-    transition: all 0.15s ease;
-    text-decoration: none;
     position: relative;
+    display: block;
+    padding: 0.32rem var(--sp-2);
+    border-radius: var(--r-sm);
+    color: var(--c-text-3);
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
   }
-  .sidebar__link:hover {
-    color: var(--c-text-1);
-    background: rgba(255,255,255,0.04);
-  }
-  .sidebar__link--active {
-    color: #facc15;
-    background: linear-gradient(90deg, rgba(234,179,8,0.1), transparent);
-    font-weight: 600;
-  }
+  .sidebar__link:hover { color: var(--c-text-1); background: rgba(255,255,255,0.03); }
+  .sidebar__link--active { color: #facc15; background: linear-gradient(90deg, rgba(234,179,8,0.1), transparent); font-weight: 600; }
   .sidebar__link--active::before {
     content: '';
     position: absolute;
-    left: -1px;
+    left: calc(var(--sp-3) * -1 - 1px);
     top: 50%;
     transform: translateY(-50%);
     width: 2px;
     height: 60%;
+    border-radius: 1px;
     background: #facc15;
-    border-radius: 0 1px 1px 0;
   }
 
-  /* Mobile Drawer */
+  .sidebar__empty { margin: 0; padding: var(--sp-6) var(--sp-3); border: 1px dashed var(--c-border); border-radius: var(--r-md); text-align: center; font-size: 0.8rem; color: var(--c-text-3); }
+  .sidebar__empty[hidden] { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar__group-content, .sidebar__group-chevron { transition: none; }
+  }
+
+  /* ── Mobile drawer ── */
   .mobile-filter-trigger { display: none; }
   .mobile-filter-backdrop { display: none; }
 
@@ -845,6 +508,7 @@ rawComponentCategories.forEach((cat) => {
     }
     #mobile-filter-btn {
       pointer-events: auto; display: flex; align-items: center; gap: var(--sp-2);
+      min-height: 48px;
       background: rgba(234,179,8,0.95); backdrop-filter: blur(10px);
       color: #000; border: none; padding: 0.8rem 1.6rem;
       border-radius: var(--r-full); font-weight: 700; font-size: 0.9rem;
@@ -864,15 +528,19 @@ rawComponentCategories.forEach((cat) => {
       border-radius: var(--r-xl) var(--r-xl) 0 0;
       z-index: 50; transform: translateY(100%);
       transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-      display: flex; flex-direction: column;
-      padding: var(--sp-8) var(--sp-2) var(--sp-12);
+      padding: var(--sp-6) var(--sp-2) var(--sp-12);
       box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
     }
     .sidebar::before {
-      content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
       width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px;
     }
     .sidebar.is-open { transform: translateY(0); }
-    .sidebar__search input { font-size: 1rem; padding: 0.9rem 0.9rem 0.9rem 2.4rem; }
+    .sidebar__search { background: var(--c-bg-1); }
+    .sidebar__search input { min-height: 48px; font-size: 1rem; }
+    .sidebar__kbd { display: none; }
+    .sidebar__search-icon, .sidebar__clear { top: calc(var(--sp-5) + 24px); }
+    .sidebar__group-header, .sb-quick__link { min-height: 44px; }
+    .sidebar__link { padding-block: 0.6rem; }
   }
 </style>

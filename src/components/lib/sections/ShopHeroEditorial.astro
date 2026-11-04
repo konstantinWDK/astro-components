@@ -1,0 +1,151 @@
+---
+/**
+ * ShopHeroEditorial — Magazine-style shop hero: oversized serif headline with an italic accent
+ * word, issue/season meta, two CTAs, a tall feature image with caption and a running ticker.
+ *
+ * @param {string} kicker - Small label above the title. Default 'Autumn / Winter 26'.
+ * @param {string} title - Headline (wrap a word in *asterisks* to italicise it). Default 'Quiet *objects* for everyday rituals'.
+ * @param {string} text - Supporting paragraph.
+ * @param {{label: string, href: string}} primary - Main CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA (optional).
+ * @param {{icon?: string, hue?: number, image?: string, alt?: string, caption?: string, href?: string}} media - Feature visual.
+ * @param {string[]} ticker - Words for the running ticker (empty hides it).
+ * @param {string} issue - Small index label, e.g. "N° 04".
+ * @param {string} variant - Layout (split|stacked). Default 'split'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1; ticker is decorative (aria-hidden) and stops with reduced motion.
+ */
+import ProductMedia from '../ecommerce/ProductMedia.astro';
+
+interface Cta { label: string; href: string }
+interface Props {
+  kicker?: string;
+  title?: string;
+  text?: string;
+  primary?: Cta;
+  secondary?: Cta;
+  media?: { icon?: string; hue?: number; image?: string; alt?: string; caption?: string; href?: string };
+  ticker?: string[];
+  issue?: string;
+  variant?: 'split' | 'stacked';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  kicker = 'Autumn / Winter 26',
+  title = 'Quiet *objects* for everyday rituals',
+  text = 'Clothing and homeware made slowly, in small runs, by workshops we know by name. Designed to be used for years — and to look better for it.',
+  primary = { label: 'Shop the collection', href: '#' },
+  secondary = { label: 'Read the journal', href: '#' },
+  media = { icon: 'jacket', hue: 22, caption: 'Wool overcoat, in Rust — €320', href: '#' },
+  ticker = ['Made in small runs', 'Natural fibres', 'Repair for life', 'Carbon-neutral shipping', 'Free returns'],
+  issue = 'N° 04',
+  variant = 'split',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const parts = title.split(/\*(.+?)\*/g);
+const MediaTag = media.href ? 'a' : 'div';
+---
+
+<section class:list={['sh-ed', `sh-ed--${variant}`, `sh-ed--${size}`, className]}>
+  <div class="sh-ed__inner">
+    <div class="sh-ed__copy">
+      <p class="sh-ed__meta"><span>{kicker}</span>{issue && <span>{issue}</span>}</p>
+      <h1 class="sh-ed__title">{parts.map((p, i) => (i % 2 ? <em>{p}</em> : p))}</h1>
+      <div class="sh-ed__foot">
+        {text && <p class="sh-ed__text">{text}</p>}
+        <div class="sh-ed__ctas">
+          {primary && <a class="sh-ed__btn sh-ed__btn--solid" href={primary.href}>{primary.label}<span aria-hidden="true">→</span></a>}
+          {secondary && <a class="sh-ed__btn" href={secondary.href}>{secondary.label}</a>}
+        </div>
+      </div>
+    </div>
+    <MediaTag class="sh-ed__media" href={media.href}>
+      <ProductMedia image={media.image} alt={media.alt ?? ''} icon={media.icon} hue={media.hue} ratio="4 / 5" variant="soft" size="lg" />
+      {media.caption && <span class="sh-ed__caption">{media.caption}</span>}
+    </MediaTag>
+  </div>
+  {ticker.length > 0 && (
+    <div class="sh-ed__ticker" aria-hidden="true">
+      <div class="sh-ed__track">
+        {[0, 1].map(() => ticker.map((w) => <span>{w}<i>✦</i></span>))}
+      </div>
+    </div>
+  )}
+</section>
+
+<style>
+  .sh-ed { container-type: inline-size; --py: clamp(2.5rem, 6vw, 5rem); color: var(--c-text-1, #fff); overflow: hidden; }
+  .sh-ed--sm { --py: clamp(1.5rem, 4vw, 3rem); }
+  .sh-ed--lg { --py: clamp(3.5rem, 8vw, 7rem); }
+  .sh-ed__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: end;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--py) clamp(1rem, 3vw, 2.5rem);
+  }
+  .sh-ed--stacked .sh-ed__inner { grid-template-columns: 1fr; }
+  .sh-ed__meta { display: flex; justify-content: space-between; gap: var(--sp-4, 1rem); margin: 0 0 var(--sp-6, 1.5rem); padding-bottom: var(--sp-3, 0.75rem); border-bottom: 1px solid currentColor; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+  .sh-ed__title {
+    margin: 0;
+    font-family: var(--font-display, Georgia, 'Times New Roman', serif);
+    font-size: clamp(3rem, 8.5vw, 8.5rem);
+    font-weight: 400;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .sh-ed__title em { font-style: italic; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .sh-ed__foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-6, 1.5rem); align-items: end; margin-top: var(--sp-8, 2rem); }
+  .sh-ed__text { margin: 0; max-width: 30rem; font-size: 1rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .sh-ed__ctas { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); }
+  .sh-ed__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    padding: 0 1.4rem;
+    border: 1px solid currentColor;
+    border-radius: var(--r-sm, 2px);
+    color: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .sh-ed__btn:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .sh-ed__btn--solid { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-color: var(--c-text-1, #fff); }
+  .sh-ed__btn--solid:hover { background: var(--shop-accent, var(--c-primary-light, #d4a017)); border-color: var(--shop-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .sh-ed__btn:focus-visible, .sh-ed__media:focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+
+  .sh-ed__media { position: relative; display: block; color: inherit; text-decoration: none; border-radius: var(--r-sm, 2px); overflow: hidden; }
+  .sh-ed__media :global(.p-media) { transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  .sh-ed__media:hover :global(.p-media) { transform: scale(1.03); }
+  .sh-ed__caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); background: linear-gradient(transparent, rgb(var(--paper-rgb, 5 5 5) / 0.85)); font-size: 0.8rem; letter-spacing: 0.02em; }
+
+  .sh-ed__ticker { border-block: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); overflow: hidden; }
+  .sh-ed__track { display: flex; width: max-content; animation: sh-ed-run 40s linear infinite; }
+  .sh-ed__track span { display: inline-flex; align-items: center; gap: 1.5rem; padding: 0.9rem 0 0.9rem 1.5rem; font-family: var(--font-display, Georgia, serif); font-size: 1.15rem; font-style: italic; white-space: nowrap; }
+  .sh-ed__track i { font-style: normal; font-size: 0.7rem; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  @keyframes sh-ed-run { to { transform: translateX(-50%); } }
+
+  @container (max-width: 900px) {
+    .sh-ed__inner { grid-template-columns: 1fr; }
+    .sh-ed__foot { grid-template-columns: 1fr; }
+    .sh-ed__media { max-width: 520px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sh-ed__track { animation: none; }
+    .sh-ed__media :global(.p-media) { transition: none; }
+  }
+</style>

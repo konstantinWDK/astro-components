@@ -1,0 +1,229 @@
+---
+/**
+ * ProductCardMinimal — Editorial product card: tall media that swaps to a second view on hover,
+ * quick-add size buttons, name, price and colour count. Square corners, typography-led.
+ *
+ * @param {Product} product - Product data. A demo product is used by default.
+ * @param {string} href - Product page URL. Default '#'.
+ * @param {number} index - Optional catalogue number shown as "N° 01".
+ * @param {string} currency - ISO currency. Default 'EUR'.
+ * @param {string} locale - Number format locale. Default 'en-GB'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {boolean} quickAdd - Show quick-add (sizes, or a single "Add" button). Default true.
+ * @param {string} ratio - Media aspect ratio. Default '3 / 4'.
+ * @param {string} variant - Style (plain|framed). Default 'plain'.
+ * @param {string} size - Type scale (sm|md|lg). Default 'md'.
+ * @param {string} headingLevel - Title element (h2|h3|h4). Default 'h3'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the title is a stretched link; quick-add buttons sit above it with their own
+ * labels ("Add size M"), are reachable by keyboard and appear on focus as well as hover.
+ */
+import ProductMedia from './ProductMedia.astro';
+import { formatMoney } from './cart-store';
+import type { Product } from './types';
+
+interface Props {
+  product?: Product;
+  href?: string;
+  index?: number;
+  currency?: string;
+  locale?: string;
+  cartKey?: string;
+  quickAdd?: boolean;
+  ratio?: string;
+  variant?: 'plain' | 'framed';
+  size?: 'sm' | 'md' | 'lg';
+  headingLevel?: 'h2' | 'h3' | 'h4';
+  className?: string;
+}
+
+const {
+  product = {
+    slug: 'linen-overshirt',
+    name: 'Linen Overshirt',
+    price: 145,
+    category: 'clothing',
+    badge: 'New',
+    colors: [{ name: 'Oat', hex: '#d9cbb3' }, { name: 'Ink', hex: '#22252b' }, { name: 'Rust', hex: '#9c3d1c' }],
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    icon: 'shirt',
+    hue: 30,
+  },
+  href = '#',
+  index,
+  currency = 'EUR',
+  locale = 'en-GB',
+  cartKey = 'ack-cart',
+  quickAdd = true,
+  ratio = '3 / 4',
+  variant = 'plain',
+  size = 'md',
+  headingLevel = 'h3',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const money = { currency, locale };
+const inStock = product.inStock !== false;
+const base = { id: product.slug, name: product.name, price: product.price, icon: product.icon, hue: product.hue, image: product.image };
+const color = product.colors?.[0]?.name;
+const titleId = `pcm-${product.slug}`;
+---
+
+<article
+  class:list={['pcm', `pcm--${variant}`, `pcm--${size}`, className]}
+  aria-labelledby={titleId}
+  data-product
+  data-name={product.name.toLowerCase()}
+  data-category={product.category}
+  data-price={product.price}
+  data-rating={product.rating ?? 0}
+  data-colors={(product.colors ?? []).map((c) => c.name.toLowerCase()).join(',')}
+  data-stock={inStock ? 'in' : 'out'}
+>
+  <div class="pcm__media">
+    <div class="pcm__view pcm__view--a">
+      <ProductMedia image={product.image} alt={product.name} icon={product.icon} hue={product.hue} ratio={ratio} variant="soft" size="lg" />
+    </div>
+    <div class="pcm__view pcm__view--b" aria-hidden="true">
+      <ProductMedia icon={product.icon} hue={(product.hue ?? 30) + 20} ratio={ratio} variant="glow" size="sm" />
+    </div>
+    {(product.badge || !inStock) && <span class="pcm__badge">{inStock ? product.badge : 'Sold out'}</span>}
+    {index !== undefined && <span class="pcm__index" aria-hidden="true">N° {String(index).padStart(2, '0')}</span>}
+
+    {quickAdd && inStock && (
+      <div class="pcm__quick" role="group" aria-label={`Quick add ${product.name}`}>
+        {product.sizes?.length ? (
+          <>
+            <span class="pcm__quick-label" aria-hidden="true">Quick add</span>
+            <div class="pcm__sizes">
+              {product.sizes.map((s) => (
+                <button
+                  type="button"
+                  class="pcm__size"
+                  data-add-to-cart={JSON.stringify({ ...base, variant: [color, s].filter(Boolean).join(' / ') })}
+                  data-cart-key={cartKey}
+                  data-open-cart="false"
+                  aria-label={`Add ${product.name}, size ${s}`}
+                ><span data-label>{s}</span></button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <button
+            type="button"
+            class="pcm__size pcm__size--wide"
+            data-add-to-cart={JSON.stringify({ ...base, variant: color })}
+            data-cart-key={cartKey}
+            data-open-cart="false"
+            data-added-label="Added"
+            aria-label={`Add ${product.name} to bag`}
+          ><span data-label>Add to bag +</span></button>
+        )}
+      </div>
+    )}
+  </div>
+
+  <div class="pcm__info">
+    <Heading class="pcm__title" id={titleId}><a class="pcm__link" href={href}>{product.name}</a></Heading>
+    <p class="pcm__price">
+      <span>{formatMoney(product.price, money)}</span>
+      {product.compareAt && <s><span class="sr-only">Was </span>{formatMoney(product.compareAt, money)}</s>}
+    </p>
+    {product.colors && product.colors.length > 0 && (
+      <p class="pcm__colors">
+        <span class="pcm__dots" aria-hidden="true">{product.colors.slice(0, 4).map((c) => <i style={`--sw: ${c.hex}`}></i>)}</span>
+        {product.colors.length} {product.colors.length === 1 ? 'colour' : 'colours'}
+      </p>
+    )}
+  </div>
+</article>
+
+<script>
+  import { bindAddToCart } from './cart-store';
+  bindAddToCart(document);
+</script>
+
+<style>
+  .pcm { position: relative; display: flex; flex-direction: column; gap: var(--sp-3, 0.75rem); min-width: 0; }
+  .pcm--framed { padding: var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .pcm__media { position: relative; overflow: hidden; border-radius: var(--r-sm, 2px); background: var(--c-bg-2, #111); }
+  .pcm__view { transition: opacity 0.5s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+  .pcm__view--b { position: absolute; inset: 0; opacity: 0; transform: scale(1.04); }
+  .pcm__view--b :global(.p-media__art) { transform: rotate(-12deg) scale(1.25); }
+  .pcm:hover .pcm__view--b, .pcm:focus-within .pcm__view--b { opacity: 1; transform: none; }
+  .pcm:hover .pcm__view--a { transform: scale(1.03); }
+
+  .pcm__badge, .pcm__index {
+    position: absolute;
+    top: var(--sp-3, 0.75rem);
+    z-index: 2;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pcm__badge { left: var(--sp-3, 0.75rem); padding: 0.3rem 0.55rem; background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); }
+  .pcm__index { right: var(--sp-3, 0.75rem); color: var(--c-text-2, #a3a3a3); font-variant-numeric: tabular-nums; }
+
+  .pcm__quick {
+    position: absolute;
+    left: var(--sp-2, 0.5rem);
+    right: var(--sp-2, 0.5rem);
+    bottom: var(--sp-2, 0.5rem);
+    z-index: 3;
+    display: grid;
+    gap: 6px;
+    padding: var(--sp-3, 0.75rem);
+    background: rgb(var(--paper-rgb, 5 5 5) / 0.92);
+    backdrop-filter: blur(10px);
+    transform: translateY(calc(100% + 12px));
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pcm:hover .pcm__quick, .pcm__quick:focus-within { transform: none; }
+  .pcm__quick-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .pcm__sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pcm__size {
+    flex: 1 0 36px;
+    min-height: 36px;
+    padding: 0 6px;
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.18);
+    border-radius: var(--r-sm, 2px);
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .pcm__size:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-color: var(--c-text-1, #fff); }
+  .pcm__size.is-added { background: var(--shop-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .pcm__size--wide { flex: 1 1 100%; letter-spacing: 0.04em; }
+  .pcm__size:focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .pcm__info { display: grid; gap: 2px; }
+  .pcm__title { margin: 0; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: 1.05rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.25; }
+  .pcm--sm .pcm__title { font-size: 0.95rem; }
+  .pcm--lg .pcm__title { font-size: 1.3rem; }
+  .pcm__link { color: var(--c-text-1, #fff); text-decoration: none; }
+  .pcm__link::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+  .pcm__link:focus-visible { outline: none; }
+  .pcm:focus-within:not(:has(.pcm__quick:focus-within)) { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 4px; }
+  .pcm__price { display: flex; gap: var(--sp-2, 0.5rem); margin: 0; font-size: 0.9rem; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .pcm__price s { color: var(--c-text-2, #a3a3a3); }
+  .pcm__colors { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 2px 0 0; font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .pcm__dots { display: inline-flex; }
+  .pcm__dots i { width: 10px; height: 10px; margin-right: -3px; border-radius: 50%; background: var(--sw); box-shadow: 0 0 0 1.5px var(--c-bg, #050505); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (hover: none) {
+    .pcm__quick { position: static; transform: none; padding: var(--sp-2, 0.5rem) 0 0; background: transparent; backdrop-filter: none; }
+    .pcm__quick-label { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pcm__view, .pcm__quick { transition: none; }
+  }
+</style>

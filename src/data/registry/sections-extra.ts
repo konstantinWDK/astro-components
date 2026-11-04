@@ -323,4 +323,75 @@ export const sectionsExtra: ComponentDoc[] = [
   socials={[{ label: 'GitHub', href: 'https://github.com', icon: 'github' }]}
 />`,
   }),
+
+  // === E-COMMERCE (editorial) ===
+  section({
+    slug: 'shop-header-editorial', name: 'Shop Header Editorial', file: 'ShopHeaderEditorial.astro', sectionCategory: 'commerce',
+    description: "Editorial store header: announcement line, centred wordmark, mega menu with feature tile, theme toggle and live bag count.",
+    tags: ["header", "navbar", "mega-menu", "ecommerce", "editorial"], featured: true,
+    usage: `<ShopHeaderEditorial brand="Forma" bagHref="/bag/" links={[
+  { label: 'Shop', href: '/shop/', columns: [{ title: 'Clothing', links: [{ label: 'Knitwear', href: '/shop/?category=knit' }] }] },
+  { label: 'Journal', href: '/journal/' },
+]} />`,
+  }),
+  section({
+    slug: 'shop-hero-editorial', name: 'Shop Hero Editorial', file: 'ShopHeroEditorial.astro', sectionCategory: 'commerce',
+    description: "Magazine-style shop hero with oversized serif headline, italic accent word, issue meta, feature image with caption and a running ticker.",
+    tags: ["hero", "ecommerce", "editorial", "typography"], featured: true,
+    usage: `<ShopHeroEditorial title="Quiet *objects* for everyday rituals" primary={{ label: 'Shop now', href: '/shop/' }} />`,
+  }),
+  section({
+    slug: 'shop-collection-mosaic', name: 'Shop Collection Mosaic', file: 'ShopCollectionMosaic.astro', sectionCategory: 'commerce',
+    description: "Asymmetric collection grid with a tall feature tile, numbered tiles, item counts and underline links.",
+    tags: ["collections", "grid", "ecommerce", "categories"],
+    usage: `<ShopCollectionMosaic title="Shop by *intention*" items={[
+  { title: 'The wardrobe', href: '/shop/?category=clothing', count: 24, icon: 'jacket', hue: 22 },
+  { title: 'At the table', href: '/shop/?category=objects', count: 12, icon: 'mug', hue: 14 },
+  { title: 'To carry', href: '/shop/?category=bags', count: 8, icon: 'bag', hue: 34 },
+]} />`,
+  }),
+  section({
+    slug: 'shop-product-rail', name: 'Shop Product Rail', file: 'ShopProductRail.astro', sectionCategory: 'commerce',
+    description: "Scroll-snapping product carousel of minimal product cards with numbering, prev/next buttons and a progress line.",
+    tags: ["carousel", "products", "ecommerce", "slider"], featured: true,
+    usage: `<ShopProductRail title="New this *week*" products={products} productBase="/product/" />`,
+  }),
+  section({
+    slug: 'shop-lookbook', name: 'Shop Lookbook', file: 'ShopLookbook.astro', sectionCategory: 'commerce',
+    description: "\"Shop the look\" image with numbered hotspots that open product cards with add-to-bag, mirrored by an accessible product list.",
+    tags: ["lookbook", "hotspots", "ecommerce", "shoppable"], featured: true,
+    usage: `<ShopLookbook title="Shop the *look*" spots={[
+  { x: 40, y: 32, product: { slug: 'overshirt', name: 'Linen Overshirt', price: 145, category: 'clothing', icon: 'shirt' }, href: '/product/overshirt/' },
+]} />`,
+  }),
+  section({
+    slug: 'shop-values-marquee', name: 'Shop Values Marquee', file: 'ShopValuesMarquee.astro', sectionCategory: 'commerce',
+    description: "Brand promise band: oversized italic marquee followed by numbered value columns.",
+    tags: ["marquee", "values", "ecommerce", "brand"],
+    usage: `<ShopValuesMarquee words={['Made slowly', 'Natural fibres']} values={[{ title: 'Honest materials', text: 'Traceable to the mill.' }]} />`,
+  }),
+  section({
+    slug: 'shop-reviews-editorial', name: 'Shop Reviews Editorial', file: 'ShopReviewsEditorial.astro', sectionCategory: 'commerce',
+    description: "Large serif customer quotes, one at a time, with product context, numbered pager and overall score.",
+    tags: ["reviews", "testimonials", "ecommerce", "carousel"],
+    usage: `<ShopReviewsEditorial score={4.9} count={1284} reviews={[{ quote: 'Softer every wash.', name: 'Inés M.', product: 'Linen Overshirt' }]} />`,
+  }),
+  section({
+    slug: 'shop-newsletter-editorial', name: 'Shop Newsletter Editorial', file: 'ShopNewsletterEditorial.astro', sectionCategory: 'commerce',
+    description: "Oversized editorial sign-up with underline email field, consent note and inline validation.",
+    tags: ["newsletter", "form", "ecommerce", "cta"],
+    usage: `<ShopNewsletterEditorial title="Letters from the *studio*" variant="accent" />`,
+  }),
+  section({
+    slug: 'shop-footer-wordmark', name: 'Shop Footer Wordmark', file: 'ShopFooterWordmark.astro', sectionCategory: 'commerce',
+    description: "Store footer with link columns, contact block, payment labels and a giant edge-to-edge wordmark.",
+    tags: ["footer", "ecommerce", "wordmark"],
+    usage: `<ShopFooterWordmark brand="Forma" />`,
+  }),
+  section({
+    slug: 'shop-category-hero', name: 'Shop Category Hero', file: 'ShopCategoryHero.astro', sectionCategory: 'commerce',
+    description: "Catalogue header with breadcrumb, oversized category title and count, intro, sub-category links and an image strip.",
+    tags: ["category", "header", "ecommerce", "catalog"],
+    usage: `<ShopCategoryHero title="Clothing" count={24} links={[{ label: 'All', href: '/shop/', active: true }, { label: 'Knitwear', href: '/shop/knit/' }]} />`,
+  }),
 ];

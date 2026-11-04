@@ -1,0 +1,169 @@
+---
+/**
+ * StoreLayout — Full HTML document for the e-commerce template: promo bar, StoreHeader with
+ * category menu, CartDrawer, main content slot and FooterMegaSection.
+ *
+ * @param {string} title - Page title (store name is appended).
+ * @param {string} description - Meta description.
+ * @param {StoreConfig} store - Catalogue and settings. Default: the demo store.
+ * @param {StoreRoutes} routes - Page URLs. Default: '/', '/shop/', '/product/', '/checkout/'.
+ * @param {string} currentHref - Highlights the matching menu link.
+ * @param {boolean} seedCart - Pre-fill an empty cart with two demo items (previews only). Default false.
+ * @param {boolean} noindex - Add robots noindex (previews, staging). Default false.
+ * @param {boolean} minimal - Hide promo bar and menu (checkout focus mode). Default false.
+ * @param {string} lang - Document language. Default 'en'.
+ * @param {string} theme - Initial theme (dark|light|auto). The header toggle overrides it per visitor. Default 'dark'.
+ * @param {boolean} liveActivity - Show rotating recent-purchase notices (store.recentBuyers). Default false.
+ * @param {boolean} themeToggle - Show the light/dark toggle in the header. Default true.
+ *
+ * Slots: default (page content), `head` (extra tags in <head>).
+ */
+import '../../../../styles/global.css';
+import PromoBar from '../../ecommerce/PromoBar.astro';
+import StoreHeader from '../../ecommerce/StoreHeader.astro';
+import CartDrawer from '../../ecommerce/CartDrawer.astro';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import CartToast from '../../ecommerce/CartToast.astro';
+import LiveActivityToast from '../../ecommerce/LiveActivityToast.astro';
+import { demoStore, defaultRoutes, categoryHref, type StoreConfig, type StoreRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  store?: StoreConfig;
+  routes?: StoreRoutes;
+  currentHref?: string;
+  seedCart?: boolean;
+  noindex?: boolean;
+  minimal?: boolean;
+  lang?: string;
+  theme?: 'dark' | 'light' | 'auto';
+  themeToggle?: boolean;
+  liveActivity?: boolean;
+}
+
+const {
+  title,
+  description,
+  store = demoStore,
+  routes = defaultRoutes,
+  currentHref,
+  seedCart = false,
+  noindex = false,
+  minimal = false,
+  lang = 'en',
+  theme = 'dark',
+  themeToggle = true,
+  liveActivity = false,
+} = Astro.props;
+
+const fullTitle = title.includes(store.name) ? title : `${title} — ${store.name}`;
+const links = [
+  {
+    label: 'Shop',
+    href: routes.shop,
+    children: store.categories.map((c) => ({ label: c.name, href: categoryHref(routes, c.id), description: c.description })),
+  },
+  { label: 'New in', href: `${routes.shop}?sort=featured` },
+  { label: 'Top rated', href: `${routes.shop}?sort=rating` },
+  { label: 'Sale', href: `${routes.shop}?sort=price-asc` },
+];
+const seed = seedCart
+  ? store.products.slice(0, 1).concat(store.products.filter((p) => p.slug === 'ember-mug')).map((p, i) => ({
+      id: p.colors?.[0] ? `${p.slug}::${p.colors[0].name}` : p.slug,
+      name: p.name,
+      price: p.price,
+      qty: i === 0 ? 1 : 2,
+      variant: p.colors?.[0]?.name,
+      icon: p.icon,
+      hue: p.hue,
+    }))
+  : [];
+const activity = liveActivity
+  ? store.recentBuyers
+      .map((b) => {
+        const p = store.products.find((x) => x.slug === b.product);
+        return p ? { name: b.name, city: b.city, ago: b.ago, product: p.name, href: `${routes.product}${p.slug}/`, icon: p.icon, hue: p.hue } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => Boolean(x))
+  : [];
+const footer = [
+  { title: 'Shop', links: store.categories.map((c) => ({ label: c.name, href: categoryHref(routes, c.id) })) },
+  ...store.footer.slice(1),
+];
+---
+
+<!doctype html>
+<html lang={lang} data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <meta name="theme-color" content={theme === 'light' ? '#f6f5f2' : '#050505'} />
+    <script is:inline define:vars={{ initial: theme, allowToggle: themeToggle }}>
+      (function () {
+        var t = initial;
+        try { if (allowToggle) t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class="store">
+    <a class="store__skip" href="#main">Skip to content</a>
+    {!minimal && <PromoBar messages={store.promoMessages} storageKey={`${store.cartKey}-promo`} />}
+    <StoreHeader
+      brand={store.name}
+      brandHref={routes.home}
+      links={minimal ? [] : links}
+      searchAction={routes.shop}
+      accountHref=""
+      cartKey={store.cartKey}
+      currentHref={currentHref}
+      themeToggle={themeToggle}
+    />
+    <main id="main" class="store__main" tabindex="-1">
+      <slot />
+    </main>
+    <FooterMegaSection
+      brand={store.name}
+      tagline={store.tagline}
+      columns={footer}
+      status="All orders shipping on time"
+      copyright={`© ${new Date().getFullYear()} ${store.name}. Demo store built with Astro Components Kit.`}
+    />
+    <CartDrawer
+      cartKey={store.cartKey}
+      checkoutHref={routes.checkout}
+      currency={store.currency}
+      locale={store.locale}
+      freeShippingThreshold={store.freeShippingThreshold}
+      demoItems={seed}
+    />
+    <CartToast cartKey={store.cartKey} />
+    {activity.length > 0 && <LiveActivityToast items={activity} storageKey={`${store.cartKey}-activity`} />}
+  </body>
+</html>
+
+<style is:global>
+  body.store { overflow-x: clip; }
+  .store__main { position: relative; z-index: 1; outline: none; }
+  .store__skip {
+    position: fixed;
+    top: -60px;
+    left: 12px;
+    z-index: 2000;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    background: var(--c-primary-light);
+    color: var(--c-on-primary);
+    font-weight: 700;
+    transition: top 0.2s ease;
+  }
+  .store__skip:focus { top: 12px; color: var(--c-on-primary); }
+  .store-container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 var(--sp-6); }
+  @media (max-width: 640px) { .store-container { padding: 0 var(--sp-4); } }
+</style>

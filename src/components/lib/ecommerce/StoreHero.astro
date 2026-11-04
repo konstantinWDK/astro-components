@@ -1,0 +1,260 @@
+---
+/**
+ * StoreHero — Shop landing hero: headline, CTAs, quick stats and a featured product
+ * stage with floating price and rating chips.
+ *
+ * @param {string} eyebrow - Small label above the title. Default 'New season · 2026'.
+ * @param {string} title - Headline. Default 'Gear that feels'.
+ * @param {string} highlight - Gradient part of the headline. Default 'made for you'.
+ * @param {string} subtitle - Supporting copy.
+ * @param {{label: string, href: string}} primary - Main CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA (optional).
+ * @param {Array<{value: string, label: string}>} stats - Proof points below the CTAs.
+ * @param {Product} product - Featured product shown on the stage.
+ * @param {string} productHref - Featured product link.
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} variant - Layout (split|centered). Default 'split'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1; decorative stage art is aria-hidden; the featured product is a real link.
+ */
+import ProductMedia from './ProductMedia.astro';
+import ProductRating from './ProductRating.astro';
+import { formatMoney } from './cart-store';
+import type { Product } from './types';
+
+interface Cta { label: string; href: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  highlight?: string;
+  subtitle?: string;
+  primary?: Cta;
+  secondary?: Cta;
+  stats?: Array<{ value: string; label: string }>;
+  product?: Product;
+  productHref?: string;
+  currency?: string;
+  locale?: string;
+  variant?: 'split' | 'centered';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  eyebrow = 'New season · 2026',
+  title = 'Gear that feels',
+  highlight = 'made for you',
+  subtitle = 'Thoughtfully designed audio, wearables and everyday carry. Free shipping over $75 and 30-day returns on everything.',
+  primary = { label: 'Shop the collection', href: '#' },
+  secondary = { label: 'Explore new arrivals', href: '#' },
+  stats = [
+    { value: '4.9/5', label: 'from 12k reviews' },
+    { value: '48h', label: 'average delivery' },
+    { value: '30 days', label: 'free returns' },
+  ],
+  product = { slug: 'aurora-headphones', name: 'Aurora Wireless Headphones', price: 189, compareAt: 229, category: 'audio', rating: 4.8, reviews: 312, icon: 'headphones', hue: 38 },
+  productHref = '#',
+  currency = 'USD',
+  locale = 'en-US',
+  variant = 'split',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const money = { currency, locale };
+---
+
+<section class:list={['store-hero', `store-hero--${variant}`, `store-hero--${size}`, className]}>
+  <div class="store-hero__glow" aria-hidden="true"></div>
+  <div class="store-hero__inner">
+    <div class="store-hero__copy">
+      {eyebrow && <p class="store-hero__eyebrow"><span aria-hidden="true"></span>{eyebrow}</p>}
+      <h1 class="store-hero__title">{title} <em>{highlight}</em></h1>
+      {subtitle && <p class="store-hero__subtitle">{subtitle}</p>}
+      <div class="store-hero__ctas">
+        {primary && (
+          <a class="store-hero__btn store-hero__btn--primary" href={primary.href}>
+            {primary.label}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        )}
+        {secondary && <a class="store-hero__btn store-hero__btn--ghost" href={secondary.href}>{secondary.label}</a>}
+      </div>
+      {stats.length > 0 && (
+        <dl class="store-hero__stats">
+          {stats.map((s) => (
+            <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+          ))}
+        </dl>
+      )}
+    </div>
+
+    {product && (
+      <div class="store-hero__stage">
+        <div class="store-hero__ring" aria-hidden="true"></div>
+        <a class="store-hero__product" href={productHref}>
+          <ProductMedia image={product.image} alt={product.name} icon={product.icon} hue={product.hue} size="lg" ratio="4 / 5" />
+          <span class="store-hero__chip store-hero__chip--price">
+            <small>{product.name}</small>
+            <strong>{formatMoney(product.price, money)}</strong>
+            {product.compareAt && <s><span class="sr-only">Was </span>{formatMoney(product.compareAt, money)}</s>}
+          </span>
+          {product.rating !== undefined && (
+            <span class="store-hero__chip store-hero__chip--rating">
+              <ProductRating value={product.rating} count={product.reviews} />
+            </span>
+          )}
+        </a>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .store-hero {
+    container-type: inline-size;
+    --hero-pad: clamp(3rem, 7vw, 6rem);
+    position: relative;
+    overflow: hidden;
+    padding: var(--hero-pad) var(--sp-6, 1.5rem);
+    isolation: isolate;
+  }
+  .store-hero--sm { --hero-pad: clamp(2rem, 5vw, 3.5rem); }
+  .store-hero--lg { --hero-pad: clamp(4rem, 9vw, 8rem); }
+
+  .store-hero__glow {
+    position: absolute;
+    inset: -20% -10% auto 30%;
+    height: 120%;
+    background: radial-gradient(closest-side, rgba(212, 160, 23, 0.16), transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .store-hero__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .store-hero--centered .store-hero__inner { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .store-hero--centered .store-hero__ctas, .store-hero--centered .store-hero__stats { justify-content: center; }
+  .store-hero--centered .store-hero__stage { max-width: 420px; }
+
+  .store-hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--r-full, 9999px);
+    border: 1px solid rgba(212, 160, 23, 0.3);
+    background: rgba(212, 160, 23, 0.08);
+    color: var(--c-accent, #fef3c7);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .store-hero__eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: var(--c-primary-light, #d4a017); box-shadow: 0 0 10px var(--c-primary-light, #d4a017); }
+
+  .store-hero__title {
+    margin: 0;
+    font-size: clamp(2.4rem, 6vw, 4.6rem);
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    color: var(--c-text-1, #fff);
+  }
+  .store-hero__title em {
+    display: block;
+    font-style: normal;
+    background: linear-gradient(100deg, var(--c-accent, #fef3c7), var(--c-primary-light, #d4a017) 55%, var(--c-primary, #b8860b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .store-hero__subtitle { max-width: 34rem; margin: var(--sp-5, 1.25rem) 0 0; font-size: 1.05rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .store-hero--centered .store-hero__subtitle { margin-inline: auto; }
+
+  .store-hero__ctas { display: flex; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); margin-top: var(--sp-8, 2rem); }
+  .store-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 9999px);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: transform 0.2s ease, filter 0.2s ease, background 0.2s ease;
+  }
+  .store-hero__btn--primary { background: var(--c-primary-light, #d4a017); color: var(--c-on-primary, #050505); }
+  .store-hero__btn--primary:hover { color: var(--c-on-primary, #050505); filter: brightness(1.08); transform: translateY(-2px); }
+  .store-hero__btn--ghost { border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.14); color: var(--c-text-1, #fff); }
+  .store-hero__btn--ghost:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); color: var(--c-text-1, #fff); }
+  .store-hero__btn:focus-visible, .store-hero__product:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+
+  .store-hero__stats { display: flex; flex-wrap: wrap; gap: var(--sp-8, 2rem); margin: var(--sp-10, 2.5rem) 0 0; }
+  .store-hero__stats div { display: flex; flex-direction: column-reverse; }
+  .store-hero__stats dt { font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .store-hero__stats dd { margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--c-text-1, #fff); letter-spacing: -0.02em; }
+
+  .store-hero__stage { position: relative; width: 100%; max-width: 480px; justify-self: center; }
+  .store-hero__ring {
+    position: absolute;
+    inset: 8% -6%;
+    border-radius: 50%;
+    border: 1px dashed rgba(212, 160, 23, 0.25);
+    animation: sh-spin 40s linear infinite;
+  }
+  .store-hero__product {
+    position: relative;
+    display: block;
+    border-radius: var(--r-xl, 28px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    overflow: visible;
+    color: inherit;
+    text-decoration: none;
+    animation: sh-float 7s ease-in-out infinite;
+  }
+  .store-hero__product :global(.p-media) { border-radius: var(--r-xl, 28px); }
+  .store-hero__chip {
+    position: absolute;
+    display: grid;
+    gap: 2px;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    background: rgb(var(--paper-rgb, 5 5 5) / 0.78);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+    text-align: left;
+  }
+  .store-hero__chip--price { left: -6%; bottom: 12%; }
+  .store-hero__chip--price small { font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); }
+  .store-hero__chip--price strong { font-size: 1.25rem; color: var(--c-text-1, #fff); }
+  .store-hero__chip--price s { font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .store-hero__chip--rating { right: -4%; top: 10%; }
+
+  @keyframes sh-float { 50% { transform: translateY(-10px); } }
+  @keyframes sh-spin { to { transform: rotate(360deg); } }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 900px) {
+    .store-hero__inner { grid-template-columns: 1fr; }
+    .store-hero__stage { max-width: 360px; }
+    .store-hero__chip--price { left: 0; }
+    .store-hero__chip--rating { right: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .store-hero__product, .store-hero__ring { animation: none; }
+  }
+</style>

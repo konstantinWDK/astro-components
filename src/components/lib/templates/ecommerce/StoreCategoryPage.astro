@@ -1,0 +1,160 @@
+---
+/**
+ * StoreCategoryPage — E-commerce template catalogue: breadcrumb, category chips, toolbar
+ * with live count + sort, FilterSidebar and ProductGrid (instant client-side filtering).
+ *
+ * Usage (src/pages/shop.astro):
+ *   import { StoreCategoryPage } from 'astro-component-kit/templates/ecommerce';
+ *   <StoreCategoryPage />
+ * Category links use `?category=<id>`; pass `category` to build one static page per category.
+ *
+ * @param {StoreConfig} store - Catalogue and settings. Default: demo store.
+ * @param {StoreRoutes} routes - Page URLs.
+ * @param {string} category - Pre-selected category id (optional).
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import StoreLayout from './StoreLayout.astro';
+import ProductToolbar from '../../ecommerce/ProductToolbar.astro';
+import FilterSidebar from '../../ecommerce/FilterSidebar.astro';
+import ProductGrid from '../../ecommerce/ProductGrid.astro';
+import TrustBadges from '../../ecommerce/TrustBadges.astro';
+import { demoStore, defaultRoutes, categoryHref, categoryNames, type StoreConfig, type StoreRoutes } from './data';
+
+interface Props {
+  store?: StoreConfig;
+  routes?: StoreRoutes;
+  category?: string;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'dark' | 'light' | 'auto';
+}
+
+const { store = demoStore, routes = defaultRoutes, category, seedCart = false, noindex = false, theme = 'dark' } = Astro.props;
+
+const active = store.categories.find((c) => c.id === category);
+const names = categoryNames(store);
+const maxPrice = Math.ceil(Math.max(...store.products.map((p) => p.price)) / 50) * 50;
+const colors = Array.from(new Map(store.products.flatMap((p) => p.colors ?? []).map((c) => [c.name, c])).values());
+const filterCats = store.categories.map((c) => ({ id: c.id, name: c.name, count: store.products.filter((p) => p.category === c.id).length }));
+const title = active ? active.name : 'All products';
+const description = active?.description ?? 'Everything we make, in one place. Filter by category, price, colour and rating.';
+---
+
+<StoreLayout theme={theme} title={title} description={description} store={store} routes={routes} currentHref={routes.shop} seedCart={seedCart} noindex={noindex}>
+  <div class="store-container shop">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={routes.home}>Home</a></li>
+        <li><a href={routes.shop} aria-current={active ? undefined : 'page'}>Shop</a></li>
+        {active && <li><span aria-current="page">{active.name}</span></li>}
+      </ol>
+    </nav>
+
+    <ProductToolbar title={title} description={description} total={store.products.length} target="shop-grid" filtersId="shop-filters" />
+
+    <ul class="chips" aria-label="Categories">
+      <li><a class="chip" href={routes.shop} aria-current={!active ? 'page' : undefined}>All</a></li>
+      {store.categories.map((c) => (
+        <li><a class="chip" href={categoryHref(routes, c.id)} aria-current={active?.id === c.id ? 'page' : undefined} data-chip={c.id}>{c.name}</a></li>
+      ))}
+    </ul>
+
+    <div class="shop__layout">
+      <div class="shop__filters">
+        <FilterSidebar
+          target="shop-grid"
+          id="shop-filters"
+          categories={filterCats}
+          selected={active ? [active.id] : []}
+          maxPrice={maxPrice}
+          colors={colors}
+          currency={store.currency}
+          locale={store.locale}
+        />
+      </div>
+      <ProductGrid
+        id="shop-grid"
+        products={store.products}
+        productBase={routes.product}
+        categoryNames={names}
+        columns={3}
+        currency={store.currency}
+        locale={store.locale}
+        cartKey={store.cartKey}
+        openCart={false}
+      />
+    </div>
+
+    <div class="shop__trust">
+      <TrustBadges variant="divided" size="sm" />
+    </div>
+  </div>
+</StoreLayout>
+
+<script>
+  // Category chips filter in place (no reload) and keep FilterSidebar in sync.
+  document.querySelectorAll<HTMLAnchorElement>('.chips a').forEach((chip) => {
+    chip.addEventListener('click', (e) => {
+      const form = document.getElementById('shop-filters') as HTMLFormElement | null;
+      if (!form) return;
+      e.preventDefault();
+      const id = chip.dataset.chip;
+      form.querySelectorAll<HTMLInputElement>('input[name="category"]').forEach((i) => { i.checked = id ? i.value === id : false; });
+      form.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+  const syncChips = () => {
+    const form = document.getElementById('shop-filters') as HTMLFormElement | null;
+    if (!form) return;
+    const checked = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="category"]:checked')).map((i) => i.value);
+    document.querySelectorAll<HTMLAnchorElement>('.chips a').forEach((chip) => {
+      const id = chip.dataset.chip;
+      const on = id ? checked.length === 1 && checked[0] === id : checked.length === 0;
+      if (on) chip.setAttribute('aria-current', 'page');
+      else chip.removeAttribute('aria-current');
+    });
+  };
+  document.getElementById('shop-filters')?.addEventListener('change', syncChips);
+  document.getElementById('shop-filters')?.addEventListener('reset', () => window.setTimeout(syncChips, 0));
+  syncChips();
+</script>
+
+<style>
+  .shop { padding-block: var(--sp-6) clamp(3rem, 7vw, 5rem); }
+
+  .crumbs ol { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0 0 var(--sp-6); padding: 0; list-style: none; font-size: 0.85rem; }
+  .crumbs li { display: flex; align-items: center; gap: var(--sp-2); color: var(--c-text-2); }
+  .crumbs li + li::before { content: '/'; opacity: 0.5; }
+  .crumbs a { color: var(--c-text-2); }
+  .crumbs a:hover { color: var(--c-text-1); }
+  .crumbs [aria-current='page'] { color: var(--c-text-1); font-weight: 600; }
+
+  .chips { display: flex; gap: var(--sp-2); margin: 0 0 var(--sp-6); padding: 0 0 4px; list-style: none; overflow-x: auto; scrollbar-width: none; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-4);
+    border-radius: var(--r-full);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    color: var(--c-text-2);
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .chip:hover { color: var(--c-text-1); border-color: rgb(var(--ink-rgb, 255 255 255) / 0.25); }
+  .chip[aria-current='page'] { background: var(--c-text-1); color: var(--c-bg); border-color: var(--c-text-1); }
+  .chip:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+
+  .shop__layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--sp-8); align-items: start; }
+  .shop__filters { position: sticky; top: 88px; }
+  .shop__trust { margin-top: clamp(3rem, 6vw, 4.5rem); }
+
+  @media (max-width: 900px) {
+    .shop__layout { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .shop__filters { position: static; }
+  }
+</style>

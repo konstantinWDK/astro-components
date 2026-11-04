@@ -1,0 +1,230 @@
+---
+/**
+ * CountdownBanner — Live sale countdown (days · hours · minutes · seconds) with title,
+ * copy and CTA; switches to an "ended" message when the time runs out.
+ *
+ * @param {string} endsAt - ISO date the offer ends. When omitted, `hours` is used.
+ * @param {number} hours - Rolling offer length in hours, counted from the visitor's first view (stored in localStorage). Default 48.
+ * @param {string} eyebrow - Small label. Default 'Flash sale'.
+ * @param {string} title - Headline. Default 'Up to 30% off the Storm collection'.
+ * @param {string} text - Supporting copy.
+ * @param {{label: string, href: string}} cta - Call to action.
+ * @param {string} endedText - Message shown after the deadline. Default 'This offer has ended — new deals every Friday.'
+ * @param {string} storageKey - localStorage key for the rolling deadline. Default 'ack-countdown'.
+ * @param {string} variant - Style (glow|bar|card). Default 'glow'.
+ * @param {string} size - Density (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the ticking digits are aria-hidden; a visually hidden sentence with the remaining
+ * time updates once a minute in a polite live region (no per-second announcements).
+ */
+interface Props {
+  endsAt?: string;
+  hours?: number;
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  cta?: { label: string; href: string };
+  endedText?: string;
+  storageKey?: string;
+  variant?: 'glow' | 'bar' | 'card';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  endsAt,
+  hours = 48,
+  eyebrow = 'Flash sale',
+  title = 'Up to 30% off the Storm collection',
+  text = 'Waterproof shells, insulated layers and accessories. While stock lasts.',
+  cta = { label: 'Shop the sale', href: '#' },
+  endedText = 'This offer has ended — new deals every Friday.',
+  storageKey = 'ack-countdown',
+  variant = 'glow',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const units = [
+  { key: 'd', label: 'Days' },
+  { key: 'h', label: 'Hours' },
+  { key: 'm', label: 'Minutes' },
+  { key: 's', label: 'Seconds' },
+];
+---
+
+<section
+  class:list={['countdown', `countdown--${variant}`, `countdown--${size}`, className]}
+  data-countdown
+  data-ends={endsAt}
+  data-hours={hours}
+  data-key={storageKey}
+  aria-label={title}
+>
+  <div class="countdown__inner">
+  <div class="countdown__copy">
+    {eyebrow && <p class="countdown__eyebrow"><span aria-hidden="true"></span>{eyebrow}</p>}
+    <h2 class="countdown__title">{title}</h2>
+    {text && <p class="countdown__text" data-live-text>{text}</p>}
+    <p class="countdown__ended" data-ended hidden>{endedText}</p>
+  </div>
+  <div class="countdown__side">
+    <div class="countdown__clock" aria-hidden="true" data-clock>
+      {units.map((u) => (
+        <div class="countdown__unit">
+          <span class="countdown__num" data-unit={u.key}>00</span>
+          <span class="countdown__label">{u.label}</span>
+        </div>
+      ))}
+    </div>
+    <p class="sr-only" aria-live="polite" data-sr></p>
+    {cta && <a class="countdown__cta" href={cta.href}>{cta.label}</a>}
+  </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-countdown]:not([data-bound])').forEach((el) => {
+    el.dataset.bound = '';
+    let end = el.dataset.ends ? Date.parse(el.dataset.ends) : NaN;
+    if (Number.isNaN(end)) {
+      const key = el.dataset.key || 'ack-countdown';
+      const ms = (Number(el.dataset.hours) || 48) * 3600_000;
+      try {
+        const saved = Number(window.localStorage.getItem(key));
+        end = saved && saved > Date.now() ? saved : Date.now() + ms;
+        window.localStorage.setItem(key, String(end));
+      } catch {
+        end = Date.now() + ms;
+      }
+    }
+    const nums = Object.fromEntries(Array.from(el.querySelectorAll<HTMLElement>('[data-unit]')).map((n) => [n.dataset.unit, n]));
+    const sr = el.querySelector<HTMLElement>('[data-sr]');
+    const ended = el.querySelector<HTMLElement>('[data-ended]');
+    const clock = el.querySelector<HTMLElement>('[data-clock]');
+    let lastMinute = -1;
+    let timer = 0;
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    function tick() {
+      const left = Math.max(0, end - Date.now());
+      const s = Math.floor(left / 1000);
+      const parts = { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
+      (Object.keys(parts) as Array<keyof typeof parts>).forEach((k) => {
+        const node = nums[k];
+        const value = pad(parts[k]);
+        if (node && node.textContent !== value) {
+          node.textContent = value;
+          node.classList.remove('is-tick');
+          void node.offsetWidth;
+          node.classList.add('is-tick');
+        }
+      });
+      const minute = Math.floor(s / 60);
+      if (sr && minute !== lastMinute) {
+        lastMinute = minute;
+        sr.textContent = `Offer ends in ${parts.d} days, ${parts.h} hours and ${parts.m} minutes.`;
+      }
+      if (left === 0) {
+        window.clearInterval(timer);
+        el.classList.add('is-ended');
+        if (ended) ended.hidden = false;
+        if (clock) clock.hidden = true;
+        if (sr) sr.textContent = ended?.textContent || 'Offer ended.';
+      }
+    }
+    tick();
+    timer = window.setInterval(tick, 1000);
+  });
+</script>
+
+<style>
+  .countdown {
+    container-type: inline-size;
+    position: relative;
+    padding: clamp(1.5rem, 4vw, 2.75rem);
+    border-radius: var(--r-xl, 28px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .countdown--glow {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(248, 113, 113, 0.16), transparent 45%),
+      radial-gradient(circle at 0% 100%, rgba(212, 160, 23, 0.16), transparent 45%),
+      var(--c-surface, rgb(var(--ink-rgb, 255 255 255) / 0.02));
+  }
+  .countdown__inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--sp-8, 2rem); }
+  .countdown--card { background: var(--c-bg-1, #0a0a0a); }
+  .countdown--bar { border-radius: var(--r-md, 12px); padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem); }
+  .countdown--bar .countdown__inner { grid-template-columns: auto 1fr auto; gap: var(--sp-5, 1.25rem); }
+  .countdown--bar .countdown__copy { display: flex; align-items: center; gap: var(--sp-4, 1rem); }
+  .countdown--bar .countdown__title { font-size: 1rem; }
+  .countdown--bar .countdown__text, .countdown--bar .countdown__eyebrow { display: none; }
+  .countdown--bar .countdown__side { display: contents; }
+  .countdown--sm { padding: var(--sp-5, 1.25rem); }
+
+  .countdown__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-danger, #f87171);
+  }
+  .countdown__eyebrow span { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: cd-pulse 1.6s ease-in-out infinite; }
+  .countdown__title { margin: 0; font-size: clamp(1.4rem, 3vw, 2.1rem); font-weight: 900; letter-spacing: -0.03em; line-height: 1.15; color: var(--c-text-1, #fff); }
+  .countdown__text, .countdown__ended { margin: var(--sp-3, 0.75rem) 0 0; max-width: 34rem; color: var(--c-text-2, #a3a3a3); }
+  .countdown__ended[hidden] { display: none; }
+
+  .countdown__side { display: grid; justify-items: end; gap: var(--sp-4, 1rem); }
+  .countdown__clock { display: flex; gap: var(--sp-2, 0.5rem); }
+  .countdown__clock[hidden] { display: none; }
+  .countdown__unit {
+    display: grid;
+    justify-items: center;
+    min-width: 72px;
+    padding: var(--sp-3, 0.75rem) var(--sp-2, 0.5rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    background: rgb(var(--paper-rgb, 5 5 5) / 0.5);
+  }
+  .countdown--bar .countdown__unit { min-width: 52px; padding: 4px 6px; }
+  .countdown__num { font-size: 1.9rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--c-text-1, #fff); line-height: 1.1; }
+  .countdown--bar .countdown__num { font-size: 1.1rem; }
+  .countdown__num.is-tick { animation: cd-tick 0.35s ease-out; }
+  .countdown__label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .countdown__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 9999px);
+    background: var(--c-primary-light, #d4a017);
+    color: var(--c-on-primary, #050505);
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .countdown__cta:hover { filter: brightness(1.08); color: var(--c-on-primary, #050505); }
+  .countdown__cta:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 3px; }
+  .countdown.is-ended .countdown__cta { display: none; }
+
+  @keyframes cd-tick { from { transform: translateY(-4px); opacity: 0.5; } }
+  @keyframes cd-pulse { 50% { opacity: 0.35; } }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 760px) {
+    .countdown__inner, .countdown--bar .countdown__inner { grid-template-columns: 1fr; }
+    .countdown__side { justify-items: stretch; }
+    .countdown__clock { justify-content: space-between; }
+    .countdown__unit { flex: 1; min-width: 0; }
+    .countdown__cta { justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .countdown__num.is-tick, .countdown__eyebrow span { animation: none; }
+  }
+</style>

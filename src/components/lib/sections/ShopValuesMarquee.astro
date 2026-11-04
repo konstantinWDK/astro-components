@@ -1,0 +1,91 @@
+---
+/**
+ * ShopValuesMarquee — Brand promise band: an oversized italic marquee followed by numbered
+ * value columns (materials, making, after-care…).
+ *
+ * @param {string[]} words - Marquee words. Empty hides the marquee.
+ * @param {Array<{title: string, text: string}>} values - 2–4 value columns.
+ * @param {number} speed - Marquee loop duration in seconds. Default 36.
+ * @param {string} variant - Style (plain|inverted). Default 'plain'.
+ * @param {string} size - Marquee scale (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the marquee is decorative (aria-hidden) and pauses on hover and with reduced
+ * motion; values are a real list with headings.
+ */
+interface Props {
+  words?: string[];
+  values?: Array<{ title: string; text: string }>;
+  speed?: number;
+  variant?: 'plain' | 'inverted';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  words = ['Made slowly', 'Natural fibres', 'Small workshops', 'Repaired for life'],
+  values = [
+    { title: 'Honest materials', text: 'Linen, wool, organic cotton and stoneware — traceable to the mill and the kiln.' },
+    { title: 'Made in small runs', text: 'Each piece is produced in batches of a few hundred, never mass-manufactured.' },
+    { title: 'Kept for years', text: 'Free repairs on everything we make, and a buy-back for pieces you have outgrown.' },
+  ],
+  speed = 36,
+  variant = 'plain',
+  size = 'md',
+  className = '',
+} = Astro.props;
+---
+
+<section class:list={['svm', `svm--${variant}`, `svm--${size}`, className]} style={`--svm-speed: ${speed}s`}>
+  {words.length > 0 && (
+    <div class="svm__marquee" aria-hidden="true">
+      <div class="svm__track">
+        {[0, 1].map(() => words.map((w) => <span>{w}<i>✺</i></span>))}
+      </div>
+    </div>
+  )}
+  {values.length > 0 && (
+    <ol class="svm__values">
+      {values.map((v, i) => (
+        <li>
+          <span class="svm__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <h3>{v.title}</h3>
+          <p>{v.text}</p>
+        </li>
+      ))}
+    </ol>
+  )}
+</section>
+
+<style>
+  .svm { container-type: inline-size; --svm-fs: clamp(3rem, 9vw, 7.5rem); color: var(--c-text-1, #fff); overflow: hidden; }
+  .svm--sm { --svm-fs: clamp(2rem, 6vw, 4.5rem); }
+  .svm--lg { --svm-fs: clamp(4rem, 12vw, 10rem); }
+  .svm--inverted { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .svm__marquee { border-block: 1px solid currentColor; overflow: hidden; }
+  .svm__track { display: flex; width: max-content; animation: svm-run var(--svm-speed) linear infinite; }
+  .svm:hover .svm__track { animation-play-state: paused; }
+  .svm__track span { display: inline-flex; align-items: center; gap: 0.35em; padding: 0.1em 0 0.15em 0.35em; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: var(--svm-fs); font-style: italic; letter-spacing: -0.04em; line-height: 1.05; white-space: nowrap; }
+  .svm__track i { font-style: normal; font-size: 0.4em; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  @keyframes svm-run { to { transform: translateX(-50%); } }
+
+  .svm__values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 0 auto;
+    max-width: 1440px;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 3vw, 2.5rem);
+    list-style: none;
+    gap: 0;
+  }
+  .svm__values li { padding: 0 var(--sp-6, 1.5rem) var(--sp-4, 1rem); border-left: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); }
+  .svm--inverted .svm__values li { border-left-color: rgb(var(--paper-rgb, 5 5 5) / 0.2); }
+  .svm__num { font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .svm__values h3 { margin: var(--sp-3, 0.75rem) 0 var(--sp-2, 0.5rem); font-family: var(--font-display, Georgia, serif); font-size: 1.5rem; font-weight: 400; letter-spacing: -0.02em; }
+  .svm__values p { margin: 0; max-width: 22rem; font-size: 0.92rem; line-height: 1.65; opacity: 0.75; }
+
+  @container (max-width: 640px) {
+    .svm__values li { padding: var(--sp-4, 1rem) 0; border-left: 0; border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); }
+  }
+  @media (prefers-reduced-motion: reduce) { .svm__track { animation: none; } }
+</style>

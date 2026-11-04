@@ -1,0 +1,113 @@
+---
+/**
+ * AgencyServicesList — Numbered, expandable service rows: big service names, short pitch,
+ * deliverable chips, typical timeline and "from" price, with a hover/focus reveal.
+ *
+ * @param {string} eyebrow - Small label. Default 'What we do'.
+ * @param {string} title - Section heading. Default 'Services that move the needle'.
+ * @param {Array<{name: string, pitch: string, deliverables?: string[], timeline?: string, from?: string, href?: string}>} services - Rows.
+ * @param {number} open - Index opened by default (-1 for none). Default 0.
+ * @param {boolean} exclusive - Opening one row closes the others. Default true.
+ * @param {string} variant - Style (lines|cards). Default 'lines'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: native <details>/<summary> rows (keyboard and screen-reader friendly); each row
+ * has a heading; the decorative number and arrow are aria-hidden.
+ */
+interface Service { name: string; pitch: string; deliverables?: string[]; timeline?: string; from?: string; href?: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  services?: Service[];
+  open?: number;
+  exclusive?: boolean;
+  variant?: 'lines' | 'cards';
+  className?: string;
+}
+
+const {
+  eyebrow = 'What we do',
+  title = 'Services that move the needle',
+  services = [
+    { name: 'Brand identity', pitch: 'Positioning, naming, logo systems and guidelines that make you unmistakable.', deliverables: ['Strategy workshop', 'Visual identity', 'Brand book', 'Launch kit'], timeline: '6–8 weeks', from: '€18k' },
+    { name: 'Websites', pitch: 'Fast, accessible Astro sites with a CMS your team will actually enjoy.', deliverables: ['UX & content', 'Design system', 'Astro build', 'CMS & analytics'], timeline: '8–12 weeks', from: '€24k' },
+    { name: 'Growth marketing', pitch: 'Performance campaigns, SEO and CRO run by people who read the numbers.', deliverables: ['Paid social', 'SEO', 'A/B testing', 'Monthly reporting'], timeline: 'Monthly', from: '€6k / mo' },
+    { name: 'Content & social', pitch: 'Always-on content engines: shoots, short video, copy and community.', deliverables: ['Editorial calendar', 'Production', 'Community'], timeline: 'Monthly', from: '€4k / mo' },
+  ],
+  open = 0,
+  exclusive = true,
+  variant = 'lines',
+  className = '',
+} = Astro.props;
+---
+
+<div class="cq-agency-services">
+<section class:list={['asl', `asl--${variant}`, className]} aria-labelledby="asl-title" data-services data-exclusive={exclusive ? '' : undefined}>
+  <header class="asl__head">
+    <p class="asl__eyebrow">{eyebrow}</p>
+    <h2 class="asl__title" id="asl-title">{title}</h2>
+  </header>
+  <div class="asl__list">
+    {services.map((s, i) => (
+      <details class="asl__row" open={i === open}>
+        <summary class="asl__summary">
+          <span class="asl__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <h3 class="asl__name">{s.name}</h3>
+          {s.from && <span class="asl__from">from {s.from}</span>}
+          <span class="asl__arrow" aria-hidden="true">↗</span>
+        </summary>
+        <div class="asl__body">
+          <p class="asl__pitch">{s.pitch}</p>
+          {s.deliverables && <ul class="asl__chips">{s.deliverables.map((d) => <li>{d}</li>)}</ul>}
+          <p class="asl__meta">{s.timeline && <span>Timeline · <strong>{s.timeline}</strong></span>}{s.href && <a href={s.href}>Learn more →</a>}</p>
+        </div>
+      </details>
+    ))}
+  </div>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-services][data-exclusive]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const rows = Array.from(root.querySelectorAll<HTMLDetailsElement>('details'));
+    rows.forEach((d) => d.addEventListener('toggle', () => { if (d.open) rows.forEach((o) => { if (o !== d) o.open = false; }); }));
+  });
+</script>
+
+<style>
+  .cq-agency-services { container-type: inline-size; }
+  .asl { color: var(--c-text-1, #fff); }
+  .asl__head { display: grid; gap: var(--sp-2, 0.5rem); margin-bottom: var(--sp-6, 1.5rem); }
+  .asl__eyebrow { margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .asl__title { margin: 0; max-width: 18ch; font-size: clamp(2.2rem, 6cqi, 4.2rem); font-weight: 900; letter-spacing: -0.05em; line-height: 0.95; }
+  .asl__list { border-top: 1.5px solid currentColor; }
+  .asl--cards .asl__list { display: grid; gap: var(--sp-3, 0.75rem); border: 0; }
+  .asl__row { border-bottom: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.15)); }
+  .asl--cards .asl__row { border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); border-radius: 24px; padding: 0 var(--sp-5, 1.25rem); }
+  .asl__summary { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto 48px; align-items: center; gap: var(--sp-4, 1rem); min-height: 96px; cursor: pointer; list-style: none; }
+  .asl__summary::-webkit-details-marker { display: none; }
+  .asl__summary:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 4px; border-radius: 12px; }
+  .asl__num { font-size: 0.85rem; font-weight: 700; color: var(--c-text-3, #737373); font-variant-numeric: tabular-nums; }
+  .asl__name { margin: 0; font-size: clamp(1.6rem, 4.4cqi, 3rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+  .asl__summary:hover .asl__name { transform: translateX(10px); }
+  .asl__from { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.2)); font-size: 0.82rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); white-space: nowrap; }
+  .asl__arrow { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 1.1rem; transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease; }
+  .asl__row[open] .asl__arrow { transform: rotate(90deg); background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); border-color: transparent; }
+  .asl__body { display: grid; gap: var(--sp-4, 1rem); padding: 0 0 var(--sp-6, 1.5rem) calc(56px + var(--sp-4, 1rem)); animation: asl-in 0.35s ease-out; }
+  @keyframes asl-in { from { opacity: 0; transform: translateY(-6px); } }
+  .asl__pitch { margin: 0; max-width: 46rem; font-size: 1.1rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .asl__chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .asl__chips li { padding: 8px 14px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); font-size: 0.85rem; font-weight: 600; }
+  .asl__meta { display: flex; flex-wrap: wrap; gap: var(--sp-5, 1.25rem); margin: 0; font-size: 0.88rem; color: var(--c-text-2, #a3a3a3); }
+  .asl__meta strong { color: var(--c-text-1, #fff); }
+  .asl__meta a { color: var(--c-text-1, #fff); font-weight: 700; }
+
+  @container (max-width: 640px) {
+    .asl__summary { grid-template-columns: 36px minmax(0, 1fr) 44px; min-height: 80px; }
+    .asl__from { display: none; }
+    .asl__arrow { width: 44px; height: 44px; }
+    .asl__body { padding-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .asl__name, .asl__arrow, .asl__body { transition: none; animation: none; } }
+</style>

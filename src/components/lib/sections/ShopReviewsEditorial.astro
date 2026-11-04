@@ -1,0 +1,133 @@
+---
+/**
+ * ShopReviewsEditorial — Customer voices as one large serif quote at a time, with product
+ * context, star rating, numbered pager and an overall score.
+ *
+ * @param {string} eyebrow - Small label. Default 'Customer notes'.
+ * @param {number} score - Average rating shown on the side. Default 4.9.
+ * @param {number} count - Total reviews. Default 1284.
+ * @param {Array<{quote: string, name: string, place?: string, product?: string, rating?: number}>} reviews - Quotes.
+ * @param {number} interval - Auto-advance in ms (0 = manual only). Default 7000.
+ * @param {string} variant - Style (plain|boxed). Default 'plain'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a labelled carousel region; slides are figures with figcaption; auto-advance
+ * pauses on hover/focus, is off with reduced motion, and pager buttons use aria-current.
+ */
+import ProductRating from '../ecommerce/ProductRating.astro';
+
+interface Review { quote: string; name: string; place?: string; product?: string; rating?: number }
+interface Props {
+  eyebrow?: string;
+  score?: number;
+  count?: number;
+  reviews?: Review[];
+  interval?: number;
+  variant?: 'plain' | 'boxed';
+  className?: string;
+}
+
+const {
+  eyebrow = 'Customer notes',
+  score = 4.9,
+  count = 1284,
+  reviews = [
+    { quote: 'The overshirt has been washed forty times and it only gets softer. It is the first thing I reach for.', name: 'Inés M.', place: 'Valencia', product: 'Linen Overshirt', rating: 5 },
+    { quote: 'Packaging without plastic, a handwritten note, and a mug that feels made for my hands.', name: 'Jonas P.', place: 'Hamburg', product: 'Kiln Mug', rating: 5 },
+    { quote: 'They repaired the strap of my tote for free, two years after I bought it. That is rare.', name: 'Amira S.', place: 'Lyon', product: 'Field Tote', rating: 5 },
+  ],
+  interval = 7000,
+  variant = 'plain',
+  className = '',
+} = Astro.props;
+---
+
+<div class="sre-cq">
+<section class:list={['sre', `sre--${variant}`, className]} aria-roledescription="carousel" aria-label={eyebrow} data-reviews data-interval={interval}>
+  <div class="sre__side">
+    <p class="sre__eyebrow">{eyebrow}</p>
+    <p class="sre__score">{score.toFixed(1)}<span>/5</span></p>
+    <ProductRating value={score} count={count} showValue={false} size="md" />
+  </div>
+  <div class="sre__main">
+    <div class="sre__slides">
+      {reviews.map((r, i) => (
+        <figure class:list={['sre__slide', { 'is-active': i === 0 }]} hidden={i !== 0} aria-roledescription="slide" aria-label={`${i + 1} of ${reviews.length}`} data-slide>
+          <blockquote class="sre__quote"><p>“{r.quote}”</p></blockquote>
+          <figcaption class="sre__by">
+            <strong>{r.name}</strong>{r.place && <span>, {r.place}</span>}
+            {r.product && <span class="sre__product">on {r.product}</span>}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+    {reviews.length > 1 && (
+      <div class="sre__pager" role="group" aria-label="Choose a review">
+        {reviews.map((_, i) => (
+          <button type="button" class="sre__page" aria-label={`Review ${i + 1}`} aria-current={i === 0 ? 'true' : undefined} data-page={i}>{String(i + 1).padStart(2, '0')}</button>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-reviews]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-slide]'));
+    const pages = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-page]'));
+    let index = 0;
+    let paused = false;
+    const go = (i: number) => {
+      index = (i + slides.length) % slides.length;
+      slides.forEach((s, n) => { s.hidden = n !== index; s.classList.toggle('is-active', n === index); });
+      pages.forEach((p, n) => { if (n === index) p.setAttribute('aria-current', 'true'); else p.removeAttribute('aria-current'); });
+    };
+    pages.forEach((p, i) => p.addEventListener('click', () => go(i)));
+    root.addEventListener('mouseenter', () => { paused = true; });
+    root.addEventListener('mouseleave', () => { paused = false; });
+    root.addEventListener('focusin', () => { paused = true; });
+    root.addEventListener('focusout', () => { paused = false; });
+    const ms = Number(root.dataset.interval) || 0;
+    if (ms > 0 && slides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.setInterval(() => { if (!paused && !document.hidden) go(index + 1); }, ms);
+    }
+  });
+</script>
+
+<style>
+  .sre-cq { container-type: inline-size; }
+  .sre {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 5rem);
+    padding-block: clamp(2rem, 5vw, 4rem);
+    border-top: 1px solid var(--c-text-1, #fff);
+    color: var(--c-text-1, #fff);
+  }
+  .sre--boxed { padding: clamp(1.5rem, 4vw, 3.5rem); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: var(--c-bg-1, #0a0a0a); }
+  .sre__eyebrow { margin: 0 0 var(--sp-4, 1rem); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .sre__score { margin: 0 0 var(--sp-2, 0.5rem); font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: 4.5rem; line-height: 1; letter-spacing: -0.04em; }
+  .sre__score span { font-size: 1.2rem; color: var(--c-text-2, #a3a3a3); }
+  .sre__side :global(.p-rating) { --p-rating-star: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+
+  .sre__slides { display: grid; min-height: 12rem; }
+  .sre__slide { grid-area: 1 / 1; margin: 0; }
+  .sre__slide[hidden] { display: none; }
+  .sre__slide.is-active { animation: sre-in 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes sre-in { from { opacity: 0; transform: translateY(10px); } }
+  .sre__quote { margin: 0; }
+  .sre__quote p { margin: 0; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: clamp(1.6rem, 3.4vw, 2.8rem); font-weight: 400; font-style: italic; line-height: 1.2; letter-spacing: -0.02em; text-wrap: balance; }
+  .sre__by { margin-top: var(--sp-5, 1.25rem); font-size: 0.9rem; }
+  .sre__by span { color: var(--c-text-2, #a3a3a3); }
+  .sre__product { display: block; margin-top: 2px; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .sre__pager { display: flex; gap: var(--sp-4, 1rem); margin-top: var(--sp-8, 2rem); }
+  .sre__page { min-width: 44px; min-height: 44px; padding: 0; border: 0; border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.2)); background: none; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.8rem; font-variant-numeric: tabular-nums; text-align: left; cursor: pointer; }
+  .sre__page[aria-current='true'] { border-top: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); color: var(--c-text-1, #fff); }
+  .sre__page:focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+
+  @container (max-width: 760px) { .sre { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .sre__slide.is-active { animation: none; } }
+</style>

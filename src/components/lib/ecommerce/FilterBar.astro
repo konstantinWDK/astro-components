@@ -1,0 +1,278 @@
+---
+/**
+ * FilterBar — Horizontal catalogue toolbar: category chips, a "Refine" panel (price, colour,
+ * availability), sort select and a live count. Filters any grid of product cards instantly.
+ *
+ * @param {string} target - id of the product grid. Default 'product-grid'.
+ * @param {Array<{id: string, name: string, count?: number}>} categories - Category chips.
+ * @param {string[]} selected - Pre-selected category ids (also read from `?category=`).
+ * @param {number} maxPrice - Upper bound of the price slider. Default 400.
+ * @param {Array<{name: string, hex: string}>} colors - Colour options.
+ * @param {number} total - Initial product count. Default 0.
+ * @param {string} allLabel - Label of the "all" chip. Default 'All'.
+ * @param {string} countLabel - Text after the count. Default 'products'.
+ * @param {string} currency - ISO currency. Default 'EUR'.
+ * @param {string} locale - Number format locale. Default 'en-GB'.
+ * @param {boolean} sticky - Stick under the header while scrolling. Default true.
+ * @param {string} variant - Style (line|filled). Default 'line'.
+ * @param {string} id - Base id. Default 'filter-bar'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: chips are toggle buttons (aria-pressed); "Refine" is a disclosure that closes
+ * with Escape; the count is a polite live region; all controls are native inputs.
+ */
+import { formatMoney } from './cart-store';
+
+interface Props {
+  target?: string;
+  categories?: Array<{ id: string; name: string; count?: number }>;
+  selected?: string[];
+  maxPrice?: number;
+  colors?: Array<{ name: string; hex: string }>;
+  total?: number;
+  allLabel?: string;
+  countLabel?: string;
+  currency?: string;
+  locale?: string;
+  sticky?: boolean;
+  variant?: 'line' | 'filled';
+  id?: string;
+  className?: string;
+}
+
+const {
+  target = 'product-grid',
+  categories = [
+    { id: 'clothing', name: 'Clothing', count: 5 },
+    { id: 'shoes', name: 'Shoes', count: 2 },
+    { id: 'bags', name: 'Bags', count: 2 },
+    { id: 'objects', name: 'Objects', count: 3 },
+  ],
+  selected = [],
+  maxPrice = 400,
+  colors = [
+    { name: 'Oat', hex: '#d9cbb3' },
+    { name: 'Ink', hex: '#22252b' },
+    { name: 'Rust', hex: '#9c3d1c' },
+    { name: 'Sage', hex: '#8a9a7b' },
+  ],
+  total = 0,
+  allLabel = 'All',
+  countLabel = 'products',
+  currency = 'EUR',
+  locale = 'en-GB',
+  sticky = true,
+  variant = 'line',
+  id = 'filter-bar',
+  className = '',
+} = Astro.props;
+
+const money = { currency, locale };
+---
+
+<div class:list={['fbar', `fbar--${variant}`, { 'fbar--sticky': sticky }, className]} data-filter-bar data-target={target} data-currency={currency} data-locale={locale}>
+  <div class="fbar__row">
+    <div class="fbar__chips" role="group" aria-label="Categories">
+      <button type="button" class="fbar__chip" data-chip="" aria-pressed={selected.length === 0 ? 'true' : 'false'}>{allLabel}</button>
+      {categories.map((c) => (
+        <button type="button" class="fbar__chip" data-chip={c.id} aria-pressed={selected.includes(c.id) ? 'true' : 'false'}>
+          {c.name}{c.count !== undefined && <sup>{c.count}</sup>}
+        </button>
+      ))}
+    </div>
+
+    <div class="fbar__tools">
+      <p class="fbar__count" aria-live="polite"><span data-result-count={target}>{total}</span> {countLabel}</p>
+      <button type="button" class="fbar__refine" aria-expanded="false" aria-controls={`${id}-panel`} data-refine>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        Refine <span class="fbar__badge" data-active hidden></span>
+      </button>
+      <label class="fbar__sort">
+        <span class="sr-only">Sort by</span>
+        <select data-sort>
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price, low to high</option>
+          <option value="price-desc">Price, high to low</option>
+          <option value="name">Alphabetical</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <form class="fbar__panel" id={`${id}-panel`} hidden data-panel aria-label="Refine products">
+    <fieldset>
+      <legend>Price</legend>
+      <label class="fbar__range">
+        <span>Up to <output data-price-out>{formatMoney(maxPrice, money)}</output></span>
+        <input type="range" name="max" min="0" max={maxPrice} step="5" value={maxPrice} aria-label="Maximum price" />
+      </label>
+    </fieldset>
+    {colors.length > 0 && (
+      <fieldset>
+        <legend>Colour</legend>
+        <div class="fbar__colors">
+          {colors.map((c) => (
+            <label class="fbar__color" style={`--sw: ${c.hex}`}>
+              <input type="checkbox" name="color" value={c.name.toLowerCase()} />
+              <span aria-hidden="true"></span>{c.name}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    )}
+    <fieldset>
+      <legend>Availability</legend>
+      <label class="fbar__check"><input type="checkbox" name="stock" value="in" /> <span>In stock only</span></label>
+    </fieldset>
+    <div class="fbar__panel-actions">
+      <button type="reset" class="fbar__link">Clear filters</button>
+      <button type="button" class="fbar__done" data-close>Show results</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  import { applyCatalogFilter, syncCatalogUrl } from './catalog-filter';
+  import { formatMoney } from './cart-store';
+
+  document.querySelectorAll<HTMLElement>('[data-filter-bar]:not([data-bound])').forEach((bar) => {
+    bar.dataset.bound = '';
+    const grid = document.getElementById(bar.dataset.target || '');
+    if (!grid) return;
+    const target: HTMLElement = grid;
+    const chips = Array.from(bar.querySelectorAll<HTMLButtonElement>('[data-chip]'));
+    const panel = bar.querySelector<HTMLFormElement>('[data-panel]')!;
+    const refine = bar.querySelector<HTMLButtonElement>('[data-refine]')!;
+    const sort = bar.querySelector<HTMLSelectElement>('[data-sort]')!;
+    const active = bar.querySelector<HTMLElement>('[data-active]')!;
+    const priceOut = bar.querySelector<HTMLOutputElement>('[data-price-out]');
+    const priceInput = panel.elements.namedItem('max') as HTMLInputElement;
+    const money = { currency: bar.dataset.currency, locale: bar.dataset.locale };
+
+    const params = new URLSearchParams(window.location.search);
+    let categories = (params.get('category') || '').split(',').filter(Boolean);
+    if (!categories.length) categories = chips.filter((c) => c.dataset.chip && c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.chip!);
+    if (params.get('sort')) sort.value = params.get('sort')!;
+
+    function run() {
+      const data = new FormData(panel);
+      const max = Number(data.get('max'));
+      const colors = data.getAll('color') as string[];
+      const inStockOnly = data.get('stock') === 'in';
+      chips.forEach((c) => {
+        const id = c.dataset.chip;
+        c.setAttribute('aria-pressed', String(id ? categories.includes(id) : categories.length === 0));
+      });
+      applyCatalogFilter(target, { categories, colors, maxPrice: max, minRating: 0, inStockOnly, sort: sort.value });
+      syncCatalogUrl({ categories, sort: sort.value });
+      if (priceOut) priceOut.textContent = formatMoney(max, money);
+      const n = colors.length + (inStockOnly ? 1 : 0) + (max < Number(priceInput.max) ? 1 : 0);
+      active.hidden = n === 0;
+      active.textContent = String(n);
+    }
+
+    chips.forEach((chip) => chip.addEventListener('click', () => {
+      const id = chip.dataset.chip;
+      if (!id) categories = [];
+      else categories = categories.includes(id) ? categories.filter((c) => c !== id) : [...categories, id];
+      run();
+    }));
+    const setOpen = (open: boolean) => {
+      panel.hidden = !open;
+      refine.setAttribute('aria-expanded', String(open));
+    };
+    refine.addEventListener('click', () => setOpen(panel.hidden));
+    bar.querySelector('[data-close]')?.addEventListener('click', () => { setOpen(false); refine.focus(); });
+    bar.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { setOpen(false); refine.focus(); } });
+    panel.addEventListener('input', run);
+    panel.addEventListener('reset', () => window.setTimeout(run, 0));
+    sort.addEventListener('change', run);
+    run();
+  });
+</script>
+
+<style>
+  .fbar { container-type: inline-size; position: relative; z-index: 5; border-block: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); background: var(--c-bg, #050505); }
+  .fbar--sticky { position: sticky; top: var(--shop-header-h, 0px); }
+  .fbar--filled { background: var(--c-bg-1, #0a0a0a); }
+  .fbar__row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4, 1rem); min-height: 60px; }
+  .fbar__chips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
+  .fbar__chips::-webkit-scrollbar { display: none; }
+  .fbar__chip {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 3px;
+    min-height: 40px;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid transparent;
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .fbar__chip sup { font-size: 0.62rem; opacity: 0.8; }
+  .fbar__chip:hover { color: var(--c-text-1, #fff); border-color: var(--c-border, rgba(255, 255, 255, 0.15)); }
+  .fbar__chip[aria-pressed='true'] { color: var(--c-bg, #050505); background: var(--c-text-1, #fff); }
+
+  .fbar__tools { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); flex-shrink: 0; }
+  .fbar__count { margin: 0; font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); white-space: nowrap; }
+  .fbar__count span { color: var(--c-text-1, #fff); font-weight: 700; }
+  .fbar__refine, .fbar__sort select {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 0.9rem;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.15));
+    border-radius: var(--r-sm, 2px);
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .fbar__sort select { appearance: none; padding-right: 2rem; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+  .fbar__sort select option { background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); }
+  .fbar__refine[aria-expanded='true'] { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .fbar__badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--shop-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.68rem; font-weight: 800; line-height: 18px; text-align: center; }
+  .fbar__badge[hidden] { display: none; }
+  .fbar :is(button, select, input):focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .fbar__panel {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0 var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.1));
+  }
+  .fbar__panel[hidden] { display: none; }
+  .fbar__panel fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .fbar__panel legend { margin-bottom: var(--sp-3, 0.75rem); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .fbar__range { display: grid; gap: var(--sp-2, 0.5rem); font-size: 0.88rem; color: var(--c-text-1, #fff); }
+  .fbar__range input { width: 100%; accent-color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .fbar__colors { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); }
+  .fbar__color { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 0.7rem 0 0.4rem; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.15)); border-radius: 999px; font-size: 0.82rem; color: var(--c-text-1, #fff); cursor: pointer; }
+  .fbar__color input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .fbar__color span { width: 18px; height: 18px; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb, 255 255 255) / 0.2); }
+  .fbar__color:has(input:checked) { border-color: var(--c-text-1, #fff); background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+  .fbar__color:has(input:focus-visible) { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .fbar__check { display: inline-flex; align-items: center; gap: var(--sp-2, 0.5rem); min-height: 36px; font-size: 0.88rem; color: var(--c-text-1, #fff); cursor: pointer; }
+  .fbar__check input { width: 18px; height: 18px; accent-color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .fbar__panel-actions { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: var(--sp-2, 0.5rem); }
+  .fbar__link { min-height: 36px; border: 0; background: none; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.85rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .fbar__done { min-height: 44px; padding: 0 1.25rem; border: 0; border-radius: var(--r-sm, 2px); background: var(--c-text-1, #fff); color: var(--c-bg, #050505); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 860px) {
+    .fbar__row { flex-direction: column; align-items: stretch; gap: 0; }
+    .fbar__tools { justify-content: space-between; padding-bottom: 10px; }
+    .fbar__panel { grid-template-columns: 1fr; }
+    .fbar__panel-actions { flex-direction: row; justify-content: space-between; }
+  }
+</style>

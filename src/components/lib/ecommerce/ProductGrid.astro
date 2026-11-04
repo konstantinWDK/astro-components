@@ -1,0 +1,118 @@
+---
+/**
+ * ProductGrid — Responsive grid of StoreProductCard tiles with an empty state.
+ * Works on its own or as the target of FilterSidebar / ProductToolbar (same `id`).
+ *
+ * @param {Product[]} products - Products to render.
+ * @param {string} id - Grid id; FilterSidebar and ProductToolbar point at it. Default 'product-grid'.
+ * @param {string} productBase - Product URL prefix; links become `${productBase}${slug}/`. Default '#'.
+ * @param {Record<string, string>} categoryNames - Category id → label for the card eyebrow.
+ * @param {number} columns - Desktop columns (2–5). Default 4.
+ * @param {string} cardVariant - StoreProductCard variant (glass|minimal|bordered). Default 'glass'.
+ * @param {string} cardSize - StoreProductCard size (sm|md|lg). Default 'md'.
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {boolean} openCart - Open the drawer after adding (false = toast). Default true.
+ * @param {string} emptyTitle - Empty state heading. Default 'No products match'.
+ * @param {string} emptyText - Empty state copy.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: cards keep their own headings; the empty state is a polite status message.
+ */
+import StoreProductCard from './StoreProductCard.astro';
+import type { Product } from './types';
+
+interface Props {
+  products?: Product[];
+  id?: string;
+  productBase?: string;
+  categoryNames?: Record<string, string>;
+  columns?: number;
+  cardVariant?: 'glass' | 'minimal' | 'bordered';
+  cardSize?: 'sm' | 'md' | 'lg';
+  currency?: string;
+  locale?: string;
+  cartKey?: string;
+  openCart?: boolean;
+  emptyTitle?: string;
+  emptyText?: string;
+  className?: string;
+}
+
+const {
+  products = [
+    { slug: 'aurora-headphones', name: 'Aurora Wireless Headphones', price: 189, compareAt: 229, category: 'audio', rating: 4.8, reviews: 312, badge: '-18%', badgeVariant: 'warning', icon: 'headphones', hue: 38 },
+    { slug: 'orbit-watch', name: 'Orbit Smart Watch', price: 249, category: 'wearables', rating: 4.6, reviews: 198, badge: 'New', badgeVariant: 'info', icon: 'watch', hue: 205 },
+    { slug: 'trail-backpack', name: 'Trail 24L Backpack', price: 119, category: 'bags', rating: 4.7, reviews: 87, icon: 'backpack', hue: 150 },
+    { slug: 'halo-lamp', name: 'Halo Desk Lamp', price: 79, category: 'home', rating: 4.5, reviews: 54, icon: 'lamp', hue: 25 },
+  ],
+  id = 'product-grid',
+  productBase = '#',
+  categoryNames = { audio: 'Audio', wearables: 'Wearables', bags: 'Bags', home: 'Home' },
+  columns = 4,
+  cardVariant = 'glass',
+  cardSize = 'md',
+  currency = 'USD',
+  locale = 'en-US',
+  cartKey = 'ack-cart',
+  openCart = true,
+  emptyTitle = 'No products match',
+  emptyText = 'Try removing a filter or widening the price range.',
+  className = '',
+} = Astro.props;
+
+const cols = Math.min(5, Math.max(2, columns));
+const hrefFor = (slug: string) => (productBase === '#' ? '#' : `${productBase}${slug}/`);
+---
+
+<div class:list={['p-grid-wrap', className]}>
+  <div class="p-grid" id={id} style={`--pg-cols: ${cols}`} data-product-list>
+    {products.map((p, i) => (
+      <StoreProductCard
+        product={p}
+        href={hrefFor(p.slug)}
+        categoryLabel={categoryNames[p.category] ?? ''}
+        variant={cardVariant}
+        size={cardSize}
+        currency={currency}
+        locale={locale}
+        cartKey={cartKey}
+        openCart={openCart}
+      />
+    ))}
+  </div>
+  <div class="p-grid__empty" role="status" data-product-empty hidden>
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/></svg>
+    <p><strong>{emptyTitle}</strong></p>
+    <p>{emptyText}</p>
+  </div>
+</div>
+
+<style>
+  .p-grid-wrap { container-type: inline-size; }
+  .p-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--pg-cols), minmax(0, 1fr));
+    gap: var(--sp-5, 1.25rem);
+  }
+  .p-grid > :global([hidden]) { display: none; }
+  .p-grid__empty {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-16, 4rem) var(--sp-6, 1.5rem);
+    border: 1px dashed rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    border-radius: var(--r-lg, 20px);
+    text-align: center;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .p-grid__empty[hidden] { display: none; }
+  .p-grid__empty svg { color: var(--c-primary-light, #d4a017); }
+  .p-grid__empty p { margin: 0; }
+  .p-grid__empty strong { color: var(--c-text-1, #fff); font-size: 1.05rem; }
+
+  @container (max-width: 1100px) { .p-grid { grid-template-columns: repeat(min(var(--pg-cols), 3), minmax(0, 1fr)); } }
+  @container (max-width: 760px) { .p-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3, 0.75rem); } }
+  @container (max-width: 380px) { .p-grid { grid-template-columns: 1fr; } }
+</style>

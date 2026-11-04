@@ -1,0 +1,147 @@
+---
+/**
+ * AgencyWorkGrid — Case-study grid with category filter chips: large art tiles, client, title,
+ * services and a headline result, in an alternating big/small rhythm.
+ *
+ * @param {string} eyebrow - Small label. Default 'Selected work'.
+ * @param {string} title - Heading. Default 'Work we are proud of'.
+ * @param {Array<{slug: string, client: string, title: string, category: string, services?: string[], result?: string, year?: string, hue?: number, image?: string, href?: string}>} projects - Case studies.
+ * @param {boolean} filters - Show category chips. Default true.
+ * @param {{label: string, href: string}} link - "All work" link (optional).
+ * @param {string} variant - Layout (mosaic|grid). Default 'mosaic'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each card is one link with a heading; filter chips are toggle buttons and the
+ * number of visible projects is announced; art is decorative.
+ */
+interface Project { slug: string; client: string; title: string; category: string; services?: string[]; result?: string; year?: string; hue?: number; image?: string; href?: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  projects?: Project[];
+  filters?: boolean;
+  link?: { label: string; href: string };
+  variant?: 'mosaic' | 'grid';
+  className?: string;
+}
+
+const {
+  eyebrow = 'Selected work',
+  title = 'Work we are proud of',
+  projects = [
+    { slug: 'nordlys', client: 'Nordlys', title: 'A Nordic skincare brand that sold out its launch', category: 'Brand', services: ['Identity', 'Packaging'], result: '+212% preorders', year: '2026', hue: 190 },
+    { slug: 'pace', client: 'Pace', title: 'A running app redesign that doubled retention', category: 'Product', services: ['UX', 'UI'], result: '2× day-30 retention', year: '2025', hue: 80 },
+    { slug: 'casa-alba', client: 'Casa Alba', title: 'Direct bookings for a boutique hotel group', category: 'Web', services: ['Website', 'SEO'], result: '+64% direct revenue', year: '2025', hue: 25 },
+    { slug: 'fintrack', client: 'Fintrack', title: 'Paid social that halved the cost per signup', category: 'Growth', services: ['Paid social', 'CRO'], result: '−48% CPA', year: '2026', hue: 280 },
+  ],
+  filters = true,
+  link = { label: 'All case studies', href: '#' },
+  variant = 'mosaic',
+  className = '',
+} = Astro.props;
+
+const cats = Array.from(new Set(projects.map((p) => p.category)));
+---
+
+<div class="cq-agency-work">
+<section class:list={['awg', `awg--${variant}`, className]} aria-labelledby="awg-title" data-work>
+  <header class="awg__head">
+    <div>
+      <p class="awg__eyebrow">{eyebrow}</p>
+      <h2 class="awg__title" id="awg-title">{title}</h2>
+    </div>
+    {link && <a class="awg__all" href={link.href}>{link.label} <span aria-hidden="true">↗</span></a>}
+  </header>
+  {filters && cats.length > 1 && (
+    <div class="awg__chips" role="group" aria-label="Filter by discipline">
+      <button type="button" aria-pressed="true" data-cat="">All <sup>{projects.length}</sup></button>
+      {cats.map((c) => <button type="button" aria-pressed="false" data-cat={c}>{c} <sup>{projects.filter((p) => p.category === c).length}</sup></button>)}
+    </div>
+  )}
+  <p class="sr-only" aria-live="polite" data-announce></p>
+  <ul class="awg__grid">
+    {projects.map((p, i) => (
+      <li class:list={['awg__item', { 'awg__item--wide': variant === 'mosaic' && i % 3 === 0 }]} data-cat={p.category}>
+        <a class="awg__card" href={p.href ?? '#'}>
+          <span class="awg__art" style={`--h: ${p.hue ?? 80}`} aria-hidden="true">
+            {p.image ? <img src={p.image} alt="" loading="lazy" decoding="async" /> : <span class="awg__glyph">{p.client.slice(0, 1)}</span>}
+            {p.result && <span class="awg__result">{p.result}</span>}
+          </span>
+          <span class="awg__meta"><span>{p.client}</span>{p.year && <span>{p.year}</span>}</span>
+          <h3 class="awg__name">{p.title}</h3>
+          {p.services && <span class="awg__tags">{p.services.map((s) => <span>{s}</span>)}</span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-work]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cat]')).filter((b) => b.tagName === 'BUTTON');
+    const items = Array.from(root.querySelectorAll<HTMLElement>('li[data-cat]'));
+    const announce = root.querySelector<HTMLElement>('[data-announce]')!;
+    chips.forEach((c) => c.addEventListener('click', () => {
+      const cat = c.dataset.cat || '';
+      chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+      let n = 0;
+      items.forEach((it) => { const show = !cat || it.dataset.cat === cat; it.hidden = !show; if (show) n++; });
+      announce.textContent = `${n} ${n === 1 ? 'project' : 'projects'} shown`;
+    }));
+  });
+</script>
+
+<style>
+  .cq-agency-work { container-type: inline-size; }
+  .awg { color: var(--c-text-1, #fff); }
+  .awg__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4, 1rem); margin-bottom: var(--sp-5, 1.25rem); }
+  .awg__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .awg__title { margin: 0; font-size: clamp(2.2rem, 6cqi, 4.2rem); font-weight: 900; letter-spacing: -0.05em; line-height: 0.95; }
+  .awg__all { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 1.2rem; border-radius: 999px; border: 1.5px solid currentColor; color: inherit; font-weight: 800; text-decoration: none; white-space: nowrap; }
+  .awg__all:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .awg__chips { display: flex; gap: 6px; margin-bottom: var(--sp-6, 1.5rem); overflow-x: auto; scrollbar-width: none; }
+  .awg__chips button { min-height: 42px; padding: 0 1rem; border-radius: 999px; border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.2)); background: transparent; color: var(--c-text-1, #fff); font: inherit; font-size: 0.9rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  .awg__chips sup { font-size: 0.65rem; opacity: 0.7; }
+  .awg__chips [aria-pressed='true'] { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-color: var(--c-text-1, #fff); }
+
+  .awg__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1rem, 3cqi, 2rem); margin: 0; padding: 0; list-style: none; }
+  .awg--grid .awg__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .awg__item[hidden] { display: none; }
+  .awg__item--wide { grid-column: 1 / -1; }
+  .awg__card { display: grid; gap: var(--sp-2, 0.5rem); color: inherit; text-decoration: none; }
+  .awg__art {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    border-radius: 24px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 25% 25%, hsl(var(--h) 85% 65%), transparent 55%),
+      radial-gradient(circle at 80% 80%, hsl(calc(var(--h) + 50) 80% 55%), transparent 55%),
+      hsl(var(--h) 45% 18%);
+    transition: border-radius 0.4s ease;
+  }
+  .awg__item--wide .awg__art { aspect-ratio: 21 / 9; }
+  .awg__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .awg__glyph { font-size: clamp(6rem, 22cqi, 16rem); font-weight: 900; letter-spacing: -0.08em; line-height: 1; color: rgba(255, 255, 255, 0.92); mix-blend-mode: overlay; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  .awg__card:hover .awg__glyph { transform: scale(1.08) rotate(-4deg); }
+  .awg__card:hover .awg__art { border-radius: 48px; }
+  .awg__result { position: absolute; left: 16px; bottom: 16px; padding: 8px 14px; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.88rem; font-weight: 800; transform: rotate(-2deg); }
+  .awg__meta { display: flex; justify-content: space-between; margin-top: var(--sp-2, 0.5rem); font-size: 0.85rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .awg__name { margin: 0; font-size: clamp(1.25rem, 2.6cqi, 1.8rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; }
+  .awg__card:hover .awg__name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .awg__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .awg__tags span { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.18)); font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .awg :is(a, button):focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 4px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 720px) {
+    .awg__grid, .awg--grid .awg__grid { grid-template-columns: 1fr; }
+    .awg__item--wide .awg__art { aspect-ratio: 4 / 3; }
+    .awg__head { flex-direction: column; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) { .awg__glyph, .awg__art { transition: none; } }
+</style>

@@ -1,0 +1,190 @@
+---
+/**
+ * TeamMembers — Team management list: members with avatar, email, role selector and status,
+ * an invite form, and remove with confirmation.
+ *
+ * @param {string} title - Card title. Default 'Team'.
+ * @param {Array<{name: string, email: string, role: string, status?: 'active'|'invited'|'suspended', you?: boolean}>} members - People.
+ * @param {string[]} roles - Role options. Default ['Owner', 'Manager', 'Front desk', 'Housekeeping', 'Viewer'].
+ * @param {number} seats - Seats in the plan (shows "4 of 10 seats"). Optional.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: real list; role selects and remove buttons are labelled with the member's name;
+ * the invite email field validates natively; changes are announced politely.
+ * Emits `app:team-invite` `{ email, role }` and `app:team-remove` `{ email }`.
+ */
+import { initials, hueFrom } from './app-icons';
+
+interface Member { name: string; email: string; role: string; status?: 'active' | 'invited' | 'suspended'; you?: boolean }
+interface Props {
+  title?: string;
+  members?: Member[];
+  roles?: string[];
+  seats?: number;
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  title = 'Team',
+  members = [
+    { name: 'Lucía Ortega', email: 'lucia@mirador.com', role: 'Owner', status: 'active', you: true },
+    { name: 'Daniel Kim', email: 'daniel@mirador.com', role: 'Manager', status: 'active' },
+    { name: 'Rosa Jiménez', email: 'rosa@mirador.com', role: 'Housekeeping', status: 'active' },
+    { name: 'Omar Haddad', email: 'omar@mirador.com', role: 'Front desk', status: 'invited' },
+  ],
+  roles = ['Owner', 'Manager', 'Front desk', 'Housekeeping', 'Viewer'],
+  seats = 10,
+  variant = 'card',
+  className = '',
+} = Astro.props;
+---
+
+<section class:list={['team', `team--${variant}`, className]} data-team aria-labelledby="team-title">
+  <header class="team__head">
+    <div>
+      <h2 class="team__title" id="team-title">{title}</h2>
+      {seats && <p class="team__seats"><span data-used>{members.length}</span> of {seats} seats used</p>}
+    </div>
+  </header>
+
+  <form class="team__invite" novalidate data-invite>
+    <label class="sr-only" for="team-email">Email to invite</label>
+    <input id="team-email" type="email" name="email" placeholder="name@company.com" required autocomplete="email" />
+    <label class="sr-only" for="team-role">Role</label>
+    <select id="team-role" name="role">{roles.filter((r) => r !== 'Owner').map((r) => <option>{r}</option>)}</select>
+    <button type="submit">Send invite</button>
+  </form>
+  <p class="team__msg" aria-live="polite" data-msg></p>
+
+  <ul class="team__list" data-list>
+    {members.map((m) => (
+      <li class="team__row" data-email={m.email}>
+        <span class="team__avatar" style={`--h: ${hueFrom(m.name)}`} aria-hidden="true">{initials(m.name)}</span>
+        <span class="team__who">
+          <strong>{m.name}{m.you && <em> (you)</em>}</strong>
+          <small>{m.email}</small>
+        </span>
+        <span class:list={['team__status', `team__status--${m.status ?? 'active'}`]}>{m.status === 'invited' ? 'Invited' : m.status === 'suspended' ? 'Suspended' : 'Active'}</span>
+        <label class="sr-only" for={`role-${m.email}`}>Role for {m.name}</label>
+        <select id={`role-${m.email}`} class="team__role" disabled={m.role === 'Owner'}>
+          {roles.map((r) => <option selected={r === m.role}>{r}</option>)}
+        </select>
+        <button type="button" class="team__remove" aria-label={`Remove ${m.name}`} disabled={m.you} data-remove>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<script>
+  import { initials, hueFrom } from './app-icons';
+
+  document.querySelectorAll<HTMLElement>('[data-team]:not([data-bound])').forEach((team) => {
+    team.dataset.bound = '';
+    const list = team.querySelector<HTMLUListElement>('[data-list]')!;
+    const msg = team.querySelector<HTMLElement>('[data-msg]')!;
+    const used = team.querySelector<HTMLElement>('[data-used]');
+    const form = team.querySelector<HTMLFormElement>('[data-invite]')!;
+    const recount = () => { if (used) used.textContent = String(list.children.length); };
+
+    const bindRemove = (btn: HTMLButtonElement) => {
+      let armed = false;
+      btn.addEventListener('click', () => {
+        const row = btn.closest<HTMLElement>('.team__row')!;
+        const name = row.querySelector('strong')?.textContent?.replace(' (you)', '') ?? '';
+        if (!armed) {
+          armed = true;
+          btn.classList.add('is-armed');
+          btn.setAttribute('aria-label', `Confirm removing ${name}`);
+          msg.textContent = `Click again to remove ${name}.`;
+          window.setTimeout(() => { armed = false; btn.classList.remove('is-armed'); btn.setAttribute('aria-label', `Remove ${name}`); }, 3000);
+          return;
+        }
+        team.dispatchEvent(new CustomEvent('app:team-remove', { bubbles: true, detail: { email: row.dataset.email } }));
+        const next = (row.nextElementSibling ?? row.previousElementSibling)?.querySelector<HTMLElement>('select, button');
+        row.remove();
+        msg.textContent = `${name} was removed from the team.`;
+        recount();
+        next?.focus();
+      });
+    };
+    team.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(bindRemove);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = form.elements.namedItem('email') as HTMLInputElement;
+      const role = (form.elements.namedItem('role') as HTMLSelectElement).value;
+      if (!input.checkValidity()) { msg.textContent = 'Enter a valid email address.'; input.focus(); return; }
+      const email = input.value.trim();
+      const name = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const li = document.createElement('li');
+      li.className = 'team__row is-new';
+      li.dataset.email = email;
+      li.innerHTML = `<span class="team__avatar" style="--h:${hueFrom(name)}" aria-hidden="true">${initials(name)}</span>
+        <span class="team__who"><strong></strong><small></small></span>
+        <span class="team__status team__status--invited">Invited</span>
+        <span class="team__role-static"></span>
+        <button type="button" class="team__remove" data-remove><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;
+      li.querySelector('strong')!.textContent = name;
+      li.querySelector('small')!.textContent = email;
+      li.querySelector('.team__role-static')!.textContent = role;
+      li.querySelector('button')!.setAttribute('aria-label', `Remove ${name}`);
+      list.append(li);
+      bindRemove(li.querySelector<HTMLButtonElement>('[data-remove]')!);
+      msg.textContent = `Invitation sent to ${email} as ${role}.`;
+      team.dispatchEvent(new CustomEvent('app:team-invite', { bubbles: true, detail: { email, role } }));
+      form.reset();
+      recount();
+    });
+  });
+</script>
+
+<style>
+  .team { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3, 0.75rem); min-width: 0; }
+  .team--card { padding: var(--sp-5, 1.25rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .team__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .team__seats { margin: 2px 0 0; font-size: 0.8rem; color: var(--c-text-3, #737373); }
+  .team__invite { display: flex; gap: var(--sp-2, 0.5rem); }
+  .team__invite input, .team__invite select, .team__role {
+    min-height: 40px;
+    padding: 0 0.75rem;
+    border-radius: 10px;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12));
+    background: var(--c-bg, #050505);
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.85rem;
+  }
+  .team__invite input { flex: 1; min-width: 0; }
+  .team__invite button { min-height: 40px; padding: 0 1rem; border: 0; border-radius: 10px; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .team__msg { min-height: 1.2em; margin: 0; font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .team__list { display: grid; margin: 0; padding: 0; list-style: none; }
+  .team__list :global(.team__row) { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto 150px 40px; align-items: center; gap: var(--sp-3, 0.75rem); padding: var(--sp-3, 0.75rem) 0; border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.06)); }
+  .team__list :global(.team__row.is-new) { animation: team-in 0.3s ease-out; }
+  @keyframes team-in { from { opacity: 0; transform: translateY(-4px); } }
+  .team__list :global(.team__avatar) { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: hsl(var(--h) 50% 45%); color: #fff; font-size: 0.72rem; font-weight: 700; }
+  .team__list :global(.team__who) { display: grid; min-width: 0; }
+  .team__list :global(.team__who strong) { font-size: 0.88rem; color: var(--c-text-1, #fff); }
+  .team__list :global(.team__who em) { font-style: normal; font-weight: 500; color: var(--c-text-3, #737373); }
+  .team__list :global(.team__who small) { font-size: 0.76rem; color: var(--c-text-3, #737373); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .team__list :global(.team__status) { padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: color-mix(in srgb, var(--c-success, #34d399) 14%, transparent); color: var(--c-success, #34d399); }
+  .team__list :global(.team__status--invited) { background: color-mix(in srgb, var(--c-warning, #fbbf24) 14%, transparent); color: var(--c-warning, #fbbf24); }
+  .team__list :global(.team__status--suspended) { background: color-mix(in srgb, var(--c-danger, #f87171) 14%, transparent); color: var(--c-danger, #f87171); }
+  .team__list :global(.team__role-static) { font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); padding-left: 0.75rem; }
+  .team__role:disabled { opacity: 0.6; }
+  .team__list :global(.team__remove) { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-3, #737373); cursor: pointer; }
+  .team__list :global(.team__remove:hover) { background: color-mix(in srgb, var(--c-danger, #f87171) 12%, transparent); color: var(--c-danger, #f87171); }
+  .team__list :global(.team__remove.is-armed) { background: var(--c-danger, #f87171); color: #fff; }
+  .team__list :global(.team__remove:disabled) { visibility: hidden; }
+  .team :is(input, select, button):focus-visible, .team__list :global(button:focus-visible) { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @container (max-width: 620px) {
+    .team__invite { flex-wrap: wrap; }
+    .team__list :global(.team__row) { grid-template-columns: 36px minmax(0, 1fr) 40px; }
+    .team__list :global(.team__status) { display: none; }
+    .team__role, .team__list :global(.team__role-static) { grid-column: 2; }
+  }
+</style>

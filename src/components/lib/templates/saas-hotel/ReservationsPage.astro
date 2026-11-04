@@ -1,0 +1,49 @@
+---
+/**
+ * ReservationsPage — Room rack (tape chart) for the next two weeks plus a searchable, sortable
+ * reservations table with status filters, bulk actions and pagination.
+ *
+ * Usage (src/pages/app/reservations.astro):
+ *   import { ReservationsPage } from 'astro-component-kit/templates/saas-hotel';
+ *   <ReservationsPage />
+ *
+ * @param {LobbyData} data - Workspace data.
+ * @param {SaasRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import AppLayout from './AppLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import RoomRack from '../../app/RoomRack.astro';
+import DataTable from '../../app/DataTable.astro';
+import { lobbyData, saasRoutes, type LobbyData, type SaasRoutes } from './data';
+
+interface Props {
+  data?: LobbyData;
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = lobbyData, routes = saasRoutes, theme = 'light' } = Astro.props;
+const count = (s: string) => data.reservations.filter((r) => r.status === s).length;
+---
+
+<AppLayout title="Reservations" current="reservations" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Reservations"
+    description={`${data.reservations.length} bookings in the next 14 days · ${count('Pending')} waiting for confirmation`}
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Reservations' }]}
+    actions={[{ label: 'Import', icon: 'download' }, { label: 'New booking', icon: 'plus', primary: true }]}
+    periods={[]}
+  />
+  <RoomRack days={data.days} today={1} rooms={data.rooms} bookings={data.bookings as any} />
+  <DataTable
+    id="reservations"
+    title="All reservations"
+    rows={data.reservations}
+    searchPlaceholder="Search guest, booking or room…"
+    bulkActions={['Send confirmation', 'Export CSV', 'Assign rooms']}
+    pageSize={8}
+    currency={data.currency}
+    locale={data.locale}
+  />
+</AppLayout>

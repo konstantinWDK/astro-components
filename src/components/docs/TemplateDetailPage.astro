@@ -1,0 +1,354 @@
+---
+// src/components/docs/TemplateDetailPage.astro
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from './CodeBlock.astro';
+import TemplateFrame from './TemplateFrame.astro';
+import { getTemplateBySlug } from '../../data/registry/templates';
+import { getComponentBySlug } from '../../data/registry/index';
+import type { Locale } from '../../config/site';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
+import { getLocalizedComponent } from '../../i18n/catalog';
+import { ecommercePreview, sectionPreviewProps } from './ecommerce-previews';
+
+// Real components for the live miniatures (resolved by PascalCase file name).
+const sectionModules = import.meta.glob('../lib/sections/*.astro', { eager: true }) as Record<string, { default: any }>;
+const ecommerceModules = import.meta.glob('../lib/ecommerce/*.astro', { eager: true }) as Record<string, { default: any }>;
+const appModules = import.meta.glob('../lib/app/*.astro', { eager: true }) as Record<string, { default: any }>;
+const pascal = (s: string) => s.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+
+interface Props {
+  slug: string;
+  lang?: Locale;
+}
+
+const { slug, lang = 'en' } = Astro.props;
+const t = useTranslations(lang);
+const tpl = getTemplateBySlug(slug)!;
+
+const resolve = (slugs: string[]) =>
+  slugs
+    .map((s) => getComponentBySlug(s))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+    .map((c) => {
+      const loc = getLocalizedComponent(c, lang);
+      const base = c.category === 'sections' ? '/sections' : '/docs';
+      const isSection = c.category === 'sections';
+      const file = c.slug === 'cart-store' ? 'CartDrawer' : pascal(c.slug);
+      const Preview = (isSection ? sectionModules[`../lib/sections/${file}.astro`] : c.category === 'app' ? appModules[`../lib/app/${file}.astro`] : ecommerceModules[`../lib/ecommerce/${file}.astro`])?.default ?? null;
+      const demo = isSection ? { props: sectionPreviewProps[c.slug] } : ecommercePreview[c.slug] ?? {};
+      return {
+        slug: c.slug,
+        name: c.name,
+        description: loc.description,
+        href: getLocalizedPath(`${base}/${c.slug}`, lang),
+        isSection,
+        Preview,
+        props: demo.props ?? {},
+        maxWidth: demo.maxWidth,
+      };
+    });
+const newItems = resolve(tpl.newComponents);
+const newSections = newItems.filter((c) => c.isSection);
+const newComponents = newItems.filter((c) => !c.isSection);
+const reused = resolve(tpl.reusedComponents);
+const sourceUrl = `https://github.com/konstantinWDK/astro-components/tree/main/src/components/lib/templates/${tpl.slug}`;
+const seoTitle = `${tpl.name[lang]} — ${t('templates.title')}`;
+---
+
+<DocsLayout title={seoTitle} description={tpl.tagline[lang]} lang={lang}>
+  <div class="doc-page">
+    <nav class="breadcrumb" aria-label={t('a11y.breadcrumb')}>
+      <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+      <span class="breadcrumb__sep">›</span>
+      <a href={getLocalizedPath('/templates', lang)}>{t('nav.templates')}</a>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">{tpl.name[lang]}</span>
+    </nav>
+
+    <header class="td-header">
+      <span class="td-header__badge">{t('templates.badge')}</span>
+      <h1 class="td-header__title">{tpl.name[lang]}</h1>
+      <p class="td-header__tagline">{tpl.tagline[lang]}</p>
+      <p class="td-header__desc">{tpl.description[lang]}</p>
+      <div class="td-header__stats">
+        <span><strong>{tpl.pages.length}</strong> {t('templates.pagesCount')}</span>
+        <span><strong>{newComponents.length + reused.length}</strong> {t('templates.componentsCount')}</span>
+        <span><strong>0</strong> deps</span>
+      </div>
+      <div class="td-header__actions">
+        <a class="tpl-btn tpl-btn--primary" href={tpl.previewBase} target="_blank" rel="noopener">
+          {t('templates.openPreview')}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+        </a>
+        <a class="tpl-btn" href={sourceUrl} target="_blank" rel="noopener">{t('templates.source')}</a>
+      </div>
+    </header>
+
+    <section class="doc-section" id="preview">
+      <h2 class="doc-section__title" id="live-preview">{t('templates.livePreview')}</h2>
+      <TemplateFrame src={tpl.previewBase} title={`${tpl.name[lang]} — ${t('templates.livePreview')}`} height={900} eager />
+    </section>
+
+    <section class="doc-section">
+      <h2 class="doc-section__title" id="pages">{t('templates.pages')}</h2>
+      <p class="doc-section__subtitle">{t('templates.pagesDesc')}</p>
+      <div class="td-pages">
+        {tpl.pages.map((p) => (
+          <article class="td-page">
+            <TemplateFrame src={`${tpl.previewBase}${p.path}`} title={p.name[lang]} height={1100} />
+            <div class="td-page__body">
+              <h3><a class="td-page__link" href={`${tpl.previewBase}${p.path}`} target="_blank" rel="noopener">{p.name[lang]}</a></h3>
+              <p>{p.description[lang]}</p>
+              <code>{p.file}</code>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="doc-section">
+      <h2 class="doc-section__title" id="included">{t('templates.highlights')}</h2>
+      <ul class="td-highlights">
+        {tpl.highlights[lang].map((h) => <li>{h}</li>)}
+      </ul>
+    </section>
+
+    <section class="doc-section">
+      <h2 class="doc-section__title" id="install">{t('templates.install')}</h2>
+      <ol class="td-steps">
+        <li>
+          <h3>{t('templates.step1')}</h3>
+          <CodeBlock code="npm install astro-component-kit" lang="bash" id={`tpl-${tpl.slug}-install`} />
+        </li>
+        <li>
+          <h3>{t('templates.step2')}</h3>
+          <div class="td-files">
+            {tpl.pages.map((p) => (
+              <div>
+                <p class="td-files__name"><code>{p.file}</code></p>
+                <CodeBlock code={p.code} lang="astro" id={`tpl-${tpl.slug}-${p.id}`} />
+              </div>
+            ))}
+          </div>
+        </li>
+        <li>
+          <h3>{t('templates.step3')}</h3>
+          <p>{t('templates.step3Desc')}</p>
+          <CodeBlock code={tpl.storeConfigExample} lang="astro" id={`tpl-${tpl.slug}-config`} />
+        </li>
+      </ol>
+    </section>
+
+    {[
+      { id: 'new-sections', title: t('templates.newSections'), desc: t('templates.newSectionsDesc'), items: newSections, canvas: 1280 },
+      { id: 'new-components', title: t('templates.newComponents'), desc: t('templates.newComponentsDesc'), items: newComponents, canvas: 720 },
+    ].filter((g) => g.items.length > 0).map((g) => (
+      <section class="doc-section">
+        <h2 class="doc-section__title" id={g.id}>{g.title} <span class="td-count">{g.items.length}</span></h2>
+        <p class="doc-section__subtitle">{g.desc}</p>
+        <div class:list={['td-prev-grid', { 'td-prev-grid--sections': g.canvas === 1280 }]}>
+          {g.items.map((c) => (
+            <article class="td-prev">
+              <div class:list={['td-prev__stage', { 'td-prev__stage--component': !c.isSection }]} style={`--canvas: ${g.canvas}`} data-mini>
+                {c.Preview ? (
+                  <div class="td-prev__mini" inert aria-hidden="true" data-nosnippet>
+                    <div class="td-prev__scale">
+                      <div class="td-prev__inner" style={c.maxWidth ? `max-width: ${c.maxWidth}` : ''}>
+                        <c.Preview {...c.props} />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <span class="td-prev__fallback" aria-hidden="true">{c.name}</span>
+                )}
+              </div>
+              <div class="td-prev__body">
+                <span class="td-prev__kind">{c.isSection ? t('templates.kindSection') : t('templates.kindComponent')}</span>
+                <h3 class="td-prev__name"><a class="td-prev__link" href={c.href}>{c.name}</a></h3>
+                <p class="td-prev__desc">{c.description}</p>
+                <span class="td-prev__cta" aria-hidden="true">{c.isSection ? t('templates.viewSection') : t('templates.viewComponent')} →</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <section class="doc-section">
+      <h2 class="doc-section__title" id="reused-components">{t('templates.reused')}</h2>
+      <p class="doc-section__subtitle">{t('templates.reusedDesc')}</p>
+      <ul class="td-comps td-comps--compact">
+        {reused.map((c) => (
+          <li><a href={c.href}><strong>{c.name}</strong></a></li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</DocsLayout>
+
+<style>
+  .doc-page { width: 100%; }
+  .breadcrumb { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6); }
+  .breadcrumb a { color: var(--c-text-3); }
+  .breadcrumb a:hover { color: var(--c-text-1); }
+  .breadcrumb__sep { opacity: 0.5; }
+  .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
+
+  .td-header { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+  .td-header__badge {
+    width: fit-content; padding: 0.3rem 0.8rem; border-radius: var(--r-full);
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #facc15; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.25);
+  }
+  .td-header__title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 900; letter-spacing: -0.03em; color: var(--c-text-1); }
+  .td-header__tagline { margin: 0; font-size: 1.1rem; color: var(--c-text-1); }
+  .td-header__desc { margin: 0; max-width: 52rem; line-height: 1.7; color: var(--c-text-2); }
+  .td-header__stats { display: flex; flex-wrap: wrap; gap: var(--sp-6); font-size: 0.85rem; color: var(--c-text-2); }
+  .td-header__stats strong { margin-right: 0.25rem; font-size: 1.15rem; color: var(--c-text-1); }
+  .td-header__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-2); }
+
+  .tpl-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 var(--sp-5);
+    border-radius: var(--r-full); border: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 0.88rem; font-weight: 700; color: var(--c-text-1);
+  }
+  .tpl-btn:hover { background: rgba(255, 255, 255, 0.05); color: var(--c-text-1); }
+  .tpl-btn--primary { border-color: transparent; background: var(--c-primary-light); color: var(--c-bg); }
+  .tpl-btn--primary:hover { background: var(--c-primary-light); filter: brightness(1.08); color: var(--c-bg); }
+  .tpl-btn:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 3px; }
+
+  .doc-section { margin-top: var(--sp-10); }
+  .doc-section__title { font-size: 1.1rem; font-weight: 700; color: var(--c-text-1); margin: 0 0 var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--c-border); }
+  .doc-section__subtitle { margin: 0 0 var(--sp-4); font-size: 0.9rem; color: var(--c-text-3); }
+
+  .td-pages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); }
+  .td-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.015);
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.25s ease;
+  }
+  .td-page:hover { border-color: rgba(212, 160, 23, 0.35); transform: translateY(-2px); }
+  .td-page:focus-within { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+  .td-page :global(.tpl-frame) { border: 0; border-bottom: 1px solid var(--c-border); border-radius: 0; }
+  .td-page__body { display: grid; gap: var(--sp-2); padding: var(--sp-4) var(--sp-5) var(--sp-5); }
+  .td-page__body h3 { margin: 0; font-size: 1rem; }
+  .td-page__link { color: var(--c-text-1); }
+  .td-page__link::after { content: ''; position: absolute; inset: 0; }
+  .td-page__link:focus-visible { outline: none; }
+  .td-page__body p { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--c-text-2); }
+  .td-page__body code { width: fit-content; font-size: 0.75rem; color: #facc15; background: rgba(255, 255, 255, 0.05); padding: 0.1rem 0.4rem; border-radius: 4px; overflow-wrap: anywhere; }
+
+  .td-highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
+  .td-highlights li {
+    padding: var(--sp-4) var(--sp-4) var(--sp-4) 2.6rem; position: relative;
+    border-radius: var(--r-md); border: 1px solid var(--c-border); background: rgba(255, 255, 255, 0.015);
+    font-size: 0.9rem; color: var(--c-text-1);
+  }
+  .td-highlights li::before {
+    content: ''; position: absolute; left: var(--sp-4); top: 1.15rem; width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(212, 160, 23, 0.15) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4a017' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 9px no-repeat;
+  }
+
+  .td-steps { display: grid; gap: var(--sp-8); margin: 0; padding: 0; list-style: none; counter-reset: step; }
+  .td-steps > li { position: relative; padding-left: 2.75rem; counter-increment: step; min-width: 0; }
+  .td-steps > li::before {
+    content: counter(step); position: absolute; left: 0; top: -2px; display: grid; place-items: center;
+    width: 30px; height: 30px; border-radius: 50%; background: rgba(212, 160, 23, 0.14); color: var(--c-primary-light); font-weight: 800; font-size: 0.85rem;
+  }
+  .td-steps h3 { margin: 0 0 var(--sp-3); font-size: 1rem; color: var(--c-text-1); }
+  .td-steps p { margin: 0 0 var(--sp-3); font-size: 0.9rem; color: var(--c-text-2); }
+  .td-files { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
+  .td-files > div, .td-steps > li > :global(*) { min-width: 0; }
+  .td-steps { grid-template-columns: minmax(0, 1fr); }
+  .td-files__name { margin: 0 0 var(--sp-2) !important; }
+  .td-files__name code { font-size: 0.78rem; color: #facc15; }
+
+  .td-comps { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
+  .td-comps a {
+    display: grid; gap: 4px; height: 100%; padding: var(--sp-4);
+    border-radius: var(--r-md); border: 1px solid var(--c-border); background: rgba(255, 255, 255, 0.015);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .td-comps a:hover { border-color: rgba(212, 160, 23, 0.35); background: rgba(212, 160, 23, 0.04); }
+  .td-comps a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+  .td-comps strong { font-size: 0.92rem; color: var(--c-text-1); }
+  .td-comps span { font-size: 0.8rem; line-height: 1.5; color: var(--c-text-2); }
+  .td-comps--compact { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .td-comps--compact a { padding: var(--sp-3) var(--sp-4); }
+
+  /* Live miniatures of new sections / components */
+  .td-count { margin-left: 0.35rem; padding: 0.05rem 0.45rem; border-radius: var(--r-full); background: rgba(234, 179, 8, 0.12); color: #facc15; font-size: 0.72rem; vertical-align: middle; }
+  .td-prev-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
+  .td-prev-grid--sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .td-prev {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.015);
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.25s ease;
+  }
+  .td-prev:hover { border-color: rgba(212, 160, 23, 0.4); transform: translateY(-2px); }
+  .td-prev:focus-within { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+  .td-prev__stage {
+    --mini-scale: 0.35;
+    position: relative;
+    height: 240px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--c-border);
+    background: #050505;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 240px;
+  }
+  .td-prev-grid--sections .td-prev__stage { height: 280px; contain-intrinsic-size: auto 280px; }
+  .td-prev__stage::after { content: ''; position: absolute; inset: auto 0 0; height: 40px; background: linear-gradient(transparent, #050505); pointer-events: none; }
+  .td-prev__mini { position: absolute; inset: 0; pointer-events: none; }
+  .td-prev__scale {
+    width: calc(var(--canvas) * 1px);
+    transform: scale(var(--mini-scale));
+    transform-origin: top left;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .td-prev:hover .td-prev__scale { transform: scale(calc(var(--mini-scale) * 1.03)); }
+  .td-prev__stage--component .td-prev__inner { margin: 0 auto; padding: 48px 40px; }
+  .td-prev__fallback { display: grid; place-items: center; height: 100%; color: var(--c-text-3); font-size: 0.9rem; }
+  .td-prev__body { display: grid; gap: 4px; padding: var(--sp-4) var(--sp-5) var(--sp-5); }
+  .td-prev__kind { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #facc15; }
+  .td-prev__name { margin: 0; font-size: 1rem; }
+  .td-prev__link { color: var(--c-text-1); }
+  .td-prev__link::after { content: ''; position: absolute; inset: 0; z-index: 2; }
+  .td-prev__link:focus-visible { outline: none; }
+  .td-prev__desc { margin: 0; font-size: 0.82rem; line-height: 1.55; color: var(--c-text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .td-prev__cta { margin-top: 6px; font-size: 0.8rem; font-weight: 700; color: var(--c-primary-light); }
+  .td-prev:hover .td-prev__cta { text-decoration: underline; text-underline-offset: 3px; }
+  @media (max-width: 1200px) { .td-prev-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (prefers-reduced-motion: reduce) { .td-prev__scale { transition: none; } }
+
+  @media (max-width: 900px) {
+    .td-pages { grid-template-columns: 1fr; }
+    .td-prev-grid, .td-prev-grid--sections { grid-template-columns: 1fr; }
+    .td-steps > li { padding-left: 0; }
+    .td-steps > li::before { position: static; margin-bottom: var(--sp-2); }
+  }
+</style>
+
+<script>
+  // Fit each miniature canvas to its card width.
+  const stages = document.querySelectorAll<HTMLElement>('[data-mini]');
+  const fit = (el: HTMLElement) => {
+    const canvas = Number(getComputedStyle(el).getPropertyValue('--canvas')) || 1280;
+    el.style.setProperty('--mini-scale', String(el.clientWidth / canvas));
+  };
+  stages.forEach(fit);
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver((entries) => entries.forEach((e) => fit(e.target as HTMLElement)));
+    stages.forEach((s) => ro.observe(s));
+  }
+</script>

@@ -1,0 +1,145 @@
+---
+/**
+ * VariantPicker — Colour swatches or size pills as an accessible radio group.
+ * Can keep an add-to-cart button's `data-variant` in sync with the selection.
+ *
+ * @param {string} label - Group legend. Default 'Colour'.
+ * @param {string} name - Radio name. Default 'variant'.
+ * @param {string} type - Picker style (swatch|pill). Default 'swatch'.
+ * @param {Array<{label: string, value?: string, hex?: string, disabled?: boolean}>} options - Choices.
+ * @param {number} selected - Index of the pre-selected option. Default 0.
+ * @param {string} target - id of an add-to-cart button whose `data-variant` follows the choice.
+ * @param {string} size - Control size (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Theming: --vp-active-bg, --vp-active-color, --vp-active-border, --vp-ring, --vp-radius.
+ *
+ * Accessibility: native radios (arrow keys work), visible focus ring, the chosen value is
+ * printed next to the legend; disabled options are announced as unavailable.
+ */
+interface Option { label: string; value?: string; hex?: string; disabled?: boolean }
+interface Props {
+  label?: string;
+  name?: string;
+  type?: 'swatch' | 'pill';
+  options?: Option[];
+  selected?: number;
+  target?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  label = 'Colour',
+  name = 'variant',
+  type = 'swatch',
+  options = [
+    { label: 'Graphite', hex: '#2b2b2f' },
+    { label: 'Sand', hex: '#d8c3a5' },
+    { label: 'Ocean', hex: '#3d6f9e' },
+    { label: 'Clay', hex: '#b5654a', disabled: true },
+  ],
+  selected = 0,
+  target,
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const uid = `vp-${name}`;
+---
+
+<fieldset class:list={['v-picker', `v-picker--${type}`, `v-picker--${size}`, className]} data-variant-picker data-target={target}>
+  <legend class="v-picker__legend">
+    {label}: <span class="v-picker__value" data-variant-value>{options[selected]?.label}</span>
+  </legend>
+  <div class="v-picker__options">
+    {options.map((o, i) => (
+      <label class:list={['v-picker__opt', { 'is-disabled': o.disabled }]} style={o.hex ? `--sw: ${o.hex}` : ''} title={o.label}>
+        <input
+          type="radio"
+          name={`${uid}`}
+          value={o.value ?? o.label}
+          data-label={o.label}
+          checked={i === selected}
+          disabled={o.disabled}
+        />
+        {type === 'swatch'
+          ? <span class="v-picker__dot" aria-hidden="true"></span>
+          : <span class="v-picker__pill">{o.label}</span>}
+        {type === 'swatch' && <span class="sr-only">{o.label}{o.disabled ? ' (sold out)' : ''}</span>}
+        {type === 'pill' && o.disabled && <span class="sr-only"> (sold out)</span>}
+      </label>
+    ))}
+  </div>
+</fieldset>
+
+<script>
+  document.querySelectorAll<HTMLFieldSetElement>('[data-variant-picker]:not([data-bound])').forEach((fs) => {
+    fs.dataset.bound = '';
+    const out = fs.querySelector<HTMLElement>('[data-variant-value]');
+    const sync = () => {
+      const checked = fs.querySelector<HTMLInputElement>('input:checked');
+      if (!checked) return;
+      if (out) out.textContent = checked.dataset.label || checked.value;
+      const btn = fs.dataset.target ? document.getElementById(fs.dataset.target) : null;
+      if (btn) {
+        // Combine every picker that targets the same button: "Sand / M"
+        const parts = Array.from(document.querySelectorAll<HTMLElement>(`[data-variant-picker][data-target="${fs.dataset.target}"]`))
+          .map((p) => p.querySelector<HTMLInputElement>('input:checked')?.dataset.label)
+          .filter(Boolean);
+        btn.dataset.variant = parts.join(' / ');
+      }
+    };
+    fs.addEventListener('change', sync);
+    sync();
+  });
+</script>
+
+<style>
+  .v-picker { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .v-picker__legend { padding: 0; margin-bottom: var(--sp-3, 0.75rem); font-size: 0.85rem; font-weight: 600; color: var(--c-text-2, #a3a3a3); }
+  .v-picker__value { color: var(--c-text-1, #fff); }
+  .v-picker__options { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); }
+  .v-picker__opt { position: relative; cursor: pointer; }
+  .v-picker__opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .v-picker__opt.is-disabled { cursor: not-allowed; }
+
+  .v-picker__dot {
+    display: block;
+    width: 36px;
+    height: 36px;
+    margin: 4px;
+    border-radius: 50%;
+    background: var(--sw);
+    box-shadow: 0 0 0 1px rgb(var(--ink-rgb, 255 255 255) / 0.2);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .v-picker--sm .v-picker__dot { width: 28px; height: 28px; margin: 8px; }
+  .v-picker--lg .v-picker__dot { width: 44px; height: 44px; margin: 2px; }
+  .v-picker__opt:hover .v-picker__dot { transform: scale(1.06); }
+  .v-picker__opt input:checked + .v-picker__dot { box-shadow: 0 0 0 3px var(--c-bg, #050505), 0 0 0 5px var(--vp-ring, var(--c-primary-light, #d4a017)); }
+  .v-picker__opt.is-disabled .v-picker__dot { opacity: 0.35; background-image: linear-gradient(135deg, transparent 46%, rgb(var(--ink-rgb, 255 255 255) / 0.8) 47% 53%, transparent 54%); }
+
+  .v-picker__pill {
+    display: grid;
+    place-items: center;
+    min-width: 52px;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--vp-radius, var(--r-md, 12px));
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.12);
+    color: var(--c-text-1, #fff);
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .v-picker--sm .v-picker__pill { min-height: 36px; min-width: 44px; font-size: 0.8rem; }
+  .v-picker__opt:hover .v-picker__pill { border-color: rgb(var(--ink-rgb, 255 255 255) / 0.3); }
+  .v-picker__opt input:checked + .v-picker__pill { border-color: var(--vp-active-border, var(--c-primary-light, #d4a017)); background: var(--vp-active-bg, rgba(212, 160, 23, 0.12)); color: var(--vp-active-color, var(--c-text-1, #fff)); }
+  .v-picker__opt.is-disabled .v-picker__pill { color: var(--c-text-3, #737373); text-decoration: line-through; }
+
+  .v-picker__opt input:focus-visible + .v-picker__dot,
+  .v-picker__opt input:focus-visible + .v-picker__pill { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>

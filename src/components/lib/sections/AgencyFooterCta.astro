@@ -1,0 +1,94 @@
+---
+/**
+ * AgencyFooterCta — Agency footer led by a giant "Let's talk" link, then link columns, offices,
+ * socials and the legal line.
+ *
+ * @param {string} kicker - Line above the CTA. Default 'Have a project in mind?'.
+ * @param {{label: string, href: string}} cta - Giant CTA link. Default "Let's talk".
+ * @param {string} email - Email shown under the CTA (optional).
+ * @param {Array<{title: string, links: {label: string, href: string}[]}>} columns - Link columns.
+ * @param {Array<{city: string, address: string}>} offices - Office addresses.
+ * @param {Array<{label: string, href: string}>} socials - Social links.
+ * @param {string} brand - Brand for the legal line. Default 'Volta'.
+ * @param {string} variant - Style (accent|plain). Default 'accent'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: footer landmark with a visually hidden heading; the CTA is a single large link;
+ * columns are nav lists.
+ */
+interface Props {
+  kicker?: string;
+  cta?: { label: string; href: string };
+  email?: string;
+  columns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  offices?: Array<{ city: string; address: string }>;
+  socials?: Array<{ label: string; href: string }>;
+  brand?: string;
+  variant?: 'accent' | 'plain';
+  className?: string;
+}
+
+const {
+  kicker = 'Have a project in mind?',
+  cta = { label: "Let's talk", href: '#contact' },
+  email = 'hello@volta.studio',
+  columns = [
+    { title: 'Studio', links: [{ label: 'Work', href: '#' }, { label: 'Services', href: '#' }, { label: 'About', href: '#' }, { label: 'Careers', href: '#' }] },
+    { title: 'Services', links: [{ label: 'Brand identity', href: '#' }, { label: 'Websites', href: '#' }, { label: 'Growth', href: '#' }] },
+  ],
+  offices = [{ city: 'Madrid', address: 'Calle de Fuencarral 45' }, { city: 'Lisbon', address: 'Rua das Flores 12' }],
+  socials = [{ label: 'Instagram', href: '#' }, { label: 'LinkedIn', href: '#' }, { label: 'Dribbble', href: '#' }, { label: 'Behance', href: '#' }],
+  brand = 'Volta',
+  variant = 'accent',
+  className = '',
+} = Astro.props;
+---
+
+<div class="cq-agency-footer">
+<footer class:list={['afc', `afc--${variant}`, className]} aria-labelledby="afc-title">
+  <h2 id="afc-title" class="sr-only">Footer</h2>
+  <div class="afc__inner">
+    <p class="afc__kicker">{kicker}</p>
+    <a class="afc__cta" href={cta.href}>{cta.label}<span aria-hidden="true">↗</span></a>
+    {email && <a class="afc__email" href={`mailto:${email}`}>{email}</a>}
+
+    <div class="afc__grid">
+      {columns.map((c) => (
+        <nav aria-label={c.title}><p class="afc__label">{c.title}</p><ul>{c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul></nav>
+      ))}
+      {offices.length > 0 && (
+        <div><p class="afc__label">Offices</p><ul>{offices.map((o) => <li><strong>{o.city}</strong><span>{o.address}</span></li>)}</ul></div>
+      )}
+      {socials.length > 0 && (
+        <nav aria-label="Social"><p class="afc__label">Follow</p><ul>{socials.map((s) => <li><a href={s.href}>{s.label} ↗</a></li>)}</ul></nav>
+      )}
+    </div>
+    <p class="afc__legal"><span>© {new Date().getFullYear()} {brand}. All rights reserved.</span><span>Privacy · Cookies · Imprint</span></p>
+  </div>
+</footer>
+</div>
+
+<style>
+  .cq-agency-footer { container-type: inline-size; }
+  .afc { padding: clamp(3rem, 8cqi, 6rem) clamp(1rem, 4cqi, 2.5rem) var(--sp-6, 1.5rem); color: var(--c-text-1, #fff); }
+  .afc--accent { background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); --c-text-1: var(--c-on-primary, #050505); --c-text-2: color-mix(in srgb, var(--c-on-primary, #050505) 72%, transparent); --c-border: color-mix(in srgb, var(--c-on-primary, #050505) 25%, transparent); border-radius: 40px 40px 0 0; }
+  .afc__inner { max-width: 1280px; margin: 0 auto; }
+  .afc__kicker { margin: 0 0 var(--sp-3, 0.75rem); font-size: 1.1rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .afc__cta { display: inline-flex; align-items: flex-start; gap: 0.1em; font-size: clamp(3.5rem, 15cqi, 12rem); font-weight: 900; letter-spacing: -0.07em; line-height: 0.85; color: inherit; text-decoration: none; transition: letter-spacing 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  .afc__cta span { font-size: 0.4em; transition: transform 0.4s ease; }
+  .afc__cta:hover { letter-spacing: -0.05em; color: inherit; }
+  .afc__cta:hover span { transform: translate(6px, -6px) rotate(10deg); }
+  .afc__email { display: inline-block; margin-top: var(--sp-4, 1rem); font-size: clamp(1.1rem, 2.4cqi, 1.5rem); font-weight: 800; color: inherit; text-decoration: underline; text-underline-offset: 6px; }
+  .afc__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-8, 2rem); margin-top: clamp(2.5rem, 7cqi, 5rem); padding-top: var(--sp-6, 1.5rem); border-top: 1.5px solid currentColor; }
+  .afc__label { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .afc__grid ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .afc__grid a { display: inline-flex; min-height: 32px; align-items: center; color: inherit; font-weight: 700; text-decoration: none; }
+  .afc__grid a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .afc__grid li strong { display: block; font-weight: 800; }
+  .afc__grid li span { font-size: 0.9rem; color: var(--c-text-2, #a3a3a3); }
+  .afc a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+  .afc__legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin: var(--sp-10, 2.5rem) 0 0; font-size: 0.82rem; color: var(--c-text-2, #a3a3a3); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @container (max-width: 760px) { .afc__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .afc--accent { border-radius: 28px 28px 0 0; } }
+  @media (prefers-reduced-motion: reduce) { .afc__cta, .afc__cta span { transition: none; } }
+</style>

@@ -1,0 +1,78 @@
+---
+/**
+ * ProductRating — Read-only star rating with value and review count.
+ *
+ * @param {number} value - Average rating, 0–5. Default 4.6.
+ * @param {number} count - Number of reviews (optional).
+ * @param {string} size - Visual size (sm|md|lg). Default 'sm'.
+ * @param {boolean} showValue - Print the numeric value. Default true.
+ * @param {string} label - Accessible label template; `{value}` and `{count}` are replaced.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: exposed as one `role="img"` with a full text label; stars are decorative.
+ */
+interface Props {
+  value?: number;
+  count?: number;
+  size?: 'sm' | 'md' | 'lg';
+  showValue?: boolean;
+  label?: string;
+  className?: string;
+}
+
+const {
+  value = 4.6,
+  count,
+  size = 'sm',
+  showValue = true,
+  label = 'Rated {value} out of 5{count}',
+  className = '',
+} = Astro.props;
+
+const clamped = Math.max(0, Math.min(5, value));
+const pct = `${(clamped / 5) * 100}%`;
+const aria = label
+  .replace('{value}', clamped.toFixed(1))
+  .replace('{count}', count !== undefined ? `, ${count} reviews` : '');
+const stars = '★★★★★';
+---
+
+<span class:list={['p-rating', `p-rating--${size}`, className]} role="img" aria-label={aria}>
+  <span class="p-rating__stars" aria-hidden="true" style={`--p-rating-fill: ${pct}`}>
+    <span class="p-rating__base">{stars}</span>
+    <span class="p-rating__fill">{stars}</span>
+  </span>
+  {showValue && <span class="p-rating__value" aria-hidden="true">{clamped.toFixed(1)}</span>}
+  {count !== undefined && <span class="p-rating__count" aria-hidden="true">({count})</span>}
+</span>
+
+<style>
+  .p-rating {
+    --p-rating-star: var(--c-primary-light, #d4a017);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-size: 0.8rem;
+    line-height: 1;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .p-rating--md { font-size: 0.95rem; }
+  .p-rating--lg { font-size: 1.15rem; }
+
+  .p-rating__stars {
+    position: relative;
+    display: inline-block;
+    letter-spacing: 0.08em;
+  }
+  .p-rating__base { color: rgb(var(--ink-rgb, 255 255 255) / 0.14); }
+  .p-rating__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--p-rating-fill);
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--p-rating-star);
+  }
+  .p-rating__value { font-weight: 700; color: var(--c-text-1, #fff); }
+  .p-rating__count { color: var(--c-text-3, #737373); }
+</style>

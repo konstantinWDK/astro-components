@@ -1,0 +1,189 @@
+---
+/**
+ * HousekeepingBoard — Room status board grouped by floor: clean, dirty, inspecting, occupied and
+ * out of order, with live counters, status filter and a quick "next status" action per room.
+ *
+ * @param {Array<{number: string, floor: string, type?: string, status: Status, guest?: string, note?: string, assignee?: string}>} rooms - Rooms to show.
+ * @param {string} title - Card title. Default 'Housekeeping'.
+ * @param {boolean} interactive - Clicking a tile advances dirty → inspecting → clean (demo/workflow). Default true.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} size - Tile size (sm|md). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Statuses: clean · dirty · inspecting · occupied · ooo (out of order).
+ * Emits `app:room-status` with `{ room, status }` on change.
+ *
+ * Accessibility: status is written in text on every tile (not colour only); tiles are buttons
+ * with full labels; counters live in a polite region; the filter is a set of toggle buttons.
+ */
+type Status = 'clean' | 'dirty' | 'inspecting' | 'occupied' | 'ooo';
+interface Room { number: string; floor: string; type?: string; status: Status; guest?: string; note?: string; assignee?: string }
+interface Props {
+  rooms?: Room[];
+  title?: string;
+  interactive?: boolean;
+  variant?: 'card' | 'plain';
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+const {
+  rooms = [
+    { number: '101', floor: 'Floor 1', type: 'Standard', status: 'clean' },
+    { number: '102', floor: 'Floor 1', type: 'Standard', status: 'occupied', guest: 'A. Tanaka' },
+    { number: '103', floor: 'Floor 1', type: 'Standard', status: 'dirty', assignee: 'Rosa' },
+    { number: '104', floor: 'Floor 1', type: 'Twin', status: 'inspecting', assignee: 'Luis' },
+    { number: '201', floor: 'Floor 2', type: 'Deluxe', status: 'ooo', note: 'A/C repair' },
+    { number: '202', floor: 'Floor 2', type: 'Deluxe', status: 'occupied', guest: 'J. Whitfield' },
+    { number: '203', floor: 'Floor 2', type: 'Deluxe', status: 'dirty', assignee: 'Rosa' },
+    { number: '204', floor: 'Floor 2', type: 'Deluxe', status: 'clean' },
+  ],
+  title = 'Housekeeping',
+  interactive = true,
+  variant = 'card',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const labels: Record<Status, string> = { clean: 'Clean', dirty: 'Dirty', inspecting: 'Inspecting', occupied: 'Occupied', ooo: 'Out of order' };
+const order: Status[] = ['clean', 'dirty', 'inspecting', 'occupied', 'ooo'];
+const floors = Array.from(new Set(rooms.map((r) => r.floor)));
+const counts = Object.fromEntries(order.map((s) => [s, rooms.filter((r) => r.status === s).length]));
+---
+
+<section class:list={['hk', `hk--${variant}`, `hk--${size}`, className]} data-hk data-interactive={interactive ? '' : undefined} aria-labelledby="hk-title">
+  <header class="hk__head">
+    <h2 class="hk__title" id="hk-title">{title}</h2>
+    <div class="hk__filters" role="group" aria-label="Filter rooms by status">
+      <button type="button" class="hk__filter" aria-pressed="true" data-f="">All <span data-c="">{rooms.length}</span></button>
+      {order.map((s) => (
+        <button type="button" class:list={['hk__filter', `hk__filter--${s}`]} aria-pressed="false" data-f={s}>
+          <i aria-hidden="true"></i>{labels[s]} <span data-c={s}>{counts[s]}</span>
+        </button>
+      ))}
+    </div>
+  </header>
+
+  <p class="sr-only" aria-live="polite" data-announce></p>
+
+  {floors.map((floor) => (
+    <div class="hk__floor">
+      <h3 class="hk__floor-title">{floor}</h3>
+      <ul class="hk__grid">
+        {rooms.filter((r) => r.floor === floor).map((r) => (
+          <li data-status={r.status}>
+            <button
+              type="button"
+              class:list={['hk__room', `hk__room--${r.status}`]}
+              data-room={r.number}
+              data-status={r.status}
+              aria-label={`Room ${r.number}, ${labels[r.status]}${r.guest ? `, ${r.guest}` : ''}${r.assignee ? `, assigned to ${r.assignee}` : ''}${interactive && (r.status === 'dirty' || r.status === 'inspecting') ? '. Activate to advance status' : ''}`}
+            >
+              <span class="hk__num">{r.number}</span>
+              {r.type && <span class="hk__type">{r.type}</span>}
+              <span class="hk__state"><i aria-hidden="true"></i><span data-label>{labels[r.status]}</span></span>
+              {(r.guest || r.note || r.assignee) && <span class="hk__meta">{r.guest ?? r.note ?? `→ ${r.assignee}`}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</section>
+
+<script>
+  const LABELS: Record<string, string> = { clean: 'Clean', dirty: 'Dirty', inspecting: 'Inspecting', occupied: 'Occupied', ooo: 'Out of order' };
+  const NEXT: Record<string, string> = { dirty: 'inspecting', inspecting: 'clean' };
+
+  document.querySelectorAll<HTMLElement>('[data-hk]:not([data-bound])').forEach((hk) => {
+    hk.dataset.bound = '';
+    const filters = Array.from(hk.querySelectorAll<HTMLButtonElement>('[data-f]'));
+    const announce = hk.querySelector<HTMLElement>('[data-announce]')!;
+    let active = '';
+
+    const recount = () => {
+      const items = Array.from(hk.querySelectorAll<HTMLElement>('li[data-status]'));
+      hk.querySelectorAll<HTMLElement>('[data-c]').forEach((c) => {
+        const s = c.dataset.c;
+        c.textContent = String(s ? items.filter((i) => i.dataset.status === s).length : items.length);
+      });
+      items.forEach((i) => { i.hidden = Boolean(active) && i.dataset.status !== active; });
+      hk.querySelectorAll<HTMLElement>('.hk__floor').forEach((f) => { f.hidden = !f.querySelector('li:not([hidden])'); });
+    };
+
+    filters.forEach((f) => f.addEventListener('click', () => {
+      active = f.dataset.f || '';
+      filters.forEach((x) => x.setAttribute('aria-pressed', String(x === f)));
+      recount();
+    }));
+
+    if (hk.hasAttribute('data-interactive')) {
+      hk.querySelectorAll<HTMLButtonElement>('.hk__room').forEach((btn) => btn.addEventListener('click', () => {
+        const next = NEXT[btn.dataset.status || ''];
+        if (!next) return;
+        btn.classList.remove(`hk__room--${btn.dataset.status}`);
+        btn.classList.add(`hk__room--${next}`);
+        btn.dataset.status = next;
+        btn.closest('li')!.dataset.status = next;
+        btn.querySelector('[data-label]')!.textContent = LABELS[next];
+        btn.setAttribute('aria-label', btn.getAttribute('aria-label')!.replace(/, (Dirty|Inspecting|Clean)/, `, ${LABELS[next]}`));
+        announce.textContent = `Room ${btn.dataset.room} is now ${LABELS[next].toLowerCase()}.`;
+        hk.dispatchEvent(new CustomEvent('app:room-status', { bubbles: true, detail: { room: btn.dataset.room, status: next } }));
+        recount();
+      }));
+    }
+  });
+</script>
+
+<style>
+  .hk { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4, 1rem); min-width: 0; }
+  .hk--card { padding: var(--sp-5, 1.25rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .hk__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); }
+  .hk__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .hk__filters { display: flex; gap: 6px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .hk__filter { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 0.7rem; border-radius: 999px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); background: transparent; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.76rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .hk__filter i { width: 8px; height: 8px; border-radius: 50%; background: var(--tone); }
+  .hk__filter span { color: var(--c-text-3, #737373); font-variant-numeric: tabular-nums; }
+  .hk__filter[aria-pressed='true'] { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-color: var(--c-text-1, #fff); }
+  .hk__filter[aria-pressed='true'] span { color: inherit; opacity: 0.7; }
+
+  .hk__floor[hidden] { display: none; }
+  .hk__floor-title { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-3, #737373); }
+  .hk__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .hk--sm .hk__grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .hk__grid li[hidden] { display: none; }
+  .hk__room {
+    --tone: var(--c-text-3, #737373);
+    display: grid;
+    gap: 2px;
+    width: 100%;
+    min-height: 96px;
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+    border-top: 3px solid var(--tone);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--tone) 7%, var(--c-bg-1, #0a0a0a));
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .hk--sm .hk__room { min-height: 76px; }
+  .hk__room:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--tone) 70%, transparent); }
+  .hk__room:focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .hk__num { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .hk__type { font-size: 0.72rem; color: var(--c-text-3, #737373); }
+  .hk__state { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.75rem; font-weight: 700; color: var(--tone); }
+  .hk__state i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .hk__meta { font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hk__room--clean, .hk__filter--clean { --tone: var(--c-success, #34d399); }
+  .hk__room--dirty, .hk__filter--dirty { --tone: var(--c-danger, #f87171); }
+  .hk__room--inspecting, .hk__filter--inspecting { --tone: var(--c-warning, #fbbf24); }
+  .hk__room--occupied, .hk__filter--occupied { --tone: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .hk__room--ooo, .hk__filter--ooo { --tone: var(--c-text-3, #737373); }
+  .hk__room--ooo { background: repeating-linear-gradient(135deg, rgb(var(--ink-rgb, 255 255 255) / 0.04) 0 8px, transparent 8px 16px), var(--c-bg-1, #0a0a0a); }
+  .hk__filter:focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .hk__room { transition: none; } }
+</style>

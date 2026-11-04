@@ -1,0 +1,83 @@
+---
+/**
+ * AppLayout — Full HTML document for the hotel SaaS app: AppSidebar + AppTopbar + content area.
+ * Owns the "Lobby" look through tokens (cobalt accent, slate surfaces) with light and dark palettes.
+ *
+ * @param {string} title - Page title (product name is appended).
+ * @param {string} description - Meta description.
+ * @param {string} current - Active route key (dashboard|reservations|rooms|guests|reports|settings).
+ * @param {LobbyData} data - Demo/workspace data. Default: Hotel Mirador.
+ * @param {SaasRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). The topbar toggle overrides it. Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default true (app pages are private).
+ * @param {string} lang - Document language. Default 'en'.
+ */
+import '../../../../styles/global.css';
+import './lobby-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { lobbyData, saasRoutes, type LobbyData, type SaasRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: 'dashboard' | 'reservations' | 'rooms' | 'guests' | 'reports' | 'settings';
+  data?: LobbyData;
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const { title, description, current = 'dashboard', data = lobbyData, routes = saasRoutes, theme = 'light', noindex = true, lang = 'en' } = Astro.props;
+
+const pending = data.reservations.filter((r) => r.status === 'Pending').length;
+const dirty = data.housekeeping.filter((r) => r.status === 'dirty').length;
+const groups = [
+  { items: [
+    { label: 'Dashboard', href: routes.dashboard, icon: 'dashboard' },
+    { label: 'Reservations', href: routes.reservations, icon: 'calendar', badge: pending || undefined },
+    { label: 'Rooms', href: routes.rooms, icon: 'bed', badge: dirty || undefined },
+    { label: 'Guests', href: routes.guests, icon: 'users' },
+  ] },
+  { label: 'Insights', items: [{ label: 'Reports', href: routes.reports, icon: 'chart' }] },
+  { label: 'Workspace', items: [{ label: 'Settings', href: routes.settings, icon: 'settings' }] },
+];
+const currentHref = routes[current];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-lobby" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} · ${data.workspace.name} — ${data.product}`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="lobby">
+    <a class="lobby__skip" href="#main">Skip to content</a>
+    <div class="lobby__shell">
+      <AppSidebar
+        workspace={data.workspace}
+        groups={groups}
+        currentHref={currentHref}
+        promo={{ title: 'Channel manager', text: '4 of 5 channels in sync', href: routes.settings, cta: 'Connect Airbnb', progress: 80 }}
+      />
+      <div class="lobby__main">
+        <AppTopbar notifications={data.notifications} user={data.user} userLinks={[{ label: 'Your profile', href: routes.settings }, { label: 'Team & billing', href: `${routes.settings}#team` }]} signOutHref={routes.signIn} />
+        <main id="main" class="lobby__content" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

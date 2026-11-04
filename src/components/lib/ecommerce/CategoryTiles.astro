@@ -1,0 +1,143 @@
+---
+/**
+ * CategoryTiles — Grid of shop categories with illustration, item count and arrow link.
+ *
+ * @param {string} title - Section heading (optional). Default 'Shop by category'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<StoreCategory & { href: string, count?: number }>} categories - Tiles to show.
+ * @param {number} columns - Desktop columns (2–6). Default 4.
+ * @param {string} variant - Tile style (glass|image|minimal). Default 'glass'.
+ * @param {string} size - Tile height (sm|md|lg). Default 'md'.
+ * @param {string} countLabel - Suffix after the count. Default 'products'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each tile is a single link with a visible name; art is decorative.
+ */
+import ProductMedia from './ProductMedia.astro';
+import type { StoreCategory } from './types';
+
+type Tile = StoreCategory & { href: string; count?: number };
+interface Props {
+  title?: string;
+  subtitle?: string;
+  categories?: Tile[];
+  columns?: number;
+  variant?: 'glass' | 'image' | 'minimal';
+  size?: 'sm' | 'md' | 'lg';
+  countLabel?: string;
+  className?: string;
+}
+
+const {
+  title = 'Shop by category',
+  subtitle,
+  categories = [
+    { id: 'audio', name: 'Audio', href: '#', count: 18, icon: 'headphones', hue: 38 },
+    { id: 'wearables', name: 'Wearables', href: '#', count: 12, icon: 'watch', hue: 200 },
+    { id: 'bags', name: 'Bags', href: '#', count: 9, icon: 'backpack', hue: 150 },
+    { id: 'home', name: 'Home', href: '#', count: 24, icon: 'lamp', hue: 20 },
+  ],
+  columns = 4,
+  variant = 'glass',
+  size = 'md',
+  countLabel = 'products',
+  className = '',
+} = Astro.props;
+
+const cols = Math.min(6, Math.max(2, columns));
+---
+
+<section class:list={['cat-tiles', `cat-tiles--${variant}`, `cat-tiles--${size}`, className]} style={`--ct-cols: ${cols}`}>
+  {(title || subtitle) && (
+    <header class="cat-tiles__head">
+      {title && <h2 class="cat-tiles__title">{title}</h2>}
+      {subtitle && <p class="cat-tiles__subtitle">{subtitle}</p>}
+    </header>
+  )}
+  <ul class="cat-tiles__grid">
+    {categories.map((c) => (
+      <li>
+        <a class="cat-tile is-hoverable" href={c.href}>
+          <ProductMedia icon={c.icon} hue={c.hue} ratio="auto" size="sm" variant={variant === 'minimal' ? 'flat' : 'glow'} className="cat-tile__media" />
+          <span class="cat-tile__text">
+            <span class="cat-tile__name">{c.name}</span>
+            {c.count !== undefined && <span class="cat-tile__count">{c.count} {countLabel}</span>}
+          </span>
+          <span class="cat-tile__arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .cat-tiles { container-type: inline-size; --ct-h: 220px; }
+  .cat-tiles--sm { --ct-h: 160px; }
+  .cat-tiles--lg { --ct-h: 280px; }
+  .cat-tiles__head { margin-bottom: var(--sp-6, 1.5rem); }
+  .cat-tiles__title { margin: 0; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .cat-tiles__subtitle { margin: var(--sp-2, 0.5rem) 0 0; color: var(--c-text-2, #a3a3a3); }
+
+  .cat-tiles__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--ct-cols), minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cat-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: var(--ct-h);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    overflow: hidden;
+    color: var(--c-text-1, #fff);
+    text-decoration: none;
+    isolation: isolate;
+    transition: border-color 0.25s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cat-tile:hover { border-color: rgba(212, 160, 23, 0.35); transform: translateY(-3px); color: var(--c-text-1, #fff); }
+  .cat-tile:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .cat-tile :global(.cat-tile__media) { position: absolute; inset: 0; height: 100%; z-index: -1; aspect-ratio: auto; }
+  .cat-tile :global(.cat-tile__media .p-media__art) { width: auto; height: 46%; margin-bottom: 18%; }
+  .cat-tile::after { content: ''; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgb(var(--paper-rgb, 5 5 5) / 0.85)); z-index: -1; }
+  .cat-tiles--minimal .cat-tile::after { display: none; }
+
+  .cat-tile__text { display: grid; gap: 2px; }
+  .cat-tile__name { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+  .cat-tile__count { font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .cat-tile__arrow {
+    position: absolute;
+    top: var(--sp-4, 1rem);
+    right: var(--sp-4, 1rem);
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    backdrop-filter: blur(8px);
+    transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+  }
+  .cat-tile:hover .cat-tile__arrow { background: var(--c-primary-light, #d4a017); color: var(--c-on-primary, #050505); transform: rotate(45deg); }
+
+  @container (max-width: 900px) {
+    .cat-tiles__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @container (max-width: 420px) {
+    .cat-tiles__grid { --ct-h: 170px; }
+    .cat-tiles__grid { gap: var(--sp-3, 0.75rem); }
+    .cat-tile { padding: var(--sp-4, 1rem); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cat-tile, .cat-tile__arrow { transition: none; }
+  }
+</style>

@@ -1,0 +1,100 @@
+---
+/**
+ * ShopFooterWordmark — Store footer with link columns, contact block, payment labels and a
+ * giant edge-to-edge wordmark at the bottom.
+ *
+ * @param {string} brand - Wordmark. Default 'Forma'.
+ * @param {string} brandHref - Wordmark link. Default '/'.
+ * @param {Array<{title: string, links: {label: string, href: string}[]}>} columns - Link columns.
+ * @param {{title: string, lines: string[]}} contact - Contact block (optional).
+ * @param {string[]} payments - Payment method labels. Default Visa · Mastercard · PayPal · Apple Pay.
+ * @param {string} copyright - Bottom-left text.
+ * @param {string} variant - Style (plain|inverted). Default 'plain'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: footer landmark with a visually hidden heading; columns are nav lists; the
+ * wordmark is decorative (aria-hidden) and duplicated by the visible brand link.
+ */
+interface Props {
+  brand?: string;
+  brandHref?: string;
+  columns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  contact?: { title: string; lines: string[] };
+  payments?: string[];
+  copyright?: string;
+  variant?: 'plain' | 'inverted';
+  className?: string;
+}
+
+const {
+  brand = 'Forma',
+  brandHref = '/',
+  columns = [
+    { title: 'Shop', links: [{ label: 'Clothing', href: '#' }, { label: 'Shoes', href: '#' }, { label: 'Bags', href: '#' }, { label: 'Objects', href: '#' }] },
+    { title: 'Care', links: [{ label: 'Shipping', href: '#' }, { label: 'Returns', href: '#' }, { label: 'Repairs', href: '#' }, { label: 'Size guide', href: '#' }] },
+    { title: 'Studio', links: [{ label: 'About', href: '#' }, { label: 'Journal', href: '#' }, { label: 'Stockists', href: '#' }] },
+  ],
+  contact = { title: 'Visit', lines: ['Calle del Pez 14, Madrid', 'Tue–Sat · 11:00–20:00', 'hello@forma.studio'] },
+  payments = ['Visa', 'Mastercard', 'PayPal', 'Apple Pay'],
+  copyright = `© ${new Date().getFullYear()} Forma Studio`,
+  variant = 'plain',
+  className = '',
+} = Astro.props;
+---
+
+<footer class:list={['sfw', `sfw--${variant}`, className]} aria-labelledby="sfw-title">
+  <h2 id="sfw-title" class="sr-only">Site footer</h2>
+  <div class="sfw__top">
+    <a class="sfw__brand" href={brandHref}>{brand}</a>
+    {columns.map((c) => (
+      <nav class="sfw__col" aria-label={c.title}>
+        <p class="sfw__col-title">{c.title}</p>
+        <ul>{c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+      </nav>
+    ))}
+    {contact && (
+      <div class="sfw__col">
+        <p class="sfw__col-title">{contact.title}</p>
+        <address>{contact.lines.map((l) => <span>{l}</span>)}</address>
+      </div>
+    )}
+  </div>
+  <div class="sfw__bottom">
+    <p>{copyright}</p>
+    {payments.length > 0 && <ul class="sfw__pay" aria-label="Payment methods">{payments.map((p) => <li>{p}</li>)}</ul>}
+  </div>
+  <p class="sfw__wordmark" aria-hidden="true">{brand}<span>°</span></p>
+</footer>
+
+<style>
+  .sfw { container-type: inline-size; padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1rem, 3vw, 2.5rem) 0; border-top: 1px solid var(--c-text-1, #fff); color: var(--c-text-1, #fff); overflow: hidden; }
+  .sfw--inverted { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-top: 0; }
+  .sfw__top { display: grid; grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr)); gap: var(--sp-8, 2rem); max-width: 1440px; margin: 0 auto; }
+  .sfw__brand { font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: 1.8rem; letter-spacing: -0.03em; color: inherit; text-decoration: none; }
+  .sfw__col-title { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.6; }
+  .sfw__col ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .sfw__col a { display: inline-flex; align-items: center; min-height: 34px; color: inherit; text-decoration: none; font-size: 0.95rem; }
+  .sfw__col a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .sfw__col address { display: grid; gap: 6px; font-style: normal; font-size: 0.95rem; line-height: 1.5; }
+  .sfw a:focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .sfw__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-4, 1rem); max-width: 1440px; margin: clamp(2rem, 5vw, 3.5rem) auto 0; padding-top: var(--sp-4, 1rem); border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); font-size: 0.8rem; opacity: 0.75; }
+  .sfw__bottom p { margin: 0; }
+  .sfw__pay { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .sfw__pay li { padding: 0.15rem 0.55rem; border: 1px solid currentColor; border-radius: var(--r-sm, 2px); font-size: 0.7rem; letter-spacing: 0.04em; }
+  .sfw__wordmark {
+    margin: clamp(1rem, 3vw, 2rem) 0 -0.18em;
+    font-family: var(--font-display, Georgia, 'Times New Roman', serif);
+    font-size: clamp(5rem, 24vw, 22rem);
+    line-height: 0.8;
+    letter-spacing: -0.06em;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .sfw__wordmark span { color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 900px) {
+    .sfw__top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sfw__brand { grid-column: 1 / -1; }
+  }
+</style>

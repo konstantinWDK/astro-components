@@ -18,6 +18,8 @@ export * from './lib/buttons';
 export * from './lib/cards';
 export * from './lib/charts';
 export * from './lib/data';
+export * from './lib/ecommerce';
+export * from './lib/app';
 export * from './lib/feedback';
 export * from './lib/forms';
 export * from './lib/layout';

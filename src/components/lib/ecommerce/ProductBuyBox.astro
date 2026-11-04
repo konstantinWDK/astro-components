@@ -1,0 +1,247 @@
+---
+/**
+ * ProductBuyBox — Product detail purchase panel: title, rating, price, colour/size pickers,
+ * quantity (StepperInput), add to cart, buy now, guarantees and expandable details.
+ *
+ * @param {Product} product - Product data. A demo product is used by default.
+ * @param {string} categoryLabel - Eyebrow text (e.g. the category name).
+ * @param {string} checkoutHref - Where "Buy now" goes after adding the item. Default '#'.
+ * @param {Array<{title: string, body: string}>} details - Expandable sections (materials, shipping…).
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {string} id - Base id for inner controls. Default 'buy-box'.
+ * @param {string} variant - Style (plain|glass). Default 'plain'.
+ * @param {string} size - Type scale (md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1 with the product name; pickers are radio groups; details use native
+ * <details>/<summary>; sold-out state disables the buttons and says so in text.
+ */
+import Badge from '../feedback/Badge.astro';
+import StepperInput from '../forms/StepperInput.astro';
+import ProductRating from './ProductRating.astro';
+import VariantPicker from './VariantPicker.astro';
+import TrustBadges from './TrustBadges.astro';
+import StockIndicator from './StockIndicator.astro';
+import { formatMoney } from './cart-store';
+import type { Product } from './types';
+
+interface Props {
+  product?: Product;
+  categoryLabel?: string;
+  checkoutHref?: string;
+  details?: Array<{ title: string; body: string }>;
+  currency?: string;
+  locale?: string;
+  cartKey?: string;
+  id?: string;
+  variant?: 'plain' | 'glass';
+  size?: 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  product = {
+    slug: 'aurora-headphones',
+    name: 'Aurora Wireless Headphones',
+    price: 189,
+    compareAt: 229,
+    category: 'audio',
+    rating: 4.8,
+    reviews: 312,
+    badge: 'Bestseller',
+    badgeVariant: 'warning',
+    colors: [{ name: 'Graphite', hex: '#2b2b2f' }, { name: 'Sand', hex: '#d8c3a5' }, { name: 'Ocean', hex: '#3d6f9e' }],
+    icon: 'headphones',
+    hue: 38,
+    description: 'Adaptive noise cancelling, 40-hour battery and memory-foam cushions that disappear after five minutes. Tuned in-house for a warm, detailed sound.',
+    inStock: true,
+  },
+  categoryLabel = 'Audio',
+  checkoutHref = '#',
+  details = [
+    { title: 'Features', body: 'Hybrid ANC with transparency mode · Bluetooth 5.4 multipoint · USB-C fast charge (10 min = 5 h) · Foldable aluminium frame.' },
+    { title: 'Shipping & returns', body: 'Free standard shipping over $75, delivered in 2–4 business days. Return anything within 30 days for a full refund.' },
+    { title: 'Warranty', body: 'Two-year limited warranty covering manufacturing defects, with free repair or replacement.' },
+  ],
+  currency = 'USD',
+  locale = 'en-US',
+  cartKey = 'ack-cart',
+  id = 'buy-box',
+  variant = 'plain',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const money = { currency, locale };
+const inStock = product.inStock !== false;
+const saving = product.compareAt ? Math.round((1 - product.price / product.compareAt) * 100) : 0;
+const payload = JSON.stringify({ id: product.slug, name: product.name, price: product.price, icon: product.icon, hue: product.hue, image: product.image });
+const addId = `${id}-add`;
+---
+
+<div class:list={['buy-box', `buy-box--${variant}`, `buy-box--${size}`, className]}>
+  <div class="buy-box__top">
+    {categoryLabel && <p class="buy-box__cat">{categoryLabel}</p>}
+    {product.badge && <Badge variant={product.badgeVariant ?? 'default'}>{product.badge}</Badge>}
+  </div>
+  <h1 class="buy-box__title">{product.name}</h1>
+  {product.rating !== undefined && (
+    <a class="buy-box__rating" href="#reviews">
+      <ProductRating value={product.rating} count={product.reviews} size="md" />
+    </a>
+  )}
+
+  <p class="buy-box__price">
+    <span class="buy-box__now">{formatMoney(product.price, money)}</span>
+    {product.compareAt && <s class="buy-box__was"><span class="sr-only">Was </span>{formatMoney(product.compareAt, money)}</s>}
+    {saving > 0 && <span class="buy-box__save">Save {saving}%</span>}
+  </p>
+  {product.description && <p class="buy-box__desc">{product.description}</p>}
+
+  <div class="buy-box__pickers">
+    {product.colors && product.colors.length > 0 && (
+      <VariantPicker label="Colour" name={`${id}-color`} type="swatch" target={addId} options={product.colors.map((c) => ({ label: c.name, hex: c.hex }))} />
+    )}
+    {product.sizes && product.sizes.length > 0 && (
+      <VariantPicker label="Size" name={`${id}-size`} type="pill" target={addId} options={product.sizes.map((s) => ({ label: s }))} />
+    )}
+  </div>
+
+  <div class="buy-box__actions">
+    <StepperInput id={`${id}-qty`} name="qty" value={1} min={1} max={10} />
+    <button
+      class="buy-box__add"
+      id={addId}
+      type="button"
+      data-add-to-cart={payload}
+      data-cart-key={cartKey}
+      data-qty-from={`${id}-qty`}
+      data-added-label="Added to cart"
+      disabled={!inStock}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>
+      <span data-label>{inStock ? 'Add to cart' : 'Sold out'}</span>
+    </button>
+  </div>
+  {inStock && (
+    <a class="buy-box__buy" href={checkoutHref} data-buy-now={addId}>Buy now</a>
+  )}
+
+  {inStock && product.stock !== undefined && product.stock <= 5 ? (
+    <StockIndicator stock={product.stock} viewers={8 + (product.reviews ?? 0) % 17} />
+  ) : (
+    <p class="buy-box__stock" data-in={inStock ? '' : undefined}>
+      <span aria-hidden="true"></span>{inStock ? 'In stock — ships in 24 hours' : 'Out of stock — back soon'}
+    </p>
+  )}
+
+  <TrustBadges variant="inline" size="sm" items={[
+    { icon: 'truck', title: 'Free shipping', text: 'Over $75' },
+    { icon: 'return', title: '30-day returns', text: 'Free & easy' },
+  ]} />
+
+  {details.length > 0 && (
+    <div class="buy-box__details">
+      {details.map((d, i) => (
+        <details open={i === 0}>
+          <summary>{d.title}</summary>
+          <p>{d.body}</p>
+        </details>
+      ))}
+    </div>
+  )}
+</div>
+
+<script>
+  import { bindAddToCart } from './cart-store';
+
+  bindAddToCart(document);
+  document.querySelectorAll<HTMLAnchorElement>('[data-buy-now]').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const btn = document.getElementById(link.dataset.buyNow || '') as HTMLButtonElement | null;
+      if (!btn || btn.disabled) return;
+      e.preventDefault();
+      btn.dataset.openCart = 'false';
+      btn.click();
+      window.location.href = link.href;
+    });
+  });
+</script>
+
+<style>
+  .buy-box { display: flex; flex-direction: column; gap: var(--sp-4, 1rem); min-width: 0; }
+  .buy-box--glass {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-xl, 28px);
+    border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    background: var(--c-surface, rgb(var(--ink-rgb, 255 255 255) / 0.02));
+  }
+  .buy-box__top { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); }
+  .buy-box__cat { margin: 0; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .buy-box__title { margin: 0; font-size: clamp(1.8rem, 3.6vw, 2.6rem); font-weight: 900; line-height: 1.08; letter-spacing: -0.035em; color: var(--c-text-1, #fff); }
+  .buy-box--lg .buy-box__title { font-size: clamp(2.2rem, 4.4vw, 3.2rem); }
+  .buy-box__rating { width: fit-content; text-decoration: none; border-radius: var(--r-sm, 8px); }
+  .buy-box__rating:hover :global(.p-rating__count) { text-decoration: underline; }
+
+  .buy-box__price { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); margin: 0; }
+  .buy-box__now { font-size: 1.9rem; font-weight: 900; color: var(--c-text-1, #fff); letter-spacing: -0.02em; }
+  .buy-box__was { font-size: 1.05rem; color: var(--c-text-2, #a3a3a3); }
+  .buy-box__save { padding: 0.2rem 0.6rem; border-radius: var(--r-full, 9999px); background: rgba(52, 211, 153, 0.12); color: var(--c-success, #34d399); font-size: 0.78rem; font-weight: 800; }
+  .buy-box__desc { margin: 0; line-height: 1.7; color: var(--c-text-2, #a3a3a3); }
+
+  .buy-box__pickers { display: grid; gap: var(--sp-5, 1.25rem); padding: var(--sp-2, 0.5rem) 0; }
+
+  .buy-box__actions { display: flex; gap: var(--sp-3, 0.75rem); align-items: stretch; }
+  .buy-box__actions :global(.stepper-container) { width: auto; flex-shrink: 0; }
+  .buy-box__actions :global(.stepper) { height: 52px; border-radius: var(--r-full, 9999px); border-color: rgb(var(--ink-rgb, 255 255 255) / 0.12); }
+  .buy-box__actions :global(.stepper-btn) { width: 48px; height: 100%; background: transparent; color: var(--c-text-1, #fff); }
+  .buy-box__actions :global(.stepper-btn:hover) { background: rgb(var(--ink-rgb, 255 255 255) / 0.07); }
+  .buy-box__actions :global(.stepper-input) { width: 44px; height: 100%; }
+  .buy-box__add,
+  .buy-box__buy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 52px;
+    border-radius: var(--r-full, 9999px);
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  }
+  .buy-box__add { flex: 1; border: 0; background: var(--c-primary-light, #d4a017); color: var(--c-on-primary, #050505); }
+  .buy-box__add:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .buy-box__add.is-added { background: var(--c-success, #34d399); }
+  .buy-box__add:disabled { background: rgb(var(--ink-rgb, 255 255 255) / 0.08); color: var(--c-text-2, #a3a3a3); cursor: not-allowed; transform: none; }
+  .buy-box__buy { border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.16); color: var(--c-text-1, #fff); }
+  .buy-box__buy:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); color: var(--c-text-1, #fff); }
+  .buy-box :is(a, button, summary):focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+
+  .buy-box__stock { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0; font-size: 0.85rem; color: var(--c-danger, #f87171); }
+  .buy-box__stock[data-in] { color: var(--c-success, #34d399); }
+  .buy-box__stock span { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
+
+  .buy-box__details { border-top: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05)); }
+  .buy-box__details details { border-bottom: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05)); }
+  .buy-box__details summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    font-weight: 700;
+    color: var(--c-text-1, #fff);
+    cursor: pointer;
+    list-style: none;
+  }
+  .buy-box__details summary::-webkit-details-marker { display: none; }
+  .buy-box__details summary::after { content: '+'; font-size: 1.3rem; font-weight: 400; color: var(--c-text-2, #a3a3a3); transition: transform 0.2s ease; }
+  .buy-box__details details[open] summary::after { transform: rotate(45deg); }
+  .buy-box__details p { margin: 0 0 var(--sp-4, 1rem); font-size: 0.9rem; line-height: 1.7; color: var(--c-text-2, #a3a3a3); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>

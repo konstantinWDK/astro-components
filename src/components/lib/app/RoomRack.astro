@@ -1,0 +1,207 @@
+---
+/**
+ * RoomRack — Booking timeline ("tape chart"): rooms as rows, days as columns and reservations as
+ * coloured bars by status, with a today marker, room-type groups and a detail panel on click.
+ *
+ * @param {string[]} days - Column labels, e.g. ['Mon 3', 'Tue 4', …].
+ * @param {number} today - Index of today's column (-1 hides the marker). Default 1.
+ * @param {Array<{id: string, name: string, type?: string}>} rooms - Rows.
+ * @param {Array<{room: string, guest: string, start: number, nights: number, status: 'confirmed'|'checked-in'|'pending'|'blocked', ref?: string, channel?: string}>} bookings - Bars; `start` is a day index.
+ * @param {string} title - Card title. Default 'Room rack'.
+ * @param {number} dayWidth - Column width in px. Default 64.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each booking is a button labelled with guest, room, dates and status; the detail
+ * panel is a polite live region; the grid scrolls horizontally with the keyboard.
+ */
+interface Booking { room: string; guest: string; start: number; nights: number; status: 'confirmed' | 'checked-in' | 'pending' | 'blocked'; ref?: string; channel?: string }
+interface Props {
+  days?: string[];
+  today?: number;
+  rooms?: Array<{ id: string; name: string; type?: string }>;
+  bookings?: Booking[];
+  title?: string;
+  dayWidth?: number;
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  days = ['Mon 3', 'Tue 4', 'Wed 5', 'Thu 6', 'Fri 7', 'Sat 8', 'Sun 9', 'Mon 10', 'Tue 11', 'Wed 12'],
+  today = 1,
+  rooms = [
+    { id: '101', name: '101', type: 'Standard' },
+    { id: '102', name: '102', type: 'Standard' },
+    { id: '201', name: '201', type: 'Deluxe' },
+    { id: '202', name: '202', type: 'Deluxe' },
+    { id: '301', name: '301', type: 'Suite' },
+  ],
+  bookings = [
+    { room: '101', guest: 'Elena Duarte', start: 0, nights: 3, status: 'checked-in', ref: 'MR-2830', channel: 'Booking.com' },
+    { room: '101', guest: 'Tom Becker', start: 4, nights: 2, status: 'confirmed', ref: 'MR-2852' },
+    { room: '102', guest: 'Aiko Tanaka', start: 1, nights: 5, status: 'confirmed', ref: 'MR-2839', channel: 'Expedia' },
+    { room: '201', guest: 'Maintenance', start: 2, nights: 2, status: 'blocked' },
+    { room: '202', guest: 'James Whitfield', start: 0, nights: 2, status: 'checked-in', ref: 'MR-2840' },
+    { room: '202', guest: 'Sofía Ramos', start: 3, nights: 4, status: 'pending', ref: 'MR-2861' },
+    { room: '301', guest: 'The Okafor family', start: 1, nights: 6, status: 'confirmed', ref: 'MR-2844', channel: 'Direct' },
+  ],
+  title = 'Room rack',
+  dayWidth = 64,
+  variant = 'card',
+  className = '',
+} = Astro.props;
+
+const labels: Record<Booking['status'], string> = { confirmed: 'Confirmed', 'checked-in': 'Checked in', pending: 'Pending', blocked: 'Blocked' };
+const groups = Array.from(new Set(rooms.map((r) => r.type ?? ''))).map((type) => ({ type, rooms: rooms.filter((r) => (r.type ?? '') === type) }));
+const occupied = days.map((_, d) => bookings.filter((b) => b.status !== 'blocked' && d >= b.start && d < b.start + b.nights).length);
+---
+
+<section class:list={['rack', `rack--${variant}`, className]} style={`--day-w: ${dayWidth}px; --days: ${days.length}`} data-rack aria-labelledby="rack-title">
+  <header class="rack__head">
+    <h2 class="rack__title" id="rack-title">{title}</h2>
+    <ul class="rack__legend" aria-label="Legend">
+      {(Object.keys(labels) as Booking['status'][]).map((s) => <li><i class={`rack__swatch rack__swatch--${s}`} aria-hidden="true"></i>{labels[s]}</li>)}
+    </ul>
+  </header>
+
+  <div class="rack__scroll" tabindex="0" role="region" aria-label={`${title}, scroll horizontally`}>
+    <div class="rack__grid">
+      <div class="rack__corner">Room</div>
+      {days.map((d, i) => (
+        <div class:list={['rack__day', { 'is-today': i === today, 'is-weekend': /^(Sat|Sun|Sáb|Dom)/i.test(d) }]}>
+          <span>{d}</span>
+          <small>{Math.round((occupied[i] / Math.max(1, rooms.length)) * 100)}%</small>
+        </div>
+      ))}
+
+      {groups.map((g) => (
+        <>
+          {g.type && <div class="rack__group" style={`grid-column: 1 / span ${days.length + 1}`}>{g.type} <span>{g.rooms.length}</span></div>}
+          {g.rooms.map((room) => (
+            <>
+              <div class="rack__room">{room.name}</div>
+              <div class="rack__lane" style={`grid-column: 2 / span ${days.length}`}>
+                {today >= 0 && <span class="rack__now" style={`left: calc(${today} * var(--day-w) + var(--day-w) / 2)`} aria-hidden="true"></span>}
+                {bookings.filter((b) => b.room === room.id).map((b) => (
+                  <button
+                    type="button"
+                    class:list={['rack__bar', `rack__bar--${b.status}`]}
+                    style={`left: calc(${b.start} * var(--day-w) + 3px); width: calc(${Math.min(b.nights, days.length - b.start)} * var(--day-w) - 6px)`}
+                    aria-label={`${b.guest}, room ${room.name}, ${days[b.start]} for ${b.nights} ${b.nights === 1 ? 'night' : 'nights'}, ${labels[b.status]}`}
+                    data-detail={JSON.stringify({ guest: b.guest, room: room.name, type: room.type, from: days[b.start], nights: b.nights, status: labels[b.status], ref: b.ref, channel: b.channel })}
+                  >
+                    <span>{b.guest}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ))}
+        </>
+      ))}
+    </div>
+  </div>
+
+  <div class="rack__detail" aria-live="polite" data-detail-out>
+    <p class="rack__hint">Select a booking to see its details.</p>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rack]:not([data-bound])').forEach((rack) => {
+    rack.dataset.bound = '';
+    const out = rack.querySelector<HTMLElement>('[data-detail-out]')!;
+    const bars = Array.from(rack.querySelectorAll<HTMLButtonElement>('.rack__bar'));
+    bars.forEach((bar) => bar.addEventListener('click', () => {
+      bars.forEach((b) => b.removeAttribute('aria-pressed'));
+      bar.setAttribute('aria-pressed', 'true');
+      const d = JSON.parse(bar.dataset.detail || '{}');
+      const dl = document.createElement('dl');
+      dl.className = 'rack__dl';
+      const rows: Array<[string, string | undefined]> = [
+        ['Guest', d.guest], ['Room', `${d.room}${d.type ? ` · ${d.type}` : ''}`], ['Arrival', d.from],
+        ['Nights', String(d.nights)], ['Status', d.status], ['Booking', d.ref], ['Channel', d.channel],
+      ];
+      rows.filter(([, v]) => v).forEach(([k, v]) => {
+        const wrap = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = k;
+        const dd = document.createElement('dd'); dd.textContent = v!;
+        wrap.append(dt, dd);
+        dl.append(wrap);
+      });
+      out.replaceChildren(dl);
+    }));
+  });
+</script>
+
+<style>
+  .rack { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3, 0.75rem); min-width: 0; }
+  .rack--card { padding: var(--sp-5, 1.25rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .rack__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); }
+  .rack__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .rack__legend { display: flex; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); margin: 0; padding: 0; list-style: none; font-size: 0.75rem; color: var(--c-text-2, #a3a3a3); }
+  .rack__legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .rack__swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+  .rack__scroll { overflow-x: auto; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .rack__grid { display: grid; grid-template-columns: 80px repeat(var(--days), var(--day-w)); min-width: max-content; }
+  .rack__corner, .rack__day { position: sticky; top: 0; z-index: 2; display: grid; align-content: center; height: 48px; padding: 0 8px; background: var(--c-bg-1, #0a0a0a); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); font-size: 0.72rem; color: var(--c-text-3, #737373); }
+  .rack__corner { left: 0; z-index: 3; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .rack__day { text-align: center; border-left: 1px solid var(--c-border, rgba(255, 255, 255, 0.05)); }
+  .rack__day span { font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .rack__day small { font-size: 0.66rem; }
+  .rack__day.is-weekend { background: color-mix(in srgb, var(--c-bg-1, #0a0a0a) 92%, var(--c-text-1, #fff)); }
+  .rack__day.is-today span { color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .rack__group { padding: 6px 10px; background: rgb(var(--ink-rgb, 255 255 255) / 0.03); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.06)); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .rack__group span { color: var(--c-text-3, #737373); }
+  .rack__room { position: sticky; left: 0; z-index: 1; display: flex; align-items: center; height: 48px; padding: 0 12px; background: var(--c-bg-1, #0a0a0a); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.06)); border-right: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); font-size: 0.85rem; font-weight: 700; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .rack__lane {
+    position: relative;
+    height: 48px;
+    border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.06));
+    background-image: linear-gradient(to right, var(--c-border, rgba(255, 255, 255, 0.05)) 1px, transparent 1px);
+    background-size: var(--day-w) 100%;
+  }
+  .rack__now { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--app-accent, var(--c-primary-light, #d4a017)); opacity: 0.6; z-index: 1; }
+
+  .rack__bar {
+    --tone: var(--app-accent, var(--c-primary-light, #d4a017));
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border: 0;
+    border-left: 3px solid var(--tone);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--tone) 22%, var(--c-bg-1, #0a0a0a));
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .rack__bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rack__bar:hover, .rack__bar[aria-pressed='true'] { transform: translateY(-1px); box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--tone) 60%, transparent); }
+  .rack__bar[aria-pressed='true'] { outline: 2px solid var(--tone); outline-offset: 1px; }
+  .rack__bar:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 2px; }
+  .rack__bar--checked-in, .rack__swatch--checked-in { --tone: var(--c-success, #34d399); }
+  .rack__bar--pending, .rack__swatch--pending { --tone: var(--c-warning, #fbbf24); }
+  .rack__bar--blocked, .rack__swatch--blocked { --tone: var(--c-text-3, #737373); }
+  .rack__bar--blocked { background: repeating-linear-gradient(135deg, rgb(var(--ink-rgb, 255 255 255) / 0.06) 0 6px, transparent 6px 12px); color: var(--c-text-2, #a3a3a3); }
+  .rack__swatch { background: var(--tone, var(--app-accent, var(--c-primary-light, #d4a017))); }
+  .rack__swatch--confirmed { --tone: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .rack__scroll:focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .rack__detail { min-height: 44px; padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-radius: 10px; background: rgb(var(--ink-rgb, 255 255 255) / 0.03); }
+  .rack__hint { margin: 0; font-size: 0.82rem; color: var(--c-text-3, #737373); }
+  .rack__detail :global(.rack__dl) { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem) var(--sp-6, 1.5rem); margin: 0; }
+  .rack__detail :global(.rack__dl dt) { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--c-text-3, #737373); }
+  .rack__detail :global(.rack__dl dd) { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--c-text-1, #fff); }
+  @media (prefers-reduced-motion: reduce) { .rack__bar { transition: none; } }
+</style>

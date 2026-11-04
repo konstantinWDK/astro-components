@@ -3,6 +3,8 @@ export * from './buttons/index';
 export * from './cards/index';
 export * from './charts/index';
 export * from './data/index';
+export * from './ecommerce/index';
+export * from './app/index';
 export * from './feedback/index';
 export * from './forms/index';
 export * from './layout/index';

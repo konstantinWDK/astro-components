@@ -1,0 +1,290 @@
+---
+/**
+ * CartPageList — Full shopping-bag page: line items with quantity and remove, gift note,
+ * free-shipping progress and a summary card with the checkout button. Reads the cart store live.
+ *
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {string} title - Page heading. Default 'Your bag'.
+ * @param {string} checkoutHref - Checkout URL. Default '#'.
+ * @param {string} continueHref - "Continue shopping" URL. Default '#'.
+ * @param {number} freeShippingThreshold - Free shipping from this subtotal (0 hides it). Default 150.
+ * @param {number} shippingFlat - Shipping estimate below the threshold. Default 8.
+ * @param {string} currency - ISO currency. Default 'EUR'.
+ * @param {string} locale - Number format locale. Default 'en-GB'.
+ * @param {CartItem[]} demoItems - Seeds an empty cart once (demos only).
+ * @param {string} variant - Style (editorial|card). Default 'editorial'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1; the item list is a real list with labelled quantity buttons;
+ * totals are a polite live region; removing an item moves focus to the next row (or the heading).
+ */
+import type { CartItem } from './types';
+
+interface Props {
+  cartKey?: string;
+  title?: string;
+  checkoutHref?: string;
+  continueHref?: string;
+  freeShippingThreshold?: number;
+  shippingFlat?: number;
+  currency?: string;
+  locale?: string;
+  demoItems?: CartItem[];
+  variant?: 'editorial' | 'card';
+  className?: string;
+}
+
+const {
+  cartKey = 'ack-cart',
+  title = 'Your bag',
+  checkoutHref = '#',
+  continueHref = '#',
+  freeShippingThreshold = 150,
+  shippingFlat = 8,
+  currency = 'EUR',
+  locale = 'en-GB',
+  demoItems = [],
+  variant = 'editorial',
+  className = '',
+} = Astro.props;
+---
+
+<section
+  class:list={['bag', `bag--${variant}`, className]}
+  aria-labelledby="bag-title"
+  data-bag
+  data-key={cartKey}
+  data-currency={currency}
+  data-locale={locale}
+  data-free={freeShippingThreshold}
+  data-ship={shippingFlat}
+  data-seed={demoItems.length ? JSON.stringify(demoItems) : undefined}
+>
+  <header class="bag__head">
+    <h1 class="bag__title" id="bag-title" tabindex="-1">{title} <sup data-count></sup></h1>
+    <a class="bag__continue" href={continueHref}>← Continue shopping</a>
+  </header>
+
+  <div class="bag__layout">
+    <div class="bag__main">
+      <div class="bag__cols" aria-hidden="true"><span>Item</span><span>Quantity</span><span>Total</span></div>
+      <ul class="bag__lines" data-lines aria-label="Items in your bag"></ul>
+      <div class="bag__empty" data-empty hidden>
+        <p class="bag__empty-title">Your bag is empty.</p>
+        <p>Pieces you add will wait here for you.</p>
+        <a class="bag__btn" href={continueHref}>Discover the collection</a>
+      </div>
+      <details class="bag__note" data-note-wrap>
+        <summary>Add a gift note</summary>
+        <label class="sr-only" for="bag-note">Gift note</label>
+        <textarea id="bag-note" rows="3" maxlength="200" placeholder="Write a short message — we'll print it on a card." data-note></textarea>
+      </details>
+    </div>
+
+    <aside class="bag__summary" aria-label="Order summary" data-summary>
+      <div class="bag__ship" data-ship-wrap>
+        <p data-ship-text></p>
+        <div class="bag__ship-bar" aria-hidden="true"><span data-ship-bar></span></div>
+      </div>
+      <dl class="bag__totals" aria-live="polite">
+        <div><dt>Subtotal</dt><dd data-t="subtotal">—</dd></div>
+        <div><dt>Shipping</dt><dd data-t="shipping">—</dd></div>
+        <div class="bag__total"><dt>Estimated total</dt><dd data-t="total">—</dd></div>
+      </dl>
+      <p class="bag__taxes">Taxes included. Discount codes are applied at checkout.</p>
+      <a class="bag__btn bag__btn--block" href={checkoutHref} data-checkout>Checkout</a>
+      <ul class="bag__assurance">
+        <li>Free returns within 30 days</li>
+        <li>Secure payment · Cards, PayPal, Apple Pay</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<script>
+  import { createCart, formatMoney } from './cart-store';
+  import { productIcon } from './product-icons';
+  import type { CartItem } from './types';
+
+  document.querySelectorAll<HTMLElement>('[data-bag]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const cart = createCart(root.dataset.key);
+    const money = { currency: root.dataset.currency, locale: root.dataset.locale };
+    const free = Number(root.dataset.free) || 0;
+    const flat = Number(root.dataset.ship) || 0;
+    const list = root.querySelector<HTMLUListElement>('[data-lines]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const summary = root.querySelector<HTMLElement>('[data-summary]')!;
+    const cols = root.querySelector<HTMLElement>('.bag__cols')!;
+    const noteWrap = root.querySelector<HTMLElement>('[data-note-wrap]')!;
+    const note = root.querySelector<HTMLTextAreaElement>('[data-note]')!;
+    const heading = root.querySelector<HTMLElement>('#bag-title')!;
+    const out = (k: string) => root.querySelector<HTMLElement>(`[data-t="${k}"]`)!;
+    const noteKey = `${cart.key}:note`;
+
+    if (root.dataset.seed) { try { cart.seed(JSON.parse(root.dataset.seed)); } catch { /* ignore */ } }
+    try { note.value = window.localStorage.getItem(noteKey) || ''; } catch { /* ignore */ }
+    note.addEventListener('input', () => { try { window.localStorage.setItem(noteKey, note.value); } catch { /* ignore */ } });
+
+    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string) => {
+      const n = document.createElement(tag);
+      n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    };
+
+    function row(item: CartItem, i: number, all: CartItem[]) {
+      const li = make('li', 'bag-line');
+      const media = make('div', 'bag-line__media');
+      media.style.setProperty('--h', String(item.hue ?? 30));
+      media.innerHTML = item.image
+        ? `<img src="${encodeURI(item.image)}" alt="">`
+        : `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${productIcon(item.icon)}</svg>`;
+      const info = make('div', 'bag-line__info');
+      info.append(make('p', 'bag-line__name', item.name));
+      if (item.variant) info.append(make('p', 'bag-line__meta', item.variant));
+      info.append(make('p', 'bag-line__unit', formatMoney(item.price, money)));
+      const remove = make('button', 'bag-line__remove', 'Remove');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `Remove ${item.name}`);
+      remove.addEventListener('click', () => {
+        const next = all[i + 1] ?? all[i - 1];
+        cart.remove(item.id);
+        const target = next ? root.querySelector<HTMLElement>(`[aria-label="Remove ${CSS.escape(next.name)}"]`) : null;
+        (target ?? heading).focus();
+      });
+      info.append(remove);
+
+      const qty = make('div', 'bag-line__qty');
+      const minus = make('button', 'bag-line__step', '−');
+      minus.type = 'button';
+      minus.setAttribute('aria-label', `Decrease quantity of ${item.name}`);
+      minus.addEventListener('click', () => cart.setQty(item.id, item.qty - 1));
+      const count = make('span', 'bag-line__count', String(item.qty));
+      const plus = make('button', 'bag-line__step', '+');
+      plus.type = 'button';
+      plus.setAttribute('aria-label', `Increase quantity of ${item.name}`);
+      plus.addEventListener('click', () => cart.setQty(item.id, item.qty + 1));
+      qty.append(minus, count, plus);
+
+      li.append(media, info, qty, make('p', 'bag-line__total', formatMoney(item.price * item.qty, money)));
+      return li;
+    }
+
+    function render() {
+      const items = cart.items();
+      const focused = document.activeElement?.getAttribute('aria-label');
+      list.replaceChildren(...items.map((it, i) => row(it, i, items)));
+      const has = items.length > 0;
+      empty.hidden = has;
+      summary.hidden = !has;
+      cols.hidden = !has;
+      noteWrap.hidden = !has;
+      const count = items.reduce((n, i) => n + i.qty, 0);
+      root.querySelector('[data-count]')!.textContent = has ? `(${count})` : '';
+      const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
+      const shipping = !has || (free > 0 && subtotal >= free) ? 0 : flat;
+      out('subtotal').textContent = formatMoney(subtotal, money);
+      out('shipping').textContent = shipping === 0 ? 'Free' : formatMoney(shipping, money);
+      out('total').textContent = formatMoney(subtotal + shipping, money);
+      const shipWrap = root.querySelector<HTMLElement>('[data-ship-wrap]')!;
+      shipWrap.hidden = free <= 0;
+      const left = Math.max(0, free - subtotal);
+      root.querySelector('[data-ship-text]')!.textContent = left > 0 ? `${formatMoney(left, money)} away from free shipping` : 'Free shipping unlocked';
+      root.querySelector<HTMLElement>('[data-ship-bar]')!.style.width = `${free ? Math.min(100, (subtotal / free) * 100) : 100}%`;
+      if (focused && !root.contains(document.activeElement)) {
+        root.querySelector<HTMLElement>(`[aria-label="${CSS.escape(focused)}"]`)?.focus();
+      }
+    }
+
+    render();
+    cart.subscribe(render);
+  });
+</script>
+
+<style>
+  .bag { container-type: inline-size; min-width: 0; }
+  .bag__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-4, 1rem); padding-bottom: var(--sp-5, 1.25rem); border-bottom: 1px solid var(--c-text-1, #fff); }
+  .bag__title { margin: 0; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 400; letter-spacing: -0.03em; line-height: 1; color: var(--c-text-1, #fff); outline: none; }
+  .bag__title sup { font-family: var(--font-sans, system-ui); font-size: 0.9rem; letter-spacing: 0; vertical-align: super; color: var(--c-text-2, #a3a3a3); }
+  .bag__continue { min-height: 44px; display: inline-flex; align-items: center; font-size: 0.88rem; color: var(--c-text-1, #fff); text-decoration: underline; text-underline-offset: 4px; }
+
+  .bag__layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: clamp(2rem, 5vw, 4.5rem); align-items: start; padding-top: var(--sp-6, 1.5rem); }
+  .bag__cols { display: grid; grid-template-columns: 1fr 140px 110px; padding-bottom: var(--sp-3, 0.75rem); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .bag__cols span:nth-child(3) { text-align: right; }
+  .bag__cols[hidden] { display: none; }
+
+  .bag__lines { margin: 0; padding: 0; list-style: none; }
+  .bag__lines :global(.bag-line) {
+    display: grid;
+    grid-template-columns: 96px 1fr 140px 110px;
+    gap: var(--sp-4, 1rem);
+    align-items: start;
+    padding: var(--sp-5, 1.25rem) 0;
+    border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.1));
+  }
+  .bag__lines :global(.bag-line__media) {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 3 / 4;
+    color: hsl(var(--h) var(--pm-ink-s, 80%) var(--pm-ink-l, 80%));
+    background: linear-gradient(160deg, hsl(var(--h) 40% 50% / 0.18), var(--c-bg-2, #111));
+    border-radius: var(--r-sm, 2px);
+  }
+  .bag__lines :global(.bag-line__media svg) { width: 58%; }
+  .bag__lines :global(.bag-line__media img) { width: 100%; height: 100%; object-fit: cover; }
+  .bag__lines :global(.bag-line__info) { display: grid; gap: 2px; min-width: 0; }
+  .bag__lines :global(.bag-line__name) { margin: 0; font-family: var(--font-display, Georgia, serif); font-size: 1.1rem; color: var(--c-text-1, #fff); }
+  .bag__lines :global(.bag-line__meta), .bag__lines :global(.bag-line__unit) { margin: 0; font-size: 0.82rem; color: var(--c-text-2, #a3a3a3); }
+  .bag__lines :global(.bag-line__remove) { justify-self: start; min-height: 36px; margin-top: 6px; padding: 0; border: 0; background: none; color: var(--c-text-1, #fff); font: inherit; font-size: 0.8rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .bag__lines :global(.bag-line__qty) { display: inline-flex; align-items: center; width: fit-content; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.15)); border-radius: var(--r-sm, 2px); }
+  .bag__lines :global(.bag-line__step) { width: 40px; height: 40px; border: 0; background: none; color: var(--c-text-1, #fff); font-size: 1rem; cursor: pointer; }
+  .bag__lines :global(.bag-line__step:hover) { background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+  .bag__lines :global(.bag-line__count) { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; color: var(--c-text-1, #fff); }
+  .bag__lines :global(.bag-line__total) { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--c-text-1, #fff); font-weight: 600; }
+  .bag :global(button:focus-visible), .bag a:focus-visible, .bag summary:focus-visible, .bag textarea:focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .bag__empty { display: grid; justify-items: start; gap: var(--sp-2, 0.5rem); padding: var(--sp-10, 2.5rem) 0; }
+  .bag__empty[hidden] { display: none; }
+  .bag__empty p { margin: 0; color: var(--c-text-2, #a3a3a3); }
+  .bag__empty-title { font-family: var(--font-display, Georgia, serif); font-size: 1.6rem; color: var(--c-text-1, #fff) !important; }
+
+  .bag__note { margin-top: var(--sp-5, 1.25rem); }
+  .bag__note[hidden] { display: none; }
+  .bag__note summary { min-height: 44px; display: flex; align-items: center; font-size: 0.88rem; color: var(--c-text-1, #fff); cursor: pointer; }
+  .bag__note textarea { width: 100%; padding: var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.15)); border-radius: var(--r-sm, 2px); background: transparent; color: var(--c-text-1, #fff); font: inherit; font-size: 0.9rem; resize: vertical; }
+
+  .bag__summary { position: sticky; top: calc(var(--shop-header-h, 0px) + 1.5rem); display: grid; gap: var(--sp-4, 1rem); padding: var(--sp-6, 1.5rem); background: var(--c-bg-1, #0a0a0a); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); }
+  .bag--card .bag__summary { border-radius: var(--r-lg, 20px); }
+  .bag__summary[hidden] { display: none; }
+  .bag__ship p { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.85rem; color: var(--c-text-1, #fff); }
+  .bag__ship[hidden] { display: none; }
+  .bag__ship-bar { height: 3px; background: rgb(var(--ink-rgb, 255 255 255) / 0.12); }
+  .bag__ship-bar span { display: block; height: 100%; width: 0; background: var(--shop-accent, var(--c-primary-light, #d4a017)); transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+  .bag__totals { display: grid; gap: var(--sp-2, 0.5rem); margin: 0; }
+  .bag__totals div { display: flex; justify-content: space-between; font-size: 0.9rem; }
+  .bag__totals dt { color: var(--c-text-2, #a3a3a3); }
+  .bag__totals dd { margin: 0; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .bag__total { padding-top: var(--sp-3, 0.75rem); border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); }
+  .bag__totals .bag__total dt { color: var(--c-text-1, #fff); font-weight: 600; }
+  .bag__totals .bag__total dd { font-size: 1.25rem; font-weight: 700; }
+  .bag__taxes { margin: 0; font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .bag__btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 1.5rem; border-radius: var(--r-sm, 2px); background: var(--c-text-1, #fff); color: var(--c-bg, #050505); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; text-decoration: none; transition: background 0.2s ease, color 0.2s ease; }
+  .bag__btn:hover { background: var(--shop-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .bag__btn--block { width: 100%; }
+  .bag__assurance { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .bag__assurance li::before { content: '— '; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 900px) {
+    .bag__layout { grid-template-columns: 1fr; }
+    .bag__summary { position: static; }
+  }
+  @container (max-width: 600px) {
+    .bag__cols { display: none; }
+    .bag__lines :global(.bag-line) { grid-template-columns: 84px 1fr; }
+    .bag__lines :global(.bag-line__qty) { grid-column: 2; }
+    .bag__lines :global(.bag-line__total) { grid-column: 2; text-align: left; }
+  }
+</style>

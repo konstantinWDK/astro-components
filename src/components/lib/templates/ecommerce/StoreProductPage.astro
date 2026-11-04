@@ -1,0 +1,165 @@
+---
+/**
+ * StoreProductPage — E-commerce template product detail: breadcrumb, ProductGallery,
+ * ProductBuyBox, reviews summary and related products.
+ *
+ * Usage (src/pages/product/[slug].astro):
+ *   import { StoreProductPage, demoStore } from 'astro-component-kit/templates/ecommerce';
+ *   export const getStaticPaths = () => demoStore.products.map((p) => ({ params: { slug: p.slug } }));
+ *   <StoreProductPage slug={Astro.params.slug} />
+ *
+ * @param {string} slug - Product slug to show. Default: first product.
+ * @param {StoreConfig} store - Catalogue and settings. Default: demo store.
+ * @param {StoreRoutes} routes - Page URLs.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import StoreLayout from './StoreLayout.astro';
+import ProductGallery from '../../ecommerce/ProductGallery.astro';
+import ProductBuyBox from '../../ecommerce/ProductBuyBox.astro';
+import ProductRating from '../../ecommerce/ProductRating.astro';
+import ProductGrid from '../../ecommerce/ProductGrid.astro';
+import { demoStore, defaultRoutes, categoryHref, categoryNames, type StoreConfig, type StoreRoutes } from './data';
+
+interface Props {
+  slug?: string;
+  store?: StoreConfig;
+  routes?: StoreRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'dark' | 'light' | 'auto';
+}
+
+const { slug, store = demoStore, routes = defaultRoutes, seedCart = false, noindex = false, theme = 'dark' } = Astro.props;
+
+const product = store.products.find((p) => p.slug === slug) ?? store.products[0];
+const category = store.categories.find((c) => c.id === product.category);
+const related = store.products
+  .filter((p) => p.slug !== product.slug)
+  .sort((a, b) => Number(b.category === product.category) - Number(a.category === product.category))
+  .slice(0, 4);
+
+// Deterministic demo review distribution derived from the rating.
+const total = product.reviews ?? 0;
+const r = product.rating ?? 0;
+const weights = [Math.max(0, r - 3.6) * 3, 1.2, 0.5, 0.2, 0.12];
+const sum = weights.reduce((a, b) => a + b, 0) || 1;
+const bars = [5, 4, 3, 2, 1].map((stars, i) => ({ stars, count: Math.round((weights[i] / sum) * total) }));
+const reviews = [
+  { name: 'Maya R.', title: 'Exceeded expectations', body: 'Beautifully made and it arrived in two days. I have already ordered a second one as a gift.', rating: 5 },
+  { name: 'Jonas K.', title: 'Great quality', body: 'Feels premium and the details are spot on. Packaging was plastic-free, which I appreciated.', rating: 5 },
+  { name: 'Lea M.', title: 'Almost perfect', body: 'Love the colour and the finish. Took a few days to get used to, but now I use it every day.', rating: 4 },
+];
+const money = new Intl.NumberFormat(store.locale, { style: 'currency', currency: store.currency, maximumFractionDigits: 0 }).format(store.freeShippingThreshold);
+---
+
+<StoreLayout theme={theme} title={product.name} description={product.description} store={store} routes={routes} seedCart={seedCart} noindex={noindex}>
+  <div class="store-container pdp">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={routes.home}>Home</a></li>
+        <li><a href={routes.shop}>Shop</a></li>
+        {category && <li><a href={categoryHref(routes, category.id)}>{category.name}</a></li>}
+        <li><span aria-current="page">{product.name}</span></li>
+      </ol>
+    </nav>
+
+    <div class="pdp__main">
+      <ProductGallery images={product.image ? [product.image] : []} alt={product.name} icon={product.icon} hue={product.hue} />
+      <ProductBuyBox
+        product={product}
+        categoryLabel={category?.name}
+        checkoutHref={routes.checkout}
+        currency={store.currency}
+        locale={store.locale}
+        cartKey={store.cartKey}
+        details={[
+          { title: 'Details', body: product.description ?? '' },
+          { title: 'Shipping & returns', body: `Free standard shipping over ${money}, delivered in 2–4 business days. Return anything within 30 days for a full refund.` },
+          { title: 'Warranty', body: 'Two-year limited warranty covering manufacturing defects, with free repair or replacement.' },
+        ]}
+      />
+    </div>
+
+    {total > 0 && (
+      <section class="reviews" id="reviews" aria-labelledby="reviews-title">
+        <div class="reviews__summary">
+          <h2 id="reviews-title">Customer reviews</h2>
+          <p class="reviews__score">{r.toFixed(1)}<span>/5</span></p>
+          <ProductRating value={r} count={total} size="lg" showValue={false} />
+          <ul class="reviews__bars" aria-label="Rating distribution">
+            {bars.map((b) => (
+              <li>
+                <span>{b.stars} ★</span>
+                <span class="reviews__bar" aria-hidden="true"><span style={`width: ${total ? (b.count / total) * 100 : 0}%`}></span></span>
+                <span class="reviews__count">{b.count}<span class="sr-only"> reviews with {b.stars} stars</span></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <ul class="reviews__list">
+          {reviews.map((rv) => (
+            <li class="review">
+              <ProductRating value={rv.rating} showValue={false} />
+              <h3>{rv.title}</h3>
+              <p>{rv.body}</p>
+              <p class="review__by">{rv.name} · <span>Verified buyer</span></p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <section class="related" aria-labelledby="related-title">
+      <h2 id="related-title">You may also like</h2>
+      <ProductGrid id="related" products={related} productBase={routes.product} categoryNames={categoryNames(store)} currency={store.currency} locale={store.locale} cartKey={store.cartKey} openCart={false} />
+    </section>
+  </div>
+</StoreLayout>
+
+<style>
+  .pdp { padding-block: var(--sp-6) clamp(3rem, 7vw, 5rem); }
+  .crumbs ol { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0 0 var(--sp-6); padding: 0; list-style: none; font-size: 0.85rem; }
+  .crumbs li { display: flex; align-items: center; gap: var(--sp-2); color: var(--c-text-2); }
+  .crumbs li + li::before { content: '/'; opacity: 0.5; }
+  .crumbs a { color: var(--c-text-2); }
+  .crumbs a:hover { color: var(--c-text-1); }
+  .crumbs [aria-current='page'] { color: var(--c-text-1); font-weight: 600; }
+
+  .pdp__main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: start; }
+  .pdp__main > :global(.p-gallery-cq) { position: sticky; top: 88px; }
+
+  .reviews {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: clamp(2rem, 5vw, 3rem);
+    border-top: 1px solid var(--c-border);
+  }
+  .reviews h2, .related h2 { margin: 0 0 var(--sp-4); font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 900; letter-spacing: -0.03em; color: var(--c-text-1); }
+  .reviews__score { margin: 0; font-size: 3.2rem; font-weight: 900; line-height: 1; color: var(--c-text-1); letter-spacing: -0.04em; }
+  .reviews__score span { font-size: 1.1rem; color: var(--c-text-2); font-weight: 600; }
+  .reviews__summary :global(.p-rating) { margin: var(--sp-3) 0 var(--sp-5); }
+  .reviews__bars { display: grid; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+  .reviews__bars li { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: var(--sp-3); font-size: 0.82rem; }
+  .reviews__bar { height: 8px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); overflow: hidden; }
+  .reviews__bar span { display: block; height: 100%; border-radius: inherit; background: var(--c-primary-light); }
+  .reviews__count { text-align: right; color: var(--c-text-2); }
+
+  .reviews__list { display: grid; gap: var(--sp-4); margin: 0; padding: 0; list-style: none; }
+  .review { display: grid; gap: var(--sp-2); padding: var(--sp-5); border-radius: var(--r-lg); border: 1px solid var(--c-border); background: var(--c-surface); }
+  .review h3 { margin: 0; font-size: 1rem; color: var(--c-text-1); }
+  .review p { margin: 0; line-height: 1.65; font-size: 0.92rem; }
+  .review__by { font-size: 0.82rem !important; color: var(--c-text-1); font-weight: 600; }
+  .review__by span { color: var(--c-success, #34d399); font-weight: 500; }
+
+  .related { margin-top: clamp(3rem, 7vw, 5rem); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .pdp__main, .reviews { grid-template-columns: 1fr; }
+    .pdp__main > :global(.p-gallery-cq) { position: static; }
+  }
+</style>

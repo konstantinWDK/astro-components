@@ -1,0 +1,83 @@
+---
+// src/components/docs/TemplateFrame.astro
+// Scaled, non-interactive live miniature of a template page (desktop width rendered in an iframe).
+interface Props {
+  src: string;
+  title: string;
+  /** Rendered viewport width in px. */
+  width?: number;
+  /** Rendered viewport height in px (controls the visible crop). */
+  height?: number;
+  eager?: boolean;
+}
+
+const { src, title, width = 1440, height = 960, eager = false } = Astro.props;
+---
+
+<div class="tpl-frame" style={`--tf-w: ${width}; --tf-h: ${height};`} data-template-frame>
+  <div class="tpl-frame__bar" aria-hidden="true"><span></span><span></span><span></span><em>{src}</em></div>
+  <div class="tpl-frame__viewport" inert aria-hidden="true">
+    <iframe src={src} title={title} scrolling="no" loading={eager ? 'eager' : 'lazy'} tabindex="-1" width={width} height={height}></iframe>
+  </div>
+</div>
+
+<script>
+  const frames = document.querySelectorAll<HTMLElement>('[data-template-frame]');
+  const ro = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const el = entry.target as HTMLElement;
+      const w = Number(getComputedStyle(el).getPropertyValue('--tf-w')) || 1440;
+      el.style.setProperty('--tf-s', String(entry.contentRect.width / w));
+    }
+  });
+  frames.forEach((f) => ro.observe(f));
+</script>
+
+<style>
+  .tpl-frame {
+    --tf-s: 0.3;
+    position: relative;
+    border-radius: var(--r-md);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #050505;
+    overflow: hidden;
+  }
+  .tpl-frame__bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .tpl-frame__bar span { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); }
+  .tpl-frame__bar em {
+    margin-left: 8px;
+    overflow: hidden;
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--c-text-3);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .tpl-frame__viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: calc(var(--tf-w)) / calc(var(--tf-h));
+    overflow: hidden;
+  }
+  .tpl-frame__viewport iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--tf-w) * 1px);
+    height: calc(var(--tf-h) * 1px);
+    border: 0;
+    transform: scale(var(--tf-s));
+    transform-origin: top left;
+    pointer-events: none;
+    background: #050505;
+  }
+</style>

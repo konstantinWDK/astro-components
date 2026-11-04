@@ -1,0 +1,98 @@
+---
+/**
+ * StoreCheckoutPage — E-commerce template checkout in focus mode: StepBreadcrumbBar,
+ * CheckoutForm (contact, delivery, shipping, payment) and a live OrderSummary.
+ *
+ * Usage (src/pages/checkout.astro):
+ *   import { StoreCheckoutPage } from 'astro-component-kit/templates/ecommerce';
+ *   <StoreCheckoutPage />
+ *
+ * @param {StoreConfig} store - Catalogue and settings. Default: demo store.
+ * @param {StoreRoutes} routes - Page URLs.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default true (checkout pages should not be indexed).
+ */
+import StoreLayout from './StoreLayout.astro';
+import StepBreadcrumbBar from '../../navigation/StepBreadcrumbBar.astro';
+import CheckoutForm from '../../ecommerce/CheckoutForm.astro';
+import OrderSummary from '../../ecommerce/OrderSummary.astro';
+import { demoStore, defaultRoutes, type StoreConfig, type StoreRoutes } from './data';
+
+interface Props {
+  store?: StoreConfig;
+  routes?: StoreRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'dark' | 'light' | 'auto';
+}
+
+const { store = demoStore, routes = defaultRoutes, seedCart = false, noindex = true, theme = 'dark' } = Astro.props;
+---
+
+<StoreLayout theme={theme} title="Checkout" description={`Secure checkout — ${store.name}`} store={store} routes={routes} seedCart={seedCart} noindex={noindex} minimal>
+  <div class="store-container co">
+    <div class="co__steps" data-co-steps>
+      <StepBreadcrumbBar
+        steps={[
+          { step: 1, label: 'Cart', status: 'complete', href: routes.shop },
+          { step: 2, label: 'Details & payment', status: 'active', href: '#checkout' },
+          { step: 3, label: 'Confirmation', status: 'upcoming', href: '#checkout' },
+        ]}
+      />
+    </div>
+
+    <div class="co__head">
+      <h1>Checkout</h1>
+      <a href={routes.shop}><span aria-hidden="true">←</span> Continue shopping</a>
+    </div>
+
+    <div class="co__layout">
+      <CheckoutForm
+        id="checkout"
+        shippingRates={store.shippingRates}
+        freeShippingThreshold={store.freeShippingThreshold}
+        cartKey={store.cartKey}
+        currency={store.currency}
+        locale={store.locale}
+        continueHref={routes.home}
+      />
+      <OrderSummary
+        cartKey={store.cartKey}
+        shippingRates={store.shippingRates}
+        freeShippingThreshold={store.freeShippingThreshold}
+        taxRate={store.taxRate}
+        promoCodes={store.promoCodes}
+        currency={store.currency}
+        locale={store.locale}
+      />
+    </div>
+  </div>
+</StoreLayout>
+
+<script>
+  // Move the step bar to "Confirmation" once the order is placed.
+  document.addEventListener('ack:order-placed', () => {
+    const items = Array.from(document.querySelectorAll<HTMLElement>('[data-co-steps] .step-nav__item'));
+    items.forEach((item, i) => {
+      item.classList.remove('step-nav__item--active', 'step-nav__item--upcoming');
+      item.classList.add(i === items.length - 1 ? 'step-nav__item--active' : 'step-nav__item--complete');
+      const link = item.querySelector('a');
+      if (i === items.length - 1) link?.setAttribute('aria-current', 'step');
+      else link?.removeAttribute('aria-current');
+    });
+  });
+</script>
+
+<style>
+  .co { padding-block: var(--sp-8) clamp(3rem, 7vw, 5rem); }
+  .co__steps { max-width: 720px; margin: 0 auto var(--sp-8); }
+  .co__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .co__head h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; letter-spacing: -0.035em; color: var(--c-text-1); }
+  .co__head a { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; font-weight: 600; font-size: 0.9rem; }
+  .co__layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+  @media (max-width: 960px) {
+    .co__layout { grid-template-columns: 1fr; }
+    .co__layout > :global(.o-summary) { order: -1; }
+  }
+</style>

@@ -1,0 +1,483 @@
+---
+/**
+ * CartDrawer — Slide-in cart with line items, quantity steppers, remove, free-shipping
+ * progress, subtotal and checkout button. Reads and writes the shared cart store.
+ *
+ * Opens on the `ack:cart-open` event (dispatched by StoreHeader's cart button and by
+ * add-to-cart buttons) or on any `[data-cart-open]` element outside a StoreHeader.
+ *
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {string} title - Drawer heading. Default 'Your cart'.
+ * @param {string} checkoutHref - Checkout page URL. Default '#'.
+ * @param {string} checkoutLabel - Checkout button label. Default 'Checkout'.
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {number} freeShippingThreshold - Shows progress towards free shipping (0 hides it). Default 75.
+ * @param {CartItem[]} demoItems - Seeds an empty cart once (demo stores only).
+ * @param {boolean} inline - Render as an always-visible panel instead of an overlay (docs/previews). Default false.
+ * @param {string} side - Slide-in side (right|left). Default 'right'.
+ * @param {string} size - Panel width (sm|md|lg). Default 'md'.
+ * @param {string} id - Base id for inner elements (unique per page). Default 'cart-drawer'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: modal dialog with focus trap, Escape to close, focus returned to the trigger,
+ * background scroll locked; totals are announced through a polite live region.
+ */
+import type { CartItem } from './types';
+
+interface Props {
+  cartKey?: string;
+  title?: string;
+  checkoutHref?: string;
+  checkoutLabel?: string;
+  currency?: string;
+  locale?: string;
+  freeShippingThreshold?: number;
+  demoItems?: CartItem[];
+  inline?: boolean;
+  side?: 'right' | 'left';
+  size?: 'sm' | 'md' | 'lg';
+  id?: string;
+  className?: string;
+}
+
+const {
+  cartKey = 'ack-cart',
+  title = 'Your cart',
+  checkoutHref = '#',
+  checkoutLabel = 'Checkout',
+  currency = 'USD',
+  locale = 'en-US',
+  freeShippingThreshold = 75,
+  demoItems = [],
+  inline = false,
+  side = 'right',
+  size = 'md',
+  id = 'cart-drawer',
+  className = '',
+} = Astro.props;
+
+const uid = id;
+---
+
+<div
+  class:list={['cart-drawer', `cart-drawer--${side}`, `cart-drawer--${size}`, { 'cart-drawer--inline': inline }, className]}
+  data-cart-drawer
+  data-key={cartKey}
+  data-currency={currency}
+  data-locale={locale}
+  data-free={freeShippingThreshold}
+  data-seed={demoItems.length ? JSON.stringify(demoItems) : undefined}
+  data-inline={inline ? '' : undefined}
+  hidden={!inline}
+>
+  {!inline && <div class="cart-drawer__backdrop" data-cart-close></div>}
+  <aside
+    class="cart-drawer__panel"
+    role={inline ? 'region' : 'dialog'}
+    aria-modal={inline ? undefined : 'true'}
+    aria-labelledby={`${uid}-title`}
+    tabindex="-1"
+  >
+    <header class="cart-drawer__head">
+      <h2 class="cart-drawer__title" id={`${uid}-title`}>{title} <span class="cart-drawer__qty" data-cart-qty></span></h2>
+      {!inline && (
+        <button class="cart-drawer__close" type="button" aria-label="Close cart" data-cart-close>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      )}
+    </header>
+
+    {freeShippingThreshold > 0 && (
+      <div class="cart-drawer__ship" data-ship>
+        <p class="cart-drawer__ship-text" data-ship-text></p>
+        <div class="cart-drawer__ship-bar" aria-hidden="true"><span data-ship-bar></span></div>
+      </div>
+    )}
+
+    <ul class="cart-drawer__lines" data-lines aria-label="Cart items"></ul>
+
+    <div class="cart-drawer__empty" data-empty hidden>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>
+      <p><strong>Your cart is empty</strong></p>
+      <p>Add a few products and they will show up here.</p>
+      {!inline && <button class="cart-drawer__ghost" type="button" data-cart-close>Continue shopping</button>}
+    </div>
+
+    <footer class="cart-drawer__foot" data-foot>
+      <div class="cart-drawer__row">
+        <span>Subtotal</span>
+        <strong data-subtotal aria-live="polite">—</strong>
+      </div>
+      <p class="cart-drawer__note">Taxes and shipping are calculated at checkout.</p>
+      <a class="cart-drawer__checkout" href={checkoutHref}>
+        {checkoutLabel}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </footer>
+  </aside>
+</div>
+
+<script>
+  import { createCart, formatMoney } from './cart-store';
+  import { productIcon } from './product-icons';
+  import type { CartItem } from './types';
+
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  document.querySelectorAll<HTMLElement>('[data-cart-drawer]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const cart = createCart(root.dataset.key);
+    const money = { currency: root.dataset.currency, locale: root.dataset.locale };
+    const inline = root.hasAttribute('data-inline');
+    const free = Number(root.dataset.free) || 0;
+    const panel = root.querySelector<HTMLElement>('.cart-drawer__panel')!;
+    const list = root.querySelector<HTMLUListElement>('[data-lines]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const foot = root.querySelector<HTMLElement>('[data-foot]')!;
+    const subtotalEl = root.querySelector<HTMLElement>('[data-subtotal]')!;
+    const qtyEl = root.querySelector<HTMLElement>('[data-cart-qty]')!;
+    const ship = root.querySelector<HTMLElement>('[data-ship]');
+    const shipText = root.querySelector<HTMLElement>('[data-ship-text]');
+    const shipBar = root.querySelector<HTMLElement>('[data-ship-bar]');
+    let lastTrigger: HTMLElement | null = null;
+
+    if (root.dataset.seed) {
+      try { cart.seed(JSON.parse(root.dataset.seed)); } catch { /* bad seed */ }
+    }
+
+    const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
+      const node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    };
+
+    function line(item: CartItem): HTMLLIElement {
+      const li = el('li', 'cart-line');
+      const media = el('div', 'cart-line__media');
+      media.style.setProperty('--h', String(item.hue ?? 40));
+      if (item.image) {
+        const img = el('img');
+        img.src = item.image;
+        img.alt = '';
+        media.append(img);
+      } else {
+        media.innerHTML = `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${productIcon(item.icon)}</svg>`;
+      }
+      const info = el('div', 'cart-line__info');
+      info.append(el('p', 'cart-line__name', item.name));
+      if (item.variant) info.append(el('p', 'cart-line__variant', item.variant));
+
+      const stepper = el('div', 'cart-line__stepper');
+      const minus = el('button', 'cart-line__step', '−');
+      minus.type = 'button';
+      minus.setAttribute('aria-label', `Decrease quantity of ${item.name}`);
+      minus.addEventListener('click', () => cart.setQty(item.id, item.qty - 1));
+      const qty = el('span', 'cart-line__count', String(item.qty));
+      qty.setAttribute('aria-label', `Quantity ${item.qty}`);
+      const plus = el('button', 'cart-line__step', '+');
+      plus.type = 'button';
+      plus.setAttribute('aria-label', `Increase quantity of ${item.name}`);
+      plus.disabled = item.qty >= 99;
+      plus.addEventListener('click', () => cart.setQty(item.id, item.qty + 1));
+      stepper.append(minus, qty, plus);
+      info.append(stepper);
+
+      const side = el('div', 'cart-line__side');
+      side.append(el('p', 'cart-line__price', formatMoney(item.price * item.qty, money)));
+      const remove = el('button', 'cart-line__remove', 'Remove');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `Remove ${item.name}`);
+      remove.addEventListener('click', () => cart.remove(item.id));
+      side.append(remove);
+
+      li.append(media, info, side);
+      return li;
+    }
+
+    function render() {
+      const items = cart.items();
+      const count = items.reduce((n, i) => n + i.qty, 0);
+      const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
+      const active = document.activeElement as HTMLElement | null;
+      const focusedLabel = active && root.contains(active) ? active.getAttribute('aria-label') : null;
+      list.replaceChildren(...items.map(line));
+      empty.hidden = items.length > 0;
+      foot.hidden = items.length === 0;
+      list.hidden = items.length === 0;
+      qtyEl.textContent = count ? `(${count})` : '';
+      subtotalEl.textContent = formatMoney(subtotal, money);
+      if (ship && shipText && shipBar) {
+        ship.hidden = items.length === 0;
+        const left = Math.max(0, free - subtotal);
+        shipText.textContent = left > 0
+          ? `You're ${formatMoney(left, money)} away from free shipping`
+          : 'You unlocked free shipping';
+        shipBar.style.width = `${Math.min(100, (subtotal / free) * 100)}%`;
+        ship.classList.toggle('is-done', left === 0);
+      }
+      // keep the keyboard position after re-rendering the lines
+      if (focusedLabel && !root.contains(document.activeElement)) {
+        const again = Array.from(root.querySelectorAll<HTMLElement>('[aria-label]')).find((n) => n.getAttribute('aria-label') === focusedLabel);
+        (again ?? panel).focus();
+      }
+    }
+
+    function open(trigger?: HTMLElement | null) {
+      if (inline) return;
+      lastTrigger = trigger ?? (document.activeElement as HTMLElement | null);
+      root.hidden = false;
+      document.documentElement.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        root.classList.add('is-open');
+        panel.focus();
+      });
+    }
+
+    function close() {
+      if (inline || root.hidden) return;
+      root.classList.remove('is-open');
+      document.documentElement.style.overflow = '';
+      const done = () => { root.hidden = true; };
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) done();
+      else window.setTimeout(done, 280);
+      lastTrigger?.focus();
+    }
+
+    render();
+    cart.subscribe(render);
+
+    document.addEventListener('ack:cart-open', (e) => {
+      const detail = (e as CustomEvent).detail || {};
+      if (!detail.key || detail.key === cart.key) open(detail.trigger);
+    });
+    document.querySelectorAll<HTMLElement>('[data-cart-open]').forEach((btn) => {
+      if (btn.closest('[data-store-header]')) return; // the header dispatches the event itself
+      btn.addEventListener('click', () => open(btn));
+    });
+    root.querySelectorAll('[data-cart-close]').forEach((n) => n.addEventListener('click', close));
+
+    root.addEventListener('keydown', (e) => {
+      if (inline) return;
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab') return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((n) => !n.closest('[hidden]'));
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  });
+</script>
+
+<style>
+  .cart-drawer {
+    --cd-w: 420px;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .cart-drawer[hidden] { display: none; }
+  .cart-drawer--sm { --cd-w: 360px; }
+  .cart-drawer--lg { --cd-w: 500px; }
+
+  .cart-drawer__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.28s ease;
+  }
+  .cart-drawer.is-open .cart-drawer__backdrop { opacity: 1; }
+
+  .cart-drawer__panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(var(--cd-w), 100vw);
+    background: var(--c-bg-1, #0a0a0a);
+    border-left: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    box-shadow: -30px 0 80px -30px rgba(0, 0, 0, 0.9);
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+  }
+  .cart-drawer--left .cart-drawer__panel { right: auto; left: 0; border-left: 0; border-right: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.08); transform: translateX(-100%); }
+  .cart-drawer.is-open .cart-drawer__panel { transform: none; }
+
+  .cart-drawer--inline { position: relative; inset: auto; z-index: auto; }
+  .cart-drawer--inline .cart-drawer__panel {
+    position: relative;
+    width: 100%;
+    max-width: var(--cd-w);
+    margin: 0 auto;
+    transform: none;
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    border-radius: var(--r-lg, 20px);
+    box-shadow: none;
+    min-height: 420px;
+  }
+
+  .cart-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-5, 1.25rem) var(--sp-6, 1.5rem);
+    border-bottom: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+  }
+  .cart-drawer__title { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--c-text-1, #fff); }
+  .cart-drawer__qty { color: var(--c-text-2, #a3a3a3); font-weight: 600; }
+  .cart-drawer__close {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    border: 0;
+    border-radius: var(--r-full, 9999px);
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    cursor: pointer;
+  }
+  .cart-drawer__close:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+
+  .cart-drawer__ship { padding: var(--sp-4, 1rem) var(--sp-6, 1.5rem) 0; }
+  .cart-drawer__ship[hidden] { display: none; }
+  .cart-drawer__ship-text { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.82rem; color: var(--c-text-1, #fff); }
+  .cart-drawer__ship-bar { height: 6px; border-radius: var(--r-full, 9999px); background: rgb(var(--ink-rgb, 255 255 255) / 0.07); overflow: hidden; }
+  .cart-drawer__ship-bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--c-primary, #b8860b), var(--c-primary-light, #d4a017));
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .cart-drawer__ship.is-done .cart-drawer__ship-bar span { background: var(--c-success, #34d399); }
+
+  .cart-drawer__lines {
+    flex: 1;
+    margin: 0;
+    padding: var(--sp-2, 0.5rem) var(--sp-6, 1.5rem);
+    list-style: none;
+    overflow-y: auto;
+  }
+  .cart-drawer__lines[hidden] { display: none; }
+  .cart-drawer__lines :global(.cart-line) {
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    gap: var(--sp-3, 0.75rem);
+    align-items: start;
+    padding: var(--sp-4, 1rem) 0;
+    border-bottom: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    animation: cd-in 0.3s ease-out;
+  }
+  .cart-drawer__lines :global(.cart-line__media) {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border-radius: var(--r-md, 12px);
+    overflow: hidden;
+    color: hsl(var(--h) var(--pm-ink-s, 80%) var(--pm-ink-l, 80%));
+    background: radial-gradient(circle at 50% 40%, hsl(var(--h) 70% 50% / 0.3), transparent 70%), var(--c-bg-2, #111);
+  }
+  .cart-drawer__lines :global(.cart-line__media svg) { width: 60%; }
+  .cart-drawer__lines :global(.cart-line__media img) { width: 100%; height: 100%; object-fit: cover; }
+  .cart-drawer__lines :global(.cart-line__name) { margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--c-text-1, #fff); line-height: 1.3; }
+  .cart-drawer__lines :global(.cart-line__variant) { margin: 2px 0 0; font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .cart-drawer__lines :global(.cart-line__stepper) {
+    display: inline-flex;
+    align-items: center;
+    margin-top: var(--sp-2, 0.5rem);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    border-radius: var(--r-full, 9999px);
+  }
+  .cart-drawer__lines :global(.cart-line__step) {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: var(--r-full, 9999px);
+  }
+  .cart-drawer__lines :global(.cart-line__step:hover) { background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+  .cart-drawer__lines :global(.cart-line__step:disabled) { opacity: 0.35; cursor: not-allowed; }
+  .cart-drawer__lines :global(.cart-line__count) { min-width: 24px; text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .cart-drawer__lines :global(.cart-line__side) { display: grid; justify-items: end; gap: var(--sp-2, 0.5rem); }
+  .cart-drawer__lines :global(.cart-line__price) { margin: 0; font-weight: 800; color: var(--c-text-1, #fff); font-size: 0.9rem; }
+  .cart-drawer__lines :global(.cart-line__remove) {
+    min-height: 32px;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    font: inherit;
+    font-size: 0.78rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .cart-drawer__lines :global(.cart-line__remove:hover) { color: var(--c-danger, #f87171); }
+  @keyframes cd-in { from { opacity: 0; transform: translateY(6px); } }
+
+  .cart-drawer__empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-8, 2rem);
+    text-align: center;
+  }
+  .cart-drawer__empty[hidden] { display: none; }
+  .cart-drawer__empty svg { color: var(--c-primary-light, #d4a017); margin-bottom: var(--sp-2, 0.5rem); }
+  .cart-drawer__empty p { margin: 0; font-size: 0.9rem; }
+  .cart-drawer__empty strong { color: var(--c-text-1, #fff); font-size: 1rem; }
+
+  .cart-drawer__foot {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-5, 1.25rem) var(--sp-6, 1.5rem) var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.015);
+  }
+  .cart-drawer__foot[hidden] { display: none; }
+  .cart-drawer__row { display: flex; justify-content: space-between; align-items: baseline; color: var(--c-text-1, #fff); }
+  .cart-drawer__row strong { font-size: 1.2rem; }
+  .cart-drawer__note { margin: 0; font-size: 0.78rem; }
+  .cart-drawer__checkout,
+  .cart-drawer__ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 50px;
+    border-radius: var(--r-full, 9999px);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+  .cart-drawer__checkout { background: var(--c-primary-light, #d4a017); color: var(--c-on-primary, #050505); }
+  .cart-drawer__checkout:hover { filter: brightness(1.08); color: var(--c-on-primary, #050505); }
+  .cart-drawer__ghost { margin-top: var(--sp-3, 0.75rem); padding: 0 var(--sp-6, 1.5rem); min-height: 44px; border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.14); background: transparent; color: var(--c-text-1, #fff); }
+  .cart-drawer :is(a, button):focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cart-drawer__panel, .cart-drawer__backdrop, .cart-drawer__ship-bar span { transition: none; }
+    .cart-drawer__lines :global(.cart-line) { animation: none; }
+  }
+</style>

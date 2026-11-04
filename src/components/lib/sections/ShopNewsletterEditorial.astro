@@ -1,0 +1,128 @@
+---
+/**
+ * ShopNewsletterEditorial — Oversized editorial sign-up: large serif statement on one side,
+ * underline-style email field, consent note and inline success/error messages on the other.
+ *
+ * @param {string} title - Statement (use *asterisks* for italics). Default 'Letters from the *studio*'.
+ * @param {string} text - Supporting copy.
+ * @param {string} action - Form action. With '#' the form validates and confirms locally. Default '#'.
+ * @param {string} buttonLabel - Submit label. Default 'Subscribe'.
+ * @param {string} consent - Small print under the field.
+ * @param {string} successText - Message after a valid submit.
+ * @param {string} variant - Style (plain|inverted|accent). Default 'plain'.
+ * @param {string} size - Type scale (sm|md|lg). Default 'md'.
+ * @param {string} id - Base id. Default 'shop-news'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: labelled email input with autocomplete, aria-invalid + described error,
+ * messages in a polite live region.
+ */
+interface Props {
+  title?: string;
+  text?: string;
+  action?: string;
+  buttonLabel?: string;
+  consent?: string;
+  successText?: string;
+  variant?: 'plain' | 'inverted' | 'accent';
+  size?: 'sm' | 'md' | 'lg';
+  id?: string;
+  className?: string;
+}
+
+const {
+  title = 'Letters from the *studio*',
+  text = 'One email a month: new pieces before anyone else, the people who make them, and 10% off your first order.',
+  action = '#',
+  buttonLabel = 'Subscribe',
+  consent = 'By subscribing you accept our privacy policy. Unsubscribe in one click.',
+  successText = 'Thank you — your first letter is on its way.',
+  variant = 'plain',
+  size = 'md',
+  id = 'shop-news',
+  className = '',
+} = Astro.props;
+
+const parts = title.split(/\*(.+?)\*/g);
+---
+
+<div class="sne-cq">
+<section class:list={['sne', `sne--${variant}`, `sne--${size}`, className]} aria-labelledby={`${id}-title`}>
+  <h2 class="sne__title" id={`${id}-title`}>{parts.map((p, i) => (i % 2 ? <em>{p}</em> : p))}</h2>
+  <div class="sne__side">
+    {text && <p class="sne__text">{text}</p>}
+    <form class="sne__form" action={action} method="post" novalidate data-news data-success={successText}>
+      <label class="sne__label" for={`${id}-email`}>Email address</label>
+      <div class="sne__field">
+        <input id={`${id}-email`} name="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-describedby={`${id}-msg`} />
+        <button type="submit">{buttonLabel} <span aria-hidden="true">→</span></button>
+      </div>
+      <p class="sne__msg" id={`${id}-msg`} aria-live="polite" data-msg></p>
+      {consent && <p class="sne__consent">{consent}</p>}
+    </form>
+  </div>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-news]:not([data-bound])').forEach((form) => {
+    form.dataset.bound = '';
+    const input = form.querySelector<HTMLInputElement>('input[type="email"]')!;
+    const msg = form.querySelector<HTMLElement>('[data-msg]')!;
+    form.addEventListener('submit', (e) => {
+      const local = form.getAttribute('action') === '#';
+      if (!input.checkValidity()) {
+        e.preventDefault();
+        input.setAttribute('aria-invalid', 'true');
+        msg.dataset.state = 'error';
+        msg.textContent = 'Please enter a valid email address.';
+        input.focus();
+        return;
+      }
+      input.removeAttribute('aria-invalid');
+      if (local) {
+        e.preventDefault();
+        msg.dataset.state = 'ok';
+        msg.textContent = form.dataset.success || 'Subscribed.';
+        form.reset();
+      }
+    });
+  });
+</script>
+
+<style>
+  .sne-cq { container-type: inline-size; }
+  .sne {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: clamp(1.5rem, 5vw, 5rem);
+    align-items: end;
+    padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 3vw, 2.5rem);
+    color: var(--c-text-1, #fff);
+  }
+  .sne--inverted { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .sne--accent { background: var(--shop-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .sne__title { margin: 0; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: clamp(2.6rem, 7vw, 6.5rem); font-weight: 400; letter-spacing: -0.045em; line-height: 0.92; text-wrap: balance; }
+  .sne--sm .sne__title { font-size: clamp(2rem, 5vw, 4rem); }
+  .sne--lg .sne__title { font-size: clamp(3rem, 9vw, 8.5rem); }
+  .sne__title em { font-style: italic; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .sne--accent .sne__title em { color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.12em; }
+  .sne__text { margin: 0 0 var(--sp-6, 1.5rem); max-width: 26rem; line-height: 1.65; opacity: 0.8; }
+  .sne__label { display: block; margin-bottom: var(--sp-2, 0.5rem); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }
+  .sne__field { display: flex; align-items: stretch; border-bottom: 1.5px solid currentColor; }
+  .sne__field input { flex: 1; min-width: 0; min-height: 56px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: 1.15rem; outline: none; }
+  .sne__field input::placeholder { color: currentColor; opacity: 0.45; }
+  .sne__field input[aria-invalid='true'] { color: var(--c-danger, #f87171); }
+  .sne__field button { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0 0 0 var(--sp-4, 1rem); border: 0; background: none; color: inherit; font: inherit; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+  .sne__field button:hover { color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .sne--accent .sne__field button:hover { color: inherit; text-decoration: underline; }
+  .sne__field:focus-within { border-bottom-width: 2.5px; }
+  .sne__field button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  .sne__msg { min-height: 1.4em; margin: var(--sp-2, 0.5rem) 0 0; font-size: 0.85rem; }
+  .sne__msg[data-state='error'] { color: var(--c-danger, #f87171); }
+  .sne__msg[data-state='ok'] { color: var(--c-success, #34d399); }
+  .sne--accent .sne__msg, .sne--inverted .sne__msg { color: inherit; font-weight: 600; }
+  .sne__consent { margin: var(--sp-2, 0.5rem) 0 0; font-size: 0.75rem; opacity: 0.6; }
+
+  @container (max-width: 860px) { .sne { grid-template-columns: 1fr; } }
+</style>

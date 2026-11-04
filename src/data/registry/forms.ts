@@ -19,6 +19,7 @@ export const forms: ComponentDoc[] = [
  * @param {string} placeholder - Passed placeholder. Default is ' '. (Space is needed for CSS :placeholder-shown to work).
  * @param {boolean} required - HTML required attribute parameter. Default is false.
  * @param {string} name - HTML input name binding.
+ * @param {string} autocomplete - HTML autocomplete hint (e.g. 'email', 'given-name'). Default is 'off'.
  */
 interface Props { 
   label: string; 
@@ -27,13 +28,14 @@ interface Props {
   placeholder?: string; 
   required?: boolean; 
   name?: string; 
+  autocomplete?: string; 
 }
 
-const { label, id, type = 'text', placeholder = ' ', required = false, name } = Astro.props;
+const { label, id, type = 'text', placeholder = ' ', required = false, name, autocomplete = 'off' } = Astro.props;
 ---
 
 <div class="anim-input-wrap">
-  <input {id} {name} {type} {placeholder} {required} class="anim-input" autocomplete="off" />
+  <input {id} {name} {type} {placeholder} {required} class="anim-input" autocomplete={autocomplete} />
   <label for={id} class="anim-input-label">{label}</label>
 </div>
 
@@ -412,7 +414,9 @@ const { label, name, options = [], horizontal = false } = Astro.props;
   
   .radio-item { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; color: var(--c-text-2, #94a3b8); transition: 0.2s; user-select: none; }
   
-  .radio-item input { appearance: none; display: none; }
+  .radio-item input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+  .radio-item { position: relative; }
+  .radio-item input:focus-visible + .radio-circle { outline: 2px solid var(--c-primary-light, #818cf8); outline-offset: 2px; }
   
   .radio-circle { 
     width: 20px; height: 20px; 

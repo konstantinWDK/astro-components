@@ -1,0 +1,133 @@
+---
+/**
+ * GuestProfileCard — CRM profile for a guest or customer: avatar, loyalty tier, contact details,
+ * lifetime stats, preference tags, upcoming stay and internal notes.
+ *
+ * @param {{name: string, email?: string, phone?: string, country?: string, since?: string}} guest - Identity and contact.
+ * @param {string} tier - Loyalty tier label (optional). Default 'Gold'.
+ * @param {Array<{label: string, value: string}>} stats - Lifetime figures (stays, nights, spend…).
+ * @param {string[]} preferences - Preference tags.
+ * @param {{room: string, dates: string, status?: string}} upcoming - Next stay (optional).
+ * @param {string[]} notes - Staff notes (optional).
+ * @param {Array<{label: string, href?: string, primary?: boolean}>} actions - Buttons in the header.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: h2 with the guest name; contact items are real mailto/tel links; stats are a
+ * description list; tags are a plain list.
+ */
+import { appIcon, initials, hueFrom } from './app-icons';
+
+interface Props {
+  guest?: { name: string; email?: string; phone?: string; country?: string; since?: string };
+  tier?: string;
+  stats?: Array<{ label: string; value: string }>;
+  preferences?: string[];
+  upcoming?: { room: string; dates: string; status?: string };
+  notes?: string[];
+  actions?: Array<{ label: string; href?: string; primary?: boolean }>;
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  guest = { name: 'Elena Duarte', email: 'elena.duarte@mail.com', phone: '+34 612 345 678', country: 'Spain', since: 'Mar 2022' },
+  tier = 'Gold',
+  stats = [{ label: 'Stays', value: '7' }, { label: 'Nights', value: '19' }, { label: 'Lifetime spend', value: '€4,820' }, { label: 'Avg. rating', value: '4.9' }],
+  preferences = ['High floor', 'Feather-free pillows', 'Late check-out', 'Sparkling water'],
+  upcoming = { room: '204 · Deluxe King', dates: 'Nov 4 – Nov 7', status: 'Confirmed' },
+  notes = ['Celebrating anniversary — prepare welcome card.', 'Prefers WhatsApp for contact.'],
+  actions = [{ label: 'Message' }, { label: 'New booking', primary: true }],
+  variant = 'card',
+  className = '',
+} = Astro.props;
+---
+
+<article class:list={['gp', `gp--${variant}`, className]} aria-labelledby="gp-name">
+  <header class="gp__head">
+    <span class="gp__avatar" style={`--h: ${hueFrom(guest.name)}`} aria-hidden="true">{initials(guest.name)}</span>
+    <div class="gp__id">
+      <h2 class="gp__name" id="gp-name">{guest.name}</h2>
+      <p class="gp__sub">
+        {tier && <span class="gp__tier"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><Fragment set:html={appIcon('star')} /></svg>{tier} member</span>}
+        {guest.since && <span>Guest since {guest.since}</span>}
+      </p>
+    </div>
+    <div class="gp__actions">
+      {actions.map((a) => {
+        const Tag = a.href ? 'a' : 'button';
+        return <Tag class:list={['gp__btn', { 'gp__btn--primary': a.primary }]} href={a.href} type={a.href ? undefined : 'button'}>{a.label}</Tag>;
+      })}
+    </div>
+  </header>
+
+  <ul class="gp__contact">
+    {guest.email && <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('mail')} /></svg><a href={`mailto:${guest.email}`}>{guest.email}</a></li>}
+    {guest.phone && <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('phone')} /></svg><a href={`tel:${guest.phone.replace(/\s/g, '')}`}>{guest.phone}</a></li>}
+    {guest.country && <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('plane')} /></svg>{guest.country}</li>}
+  </ul>
+
+  <dl class="gp__stats">
+    {stats.map((s) => <div><dt>{s.label}</dt><dd>{s.value}</dd></div>)}
+  </dl>
+
+  {upcoming && (
+    <div class="gp__block">
+      <h3>Upcoming stay</h3>
+      <p class="gp__stay"><strong>{upcoming.room}</strong><span>{upcoming.dates}</span>{upcoming.status && <em>{upcoming.status}</em>}</p>
+    </div>
+  )}
+  {preferences.length > 0 && (
+    <div class="gp__block">
+      <h3>Preferences</h3>
+      <ul class="gp__tags">{preferences.map((p) => <li>{p}</li>)}</ul>
+    </div>
+  )}
+  {notes.length > 0 && (
+    <div class="gp__block">
+      <h3>Staff notes</h3>
+      <ul class="gp__notes">{notes.map((n) => <li>{n}</li>)}</ul>
+    </div>
+  )}
+</article>
+
+<style>
+  .gp { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-5, 1.25rem); min-width: 0; }
+  .gp--card { padding: var(--sp-6, 1.5rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .gp__head { display: flex; align-items: center; gap: var(--sp-4, 1rem); }
+  .gp__avatar { display: grid; place-items: center; flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px; background: hsl(var(--h) 50% 45%); color: #fff; font-size: 1.05rem; font-weight: 800; }
+  .gp__id { flex: 1; min-width: 0; }
+  .gp__name { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: var(--c-text-1, #fff); }
+  .gp__sub { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 0; font-size: 0.8rem; color: var(--c-text-3, #737373); }
+  .gp__tier { display: inline-flex; align-items: center; gap: 4px; color: var(--c-warning, #fbbf24); font-weight: 700; }
+  .gp__actions { display: flex; gap: var(--sp-2, 0.5rem); }
+  .gp__btn { display: inline-flex; align-items: center; min-height: 38px; padding: 0 0.85rem; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: transparent; color: var(--c-text-1, #fff); font: inherit; font-size: 0.82rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .gp__btn:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); color: var(--c-text-1, #fff); }
+  .gp__btn--primary { border-color: transparent; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .gp__btn--primary:hover { background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); filter: brightness(1.08); }
+  .gp :is(a, button):focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .gp__contact { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem) var(--sp-5, 1.25rem); margin: 0; padding: 0; list-style: none; font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+  .gp__contact li { display: inline-flex; align-items: center; gap: 6px; }
+  .gp__contact a { color: var(--c-text-1, #fff); text-decoration: none; }
+  .gp__contact a:hover { text-decoration: underline; }
+  .gp__stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; border-radius: 12px; overflow: hidden; background: var(--c-border, rgba(255, 255, 255, 0.08)); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .gp__stats div { display: flex; flex-direction: column-reverse; padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); background: var(--c-bg-1, #0a0a0a); }
+  .gp__stats dt { font-size: 0.72rem; color: var(--c-text-3, #737373); }
+  .gp__stats dd { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .gp__block h3 { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-3, #737373); }
+  .gp__stay { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-radius: 10px; background: color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 8%, transparent); font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+  .gp__stay strong { color: var(--c-text-1, #fff); }
+  .gp__stay em { margin-left: auto; font-style: normal; font-size: 0.75rem; font-weight: 700; color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .gp__tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .gp__tags li { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); font-size: 0.78rem; color: var(--c-text-1, #fff); }
+  .gp__notes { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .gp__notes li { padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border-left: 2px solid var(--c-warning, #fbbf24); background: rgb(var(--ink-rgb, 255 255 255) / 0.03); font-size: 0.82rem; color: var(--c-text-2, #a3a3a3); }
+
+  @container (max-width: 560px) {
+    .gp__head { flex-wrap: wrap; }
+    .gp__actions { width: 100%; }
+    .gp__btn { flex: 1; justify-content: center; }
+    .gp__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

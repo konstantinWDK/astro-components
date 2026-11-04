@@ -1,0 +1,103 @@
+---
+/**
+ * ShopCategoryHero — Catalogue page header: breadcrumb, oversized category title with item
+ * count, intro text, sub-category links and a strip of three visuals.
+ *
+ * @param {Array<{label: string, href?: string}>} breadcrumb - Trail; the last item is the current page.
+ * @param {string} title - Category name. Default 'Clothing'.
+ * @param {number} count - Number of products (superscript). Optional.
+ * @param {string} text - Intro paragraph.
+ * @param {Array<{label: string, href: string, active?: boolean}>} links - Sub-category links.
+ * @param {Array<{icon?: string, hue?: number, image?: string}>} visuals - Up to three images (empty hides the strip).
+ * @param {string} variant - Layout (split|centered). Default 'split'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: breadcrumb nav with aria-current; one h1; visuals are decorative.
+ */
+import ProductMedia from '../ecommerce/ProductMedia.astro';
+
+interface Props {
+  breadcrumb?: Array<{ label: string; href?: string }>;
+  title?: string;
+  count?: number;
+  text?: string;
+  links?: Array<{ label: string; href: string; active?: boolean }>;
+  visuals?: Array<{ icon?: string; hue?: number; image?: string }>;
+  variant?: 'split' | 'centered';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  breadcrumb = [{ label: 'Home', href: '#' }, { label: 'Shop', href: '#' }, { label: 'Clothing' }],
+  title = 'Clothing',
+  count = 24,
+  text = 'Overshirts, knitwear and outerwear cut from linen, merino and organic cotton. Designed to be layered, washed and worn for a decade.',
+  links = [
+    { label: 'All', href: '#', active: true },
+    { label: 'Overshirts', href: '#' },
+    { label: 'Knitwear', href: '#' },
+    { label: 'Outerwear', href: '#' },
+  ],
+  visuals = [{ icon: 'shirt', hue: 30 }, { icon: 'jacket', hue: 22 }, { icon: 'sneaker', hue: 12 }],
+  variant = 'split',
+  size = 'md',
+  className = '',
+} = Astro.props;
+---
+
+<header class:list={['sch', `sch--${variant}`, `sch--${size}`, className]}>
+  <nav class="sch__crumbs" aria-label="Breadcrumb">
+    <ol>
+      {breadcrumb.map((b, i) => (
+        <li>{b.href && i < breadcrumb.length - 1 ? <a href={b.href}>{b.label}</a> : <span aria-current="page">{b.label}</span>}</li>
+      ))}
+    </ol>
+  </nav>
+  <div class="sch__main">
+    <h1 class="sch__title">{title}{count !== undefined && <sup>{count}</sup>}</h1>
+    <div class="sch__side">
+      {text && <p class="sch__text">{text}</p>}
+      {links.length > 0 && (
+        <ul class="sch__links">
+          {links.map((l) => <li><a href={l.href} aria-current={l.active ? 'page' : undefined}>{l.label}</a></li>)}
+        </ul>
+      )}
+    </div>
+  </div>
+  {visuals.length > 0 && (
+    <div class="sch__strip" aria-hidden="true">
+      {visuals.slice(0, 3).map((v) => <ProductMedia image={v.image} icon={v.icon} hue={v.hue} ratio="16 / 9" variant="soft" size="md" />)}
+    </div>
+  )}
+</header>
+
+<style>
+  .sch { container-type: inline-size; --py: clamp(1.5rem, 4vw, 3rem); padding-block: var(--py); color: var(--c-text-1, #fff); }
+  .sch--sm { --py: 1rem; }
+  .sch--lg { --py: clamp(2.5rem, 6vw, 5rem); }
+  .sch__crumbs ol { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 var(--sp-6, 1.5rem); padding: 0; list-style: none; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .sch__crumbs li + li::before { content: '/'; margin-right: 0.5rem; opacity: 0.5; }
+  .sch__crumbs a { color: inherit; text-decoration: none; }
+  .sch__crumbs a:hover { color: var(--c-text-1, #fff); }
+  .sch__crumbs [aria-current] { color: var(--c-text-1, #fff); }
+  .sch__main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr); gap: clamp(1rem, 4vw, 4rem); align-items: end; }
+  .sch--centered .sch__main { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .sch__title { margin: 0; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: clamp(3.5rem, 12vw, 10rem); font-weight: 400; letter-spacing: -0.055em; line-height: 0.85; }
+  .sch__title sup { margin-left: 0.15em; font-family: var(--font-sans, system-ui); font-size: 0.14em; font-weight: 600; letter-spacing: 0; vertical-align: super; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .sch__text { margin: 0 0 var(--sp-4, 1rem); max-width: 30rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .sch__links { display: flex; flex-wrap: wrap; gap: 0 var(--sp-5, 1.25rem); margin: 0; padding: 0; list-style: none; }
+  .sch--centered .sch__links { justify-content: center; }
+  .sch__links a { display: inline-flex; align-items: center; min-height: 40px; font-size: 0.9rem; color: var(--c-text-2, #a3a3a3); text-decoration: none; border-bottom: 1px solid transparent; }
+  .sch__links a:hover, .sch__links a[aria-current] { color: var(--c-text-1, #fff); border-bottom-color: currentColor; }
+  .sch a:focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .sch__strip { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--sp-3, 0.75rem); margin-top: clamp(1.5rem, 4vw, 3rem); }
+  .sch__strip :global(.p-media) { height: 100%; border-radius: var(--r-sm, 2px); }
+
+  @container (max-width: 760px) {
+    .sch__main { grid-template-columns: 1fr; }
+    .sch__strip { grid-template-columns: 1fr 1fr; }
+    .sch__strip > :global(:first-child) { grid-column: 1 / -1; }
+  }
+</style>

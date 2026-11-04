@@ -1,0 +1,346 @@
+---
+/**
+ * DataTable — Client-side data table for SaaS apps: search, status filter chips, sortable
+ * columns, row selection with a bulk-action bar, pagination and typed cells
+ * (text, person, status, money, date, number, tags).
+ *
+ * @param {string} title - Card title (optional).
+ * @param {Array<{key: string, label: string, type?: 'text'|'person'|'status'|'money'|'date'|'number'|'tags', align?: 'left'|'right', sortable?: boolean}>} columns - Column definitions.
+ * @param {Array<Record<string, any>>} rows - Row data; `person` cells take `{ name, sub? }`, `status` cells take a string.
+ * @param {Record<string, 'success'|'warning'|'danger'|'info'|'default'>} statusTones - Status → tone map.
+ * @param {string} filterKey - Column used for the filter chips (optional).
+ * @param {boolean} selectable - Show row checkboxes and the bulk bar. Default true.
+ * @param {string[]} bulkActions - Bulk bar buttons. Default ['Export', 'Send email'].
+ * @param {number} pageSize - Rows per page. Default 8.
+ * @param {string} searchPlaceholder - Search placeholder. Default 'Search…'.
+ * @param {string} currency - ISO currency for money cells. Default 'EUR'.
+ * @param {string} locale - Number/date locale. Default 'en-GB'.
+ * @param {string} emptyText - Shown when nothing matches. Default 'No results match your filters.'
+ * @param {string} id - Table id (unique per page). Default 'data-table'.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} density - Row height (compact|comfortable). Default 'comfortable'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: real <table> with a caption; sortable headers are buttons inside <th> with
+ * aria-sort; checkboxes have row labels; result counts and page changes are announced politely.
+ */
+import { initials, hueFrom } from './app-icons';
+
+type CellType = 'text' | 'person' | 'status' | 'money' | 'date' | 'number' | 'tags';
+interface Column { key: string; label: string; type?: CellType; align?: 'left' | 'right'; sortable?: boolean }
+interface Props {
+  title?: string;
+  columns?: Column[];
+  rows?: Array<Record<string, any>>;
+  statusTones?: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'>;
+  filterKey?: string;
+  selectable?: boolean;
+  bulkActions?: string[];
+  pageSize?: number;
+  searchPlaceholder?: string;
+  currency?: string;
+  locale?: string;
+  emptyText?: string;
+  id?: string;
+  variant?: 'card' | 'plain';
+  density?: 'compact' | 'comfortable';
+  className?: string;
+}
+
+const {
+  title = 'Reservations',
+  columns = [
+    { key: 'ref', label: 'Booking', sortable: true },
+    { key: 'guest', label: 'Guest', type: 'person', sortable: true },
+    { key: 'room', label: 'Room', sortable: true },
+    { key: 'checkIn', label: 'Check-in', type: 'date', sortable: true },
+    { key: 'nights', label: 'Nights', type: 'number', align: 'right', sortable: true },
+    { key: 'status', label: 'Status', type: 'status' },
+    { key: 'total', label: 'Total', type: 'money', align: 'right', sortable: true },
+  ],
+  rows = [
+    { ref: 'MR-2841', guest: { name: 'Elena Duarte', sub: 'Booking.com' }, room: '204 · Deluxe', checkIn: '2026-11-04', nights: 3, status: 'Confirmed', total: 612 },
+    { ref: 'MR-2840', guest: { name: 'James Whitfield', sub: 'Direct' }, room: '310 · Suite', checkIn: '2026-11-04', nights: 2, status: 'Checked in', total: 890 },
+    { ref: 'MR-2839', guest: { name: 'Aiko Tanaka', sub: 'Expedia' }, room: '108 · Standard', checkIn: '2026-11-05', nights: 4, status: 'Pending', total: 476 },
+    { ref: 'MR-2838', guest: { name: 'Marco Bellini', sub: 'Direct' }, room: '212 · Deluxe', checkIn: '2026-11-06', nights: 1, status: 'Cancelled', total: 0 },
+  ],
+  statusTones = { Confirmed: 'info', 'Checked in': 'success', 'Checked out': 'default', Pending: 'warning', Cancelled: 'danger', 'No show': 'danger' },
+  filterKey = 'status',
+  selectable = true,
+  bulkActions = ['Export', 'Send email'],
+  pageSize = 8,
+  searchPlaceholder = 'Search…',
+  currency = 'EUR',
+  locale = 'en-GB',
+  emptyText = 'No results match your filters.',
+  id = 'data-table',
+  variant = 'card',
+  density = 'comfortable',
+  className = '',
+} = Astro.props;
+
+const money = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
+const date = (v: string) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${v}T00:00:00Z`));
+const filters = filterKey ? Array.from(new Set(rows.map((r) => String(r[filterKey])))) : [];
+const searchText = (r: Record<string, any>) =>
+  columns.map((c) => (c.type === 'person' ? `${r[c.key]?.name ?? ''} ${r[c.key]?.sub ?? ''}` : Array.isArray(r[c.key]) ? r[c.key].join(' ') : r[c.key] ?? '')).join(' ').toLowerCase();
+const sortValue = (c: Column, v: any) => (c.type === 'person' ? v?.name ?? '' : v ?? '');
+---
+
+<section class:list={['dt', `dt--${variant}`, `dt--${density}`, className]} data-table={id} data-page-size={pageSize} aria-labelledby={`${id}-title`}>
+  <div class="dt__toolbar">
+    <h2 class="dt__title" id={`${id}-title`}>{title} <span class="dt__count" aria-live="polite"><span data-count>{rows.length}</span></span></h2>
+    <div class="dt__tools">
+      <label class="dt__search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span class="sr-only">{searchPlaceholder}</span>
+        <input type="search" placeholder={searchPlaceholder} data-search />
+      </label>
+    </div>
+  </div>
+  {filters.length > 1 && (
+    <div class="dt__chips" role="group" aria-label="Filter by status">
+      <button type="button" class="dt__chip" aria-pressed="true" data-filter="">All <span>{rows.length}</span></button>
+      {filters.map((f) => (
+        <button type="button" class="dt__chip" aria-pressed="false" data-filter={f}>{f} <span>{rows.filter((r) => String(r[filterKey]) === f).length}</span></button>
+      ))}
+    </div>
+  )}
+
+  {selectable && (
+    <div class="dt__bulk" hidden data-bulk>
+      <span><strong data-selected>0</strong> selected</span>
+      {bulkActions.map((a) => <button type="button" class="dt__bulk-btn">{a}</button>)}
+      <button type="button" class="dt__bulk-clear" data-clear>Clear</button>
+    </div>
+  )}
+
+  <div class="dt__scroll" tabindex="0" role="region" aria-labelledby={`${id}-title`}>
+    <table class="dt__table">
+      <caption class="sr-only">{title}</caption>
+      <thead>
+        <tr>
+          {selectable && <th class="dt__check" scope="col"><input type="checkbox" aria-label="Select all rows on this page" data-all /></th>}
+          {columns.map((c) => (
+            <th scope="col" class:list={[{ 'dt__right': c.align === 'right' }]} aria-sort={c.sortable ? 'none' : undefined}>
+              {c.sortable ? (
+                <button type="button" class="dt__sort" data-sort={c.key} data-type={c.type ?? 'text'}>
+                  {c.label}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>
+                </button>
+              ) : c.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody data-body>
+        {rows.map((r, i) => (
+          <tr data-row data-search={searchText(r)} data-filter-value={filterKey ? String(r[filterKey]) : ''} data-index={i} {...Object.fromEntries(columns.map((c) => [`data-v-${c.key.toLowerCase()}`, String(sortValue(c, r[c.key]))]))}>
+            {selectable && <td class="dt__check"><input type="checkbox" aria-label={`Select ${columns[0] ? sortValue(columns[0], r[columns[0].key]) : `row ${i + 1}`}`} data-select /></td>}
+            {columns.map((c) => {
+              const v = r[c.key];
+              return (
+                <td class:list={[{ 'dt__right': c.align === 'right' }]}>
+                  {c.type === 'person' ? (
+                    <span class="dt__person">
+                      <span class="dt__avatar" style={`--h: ${hueFrom(v?.name ?? '')}`} aria-hidden="true">{initials(v?.name ?? '?')}</span>
+                      <span><strong>{v?.name}</strong>{v?.sub && <small>{v.sub}</small>}</span>
+                    </span>
+                  ) : c.type === 'status' ? (
+                    <span class:list={['dt__status', `dt__status--${statusTones[v] ?? 'default'}`]}><i aria-hidden="true"></i>{v}</span>
+                  ) : c.type === 'money' ? money(Number(v) || 0)
+                    : c.type === 'date' ? <time datetime={v}>{date(v)}</time>
+                    : c.type === 'tags' ? <span class="dt__tags">{(v ?? []).map((tg: string) => <span>{tg}</span>)}</span>
+                    : v}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p class="dt__empty" hidden data-empty>{emptyText}</p>
+  </div>
+
+  <div class="dt__foot">
+    <p class="dt__range" aria-live="polite" data-range></p>
+    <div class="dt__pager">
+      <button type="button" class="dt__page" aria-label="Previous page" data-prev>‹</button>
+      <span class="dt__pages" data-pages></span>
+      <button type="button" class="dt__page" aria-label="Next page" data-next>›</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-table]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const body = root.querySelector<HTMLTableSectionElement>('[data-body]')!;
+    const rows = Array.from(body.querySelectorAll<HTMLTableRowElement>('[data-row]'));
+    const size = Number(root.dataset.pageSize) || 8;
+    const search = root.querySelector<HTMLInputElement>('[data-search]');
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const sorters = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-sort]'));
+    const all = root.querySelector<HTMLInputElement>('[data-all]');
+    const bulk = root.querySelector<HTMLElement>('[data-bulk]');
+    const pagesEl = root.querySelector<HTMLElement>('[data-pages]')!;
+    let query = '';
+    let filter = '';
+    let sortKey = '';
+    let sortDir = 1;
+    let page = 0;
+
+    function visibleRows() {
+      return rows.filter((r) => (!query || (r.dataset.search || '').includes(query)) && (!filter || r.dataset.filterValue === filter));
+    }
+
+    function render() {
+      let list = visibleRows();
+      if (sortKey) {
+        const type = sorters.find((s) => s.dataset.sort === sortKey)?.dataset.type;
+        const attr = `v${sortKey.toLowerCase().replace(/^./, (c) => c.toUpperCase())}`;
+        list = [...list].sort((a, b) => {
+          const A = a.dataset[attr] ?? '', B = b.dataset[attr] ?? '';
+          const cmp = type === 'money' || type === 'number' ? Number(A) - Number(B) : A.localeCompare(B);
+          return cmp * sortDir;
+        });
+      } else {
+        list = [...list].sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
+      }
+      const pages = Math.max(1, Math.ceil(list.length / size));
+      page = Math.min(page, pages - 1);
+      const shown = list.slice(page * size, page * size + size);
+      rows.forEach((r) => { r.hidden = true; });
+      body.append(...list);
+      shown.forEach((r) => { r.hidden = false; });
+      root.querySelector('[data-count]')!.textContent = String(list.length);
+      root.querySelector<HTMLElement>('[data-empty]')!.hidden = list.length > 0;
+      root.querySelector('[data-range]')!.textContent = list.length ? `${page * size + 1}–${page * size + shown.length} of ${list.length}` : '';
+      pagesEl.replaceChildren(...Array.from({ length: pages }, (_, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'dt__page';
+        b.textContent = String(i + 1);
+        b.setAttribute('aria-label', `Page ${i + 1}`);
+        if (i === page) b.setAttribute('aria-current', 'page');
+        b.addEventListener('click', () => { page = i; render(); });
+        return b;
+      }));
+      root.querySelector<HTMLButtonElement>('[data-prev]')!.disabled = page === 0;
+      root.querySelector<HTMLButtonElement>('[data-next]')!.disabled = page >= pages - 1;
+      syncSelection();
+    }
+
+    function syncSelection() {
+      const boxes = rows.map((r) => r.querySelector<HTMLInputElement>('[data-select]')).filter(Boolean) as HTMLInputElement[];
+      const selected = boxes.filter((b) => b.checked);
+      rows.forEach((r) => r.classList.toggle('is-selected', Boolean(r.querySelector<HTMLInputElement>('[data-select]')?.checked)));
+      if (bulk) {
+        bulk.hidden = selected.length === 0;
+        bulk.querySelector('[data-selected]')!.textContent = String(selected.length);
+      }
+      if (all) {
+        const pageBoxes = rows.filter((r) => !r.hidden).map((r) => r.querySelector<HTMLInputElement>('[data-select]')!).filter(Boolean);
+        all.checked = pageBoxes.length > 0 && pageBoxes.every((b) => b.checked);
+        all.indeterminate = !all.checked && pageBoxes.some((b) => b.checked);
+      }
+    }
+
+    search?.addEventListener('input', () => { query = search.value.trim().toLowerCase(); page = 0; render(); });
+    chips.forEach((c) => c.addEventListener('click', () => {
+      filter = c.dataset.filter || '';
+      chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+      page = 0;
+      render();
+    }));
+    sorters.forEach((s) => s.addEventListener('click', () => {
+      if (sortKey === s.dataset.sort) sortDir = sortDir === 1 ? -1 : sortDir === -1 ? 0 : 1;
+      else { sortKey = s.dataset.sort || ''; sortDir = 1; }
+      if (sortDir === 0) sortKey = '';
+      sorters.forEach((x) => x.closest('th')?.setAttribute('aria-sort', x === s && sortKey ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'));
+      render();
+    }));
+    root.querySelector('[data-prev]')?.addEventListener('click', () => { page = Math.max(0, page - 1); render(); });
+    root.querySelector('[data-next]')?.addEventListener('click', () => { page += 1; render(); });
+    root.addEventListener('change', (e) => { if ((e.target as HTMLElement).matches('[data-select]')) syncSelection(); });
+    all?.addEventListener('change', () => {
+      rows.filter((r) => !r.hidden).forEach((r) => { const b = r.querySelector<HTMLInputElement>('[data-select]'); if (b) b.checked = all.checked; });
+      syncSelection();
+    });
+    root.querySelector('[data-clear]')?.addEventListener('click', () => {
+      rows.forEach((r) => { const b = r.querySelector<HTMLInputElement>('[data-select]'); if (b) b.checked = false; });
+      syncSelection();
+    });
+    render();
+  });
+</script>
+
+<style>
+  .dt { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3, 0.75rem); min-width: 0; }
+  .dt--card { padding: var(--sp-5, 1.25rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .dt__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); }
+  .dt__title { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .dt__count { padding: 1px 8px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); }
+  .dt__search { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 0.7rem; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); color: var(--c-text-3, #737373); }
+  .dt__search:focus-within { border-color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .dt__search input { width: 200px; border: 0; outline: 0; background: none; color: var(--c-text-1, #fff); font: inherit; font-size: 0.85rem; }
+
+  .dt__chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .dt__chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 0.7rem; border-radius: 999px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); background: transparent; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.78rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .dt__chip span { color: var(--c-text-3, #737373); }
+  .dt__chip[aria-pressed='true'] { background: var(--c-text-1, #fff); border-color: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .dt__chip[aria-pressed='true'] span { color: inherit; opacity: 0.7; }
+
+  .dt__bulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem); padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border-radius: 10px; background: color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 12%, transparent); font-size: 0.82rem; color: var(--c-text-1, #fff); }
+  .dt__bulk[hidden] { display: none; }
+  .dt__bulk > span { margin-right: auto; }
+  .dt__bulk-btn, .dt__bulk-clear { min-height: 32px; padding: 0 0.7rem; border-radius: 8px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.15)); background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .dt__bulk-clear { background: transparent; border-color: transparent; text-decoration: underline; }
+
+  .dt__scroll { overflow-x: auto; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .dt--plain .dt__scroll { border: 0; }
+  .dt__table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .dt__table th { position: sticky; top: 0; padding: 0 var(--sp-3, 0.75rem); height: 40px; background: rgb(var(--ink-rgb, 255 255 255) / 0.03); color: var(--c-text-3, #737373); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-align: left; text-transform: uppercase; white-space: nowrap; border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .dt__table td { padding: 0 var(--sp-3, 0.75rem); height: 56px; color: var(--c-text-2, #a3a3a3); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.06)); white-space: nowrap; }
+  .dt--compact .dt__table td { height: 44px; }
+  .dt__table tbody tr:last-child td { border-bottom: 0; }
+  .dt__table tbody tr:hover td { background: rgb(var(--ink-rgb, 255 255 255) / 0.025); }
+  .dt__table tbody tr.is-selected td { background: color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 8%, transparent); }
+  .dt__table tr[hidden] { display: none; }
+  .dt__right { text-align: right !important; font-variant-numeric: tabular-nums; }
+  .dt__check { width: 44px; }
+  .dt__check input { width: 16px; height: 16px; accent-color: var(--app-accent, var(--c-primary-light, #d4a017)); cursor: pointer; }
+  .dt__sort { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+  .dt__sort svg { opacity: 0.4; }
+  th[aria-sort='ascending'] .dt__sort, th[aria-sort='descending'] .dt__sort { color: var(--c-text-1, #fff); }
+  th[aria-sort='ascending'] .dt__sort svg, th[aria-sort='descending'] .dt__sort svg { opacity: 1; color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .dt__person { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); }
+  .dt__person strong { display: block; color: var(--c-text-1, #fff); font-weight: 600; }
+  .dt__person small { display: block; font-size: 0.75rem; color: var(--c-text-3, #737373); }
+  .dt__avatar { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: hsl(var(--h) 50% 45%); color: #fff; font-size: 0.7rem; font-weight: 700; }
+  .dt__status { --tone: var(--c-text-2, #a3a3a3); display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--tone) 12%, transparent); color: var(--tone); font-size: 0.75rem; font-weight: 600; }
+  .dt__status i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .dt__status--success { --tone: var(--c-success, #34d399); }
+  .dt__status--warning { --tone: var(--c-warning, #fbbf24); }
+  .dt__status--danger { --tone: var(--c-danger, #f87171); }
+  .dt__status--info { --tone: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .dt__tags { display: inline-flex; gap: 4px; }
+  .dt__tags span { padding: 2px 7px; border-radius: 6px; background: rgb(var(--ink-rgb, 255 255 255) / 0.06); font-size: 0.72rem; }
+  .dt__empty { margin: 0; padding: var(--sp-10, 2.5rem); text-align: center; color: var(--c-text-3, #737373); }
+  .dt__empty[hidden] { display: none; }
+
+  .dt__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); }
+  .dt__range { margin: 0; font-size: 0.8rem; color: var(--c-text-3, #737373); }
+  .dt__pager, .dt__pages { display: flex; gap: 4px; }
+  .dt__pages :global(.dt__page), .dt__page { min-width: 34px; height: 34px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); border-radius: 8px; background: transparent; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.8rem; cursor: pointer; }
+  .dt__pages :global(.dt__page[aria-current='page']) { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-color: var(--c-text-1, #fff); }
+  .dt__page:disabled { opacity: 0.35; cursor: default; }
+  .dt :is(button, input, [tabindex='0']):focus-visible, .dt__pages :global(.dt__page:focus-visible) { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 560px) {
+    .dt__toolbar { flex-direction: column; align-items: stretch; }
+    .dt__search input { width: 100%; }
+    .dt__foot { flex-direction: column; }
+  }
+</style>

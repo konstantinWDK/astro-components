@@ -11,6 +11,8 @@ import { typography } from './typography';
 import { sections, sectionCategories, getSectionsByCategory, getSectionCategoryById } from './sections';
 import { charts } from './charts';
 import { chartsSvg } from './charts-svg';
+import { ecommerce } from './ecommerce';
+import { app } from './app';
 
 import { type ComponentDoc, type Category, type SectionCategory } from './types';
 export type { ComponentDoc, Category, SectionCategory };
@@ -27,6 +29,8 @@ export const categories: Category[] = [
   { id: 'data', name: 'Data Display', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`, description: 'Stats, tables, and visualization elements.' },
   { id: 'typography', name: 'Typography', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`, description: 'Headings and text patterns.' },
   { id: 'charts', name: 'Charts', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`, description: 'Charts and statistics: SVG line, bar, pie, funnel, heatmap, KPI and more.' },
+  { id: 'ecommerce', name: 'E-commerce', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>`, description: 'Shop building blocks: product cards, cart drawer, filters, product page and checkout.' },
+  { id: 'app', name: 'App & Dashboard', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M9 9h12"/></svg>`, description: 'SaaS building blocks: sidebar, topbar, data table, boards, settings and auth.' },
   { id: 'sections', name: 'Sections', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>`, description: 'Complete page sections: heroes, features, pricing, CTAs, and more.' },
 ];
 
@@ -42,6 +46,8 @@ export const components: ComponentDoc[] = [
   ...typography,
   ...charts,
   ...chartsSvg,
+  ...ecommerce,
+  ...app,
   ...sections,
 ];
 

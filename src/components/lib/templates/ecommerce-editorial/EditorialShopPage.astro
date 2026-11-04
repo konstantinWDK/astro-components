@@ -1,0 +1,112 @@
+---
+/**
+ * EditorialShopPage — Editorial catalogue: ShopCategoryHero, sticky FilterBar (chips, refine
+ * panel, sort, live count) and a grid of ProductCardMinimal with quick add.
+ *
+ * Usage (src/pages/shop.astro):
+ *   import { EditorialShopPage } from 'astro-component-kit/templates/ecommerce-editorial';
+ *   <EditorialShopPage />
+ * Category links use `?category=<id>`; pass `category` to build one static page per category.
+ *
+ * @param {EditorialStore} store - Catalogue and settings.
+ * @param {EditorialRoutes} routes - Page URLs.
+ * @param {string} category - Pre-selected category id.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} seedCart - Pre-fill the bag with demo items. Default false.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import EditorialLayout from './EditorialLayout.astro';
+import ShopCategoryHero from '../../sections/ShopCategoryHero.astro';
+import ShopNewsletterEditorial from '../../sections/ShopNewsletterEditorial.astro';
+import FilterBar from '../../ecommerce/FilterBar.astro';
+import ProductCardMinimal from '../../ecommerce/ProductCardMinimal.astro';
+import { formaStore, editorialRoutes, editorialProductHref, editorialCategoryHref, type EditorialStore, type EditorialRoutes } from './data';
+
+interface Props {
+  store?: EditorialStore;
+  routes?: EditorialRoutes;
+  category?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  seedCart?: boolean;
+  noindex?: boolean;
+}
+
+const { store = formaStore, routes = editorialRoutes, category, theme = 'light', seedCart = false, noindex = false } = Astro.props;
+
+const active = store.categories.find((c) => c.id === category);
+const maxPrice = Math.ceil(Math.max(...store.products.map((p) => p.price)) / 50) * 50;
+const colors = Array.from(new Map(store.products.flatMap((p) => p.colors ?? []).map((c) => [c.name, c])).values());
+const chips = store.categories.map((c) => ({ id: c.id, name: c.name, count: store.products.filter((p) => p.category === c.id).length }));
+const title = active?.name ?? 'All pieces';
+const text = active?.description ?? 'Everything we make, in one place — clothing, shoes, bags and objects for the home. Filter by category, colour or price.';
+---
+
+<EditorialLayout title={title} description={text} store={store} routes={routes} currentHref={routes.shop} theme={theme} seedCart={seedCart} noindex={noindex}>
+  <div class="forma-wrap">
+    <ShopCategoryHero
+      breadcrumb={[{ label: 'Home', href: routes.home }, { label: 'Shop', href: routes.shop }, ...(active ? [{ label: active.name }] : [])]}
+      title={title}
+      count={active ? chips.find((c) => c.id === active.id)?.count : store.products.length}
+      text={text}
+      links={[]}
+      visuals={[]}
+    />
+  </div>
+
+  <div class="forma-wrap">
+    <FilterBar
+      target="forma-grid"
+      categories={chips}
+      selected={active ? [active.id] : []}
+      maxPrice={maxPrice}
+      colors={colors}
+      total={store.products.length}
+      countLabel="pieces"
+      currency={store.currency}
+      locale={store.locale}
+    />
+  </div>
+
+  <div class="forma-wrap shop-grid-wrap">
+    <ul class="shop-grid" id="forma-grid">
+      {store.products.map((p, i) => (
+        <li><ProductCardMinimal product={p} href={editorialProductHref(routes, p.slug)} index={i + 1} currency={store.currency} locale={store.locale} cartKey={store.cartKey} /></li>
+      ))}
+    </ul>
+    <div class="shop-empty" data-product-empty hidden role="status">
+      <p class="shop-empty__title">Nothing matches — yet.</p>
+      <p>Try another colour or <a href={editorialCategoryHref(routes)}>see everything</a>.</p>
+    </div>
+  </div>
+
+  <div class="section-space">
+    <ShopNewsletterEditorial size="sm" title="New pieces, *first*" />
+  </div>
+</EditorialLayout>
+
+<style>
+  .shop-grid-wrap { padding-top: clamp(1.5rem, 4vw, 2.5rem); }
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(1.5rem, 3vw, 2.5rem) clamp(0.75rem, 1.5vw, 1.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .shop-grid > li { min-width: 0; }
+  .shop-grid > li:nth-child(7n + 1) { grid-column: span 2; }
+  .shop-grid > li:nth-child(7n + 1) :global(.p-media) { aspect-ratio: 3 / 2 !important; }
+  .shop-grid > li[hidden] { display: none; }
+  .shop-grid > li:nth-child(7n + 1) :global(.pcm__title) { font-size: 1.5rem; }
+  .shop-empty { padding: clamp(3rem, 8vw, 6rem) 0; text-align: center; }
+  .shop-empty[hidden] { display: none; }
+  .shop-empty p { margin: 0; }
+  .shop-empty__title { font-family: var(--font-display); font-size: 2rem; color: var(--c-text-1); }
+  .shop-empty a { color: var(--c-text-1); text-decoration: underline; }
+  @media (max-width: 1100px) { .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 760px) {
+    .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .shop-grid > li:nth-child(7n + 1) { grid-column: 1 / -1; }
+  }
+</style>

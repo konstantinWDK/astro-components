@@ -1,0 +1,93 @@
+---
+/**
+ * ProductToolbar — Catalog heading bar: title, live result count and a sort select
+ * (built on ModernSelect) that drives FilterSidebar's sorting.
+ *
+ * @param {string} title - Page heading. Default 'All products'.
+ * @param {string} description - Optional supporting copy.
+ * @param {number} total - Initial product count. Default 0.
+ * @param {string} target - ProductGrid id. Default 'product-grid'.
+ * @param {string} filtersId - FilterSidebar form id (sort select becomes `${filtersId}-sort`). Default 'catalog-filters'.
+ * @param {Array<{label: string, value: string}>} sortOptions - Sort choices (values: featured|price-asc|price-desc|rating|name).
+ * @param {string} countLabel - Text after the count. Default 'products'.
+ * @param {string} headingLevel - Title element (h1|h2). Default 'h1'.
+ * @param {string} variant - Layout (split|stacked). Default 'split'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the count lives in a polite live region so filter changes are announced.
+ */
+import ModernSelect from '../forms/ModernSelect.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  total?: number;
+  target?: string;
+  filtersId?: string;
+  sortOptions?: Array<{ label: string; value: string }>;
+  countLabel?: string;
+  headingLevel?: 'h1' | 'h2';
+  variant?: 'split' | 'stacked';
+  className?: string;
+}
+
+const {
+  title = 'All products',
+  description,
+  total = 0,
+  target = 'product-grid',
+  filtersId = 'catalog-filters',
+  sortOptions = [
+    { label: 'Featured', value: 'featured' },
+    { label: 'Price: low to high', value: 'price-asc' },
+    { label: 'Price: high to low', value: 'price-desc' },
+    { label: 'Top rated', value: 'rating' },
+    { label: 'Name A–Z', value: 'name' },
+  ],
+  countLabel = 'products',
+  headingLevel = 'h1',
+  variant = 'split',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+---
+
+<div class="p-toolbar-cq">
+<div class:list={['p-toolbar', `p-toolbar--${variant}`, className]}>
+  <div class="p-toolbar__text">
+    <Heading class="p-toolbar__title">{title}</Heading>
+    {description && <p class="p-toolbar__desc">{description}</p>}
+    <p class="p-toolbar__count" aria-live="polite">
+      <span data-result-count={target}>{total}</span> {countLabel}
+    </p>
+  </div>
+  <div class="p-toolbar__sort">
+    <ModernSelect label="Sort by" id={`${filtersId}-sort`} name="sort" options={sortOptions} />
+  </div>
+</div>
+</div>
+
+<style>
+  .p-toolbar-cq { container-type: inline-size; }
+  .p-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-6, 1.5rem);
+    padding-bottom: var(--sp-5, 1.25rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+    border-bottom: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+  }
+  .p-toolbar--stacked { flex-direction: column; align-items: stretch; }
+  .p-toolbar__title { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; letter-spacing: -0.035em; color: var(--c-text-1, #fff); }
+  .p-toolbar__desc { max-width: 40rem; margin: var(--sp-2, 0.5rem) 0 0; color: var(--c-text-2, #a3a3a3); }
+  .p-toolbar__count { margin: var(--sp-2, 0.5rem) 0 0; font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+  .p-toolbar__count span { color: var(--c-text-1, #fff); font-weight: 700; }
+  .p-toolbar__sort { width: 220px; flex-shrink: 0; }
+
+  @container (max-width: 640px) {
+    .p-toolbar { flex-direction: column; align-items: stretch; }
+    .p-toolbar__sort { width: 100%; }
+  }
+</style>

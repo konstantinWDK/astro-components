@@ -1,6 +1,6 @@
 # ⬇ Astro Component Kit
 
-> A free, open-source accessible UI component library built for [Astro 5.x](https://astro.build).
+> A free, open-source accessible UI component library and production templates built for [Astro 5.x](https://astro.build).
 > **🌐 Browse & copy components** at [astrocomponents.dev](https://astrocomponents.dev)
 > **📦 Install via npm** or **copy-paste** — your choice!
 
@@ -13,13 +13,14 @@
 
 ## ✨ Features
 
-- 🎨 **Premium design** — dark mode first, glassmorphism, fluid typography, and subtle micro-animations
-- ⚡ **Full-page sections** — 14 production-ready landing sections (Heroes, Bento Grids, Pricing Matrices, Testimonials, CTAs, FAQs, Teams)
-- ♿ **Accessible** — strictly WCAG 2.1 AA compliant with ARIA roles and keyboard navigation
+- 🛍️ **Multi-page production templates** — 3 complete templates (E-commerce Store, Editorial Boutique, SaaS Hotel) with state management, cart persistence, and live previews
+- 🎨 **Dark & Light theme** — dark mode first with official `[data-theme="light"]` support, adaptive tokens, and glassmorphism
+- ⚡ **Full-page sections** — 41+ production-ready landing sections (Heroes, Bento Grids, Pricing Matrices, Testimonials, CTAs, FAQs, Teams, Footers)
+- 📈 **Zero-dependency SVG charts** — 41 pure-SVG data visualization components rendered at build time with keyboard tooltips and data table fallbacks
+- ♿ **Strictly Accessible** — WCAG 2.1 AA compliant with ARIA roles and full keyboard navigation
 - 📋 **Copy & paste** — browse [astrocomponents.dev](https://astrocomponents.dev) and copy components directly
-- 📦 **npm installable** — `npm install astro-component-kit` for direct imports
+- 📦 **npm installable** — `npm install astro-component-kit` for direct modular imports
 - ♻️ **Zero runtime dependencies** — pure `.astro` components + Vanilla CSS
-- 🌑 **Dark mode first** — crafted for modern, dark-themed developer interfaces
 - 🔓 **Open Source** — MIT license, contributions welcome
 
 ---
@@ -45,7 +46,10 @@ import {
   CtaGlowBanner 
 } from 'astro-component-kit';
 
-// Or import by category (recommended for modularity)
+// Or import by category (recommended for tree-shaking & modularity)
+import { StoreProductCard, ProductBuyBox, VariantPicker, CartDrawer } from 'astro-component-kit/ecommerce';
+import { DataTable, AppSidebar, AppTopbar, RoomRack } from 'astro-component-kit/app';
+import { LineChart, BarChart, DonutChart, KpiStatTile } from 'astro-component-kit/charts';
 import { GlassButton, GlowButton, ThreeDPushButton } from 'astro-component-kit/buttons';
 import { GlassCard, ProfileCard, PricingCard } from 'astro-component-kit/cards';
 import { GlassAlert, Badge, ConfettiFeedback } from 'astro-component-kit/feedback';
@@ -54,7 +58,6 @@ import { OverlayModal, CommandDialog, BottomSheetMobile } from 'astro-component-
 import { AnimatedInput, OTPInput, GlassSlider } from 'astro-component-kit/forms';
 import { GlassCardGrid, SplitScreenLayout, MasonryGrid, BentoGrid3 } from 'astro-component-kit/layout';
 import { GradientHeading, GlassBlockQuote, CyberpunkGlitchText } from 'astro-component-kit/typography';
-import { AreaChart, DonutChart, BarChart } from 'astro-component-kit/charts';
 import { 
   FeatureBentoGrid, 
   PricingComparisonMatrix, 
@@ -74,7 +77,7 @@ import {
 <FeatureBentoGrid />
 ```
 
-**Import global design tokens** (optional but recommended):
+**Import global design tokens** (required for theme colors, spacing and typography):
 
 ```astro
 ---
@@ -85,7 +88,7 @@ import 'astro-component-kit/global.css';
 ### Option 2: Copy & Paste from Docs
 
 1. Visit [astrocomponents.dev](https://astrocomponents.dev)
-2. Browse the component library
+2. Browse the component library or templates
 3. Click **Copy** on the component code
 4. Paste into your `src/components/` directory
 5. Import and use in your Astro pages
@@ -105,12 +108,14 @@ Open [http://localhost:4321](http://localhost:4321) to browse components locally
 
 ## 📚 Component & Section Library
 
-**290+ components & full-page sections** across 11 categories:
+**320+ components & full-page sections** across 13 categories plus 3 complete templates:
 
 | Category | Components | Description |
 |----------|:----------:|-------------|
+| **E-commerce** | 29 | Shop building blocks: product cards, cart drawer, buy box, variant picker, order summary, checkout, stock indicators |
+| **App & Dashboard** | 15 | SaaS building blocks: DataTable, collapsible AppSidebar, AppTopbar, RoomRack, ArrivalsBoard, HousekeepingBoard, AuthCard |
 | **Charts & Stats** | 47 | 41 zero-dependency SVG charts rendered at build time (line, area, bars, waterfall, pie, gauge, treemap, sankey, radar, heatmap, candlestick, KPI tiles…) plus 3 ApexCharts wrappers |
-| **Sections** | 41 | Heroes, features, pricing, testimonials, CTAs, stats dashboards, careers, FAQs, contact, logo walls, blog, changelog, footers |
+| **Sections** | 41 | Heroes, features, pricing, testimonials, CTAs, stats dashboards, careers, FAQs, contact, logo walls, shop sections, blog, footers |
 | **Buttons** | 22 | Glass, glow, neumorphic, 3D push, magnetic, cyberpunk, and animated |
 | **Cards** | 22 | Ecommerce, profile, pricing, weather, tilt, portfolio, kanban |
 | **Layout** | 22 | Bento grids, masonry, split screens, sticky sidebars, card grids, full-bleed sections |
@@ -121,7 +126,64 @@ Open [http://localhost:4321](http://localhost:4321) to browse components locally
 | **Data Display** | 23 | Tables, vertical/horizontal timelines, stats grids, sparklines, tree views |
 | **Typography** | 24 | Gradient headings, glitch text, typewriter, 3D text layers, drop caps |
 
-### SVG charts — zero dependencies
+---
+
+## 🛍️ Production Templates
+
+Complete multi-page sites built exclusively with library components. Live interactive previews are available at [astrocomponents.dev/templates](https://astrocomponents.dev/templates/).
+
+### 1. E-Commerce Store (Nova Store)
+A production-ready digital storefront with 5 pages, client-side filtering without backend, and a browser-persistent cart:
+
+```astro
+---
+// src/pages/index.astro
+import 'astro-component-kit/global.css';
+import { StoreHomePage } from 'astro-component-kit/templates/ecommerce';
+---
+
+<StoreHomePage />
+```
+
+- **Pages included:** `StoreHomePage`, `StoreCategoryPage`, `StoreProductPage`, `StoreCheckoutPage` and `StoreLayout`.
+- **Persistent Cart:** `cart-store.ts` handles cart items, quantities, promo codes, tax, and cross-tab synchronization.
+- **Import path:** `astro-component-kit/templates/ecommerce`
+
+### 2. E-Commerce Editorial (Forma Studio)
+High-fashion boutique aesthetic with serif typography, square lines, warm terracotta tones, and light theme default:
+
+```astro
+---
+// src/pages/index.astro
+import 'astro-component-kit/global.css';
+import { EditorialHomePage } from 'astro-component-kit/templates/ecommerce-editorial';
+---
+
+<EditorialHomePage />
+```
+
+- **Pages included:** `EditorialHomePage`, `EditorialShopPage`, `EditorialProductPage`, `EditorialBagPage`, `EditorialCheckoutPage` and `EditorialLayout`.
+- **Import path:** `astro-component-kit/templates/ecommerce-editorial`
+
+### 3. SaaS Hotel & Hospitality App (The Lobby)
+A dense, full-featured management dashboard:
+
+```astro
+---
+// src/pages/app/index.astro
+import 'astro-component-kit/global.css';
+import { DashboardPage } from 'astro-component-kit/templates/saas-hotel';
+---
+
+<DashboardPage />
+```
+
+- **Pages included:** `DashboardPage`, `RoomsPage` (Room Rack timeline), `ReservationsPage`, `GuestsPage`, `ReportsPage`, `SettingsPage`, `SignInPage`, and `LandingPage`.
+- **Import path:** `astro-component-kit/templates/saas-hotel`
+
+---
+
+## 📈 SVG Charts — Zero Dependencies
 
 ```astro
 ---
@@ -139,6 +201,19 @@ import { LineChart, PieChart, KpiStatTile } from 'astro-component-kit/charts';
 ```
 
 Every chart ships with a legend, keyboard-focusable marks with tooltips and a "View data" table fallback for screen readers. Colors come from the `--chart-1…8` tokens in `global.css`.
+
+---
+
+## 🌓 Theming & Dark / Light Mode
+
+Components are built dark-mode first with full support for light mode via the `[data-theme="light"]` attribute:
+
+```html
+<!-- Apply on html or body element -->
+<html data-theme="light">
+```
+
+All design tokens (`--ink-rgb`, `--paper-rgb`, `--c-on-primary`, and `--chart-*`) adapt automatically, preserving high contrast and accessible readability.
 
 ---
 
@@ -166,7 +241,7 @@ import { MinimalFooterGrid } from 'astro-component-kit/layout';
 
 <!-- 2. Hero Header -->
 <HeroGradient 
-  badge="New Release v0.3.0"
+  badge="New Release v0.4.1"
   title="Build Production Websites at Lightning Speed"
   subtitle="Zero client JavaScript runtime, accessible UI, and modern dark glassmorphism."
 />
@@ -247,22 +322,25 @@ import { Badge } from 'astro-component-kit/feedback';
 astro-component-kit/
 ├── src/
 │   ├── components/
-│   │   ├── lib/                 ← 290+ component source files
-│   │   │   ├── sections/        ← 14 full-page landing sections
-│   │   │   ├── buttons/         ← 19 button components
-│   │   │   ├── cards/           ← 19 card components
-│   │   │   ├── layout/          ← 19 layout & grid components
-│   │   │   ├── forms/           ← 18 form controls & inputs
-│   │   │   ├── navigation/      ← 17 navbar & menu components
-│   │   │   ├── overlays/        ← 20 overlay & modal components
-│   │   │   ├── feedback/        ← 17 alert & feedback components
-│   │   │   ├── data/            ← 19 data visualization & tables
-│   │   │   ├── typography/      ← 19 typography components
-│   │   │   └── charts/          ← 3 interactive data charts
+│   │   ├── lib/                 ← 320+ component source files & templates
+│   │   │   ├── templates/       ← Multi-page templates (ecommerce, editorial, saas-hotel)
+│   │   │   ├── ecommerce/       ← 29 e-commerce components & cart-store
+│   │   │   ├── app/             ← 15 SaaS & dashboard components
+│   │   │   ├── charts/          ← 47 SVG & interactive charts and KPI tiles
+│   │   │   ├── sections/        ← 41 full-page landing & shop sections
+│   │   │   ├── buttons/         ← 22 button components
+│   │   │   ├── cards/           ← 22 card components
+│   │   │   ├── layout/          ← 22 layout & grid components
+│   │   │   ├── forms/           ← 24 form controls & inputs
+│   │   │   ├── navigation/      ← 23 navbar & menu components
+│   │   │   ├── overlays/        ← 23 overlay & modal components
+│   │   │   ├── feedback/        ← 22 alert & feedback components
+│   │   │   ├── data/            ← 23 data visualization & tables
+│   │   │   └── typography/      ← 24 typography components
 │   │   └── index.ts             ← Main barrel export
 │   └── types.d.ts               ← TypeScript declarations
 ├── src/styles/
-│   └── global.css               ← Design tokens & global CSS
+│   └── global.css               ← Design tokens & theme styles (dark/light)
 └── package.json
 ```
 

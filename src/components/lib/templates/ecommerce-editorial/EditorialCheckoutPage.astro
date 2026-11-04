@@ -1,0 +1,123 @@
+---
+/**
+ * EditorialCheckoutPage — Split-screen checkout in focus mode: CheckoutForm on the paper side,
+ * a full-height tinted panel with OrderSummary (promo codes, shipping, total) on the other.
+ *
+ * Usage (src/pages/checkout.astro):
+ *   import { EditorialCheckoutPage } from 'astro-component-kit/templates/ecommerce-editorial';
+ *   <EditorialCheckoutPage />
+ *
+ * @param {EditorialStore} store - Catalogue and settings.
+ * @param {EditorialRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} seedCart - Pre-fill the bag with demo items. Default false.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import EditorialLayout from './EditorialLayout.astro';
+import CheckoutForm from '../../ecommerce/CheckoutForm.astro';
+import OrderSummary from '../../ecommerce/OrderSummary.astro';
+import { formaStore, editorialRoutes, type EditorialStore, type EditorialRoutes } from './data';
+
+interface Props {
+  store?: EditorialStore;
+  routes?: EditorialRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  seedCart?: boolean;
+  noindex?: boolean;
+}
+
+const { store = formaStore, routes = editorialRoutes, theme = 'light', seedCart = false, noindex = true } = Astro.props;
+---
+
+<EditorialLayout title="Checkout" description={`Secure checkout — ${store.name}`} store={store} routes={routes} theme={theme} seedCart={seedCart} noindex={noindex} minimal>
+  <div class="co-split">
+    <div class="co-split__form">
+      <div class="co-split__inner">
+      <nav class="co-steps" aria-label="Checkout steps">
+        <ol>
+          <li><a href={routes.bag}>Bag</a></li>
+          <li><span aria-current="step">Details &amp; payment</span></li>
+          <li><span>Confirmation</span></li>
+        </ol>
+      </nav>
+      <h1 class="co-title">Checkout</h1>
+      <CheckoutForm
+        id="checkout"
+        variant="plain"
+        shippingRates={store.shippingRates}
+        freeShippingThreshold={store.freeShippingThreshold}
+        countries={[
+          { label: 'Spain', value: 'ES' },
+          { label: 'Portugal', value: 'PT' },
+          { label: 'France', value: 'FR' },
+          { label: 'Germany', value: 'DE' },
+          { label: 'Italy', value: 'IT' },
+          { label: 'United Kingdom', value: 'GB' },
+        ]}
+        cartKey={store.cartKey}
+        currency={store.currency}
+        locale={store.locale}
+        continueHref={routes.home}
+      />
+      </div>
+    </div>
+    <div class="co-split__summary">
+      <OrderSummary
+        title="In your bag"
+        variant="plain"
+        cartKey={store.cartKey}
+        shippingRates={store.shippingRates}
+        freeShippingThreshold={store.freeShippingThreshold}
+        taxRate={store.taxRate}
+        promoCodes={store.promoCodes}
+        editHref={routes.bag}
+        currency={store.currency}
+        locale={store.locale}
+      />
+    </div>
+  </div>
+</EditorialLayout>
+
+<script>
+  document.addEventListener('ack:order-placed', () => {
+    const steps = document.querySelectorAll<HTMLElement>('.co-steps li');
+    steps.forEach((li, i) => {
+      const el = li.firstElementChild as HTMLElement | null;
+      if (!el) return;
+      if (i === steps.length - 1) el.setAttribute('aria-current', 'step');
+      else el.removeAttribute('aria-current');
+    });
+  });
+</script>
+
+<style>
+  .co-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); min-height: calc(100vh - var(--shop-header-h)); }
+  .co-split__form { padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 4vw, 4.5rem) clamp(3rem, 6vw, 5rem); }
+  .co-split__inner { max-width: 640px; margin-left: auto; }
+  .co-split__summary { padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 4vw, 4rem); background: var(--c-bg-2); border-left: 1px solid var(--c-border); }
+  .co-split__summary > :global(.o-summary) { max-width: 460px; position: sticky; top: calc(var(--shop-header-h) + 1.5rem); }
+  .co-steps ol { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 var(--sp-5); padding: 0; list-style: none; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-2); }
+  .co-steps li + li::before { content: '→'; margin-right: 0.6rem; opacity: 0.5; }
+  .co-steps a { color: inherit; }
+  .co-steps [aria-current] { color: var(--c-text-1); font-weight: 700; }
+  .co-title { margin: 0 0 var(--sp-6); font-family: var(--font-display); font-size: clamp(2.4rem, 5vw, 3.8rem); font-weight: 400; letter-spacing: -0.04em; line-height: 1; color: var(--c-text-1); }
+
+  /* Editorial tuning of the shared checkout components */
+  .co-split :global(.checkout__section) { padding-bottom: var(--sp-6); border-bottom: 1px solid var(--c-border); }
+  .co-split :global(.checkout__section legend) { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; letter-spacing: -0.02em; }
+  .co-split :global(.checkout__num) { background: transparent; border: 1px solid var(--c-text-1); color: var(--c-text-1); font-family: var(--font-sans); }
+  .co-split :global(.checkout__rate) { border-radius: var(--r-sm); }
+  .co-split :global(.checkout__pay) { border-radius: var(--r-sm); background: var(--c-text-1); color: var(--c-bg); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.9rem; }
+  .co-split :global(.checkout__pay:hover) { background: var(--shop-accent); color: var(--c-on-primary); filter: none; }
+  .co-split :global(.checkout__done) { border-radius: var(--r-sm); }
+  .co-split :global(.o-summary__title) { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; }
+  .co-split :global(.o-summary__promo input), .co-split :global(.o-summary__promo button) { border-radius: var(--r-sm); }
+  .co-split :global(.o-line__media) { border-radius: var(--r-sm); }
+
+  @media (max-width: 960px) {
+    .co-split { grid-template-columns: 1fr; }
+    .co-split__summary { order: -1; border-left: 0; border-bottom: 1px solid var(--c-border); }
+    .co-split__summary > :global(.o-summary) { position: static; max-width: none; }
+    .co-split__inner { margin-left: 0; max-width: none; }
+  }
+</style>

@@ -1,0 +1,216 @@
+---
+/**
+ * EditorialLayout — Full HTML document for the editorial e-commerce template: ShopHeaderEditorial
+ * with mega menu, main slot, ShopFooterWordmark and CartToast. Owns the "Forma" look through
+ * design tokens: serif display font, square corners, terracotta accent, light + dark palettes.
+ *
+ * @param {string} title - Page title (store name is appended).
+ * @param {string} description - Meta description.
+ * @param {EditorialStore} store - Catalogue and settings. Default: Forma demo store.
+ * @param {EditorialRoutes} routes - Page URLs.
+ * @param {string} currentHref - Highlights the matching menu link.
+ * @param {string} theme - Initial theme (light|dark|auto). The header toggle overrides it per visitor. Default 'light'.
+ * @param {boolean} seedCart - Pre-fill an empty bag with demo items (previews only). Default false.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ * @param {boolean} minimal - Hide the menu and footer columns (checkout focus mode). Default false.
+ * @param {string} lang - Document language. Default 'en'.
+ */
+import '../../../../styles/global.css';
+import ShopHeaderEditorial from '../../sections/ShopHeaderEditorial.astro';
+import ShopFooterWordmark from '../../sections/ShopFooterWordmark.astro';
+import CartToast from '../../ecommerce/CartToast.astro';
+import { formaStore, editorialRoutes, editorialCategoryHref, type EditorialStore, type EditorialRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  store?: EditorialStore;
+  routes?: EditorialRoutes;
+  currentHref?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  seedCart?: boolean;
+  noindex?: boolean;
+  minimal?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description,
+  store = formaStore,
+  routes = editorialRoutes,
+  currentHref,
+  theme = 'light',
+  seedCart = false,
+  noindex = false,
+  minimal = false,
+  lang = 'en',
+} = Astro.props;
+
+const fullTitle = title.includes(store.name) ? title : `${title} — ${store.name} Studio`;
+const half = Math.ceil(store.categories.length / 2);
+const links = [
+  {
+    label: 'Shop',
+    href: routes.shop,
+    columns: [
+      { title: 'Categories', links: store.categories.slice(0, half).map((c) => ({ label: c.name, href: editorialCategoryHref(routes, c.id) })) },
+      { title: 'More', links: store.categories.slice(half).map((c) => ({ label: c.name, href: editorialCategoryHref(routes, c.id) })) },
+      { title: 'Edits', links: [{ label: 'New in', href: `${routes.shop}?sort=featured` }, { label: 'Under €100', href: `${routes.shop}?sort=price-asc` }, { label: 'Gifts', href: routes.shop }] },
+    ],
+    feature: { title: 'The Autumn edit', text: 'Warm, quiet pieces for the colder months.', href: `${routes.product}wool-overcoat/`, icon: 'jacket', hue: 18 },
+  },
+  { label: 'New in', href: `${routes.shop}?sort=featured` },
+  { label: 'Objects', href: editorialCategoryHref(routes, 'objects') },
+];
+const seed = seedCart
+  ? [
+      { id: 'linen-overshirt::Oat / M', name: 'Linen Overshirt', price: 145, qty: 1, variant: 'Oat / M', icon: 'shirt' as const, hue: 30 },
+      { id: 'kiln-mug::Clay', name: 'Kiln Mug', price: 32, qty: 2, variant: 'Clay', icon: 'mug' as const, hue: 14 },
+    ]
+  : [];
+const footerColumns = [
+  { title: 'Shop', links: store.categories.map((c) => ({ label: c.name, href: editorialCategoryHref(routes, c.id) })) },
+  { title: 'Care', links: [{ label: 'Shipping', href: '#' }, { label: 'Returns', href: '#' }, { label: 'Repairs', href: '#' }, { label: 'Size guide', href: '#' }] },
+  { title: 'Studio', links: [{ label: 'About', href: '#' }, { label: 'Journal', href: '#' }, { label: 'Stockists', href: '#' }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-forma" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class="forma">
+    <a class="forma__skip" href="#main">Skip to content</a>
+    <ShopHeaderEditorial
+      brand={store.name}
+      brandHref={routes.home}
+      announcement={minimal ? '' : store.announcement}
+      links={minimal ? [] : links}
+      searchHref={minimal ? '' : routes.shop}
+      bagHref={routes.bag}
+      cartKey={store.cartKey}
+      currentHref={currentHref}
+    />
+    <main id="main" class="forma__main" tabindex="-1">
+      <slot />
+    </main>
+    <ShopFooterWordmark brand={store.name} brandHref={routes.home} columns={minimal ? [] : footerColumns} contact={minimal ? undefined : store.contact} copyright={`© ${new Date().getFullYear()} ${store.name} Studio · Demo store built with Astro Components Kit`} />
+    <CartToast cartKey={store.cartKey} position="bottom-right" actionLabel="View bag" addedTitle="Added to bag" />
+    {seed.length > 0 && <div hidden data-forma-seed={JSON.stringify(seed)} data-key={store.cartKey}></div>}
+  </body>
+</html>
+
+<script>
+  import { createCart } from '../../ecommerce/cart-store';
+
+  // Demo seed (previews) + "View bag" goes to the bag page instead of a drawer.
+  const seed = document.querySelector<HTMLElement>('[data-forma-seed]');
+  if (seed) { try { createCart(seed.dataset.key).seed(JSON.parse(seed.dataset.formaSeed || '[]')); } catch { /* ignore */ } }
+  document.addEventListener('ack:cart-open', () => {
+    const bag = document.querySelector<HTMLAnchorElement>('a[data-bag-link]');
+    if (bag) window.location.href = bag.href;
+  });
+
+  // Expose the header height so sticky toolbars sit right under it.
+  const header = document.querySelector<HTMLElement>('[data-shop-header]');
+  const setH = () => { if (header) document.documentElement.style.setProperty('--shop-header-h', `${header.offsetHeight}px`); };
+  setH();
+  window.addEventListener('resize', setH);
+</script>
+
+<style is:global>
+  .theme-forma {
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --r-sm: 2px;
+    --r-md: 3px;
+    --r-lg: 4px;
+    --r-xl: 6px;
+    --shop-header-h: 106px;
+  }
+  .theme-forma[data-theme='light'] {
+    --c-bg: #f3efe8;
+    --c-bg-1: #fbf9f5;
+    --c-bg-2: #e7e1d6;
+    --c-surface: rgba(23, 21, 18, 0.03);
+    --c-border: rgba(23, 21, 18, 0.14);
+    --c-text-1: #171512;
+    --c-text-2: #514b44;
+    --c-text-3: #6d665e;
+    --c-primary: #9c3d1c;
+    --c-primary-light: #9c3d1c;
+    --c-primary-glow: rgba(156, 61, 28, 0.14);
+    --c-accent: #7a2e14;
+    --shop-accent: #9c3d1c;
+    --c-on-primary: #ffffff;
+    --ink-rgb: 23 21 18;
+    --paper-rgb: 251 249 245;
+    --c-success: #2f6b3a;
+    --c-warning: #8a4b06;
+    --c-danger: #a8261b;
+    --pm-ink-s: 45%;
+    --pm-ink-l: 32%;
+    --pm-soft-s: 30%;
+    --pm-soft-l: 80%;
+    --pm-soft-a: 0.95;
+    color-scheme: light;
+  }
+  .theme-forma[data-theme='dark'] {
+    --c-bg: #12110f;
+    --c-bg-1: #1a1815;
+    --c-bg-2: #24211c;
+    --c-surface: rgba(242, 237, 229, 0.03);
+    --c-border: rgba(242, 237, 229, 0.14);
+    --c-text-1: #f2ede5;
+    --c-text-2: #bcb4a8;
+    --c-text-3: #948b7f;
+    --c-primary: #e2835a;
+    --c-primary-light: #e2835a;
+    --c-primary-glow: rgba(226, 131, 90, 0.16);
+    --c-accent: #f0b796;
+    --shop-accent: #e2835a;
+    --c-on-primary: #1a0d07;
+    --ink-rgb: 242 237 229;
+    --paper-rgb: 18 17 15;
+    --c-success: #7fc48c;
+    --c-warning: #e7b46a;
+    --c-danger: #f08a7a;
+    --pm-ink-s: 45%;
+    --pm-ink-l: 76%;
+    --pm-soft-s: 25%;
+    --pm-soft-l: 24%;
+    --pm-soft-a: 0.8;
+    color-scheme: dark;
+  }
+  body.forma { background: var(--c-bg); color: var(--c-text-2); overflow-x: clip; }
+  body.forma::before { display: none; }
+  .forma ::selection { background: var(--shop-accent); color: var(--c-on-primary); }
+  .forma__main { outline: none; }
+  .forma-wrap { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+  .forma__skip { position: fixed; top: -60px; left: 12px; z-index: 2000; padding: 0.6rem 1rem; background: var(--c-text-1); color: var(--c-bg); font-weight: 700; transition: top 0.2s ease; }
+  .forma__skip:focus { top: 12px; color: var(--c-bg); }
+  .forma .section-space { padding-block: clamp(3rem, 7vw, 6rem); }
+
+  /* Reused library pieces, tuned to the editorial look */
+  .forma .badge { border-radius: var(--r-sm); }
+  .forma .cart-toast { border-radius: var(--r-sm); }
+  .forma .anim-input, .forma .custom-select, .forma .stepper { border-radius: var(--r-sm); background: var(--c-bg-1); border-color: var(--c-border); }
+  .theme-forma[data-theme='light'] .anim-input, .theme-forma[data-theme='light'] .custom-select { background: #fff; }
+</style>

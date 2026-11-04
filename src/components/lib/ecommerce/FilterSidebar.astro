@@ -1,0 +1,405 @@
+---
+/**
+ * FilterSidebar — Catalog filters (category, max price, colour, rating, stock) that filter
+ * and sort a ProductGrid instantly in the browser. Collapses behind a "Filters" button on mobile.
+ *
+ * @param {string} target - id of the ProductGrid to filter. Default 'product-grid'.
+ * @param {string} id - Form id; ProductToolbar's sort select uses `${id}-sort`. Default 'catalog-filters'.
+ * @param {Array<{id: string, name: string, count?: number}>} categories - Category checkboxes.
+ * @param {string[]} selected - Pre-checked category ids (also read from `?category=` in the URL).
+ * @param {number} maxPrice - Upper bound of the price slider. Default 300.
+ * @param {Array<{name: string, hex: string}>} colors - Colour swatches.
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} variant - Style (glass|plain). Default 'glass'.
+ * @param {string} size - Density (sm|md). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: native form controls in fieldsets with legends; result count is announced
+ * by ProductToolbar's live region; the mobile toggle is a disclosure button.
+ */
+import { formatMoney } from './cart-store';
+
+interface Props {
+  target?: string;
+  id?: string;
+  categories?: Array<{ id: string; name: string; count?: number }>;
+  selected?: string[];
+  maxPrice?: number;
+  colors?: Array<{ name: string; hex: string }>;
+  currency?: string;
+  locale?: string;
+  variant?: 'glass' | 'plain';
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+const {
+  target = 'product-grid',
+  id = 'catalog-filters',
+  categories = [
+    { id: 'audio', name: 'Audio', count: 3 },
+    { id: 'wearables', name: 'Wearables', count: 2 },
+    { id: 'bags', name: 'Bags', count: 2 },
+    { id: 'home', name: 'Home', count: 3 },
+  ],
+  selected = [],
+  maxPrice = 300,
+  colors = [
+    { name: 'Graphite', hex: '#2b2b2f' },
+    { name: 'Sand', hex: '#d8c3a5' },
+    { name: 'Ocean', hex: '#3d6f9e' },
+    { name: 'Moss', hex: '#5f7a4e' },
+    { name: 'Clay', hex: '#b5654a' },
+  ],
+  currency = 'USD',
+  locale = 'en-US',
+  variant = 'glass',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const money = { currency, locale };
+---
+
+<div class:list={['filters', `filters--${variant}`, `filters--${size}`, className]} data-filters-root>
+  <button class="filters__toggle" type="button" aria-expanded="false" aria-controls={id} data-filters-toggle>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+    Filters
+    <span class="filters__active" data-active-count hidden></span>
+  </button>
+
+  <form class="filters__form" id={id} data-filters={target} data-currency={currency} data-locale={locale} aria-label="Product filters">
+    <fieldset class="filters__group">
+      <legend>Category</legend>
+      {categories.map((c) => (
+        <label class="filters__check">
+          <input type="checkbox" name="category" value={c.id} checked={selected.includes(c.id)} />
+          <span class="filters__box" aria-hidden="true"></span>
+          <span class="filters__label">{c.name}</span>
+          {c.count !== undefined && <span class="filters__count">{c.count}</span>}
+        </label>
+      ))}
+    </fieldset>
+
+    <fieldset class="filters__group">
+      <legend>Price</legend>
+      <label class="filters__range">
+        <span class="filters__range-head">
+          <span>Up to</span>
+          <output data-price-out>{formatMoney(maxPrice, money)}</output>
+        </span>
+        <input type="range" name="max" min="0" max={maxPrice} step="5" value={maxPrice} aria-label="Maximum price" />
+        <span class="filters__range-scale" aria-hidden="true"><span>{formatMoney(0, money)}</span><span>{formatMoney(maxPrice, money)}</span></span>
+      </label>
+    </fieldset>
+
+    {colors.length > 0 && (
+      <fieldset class="filters__group">
+        <legend>Colour</legend>
+        <div class="filters__swatches">
+          {colors.map((c) => (
+            <label class="filters__swatch" style={`--sw: ${c.hex}`}>
+              <input type="checkbox" name="color" value={c.name.toLowerCase()} />
+              <span class="filters__swatch-dot" aria-hidden="true"></span>
+              <span class="sr-only">{c.name}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    )}
+
+    <fieldset class="filters__group">
+      <legend>Rating</legend>
+      {[['0', 'Any rating'], ['4.5', '4.5 ★ & up'], ['4', '4 ★ & up']].map(([v, l], i) => (
+        <label class="filters__check filters__check--radio">
+          <input type="radio" name="rating" value={v} checked={i === 0} />
+          <span class="filters__box" aria-hidden="true"></span>
+          <span class="filters__label">{l}</span>
+        </label>
+      ))}
+    </fieldset>
+
+    <fieldset class="filters__group">
+      <legend class="sr-only">Availability</legend>
+      <label class="filters__switch">
+        <span>In stock only</span>
+        <input type="checkbox" name="stock" value="in" role="switch" />
+        <span class="filters__track" aria-hidden="true"></span>
+      </label>
+    </fieldset>
+
+    <button class="filters__reset" type="reset">Clear all filters</button>
+  </form>
+</div>
+
+<script>
+  import { formatMoney } from './cart-store';
+
+  document.querySelectorAll<HTMLFormElement>('form[data-filters]:not([data-bound])').forEach((form) => {
+    form.dataset.bound = '';
+    const root = form.closest<HTMLElement>('[data-filters-root]')!;
+    const target = document.getElementById(form.dataset.filters || '');
+    if (!target) return;
+    const grid: HTMLElement = target;
+    const wrap = grid.parentElement;
+    const empty = wrap?.querySelector<HTMLElement>('[data-product-empty]');
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>('[data-product]'));
+    cards.forEach((c, i) => { c.dataset.index = String(i); });
+    const sort = document.getElementById(`${form.id}-sort`) as HTMLSelectElement | null;
+    const priceOut = form.querySelector<HTMLOutputElement>('[data-price-out]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-filters-toggle]');
+    const activeBadge = root.querySelector<HTMLElement>('[data-active-count]');
+    const money = { currency: form.dataset.currency, locale: form.dataset.locale };
+    const priceInput = form.elements.namedItem('max') as HTMLInputElement;
+    const ceiling = Number(priceInput.max);
+
+    // Pre-select categories from ?category=a,b
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = (params.get('category') || '').split(',').filter(Boolean);
+    if (fromUrl.length) {
+      form.querySelectorAll<HTMLInputElement>('input[name="category"]').forEach((i) => { i.checked = fromUrl.includes(i.value); });
+    }
+    if (sort && params.get('sort')) sort.value = params.get('sort')!;
+
+    function apply() {
+      const data = new FormData(form);
+      const cats = data.getAll('category') as string[];
+      const colors = data.getAll('color') as string[];
+      const max = Number(data.get('max'));
+      const minRating = Number(data.get('rating') || 0);
+      const stockOnly = data.get('stock') === 'in';
+      let visible = 0;
+
+      cards.forEach((card) => {
+        const d = card.dataset;
+        const cardColors = (d.colors || '').split(',').filter(Boolean);
+        const ok =
+          (!cats.length || cats.includes(d.category || '')) &&
+          Number(d.price) <= max &&
+          Number(d.rating) >= minRating &&
+          (!stockOnly || d.stock === 'in') &&
+          (!colors.length || colors.some((c) => cardColors.includes(c)));
+        card.hidden = !ok;
+        if (ok) visible++;
+      });
+
+      const mode = sort?.value || 'featured';
+      const sorted = [...cards].sort((a, b) => {
+        const A = a.dataset, B = b.dataset;
+        if (mode === 'price-asc') return Number(A.price) - Number(B.price);
+        if (mode === 'price-desc') return Number(B.price) - Number(A.price);
+        if (mode === 'rating') return Number(B.rating) - Number(A.rating);
+        if (mode === 'name') return (A.name || '').localeCompare(B.name || '');
+        return Number(A.index) - Number(B.index);
+      });
+      grid.append(...sorted);
+
+      if (empty) empty.hidden = visible > 0;
+      if (priceOut) priceOut.textContent = formatMoney(max, money);
+      document.querySelectorAll<HTMLElement>(`[data-result-count="${grid.id}"]`).forEach((n) => { n.textContent = String(visible); });
+
+      const active = cats.length + colors.length + (max < ceiling ? 1 : 0) + (minRating > 0 ? 1 : 0) + (stockOnly ? 1 : 0);
+      if (activeBadge) { activeBadge.hidden = active === 0; activeBadge.textContent = String(active); }
+
+      const url = new URL(window.location.href);
+      if (cats.length) url.searchParams.set('category', cats.join(','));
+      else url.searchParams.delete('category');
+      if (mode !== 'featured') url.searchParams.set('sort', mode);
+      else url.searchParams.delete('sort');
+      window.history.replaceState(null, '', url);
+    }
+
+    form.addEventListener('input', apply);
+    form.addEventListener('change', apply);
+    form.addEventListener('submit', (e) => { e.preventDefault(); apply(); });
+    form.addEventListener('reset', () => window.setTimeout(apply, 0));
+    sort?.addEventListener('change', apply);
+
+    toggle?.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', String(open));
+      root.classList.toggle('is-open', open);
+    });
+
+    apply();
+  });
+</script>
+
+<style>
+  .filters { container-type: inline-size; position: relative; }
+  .filters__form {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+  .filters--glass .filters__form {
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    background: var(--c-surface, rgb(var(--ink-rgb, 255 255 255) / 0.02));
+  }
+
+  .filters__group {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0 0 var(--sp-4, 1rem);
+    border: 0;
+    border-bottom: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+  }
+  .filters__group:last-of-type { border-bottom: 0; }
+  .filters__group legend {
+    padding: var(--sp-2, 0.5rem) 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-1, #fff);
+  }
+
+  .filters__check {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 40px;
+    padding: 0 var(--sp-2, 0.5rem);
+    margin: 0 calc(var(--sp-2, 0.5rem) * -1);
+    border-radius: var(--r-sm, 8px);
+    cursor: pointer;
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.9rem;
+  }
+  .filters--sm .filters__check { min-height: 34px; font-size: 0.85rem; }
+  .filters__check:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.03); color: var(--c-text-1, #fff); }
+  .filters__check input,
+  .filters__swatch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .filters__box {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid rgb(var(--ink-rgb, 255 255 255) / 0.25);
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .filters__check--radio .filters__box { border-radius: 50%; }
+  .filters__check input:checked + .filters__box {
+    border-color: var(--c-primary-light, #d4a017);
+    background: var(--c-primary-light, #d4a017);
+    box-shadow: inset 0 0 0 3px var(--c-bg-1, #0a0a0a);
+  }
+  .filters__check input:checked ~ .filters__label { color: var(--c-text-1, #fff); font-weight: 600; }
+  .filters__check input:focus-visible + .filters__box,
+  .filters__swatch input:focus-visible + .filters__swatch-dot,
+  .filters__switch input:focus-visible + .filters__track { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .filters__label { flex: 1; }
+  .filters__count { font-size: 0.75rem; color: var(--c-text-2, #a3a3a3); }
+
+  .filters__range { display: grid; gap: var(--sp-2, 0.5rem); }
+  .filters__range-head { display: flex; justify-content: space-between; font-size: 0.85rem; }
+  .filters__range-head output { color: var(--c-text-1, #fff); font-weight: 700; }
+  .filters__range input { width: 100%; accent-color: var(--c-primary-light, #d4a017); height: 24px; cursor: pointer; }
+  .filters__range-scale { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); }
+
+  .filters__swatches { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); padding-top: 2px; }
+  .filters__swatch { position: relative; display: grid; place-items: center; width: 40px; height: 40px; cursor: pointer; }
+  .filters__swatch-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--sw);
+    box-shadow: 0 0 0 1px rgb(var(--ink-rgb, 255 255 255) / 0.2);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .filters__swatch:hover .filters__swatch-dot { transform: scale(1.08); }
+  .filters__swatch input:checked + .filters__swatch-dot { box-shadow: 0 0 0 2px var(--c-bg-1, #0a0a0a), 0 0 0 4px var(--c-primary-light, #d4a017); }
+
+  .filters__switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    font-size: 0.9rem;
+    color: var(--c-text-1, #fff);
+    cursor: pointer;
+  }
+  .filters__switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .filters__track {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.12);
+    transition: background 0.2s ease;
+  }
+  .filters__track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--c-text-1, #fff);
+    transition: transform 0.2s ease;
+  }
+  .filters__switch input:checked + .filters__track { background: var(--c-primary-light, #d4a017); }
+  .filters__switch input:checked + .filters__track::after { transform: translateX(18px); }
+
+  .filters__reset {
+    min-height: 44px;
+    margin-top: var(--sp-2, 0.5rem);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.12);
+    border-radius: var(--r-full, 9999px);
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .filters__reset:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); }
+  .filters__reset:focus-visible, .filters__toggle:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+
+  .filters__toggle {
+    display: none;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.12);
+    border-radius: var(--r-full, 9999px);
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.03);
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .filters__active {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--c-primary-light, #d4a017);
+    color: var(--c-on-primary, #050505);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 20px;
+  }
+  .filters__active[hidden] { display: none; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 900px) {
+    .filters__toggle { display: inline-flex; }
+    .filters__form { display: none; margin-top: var(--sp-3, 0.75rem); }
+    .filters.is-open .filters__form { display: grid; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .filters__track, .filters__track::after, .filters__swatch-dot { transition: none; }
+  }
+</style>

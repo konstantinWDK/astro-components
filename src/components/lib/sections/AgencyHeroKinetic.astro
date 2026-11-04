@@ -1,0 +1,172 @@
+---
+/**
+ * AgencyHeroKinetic — Agency hero with an oversized headline whose last word rotates through a
+ * list (highlighted like a marker stroke), intro text, CTAs, client proof and rotating stickers.
+ *
+ * @param {string} before - Headline text before the rotating word. Default 'We build brands people'.
+ * @param {string[]} words - Rotating words. Default ['remember', 'share', 'choose', 'love'].
+ * @param {string} text - Intro paragraph.
+ * @param {{label: string, href: string}} primary - Main CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA (optional).
+ * @param {{count: string, label: string, people?: string[]}} proof - Client proof with avatar initials.
+ * @param {string[]} stickers - Small rotated badges around the headline (max 3).
+ * @param {number} interval - Rotation speed in ms. Default 2200.
+ * @param {string} variant - Layout (left|centered). Default 'left'.
+ * @param {string} size - Type scale (md|lg|xl). Default 'lg'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the h1 contains the full sentence for screen readers (first word); the rotating
+ * copy is aria-hidden; rotation stops with prefers-reduced-motion and pauses on hover/focus.
+ */
+interface Props {
+  before?: string;
+  words?: string[];
+  text?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  proof?: { count: string; label: string; people?: string[] };
+  stickers?: string[];
+  interval?: number;
+  variant?: 'left' | 'centered';
+  size?: 'md' | 'lg' | 'xl';
+  className?: string;
+}
+
+const {
+  before = 'We build brands people',
+  words = ['remember', 'share', 'choose', 'love'],
+  text = 'Volta is an independent studio for brand, web and growth. We turn ambitious companies into the obvious choice in their category.',
+  primary = { label: 'Start a project', href: '#contact' },
+  secondary = { label: 'See our work', href: '#work' },
+  proof = { count: '120+', label: 'brands launched since 2016', people: ['Ana R', 'Ben K', 'Cleo M', 'Dev P'] },
+  stickers = ['Brand', 'Web', 'Growth'],
+  interval = 2200,
+  variant = 'left',
+  size = 'lg',
+  className = '',
+} = Astro.props;
+
+const hues = [80, 280, 20, 190];
+---
+
+<div class="cq-agency-hero">
+<section class:list={['ahk', `ahk--${variant}`, `ahk--${size}`, className]} data-kinetic data-interval={interval}>
+  <div class="ahk__inner">
+    <h1 class="ahk__title">
+      <span>{before} </span>
+      <span class="sr-only">{words[0]}.</span>
+      <span class="ahk__rotor" aria-hidden="true">
+        {words.map((w, i) => <span class:list={['ahk__word', { 'is-active': i === 0 }]}>{w}</span>)}
+      </span>
+    </h1>
+
+    {stickers.slice(0, 3).map((s, i) => <span class:list={['ahk__sticker', `ahk__sticker--${i + 1}`]} aria-hidden="true">{s}</span>)}
+
+    <div class="ahk__foot">
+      {text && <p class="ahk__text">{text}</p>}
+      <div class="ahk__ctas">
+        {primary && <a class="ahk__btn ahk__btn--primary" href={primary.href}>{primary.label}<span aria-hidden="true">↗</span></a>}
+        {secondary && <a class="ahk__btn" href={secondary.href}>{secondary.label}</a>}
+      </div>
+      {proof && (
+        <p class="ahk__proof">
+          {proof.people && (
+            <span class="ahk__faces" aria-hidden="true">
+              {proof.people.map((p, i) => <span style={`--h: ${hues[i % hues.length]}`}>{p.split(' ').map((x) => x[0]).join('')}</span>)}
+            </span>
+          )}
+          <span><strong>{proof.count}</strong> {proof.label}</span>
+        </p>
+      )}
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-kinetic]:not([data-bound])').forEach((hero) => {
+    hero.dataset.bound = '';
+    const words = Array.from(hero.querySelectorAll<HTMLElement>('.ahk__word'));
+    if (words.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let i = 0;
+    let paused = false;
+    hero.addEventListener('mouseenter', () => { paused = true; });
+    hero.addEventListener('mouseleave', () => { paused = false; });
+    hero.addEventListener('focusin', () => { paused = true; });
+    hero.addEventListener('focusout', () => { paused = false; });
+    window.setInterval(() => {
+      if (paused || document.hidden) return;
+      words[i].classList.remove('is-active');
+      words[i].classList.add('is-leaving');
+      const prev = words[i];
+      window.setTimeout(() => prev.classList.remove('is-leaving'), 500);
+      i = (i + 1) % words.length;
+      words[i].classList.add('is-active');
+    }, Number(hero.dataset.interval) || 2200);
+  });
+</script>
+
+<style>
+  .cq-agency-hero { container-type: inline-size; }
+  .ahk { --fs: clamp(3rem, 10cqi, 8.5rem); position: relative; padding: clamp(3rem, 9cqi, 7rem) clamp(1rem, 4cqi, 2.5rem) clamp(2.5rem, 6cqi, 5rem); color: var(--c-text-1, #fff); overflow: hidden; }
+  .ahk--md { --fs: clamp(2.6rem, 8cqi, 6.5rem); }
+  .ahk--xl { --fs: clamp(3.4rem, 12cqi, 10.5rem); }
+  .ahk__inner { position: relative; max-width: 1280px; margin: 0 auto; }
+  .ahk--centered .ahk__inner { text-align: center; }
+  .ahk__title { margin: 0; font-size: var(--fs); font-weight: 900; line-height: 0.92; letter-spacing: -0.06em; text-wrap: balance; }
+  .ahk__rotor { position: relative; display: inline-grid; vertical-align: top; }
+  .ahk__word {
+    grid-area: 1 / 1;
+    padding: 0 0.12em;
+    border-radius: 0.12em;
+    background: var(--agency-accent, var(--c-primary-light, #d4a017));
+    color: var(--c-on-primary, #050505);
+    opacity: 0;
+    transform: translateY(40%) rotate(3deg);
+    transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .ahk__word.is-active { opacity: 1; transform: rotate(-2deg); }
+  .ahk__word.is-leaving { opacity: 0; transform: translateY(-40%) rotate(-6deg); }
+
+  .ahk__sticker {
+    position: absolute;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 1.5px solid currentColor;
+    background: var(--c-bg, #050505);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    animation: ahk-float 6s ease-in-out infinite;
+  }
+  .ahk__sticker--1 { top: -2%; right: 8%; transform: rotate(8deg); }
+  .ahk__sticker--2 { top: 38%; right: -1%; transform: rotate(-10deg); animation-delay: -2s; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); border-color: transparent; }
+  .ahk__sticker--3 { top: 18%; right: 26%; transform: rotate(-4deg); animation-delay: -4s; }
+  @keyframes ahk-float { 50% { translate: 0 -8px; } }
+
+  .ahk__foot { display: grid; grid-template-columns: minmax(0, 1.2fr) auto; gap: var(--sp-6, 1.5rem) var(--sp-10, 2.5rem); align-items: end; margin-top: clamp(2rem, 5cqi, 3.5rem); padding-top: var(--sp-6, 1.5rem); border-top: 1.5px solid currentColor; }
+  .ahk--centered .ahk__foot { grid-template-columns: 1fr; justify-items: center; }
+  .ahk__text { margin: 0; max-width: 34rem; font-size: 1.1rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .ahk__ctas { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); }
+  .ahk__btn { display: inline-flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 1.6rem; border-radius: 999px; border: 1.5px solid currentColor; color: inherit; font-size: 1rem; font-weight: 800; text-decoration: none; transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease; }
+  .ahk__btn:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .ahk__btn--primary { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .ahk__btn--primary:hover { background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); transform: translateY(-2px) rotate(-1.5deg); }
+  .ahk__btn:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .ahk__proof { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--sp-3, 0.75rem); margin: 0; font-size: 0.92rem; color: var(--c-text-2, #a3a3a3); }
+  .ahk__proof strong { color: var(--c-text-1, #fff); }
+  .ahk__faces { display: inline-flex; }
+  .ahk__faces span { display: grid; place-items: center; width: 36px; height: 36px; margin-left: -8px; border-radius: 50%; border: 2px solid var(--c-bg, #050505); background: hsl(var(--h) 70% 55%); color: #0b0b0b; font-size: 0.7rem; font-weight: 800; }
+  .ahk__faces span:first-child { margin-left: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 760px) {
+    .ahk__foot { grid-template-columns: 1fr; }
+    .ahk__sticker--1, .ahk__sticker--3 { display: none; }
+    .ahk__sticker--2 { top: auto; bottom: 32%; right: 4%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ahk__sticker { animation: none; }
+    .ahk__word { transition: none; }
+  }
+</style>

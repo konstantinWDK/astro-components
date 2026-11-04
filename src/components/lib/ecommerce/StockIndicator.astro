@@ -1,0 +1,127 @@
+---
+/**
+ * StockIndicator — Urgency notice for product pages: low-stock bar ("Only 3 left") and a
+ * live "N people are viewing this" counter that drifts gently.
+ *
+ * @param {number} stock - Units left. Default 3.
+ * @param {number} threshold - At or below this value the low-stock style is used. Default 5.
+ * @param {number} capacity - Value that fills the bar completely. Default 20.
+ * @param {number} viewers - Starting number of viewers (0 hides the line). Default 14.
+ * @param {boolean} live - Let the viewers count move every few seconds. Default true.
+ * @param {string} variant - Style (card|inline). Default 'card'.
+ * @param {string} size - Density (sm|md). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: stock text is real text (not colour alone); the moving viewers number is not
+ * announced (aria-live off) to avoid noise; animation stops with prefers-reduced-motion.
+ */
+interface Props {
+  stock?: number;
+  threshold?: number;
+  capacity?: number;
+  viewers?: number;
+  live?: boolean;
+  variant?: 'card' | 'inline';
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+const {
+  stock = 3,
+  threshold = 5,
+  capacity = 20,
+  viewers = 14,
+  live = true,
+  variant = 'card',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const low = stock > 0 && stock <= threshold;
+const state = stock <= 0 ? 'out' : low ? 'low' : 'ok';
+const pct = Math.max(4, Math.min(100, (stock / capacity) * 100));
+const message = state === 'out' ? 'Sold out — join the waitlist' : low ? `Only ${stock} left — order soon` : 'In stock and ready to ship';
+---
+
+<div class:list={['stock', `stock--${state}`, `stock--${variant}`, `stock--${size}`, className]} data-stock-indicator data-viewers={viewers} data-live={live ? '' : undefined}>
+  <p class="stock__msg">
+    <span class="stock__icon" aria-hidden="true">
+      {state === 'ok'
+        ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>}
+    </span>
+    <strong>{message}</strong>
+  </p>
+  {state !== 'out' && (
+    <div class="stock__bar" aria-hidden="true"><span style={`width: ${pct}%`}></span></div>
+  )}
+  {viewers > 0 && (
+    <p class="stock__viewers" aria-live="off">
+      <span class="stock__eye" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      </span>
+      <span><strong data-viewers-count>{viewers}</strong> people are viewing this right now</span>
+    </p>
+  )}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-stock-indicator][data-live]:not([data-bound])').forEach((el) => {
+    el.dataset.bound = '';
+    const out = el.querySelector<HTMLElement>('[data-viewers-count]');
+    if (!out || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const base = Number(el.dataset.viewers) || 0;
+    let value = base;
+    window.setInterval(() => {
+      if (document.hidden) return;
+      const step = Math.random() < 0.5 ? -1 : 1;
+      value = Math.max(Math.max(1, base - 4), Math.min(base + 6, value + step));
+      out.textContent = String(value);
+      out.classList.remove('is-bump');
+      void out.offsetWidth;
+      out.classList.add('is-bump');
+    }, 6500);
+  });
+</script>
+
+<style>
+  .stock {
+    --stock-tone: var(--c-success, #34d399);
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+  .stock--low { --stock-tone: var(--c-warning, #fbbf24); }
+  .stock--out { --stock-tone: var(--c-danger, #f87171); }
+  .stock--card {
+    padding: var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid color-mix(in srgb, var(--stock-tone) 30%, transparent);
+    background: color-mix(in srgb, var(--stock-tone) 7%, transparent);
+  }
+  .stock--sm.stock--card { padding: var(--sp-3, 0.75rem); }
+
+  .stock__msg { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0; font-size: 0.9rem; color: var(--c-text-1, #fff); }
+  .stock__icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    color: var(--stock-tone);
+    background: color-mix(in srgb, var(--stock-tone) 16%, transparent);
+  }
+  .stock--low .stock__icon { animation: stock-pulse 1.8s ease-in-out infinite; }
+  .stock__bar { height: 6px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.08); overflow: hidden; }
+  .stock__bar span { display: block; height: 100%; border-radius: inherit; background: var(--stock-tone); }
+  .stock__viewers { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0; font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .stock__viewers strong { color: var(--c-text-1, #fff); display: inline-block; min-width: 1.2em; }
+  .stock__viewers strong.is-bump { animation: stock-bump 0.4s ease-out; }
+  .stock__eye { display: grid; place-items: center; color: var(--c-text-2, #a3a3a3); }
+
+  @keyframes stock-pulse { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--stock-tone) 12%, transparent); } }
+  @keyframes stock-bump { from { transform: translateY(-3px); opacity: 0.4; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stock--low .stock__icon { animation: none; }
+  }
+</style>

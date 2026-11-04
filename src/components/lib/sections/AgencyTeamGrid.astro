@@ -1,0 +1,111 @@
+---
+/**
+ * AgencyTeamGrid — Team portraits with name, role, location, a personal "fun fact" revealed on
+ * hover/focus and social links, plus an optional "we're hiring" card.
+ *
+ * @param {string} eyebrow - Small label. Default 'The studio'.
+ * @param {string} title - Heading. Default 'Small team, senior people'.
+ * @param {string} text - Intro paragraph.
+ * @param {Array<{name: string, role: string, location?: string, fact?: string, photo?: string, links?: {label: string, href: string}[]}>} people - Team members.
+ * @param {{title: string, text: string, href: string, label?: string}} hiring - Hiring card (optional).
+ * @param {number} columns - Desktop columns (3–4). Default 4.
+ * @param {string} variant - Style (portrait|compact). Default 'portrait'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each person is an article with a heading; the fun fact is real text (visible on
+ * hover and on keyboard focus of the card); social links have descriptive labels.
+ */
+interface Person { name: string; role: string; location?: string; fact?: string; photo?: string; links?: Array<{ label: string; href: string }> }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  people?: Person[];
+  hiring?: { title: string; text: string; href: string; label?: string };
+  columns?: 3 | 4;
+  variant?: 'portrait' | 'compact';
+  className?: string;
+}
+
+const {
+  eyebrow = 'The studio',
+  title = 'Small team, senior people',
+  text = 'No juniors hidden behind account managers. You work directly with the people who do the work.',
+  people = [
+    { name: 'Marta Ibáñez', role: 'Founder & creative director', location: 'Madrid', fact: 'Designed her first logo at 12 — for her cat.', links: [{ label: 'LinkedIn', href: '#' }] },
+    { name: 'Jonas Weber', role: 'Head of design', location: 'Berlin', fact: 'Owns 41 typefaces, uses three.', links: [{ label: 'Dribbble', href: '#' }] },
+    { name: 'Aisha Bello', role: 'Growth lead', location: 'Lisbon', fact: 'Ran a marathon and a product launch the same week.', links: [{ label: 'LinkedIn', href: '#' }] },
+    { name: 'Leo Martins', role: 'Lead developer', location: 'Remote', fact: 'Ships to production from a sailboat.', links: [{ label: 'GitHub', href: '#' }] },
+  ],
+  hiring = { title: 'We are hiring', text: 'Senior designers and Astro developers — remote in Europe.', href: '#', label: 'See open roles' },
+  columns = 4,
+  variant = 'portrait',
+  className = '',
+} = Astro.props;
+
+const hues = [80, 280, 20, 190, 330, 140];
+const initials = (n: string) => n.split(/\s+/).slice(0, 2).map((p) => p[0]).join('');
+---
+
+<div class="cq-agency-team">
+<section class:list={['atg', `atg--${variant}`, className]} style={`--cols: ${columns}`} aria-labelledby="atg-title">
+  <header class="atg__head">
+    <p class="atg__eyebrow">{eyebrow}</p>
+    <h2 class="atg__title" id="atg-title">{title}</h2>
+    {text && <p class="atg__text">{text}</p>}
+  </header>
+  <div class="atg__grid">
+    {people.map((p, i) => (
+      <article class="atg__person" tabindex="0" aria-labelledby={`atg-p-${i}`}>
+        <div class="atg__photo" style={`--h: ${hues[i % hues.length]}`}>
+          {p.photo ? <img src={p.photo} alt={`Portrait of ${p.name}`} loading="lazy" decoding="async" /> : <span class="atg__initials" aria-hidden="true">{initials(p.name)}</span>}
+          {p.fact && <p class="atg__fact"><span>Fun fact</span>{p.fact}</p>}
+        </div>
+        <h3 class="atg__name" id={`atg-p-${i}`}>{p.name}</h3>
+        <p class="atg__role">{p.role}{p.location && <span> · {p.location}</span>}</p>
+        {p.links && <p class="atg__links">{p.links.map((l) => <a href={l.href} aria-label={`${p.name} on ${l.label}`}>{l.label}</a>)}</p>}
+      </article>
+    ))}
+    {hiring && (
+      <a class="atg__hiring" href={hiring.href}>
+        <strong>{hiring.title}</strong>
+        <span>{hiring.text}</span>
+        <em>{hiring.label ?? 'Open roles'} ↗</em>
+      </a>
+    )}
+  </div>
+</section>
+</div>
+
+<style>
+  .cq-agency-team { container-type: inline-size; }
+  .atg { color: var(--c-text-1, #fff); }
+  .atg__head { display: grid; gap: var(--sp-2, 0.5rem); max-width: 46rem; margin-bottom: var(--sp-8, 2rem); }
+  .atg__eyebrow { margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .atg__title { margin: 0; font-size: clamp(2.2rem, 6cqi, 4.2rem); font-weight: 900; letter-spacing: -0.05em; line-height: 0.95; }
+  .atg__text { margin: var(--sp-2, 0.5rem) 0 0; font-size: 1.05rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .atg__grid { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: clamp(1rem, 2.5cqi, 1.75rem); }
+  .atg__person { display: grid; gap: 4px; outline: none; }
+  .atg__photo { position: relative; aspect-ratio: 4 / 5; border-radius: 24px; overflow: hidden; background: radial-gradient(circle at 30% 25%, hsl(var(--h) 80% 70%), transparent 60%), hsl(var(--h) 40% 22%); margin-bottom: var(--sp-3, 0.75rem); }
+  .atg--compact .atg__photo { aspect-ratio: 1; }
+  .atg__photo img { width: 100%; height: 100%; object-fit: cover; }
+  .atg__initials { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(3rem, 9cqi, 5.5rem); font-weight: 900; letter-spacing: -0.06em; color: rgba(255, 255, 255, 0.9); }
+  .atg__fact { position: absolute; inset: auto 10px 10px; margin: 0; padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-radius: 16px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.88rem; font-weight: 600; line-height: 1.4; opacity: 0; transform: translateY(12px) rotate(-1.5deg); transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+  .atg__fact span { display: block; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+  .atg__person:hover .atg__fact, .atg__person:focus-within .atg__fact, .atg__person:focus .atg__fact { opacity: 1; transform: rotate(-1.5deg); }
+  .atg__person:focus-visible .atg__photo { outline: 3px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .atg__name { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; }
+  .atg__role { margin: 0; font-size: 0.88rem; color: var(--c-text-2, #a3a3a3); }
+  .atg__links { display: flex; gap: var(--sp-3, 0.75rem); margin: 4px 0 0; }
+  .atg__links a { min-height: 32px; display: inline-flex; align-items: center; font-size: 0.85rem; font-weight: 700; color: var(--c-text-1, #fff); text-decoration: underline; text-underline-offset: 3px; }
+  .atg__links a:focus-visible, .atg__hiring:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .atg__hiring { display: flex; flex-direction: column; justify-content: flex-end; gap: var(--sp-2, 0.5rem); aspect-ratio: 4 / 5; padding: var(--sp-6, 1.5rem); border-radius: 24px; border: 2px dashed var(--c-border, rgba(255, 255, 255, 0.25)); color: inherit; text-decoration: none; transition: background 0.3s ease, border-color 0.3s ease; }
+  .atg__hiring:hover { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .atg__hiring strong { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+  .atg__hiring span { font-size: 0.92rem; opacity: 0.8; }
+  .atg__hiring em { font-style: normal; font-weight: 800; }
+  @container (max-width: 900px) { .atg__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 460px) { .atg__grid { grid-template-columns: 1fr; } .atg__hiring { aspect-ratio: auto; min-height: 200px; } }
+  @media (hover: none) { .atg__fact { position: static; opacity: 1; transform: none; margin: var(--sp-2, 0.5rem); } .atg__photo { display: flex; flex-direction: column; justify-content: flex-end; } }
+  @media (prefers-reduced-motion: reduce) { .atg__fact, .atg__hiring { transition: none; } }
+</style>

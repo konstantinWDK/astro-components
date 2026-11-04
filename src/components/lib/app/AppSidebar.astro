@@ -1,0 +1,249 @@
+---
+/**
+ * AppSidebar — SaaS app navigation: workspace switcher, grouped nav items with icons and
+ * count badges, collapsible to an icon rail, and an upgrade/plan card at the bottom.
+ *
+ * @param {{name: string, plan?: string, initials?: string}} workspace - Workspace shown at the top.
+ * @param {Array<{label?: string, items: {label: string, href: string, icon?: string, badge?: string|number}[]}>} groups - Nav groups.
+ * @param {string} currentHref - Marks the matching item with aria-current.
+ * @param {{title: string, text?: string, href: string, cta?: string, progress?: number}} promo - Card at the bottom (optional).
+ * @param {boolean} fullHeight - Full-viewport sticky sidebar (app shell). false renders it inline (docs, cards). Default true.
+ * @param {boolean} collapsible - Show the collapse toggle (remembered in localStorage). Default true.
+ * @param {string} variant - Style (surface|transparent|accent). Default 'surface'.
+ * @param {string} size - Width preset (sm|md|lg). Default 'md'.
+ * @param {string} id - Element id (AppTopbar's menu button opens it on mobile). Default 'app-sidebar'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a labelled nav landmark; the current page uses aria-current; when collapsed,
+ * labels stay available to screen readers and appear as tooltips on hover/focus.
+ */
+import { appIcon } from './app-icons';
+
+interface Item { label: string; href: string; icon?: string; badge?: string | number }
+interface Group { label?: string; items: Item[] }
+interface Props {
+  workspace?: { name: string; plan?: string; initials?: string };
+  groups?: Group[];
+  currentHref?: string;
+  promo?: { title: string; text?: string; href: string; cta?: string; progress?: number };
+  fullHeight?: boolean;
+  collapsible?: boolean;
+  variant?: 'surface' | 'transparent' | 'accent';
+  size?: 'sm' | 'md' | 'lg';
+  id?: string;
+  className?: string;
+}
+
+const {
+  workspace = { name: 'Hotel Mirador', plan: 'Pro plan', initials: 'HM' },
+  groups = [
+    { items: [
+      { label: 'Dashboard', href: '#', icon: 'dashboard' },
+      { label: 'Reservations', href: '#reservations', icon: 'calendar', badge: 12 },
+      { label: 'Rooms', href: '#rooms', icon: 'bed' },
+      { label: 'Guests', href: '#guests', icon: 'users' },
+    ] },
+    { label: 'Insights', items: [
+      { label: 'Reports', href: '#reports', icon: 'chart' },
+      { label: 'Revenue', href: '#revenue', icon: 'wallet' },
+    ] },
+    { label: 'Account', items: [{ label: 'Settings', href: '#settings', icon: 'settings' }] },
+  ],
+  currentHref = '#',
+  promo = { title: 'Channel manager', text: '3 of 5 channels connected', href: '#', cta: 'Connect more', progress: 60 },
+  fullHeight = true,
+  collapsible = true,
+  variant = 'surface',
+  size = 'md',
+  id = 'app-sidebar',
+  className = '',
+} = Astro.props;
+---
+
+<aside class:list={['app-sb', `app-sb--${variant}`, `app-sb--${size}`, { 'app-sb--inline': !fullHeight }, className]} id={id} data-app-sidebar aria-label="Application">
+  <div class="app-sb__top">
+    <a class="app-sb__ws" href={groups[0]?.items[0]?.href ?? '#'}>
+      <span class="app-sb__ws-logo" aria-hidden="true">{workspace.initials ?? workspace.name.slice(0, 2).toUpperCase()}</span>
+      <span class="app-sb__ws-text app-sb__label">
+        <strong>{workspace.name}</strong>
+        {workspace.plan && <small>{workspace.plan}</small>}
+      </span>
+    </a>
+    {collapsible && (
+      <button class="app-sb__collapse" type="button" aria-label="Collapse sidebar" aria-pressed="false" data-collapse>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+      </button>
+    )}
+  </div>
+
+  <nav class="app-sb__nav" aria-label="Main">
+    {groups.map((g) => (
+      <div class="app-sb__group">
+        {g.label && <p class="app-sb__group-label app-sb__label">{g.label}</p>}
+        <ul>
+          {g.items.map((item) => {
+            const active = item.href === currentHref;
+            return (
+              <li>
+                <a class:list={['app-sb__link', { 'is-active': active }]} href={item.href} aria-current={active ? 'page' : undefined} data-tip={item.label}>
+                  <span class="app-sb__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={appIcon(item.icon)} /></svg></span>
+                  <span class="app-sb__text app-sb__label">{item.label}</span>
+                  {item.badge !== undefined && <span class="app-sb__badge app-sb__label">{item.badge}</span>}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))}
+  </nav>
+
+  {promo && (
+    <a class="app-sb__promo app-sb__label" href={promo.href}>
+      <strong>{promo.title}</strong>
+      {promo.text && <span>{promo.text}</span>}
+      {promo.progress !== undefined && <span class="app-sb__meter" aria-hidden="true"><i style={`width: ${promo.progress}%`}></i></span>}
+      {promo.cta && <em>{promo.cta} →</em>}
+    </a>
+  )}
+</aside>
+<div class="app-sb-backdrop" data-sidebar-backdrop hidden></div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-app-sidebar]:not([data-bound])').forEach((sb) => {
+    sb.dataset.bound = '';
+    const btn = sb.querySelector<HTMLButtonElement>('[data-collapse]');
+    const key = `${sb.id}:collapsed`;
+    const set = (on: boolean) => {
+      sb.classList.toggle('is-collapsed', on);
+      btn?.setAttribute('aria-pressed', String(on));
+      btn?.setAttribute('aria-label', on ? 'Expand sidebar' : 'Collapse sidebar');
+    };
+    try { set(window.localStorage.getItem(key) === '1'); } catch { /* ignore */ }
+    btn?.addEventListener('click', () => {
+      const on = !sb.classList.contains('is-collapsed');
+      set(on);
+      try { window.localStorage.setItem(key, on ? '1' : '0'); } catch { /* ignore */ }
+    });
+
+    // Mobile drawer: opened by any [data-sidebar-open="<id>"] button (AppTopbar's menu button).
+    const backdrop = sb.nextElementSibling as HTMLElement | null;
+    const open = (v: boolean) => {
+      sb.classList.toggle('is-open', v);
+      if (backdrop) backdrop.hidden = !v;
+      document.querySelectorAll(`[data-sidebar-open="${sb.id}"]`).forEach((b) => b.setAttribute('aria-expanded', String(v)));
+      if (v) sb.querySelector<HTMLElement>('a, button')?.focus();
+    };
+    document.querySelectorAll<HTMLElement>(`[data-sidebar-open="${sb.id}"]`).forEach((b) => b.addEventListener('click', () => open(!sb.classList.contains('is-open'))));
+    backdrop?.addEventListener('click', () => open(false));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sb.classList.contains('is-open')) open(false); });
+  });
+</script>
+
+<style>
+  .app-sb {
+    --sb-w: 252px;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    width: var(--sb-w);
+    height: 100dvh;
+    padding: var(--sp-4, 1rem) var(--sp-3, 0.75rem);
+    border-right: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    background: var(--c-bg-1, #0a0a0a);
+    overflow-y: auto;
+    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 40;
+  }
+  .app-sb--inline { position: relative; height: auto; min-height: 520px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); border-radius: var(--r-lg, 16px); }
+  .app-sb--sm { --sb-w: 220px; }
+  .app-sb--lg { --sb-w: 280px; }
+  .app-sb--transparent { background: transparent; }
+  .app-sb--accent { background: var(--app-accent, var(--c-primary-light, #d4a017)); --c-text-1: #fff; --c-text-2: rgba(255, 255, 255, 0.8); }
+  .app-sb.is-collapsed { --sb-w: 72px; }
+  .app-sb.is-collapsed .app-sb__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .app-sb.is-collapsed .app-sb__top { flex-direction: column; }
+
+  .app-sb__top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2, 0.5rem); }
+  .app-sb__ws { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); min-width: 0; padding: 4px; border-radius: var(--r-md, 12px); color: var(--c-text-1, #fff); text-decoration: none; }
+  .app-sb__ws:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); color: var(--c-text-1, #fff); }
+  .app-sb__ws-logo { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.02em; }
+  .app-sb__ws-text { display: grid; min-width: 0; line-height: 1.2; }
+  .app-sb__ws-text strong { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app-sb__ws-text small { font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); }
+  .app-sb__collapse { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--c-text-2, #a3a3a3); cursor: pointer; }
+  .app-sb__collapse:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.06); color: var(--c-text-1, #fff); }
+
+  .app-sb__nav { display: grid; gap: var(--sp-4, 1rem); }
+  .app-sb__group ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .app-sb__group-label { margin: 0 0 var(--sp-1, 0.25rem); padding: 0 var(--sp-3, 0.75rem); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-3, #737373); }
+  .app-sb__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 40px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: 10px;
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .app-sb__link:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); color: var(--c-text-1, #fff); }
+  .app-sb__link.is-active { background: color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 14%, transparent); color: var(--c-text-1, #fff); font-weight: 600; }
+  .app-sb__link.is-active .app-sb__icon { color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .app-sb__icon { display: grid; place-items: center; flex-shrink: 0; width: 20px; }
+  .app-sb__text { flex: 1; white-space: nowrap; }
+  .app-sb__badge { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.08); color: var(--c-text-1, #fff); font-size: 0.7rem; font-weight: 700; text-align: center; }
+  .app-sb__link.is-active .app-sb__badge { background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .app-sb.is-collapsed .app-sb__link { justify-content: center; padding: 0; }
+  .app-sb.is-collapsed .app-sb__link:is(:hover, :focus-visible)::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--c-text-1, #fff);
+    color: var(--c-bg, #050505);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .app-sb :is(a, button):focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .app-sb__promo {
+    display: grid;
+    gap: 6px;
+    margin-top: auto;
+    padding: var(--sp-4, 1rem);
+    border-radius: 14px;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.03);
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+  .app-sb__promo strong { color: var(--c-text-1, #fff); font-size: 0.85rem; }
+  .app-sb__promo em { font-style: normal; font-weight: 600; color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .app-sb__meter { height: 6px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.08); overflow: hidden; }
+  .app-sb__meter i { display: block; height: 100%; border-radius: inherit; background: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .app-sb.is-collapsed .app-sb__promo { display: none; }
+
+  .app-sb-backdrop { position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, 0.5); }
+  .app-sb-backdrop[hidden] { display: none; }
+
+  @media (max-width: 960px) {
+    .app-sb:not(.app-sb--inline) { position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); --sb-w: 280px; box-shadow: 20px 0 60px -20px rgba(0, 0, 0, 0.5); }
+    .app-sb.is-open { transform: none; }
+    .app-sb.is-collapsed { --sb-w: 280px; }
+    .app-sb.is-collapsed .app-sb__label { position: static; width: auto; height: auto; clip: auto; }
+    .app-sb__collapse { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .app-sb { transition: none; } }
+</style>

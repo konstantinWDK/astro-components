@@ -1,0 +1,176 @@
+---
+/**
+ * ArrivalsBoard — Front-desk list with Arrivals / Departures / In-house tabs: guest, room, time,
+ * notes and a one-click check-in / check-out action with progress counter.
+ *
+ * @param {string} title - Card title. Default 'Today at the front desk'.
+ * @param {Array<{guest: string, room: string, time: string, nights?: number, vip?: boolean, note?: string, done?: boolean}>} arrivals - Expected arrivals.
+ * @param {Array<{guest: string, room: string, time: string, balance?: string, done?: boolean}>} departures - Expected departures.
+ * @param {Array<{guest: string, room: string, until: string}>} inHouse - Current guests.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: tabs follow the ARIA tabs pattern (arrow keys); action buttons say which guest
+ * they act on and switch to a pressed "done" state; progress is announced politely.
+ */
+import { initials, hueFrom } from './app-icons';
+
+interface Arrival { guest: string; room: string; time: string; nights?: number; vip?: boolean; note?: string; done?: boolean }
+interface Departure { guest: string; room: string; time: string; balance?: string; done?: boolean }
+interface Props {
+  title?: string;
+  arrivals?: Arrival[];
+  departures?: Departure[];
+  inHouse?: Array<{ guest: string; room: string; until: string }>;
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  title = 'Today at the front desk',
+  arrivals = [
+    { guest: 'Elena Duarte', room: '204', time: '14:00', nights: 3, vip: true, note: 'Late arrival, extra pillows' },
+    { guest: 'Aiko Tanaka', room: '108', time: '15:30', nights: 4 },
+    { guest: 'The Okafor family', room: '310', time: '16:00', nights: 6, note: 'Baby cot requested', done: true },
+  ],
+  departures = [
+    { guest: 'Hans Müller', room: '112', time: '11:00', balance: '€0', done: true },
+    { guest: 'Priya Nair', room: '207', time: '12:00', balance: '€48' },
+  ],
+  inHouse = [
+    { guest: 'James Whitfield', room: '202', until: 'Fri 7' },
+    { guest: 'Sofía Ramos', room: '305', until: 'Sun 9' },
+  ],
+  variant = 'card',
+  className = '',
+} = Astro.props;
+
+const tabs = [
+  { id: 'arr', label: 'Arrivals', count: arrivals.length, done: arrivals.filter((a) => a.done).length },
+  { id: 'dep', label: 'Departures', count: departures.length, done: departures.filter((d) => d.done).length },
+  { id: 'inh', label: 'In-house', count: inHouse.length },
+];
+---
+
+<section class:list={['fd', `fd--${variant}`, className]} data-frontdesk aria-labelledby="fd-title">
+  <header class="fd__head">
+    <h2 class="fd__title" id="fd-title">{title}</h2>
+    <p class="fd__progress" aria-live="polite" data-progress>{tabs[0].done}/{tabs[0].count} checked in</p>
+  </header>
+  <div class="fd__tabs" role="tablist" aria-label="Front desk lists">
+    {tabs.map((tab, i) => (
+      <button type="button" role="tab" id={`fd-tab-${tab.id}`} aria-controls={`fd-panel-${tab.id}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? '0' : '-1'} data-tab={tab.id}>
+        {tab.label} <span>{tab.count}</span>
+      </button>
+    ))}
+  </div>
+
+  <ul class="fd__list" role="tabpanel" id="fd-panel-arr" aria-labelledby="fd-tab-arr" data-panel="arr">
+    {arrivals.map((a) => (
+      <li class="fd__row">
+        <span class="fd__avatar" style={`--h: ${hueFrom(a.guest)}`} aria-hidden="true">{initials(a.guest)}</span>
+        <span class="fd__who">
+          <strong>{a.guest}{a.vip && <em class="fd__vip">VIP</em>}</strong>
+          <small>Room {a.room}{a.nights && <> · {a.nights} nights</>}{a.note && <> · {a.note}</>}</small>
+        </span>
+        <time class="fd__time">{a.time}</time>
+        <button type="button" class="fd__action" aria-pressed={a.done ? 'true' : 'false'} data-act="arr" data-done-label="Checked in" data-label="Check in">
+          <span>{a.done ? 'Checked in' : 'Check in'}</span>
+          <span class="sr-only"> {a.guest}</span>
+        </button>
+      </li>
+    ))}
+  </ul>
+  <ul class="fd__list" role="tabpanel" id="fd-panel-dep" aria-labelledby="fd-tab-dep" data-panel="dep" hidden>
+    {departures.map((d) => (
+      <li class="fd__row">
+        <span class="fd__avatar" style={`--h: ${hueFrom(d.guest)}`} aria-hidden="true">{initials(d.guest)}</span>
+        <span class="fd__who"><strong>{d.guest}</strong><small>Room {d.room}{d.balance && <> · Balance {d.balance}</>}</small></span>
+        <time class="fd__time">{d.time}</time>
+        <button type="button" class="fd__action" aria-pressed={d.done ? 'true' : 'false'} data-act="dep" data-done-label="Checked out" data-label="Check out">
+          <span>{d.done ? 'Checked out' : 'Check out'}</span>
+          <span class="sr-only"> {d.guest}</span>
+        </button>
+      </li>
+    ))}
+  </ul>
+  <ul class="fd__list" role="tabpanel" id="fd-panel-inh" aria-labelledby="fd-tab-inh" data-panel="inh" hidden>
+    {inHouse.map((g) => (
+      <li class="fd__row">
+        <span class="fd__avatar" style={`--h: ${hueFrom(g.guest)}`} aria-hidden="true">{initials(g.guest)}</span>
+        <span class="fd__who"><strong>{g.guest}</strong><small>Room {g.room}</small></span>
+        <span class="fd__time">until {g.until}</span>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-frontdesk]:not([data-bound])').forEach((fd) => {
+    fd.dataset.bound = '';
+    const tabs = Array.from(fd.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const progress = fd.querySelector<HTMLElement>('[data-progress]')!;
+    const words: Record<string, string> = { arr: 'checked in', dep: 'checked out' };
+    let current = 'arr';
+    const update = () => {
+      const panel = fd.querySelector<HTMLElement>(`[data-panel="${current}"]`)!;
+      const btns = Array.from(panel.querySelectorAll<HTMLButtonElement>('[data-act]'));
+      progress.textContent = btns.length ? `${btns.filter((b) => b.getAttribute('aria-pressed') === 'true').length}/${btns.length} ${words[current]}` : `${panel.children.length} guests in-house`;
+    };
+    const select = (i: number, focus = false) => {
+      tabs.forEach((t, n) => {
+        t.setAttribute('aria-selected', String(n === i));
+        t.tabIndex = n === i ? 0 : -1;
+        fd.querySelector<HTMLElement>(`[data-panel="${t.dataset.tab}"]`)!.hidden = n !== i;
+      });
+      current = tabs[i].dataset.tab || 'arr';
+      if (focus) tabs[i].focus();
+      update();
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(i));
+      t.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); select((i + d + tabs.length) % tabs.length, true); }
+      });
+    });
+    fd.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) => b.addEventListener('click', () => {
+      const done = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(done));
+      b.firstElementChild!.textContent = done ? b.dataset.doneLabel! : b.dataset.label!;
+      update();
+    }));
+    update();
+  });
+</script>
+
+<style>
+  .fd { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3, 0.75rem); min-width: 0; }
+  .fd--card { padding: var(--sp-5, 1.25rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .fd__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3, 0.75rem); }
+  .fd__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .fd__progress { margin: 0; font-size: 0.78rem; color: var(--c-text-3, #737373); }
+  .fd__tabs { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgb(var(--ink-rgb, 255 255 255) / 0.04); }
+  .fd__tabs button { flex: 1; min-height: 34px; border: 0; border-radius: 7px; background: transparent; color: var(--c-text-2, #a3a3a3); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .fd__tabs button span { padding: 0 6px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.08); font-size: 0.7rem; }
+  .fd__tabs [aria-selected='true'] { background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .fd__list { display: grid; margin: 0; padding: 0; list-style: none; }
+  .fd__list[hidden] { display: none; }
+  .fd__row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; align-items: center; gap: var(--sp-3, 0.75rem); padding: var(--sp-3, 0.75rem) 0; border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.06)); }
+  .fd__row:last-child { border-bottom: 0; }
+  .fd__avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: hsl(var(--h) 50% 45%); color: #fff; font-size: 0.72rem; font-weight: 700; }
+  .fd__who { display: grid; min-width: 0; }
+  .fd__who strong { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--c-text-1, #fff); }
+  .fd__who small { font-size: 0.75rem; color: var(--c-text-3, #737373); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fd__vip { padding: 1px 6px; border-radius: 6px; background: color-mix(in srgb, var(--c-warning, #fbbf24) 18%, transparent); color: var(--c-warning, #fbbf24); font-size: 0.62rem; font-style: normal; font-weight: 800; letter-spacing: 0.06em; }
+  .fd__time { font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fd__action { min-height: 34px; padding: 0 0.8rem; border-radius: 8px; border: 1px solid var(--app-accent, var(--c-primary-light, #d4a017)); background: transparent; color: var(--app-accent, var(--c-primary-light, #d4a017)); font: inherit; font-size: 0.78rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  .fd__action:hover { background: color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 12%, transparent); }
+  .fd__action[aria-pressed='true'] { border-color: transparent; background: color-mix(in srgb, var(--c-success, #34d399) 14%, transparent); color: var(--c-success, #34d399); }
+  .fd :is(button):focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @container (max-width: 420px) {
+    .fd__row { grid-template-columns: 36px minmax(0, 1fr) auto; }
+    .fd__time { display: none; }
+  }
+</style>

@@ -1,0 +1,145 @@
+---
+/**
+ * ProductGallery — Product image viewer with a large stage and thumbnail rail.
+ * Works with real photos (`images`) or generates several illustrated "angles".
+ *
+ * @param {string[]} images - Photo URLs. When empty, illustrated views are generated.
+ * @param {string} alt - Alt text base for photos. Default 'Product photo'.
+ * @param {string} icon - Illustration for generated views. Default 'headphones'.
+ * @param {number} hue - Backdrop hue for generated views. Default 38.
+ * @param {number} views - Number of generated views (2–5). Default 4.
+ * @param {string} layout - Thumbnail position (bottom|side). Default 'side'.
+ * @param {string} size - Stage ratio preset (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: thumbnails are buttons with aria-pressed and labels; arrow keys move
+ * between thumbnails; the stage announces the current view number.
+ */
+import ProductMedia from './ProductMedia.astro';
+
+interface Props {
+  images?: string[];
+  alt?: string;
+  icon?: string;
+  hue?: number;
+  views?: number;
+  layout?: 'bottom' | 'side';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  images = [],
+  alt = 'Product photo',
+  icon = 'headphones',
+  hue = 38,
+  views = 4,
+  layout = 'side',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const generated = Array.from({ length: Math.min(5, Math.max(2, views)) }, (_, i) => ({
+  hue: (hue + i * 18) % 360,
+  variant: (i % 2 === 0 ? 'glow' : 'soft') as 'glow' | 'soft',
+  turn: [0, -14, 12, -4, 20][i] ?? 0,
+  zoom: [1, 1.18, 0.92, 1.3, 1.05][i] ?? 1,
+}));
+const slides = images.length
+  ? images.map((src, i) => ({ src, label: `${alt} ${i + 1}` }))
+  : generated.map((g, i) => ({ ...g, label: `View ${i + 1}` }));
+const ratio = size === 'sm' ? '1 / 1' : size === 'lg' ? '4 / 5' : '5 / 5.4';
+---
+
+<div class="p-gallery-cq">
+<div class:list={['p-gallery', `p-gallery--${layout}`, `p-gallery--${size}`, className]} data-gallery>
+  <div class="p-gallery__stage" aria-live="polite">
+    {slides.map((s: any, i) => (
+      <div class:list={['p-gallery__slide', { 'is-active': i === 0 }]} data-slide hidden={i !== 0} style={s.turn !== undefined ? `--turn: ${s.turn}deg; --zoom: ${s.zoom}` : ''}>
+        {s.src
+          ? <ProductMedia image={s.src} alt={s.label} ratio={ratio} />
+          : <ProductMedia icon={icon} hue={s.hue} variant={s.variant} ratio={ratio} size="lg" />}
+        <span class="sr-only">{s.label} of {slides.length}</span>
+      </div>
+    ))}
+  </div>
+  <div class="p-gallery__thumbs" role="group" aria-label="Product views">
+    {slides.map((s: any, i) => (
+      <button class:list={['p-gallery__thumb']} type="button" aria-pressed={i === 0 ? 'true' : 'false'} aria-label={`Show ${s.label}`} data-thumb={i} style={s.turn !== undefined ? `--turn: ${s.turn}deg; --zoom: ${s.zoom}` : ''}>
+        {s.src
+          ? <ProductMedia image={s.src} alt="" ratio="1 / 1" />
+          : <ProductMedia icon={icon} hue={s.hue} variant={s.variant} ratio="1 / 1" size="sm" />}
+      </button>
+    ))}
+  </div>
+</div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-gallery]:not([data-bound])').forEach((g) => {
+    g.dataset.bound = '';
+    const slides = Array.from(g.querySelectorAll<HTMLElement>('[data-slide]'));
+    const thumbs = Array.from(g.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
+    const show = (i: number, focus = false) => {
+      slides.forEach((s, n) => { s.hidden = n !== i; s.classList.toggle('is-active', n === i); });
+      thumbs.forEach((t, n) => t.setAttribute('aria-pressed', String(n === i)));
+      if (focus) thumbs[i]?.focus();
+    };
+    thumbs.forEach((t, i) => {
+      t.addEventListener('click', () => show(i));
+      t.addEventListener('keydown', (e) => {
+        const keys: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+        if (!(e.key in keys)) return;
+        e.preventDefault();
+        show((i + keys[e.key] + thumbs.length) % thumbs.length, true);
+      });
+    });
+  });
+</script>
+
+<style>
+  .p-gallery-cq { container-type: inline-size; }
+  .p-gallery { display: grid; gap: var(--sp-3, 0.75rem); }
+  .p-gallery--side { grid-template-columns: 84px minmax(0, 1fr); }
+  .p-gallery--side .p-gallery__stage { order: 2; }
+  .p-gallery--side .p-gallery__thumbs { order: 1; flex-direction: column; }
+
+  .p-gallery__stage {
+    position: relative;
+    border-radius: var(--r-xl, 28px);
+    border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    overflow: hidden;
+  }
+  .p-gallery__slide[hidden] { display: none; }
+  .p-gallery__slide.is-active { animation: pg-in 0.35s ease-out; }
+  .p-gallery__slide :global(.p-media__art),
+  .p-gallery__thumb :global(.p-media__art) { transform: rotate(var(--turn, 0deg)) scale(var(--zoom, 1)); }
+
+  .p-gallery__thumbs { display: flex; gap: var(--sp-2, 0.5rem); }
+  .p-gallery__thumb {
+    flex: 0 0 84px;
+    width: 84px;
+    padding: 0;
+    border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+    border-radius: var(--r-md, 12px);
+    overflow: hidden;
+    background: none;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+  }
+  .p-gallery__thumb:hover { opacity: 1; }
+  .p-gallery__thumb[aria-pressed='true'] { opacity: 1; border-color: var(--c-primary-light, #d4a017); }
+  .p-gallery__thumb:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+
+  @keyframes pg-in { from { opacity: 0.4; transform: scale(0.985); } }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 700px) {
+    .p-gallery--side { grid-template-columns: 1fr; }
+    .p-gallery--side .p-gallery__stage { order: 1; }
+    .p-gallery--side .p-gallery__thumbs { order: 2; flex-direction: row; }
+    .p-gallery__thumb { flex-basis: 64px; width: 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .p-gallery__slide.is-active { animation: none; } }
+</style>

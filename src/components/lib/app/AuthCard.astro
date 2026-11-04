@@ -1,0 +1,213 @@
+---
+/**
+ * AuthCard — Sign-in / sign-up split screen: form card (email, password with show/hide, remember
+ * me, SSO buttons) next to a brand panel with a quote and key figures.
+ *
+ * @param {string} mode - 'signin' or 'signup'. Default 'signin'.
+ * @param {string} brand - Product name. Default 'Lobby'.
+ * @param {string} title - Heading. Defaults by mode.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} action - Form action. With '#' it validates and redirects to `successHref`. Default '#'.
+ * @param {string} successHref - Where to go after a demo sign-in. Default '#'.
+ * @param {string[]} providers - SSO buttons. Default ['Google', 'Microsoft'].
+ * @param {string} switchHref - Link to the other mode. Default '#'.
+ * @param {{quote: string, author: string, role?: string}} testimonial - Brand panel quote (optional).
+ * @param {Array<{value: string, label: string}>} stats - Brand panel figures.
+ * @param {string} variant - Layout (split|centered). Default 'split'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1; labelled fields with autocomplete (email, current-password /
+ * new-password); errors are linked with aria-describedby and announced; the show-password
+ * button is a toggle with aria-pressed.
+ */
+interface Props {
+  mode?: 'signin' | 'signup';
+  brand?: string;
+  title?: string;
+  subtitle?: string;
+  action?: string;
+  successHref?: string;
+  providers?: string[];
+  switchHref?: string;
+  testimonial?: { quote: string; author: string; role?: string };
+  stats?: Array<{ value: string; label: string }>;
+  variant?: 'split' | 'centered';
+  className?: string;
+}
+
+const {
+  mode = 'signin',
+  brand = 'Lobby',
+  title = mode === 'signin' ? 'Welcome back' : 'Create your workspace',
+  subtitle = mode === 'signin' ? 'Sign in to manage your property.' : 'Start your 14-day free trial — no card required.',
+  action = '#',
+  successHref = '#',
+  providers = ['Google', 'Microsoft'],
+  switchHref = '#',
+  testimonial = { quote: 'We replaced three tools with Lobby. Check-in takes half the time and our occupancy is up 9% this season.', author: 'Lucía Ortega', role: 'GM, Hotel Mirador' },
+  stats = [{ value: '2,400+', label: 'properties' }, { value: '38%', label: 'less admin time' }, { value: '4.9/5', label: 'support rating' }],
+  variant = 'split',
+  className = '',
+} = Astro.props;
+
+const isIn = mode === 'signin';
+---
+
+<div class="auth-cq">
+<section class:list={['auth', `auth--${variant}`, className]}>
+  <div class="auth__form-side">
+    <form class="auth__card" action={action} method="post" novalidate data-auth data-success={successHref}>
+      <p class="auth__brand"><span aria-hidden="true">{brand.slice(0, 1)}</span>{brand}</p>
+      <h1 class="auth__title">{title}</h1>
+      {subtitle && <p class="auth__sub">{subtitle}</p>}
+
+      {providers.length > 0 && (
+        <>
+          <div class="auth__sso">
+            {providers.map((p) => <button type="button" class="auth__sso-btn">Continue with {p}</button>)}
+          </div>
+          <p class="auth__or"><span>or with email</span></p>
+        </>
+      )}
+
+      {!isIn && (
+        <div class="auth__field">
+          <label for="auth-name">Full name</label>
+          <input id="auth-name" name="name" type="text" autocomplete="name" required />
+        </div>
+      )}
+      <div class="auth__field">
+        <label for="auth-email">Work email</label>
+        <input id="auth-email" name="email" type="email" autocomplete="email" required aria-describedby="auth-error" />
+      </div>
+      <div class="auth__field">
+        <div class="auth__label-row">
+          <label for="auth-pass">Password</label>
+          {isIn && <a href="#">Forgot password?</a>}
+        </div>
+        <div class="auth__pass">
+          <input id="auth-pass" name="password" type="password" autocomplete={isIn ? 'current-password' : 'new-password'} required minlength={8} aria-describedby="auth-error" />
+          <button type="button" class="auth__eye" aria-pressed="false" aria-label="Show password" data-eye>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      {isIn && (
+        <label class="auth__remember"><input type="checkbox" name="remember" checked /> Keep me signed in</label>
+      )}
+      <p class="auth__error" id="auth-error" role="alert" data-error></p>
+      <button type="submit" class="auth__submit" data-submit>{isIn ? 'Sign in' : 'Create account'}</button>
+      <p class="auth__switch">{isIn ? 'New to ' + brand + '?' : 'Already have an account?'} <a href={switchHref}>{isIn ? 'Start a free trial' : 'Sign in'}</a></p>
+    </form>
+  </div>
+
+  {variant === 'split' && (
+    <aside class="auth__brand-side" aria-label={`About ${brand}`}>
+      {testimonial && (
+        <figure class="auth__quote">
+          <blockquote><p>“{testimonial.quote}”</p></blockquote>
+          <figcaption><strong>{testimonial.author}</strong>{testimonial.role && <span> · {testimonial.role}</span>}</figcaption>
+        </figure>
+      )}
+      {stats.length > 0 && (
+        <dl class="auth__stats">{stats.map((s) => <div><dt>{s.label}</dt><dd>{s.value}</dd></div>)}</dl>
+      )}
+    </aside>
+  )}
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-auth]:not([data-bound])').forEach((form) => {
+    form.dataset.bound = '';
+    const eye = form.querySelector<HTMLButtonElement>('[data-eye]');
+    const pass = form.querySelector<HTMLInputElement>('#auth-pass');
+    const error = form.querySelector<HTMLElement>('[data-error]')!;
+    eye?.addEventListener('click', () => {
+      const show = eye.getAttribute('aria-pressed') !== 'true';
+      eye.setAttribute('aria-pressed', String(show));
+      eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      if (pass) pass.type = show ? 'text' : 'password';
+    });
+    form.addEventListener('submit', (e) => {
+      form.querySelectorAll('[aria-invalid]').forEach((n) => n.removeAttribute('aria-invalid'));
+      const bad = Array.from(form.querySelectorAll<HTMLInputElement>('input[required]')).filter((i) => !i.checkValidity());
+      if (bad.length) {
+        e.preventDefault();
+        bad.forEach((i) => i.setAttribute('aria-invalid', 'true'));
+        error.textContent = bad[0].type === 'password' ? 'Your password needs at least 8 characters.' : 'Please check your email address.';
+        bad[0].focus();
+        return;
+      }
+      if (form.getAttribute('action') === '#') {
+        e.preventDefault();
+        const btn = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+        window.setTimeout(() => { window.location.href = form.dataset.success || '#'; }, 700);
+      }
+    });
+  });
+</script>
+
+<style>
+  .auth-cq { container-type: inline-size; }
+  .auth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: min(100dvh, 860px); color: var(--c-text-2, #a3a3a3); }
+  .auth--centered { grid-template-columns: 1fr; }
+  .auth__form-side { display: grid; place-items: center; padding: clamp(1.5rem, 5vw, 4rem) var(--sp-5, 1.25rem); }
+  .auth__card { display: grid; gap: var(--sp-4, 1rem); width: 100%; max-width: 400px; }
+  .auth__brand { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0 0 var(--sp-4, 1rem); font-weight: 800; font-size: 1.05rem; color: var(--c-text-1, #fff); }
+  .auth__brand span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .auth__title { margin: 0; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; color: var(--c-text-1, #fff); }
+  .auth__sub { margin: -8px 0 0; font-size: 0.92rem; }
+  .auth__sso { display: grid; gap: var(--sp-2, 0.5rem); }
+  .auth__sso-btn { min-height: 44px; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .auth__sso-btn:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); }
+  .auth__or { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); margin: 0; font-size: 0.75rem; color: var(--c-text-3, #737373); }
+  .auth__or::before, .auth__or::after { content: ''; flex: 1; height: 1px; background: var(--c-border, rgba(255, 255, 255, 0.1)); }
+  .auth__field { display: grid; gap: 6px; }
+  .auth__field label, .auth__label-row label { font-size: 0.82rem; font-weight: 600; color: var(--c-text-1, #fff); }
+  .auth__label-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .auth__label-row a, .auth__switch a { font-size: 0.8rem; font-weight: 600; color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .auth__field input { width: 100%; min-height: 46px; padding: 0 0.85rem; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.14)); background: var(--c-bg-1, #0a0a0a); color: var(--c-text-1, #fff); font: inherit; font-size: 0.95rem; }
+  .auth__field input:focus { outline: none; border-color: var(--app-accent, var(--c-primary-light, #d4a017)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 20%, transparent); }
+  .auth__field input[aria-invalid='true'] { border-color: var(--c-danger, #f87171); }
+  .auth__pass { position: relative; }
+  .auth__pass input { padding-right: 44px; }
+  .auth__eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--c-text-3, #737373); cursor: pointer; }
+  .auth__eye[aria-pressed='true'] { color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .auth__remember { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); font-size: 0.85rem; cursor: pointer; }
+  .auth__remember input { width: 16px; height: 16px; accent-color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .auth__error { min-height: 1.2em; margin: -6px 0 0; font-size: 0.82rem; color: var(--c-danger, #f87171); }
+  .auth__error:empty { display: none; }
+  .auth__submit { min-height: 48px; border: 0; border-radius: 10px; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .auth__submit:disabled { opacity: 0.7; cursor: progress; }
+  .auth__switch { margin: 0; font-size: 0.85rem; text-align: center; }
+  .auth :is(a, button, input):focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+
+  .auth__brand-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--sp-8, 2rem);
+    padding: clamp(2rem, 5vw, 4rem);
+    background:
+      radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 45%, transparent), transparent 55%),
+      radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--chart-3, #199e70) 35%, transparent), transparent 50%),
+      #0b1020;
+    color: #fff;
+  }
+  .auth__quote { margin: 0; }
+  .auth__quote p { margin: 0; font-size: clamp(1.3rem, 2.4vw, 1.9rem); font-weight: 600; line-height: 1.35; letter-spacing: -0.02em; }
+  .auth__quote figcaption { margin-top: var(--sp-4, 1rem); font-size: 0.9rem; color: rgba(255, 255, 255, 0.75); }
+  .auth__quote strong { color: #fff; }
+  .auth__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4, 1rem); margin: 0; padding-top: var(--sp-6, 1.5rem); border-top: 1px solid rgba(255, 255, 255, 0.2); }
+  .auth__stats div { display: flex; flex-direction: column-reverse; }
+  .auth__stats dt { font-size: 0.8rem; color: rgba(255, 255, 255, 0.75); }
+  .auth__stats dd { margin: 0; font-size: 1.5rem; font-weight: 800; }
+
+  @container (max-width: 860px) {
+    .auth { grid-template-columns: 1fr; }
+    .auth__brand-side { display: none; }
+  }
+</style>

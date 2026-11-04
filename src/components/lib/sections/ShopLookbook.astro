@@ -1,0 +1,250 @@
+---
+/**
+ * ShopLookbook — "Shop the look": a large editorial image with numbered hotspots. Each hotspot
+ * opens a small product card (name, price, link and add to bag) and highlights it in the side list.
+ *
+ * @param {string} eyebrow - Small label. Default 'Lookbook'.
+ * @param {string} title - Heading (use *asterisks* for italics). Default 'Shop the *look*'.
+ * @param {string} text - Intro copy.
+ * @param {{icon?: string, hue?: number, image?: string, alt?: string}} media - Scene visual.
+ * @param {Array<{x: number, y: number, product: Product, href?: string}>} spots - Hotspots; x/y in % of the image.
+ * @param {string} currency - ISO currency. Default 'EUR'.
+ * @param {string} locale - Number format locale. Default 'en-GB'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {string} variant - Layout (image-left|image-right). Default 'image-left'.
+ * @param {string} id - Base id. Default 'lookbook'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: hotspots are buttons with full labels and aria-expanded; the same products are
+ * listed as plain links next to the image, so the look is usable without the hotspots.
+ */
+import ProductMedia from '../ecommerce/ProductMedia.astro';
+import { formatMoney } from '../ecommerce/cart-store';
+import type { Product } from '../ecommerce/types';
+
+interface Spot { x: number; y: number; product: Product; href?: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  media?: { icon?: string; hue?: number; image?: string; alt?: string };
+  spots?: Spot[];
+  currency?: string;
+  locale?: string;
+  cartKey?: string;
+  variant?: 'image-left' | 'image-right';
+  id?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'Lookbook',
+  title = 'Shop the *look*',
+  text = 'A Sunday uniform: a soft overshirt, a tote that goes everywhere and the mug that starts the day.',
+  media = { icon: 'jacket', hue: 22 },
+  spots = [
+    { x: 38, y: 34, product: { slug: 'linen-overshirt', name: 'Linen Overshirt', price: 145, category: 'clothing', icon: 'shirt', hue: 30 } },
+    { x: 66, y: 62, product: { slug: 'field-tote', name: 'Field Tote', price: 120, category: 'bags', icon: 'bag', hue: 18 } },
+    { x: 24, y: 76, product: { slug: 'kiln-mug', name: 'Kiln Mug', price: 32, category: 'objects', icon: 'mug', hue: 14 } },
+  ],
+  currency = 'EUR',
+  locale = 'en-GB',
+  cartKey = 'ack-cart',
+  variant = 'image-left',
+  id = 'lookbook',
+  className = '',
+} = Astro.props;
+
+const money = { currency, locale };
+const parts = title.split(/\*(.+?)\*/g);
+const total = spots.reduce((n, s) => n + s.product.price, 0);
+---
+
+<div class="slb-cq">
+<section class:list={['slb', `slb--${variant}`, className]} data-lookbook>
+  <div class="slb__stage">
+    <ProductMedia image={media.image} alt={media.alt ?? ''} icon={media.icon} hue={media.hue} ratio="4 / 5" variant="soft" size="lg" />
+    {spots.map((s, i) => (
+      <div class="slb__spot" style={`left: ${s.x}%; top: ${s.y}%`}>
+        <button
+          type="button"
+          class="slb__dot"
+          aria-expanded="false"
+          aria-controls={`${id}-pop-${i}`}
+          aria-label={`${i + 1}: ${s.product.name}, ${formatMoney(s.product.price, money)}`}
+          data-spot={i}
+        >{i + 1}</button>
+        <div class:list={['slb__pop', { 'slb__pop--left': s.x > 60 }]} id={`${id}-pop-${i}`} hidden data-pop>
+          <p class="slb__pop-name">{s.product.name}</p>
+          <p class="slb__pop-price">{formatMoney(s.product.price, money)}</p>
+          <div class="slb__pop-actions">
+            <a href={s.href ?? '#'}>View</a>
+            <button
+              type="button"
+              data-add-to-cart={JSON.stringify({ id: s.product.slug, name: s.product.name, price: s.product.price, icon: s.product.icon, hue: s.product.hue, variant: s.product.colors?.[0]?.name })}
+              data-cart-key={cartKey}
+              data-open-cart="false"
+              data-added-label="Added"
+            ><span data-label>Add to bag</span></button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div class="slb__copy">
+    {eyebrow && <p class="slb__eyebrow">{eyebrow}</p>}
+    <h2 class="slb__title">{parts.map((p, i) => (i % 2 ? <em>{p}</em> : p))}</h2>
+    {text && <p class="slb__text">{text}</p>}
+    <ol class="slb__list">
+      {spots.map((s, i) => (
+        <li class="slb__row" data-row={i}>
+          <span class="slb__row-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <a class="slb__row-name" href={s.href ?? '#'}>{s.product.name}</a>
+          <span class="slb__row-price">{formatMoney(s.product.price, money)}</span>
+        </li>
+      ))}
+    </ol>
+    <p class="slb__total"><span>The complete look</span><strong>{formatMoney(total, money)}</strong></p>
+  </div>
+</section>
+</div>
+
+<script>
+  import { bindAddToCart } from '../ecommerce/cart-store';
+  bindAddToCart(document);
+
+  document.querySelectorAll<HTMLElement>('[data-lookbook]:not([data-bound])').forEach((lb) => {
+    lb.dataset.bound = '';
+    const dots = Array.from(lb.querySelectorAll<HTMLButtonElement>('[data-spot]'));
+    const rows = Array.from(lb.querySelectorAll<HTMLElement>('[data-row]'));
+    const close = () => {
+      dots.forEach((d) => {
+        d.setAttribute('aria-expanded', 'false');
+        const p = document.getElementById(d.getAttribute('aria-controls') || '');
+        if (p) p.hidden = true;
+      });
+      rows.forEach((r) => r.classList.remove('is-active'));
+    };
+    dots.forEach((d, i) => {
+      d.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = d.getAttribute('aria-expanded') !== 'true';
+        close();
+        if (!open) return;
+        d.setAttribute('aria-expanded', 'true');
+        const p = document.getElementById(d.getAttribute('aria-controls') || '');
+        if (p) p.hidden = false;
+        rows[i]?.classList.add('is-active');
+      });
+      rows[i]?.addEventListener('mouseenter', () => d.classList.add('is-hint'));
+      rows[i]?.addEventListener('mouseleave', () => d.classList.remove('is-hint'));
+    });
+    document.addEventListener('click', (e) => { if (!lb.contains(e.target as Node)) close(); });
+    lb.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const open = dots.find((d) => d.getAttribute('aria-expanded') === 'true');
+      close();
+      open?.focus();
+    });
+  });
+</script>
+
+<style>
+  .slb-cq { container-type: inline-size; }
+  .slb {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(1.5rem, 5vw, 5rem);
+    align-items: center;
+    color: var(--c-text-1, #fff);
+  }
+  .slb--image-right .slb__stage { order: 2; }
+  .slb__stage { position: relative; border-radius: var(--r-sm, 2px); }
+  .slb__stage > :global(.p-media) { border-radius: var(--r-sm, 2px); }
+  .slb__spot { position: absolute; z-index: 2; transform: translate(-50%, -50%); }
+  .slb__dot {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--c-text-1, #fff);
+    color: var(--c-bg, #050505);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.6);
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .slb__dot::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid var(--c-text-1, #fff); opacity: 0.6; animation: slb-ring 2.4s ease-out infinite; }
+  .slb__dot:hover, .slb__dot.is-hint, .slb__dot[aria-expanded='true'] { transform: scale(1.12); background: var(--shop-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  @keyframes slb-ring { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(1.5); opacity: 0; } }
+
+  .slb__pop {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 12px);
+    width: 220px;
+    padding: var(--sp-4, 1rem);
+    transform: translateY(-50%);
+    background: var(--c-bg-1, #0a0a0a);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12));
+    box-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.6);
+    animation: slb-pop 0.2s ease-out;
+  }
+  .slb__pop--left { left: auto; right: calc(100% + 12px); }
+  .slb__pop[hidden] { display: none; }
+  @keyframes slb-pop { from { opacity: 0; transform: translateY(-46%); } }
+  .slb__pop-name { margin: 0; font-family: var(--font-display, Georgia, serif); font-size: 1.05rem; }
+  .slb__pop-price { margin: 2px 0 var(--sp-3, 0.75rem); font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+  .slb__pop-actions { display: flex; gap: var(--sp-2, 0.5rem); }
+  .slb__pop-actions a, .slb__pop-actions button {
+    flex: 1;
+    display: inline-grid;
+    place-items: center;
+    min-height: 40px;
+    border: 1px solid var(--c-text-1, #fff);
+    border-radius: var(--r-sm, 2px);
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .slb__pop-actions button { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .slb__pop-actions button.is-added { background: var(--shop-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .slb :is(a, button):focus-visible { outline: 2px solid var(--shop-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+
+  .slb__eyebrow { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .slb__title { margin: 0; font-family: var(--font-display, Georgia, 'Times New Roman', serif); font-size: clamp(2.4rem, 5.5vw, 4.5rem); font-weight: 400; letter-spacing: -0.04em; line-height: 0.95; }
+  .slb__title em { font-style: italic; color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .slb__text { max-width: 28rem; margin: var(--sp-5, 1.25rem) 0 0; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .slb__list { margin: var(--sp-8, 2rem) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); }
+  .slb__row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: var(--sp-3, 0.75rem); min-height: 56px; border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); transition: background 0.2s ease, padding 0.2s ease; }
+  .slb__row.is-active { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); padding-inline: var(--sp-2, 0.5rem); }
+  .slb__row-num { font-size: 0.75rem; color: var(--c-text-2, #a3a3a3); font-variant-numeric: tabular-nums; }
+  .slb__row-name { font-family: var(--font-display, Georgia, serif); font-size: 1.15rem; color: inherit; text-decoration: none; }
+  .slb__row-name:hover { color: var(--shop-accent, var(--c-primary-light, #d4a017)); }
+  .slb__row-price { font-variant-numeric: tabular-nums; }
+  .slb__total { display: flex; justify-content: space-between; margin: var(--sp-4, 1rem) 0 0; font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+  .slb__total strong { font-size: 1.1rem; color: var(--c-text-1, #fff); }
+
+  @container (max-width: 860px) {
+    .slb { grid-template-columns: 1fr; }
+    .slb--image-right .slb__stage { order: 0; }
+    .slb__pop { left: 50%; top: calc(100% + 10px); transform: translateX(-50%); width: 200px; }
+    .slb__pop--left { right: auto; left: 50%; }
+    @keyframes slb-pop { from { opacity: 0; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slb__dot::before, .slb__pop { animation: none; }
+  }
+</style>

@@ -1,0 +1,71 @@
+---
+/**
+ * SwitchRow — Settings row with label, description and an accessible on/off switch.
+ *
+ * @param {string} label - Setting name. Default 'Email notifications'.
+ * @param {string} description - Help text.
+ * @param {string} name - Form field name (submitted as "on" when checked). Default 'setting'.
+ * @param {boolean} checked - Initial state. Default true.
+ * @param {boolean} disabled - Disable the switch. Default false.
+ * @param {string} id - Input id (unique). Defaults to `sw-${name}`.
+ * @param {string} size - Switch size (sm|md). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: native checkbox with role="switch", associated label and description
+ * (aria-describedby), visible focus ring, 44px touch target.
+ */
+interface Props {
+  label?: string;
+  description?: string;
+  name?: string;
+  checked?: boolean;
+  disabled?: boolean;
+  id?: string;
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+const {
+  label = 'Email notifications',
+  description = 'Get an email for new bookings and cancellations.',
+  name = 'setting',
+  checked = true,
+  disabled = false,
+  id,
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const inputId = id ?? `sw-${name}`;
+---
+
+<div class:list={['sw-row', `sw-row--${size}`, { 'is-disabled': disabled }, className]}>
+  <div class="sw-row__text">
+    <label class="sw-row__label" for={inputId}>{label}</label>
+    {description && <p class="sw-row__desc" id={`${inputId}-desc`}>{description}</p>}
+  </div>
+  <span class="sw-row__switch">
+    <input type="checkbox" role="switch" id={inputId} name={name} checked={checked} disabled={disabled} aria-describedby={description ? `${inputId}-desc` : undefined} />
+    <span class="sw-row__track" aria-hidden="true"></span>
+  </span>
+</div>
+
+<style>
+  .sw-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4, 1rem); min-height: 44px; }
+  .sw-row + :global(.sw-row) { padding-top: var(--sp-4, 1rem); border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.06)); }
+  .sw-row__label { font-size: 0.9rem; font-weight: 600; color: var(--c-text-1, #fff); cursor: pointer; }
+  .sw-row__desc { margin: 2px 0 0; font-size: 0.8rem; line-height: 1.5; color: var(--c-text-2, #a3a3a3); }
+  .sw-row__switch { position: relative; flex-shrink: 0; width: 44px; height: 26px; }
+  .sw-row--sm .sw-row__switch { width: 36px; height: 22px; }
+  .sw-row__switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+  .sw-row__track { position: absolute; inset: 0; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.16); transition: background 0.2s ease; }
+  .sw-row__track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1); }
+  .sw-row--sm .sw-row__track::after { width: 16px; height: 16px; }
+  .sw-row__switch input:checked + .sw-row__track { background: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .sw-row__switch input:checked + .sw-row__track::after { transform: translateX(18px); }
+  .sw-row--sm .sw-row__switch input:checked + .sw-row__track::after { transform: translateX(14px); }
+  .sw-row__switch input:focus-visible + .sw-row__track { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .sw-row.is-disabled { opacity: 0.5; }
+  .sw-row.is-disabled input { cursor: not-allowed; }
+  @media (prefers-reduced-motion: reduce) { .sw-row__track, .sw-row__track::after { transition: none; } }
+</style>

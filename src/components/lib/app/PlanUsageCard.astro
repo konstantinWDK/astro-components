@@ -1,0 +1,112 @@
+---
+/**
+ * PlanUsageCard — Billing summary: current plan and price, renewal date, usage meters with
+ * warning thresholds, payment method and upgrade / manage actions.
+ *
+ * @param {string} plan - Plan name. Default 'Pro'.
+ * @param {string} price - Price label. Default '€149 / month'.
+ * @param {string} renews - Renewal text. Default 'Renews on Dec 1, 2026'.
+ * @param {Array<{label: string, used: number, limit: number, unit?: string}>} usage - Meters.
+ * @param {string} card - Payment method label (optional). Default 'Visa •••• 4242'.
+ * @param {{label: string, href: string}} upgrade - Primary action. Default upgrade.
+ * @param {{label: string, href: string}} manage - Secondary action (optional).
+ * @param {number} warnAt - Percentage at which a meter turns amber. Default 80.
+ * @param {string} variant - Style (card|accent). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each meter is a role="meter" with aria-valuenow/min/max and a text value,
+ * so usage is never conveyed by colour alone.
+ */
+interface Props {
+  plan?: string;
+  price?: string;
+  renews?: string;
+  usage?: Array<{ label: string; used: number; limit: number; unit?: string }>;
+  card?: string;
+  upgrade?: { label: string; href: string };
+  manage?: { label: string; href: string };
+  warnAt?: number;
+  variant?: 'card' | 'accent';
+  className?: string;
+}
+
+const {
+  plan = 'Pro',
+  price = '€149 / month',
+  renews = 'Renews on Dec 1, 2026',
+  usage = [
+    { label: 'Rooms', used: 42, limit: 50 },
+    { label: 'Team seats', used: 4, limit: 10 },
+    { label: 'Channel connections', used: 3, limit: 5 },
+    { label: 'Guest emails', used: 8200, limit: 10000, unit: '/ month' },
+  ],
+  card = 'Visa •••• 4242',
+  upgrade = { label: 'Upgrade to Business', href: '#' },
+  manage = { label: 'Manage billing', href: '#' },
+  warnAt = 80,
+  variant = 'card',
+  className = '',
+} = Astro.props;
+
+const fmt = (n: number) => new Intl.NumberFormat('en-GB').format(n);
+---
+
+<section class:list={['plan', `plan--${variant}`, className]} aria-labelledby="plan-title">
+  <header class="plan__head">
+    <div>
+      <p class="plan__eyebrow">Current plan</p>
+      <h2 class="plan__title" id="plan-title">{plan} <span>{price}</span></h2>
+      <p class="plan__renew">{renews}</p>
+    </div>
+    {card && <p class="plan__card"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>{card}</p>}
+  </header>
+  <ul class="plan__meters">
+    {usage.map((u) => {
+      const pct = Math.min(100, Math.round((u.used / u.limit) * 100));
+      const tone = pct >= 100 ? 'danger' : pct >= warnAt ? 'warning' : 'ok';
+      return (
+        <li>
+          <div class="plan__meter-head">
+            <span>{u.label}</span>
+            <strong>{fmt(u.used)} <small>of {fmt(u.limit)}{u.unit ? ` ${u.unit}` : ''}</small></strong>
+          </div>
+          <div class:list={['plan__bar', `plan__bar--${tone}`]} role="meter" aria-label={u.label} aria-valuemin="0" aria-valuemax={u.limit} aria-valuenow={u.used} aria-valuetext={`${fmt(u.used)} of ${fmt(u.limit)}, ${pct}%`}>
+            <span style={`width: ${pct}%`}></span>
+          </div>
+          {tone === 'warning' && <p class="plan__warn">{pct}% used — consider upgrading soon.</p>}
+        </li>
+      );
+    })}
+  </ul>
+  <div class="plan__actions">
+    {upgrade && <a class="plan__btn plan__btn--primary" href={upgrade.href}>{upgrade.label}</a>}
+    {manage && <a class="plan__btn" href={manage.href}>{manage.label}</a>}
+  </div>
+</section>
+
+<style>
+  .plan { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-5, 1.25rem); padding: var(--sp-6, 1.5rem); border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); }
+  .plan--accent { background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--app-accent, var(--c-primary-light, #d4a017)) 22%, transparent), transparent 55%), var(--c-bg-1, #0a0a0a); }
+  .plan__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4, 1rem); }
+  .plan__eyebrow { margin: 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .plan__title { margin: 4px 0 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; color: var(--c-text-1, #fff); }
+  .plan__title span { font-size: 0.95rem; font-weight: 500; color: var(--c-text-2, #a3a3a3); }
+  .plan__renew { margin: 2px 0 0; font-size: 0.8rem; color: var(--c-text-3, #737373); }
+  .plan__card { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1)); font-size: 0.8rem; color: var(--c-text-1, #fff); white-space: nowrap; }
+  .plan__meters { display: grid; gap: var(--sp-4, 1rem); margin: 0; padding: 0; list-style: none; }
+  .plan__meter-head { display: flex; justify-content: space-between; gap: var(--sp-2, 0.5rem); margin-bottom: 6px; font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+  .plan__meter-head strong { color: var(--c-text-1, #fff); font-variant-numeric: tabular-nums; }
+  .plan__meter-head small { font-weight: 500; color: var(--c-text-3, #737373); }
+  .plan__bar { height: 8px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.08); overflow: hidden; }
+  .plan__bar span { display: block; height: 100%; border-radius: inherit; background: var(--app-accent, var(--c-primary-light, #d4a017)); }
+  .plan__bar--warning span { background: var(--c-warning, #fbbf24); }
+  .plan__bar--danger span { background: var(--c-danger, #f87171); }
+  .plan__warn { margin: 4px 0 0; font-size: 0.75rem; color: var(--c-warning, #fbbf24); }
+  .plan__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); }
+  .plan__btn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 1rem; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); color: var(--c-text-1, #fff); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+  .plan__btn:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.05); color: var(--c-text-1, #fff); }
+  .plan__btn--primary { border-color: transparent; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .plan__btn--primary:hover { background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); filter: brightness(1.08); }
+  .plan__btn:focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  @container (max-width: 420px) { .plan__head { flex-direction: column; } }
+</style>

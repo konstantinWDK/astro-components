@@ -1,0 +1,150 @@
+---
+// src/components/docs/TemplatesCatalogPage.astro
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import TemplateFrame from './TemplateFrame.astro';
+import { templates } from '../../data/registry/templates';
+import type { Locale } from '../../config/site';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
+
+interface Props {
+  lang?: Locale;
+}
+
+const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang);
+
+const upcoming = [
+  { en: 'SaaS landing', es: 'Landing SaaS', ru: 'SaaS-лендинг' },
+  { en: 'Admin dashboard', es: 'Panel de administración', ru: 'Админ-панель' },
+  { en: 'Blog & magazine', es: 'Blog y revista', ru: 'Блог и журнал' },
+];
+---
+
+<DocsLayout title={t('templates.seoTitle')} description={t('templates.desc')} lang={lang}>
+  <div class="doc-page">
+    <nav class="breadcrumb" aria-label={t('a11y.breadcrumb')}>
+      <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+      <span class="breadcrumb__sep">›</span>
+      <span class="breadcrumb__current">{t('nav.templates')}</span>
+    </nav>
+
+    <header class="tpl-header">
+      <span class="tpl-header__badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        {t('templates.badge')} · {templates.length}
+      </span>
+      <h1 class="tpl-header__title">{t('templates.title')}</h1>
+      <p class="tpl-header__desc">{t('templates.desc')}</p>
+    </header>
+
+    <div class="tpl-list">
+      {templates.map((tpl) => {
+        const href = getLocalizedPath(`/templates/${tpl.slug}`, lang);
+        const components = tpl.newComponents.length + tpl.reusedComponents.length;
+        return (
+          <article class="tpl-card">
+            <div class="tpl-card__frame">
+              <TemplateFrame src={tpl.previewBase} title={`${tpl.name[lang]} — ${t('templates.livePreview')}`} eager />
+            </div>
+            <div class="tpl-card__body">
+              <div class="tpl-card__chips">
+                <span>{tpl.pages.length} {t('templates.pagesCount')}</span>
+                <span>{components} {t('templates.componentsCount')}</span>
+              </div>
+              <h2 class="tpl-card__title"><a href={href}>{tpl.name[lang]}</a></h2>
+              <p class="tpl-card__tagline">{tpl.tagline[lang]}</p>
+              <ul class="tpl-card__list">
+                {tpl.highlights[lang].slice(0, 4).map((h) => <li>{h}</li>)}
+              </ul>
+              <div class="tpl-card__actions">
+                <a class="tpl-btn tpl-btn--primary" href={href}>{t('templates.view')}</a>
+                <a class="tpl-btn" href={tpl.previewBase} target="_blank" rel="noopener">
+                  {t('templates.openPreview')}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+
+    <section class="tpl-soon" aria-label={t('templates.soon')}>
+      <p>{t('templates.soon')}</p>
+      <ul>
+        {upcoming.map((u) => <li>{u[lang]}</li>)}
+      </ul>
+    </section>
+  </div>
+</DocsLayout>
+
+<style>
+  .doc-page { width: 100%; }
+  .breadcrumb { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: 0.8rem; color: var(--c-text-3); margin-bottom: var(--sp-6); }
+  .breadcrumb a { color: var(--c-text-3); }
+  .breadcrumb a:hover { color: var(--c-text-1); }
+  .breadcrumb__sep { opacity: 0.5; }
+  .breadcrumb__current { color: var(--c-text-2); font-weight: 500; }
+
+  .tpl-header { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-8); }
+  .tpl-header__badge {
+    display: inline-flex; align-items: center; gap: var(--sp-2); width: fit-content;
+    padding: 0.3rem 0.8rem; border-radius: var(--r-full);
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #facc15; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.25);
+  }
+  .tpl-header__title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 900; letter-spacing: -0.03em; color: var(--c-text-1); }
+  .tpl-header__desc { margin: 0; max-width: 46rem; font-size: 1rem; line-height: 1.65; color: var(--c-text-2); }
+
+  .tpl-list { display: grid; gap: var(--sp-8); }
+  .tpl-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: var(--sp-8);
+    align-items: center;
+    padding: var(--sp-6);
+    border-radius: var(--r-xl);
+    border: 1px solid var(--c-border);
+    background: linear-gradient(160deg, rgba(212, 160, 23, 0.06), transparent 45%), rgba(255, 255, 255, 0.015);
+  }
+  .tpl-card__chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .tpl-card__chips span {
+    padding: 0.2rem 0.65rem; border-radius: var(--r-full);
+    font-size: 0.75rem; font-weight: 700; color: var(--c-text-2);
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--c-border);
+  }
+  .tpl-card__title { margin: var(--sp-3) 0 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.03em; }
+  .tpl-card__title a { color: var(--c-text-1); }
+  .tpl-card__title a:hover { color: var(--c-primary-light); }
+  .tpl-card__tagline { margin: var(--sp-2) 0 0; line-height: 1.6; color: var(--c-text-2); }
+  .tpl-card__list { display: grid; gap: var(--sp-2); margin: var(--sp-5) 0 0; padding: 0; list-style: none; }
+  .tpl-card__list li { position: relative; padding-left: 1.4rem; font-size: 0.9rem; color: var(--c-text-1); }
+  .tpl-card__list li::before { content: ''; position: absolute; left: 0; top: 0.45em; width: 8px; height: 8px; border-radius: 50%; background: var(--c-primary-light); box-shadow: 0 0 8px var(--c-primary-light); }
+  .tpl-card__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+
+  .tpl-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 var(--sp-5);
+    border-radius: var(--r-full); border: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 0.88rem; font-weight: 700; color: var(--c-text-1);
+    transition: background 0.2s ease, filter 0.2s ease;
+  }
+  .tpl-btn:hover { background: rgba(255, 255, 255, 0.05); color: var(--c-text-1); }
+  .tpl-btn--primary { border-color: transparent; background: var(--c-primary-light); color: var(--c-bg); }
+  .tpl-btn--primary:hover { background: var(--c-primary-light); filter: brightness(1.08); color: var(--c-bg); }
+  .tpl-btn:focus-visible, .tpl-card__title a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 3px; }
+
+  .tpl-soon {
+    margin-top: var(--sp-8);
+    padding: var(--sp-6);
+    border-radius: var(--r-lg);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    text-align: center;
+  }
+  .tpl-soon p { margin: 0 0 var(--sp-4); color: var(--c-text-2); }
+  .tpl-soon ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+  .tpl-soon li { padding: 0.35rem 0.85rem; border-radius: var(--r-full); background: rgba(255, 255, 255, 0.04); font-size: 0.82rem; color: var(--c-text-2); }
+
+  @media (max-width: 1100px) {
+    .tpl-card { grid-template-columns: 1fr; gap: var(--sp-5); padding: var(--sp-4); }
+  }
+</style>

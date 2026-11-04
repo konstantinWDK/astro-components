@@ -1,0 +1,205 @@
+---
+/**
+ * EditorialProductPage — Editorial product detail: stacked full-bleed images on the left, a sticky
+ * info column (VariantPicker colour + size, add to bag, StockIndicator, size guide and care notes),
+ * then "Complete the look" (ShopProductRail) and reviews (ShopReviewsEditorial).
+ *
+ * Usage (src/pages/product/[slug].astro):
+ *   import { EditorialProductPage, formaStore } from 'astro-component-kit/templates/ecommerce-editorial';
+ *   export const getStaticPaths = () => formaStore.products.map((p) => ({ params: { slug: p.slug } }));
+ *   <EditorialProductPage slug={Astro.params.slug} />
+ *
+ * @param {string} slug - Product slug. Default: first product.
+ * @param {EditorialStore} store - Catalogue and settings.
+ * @param {EditorialRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} seedCart - Pre-fill the bag with demo items. Default false.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import EditorialLayout from './EditorialLayout.astro';
+import ProductMedia from '../../ecommerce/ProductMedia.astro';
+import ProductRating from '../../ecommerce/ProductRating.astro';
+import VariantPicker from '../../ecommerce/VariantPicker.astro';
+import StockIndicator from '../../ecommerce/StockIndicator.astro';
+import ShopProductRail from '../../sections/ShopProductRail.astro';
+import ShopReviewsEditorial from '../../sections/ShopReviewsEditorial.astro';
+import { formatMoney } from '../../ecommerce/cart-store';
+import type { Product, StoreCategory } from '../../ecommerce/types';
+import { formaStore, editorialRoutes, editorialCategoryHref, type EditorialStore, type EditorialRoutes } from './data';
+
+interface Props {
+  slug?: string;
+  store?: EditorialStore;
+  routes?: EditorialRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  seedCart?: boolean;
+  noindex?: boolean;
+}
+
+const { slug, store = formaStore, routes = editorialRoutes, theme = 'light', seedCart = false, noindex = false } = Astro.props as Props;
+const catalog: EditorialStore = store;
+
+const product: Product = catalog.products.find((p: Product) => p.slug === slug) ?? catalog.products[0];
+const category: StoreCategory | undefined = catalog.categories.find((c: StoreCategory) => c.id === product.category);
+const money = { currency: store.currency, locale: store.locale };
+const inStock = product.inStock !== false;
+const views = [0, 1, 2, 3].map((i) => ({ hue: (product.hue ?? 30) + i * 14, turn: [0, -12, 10, 0][i], zoom: [1, 1.25, 0.9, 1.5][i], variant: (i % 2 ? 'glow' : 'soft') as 'glow' | 'soft' }));
+const related: Product[] = catalog.products.filter((p: Product) => p.slug !== product.slug && p.category !== product.category).slice(0, 6);
+const payload = JSON.stringify({ id: product.slug, name: product.name, price: product.price, icon: product.icon, hue: product.hue, image: product.image });
+const productReviews = catalog.reviews.filter((r: EditorialStore['reviews'][number]) => r.product === product.name);
+---
+
+<EditorialLayout title={product.name} description={product.description} store={store} routes={routes} theme={theme} seedCart={seedCart} noindex={noindex}>
+  <div class="forma-wrap">
+    <nav class="pdp-crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={routes.home}>Home</a></li>
+        <li><a href={routes.shop}>Shop</a></li>
+        {category && <li><a href={editorialCategoryHref(routes, category.id)}>{category.name}</a></li>}
+        <li><span aria-current="page">{product.name}</span></li>
+      </ol>
+    </nav>
+
+    <div class="pdp">
+      <div class="pdp__gallery" aria-label={`${product.name} images`} role="group">
+        {product.image ? (
+          <ProductMedia image={product.image} alt={product.name} ratio="4 / 5" />
+        ) : (
+          views.map((v, i) => (
+            <div class:list={['pdp__view', { 'pdp__view--wide': i === 0 || i === 3 }]} style={`--turn: ${v.turn}deg; --zoom: ${v.zoom}`}>
+              <ProductMedia icon={product.icon} hue={v.hue} ratio={i === 0 || i === 3 ? '4 / 5' : '3 / 4'} variant={v.variant} size="lg" />
+            </div>
+          ))
+        )}
+      </div>
+
+      <div class="pdp__info">
+        <p class="pdp__cat">{category?.name}{product.badge && <span> · {product.badge}</span>}</p>
+        <h1 class="pdp__title">{product.name}</h1>
+        <p class="pdp__price">
+          <span>{formatMoney(product.price, money)}</span>
+          {product.compareAt && <s><span class="sr-only">Was </span>{formatMoney(product.compareAt, money)}</s>}
+        </p>
+        {product.rating !== undefined && (
+          <a class="pdp__rating" href="#reviews"><ProductRating value={product.rating} count={product.reviews} /></a>
+        )}
+        {product.description && <p class="pdp__desc">{product.description}</p>}
+
+        <div class="pdp__pickers">
+          {product.colors && product.colors.length > 0 && (
+            <VariantPicker label="Colour" name="pdp-color" type="swatch" size="sm" target="pdp-add" options={product.colors.map((c: { name: string; hex: string }) => ({ label: c.name, hex: c.hex }))} />
+          )}
+          {product.sizes && product.sizes.length > 0 && (
+            <VariantPicker label="Size" name="pdp-size" type="pill" size="sm" target="pdp-add" options={product.sizes.map((s: string) => ({ label: s }))} selected={Math.floor(product.sizes.length / 2)} />
+          )}
+        </div>
+
+        {product.sizes && product.sizes.length > 0 && (
+          <details class="pdp__guide">
+            <summary>Size guide</summary>
+            <p>Our pieces are cut relaxed. If you are between sizes, choose the smaller one for a closer fit. Model is 183 cm and wears size M.</p>
+          </details>
+        )}
+
+        <button
+          type="button"
+          class="pdp__add"
+          id="pdp-add"
+          data-add-to-cart={payload}
+          data-cart-key={store.cartKey}
+          data-open-cart="false"
+          data-added-label="Added to bag ✓"
+          disabled={!inStock}
+        ><span data-label>{inStock ? `Add to bag — ${formatMoney(product.price, money)}` : 'Sold out'}</span></button>
+
+        {inStock && product.stock !== undefined && product.stock <= 5 && (
+          <StockIndicator stock={product.stock} viewers={6 + ((product.reviews ?? 0) % 11)} variant="inline" size="sm" />
+        )}
+
+        <ul class="pdp__notes">
+          <li>Complimentary shipping over {formatMoney(store.freeShippingThreshold, money)}</li>
+          <li>Free returns within 30 days</li>
+          <li>Free repairs, for life</li>
+        </ul>
+
+        <div class="pdp__acc">
+          <details open><summary>Materials &amp; care</summary><p>Natural fibres, traceable to the mill. Wash cold, dry flat, iron while damp. Every piece comes with a care card.</p></details>
+          <details><summary>Made by</summary><p>A family workshop we have worked with since day one. Small batches, fair wages and audited conditions.</p></details>
+          <details><summary>Shipping &amp; returns</summary><p>Ships in 1–2 days in plastic-free packaging. Return anything within 30 days — we cover the label.</p></details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {related.length > 0 && (
+    <div class="forma-wrap section-space">
+      <ShopProductRail eyebrow="Pairs well with" title="Complete the *look*" products={related} productBase={routes.product} link={{ label: 'Shop all', href: routes.shop }} id="pdp-rail" currency={store.currency} locale={store.locale} cartKey={store.cartKey} />
+    </div>
+  )}
+
+  <div class="forma-wrap section-space pdp-reviews" id="reviews">
+    <ShopReviewsEditorial eyebrow="Reviews" score={product.rating ?? 4.8} count={product.reviews ?? 0} reviews={productReviews.length ? productReviews : store.reviews} />
+  </div>
+</EditorialLayout>
+
+<style>
+  .pdp-crumbs ol { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: var(--sp-5) 0; list-style: none; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-2); }
+  .pdp-crumbs li + li::before { content: '/'; margin-right: 0.5rem; opacity: 0.5; }
+  .pdp-crumbs a { color: inherit; }
+  .pdp-crumbs a:hover, .pdp-crumbs [aria-current] { color: var(--c-text-1); }
+
+  .pdp { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr); gap: clamp(1.5rem, 4vw, 4.5rem); align-items: start; }
+  .pdp__gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pdp__view--wide { grid-column: 1 / -1; }
+  .pdp__view :global(.p-media__art) { transform: rotate(var(--turn)) scale(var(--zoom)); }
+  .pdp__view :global(.p-media) { border-radius: var(--r-sm); }
+
+  .pdp__info { position: sticky; top: calc(var(--shop-header-h) + 1.5rem); display: flex; flex-direction: column; gap: var(--sp-4); padding-bottom: var(--sp-8); }
+  .pdp__cat { margin: 0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-text-2); }
+  .pdp__cat span { color: var(--shop-accent); }
+  .pdp__title { margin: 0; font-family: var(--font-display); font-size: clamp(2.4rem, 4.5vw, 3.8rem); font-weight: 400; letter-spacing: -0.04em; line-height: 0.95; color: var(--c-text-1); }
+  .pdp__price { display: flex; gap: var(--sp-3); margin: 0; font-size: 1.2rem; color: var(--c-text-1); font-variant-numeric: tabular-nums; }
+  .pdp__price s { color: var(--c-text-2); }
+  .pdp__rating { width: fit-content; }
+  .pdp__rating :global(.p-rating) { --p-rating-star: var(--shop-accent); }
+  .pdp__desc { margin: 0; max-width: 34rem; line-height: 1.7; }
+  .pdp__pickers { display: grid; gap: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--c-border); }
+  .pdp__pickers { --vp-radius: var(--r-sm); --vp-active-bg: var(--c-text-1); --vp-active-color: var(--c-bg); --vp-active-border: var(--c-text-1); --vp-ring: var(--c-text-1); }
+  .pdp__guide summary, .pdp__acc summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; color: var(--c-text-1); font-size: 0.9rem; cursor: pointer; list-style: none; }
+  .pdp__guide summary { width: fit-content; min-height: 40px; text-decoration: underline; text-underline-offset: 4px; }
+  .pdp__guide summary::-webkit-details-marker, .pdp__acc summary::-webkit-details-marker { display: none; }
+  .pdp__guide p, .pdp__acc p { margin: 0 0 var(--sp-4); font-size: 0.9rem; line-height: 1.7; }
+  .pdp__add {
+    width: 100%;
+    min-height: 58px;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: var(--c-text-1);
+    color: var(--c-bg);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .pdp__add:hover:not(:disabled), .pdp__add.is-added { background: var(--shop-accent); color: var(--c-on-primary); }
+  .pdp__add:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pdp__add:focus-visible, .pdp-crumbs a:focus-visible, .pdp summary:focus-visible, .pdp__rating:focus-visible { outline: 2px solid var(--shop-accent); outline-offset: 3px; }
+  .pdp__notes { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 0.82rem; }
+  .pdp__notes li::before { content: '— '; color: var(--shop-accent); }
+  .pdp__acc { border-top: 1px solid var(--c-border); }
+  .pdp__acc details { border-bottom: 1px solid var(--c-border); }
+  .pdp__acc summary::after { content: '+'; font-size: 1.2rem; transition: transform 0.2s ease; }
+  .pdp__acc details[open] summary::after { transform: rotate(45deg); }
+  .pdp-reviews { padding-top: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .pdp { grid-template-columns: 1fr; }
+    .pdp__info { position: static; }
+    .pdp__gallery { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .pdp__view, .pdp__view--wide { grid-column: auto; scroll-snap-align: start; }
+  }
+</style>

@@ -14,7 +14,7 @@ export default defineConfig({
   integrations: [
     sitemap({
       // `/blog/*` are legacy redirects to `/notes/*`; keep them out of the sitemap.
-      filter: (page) => !/^\/(es\/|ru\/)?blog\//.test(new URL(page).pathname),
+      filter: (page) => !/^\/((es|ru)\/)?blog\/|^\/preview\//.test(new URL(page).pathname),
       // Emit hreflang alternates so search engines link the en/es/ru versions of each page.
       i18n: {
         defaultLocale: 'en',

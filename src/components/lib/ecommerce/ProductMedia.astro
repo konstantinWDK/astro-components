@@ -1,0 +1,113 @@
+---
+/**
+ * ProductMedia — Product visual: a real photo, or a generated backdrop with a
+ * line-art illustration so demo catalogs look finished without external images.
+ *
+ * @param {string} image - Product photo URL. When set, replaces the illustration.
+ * @param {string} alt - Alternative text. Required for photos; illustrations are decorative.
+ * @param {string} icon - Built-in illustration (headphones|watch|sneaker|backpack|camera|lamp|keyboard|sunglasses|bottle|speaker|jacket|mug|plant|shirt|bag|phone).
+ * @param {number} hue - 0–360 hue of the generated backdrop. Default 40 (gold).
+ * @param {string} ratio - CSS aspect-ratio. Default '1 / 1'.
+ * @param {string} size - Illustration scale (sm|md|lg). Default 'md'.
+ * @param {string} variant - Backdrop style (glow|soft|flat). Default 'glow'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: illustrations are aria-hidden; photos need `alt`.
+ */
+import { productIcon } from './product-icons';
+
+interface Props {
+  image?: string;
+  alt?: string;
+  icon?: string;
+  hue?: number;
+  ratio?: string;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'glow' | 'soft' | 'flat';
+  className?: string;
+}
+
+const {
+  image,
+  alt = '',
+  icon = 'bag',
+  hue = 40,
+  ratio = '1 / 1',
+  size = 'md',
+  variant = 'glow',
+  className = '',
+} = Astro.props;
+---
+
+<div
+  class:list={['p-media', `p-media--${size}`, `p-media--${variant}`, className]}
+  style={`--pm-hue: ${hue}; --pm-ratio: ${ratio};`}
+>
+  {image ? (
+    <img class="p-media__img" src={image} alt={alt} loading="lazy" decoding="async" />
+  ) : (
+    <svg class="p-media__art" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={productIcon(icon)} /></svg>
+  )}
+  <slot />
+</div>
+
+<style>
+  .p-media {
+    --pm-bg-1: hsl(var(--pm-hue) 70% 50% / 0.28);
+    --pm-bg-2: hsl(var(--pm-hue) 60% 30% / 0.14);
+    --pm-ink: hsl(var(--pm-hue) var(--pm-ink-s, 80%) var(--pm-ink-l, 80%));
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: var(--pm-ratio);
+    width: 100%;
+    overflow: hidden;
+    border-radius: inherit;
+    background:
+      radial-gradient(circle at 50% 42%, var(--pm-bg-1), transparent 62%),
+      linear-gradient(160deg, var(--pm-bg-2), var(--c-bg-1, #0a0a0a) 75%);
+    isolation: isolate;
+  }
+  .p-media--soft {
+    background: linear-gradient(160deg, hsl(var(--pm-hue) var(--pm-soft-s, 40%) var(--pm-soft-l, 20%) / var(--pm-soft-a, 0.5)), var(--c-bg-1, #0a0a0a));
+  }
+  .p-media--flat { background: var(--c-bg-2, #111); }
+
+  .p-media::after {
+    content: '';
+    position: absolute;
+    inset: auto 22% 14% 22%;
+    height: 10%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55), transparent 70%);
+    z-index: -1;
+  }
+  .p-media--flat::after { display: none; }
+
+  .p-media__art {
+    width: 46%;
+    height: auto;
+    color: var(--pm-ink);
+    filter: drop-shadow(0 6px 18px hsl(var(--pm-hue) 80% 50% / 0.35));
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .p-media--sm .p-media__art { width: 58%; stroke-width: 2.4; }
+  .p-media--lg .p-media__art { width: 40%; stroke-width: 1.4; }
+
+  .p-media__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(.is-hoverable:hover) .p-media__art,
+  :global(.is-hoverable:focus-within) .p-media__art {
+    transform: translateY(-4%) rotate(-4deg) scale(1.04);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .p-media__art { transition: none; }
+  }
+</style>

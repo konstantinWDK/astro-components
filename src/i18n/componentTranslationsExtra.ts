@@ -3,6 +3,200 @@
 import type { ComponentTranslation } from './componentTranslations';
 
 export const componentTranslationsExtra: Record<string, ComponentTranslation> = {
+  // ── App & Dashboard ─────────────────────────────────────────
+  'app-sidebar': {
+    es: "Barra lateral SaaS con selector de espacio de trabajo, navegación agrupada con iconos y contadores, modo compacto y tarjeta de plan.",
+    ru: "Боковое меню SaaS: переключатель рабочего пространства, группы пунктов с иконками и счётчиками, компактный режим и карточка тарифа.",
+  },
+  'app-topbar': {
+    es: "Barra superior con búsqueda ⌘K, notificaciones con no leídas, cambio de tema y menú de usuario.",
+    ru: "Верхняя панель с поиском ⌘K, уведомлениями, переключателем темы и меню пользователя.",
+  },
+  'page-header': {
+    es: "Cabecera de página de app con migas, descripción, selector de periodo, botones y pestañas.",
+    ru: "Заголовок страницы приложения: хлебные крошки, описание, выбор периода, кнопки и вкладки.",
+  },
+  'data-table': {
+    es: "Tabla con búsqueda, chips de estado, columnas ordenables, selección de filas, acciones masivas, paginación y celdas tipadas.",
+    ru: "Таблица с поиском, фильтрами статусов, сортировкой, выбором строк, массовыми действиями, пагинацией и типизированными ячейками.",
+  },
+  'room-rack': {
+    es: "Línea de tiempo de reservas: habitaciones por días con barras de color por estado, marca de hoy y panel de detalle.",
+    ru: "Шахматка бронирований: номера по дням, цветные полосы по статусу, отметка «сегодня» и панель деталей.",
+  },
+  'housekeeping-board': {
+    es: "Tablero de estado de habitaciones por planta (limpia, sucia, en revisión, ocupada, fuera de servicio) con filtros y cambio rápido.",
+    ru: "Доска статусов номеров по этажам: чистый, грязный, проверка, занят, не работает — с фильтрами и быстрым переключением.",
+  },
+  'arrivals-board': {
+    es: "Lista de recepción con llegadas, salidas y huéspedes alojados, con check-in / check-out en un clic.",
+    ru: "Список ресепшена: заезды, выезды и проживающие, заселение и выселение в один клик.",
+  },
+  'guest-profile-card': {
+    es: "Ficha CRM con avatar, nivel de fidelidad, contacto, estadísticas, preferencias, próxima estancia y notas.",
+    ru: "Карточка CRM: аватар, уровень лояльности, контакты, статистика, предпочтения, ближайший заезд и заметки.",
+  },
+  'settings-section': {
+    es: "Bloque de ajustes con título y ayuda junto a una tarjeta de campos con Guardar / Cancelar y confirmación.",
+    ru: "Блок настроек: заголовок и подсказка рядом с карточкой полей, кнопки «Сохранить/Отмена» и подтверждение.",
+  },
+  'switch-row': {
+    es: "Fila de ajustes con etiqueta, descripción e interruptor accesible.",
+    ru: "Строка настроек с подписью, описанием и доступным переключателем.",
+  },
+  'team-members': {
+    es: "Gestión de equipo con roles, estado, invitaciones y eliminación en dos pasos.",
+    ru: "Управление командой: роли, статусы, приглашения и удаление в два шага.",
+  },
+  'plan-usage-card': {
+    es: "Resumen de facturación con plan, renovación, medidores de uso con umbrales, método de pago y mejora de plan.",
+    ru: "Сводка по оплате: тариф, продление, счётчики использования с порогами, способ оплаты и повышение тарифа.",
+  },
+  'auth-card': {
+    es: "Inicio de sesión / registro a pantalla partida con SSO, mostrar contraseña, validación y panel de marca.",
+    ru: "Вход и регистрация на разделённом экране: SSO, показ пароля, проверка и панель бренда.",
+  },
+  // ── E-commerce ──────────────────────────────────────────────
+  'shop-header-editorial': {
+    es: "Cabecera editorial de tienda: línea de aviso, logotipo centrado, mega menú con destacado, cambio de tema y contador de la bolsa en vivo.",
+    ru: "Редакционная шапка магазина: строка объявления, логотип по центру, мега-меню, переключатель темы и живой счётчик корзины.",
+  },
+  'shop-hero-editorial': {
+    es: "Hero de tienda estilo revista con titular serif gigante, palabra en cursiva, imagen destacada con pie y cinta en movimiento.",
+    ru: "Hero магазина в журнальном стиле: крупный serif-заголовок, курсивное слово, главное фото с подписью и бегущая строка.",
+  },
+  'shop-collection-mosaic': {
+    es: "Cuadrícula asimétrica de colecciones con una pieza destacada, numeración, recuento y enlaces subrayados.",
+    ru: "Асимметричная сетка коллекций с главной плиткой, нумерацией, количеством товаров и ссылками.",
+  },
+  'shop-product-rail': {
+    es: "Carrusel de productos con scroll-snap, tarjetas minimalistas numeradas, flechas y barra de progreso.",
+    ru: "Карусель товаров со scroll-snap, нумерованными минималистичными карточками, стрелками и прогрессом.",
+  },
+  'shop-lookbook': {
+    es: "«Compra el look»: imagen con puntos numerados que abren fichas con añadir a la bolsa, con lista accesible equivalente.",
+    ru: "«Купить образ»: фото с точками, открывающими карточки товаров с кнопкой «в корзину», и доступный список.",
+  },
+  'shop-values-marquee': {
+    es: "Franja de valores de marca: marquesina en cursiva gigante y columnas numeradas.",
+    ru: "Полоса ценностей бренда: крупная курсивная бегущая строка и нумерованные колонки.",
+  },
+  'shop-reviews-editorial': {
+    es: "Opiniones de clientes en grandes citas serif, una a una, con producto, paginación numerada y nota media.",
+    ru: "Отзывы покупателей крупными serif-цитатами по одной, с товаром, нумерацией и общей оценкой.",
+  },
+  'shop-newsletter-editorial': {
+    es: "Suscripción editorial de gran tamaño con campo subrayado, consentimiento y validación en línea.",
+    ru: "Крупная редакционная подписка с полем-подчёркиванием, согласием и проверкой.",
+  },
+  'shop-footer-wordmark': {
+    es: "Footer de tienda con columnas de enlaces, contacto, métodos de pago y logotipo gigante de borde a borde.",
+    ru: "Футер магазина с колонками ссылок, контактами, способами оплаты и огромным логотипом.",
+  },
+  'shop-category-hero': {
+    es: "Cabecera de catálogo con migas, título de categoría gigante con recuento, intro, subcategorías y franja de imágenes.",
+    ru: "Шапка каталога: хлебные крошки, крупное название категории с количеством, описание, подкатегории и изображения.",
+  },
+  'product-card-minimal': {
+    es: "Tarjeta de producto editorial: imagen alta que cambia al pasar el ratón, tallas de añadido rápido, nombre, precio y colores.",
+    ru: "Редакционная карточка товара: высокое фото со сменой при наведении, быстрый выбор размера, название, цена и цвета.",
+  },
+  'filter-bar': {
+    es: "Barra horizontal de catálogo con chips de categoría, panel de refinado (precio, color, stock), orden y contador.",
+    ru: "Горизонтальная панель каталога: чипы категорий, панель уточнения (цена, цвет, наличие), сортировка и счётчик.",
+  },
+  'cart-page-list': {
+    es: "Página completa de la bolsa: productos con cantidad y eliminar, nota de regalo, progreso a envío gratis y resumen.",
+    ru: "Полная страница корзины: товары с количеством и удалением, подарочная записка, прогресс бесплатной доставки и итог.",
+  },
+  'cart-toast': {
+    es: "Notificaciones apiladas en vivo: «Añadido al carrito» con acción para ver el carrito y cualquier aviso propio enviado con el evento ack:notify.",
+    ru: "Живые всплывающие уведомления: «Добавлено в корзину» с кнопкой корзины и любые свои сообщения через событие ack:notify.",
+  },
+  'live-activity-toast': {
+    es: "Aviso rotativo de compras recientes (prueba social) que entra y sale; se pausa al pasar el ratón y se puede cerrar durante la sesión.",
+    ru: "Сменяющиеся уведомления о недавних покупках (социальное доказательство); пауза при наведении и закрытие на сессию.",
+  },
+  'countdown-banner': {
+    es: "Cuenta atrás en vivo para ofertas con días, horas, minutos y segundos, CTA y estado finalizado; fecha fija o plazo por visitante.",
+    ru: "Живой обратный отсчёт распродажи — дни, часы, минуты, секунды, кнопка и состояние «завершено»; фиксированная дата или срок для каждого посетителя.",
+  },
+  'stock-indicator': {
+    es: "Aviso de stock bajo con barra de nivel y contador en vivo de personas viendo el producto.",
+    ru: "Уведомление о малом остатке со шкалой и живым счётчиком просматривающих товар.",
+  },
+  'cart-store': {
+    es: "Estado del carrito sin frameworks compartido por todos los componentes de tienda: persistencia en localStorage, sincronización entre pestañas, botones de añadir y formato de precios.",
+    ru: "Состояние корзины без фреймворков для всех компонентов магазина: хранение в localStorage, синхронизация вкладок, кнопки «в корзину» и формат цен.",
+  },
+  'store-product-card': {
+    es: "Tarjeta de producto con ilustración o foto, insignia, valoración, colores, precio anterior, favoritos y botón de añadir al carrito.",
+    ru: "Карточка товара с иллюстрацией или фото, бейджем, рейтингом, цветами, старой ценой, избранным и кнопкой «в корзину».",
+  },
+  'product-grid': {
+    es: "Cuadrícula responsiva de tarjetas de producto con estado vacío; es el objetivo de FilterSidebar y ProductToolbar.",
+    ru: "Адаптивная сетка карточек товаров с пустым состоянием — цель для FilterSidebar и ProductToolbar.",
+  },
+  'store-header': {
+    es: "Barra de navegación de tienda con desplegables de categorías, buscador, cuenta y carrito con contador en vivo; menú móvil incluido.",
+    ru: "Шапка магазина с выпадающими категориями, поиском, аккаунтом и корзиной с живым счётчиком; мобильное меню в комплекте.",
+  },
+  'cart-drawer': {
+    es: "Carrito lateral con cantidades, eliminar, progreso hacia envío gratis y subtotal. Modal accesible con foco atrapado.",
+    ru: "Выезжающая корзина с количеством, удалением, прогрессом до бесплатной доставки и итогом. Доступное модальное окно.",
+  },
+  'promo-bar': {
+    es: "Barra de anuncios con mensajes rotativos, pausa al pasar el ratón y botón de cerrar recordado durante la sesión.",
+    ru: "Тонкая панель объявлений с ротацией сообщений, паузой при наведении и кнопкой закрытия.",
+  },
+  'store-hero': {
+    es: "Hero de tienda con titular en degradado, CTAs, cifras de confianza y producto destacado flotante.",
+    ru: "Hero магазина с градиентным заголовком, кнопками, цифрами доверия и парящим избранным товаром.",
+  },
+  'category-tiles': {
+    es: "Cuadrícula de categorías con ilustraciones, número de productos y flecha animada.",
+    ru: "Сетка категорий с иллюстрациями, количеством товаров и анимированной стрелкой.",
+  },
+  'trust-badges': {
+    es: "Fila de garantías de la tienda (envío, devoluciones, pago seguro y soporte) en estilo tarjeta, en línea o dividido.",
+    ru: "Ряд гарантий магазина — доставка, возврат, безопасная оплата и поддержка — в виде карточек, строки или с разделителями.",
+  },
+  'filter-sidebar': {
+    es: "Filtros de categoría, precio, color, valoración y stock que filtran y ordenan una ProductGrid al instante, sincronizados con la URL.",
+    ru: "Фильтры по категории, цене, цвету, рейтингу и наличию, мгновенно фильтрующие и сортирующие ProductGrid с синхронизацией URL.",
+  },
+  'product-toolbar': {
+    es: "Cabecera de catálogo con contador de resultados en vivo y selector de orden (ModernSelect) conectado a FilterSidebar.",
+    ru: "Заголовок каталога с живым счётчиком результатов и сортировкой (ModernSelect), связанной с FilterSidebar.",
+  },
+  'product-gallery': {
+    es: "Visor de imágenes de producto con escenario grande y miniaturas navegables con teclado; genera vistas ilustradas si no hay fotos.",
+    ru: "Просмотр изображений товара с большим окном и миниатюрами с клавиатурной навигацией; без фото создаёт иллюстрированные ракурсы.",
+  },
+  'variant-picker': {
+    es: "Muestras de color o tallas como grupo de radios nativo que mantiene sincronizado el botón de añadir al carrito.",
+    ru: "Выбор цвета или размера как нативная группа радиокнопок, синхронизированная с кнопкой «в корзину».",
+  },
+  'product-buy-box': {
+    es: "Bloque de compra de la ficha: precio, ahorro, color y talla, cantidad, añadir al carrito, comprar ya y detalles desplegables.",
+    ru: "Блок покупки на странице товара: цена, скидка, цвет и размер, количество, «в корзину», «купить сейчас» и раскрывающиеся детали.",
+  },
+  'order-summary': {
+    es: "Resumen lateral del checkout con productos, códigos promocionales, envío, impuestos y total en vivo según el método de envío.",
+    ru: "Боковая сводка заказа с товарами, промокодами, доставкой, налогом и живым итогом по выбранному способу доставки.",
+  },
+  'checkout-form': {
+    es: "Checkout en una página (contacto, entrega, envío y pago) con autocompletado, validación y confirmación animada.",
+    ru: "Оформление заказа на одной странице — контакты, доставка, способ доставки и оплата — с автозаполнением, проверкой и анимированным подтверждением.",
+  },
+  'product-media': {
+    es: "Imagen de producto: una foto real o un fondo tintado con una de 16 ilustraciones de producto a línea.",
+    ru: "Изображение товара: реальное фото или цветной фон с одной из 16 линейных иллюстраций товаров.",
+  },
+  'product-rating': {
+    es: "Valoración con estrellas de solo lectura con relleno fraccionario, valor y número de reseñas, con una única etiqueta accesible.",
+    ru: "Рейтинг звёздами только для чтения с дробной заливкой, значением и числом отзывов и единой доступной подписью.",
+  },
   // ── Charts & statistics ─────────────────────────────────────
   'chart-frame': {
     es: 'Contenedor accesible compartido por todos los gráficos SVG: tarjeta, cabecera, leyenda, tooltip y tabla de datos alternativa.',

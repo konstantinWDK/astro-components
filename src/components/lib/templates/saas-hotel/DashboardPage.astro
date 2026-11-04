@@ -1,0 +1,66 @@
+---
+/**
+ * DashboardPage — Hotel SaaS overview: KPI tiles, revenue mix, tonight's occupancy gauge,
+ * front-desk arrivals/departures, booking channels, occupancy by room type and live activity.
+ *
+ * Usage (src/pages/app/index.astro):
+ *   import { DashboardPage } from 'astro-component-kit/templates/saas-hotel';
+ *   <DashboardPage />
+ *
+ * @param {LobbyData} data - Workspace data. Default: Hotel Mirador demo.
+ * @param {SaasRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import AppLayout from './AppLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import ArrivalsBoard from '../../app/ArrivalsBoard.astro';
+import KpiStatTile from '../../charts/KpiStatTile.astro';
+import StackedAreaChart from '../../charts/StackedAreaChart.astro';
+import GaugeChart from '../../charts/GaugeChart.astro';
+import PieChart from '../../charts/PieChart.astro';
+import GroupedBarChart from '../../charts/GroupedBarChart.astro';
+import StatusTimelineFeed from '../../data/StatusTimelineFeed.astro';
+import { lobbyData, saasRoutes, type LobbyData, type SaasRoutes } from './data';
+
+interface Props {
+  data?: LobbyData;
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = lobbyData, routes = saasRoutes, theme = 'light' } = Astro.props;
+const occupiedTonight = data.housekeeping.filter((r) => r.status === 'occupied').length + data.arrivals.length;
+const tonightPct = Math.min(100, Math.round((occupiedTonight / data.rooms.length) * 100));
+---
+
+<AppLayout title="Dashboard" description="Hotel performance at a glance" current="dashboard" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Dashboard"
+    description={`Good morning, ${data.user.name.split(' ')[0]} — here is what is happening at ${data.workspace.name} today.`}
+    actions={[{ label: 'Export', icon: 'download' }, { label: 'New booking', icon: 'plus', primary: true, href: routes.reservations }]}
+    periods={['Today', '7 days', '30 days', 'Year']}
+    activePeriod={2}
+  />
+
+  <div class="lobby-grid lobby-grid--kpis">
+    {data.kpis.map((k) => <KpiStatTile label={k.label} value={k.value} change={k.change} invert={k.invert} trend={k.trend} period="vs last month" variant="solid" />)}
+  </div>
+
+  <div class="lobby-grid lobby-grid--2-1">
+    <StackedAreaChart title="Revenue by department" subtitle="Weekly, in € thousands" categories={data.revenue.categories} series={data.revenue.series} prefix="€" suffix="k" variant="solid" height={260} />
+    <GaugeChart prefix="" title="Tonight" subtitle={`${occupiedTonight} of ${data.rooms.length} rooms sold`} value={tonightPct} max={100} label="Occupancy" suffix="%" variant="solid" />
+  </div>
+
+  <div class="lobby-grid lobby-grid--1-1">
+    <ArrivalsBoard arrivals={data.arrivals} departures={data.departures} inHouse={data.inHouse} />
+    <PieChart prefix="" title="Bookings by channel" subtitle="Share of room nights, last 30 days" slices={data.channels} donut centerLabel="Direct 38%" suffix="%" variant="solid" />
+  </div>
+
+  <div class="lobby-grid lobby-grid--2-1">
+    <GroupedBarChart prefix="" title="Occupancy by room type" subtitle="May – Nov" categories={data.occupancyByType.categories} series={data.occupancyByType.series} suffix="%" variant="solid" height={240} />
+    <section class="lobby-card" aria-labelledby="activity-title">
+      <h2 id="activity-title" class="lobby-card__title">Live activity</h2>
+      <StatusTimelineFeed events={data.activity} />
+    </section>
+  </div>
+</AppLayout>

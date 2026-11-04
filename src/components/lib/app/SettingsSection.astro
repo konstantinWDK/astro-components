@@ -1,0 +1,96 @@
+---
+/**
+ * SettingsSection — Settings page block: title and description on the left, fields in a card on
+ * the right, with an optional footer holding Save / Cancel and a "saved" confirmation.
+ *
+ * @param {string} title - Section title. Default 'Profile'.
+ * @param {string} description - Help text under the title.
+ * @param {boolean} form - Wrap the fields in a <form> with Save/Cancel. Default true.
+ * @param {string} saveLabel - Save button label. Default 'Save changes'.
+ * @param {string} savedText - Confirmation after saving. Default 'Changes saved'.
+ * @param {string} id - Base id. Default 'settings-section'.
+ * @param {string} variant - Layout (split|stacked). Default 'split'.
+ * @param {string} className - Extra class.
+ *
+ * Slots: default (fields — SwitchRow, AnimatedInput, ModernSelect…), `footer-start` (extra text).
+ *
+ * Accessibility: a labelled section; the form validates natively and announces the saved state
+ * in a polite live region. Emits `app:settings-save` with the FormData.
+ */
+interface Props {
+  title?: string;
+  description?: string;
+  form?: boolean;
+  saveLabel?: string;
+  savedText?: string;
+  id?: string;
+  variant?: 'split' | 'stacked';
+  className?: string;
+}
+
+const {
+  title = 'Profile',
+  description = 'This information is visible to your team.',
+  form = true,
+  saveLabel = 'Save changes',
+  savedText = 'Changes saved',
+  id = 'settings-section',
+  variant = 'split',
+  className = '',
+} = Astro.props;
+
+const Body = form ? 'form' : 'div';
+---
+
+<section class:list={['set', `set--${variant}`, className]} aria-labelledby={`${id}-title`}>
+  <div class="set__intro">
+    <h2 class="set__title" id={`${id}-title`}>{title}</h2>
+    {description && <p class="set__desc">{description}</p>}
+  </div>
+  <Body class="set__card" data-settings-form={form ? '' : undefined} novalidate={form ? true : undefined}>
+    <div class="set__fields"><slot /></div>
+    {form && (
+      <div class="set__foot">
+        <slot name="footer-start" />
+        <p class="set__saved" aria-live="polite" data-saved data-text={savedText}></p>
+        <button type="reset" class="set__btn">Cancel</button>
+        <button type="submit" class="set__btn set__btn--primary">{saveLabel}</button>
+      </div>
+    )}
+  </Body>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-settings-form]:not([data-bound])').forEach((f) => {
+    f.dataset.bound = '';
+    const saved = f.querySelector<HTMLElement>('[data-saved]');
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!f.checkValidity()) {
+        f.querySelector<HTMLElement>(':invalid')?.focus();
+        return;
+      }
+      if (saved) {
+        saved.textContent = `✓ ${saved.dataset.text}`;
+        window.setTimeout(() => { saved.textContent = ''; }, 2600);
+      }
+      f.dispatchEvent(new CustomEvent('app:settings-save', { bubbles: true, detail: new FormData(f) }));
+    });
+  });
+</script>
+
+<style>
+  .set { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr); gap: var(--sp-6, 1.5rem); padding-block: var(--sp-6, 1.5rem); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+  .set--stacked { grid-template-columns: 1fr; }
+  .set__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .set__desc { margin: 4px 0 0; font-size: 0.85rem; line-height: 1.55; color: var(--c-text-2, #a3a3a3); }
+  .set__card { border-radius: var(--r-lg, 16px); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: var(--c-bg-1, #0a0a0a); overflow: hidden; }
+  .set__fields { display: grid; gap: var(--sp-4, 1rem); padding: var(--sp-5, 1.25rem); }
+  .set__foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2, 0.5rem); padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem); border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); background: rgb(var(--ink-rgb, 255 255 255) / 0.02); }
+  .set__saved { margin: 0 auto 0 0; font-size: 0.8rem; font-weight: 600; color: var(--c-success, #34d399); }
+  .set__btn { min-height: 38px; padding: 0 0.9rem; border-radius: 10px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: transparent; color: var(--c-text-1, #fff); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .set__btn--primary { border-color: transparent; background: var(--app-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .set__btn:focus-visible { outline: 2px solid var(--app-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .set :global(.anim-input), .set :global(.custom-select) { background: var(--c-bg, #050505); }
+  @container (max-width: 640px) { .set__intro, .set__card { grid-column: 1 / -1; } }
+</style>

@@ -1,0 +1,48 @@
+---
+/**
+ * RoomsPage — Housekeeping and room status: status KPI tiles, inventory by room type and the
+ * interactive HousekeepingBoard grouped by floor.
+ *
+ * Usage (src/pages/app/rooms.astro):
+ *   import { RoomsPage } from 'astro-component-kit/templates/saas-hotel';
+ *   <RoomsPage />
+ *
+ * @param {LobbyData} data - Workspace data.
+ * @param {SaasRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import AppLayout from './AppLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import HousekeepingBoard from '../../app/HousekeepingBoard.astro';
+import SegmentedBarChart from '../../charts/SegmentedBarChart.astro';
+import KpiStatTile from '../../charts/KpiStatTile.astro';
+import { lobbyData, saasRoutes, type LobbyData, type SaasRoutes } from './data';
+
+interface Props {
+  data?: LobbyData;
+  routes?: SaasRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = lobbyData, routes = saasRoutes, theme = 'light' } = Astro.props;
+const by = (s: string) => data.housekeeping.filter((r) => r.status === s).length;
+const types = Array.from(new Set(data.rooms.map((r) => r.type))).map((t) => ({ label: t, value: data.rooms.filter((r) => r.type === t).length }));
+---
+
+<AppLayout title="Rooms" current="rooms" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Rooms & housekeeping"
+    description="Tap a dirty room to move it to inspection, then to clean."
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Rooms' }]}
+    actions={[{ label: 'Assign tasks', icon: 'broom' }, { label: 'Block room', icon: 'door', primary: true }]}
+    periods={[]}
+  />
+  <div class="lobby-grid lobby-grid--kpis">
+    <KpiStatTile label="Ready to sell" value={String(by('clean'))} change={12} period="vs yesterday" variant="solid" size="sm" />
+    <KpiStatTile label="To clean" value={String(by('dirty'))} change={-8} invert period="vs yesterday" variant="solid" size="sm" />
+    <KpiStatTile label="Occupied" value={String(by('occupied'))} change={4} period="vs yesterday" variant="solid" size="sm" />
+    <KpiStatTile label="Out of order" value={String(by('ooo'))} change={0} invert period="vs yesterday" variant="solid" size="sm" />
+  </div>
+  <SegmentedBarChart title="Inventory by room type" segments={types} total={`${data.rooms.length} rooms`} suffix=" rooms" variant="solid" />
+  <HousekeepingBoard rooms={data.housekeeping} title="Room board" />
+</AppLayout>

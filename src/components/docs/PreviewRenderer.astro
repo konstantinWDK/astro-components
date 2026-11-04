@@ -10,6 +10,7 @@ import Badge from '../lib/feedback/Badge.astro';
 import GlassNavbar from '../lib/navigation/GlassNavbar.astro';
 import NeumorphicSwitch from '../lib/forms/NeumorphicSwitch.astro';
 import { getComponentBySlug } from '../../data/registry/index';
+import { ecommercePreview } from './ecommerce-previews';
 
 const allComponents = import.meta.glob('../lib/**/*.astro', { eager: true });
 
@@ -21,7 +22,9 @@ const { slug } = Astro.props;
 const componentMeta = getComponentBySlug(slug);
 const isButton = componentMeta?.category === 'buttons';
 // Charts need the full stage width instead of a centered pill.
-const isWidePreview = componentMeta?.category === 'charts';
+const isWidePreview = componentMeta?.category === 'charts' || componentMeta?.category === 'ecommerce' || componentMeta?.category === 'app';
+const isEcommerce = componentMeta?.category === 'ecommerce' || componentMeta?.category === 'app';
+const ecommerceDemo = ecommercePreview[slug] ?? {};
 
 // Dynamic lookup fallback with robust case/hyphen normalization
 const cleanSlug = slug.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -45,6 +48,10 @@ const componentPath = componentPaths.find(path => {
 
 if (componentPath) {
   DynamicComponent = (allComponents[componentPath] as any).default;
+}
+// The cart store is a .ts module: demo it through the drawer that uses it.
+if (slug === 'cart-store') {
+  DynamicComponent = (allComponents['../lib/ecommerce/CartDrawer.astro'] as any)?.default ?? null;
 }
 
 // Check if we have a hardcoded preview
@@ -769,7 +776,17 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
     </div>
   )}
 
-  {!hasHardcoded && DynamicComponent && !isButton && (
+  {!hasHardcoded && DynamicComponent && isEcommerce && (
+    <div class="preview-demo preview-demo--row preview-demo--wrap">
+      <div class="dynamic-preview-container dynamic-preview-container--wide">
+        <div class="ecommerce-preview" style={`max-width: ${ecommerceDemo.maxWidth ?? '100%'}`}>
+          <DynamicComponent {...(ecommerceDemo.props ?? {})} />
+        </div>
+      </div>
+    </div>
+  )}
+
+  {!hasHardcoded && DynamicComponent && !isButton && !isEcommerce && (
     <div class="preview-demo preview-demo--row preview-demo--wrap">
       <div class:list={['dynamic-preview-container', { 'dynamic-preview-container--wide': isWidePreview }]}>
         <DynamicComponent>
@@ -1444,4 +1461,5 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
   .sticky-sidebar-preview-item--active {
     background: rgba(99,102,241,0.1); color: var(--c-primary-light); font-weight: 600;
   }
+  .ecommerce-preview { width: 100%; margin: 0 auto; }
 </style>

@@ -1,0 +1,295 @@
+---
+/**
+ * OrderSummary — Checkout sidebar: cart lines, promo code, subtotal, shipping, tax and total.
+ * Reads the cart store live and follows the shipping method chosen in CheckoutForm.
+ *
+ * @param {string} title - Heading. Default 'Order summary'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {ShippingRate[]} shippingRates - Rates matching CheckoutForm's `shipping` radios.
+ * @param {number} freeShippingThreshold - Subtotal that makes the first rate free (0 disables). Default 75.
+ * @param {number} taxRate - Tax as a fraction (0.08 = 8%). Default 0.08.
+ * @param {Record<string, number>} promoCodes - Code → percent discount. Default { ASTRO10: 10 }.
+ * @param {string} editHref - "Edit cart" link (optional).
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {boolean} sticky - Stick while the form scrolls (desktop). Default true.
+ * @param {string} variant - Style (glass|plain). Default 'glass'.
+ * @param {string} className - Extra class.
+ *
+ * Emits `ack:totals` on document with `{ subtotal, discount, shipping, tax, total, formatted }`.
+ *
+ * Accessibility: the totals block is a polite live region; promo feedback is a status message.
+ */
+import type { ShippingRate } from './types';
+
+interface Props {
+  title?: string;
+  cartKey?: string;
+  shippingRates?: ShippingRate[];
+  freeShippingThreshold?: number;
+  taxRate?: number;
+  promoCodes?: Record<string, number>;
+  editHref?: string;
+  currency?: string;
+  locale?: string;
+  sticky?: boolean;
+  variant?: 'glass' | 'plain';
+  className?: string;
+}
+
+const {
+  title = 'Order summary',
+  cartKey = 'ack-cart',
+  shippingRates = [
+    { id: 'standard', label: 'Standard', eta: '3–5 business days', price: 6 },
+    { id: 'express', label: 'Express', eta: '1–2 business days', price: 14 },
+  ],
+  freeShippingThreshold = 75,
+  taxRate = 0.08,
+  promoCodes = { ASTRO10: 10 },
+  editHref,
+  currency = 'USD',
+  locale = 'en-US',
+  sticky = true,
+  variant = 'glass',
+  className = '',
+} = Astro.props;
+
+const config = JSON.stringify({ shippingRates, freeShippingThreshold, taxRate, promoCodes, currency, locale });
+---
+
+<aside class:list={['o-summary', `o-summary--${variant}`, { 'o-summary--sticky': sticky }, className]} aria-labelledby="o-summary-title" data-order-summary data-key={cartKey} data-config={config}>
+  <div class="o-summary__head">
+    <h2 class="o-summary__title" id="o-summary-title">{title}</h2>
+    {editHref && <a class="o-summary__edit" href={editHref}>Edit cart</a>}
+  </div>
+
+  <ul class="o-summary__lines" data-lines aria-label="Items in your order"></ul>
+  <p class="o-summary__empty" data-empty hidden>Your cart is empty.</p>
+
+  <form class="o-summary__promo" data-promo novalidate>
+    <label class="sr-only" for="o-summary-code">Discount code</label>
+    <input id="o-summary-code" name="code" type="text" placeholder="Discount code" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+    <button type="submit">Apply</button>
+  </form>
+  <p class="o-summary__promo-msg" role="status" data-promo-msg></p>
+
+  <dl class="o-summary__totals" aria-live="polite">
+    <div><dt>Subtotal</dt><dd data-t="subtotal">—</dd></div>
+    <div data-discount-row hidden><dt>Discount <span data-code></span></dt><dd data-t="discount">—</dd></div>
+    <div><dt>Shipping</dt><dd data-t="shipping">—</dd></div>
+    <div><dt>Estimated tax</dt><dd data-t="tax">—</dd></div>
+    <div class="o-summary__total"><dt>Total</dt><dd data-t="total">—</dd></div>
+  </dl>
+</aside>
+
+<script>
+  import { createCart, formatMoney } from './cart-store';
+  import { productIcon } from './product-icons';
+  import type { CartItem, ShippingRate } from './types';
+
+  document.querySelectorAll<HTMLElement>('[data-order-summary]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const cfg = JSON.parse(root.dataset.config || '{}') as {
+      shippingRates: ShippingRate[]; freeShippingThreshold: number; taxRate: number;
+      promoCodes: Record<string, number>; currency: string; locale: string;
+    };
+    const money = { currency: cfg.currency, locale: cfg.locale };
+    const cart = createCart(root.dataset.key);
+    const list = root.querySelector<HTMLUListElement>('[data-lines]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const promo = root.querySelector<HTMLFormElement>('[data-promo]')!;
+    const promoMsg = root.querySelector<HTMLElement>('[data-promo-msg]')!;
+    const discountRow = root.querySelector<HTMLElement>('[data-discount-row]')!;
+    const codeOut = root.querySelector<HTMLElement>('[data-code]')!;
+    const out = (k: string) => root.querySelector<HTMLElement>(`[data-t="${k}"]`)!;
+    let code = '';
+    let shippingId = cfg.shippingRates[0]?.id;
+
+    const line = (i: CartItem) => {
+      const li = document.createElement('li');
+      li.className = 'o-line';
+      const media = document.createElement('span');
+      media.className = 'o-line__media';
+      media.style.setProperty('--h', String(i.hue ?? 40));
+      media.innerHTML = i.image
+        ? `<img src="${encodeURI(i.image)}" alt="">`
+        : `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${productIcon(i.icon)}</svg>`;
+      const qty = document.createElement('span');
+      qty.className = 'o-line__qty';
+      qty.textContent = String(i.qty);
+      qty.setAttribute('aria-hidden', 'true');
+      media.append(qty);
+      const info = document.createElement('span');
+      info.className = 'o-line__info';
+      const name = document.createElement('span');
+      name.className = 'o-line__name';
+      name.textContent = i.name;
+      const meta = document.createElement('span');
+      meta.className = 'o-line__meta';
+      meta.textContent = [i.variant, `Qty ${i.qty}`].filter(Boolean).join(' · ');
+      info.append(name, meta);
+      const price = document.createElement('span');
+      price.className = 'o-line__price';
+      price.textContent = formatMoney(i.price * i.qty, money);
+      li.append(media, info, price);
+      return li;
+    };
+
+    function render() {
+      const items = cart.items();
+      list.replaceChildren(...items.map(line));
+      empty.hidden = items.length > 0;
+      const subtotal = items.reduce((n, i) => n + i.price * i.qty, 0);
+      const pct = code ? cfg.promoCodes[code] ?? 0 : 0;
+      const discount = Math.round(subtotal * pct) / 100;
+      const rate = cfg.shippingRates.find((r) => r.id === shippingId) ?? cfg.shippingRates[0];
+      const freeStandard = cfg.freeShippingThreshold > 0 && subtotal - discount >= cfg.freeShippingThreshold && rate === cfg.shippingRates[0];
+      const shipping = items.length === 0 || !rate ? 0 : freeStandard ? 0 : rate.price;
+      const tax = Math.round((subtotal - discount) * cfg.taxRate * 100) / 100;
+      const total = Math.max(0, subtotal - discount + shipping + tax);
+
+      out('subtotal').textContent = formatMoney(subtotal, money);
+      out('discount').textContent = `−${formatMoney(discount, money)}`;
+      discountRow.hidden = discount === 0;
+      codeOut.textContent = code ? `(${code})` : '';
+      out('shipping').textContent = shipping === 0 && items.length ? 'Free' : formatMoney(shipping, money);
+      out('tax').textContent = formatMoney(tax, money);
+      out('total').textContent = formatMoney(total, money);
+
+      document.dispatchEvent(new CustomEvent('ack:totals', {
+        detail: { subtotal, discount, shipping, tax, total, formatted: formatMoney(total, money), freeStandard, count: items.length },
+      }));
+    }
+
+    promo.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = promo.elements.namedItem('code') as HTMLInputElement;
+      const value = input.value.trim().toUpperCase();
+      if (!value) { promoMsg.textContent = 'Enter a code first.'; promoMsg.dataset.state = 'error'; return; }
+      if (cfg.promoCodes[value] !== undefined) {
+        code = value;
+        promoMsg.textContent = `${value} applied — ${cfg.promoCodes[value]}% off.`;
+        promoMsg.dataset.state = 'ok';
+      } else {
+        promoMsg.textContent = `"${value}" is not a valid code.`;
+        promoMsg.dataset.state = 'error';
+      }
+      render();
+    });
+
+    document.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t?.name === 'shipping' && t.checked) { shippingId = t.value; render(); }
+    });
+    document.addEventListener('ack:totals-request', render);
+
+    render();
+    cart.subscribe(render);
+  });
+</script>
+
+<style>
+  .o-summary {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    align-self: start;
+    min-width: 0;
+  }
+  .o-summary--glass {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-xl, 28px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.07);
+    background: linear-gradient(180deg, rgb(var(--ink-rgb, 255 255 255) / 0.035), rgb(var(--ink-rgb, 255 255 255) / 0.012));
+  }
+  .o-summary--sticky { position: sticky; top: calc(var(--store-header-h, 68px) + 1.5rem); }
+
+  .o-summary__head { display: flex; justify-content: space-between; align-items: baseline; }
+  .o-summary__title { margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--c-text-1, #fff); }
+  .o-summary__edit { font-size: 0.85rem; font-weight: 600; }
+
+  .o-summary__lines { display: grid; gap: var(--sp-3, 0.75rem); margin: 0; padding: 0; list-style: none; }
+  .o-summary__lines :global(.o-line) { display: grid; grid-template-columns: 60px 1fr auto; gap: var(--sp-3, 0.75rem); align-items: center; }
+  .o-summary__lines :global(.o-line__media) {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: var(--r-md, 12px);
+    color: hsl(var(--h) var(--pm-ink-s, 80%) var(--pm-ink-l, 80%));
+    background: radial-gradient(circle at 50% 40%, hsl(var(--h) 70% 50% / 0.3), transparent 70%), var(--c-bg-2, #111);
+    border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05));
+  }
+  .o-summary__lines :global(.o-line__media svg) { width: 58%; }
+  .o-summary__lines :global(.o-line__media img) { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+  .o-summary__lines :global(.o-line__qty) {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--c-text-1, #fff);
+    color: var(--c-bg, #050505);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 22px;
+    text-align: center;
+  }
+  .o-summary__lines :global(.o-line__info) { display: grid; gap: 2px; min-width: 0; }
+  .o-summary__lines :global(.o-line__name) { font-size: 0.88rem; font-weight: 700; color: var(--c-text-1, #fff); line-height: 1.3; }
+  .o-summary__lines :global(.o-line__meta) { font-size: 0.78rem; color: var(--c-text-2, #a3a3a3); }
+  .o-summary__lines :global(.o-line__price) { font-size: 0.9rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .o-summary__empty { margin: 0; color: var(--c-text-2, #a3a3a3); }
+
+  .o-summary__promo { display: flex; gap: var(--sp-2, 0.5rem); padding-top: var(--sp-4, 1rem); border-top: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05)); }
+  .o-summary__promo input {
+    flex: 1;
+    min-width: 0;
+    min-height: 46px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.1);
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.03);
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+  }
+  .o-summary__promo input::placeholder { text-transform: none; color: var(--c-text-2, #a3a3a3); }
+  .o-summary__promo input:focus { outline: none; border-color: var(--c-primary-light, #d4a017); }
+  .o-summary__promo button {
+    min-height: 46px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 1px solid rgb(var(--ink-rgb, 255 255 255) / 0.14);
+    border-radius: var(--r-md, 12px);
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.05);
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .o-summary__promo button:hover { background: rgb(var(--ink-rgb, 255 255 255) / 0.09); }
+  .o-summary__promo button:focus-visible { outline: 2px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .o-summary__promo-msg { margin: calc(var(--sp-2, 0.5rem) * -1) 0 0; min-height: 1em; font-size: 0.8rem; }
+  .o-summary__promo-msg:empty { display: none; }
+  .o-summary__promo-msg[data-state='ok'] { color: var(--c-success, #34d399); }
+  .o-summary__promo-msg[data-state='error'] { color: var(--c-danger, #f87171); }
+
+  .o-summary__totals { display: grid; gap: var(--sp-2, 0.5rem); margin: 0; padding-top: var(--sp-4, 1rem); border-top: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05)); }
+  .o-summary__totals div { display: flex; justify-content: space-between; font-size: 0.9rem; }
+  .o-summary__totals div[hidden] { display: none; }
+  .o-summary__totals dt { color: var(--c-text-2, #a3a3a3); }
+  .o-summary__totals dd { margin: 0; color: var(--c-text-1, #fff); font-weight: 600; }
+  .o-summary__totals [data-discount-row] dd { color: var(--c-success, #34d399); }
+  .o-summary__total { margin-top: var(--sp-2, 0.5rem); padding-top: var(--sp-3, 0.75rem); border-top: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05)); }
+  .o-summary__totals .o-summary__total dt { color: var(--c-text-1, #fff); font-weight: 700; font-size: 1rem; }
+  .o-summary__totals .o-summary__total dd { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.02em; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 960px) { .o-summary--sticky { position: static; } }
+</style>

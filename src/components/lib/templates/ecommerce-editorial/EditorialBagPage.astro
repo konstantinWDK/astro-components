@@ -1,0 +1,52 @@
+---
+/**
+ * EditorialBagPage — Full shopping-bag page (CartPageList) with gift note and summary,
+ * followed by a "You may also like" ShopProductRail.
+ *
+ * Usage (src/pages/bag.astro):
+ *   import { EditorialBagPage } from 'astro-component-kit/templates/ecommerce-editorial';
+ *   <EditorialBagPage />
+ *
+ * @param {EditorialStore} store - Catalogue and settings.
+ * @param {EditorialRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} seedCart - Pre-fill the bag with demo items. Default false.
+ * @param {boolean} noindex - Add robots noindex. Default true (bag pages should not be indexed).
+ */
+import EditorialLayout from './EditorialLayout.astro';
+import CartPageList from '../../ecommerce/CartPageList.astro';
+import ShopProductRail from '../../sections/ShopProductRail.astro';
+import { formaStore, editorialRoutes, pickEditorial, type EditorialStore, type EditorialRoutes } from './data';
+
+interface Props {
+  store?: EditorialStore;
+  routes?: EditorialRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  seedCart?: boolean;
+  noindex?: boolean;
+}
+
+const { store = formaStore, routes = editorialRoutes, theme = 'light', seedCart = false, noindex = true } = Astro.props;
+const suggestions = pickEditorial(store, ['kiln-mug', 'organic-tee', 'acetate-frames', 'paper-lamp', 'canvas-runner']);
+---
+
+<EditorialLayout title="Your bag" description={`Your bag — ${store.name}`} store={store} routes={routes} currentHref={routes.bag} theme={theme} seedCart={seedCart} noindex={noindex}>
+  <div class="forma-wrap bag-page">
+    <CartPageList
+      cartKey={store.cartKey}
+      checkoutHref={routes.checkout}
+      continueHref={routes.shop}
+      freeShippingThreshold={store.freeShippingThreshold}
+      shippingFlat={store.shippingFlat}
+      currency={store.currency}
+      locale={store.locale}
+    />
+  </div>
+  <div class="forma-wrap section-space">
+    <ShopProductRail eyebrow="Before you go" title="You may also *like*" products={suggestions} productBase={routes.product} link={{ label: 'Shop all', href: routes.shop }} id="bag-rail" size="sm" currency={store.currency} locale={store.locale} cartKey={store.cartKey} />
+  </div>
+</EditorialLayout>
+
+<style>
+  .bag-page { padding-top: clamp(2rem, 5vw, 3.5rem); }
+</style>

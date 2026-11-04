@@ -1,0 +1,145 @@
+---
+/**
+ * PromoBar — Slim announcement bar for shipping offers, sales or codes,
+ * with rotating messages and an optional dismiss button.
+ *
+ * @param {string[]} messages - One or more messages; several rotate every `interval` ms.
+ * @param {string} href - Optional link for the whole bar.
+ * @param {number} interval - Rotation interval in ms. Default 4500.
+ * @param {boolean} dismissible - Show a close button (remembered per session). Default true.
+ * @param {string} variant - Style (gold|glass|dark). Default 'gold'.
+ * @param {string} size - Height (sm|md). Default 'sm'.
+ * @param {string} storageKey - sessionStorage key for the dismissed state. Default 'ack-promo-closed'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: rotation pauses on hover/focus and is disabled with reduced motion;
+ * messages live in a polite live region only after the user interacts, never on load.
+ */
+interface Props {
+  messages?: string[];
+  href?: string;
+  interval?: number;
+  dismissible?: boolean;
+  variant?: 'gold' | 'glass' | 'dark';
+  size?: 'sm' | 'md';
+  storageKey?: string;
+  className?: string;
+}
+
+const {
+  messages = ['Free shipping on orders over $75', 'Use code ASTRO10 for 10% off your first order', '30-day free returns'],
+  href,
+  interval = 4500,
+  dismissible = true,
+  variant = 'gold',
+  size = 'sm',
+  storageKey = 'ack-promo-closed',
+  className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'div';
+---
+
+<div class:list={['promo-bar', `promo-bar--${variant}`, `promo-bar--${size}`, className]} data-promo-bar data-interval={interval} data-key={storageKey}>
+  <Tag class="promo-bar__track" href={href}>
+    {messages.map((m, i) => (
+      <span class:list={['promo-bar__msg', { 'is-active': i === 0 }]} aria-hidden={i === 0 ? undefined : 'true'}>{m}</span>
+    ))}
+  </Tag>
+  {dismissible && (
+    <button class="promo-bar__close" type="button" aria-label="Dismiss announcement" data-promo-close>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  )}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-promo-bar]').forEach((bar) => {
+    const key = bar.dataset.key || 'ack-promo-closed';
+    try {
+      if (window.sessionStorage.getItem(key)) { bar.hidden = true; return; }
+    } catch { /* storage blocked */ }
+
+    bar.querySelector('[data-promo-close]')?.addEventListener('click', () => {
+      bar.hidden = true;
+      try { window.sessionStorage.setItem(key, '1'); } catch { /* ignore */ }
+    });
+
+    const msgs = Array.from(bar.querySelectorAll<HTMLElement>('.promo-bar__msg'));
+    if (msgs.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let index = 0;
+    let paused = false;
+    bar.addEventListener('mouseenter', () => { paused = true; });
+    bar.addEventListener('mouseleave', () => { paused = false; });
+    bar.addEventListener('focusin', () => { paused = true; });
+    bar.addEventListener('focusout', () => { paused = false; });
+    window.setInterval(() => {
+      if (paused || document.hidden) return;
+      msgs[index].classList.remove('is-active');
+      msgs[index].setAttribute('aria-hidden', 'true');
+      index = (index + 1) % msgs.length;
+      msgs[index].classList.add('is-active');
+      msgs[index].removeAttribute('aria-hidden');
+    }, Number(bar.dataset.interval) || 4500);
+  });
+</script>
+
+<style>
+  .promo-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 48px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .promo-bar[hidden] { display: none; }
+  .promo-bar--md { min-height: 44px; font-size: 0.875rem; }
+  .promo-bar--gold { background: linear-gradient(90deg, #b8860b, #d4a017, #b8860b); color: #140f00; }
+  .promo-bar--glass { background: rgb(var(--ink-rgb, 255 255 255) / 0.04); border-bottom: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.05)); color: var(--c-text-1, #fff); }
+  .promo-bar--dark { background: var(--c-bg-2, #111); color: var(--c-text-1, #fff); }
+
+  .promo-bar__track {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
+  a.promo-bar__track:hover { text-decoration: underline; color: inherit; }
+  .promo-bar__msg {
+    grid-area: 1 / 1;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+  }
+  .promo-bar__msg.is-active { opacity: 1; transform: none; pointer-events: auto; }
+
+  .promo-bar__close {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: var(--r-full, 9999px);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.75;
+  }
+  .promo-bar__close:hover { opacity: 1; background: rgba(0, 0, 0, 0.1); }
+  .promo-bar__close:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .promo-bar__msg { transition: none; }
+  }
+</style>
