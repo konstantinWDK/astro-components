@@ -13,7 +13,7 @@ async function main() {
   if (firstArg === 'install' || (firstArg === 'mcp' && args[1]?.toLowerCase() === 'install')) {
     const client = firstArg === 'install' ? args[1] : args[2];
     if (!client) {
-      console.log(`\nUsage: npx astro-component-kit mcp install <cursor|claude|windsurf|cline>`);
+      console.log(`\nUsage: npx astro-component-kit mcp install <cursor|claude|codex|lovable|mcp>`);
       console.log(`Example: npx astro-component-kit mcp install cursor\n`);
       process.exit(1);
     }
@@ -47,8 +47,8 @@ async function main() {
 🚀 Astro Components Kit — MCP Server (Model Context Protocol)
 
 Usage:
-  npx astro-component-kit mcp install <cursor|claude|windsurf|cline>
-    → Automatically configure your AI editor to use Astro Components MCP
+  npx astro-component-kit mcp install <cursor|claude|codex|lovable|mcp>
+    → Automatically configure your AI editor/agent to use Astro Components MCP
 
   npx astro-component-kit mcp serve
     → Start the remote SSE HTTP server locally (default port 3000)

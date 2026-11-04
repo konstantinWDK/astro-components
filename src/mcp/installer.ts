@@ -1,11 +1,10 @@
 // src/mcp/installer.ts
-// Automated 1-click CLI installer for Cursor, Claude Desktop, Windsurf, and Cline.
-// Similar to 21st.dev/mcp installation experience.
+// Automated 1-click CLI installer for Cursor, Claude, Codex, Lovable, Windsurf, Cline, and Universal MCP.
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export type SupportedClient = 'cursor' | 'claude' | 'windsurf' | 'cline';
+export type SupportedClient = 'cursor' | 'claude' | 'codex' | 'lovable' | 'mcp' | 'windsurf' | 'cline';
 
 const MCP_SERVER_URL = 'https://mcp.astrocomponents.dev/sse';
 
@@ -17,6 +16,18 @@ function getHomeDir(): string {
   return os.homedir();
 }
 
+export function normalizeClient(input: string): SupportedClient | null {
+  const c = input.toLowerCase().trim();
+  if (c === 'cursor' || c === 'cursos') return 'cursor';
+  if (c === 'claude' || c === 'claude-desktop' || c === 'claude-code') return 'claude';
+  if (c === 'codex' || c === 'openai-codex' || c === 'copilot') return 'codex';
+  if (c === 'lovable' || c === 'lovable-dev') return 'lovable';
+  if (c === 'mcp' || c === 'universal' || c === 'generic') return 'mcp';
+  if (c === 'windsurf') return 'windsurf';
+  if (c === 'cline') return 'cline';
+  return null;
+}
+
 /**
  * Returns the candidate configuration paths for each supported client.
  */
@@ -26,7 +37,6 @@ function getClientConfigPaths(client: SupportedClient): { primary: string; fallb
 
   switch (client) {
     case 'cursor': {
-      // Prioritize workspace-level .cursor/mcp.json, fallback to global
       const localCursor = path.resolve(process.cwd(), '.cursor/mcp.json');
       const globalCursor = path.resolve(home, '.cursor/mcp.json');
       return { primary: localCursor, fallback: globalCursor };
@@ -40,6 +50,21 @@ function getClientConfigPaths(client: SupportedClient): { primary: string; fallb
         return { primary: path.resolve(appData, 'Claude/claude_desktop_config.json') };
       }
       return { primary: path.resolve(home, '.config/Claude/claude_desktop_config.json') };
+    }
+    case 'codex': {
+      const localCodex = path.resolve(process.cwd(), '.codex/mcp.json');
+      const globalCodex = path.resolve(home, '.codex/config.json');
+      return { primary: localCodex, fallback: globalCodex };
+    }
+    case 'lovable': {
+      const localLovable = path.resolve(process.cwd(), '.lovable/mcp.json');
+      const globalLovable = path.resolve(home, '.lovable/config.json');
+      return { primary: localLovable, fallback: globalLovable };
+    }
+    case 'mcp': {
+      const localMcp = path.resolve(process.cwd(), 'mcp.json');
+      const globalMcp = path.resolve(home, '.mcp/config.json');
+      return { primary: localMcp, fallback: globalMcp };
     }
     case 'windsurf': {
       return { primary: path.resolve(home, '.codeium/windsurf/mcp_config.json') };
@@ -76,14 +101,18 @@ function getClientConfigPaths(client: SupportedClient): { primary: string; fallb
  * Installs or updates the astro-components MCP server in the target client's configuration.
  */
 export async function installMcpForClient(targetClient: string): Promise<boolean> {
-  const client = targetClient.toLowerCase().trim() as SupportedClient;
-  const validClients: SupportedClient[] = ['cursor', 'claude', 'windsurf', 'cline'];
+  const client = normalizeClient(targetClient);
+  const validClients: SupportedClient[] = ['cursor', 'claude', 'codex', 'lovable', 'mcp', 'windsurf', 'cline'];
 
-  if (!validClients.includes(client)) {
+  if (!client) {
     console.error(`\n❌ Unknown client "${targetClient}".`);
     console.log(`   Supported clients: ${validClients.join(', ')}`);
-    console.log(`\nExample:`);
-    console.log(`   npx astro-component-kit mcp install cursor\n`);
+    console.log(`\nExamples:`);
+    console.log(`   npx astro-component-kit mcp install cursor`);
+    console.log(`   npx astro-component-kit mcp install claude`);
+    console.log(`   npx astro-component-kit mcp install codex`);
+    console.log(`   npx astro-component-kit mcp install lovable`);
+    console.log(`   npx astro-component-kit mcp install mcp\n`);
     return false;
   }
 
