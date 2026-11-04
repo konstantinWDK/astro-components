@@ -3,7 +3,7 @@
 // Dedicated 21st.dev-style MCP server landing page for Astro Components Kit.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LanguagePicker from '../layout/LanguagePicker.astro';
-import { getLocalizedPath } from '../../i18n/translations';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
 import type { Locale } from '../../config/site';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
 }
 
 const { lang = 'en' } = Astro.props;
+const t = useTranslations(lang);
 
 const content = {
   en: {
@@ -179,22 +180,31 @@ const toolsList = [
   description={content.subtitle}
 >
   <div class="mcp-page">
-    <!-- Top Navigation bar -->
-    <header class="mcp-nav">
-      <div class="mcp-nav__inner">
-        <a href={getLocalizedPath('/', lang)} class="mcp-nav__brand">
-          <span class="mcp-nav__logo" aria-hidden="true">ACK</span>
-          <span class="mcp-nav__title">astro-components</span>
+    <!-- Top Header matching project layout & animated logo -->
+    <header class="docs-header">
+      <div class="docs-header__inner">
+        <a href={getLocalizedPath('/', lang)} class="docs-header__brand">
+          <img src="/logo-animated.svg" alt="Astro Kit Components" class="brand-logo" />
         </a>
-        <div class="mcp-nav__links">
-          <a href={getLocalizedPath('/docs/glass-button', lang)} class="mcp-link">{content.btnDocs}</a>
-          <a href={getLocalizedPath('/templates', lang)} class="mcp-link">{content.btnTemplates}</a>
+        <button class="site-menu-toggle" id="site-menu-toggle" aria-label={t('a11y.menu')}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+        </button>
+        <nav class="docs-header__nav" id="site-nav">
+          <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+          <a href={getLocalizedPath('/install', lang)}>{t('nav.install')}</a>
+          <a href={getLocalizedPath('/mcp', lang)} class="active">{t('nav.mcp')}</a>
+          <a href={getLocalizedPath('/docs/glass-button', lang)}>{t('nav.components')}</a>
+          <a href={getLocalizedPath('/sections', lang)}>{t('nav.sections')}</a>
+          <a href={getLocalizedPath('/templates', lang)}>{t('nav.templates')}</a>
+          <a href={getLocalizedPath('/notes', lang)}>{t('nav.notes')}</a>
           <LanguagePicker currentLang={lang} />
-          <a href="https://github.com/konstantinwdk/astro-components" target="_blank" rel="noopener noreferrer" class="mcp-btn mcp-btn--ghost">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <a href="https://github.com/konstantinWDK/astro-components" target="_blank" rel="noopener" class="gh-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
             GitHub
           </a>
-        </div>
+        </nav>
       </div>
     </header>
 
@@ -357,14 +367,10 @@ const toolsList = [
     </section>
 
     <!-- Footer -->
-    <footer class="mcp-footer">
-      <div class="mcp-footer__inner">
-        <span>© {new Date().getFullYear()} Astro Components Kit · MIT License</span>
-        <div class="mcp-footer__links">
-          <a href="https://astrocomponents.dev">astrocomponents.dev</a>
-          <a href="https://mcp.astrocomponents.dev" target="_blank">MCP Status</a>
-          <a href="https://www.npmjs.com/package/astro-component-kit" target="_blank">npm package</a>
-        </div>
+    <footer class="footer">
+      <div class="container footer__inner">
+        <p>{lang === 'es' ? 'Creado con ❤️ para la comunidad de Astro' : lang === 'ru' ? 'Создано с ❤️ для сообщества Astro' : 'Built with ❤️ for the Astro community'} · <a href="https://github.com/konstantinWDK/astro-components" target="_blank" rel="noopener">GitHub</a></p>
+        <p class="footer__license">MIT License · Astro Components Kit</p>
       </div>
     </footer>
   </div>
@@ -376,6 +382,15 @@ const toolsList = [
 </BaseLayout>
 
 <script is:inline>
+  // Mobile nav toggle
+  const siteToggle = document.getElementById('site-menu-toggle');
+  const siteNav = document.getElementById('site-nav');
+  if (siteToggle && siteNav) {
+    siteToggle.addEventListener('click', () => {
+      siteNav.classList.toggle('is-open');
+    });
+  }
+
   // Tab switching logic
   const tabs = document.querySelectorAll('.mcp-tab');
   const panes = document.querySelectorAll('.mcp-pane');
@@ -430,56 +445,67 @@ const toolsList = [
     padding-bottom: 5rem;
   }
 
-  .mcp-nav {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
+  /* Header from project design system */
+  .docs-header {
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(7, 10, 18, 0.75);
+    height: var(--header-h);
+    background: rgba(8, 11, 20, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--c-border);
   }
-  .mcp-nav__inner {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 1rem 1.5rem;
+  .docs-header__inner {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 var(--sp-6);
+    height: 100%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: var(--sp-6);
   }
-  .mcp-nav__brand {
+  .docs-header__brand {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
     text-decoration: none;
-    color: #fff;
+    flex-shrink: 0;
+  }
+  .brand-logo {
+    height: 75px;
+    width: auto;
+  }
+  .docs-header__nav {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    margin-left: auto;
+  }
+  .docs-header__nav a {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--c-text-2);
+    text-decoration: none;
+    border-radius: var(--r-sm);
+    transition: color 0.2s, background 0.2s;
+  }
+  .docs-header__nav a:hover {
+    color: var(--c-text-1);
+    background: rgba(255,255,255,0.06);
+  }
+  .docs-header__nav a.active {
+    color: #facc15;
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.3);
     font-weight: 700;
   }
-  .mcp-nav__logo {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #000;
-    font-size: 0.75rem;
-    font-weight: 900;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    letter-spacing: 0.05em;
-  }
-  .mcp-nav__title { font-size: 1.05rem; letter-spacing: -0.01em; }
-  .mcp-nav__links { display: flex; align-items: center; gap: 1rem; }
-  .mcp-link { color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
-  .mcp-link:hover { color: #fff; }
-  .mcp-btn {
-    display: inline-flex;
+  .gh-link {
+    display: flex !important;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.45rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
   }
-  .mcp-btn--ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
-  .mcp-btn--ghost:hover { background: rgba(255, 255, 255, 0.12); }
+  .site-menu-toggle { display: none; }
 
   /* Hero */
   .mcp-hero {
@@ -759,29 +785,51 @@ const toolsList = [
   }
   .mcp-toast--visible { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-  /* Footer */
-  .mcp-footer { margin-top: 5rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 2rem; }
-  .mcp-footer__inner {
-    max-width: 900px;
+  /* Footer from project design system */
+  .footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--c-border);
+    padding: var(--sp-8) 0;
+    margin-top: 5rem;
+  }
+  .footer__inner {
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 var(--sp-6);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
-    color: #64748b;
-    flex-wrap: wrap;
-    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--c-text-3);
   }
-  .mcp-footer__links { display: flex; gap: 1rem; }
-  .mcp-footer__links a { color: #94a3b8; text-decoration: none; transition: color 0.2s; }
-  .mcp-footer__links a:hover { color: #fff; }
+  .footer a { color: var(--c-text-2); text-decoration: none; transition: color 0.2s; }
+  .footer a:hover { color: var(--c-text-1); }
+  .footer__license { font-size: 0.75rem; }
+
+  @media (max-width: 768px) {
+    .site-menu-toggle {
+       display: flex; align-items: center; justify-content: center;
+       background: transparent; border: none; color: var(--c-text-1); cursor: pointer;
+       margin-left: auto;
+    }
+    .docs-header__nav {
+       display: none;
+       position: absolute; top: var(--header-h); left: 0; width: 100%;
+       background: rgba(8, 11, 20, 0.98); backdrop-filter: blur(20px);
+       border-bottom: 1px solid var(--c-border);
+       flex-direction: column; padding: var(--sp-6); gap: var(--sp-4);
+       align-items: stretch;
+    }
+    .docs-header__nav.is-open { display: flex; }
+    .docs-header__nav a { text-align: center; padding: 0.8rem; font-size: 1.1rem; }
+  }
 
   @media (max-width: 640px) {
     .mcp-stats { grid-template-columns: repeat(2, 1fr); }
-    .mcp-nav__links { display: none; }
     .mcp-endpoint-card__row { flex-direction: column; align-items: flex-start; }
     .mcp-code-box { flex-direction: column; align-items: flex-start; }
     .mcp-copy-btn { width: 100%; justify-content: center; }
+    .footer__inner { flex-direction: column; text-align: center; gap: var(--sp-2); }
   }
 </style>
