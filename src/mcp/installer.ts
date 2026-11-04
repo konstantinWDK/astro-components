@@ -146,3 +146,4 @@ export async function installMcpForClient(targetClient: string): Promise<boolean
     return false;
   }
 }
+

@@ -31,3 +31,4 @@ if (first === 'install' || (first === 'mcp' && args[1]?.toLowerCase() === 'insta
   });
   proc.on('exit', (code) => process.exit(code || 0));
 }
+
