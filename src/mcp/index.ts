@@ -15,3 +15,4 @@ if (isStdio) {
 } else {
   startHttpServer();
 }
+
