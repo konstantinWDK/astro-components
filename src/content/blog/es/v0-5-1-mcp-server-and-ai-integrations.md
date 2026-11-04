@@ -1,6 +1,6 @@
 ---
-title: 'v0.5.0: Servidor MCP Oficial, Integración de IA en 1 Clic y Experiencia 21st.dev'
-description: 'Conecta Cursor, Claude Desktop, Codex, Lovable o cualquier cliente MCP directamente a más de 340 componentes, gráficos SVG y plantillas completas con astro-component-kit 0.5.0 en npm.'
+title: 'v0.5.1: Servidor MCP Oficial, Integración de IA en 1 Clic y Experiencia 21st.dev'
+description: 'Conecta Cursor, Claude Desktop, Codex, Lovable o cualquier cliente MCP directamente a más de 340 componentes, gráficos SVG y plantillas completas con astro-component-kit 0.5.1 en npm.'
 date: '2026-11-04'
 tag: 'Release'
 heroImage: '/galaxy-bg.svg'
@@ -8,13 +8,13 @@ heroImage: '/galaxy-bg.svg'
 
 ## Desarrollo en Astro impulsado por IA
 
-Ya está disponible **astro-component-kit 0.5.0**, una actualización mayor que transforma nuestra librería en un **ecosistema de diseño e ingeniería pensado para la Inteligencia Artificial**.
+Ya está disponible **astro-component-kit 0.5.1**, una actualización mayor que transforma nuestra librería en un **ecosistema de diseño e ingeniería pensado para la Inteligencia Artificial**.
 
 Gracias al nuevo servidor oficial **Model Context Protocol (MCP)**, tu asistente de IA en **Cursor**, **Claude**, **Codex**, **Lovable** o cualquier entorno compatible con MCP tiene acceso directo y en tiempo real a todo el catálogo de **más de 340 componentes**, **41 gráficos SVG** y **3 plantillas de aplicaciones multipágina**.
 
 ---
 
-## 🌟 Novedades en la versión 0.5.0
+## 🌟 Novedades en la versión 0.5.1
 
 ### 1. Servidor MCP Remoto oficial (SSE)
 - **Endpoint en vivo:** `https://mcp.astrocomponents.dev/sse`
@@ -71,10 +71,10 @@ Una vez conectado el servidor, pídele a tu editor:
 
 ---
 
-## 📦 Actualizar a v0.5.0
+## 📦 Actualizar a v0.5.1
 
 ```bash
-npm install astro-component-kit@0.5.0
+npm install astro-component-kit@0.5.1
 ```
 
 O configura tu asistente de IA directamente con:
@@ -82,3 +82,4 @@ O configura tu asistente de IA directamente con:
 ```bash
 npx astro-component-kit mcp install cursor
 ```
+

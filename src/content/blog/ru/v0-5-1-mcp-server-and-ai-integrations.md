@@ -1,6 +1,6 @@
 ---
-title: 'v0.5.0: Официальный MCP-сервер, настройка ИИ в 1 клик и хаб в стиле 21st.dev'
-description: 'Подключите Cursor, Claude Desktop, Codex, Lovable или любой MCP-клиент напрямую к 340+ компонентам, SVG-графикам и шаблонам с astro-component-kit 0.5.0 в npm.'
+title: 'v0.5.1: Официальный MCP-сервер, настройка ИИ в 1 клик и хаб в стиле 21st.dev'
+description: 'Подключите Cursor, Claude Desktop, Codex, Lovable или любой MCP-клиент напрямую к 340+ компонентам, SVG-графикам и шаблонам с astro-component-kit 0.5.1 в npm.'
 date: '2026-11-04'
 tag: 'Release'
 heroImage: '/galaxy-bg.svg'
@@ -8,13 +8,13 @@ heroImage: '/galaxy-bg.svg'
 
 ## Разработка на Astro с поддержкой ИИ
 
-Вышла версия **astro-component-kit 0.5.0** — масштабное обновление, которое превращает библиотеку в **экосистему для быстрой разработки с помощью искусственного интеллекта**.
+Вышла версия **astro-component-kit 0.5.1** — масштабное обновление, которое превращает библиотеку в **экосистему для быстрой разработки с помощью искусственного интеллекта**.
 
 Благодаря официальному серверу **Model Context Protocol (MCP)** ваш ИИ-ассистент в **Cursor**, **Claude**, **Codex**, **Lovable** или любой другой MCP-среде получает мгновенный доступ в реальном времени ко всем **340+ компонентам**, **41 SVG-графику** и **3 готовым многостраничным шаблонам**.
 
 ---
 
-## 🌟 Что нового в версии 0.5.0
+## 🌟 Что нового в версии 0.5.1
 
 ### 1. Официальный удалённый MCP-сервер (SSE)
 - **Рабочий адрес:** `https://mcp.astrocomponents.dev/sse`
@@ -71,10 +71,10 @@ npx astro-component-kit mcp install mcp
 
 ---
 
-## 📦 Обновление до v0.5.0
+## 📦 Обновление до v0.5.1
 
 ```bash
-npm install astro-component-kit@0.5.0
+npm install astro-component-kit@0.5.1
 ```
 
 Или подключите вашего ИИ-помощника прямо сейчас:
@@ -82,3 +82,4 @@ npm install astro-component-kit@0.5.0
 ```bash
 npx astro-component-kit mcp install cursor
 ```
+

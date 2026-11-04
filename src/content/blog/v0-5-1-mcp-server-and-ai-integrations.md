@@ -1,6 +1,6 @@
 ---
-title: 'v0.5.0: Official MCP Server, 1-Click AI Integrations & 21st.dev Experience'
-description: 'Connect Cursor, Claude Desktop, Codex, Lovable, or any MCP client directly to 340+ components, SVG charts, and multi-page templates with astro-component-kit 0.5.0 on npm.'
+title: 'v0.5.1: Official MCP Server, 1-Click AI Integrations & 21st.dev Experience'
+description: 'Connect Cursor, Claude Desktop, Codex, Lovable, or any MCP client directly to 340+ components, SVG charts, and multi-page templates with astro-component-kit 0.5.1 on npm.'
 date: '2026-11-04'
 tag: 'Release'
 heroImage: '/galaxy-bg.svg'
@@ -8,13 +8,13 @@ heroImage: '/galaxy-bg.svg'
 
 ## AI-Powered Astro Development
 
-**astro-component-kit 0.5.0** is here, and it transforms our component library into an **AI-first design engineering ecosystem**.
+**astro-component-kit 0.5.1** is here, and it transforms our component library into an **AI-first design engineering ecosystem**.
 
 With the new official **Model Context Protocol (MCP)** server, your AI assistant in **Cursor**, **Claude**, **Codex**, **Lovable**, or any MCP-compatible environment has instant, real-time access to our entire catalog of **340+ production components**, **41 SVG charts**, and **3 full-page application templates**.
 
 ---
 
-## 🌟 What is New in v0.5.0
+## 🌟 What is New in v0.5.1
 
 ### 1. Official Remote SSE MCP Server
 - **Live Endpoint:** `https://mcp.astrocomponents.dev/sse`
@@ -71,10 +71,10 @@ Once connected, simply prompt your assistant:
 
 ---
 
-## 📦 Upgrade to v0.5.0
+## 📦 Upgrade to v0.5.1
 
 ```bash
-npm install astro-component-kit@0.5.0
+npm install astro-component-kit@0.5.1
 ```
 
 Or configure your AI assistant directly with:
@@ -82,3 +82,4 @@ Or configure your AI assistant directly with:
 ```bash
 npx astro-component-kit mcp install cursor
 ```
+
