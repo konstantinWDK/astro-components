@@ -1,5 +1,5 @@
 ---
-title: 'v0.5.1: Servidor MCP Oficial, Integración de IA en 1 Clic y Experiencia 21st.dev'
+title: 'v0.5.1: Servidor MCP Oficial, Integración de IA en 1 Clic y Hub Interactivo'
 description: 'Conecta Cursor, Claude Desktop, Codex, Lovable o cualquier cliente MCP directamente a más de 340 componentes, gráficos SVG y plantillas completas con astro-component-kit 0.5.1 en npm.'
 date: '2026-11-04'
 tag: 'Release'
@@ -41,7 +41,7 @@ npx astro-component-kit mcp install lovable
 npx astro-component-kit mcp install mcp
 ```
 
-### 3. Centro interactivo estilo 21st.dev (`/mcp`)
+### 3. Centro interactivo dedicado (`/mcp`)
 Descubre la nueva página interactiva **[MCP Hub](/es/mcp/)** disponible directamente desde el menú principal:
 - Pestañas con comandos e instrucciones para cada editor.
 - Prompts de ejemplo listos para copiar sobre e-commerce, gráficos, paneles SaaS y variables de diseño.

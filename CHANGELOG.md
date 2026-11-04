@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Model Context Protocol (MCP) Server & AI Integrations
 - **Official Remote SSE MCP Server**: Live at `https://mcp.astrocomponents.dev/sse` with built-in rate-limiting (120 req/min), CORS protection, healthcheck monitoring, and Docker deployment configuration (`Dockerfile.mcp`).
-- **Interactive 21st.dev-style Landing Page**: Dedicated `/mcp` page (in English, Spanish `/es/mcp`, and Russian `/ru/mcp`) with 1-click install tabs, JSON previews, copy buttons, live stats, prompt examples, and tool catalog.
+- **Interactive MCP Landing Page**: Dedicated `/mcp` page (in English, Spanish `/es/mcp`, and Russian `/ru/mcp`) with 1-click install tabs, JSON previews, copy buttons, live stats, prompt examples, and tool catalog.
 - **1-Click CLI Installer (`bin/cli.js`)**: Executable via `npx astro-component-kit mcp install <client>` with zero dependencies for **Cursor**, **Claude**, **Codex**, **Lovable**, and universal **MCP**.
 - **8 Built-in MCP Tools**:
   - `search_components`: Search 340+ components by name, category, and tags.
