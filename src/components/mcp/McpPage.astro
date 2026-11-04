@@ -1,0 +1,760 @@
+---
+// src/components/mcp/McpPage.astro
+// Dedicated 21st.dev-style MCP server landing page for Astro Components Kit.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LanguagePicker from '../layout/LanguagePicker.astro';
+import { getLocalizedPath } from '../../i18n/translations';
+import type { Locale } from '../../config/site';
+
+interface Props {
+  lang?: Locale;
+}
+
+const { lang = 'en' } = Astro.props;
+
+const content = {
+  en: {
+    badge: 'Official MCP Server · Astro 5.x',
+    title: 'Supercharge your AI with Astro Components Kit',
+    subtitle: 'Connect Cursor, Claude Desktop, Windsurf, or Cline directly to 340+ production components, SVG charts, and multi-page templates. Let your AI build Astro sites at warp speed.',
+    endpointLabel: 'Remote SSE Endpoint',
+    fastInstallTitle: '1-Click Editor Setup',
+    fastInstallDesc: 'Choose your AI editor to get the automated installation command or direct JSON config.',
+    tabCursor: 'Cursor',
+    tabClaude: 'Claude Desktop',
+    tabWindsurf: 'Windsurf',
+    tabCline: 'Cline (VS Code)',
+    cliTabTitle: 'Automated CLI Setup',
+    manualTabTitle: 'Direct Configuration File',
+    copiedNotice: 'Copied to clipboard!',
+    promptsTitle: 'Prompt your AI with these examples',
+    promptsDesc: 'Once connected, your AI has direct access to the entire component catalog, props, and source code.',
+    toolsTitle: '8 Built-in MCP Tools',
+    toolsDesc: 'Everything your AI assistant needs to find, inspect, and write production-grade Astro code.',
+    statsComponents: 'Components',
+    statsTemplates: 'Full Templates',
+    statsCharts: 'SVG Charts',
+    statsDeps: 'Runtime Deps',
+    btnDocs: 'Browse Components',
+    btnTemplates: 'View Templates',
+    btnGitHub: 'View on GitHub',
+  },
+  es: {
+    badge: 'Servidor MCP Oficial · Astro 5.x',
+    title: 'Potencia tu IA con Astro Components Kit',
+    subtitle: 'Conecta Cursor, Claude Desktop, Windsurf o Cline directamente a más de 340 componentes de producción, gráficos SVG y plantillas completas. Deja que tu IA construya webs Astro a toda velocidad.',
+    endpointLabel: 'Endpoint SSE Remoto',
+    fastInstallTitle: 'Configuración en 1 Clic para tu Editor',
+    fastInstallDesc: 'Elige tu editor de IA para obtener el comando de instalación automática o el archivo JSON directo.',
+    tabCursor: 'Cursor',
+    tabClaude: 'Claude Desktop',
+    tabWindsurf: 'Windsurf',
+    tabCline: 'Cline (VS Code)',
+    cliTabTitle: 'Instalación Automática por CLI',
+    manualTabTitle: 'Archivo de Configuración Directo',
+    copiedNotice: '¡Copiado al portapapeles!',
+    promptsTitle: 'Prueba estos prompts en tu IA',
+    promptsDesc: 'Una vez conectado, tu asistente tendrá acceso inmediato al catálogo completo, interfaces TypeScript y código fuente.',
+    toolsTitle: '8 Herramientas MCP Integradas',
+    toolsDesc: 'Todo lo que tu asistente de IA necesita para descubrir, inspeccionar y generar código Astro listo para producción.',
+    statsComponents: 'Componentes',
+    statsTemplates: 'Plantillas',
+    statsCharts: 'Gráficos SVG',
+    statsDeps: 'Dependencias',
+    btnDocs: 'Ver Componentes',
+    btnTemplates: 'Ver Plantillas',
+    btnGitHub: 'Ver en GitHub',
+  },
+  ru: {
+    badge: 'Официальный MCP-сервер · Astro 5.x',
+    title: 'Ускорьте разработку с ИИ и Astro Components Kit',
+    subtitle: 'Подключите Cursor, Claude Desktop, Windsurf или Cline напрямую к 340+ готовым компонентам, SVG-графикам и шаблонам. Пусть ваш ИИ создаёт сайты на Astro за секунды.',
+    endpointLabel: 'Удалённый SSE Endpoint',
+    fastInstallTitle: 'Настройка редактора в 1 клик',
+    fastInstallDesc: 'Выберите ваш редактор для автоматической установки через CLI или ручной настройки JSON.',
+    tabCursor: 'Cursor',
+    tabClaude: 'Claude Desktop',
+    tabWindsurf: 'Windsurf',
+    tabCline: 'Cline (VS Code)',
+    cliTabTitle: 'Автоматическая установка через CLI',
+    manualTabTitle: 'Прямой файл конфигурации',
+    copiedNotice: 'Скопировано в буфер обмена!',
+    promptsTitle: 'Попробуйте эти промпты с вашим ИИ',
+    promptsDesc: 'После подключения ваш ИИ получит прямой доступ к каталогу, TypeScript-интерфейсам и исходному коду компонентов.',
+    toolsTitle: '8 встроенных MCP-инструментов',
+    toolsDesc: 'Всё необходимое вашему ИИ для поиска, анализа и генерации чистого Astro-кода.',
+    statsComponents: 'Компонентов',
+    statsTemplates: 'Шаблонов',
+    statsCharts: 'SVG-графиков',
+    statsDeps: 'Зависимостей',
+    btnDocs: 'Все компоненты',
+    btnTemplates: 'Все шаблоны',
+    btnGitHub: 'Код на GitHub',
+  },
+}[lang];
+
+const clients = [
+  {
+    id: 'cursor',
+    name: content.tabCursor,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 4 16 8-8 2-2 8z"/></svg>`,
+    cliCommand: 'npx astro-component-kit mcp install cursor',
+    filePath: '.cursor/mcp.json',
+    jsonConfig: `{\n  "mcpServers": {\n    "astro-components": {\n      "url": "https://mcp.astrocomponents.dev/sse"\n    }\n  }\n}`,
+  },
+  {
+    id: 'claude',
+    name: content.tabClaude,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>`,
+    cliCommand: 'npx astro-component-kit mcp install claude',
+    filePath: 'claude_desktop_config.json',
+    jsonConfig: `{\n  "mcpServers": {\n    "astro-components": {\n      "url": "https://mcp.astrocomponents.dev/sse"\n    }\n  }\n}`,
+  },
+  {
+    id: 'windsurf',
+    name: content.tabWindsurf,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M2 12a10 10 0 0 1 10-10M2 12a10 10 0 0 0 10 10"/></svg>`,
+    cliCommand: 'npx astro-component-kit mcp install windsurf',
+    filePath: '~/.codeium/windsurf/mcp_config.json',
+    jsonConfig: `{\n  "mcpServers": {\n    "astro-components": {\n      "url": "https://mcp.astrocomponents.dev/sse"\n    }\n  }\n}`,
+  },
+  {
+    id: 'cline',
+    name: content.tabCline,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    cliCommand: 'npx astro-component-kit mcp install cline',
+    filePath: 'cline_mcp_settings.json',
+    jsonConfig: `{\n  "mcpServers": {\n    "astro-components": {\n      "url": "https://mcp.astrocomponents.dev/sse"\n    }\n  }\n}`,
+  },
+];
+
+const samplePrompts = [
+  {
+    tag: 'E-commerce',
+    text: lang === 'es' ? 'Añádeme un ProductBuyBox con selector de variantes y el carrito persistente CartDrawer de astro-components' : lang === 'ru' ? 'Добавь ProductBuyBox с выбором вариантов и сохраняемую корзину CartDrawer из astro-components' : 'Add a ProductBuyBox with variant selector and persistent CartDrawer from astro-components',
+  },
+  {
+    tag: 'Charts & KPIs',
+    text: lang === 'es' ? 'Inserta un KpiStatTile de ingresos con porcentaje de cambio y un gráfico LineChart en SVG sin dependencias' : lang === 'ru' ? 'Вставь KPI-виджет дохода KpiStatTile с процентом изменения и SVG-график LineChart' : 'Insert a revenue KpiStatTile with delta percentage and a zero-dependency SVG LineChart',
+  },
+  {
+    tag: 'SaaS App',
+    text: lang === 'es' ? 'Crea la vista de habitaciones usando el RoomRack y el AppSidebar del template saas-hotel' : lang === 'ru' ? 'Создай экран номеров отеля с помощью RoomRack и AppSidebar из шаблона saas-hotel' : 'Create a room schedule view using RoomRack and AppSidebar from the saas-hotel template',
+  },
+  {
+    tag: 'Design & Themes',
+    text: lang === 'es' ? 'Configura el selector de tema claro y oscuro con los tokens adaptativos ink-rgb de global.css' : lang === 'ru' ? 'Настрой переключатель светлой и тёмной темы с адаптивными токенами ink-rgb из global.css' : 'Setup dark/light theme switching with adaptive ink-rgb tokens from global.css',
+  },
+];
+
+const toolsList = [
+  { name: 'search_components', desc: lang === 'es' ? 'Búsqueda por palabras clave, categoría o tags entre los 340+ bloques' : 'Search components by keyword, category, or tag across 340+ building blocks' },
+  { name: 'get_component', desc: lang === 'es' ? 'Obtiene Props, variantes, import syntax y guía de accesibilidad' : 'Inspect TypeScript props, usage examples, and accessibility requirements' },
+  { name: 'get_component_code', desc: lang === 'es' ? 'Código fuente .astro completo listo para pegar en el proyecto' : 'Retrieve complete raw .astro source code ready for your project' },
+  { name: 'list_categories', desc: lang === 'es' ? 'Explora las 13 categorías disponibles con el conteo de componentes' : 'List all 13 categories with descriptions and item counts' },
+  { name: 'list_templates', desc: lang === 'es' ? 'Resumen de las 3 plantillas multipágina completas en producción' : 'Overview of all 3 complete multi-page production templates' },
+  { name: 'get_template', desc: lang === 'es' ? 'Código, arquitectura y páginas de plantillas e-commerce y SaaS' : 'Full template architecture, pages, store configs, and routing files' },
+  { name: 'get_design_tokens', desc: lang === 'es' ? 'Tokens CSS, variables de modo claro/oscuro y paleta unificada' : 'CSS design tokens, light/dark mode variables, and global.css guide' },
+  { name: 'get_library_info', desc: lang === 'es' ? 'Información general de la versión, totales y guía de inicio rápido' : 'Library version, totals overview, and quickstart commands' },
+];
+---
+
+<BaseLayout
+  title={lang === 'es' ? 'Astro Components Kit — Servidor MCP Oficial para Cursor y Claude' : lang === 'ru' ? 'Astro Components Kit — Официальный MCP сервер для Cursor и Claude' : 'Astro Components Kit — Official MCP Server for AI Development'}
+  description={content.subtitle}
+>
+  <div class="mcp-page">
+    <!-- Top Navigation bar -->
+    <header class="mcp-nav">
+      <div class="mcp-nav__inner">
+        <a href={getLocalizedPath('/', lang)} class="mcp-nav__brand">
+          <span class="mcp-nav__logo" aria-hidden="true">ACK</span>
+          <span class="mcp-nav__title">astro-components</span>
+        </a>
+        <div class="mcp-nav__links">
+          <a href={getLocalizedPath('/docs/glass-button', lang)} class="mcp-link">{content.btnDocs}</a>
+          <a href={getLocalizedPath('/templates', lang)} class="mcp-link">{content.btnTemplates}</a>
+          <LanguagePicker currentLang={lang} />
+          <a href="https://github.com/konstantinwdk/astro-components" target="_blank" rel="noopener noreferrer" class="mcp-btn mcp-btn--ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="mcp-hero">
+      <div class="mcp-hero__badge">
+        <span class="mcp-hero__pulse"></span>
+        {content.badge}
+      </div>
+      <h1 class="mcp-hero__title">{content.title}</h1>
+      <p class="mcp-hero__subtitle">{content.subtitle}</p>
+
+      <!-- Key Metrics Row -->
+      <div class="mcp-stats">
+        <div class="mcp-stat">
+          <div class="mcp-stat__value">340+</div>
+          <div class="mcp-stat__label">{content.statsComponents}</div>
+        </div>
+        <div class="mcp-stat">
+          <div class="mcp-stat__value">41</div>
+          <div class="mcp-stat__label">{content.statsCharts}</div>
+        </div>
+        <div class="mcp-stat">
+          <div class="mcp-stat__value">3</div>
+          <div class="mcp-stat__label">{content.statsTemplates}</div>
+        </div>
+        <div class="mcp-stat">
+          <div class="mcp-stat__value">0</div>
+          <div class="mcp-stat__label">{content.statsDeps}</div>
+        </div>
+      </div>
+
+      <!-- Main SSE Endpoint Card -->
+      <div class="mcp-endpoint-card">
+        <div class="mcp-endpoint-card__label">{content.endpointLabel}</div>
+        <div class="mcp-endpoint-card__row">
+          <code id="mcp-endpoint">https://mcp.astrocomponents.dev/sse</code>
+          <button class="mcp-copy-btn" data-copy="https://mcp.astrocomponents.dev/sse" aria-label="Copy endpoint">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Editor Setup (like 21st.dev) -->
+    <section class="mcp-setup">
+      <div class="mcp-section-head">
+        <h2>{content.fastInstallTitle}</h2>
+        <p>{content.fastInstallDesc}</p>
+      </div>
+
+      <div class="mcp-tabs-wrapper">
+        <!-- Client Selector Tabs -->
+        <div class="mcp-tabs" role="tablist">
+          {clients.map((c, i) => (
+            <button
+              class={`mcp-tab ${i === 0 ? 'mcp-tab--active' : ''}`}
+              role="tab"
+              aria-selected={i === 0 ? 'true' : 'false'}
+              data-target={c.id}
+            >
+              <span class="mcp-tab__icon" set:html={c.icon} />
+              <span>{c.name}</span>
+            </button>
+          ))}
+        </div>
+
+        <!-- Tab Content Panes -->
+        {clients.map((c, i) => (
+          <div class={`mcp-pane ${i === 0 ? 'mcp-pane--active' : ''}`} id={`pane-${c.id}`} role="tabpanel">
+            <!-- CLI Method -->
+            <div class="mcp-method">
+              <div class="mcp-method__head">
+                <span class="mcp-method__step">1</span>
+                <div>
+                  <h3>{content.cliTabTitle}</h3>
+                  <p class="mcp-method__hint">Runs automatically and configures your project file.</p>
+                </div>
+              </div>
+              <div class="mcp-code-box">
+                <code>{c.cliCommand}</code>
+                <button class="mcp-copy-btn" data-copy={c.cliCommand}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Manual Method -->
+            <div class="mcp-method">
+              <div class="mcp-method__head">
+                <span class="mcp-method__step">2</span>
+                <div>
+                  <h3>{content.manualTabTitle}</h3>
+                  <p class="mcp-method__hint">Or paste this directly into <code>{c.filePath}</code></p>
+                </div>
+              </div>
+              <div class="mcp-code-box mcp-code-box--multiline">
+                <pre><code>{c.jsonConfig}</code></pre>
+                <button class="mcp-copy-btn" data-copy={c.jsonConfig}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copy JSON</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Example Prompts (like 21st.dev) -->
+    <section class="mcp-prompts">
+      <div class="mcp-section-head">
+        <h2>{content.promptsTitle}</h2>
+        <p>{content.promptsDesc}</p>
+      </div>
+
+      <div class="mcp-prompts-grid">
+        {samplePrompts.map((p) => (
+          <article class="mcp-prompt-card" data-prompt={p.text}>
+            <div class="mcp-prompt-card__tag">{p.tag}</div>
+            <p class="mcp-prompt-card__text">“{p.text}”</p>
+            <button class="mcp-prompt-card__btn" data-copy={p.text}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy Prompt</span>
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- Tools Catalog -->
+    <section class="mcp-tools">
+      <div class="mcp-section-head">
+        <h2>{content.toolsTitle}</h2>
+        <p>{content.toolsDesc}</p>
+      </div>
+
+      <div class="mcp-tools-grid">
+        {toolsList.map((t) => (
+          <div class="mcp-tool-item">
+            <code class="mcp-tool-item__name">{t.name}</code>
+            <p class="mcp-tool-item__desc">{t.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mcp-footer">
+      <div class="mcp-footer__inner">
+        <span>© {new Date().getFullYear()} Astro Components Kit · MIT License</span>
+        <div class="mcp-footer__links">
+          <a href="https://astrocomponents.dev">astrocomponents.dev</a>
+          <a href="https://mcp.astrocomponents.dev" target="_blank">MCP Status</a>
+          <a href="https://www.npmjs.com/package/astro-component-kit" target="_blank">npm package</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast for Copy notifications -->
+  <div id="mcp-toast" class="mcp-toast" aria-live="polite">
+    {content.copiedNotice}
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  // Tab switching logic
+  const tabs = document.querySelectorAll('.mcp-tab');
+  const panes = document.querySelectorAll('.mcp-pane');
+  const toast = document.getElementById('mcp-toast');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.target;
+      tabs.forEach((t) => {
+        t.classList.remove('mcp-tab--active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      panes.forEach((p) => p.classList.remove('mcp-pane--active'));
+
+      tab.classList.add('mcp-tab--active');
+      tab.setAttribute('aria-selected', 'true');
+      const activePane = document.getElementById(`pane-${target}`);
+      if (activePane) activePane.classList.add('mcp-pane--active');
+    });
+  });
+
+  // Copy buttons
+  document.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const text = btn.getAttribute('data-copy');
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        if (toast) {
+          toast.classList.add('mcp-toast--visible');
+          setTimeout(() => toast.classList.remove('mcp-toast--visible'), 2200);
+        }
+        const span = btn.querySelector('span');
+        if (span) {
+          const original = span.textContent;
+          span.textContent = 'Copied!';
+          setTimeout(() => { span.textContent = original; }, 1800);
+        }
+      } catch (e) {
+        console.error('Clipboard copy error:', e);
+      }
+    });
+  });
+</script>
+
+<style>
+  .mcp-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 60%), #070a12;
+    color: var(--c-text-1, #f8fafc);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    padding-bottom: 5rem;
+  }
+
+  .mcp-nav {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(7, 10, 18, 0.75);
+  }
+  .mcp-nav__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .mcp-nav__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 700;
+  }
+  .mcp-nav__logo {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+  }
+  .mcp-nav__title { font-size: 1.05rem; letter-spacing: -0.01em; }
+  .mcp-nav__links { display: flex; align-items: center; gap: 1rem; }
+  .mcp-link { color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+  .mcp-link:hover { color: #fff; }
+  .mcp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .mcp-btn--ghost { background: rgba(255, 255, 255, 0.06); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
+  .mcp-btn--ghost:hover { background: rgba(255, 255, 255, 0.12); }
+
+  /* Hero */
+  .mcp-hero {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 5rem 1.5rem 3rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .mcp-hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    margin-bottom: 1.5rem;
+  }
+  .mcp-hero__pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+  .mcp-hero__title {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.25rem;
+    background: linear-gradient(180deg, #fff 40%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .mcp-hero__subtitle {
+    font-size: clamp(1.05rem, 2vw, 1.25rem);
+    color: #94a3b8;
+    max-width: 720px;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+  }
+
+  /* Stats */
+  .mcp-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 2.5rem;
+  }
+  .mcp-stat {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .mcp-stat__value { font-size: 1.8rem; font-weight: 900; color: #fbbf24; }
+  .mcp-stat__label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
+
+  /* Endpoint Card */
+  .mcp-endpoint-card {
+    width: 100%;
+    max-width: 680px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    text-align: left;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+  .mcp-endpoint-card__label { font-size: 0.75rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+  .mcp-endpoint-card__row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .mcp-endpoint-card__row code { font-family: ui-monospace, monospace; color: #e2e8f0; font-size: 1rem; word-break: break-all; }
+
+  /* Sections general */
+  .mcp-setup, .mcp-prompts, .mcp-tools {
+    max-width: 900px;
+    margin: 4rem auto 0;
+    padding: 0 1.5rem;
+  }
+  .mcp-section-head { text-align: center; margin-bottom: 2rem; }
+  .mcp-section-head h2 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  .mcp-section-head p { color: #94a3b8; font-size: 1.05rem; }
+
+  /* Tabs Setup (like 21st.dev) */
+  .mcp-tabs-wrapper {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  }
+  .mcp-tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+  }
+  .mcp-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    padding: 0.55rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .mcp-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+  .mcp-tab--active {
+    color: #fff;
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+  .mcp-tab__icon { display: flex; align-items: center; color: #fbbf24; }
+
+  .mcp-pane { display: none; flex-direction: column; gap: 1.5rem; }
+  .mcp-pane--active { display: flex; }
+
+  .mcp-method {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .mcp-method__head { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1rem; }
+  .mcp-method__step {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .mcp-method__head h3 { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .mcp-method__hint { font-size: 0.85rem; color: #64748b; margin: 0; }
+  .mcp-method__hint code { color: #cbd5e1; }
+
+  .mcp-code-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: #040711;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+  }
+  .mcp-code-box code { font-family: ui-monospace, monospace; color: #38bdf8; font-size: 0.95rem; }
+  .mcp-code-box--multiline { align-items: flex-start; padding: 1rem; }
+  .mcp-code-box--multiline pre { margin: 0; font-family: ui-monospace, monospace; font-size: 0.9rem; color: #cbd5e1; overflow-x: auto; flex: 1; }
+
+  .mcp-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .mcp-copy-btn:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
+
+  /* Sample Prompts Grid */
+  .mcp-prompts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .mcp-prompt-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: all 0.2s;
+  }
+  .mcp-prompt-card:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+  }
+  .mcp-prompt-card__tag {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+  }
+  .mcp-prompt-card__text { font-size: 0.95rem; color: #e2e8f0; line-height: 1.5; font-style: italic; }
+  .mcp-prompt-card__btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mcp-prompt-card__btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.06); }
+
+  /* Tools list */
+  .mcp-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .mcp-tool-item {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 1.1rem;
+  }
+  .mcp-tool-item__name { font-family: ui-monospace, monospace; color: #38bdf8; font-size: 0.9rem; font-weight: 700; display: block; margin-bottom: 0.4rem; }
+  .mcp-tool-item__desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+
+  /* Toast */
+  .mcp-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #10b981;
+    color: #041f14;
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+    pointer-events: none;
+  }
+  .mcp-toast--visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Footer */
+  .mcp-footer { margin-top: 5rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 2rem; }
+  .mcp-footer__inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #64748b;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .mcp-footer__links { display: flex; gap: 1rem; }
+  .mcp-footer__links a { color: #94a3b8; text-decoration: none; transition: color 0.2s; }
+  .mcp-footer__links a:hover { color: #fff; }
+
+  @media (max-width: 640px) {
+    .mcp-stats { grid-template-columns: repeat(2, 1fr); }
+    .mcp-nav__links { display: none; }
+    .mcp-endpoint-card__row { flex-direction: column; align-items: flex-start; }
+    .mcp-code-box { flex-direction: column; align-items: flex-start; }
+    .mcp-copy-btn { width: 100%; justify-content: center; }
+  }
+</style>
