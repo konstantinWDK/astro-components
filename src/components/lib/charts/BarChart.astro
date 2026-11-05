@@ -123,6 +123,11 @@ const chartConfig = {
       if (!configStr) return;
       
       const config = JSON.parse(configStr);
+      // ApexCharts cannot parse CSS variables: resolve var(--x, fallback) to a real colour first.
+      config.colors = (config.colors || []).map((c: string) => {
+        const m = /^var\((--[\w-]+)\s*(?:,\s*([^)]+))?\)$/.exec(String(c).trim());
+        return m ? getComputedStyle(container as Element).getPropertyValue(m[1]).trim() || (m[2] || '').trim() : c;
+      });
       const target = container.querySelector('.chart-container');
       const fallback = container.querySelector('.chart-fallback');
       
@@ -158,7 +163,7 @@ const chartConfig = {
           labels: { style: { colors: '#64748b', fontSize: '12px' } },
         },
         grid: {
-          borderColor: 'rgb(var(--ink-rgb, 255 255 255) / 0.05)',
+          borderColor: 'rgba(148, 163, 184, 0.12)', // ApexCharts does not support CSS variables
           strokeDashArray: 4,
         },
         legend: {

@@ -114,6 +114,11 @@ const chartConfig = {
       if (!configStr) return;
       
       const config = JSON.parse(configStr);
+      // ApexCharts cannot parse CSS variables: resolve var(--x, fallback) to a real colour first.
+      config.colors = (config.colors || []).map((c: string) => {
+        const m = /^var\((--[\w-]+)\s*(?:,\s*([^)]+))?\)$/.exec(String(c).trim());
+        return m ? getComputedStyle(container as Element).getPropertyValue(m[1]).trim() || (m[2] || '').trim() : c;
+      });
       const target = container.querySelector('.chart-container');
       const fallback = container.querySelector('.chart-fallback');
       
@@ -143,7 +148,7 @@ const chartConfig = {
                   show: true,
                   label: config.centerLabel,
                   color: '#94a3b8',
-                  formatter: (w: any) => w.globals.seriesGlobals.reduce((a: any, b: any) => a + b, 0),
+                  formatter: (w: any) => w.globals.seriesTotals.reduce((a: any, b: any) => a + b, 0),
                 },
               },
             },
