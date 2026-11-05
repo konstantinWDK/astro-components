@@ -279,7 +279,8 @@ export function startHttpServer(options: HttpServerOptions = {}) {
     }
 
     try {
-      await transport.handlePostMessage(req, res);
+      // express.json() already consumed the request stream: hand the parsed body to the SDK
+      await transport.handlePostMessage(req, res, req.body);
     } catch (err: any) {
       console.error(`[mcp] Error handling message for session ${sessionId}:`, err?.message || err);
       if (!res.headersSent) {
