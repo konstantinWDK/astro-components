@@ -127,33 +127,67 @@ export function getComponent(slug: string): ComponentDetail | null {
   };
 }
 
+/** Index of every component source file under src/components/lib (built once, lazily). */
+let sourceIndex: Map<string, string> | null = null;
+const cleanName = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+function getSourceIndex(): Map<string, string> {
+  if (sourceIndex) return sourceIndex;
+  sourceIndex = new Map();
+  const walk = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(astro|ts)$/.test(entry.name) && entry.name !== 'index.ts') {
+        const key = cleanName(entry.name.replace(/\.(astro|ts)$/, ''));
+        // .astro files win over helper .ts modules with the same name
+        if (!sourceIndex!.has(key) || entry.name.endsWith('.astro')) sourceIndex!.set(key, full);
+      }
+    }
+  };
+  walk(path.resolve(ROOT_DIR, 'src/components/lib'));
+  return sourceIndex;
+}
+
+/** Same resolution rules as the docs site (PreviewRenderer.astro). */
+function resolveSourceFile(c: { slug: string; name: string; category: string }): string | null {
+  const index = getSourceIndex();
+  const pascal = c.slug.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+  const direct = path.resolve(ROOT_DIR, `src/components/lib/${c.category}/${pascal}.astro`);
+  if (fs.existsSync(direct)) return direct;
+  const slugKey = cleanName(c.slug);
+  const candidates = [
+    slugKey,
+    slugKey.replace(/^3d/, 'threed'),
+    cleanName(c.name),
+  ];
+  for (const key of candidates) {
+    const hit = index.get(key);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 /**
  * Retrieves the full raw Astro source code of a component.
+ * The real file in src/components/lib is the source of truth; the registry `code` field is only a
+ * fallback (for some components it holds a usage example or an older copy, not the source).
  */
 export function getComponentCode(slug: string): { slug: string; name: string; code: string } | null {
   const c = components.find((item) => item.slug === slug || item.slug.toLowerCase() === slug.toLowerCase());
   if (!c) return null;
 
-  let code = c.code || '';
-
-  // If code is empty or placeholder, attempt to read directly from src/components/lib/
-  if (!code || code.length < 50) {
-    const candidatePaths = [
-      path.resolve(ROOT_DIR, `src/components/lib/${c.category}/${c.name.replace(/\s+/g, '')}.astro`),
-      path.resolve(ROOT_DIR, `src/components/lib/${c.category}/${c.slug}.astro`),
-      path.resolve(ROOT_DIR, `src/components/lib/sections/${c.name.replace(/\s+/g, '')}.astro`),
-    ];
-    for (const p of candidatePaths) {
-      if (fs.existsSync(p)) {
-        try {
-          code = fs.readFileSync(p, 'utf8');
-          break;
-        } catch {
-          // ignore
-        }
-      }
+  let code = '';
+  const file = resolveSourceFile(c);
+  if (file) {
+    try {
+      code = fs.readFileSync(file, 'utf8');
+    } catch {
+      // fall back to the registry copy below
     }
   }
+  if (!code) code = c.code || '';
 
   return {
     slug: c.slug,
