@@ -1,0 +1,130 @@
+---
+/**
+ * SisterSiteLink — Header icon linking to the React version of the kit (reactcomponents.dev),
+ * with a tooltip bubble on hover / keyboard focus.
+ *
+ * Links to the same page on the React site when it exists there (docs, sections, templates,
+ * install, home); Astro-only pages (MCP, notes, blog) fall back to the localized React home.
+ */
+import { getLangFromUrl, cleanPath, getLocalizedPath } from '../../i18n/translations';
+
+const lang = getLangFromUrl(Astro.url);
+const path = cleanPath(Astro.url.pathname);
+const shared = path === '/' || /^\/(docs|sections|templates|install)(\/|$)/.test(path);
+const href = `https://reactcomponents.dev${getLocalizedPath(shared ? path : '/', lang)}`;
+
+const copy = {
+  en: { title: 'Also available for React', label: 'React version of this kit (reactcomponents.dev)' },
+  es: { title: 'También disponible para React', label: 'Versión React de este kit (reactcomponents.dev)' },
+  ru: { title: 'Также доступно для React', label: 'Версия этого набора для React (reactcomponents.dev)' },
+}[lang];
+---
+
+<a href={href} class="sister-link" aria-label={copy.label} aria-describedby="sister-link-tip" rel="noopener">
+  <svg class="sister-link__icon" width="20" height="20" viewBox="-11.5 -10.23 23 20.46" fill="none" aria-hidden="true">
+    <circle r="2.05" fill="currentColor" />
+    <g stroke="currentColor" stroke-width="1">
+      <ellipse rx="11" ry="4.2" />
+      <ellipse rx="11" ry="4.2" transform="rotate(60)" />
+      <ellipse rx="11" ry="4.2" transform="rotate(120)" />
+    </g>
+  </svg>
+  <span class="sister-link__text">React</span>
+  <span class="sister-link__tip" id="sister-link-tip" role="tooltip">
+    <strong>{copy.title}</strong>
+    <small>reactcomponents.dev ↗</small>
+  </span>
+</a>
+
+<style>
+  .sister-link {
+    position: relative;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0.4rem !important;
+    border-radius: var(--r-sm);
+    color: #61dafb !important;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .sister-link:hover,
+  .sister-link:focus-visible {
+    background: rgba(97, 218, 251, 0.1) !important;
+  }
+  .sister-link:focus-visible {
+    outline: 2px solid #61dafb;
+    outline-offset: 2px;
+  }
+  .sister-link__icon {
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sister-link:hover .sister-link__icon {
+    transform: rotate(90deg);
+  }
+  .sister-link__text {
+    display: none;
+  }
+
+  /* Tooltip bubble */
+  .sister-link__tip {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    z-index: 120;
+    display: grid;
+    gap: 2px;
+    width: max-content;
+    max-width: 240px;
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid rgba(97, 218, 251, 0.3);
+    background: rgba(12, 16, 26, 0.97);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    color: var(--c-text-1);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -4px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .sister-link__tip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border-left: 1px solid rgba(97, 218, 251, 0.3);
+    border-top: 1px solid rgba(97, 218, 251, 0.3);
+    background: rgba(12, 16, 26, 0.97);
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .sister-link__tip strong { font-weight: 700; }
+  .sister-link__tip small { color: #61dafb; font-size: 0.7rem; font-weight: 600; }
+  .sister-link:hover .sister-link__tip,
+  .sister-link:focus-visible .sister-link__tip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @media (max-width: 768px) {
+    /* Inside the stacked mobile menu: show a text label, no hover bubble */
+    .sister-link__text { display: inline; font-weight: 600; }
+    .sister-link__tip { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sister-link__icon, .sister-link__tip { transition: none; }
+    .sister-link:hover .sister-link__icon { transform: none; }
+  }
+  :global(:root[data-theme='light']) .sister-link { color: #087ea4 !important; }
+  :global(:root[data-theme='light']) .sister-link__tip { background: #fff; color: #121212; }
+  :global(:root[data-theme='light']) .sister-link__tip::before { background: #fff; }
+  :global(:root[data-theme='light']) .sister-link__tip small { color: #087ea4; }
+</style>
