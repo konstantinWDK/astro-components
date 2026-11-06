@@ -3,6 +3,8 @@
 import BaseLayout from './BaseLayout.astro';
 import SisterSiteLink from '../components/layout/SisterSiteLink.astro';
 import LanguagePicker from '../components/layout/LanguagePicker.astro';
+import Sidebar from '../components/docs/Sidebar.astro';
+import { categories } from '../data/registry/index';
 import type { Locale } from '../config/site';
 import { getLangFromUrl, useTranslations, getLocalizedPath, cleanPath } from '../i18n/translations';
 
@@ -34,7 +36,7 @@ const t = useTranslations(lang);
           <a href={getLocalizedPath('/', lang)} class:list={{ active: normalizedPath === '/' }}>{t('nav.home')}</a>
           <a href={getLocalizedPath('/install', lang)} class:list={{ active: normalizedPath.startsWith('/install') }}>{t('nav.install')}</a>
           <a href={getLocalizedPath('/mcp', lang)} class:list={{ active: normalizedPath.startsWith('/mcp') }}>{t('nav.mcp')}</a>
-          <a href={getLocalizedPath('/docs/glass-button', lang)} class:list={{ active: normalizedPath.startsWith('/docs') }}>{t('nav.components')}</a>
+          <a href={getLocalizedPath('/install', lang)} class:list={{ active: normalizedPath.startsWith('/docs') }}>{t('nav.components')}</a>
           <a href={getLocalizedPath('/sections', lang)} class:list={{ active: normalizedPath.startsWith('/sections') }}>{t('nav.sections')}</a>
           <a href={getLocalizedPath('/templates', lang)} class:list={{ active: normalizedPath.startsWith('/templates') }}>{t('nav.templates')}</a>
           <a href={getLocalizedPath('/notes', lang)} class:list={{ active: normalizedPath.startsWith('/notes') }}>{t('nav.notes')}</a>
@@ -51,39 +53,8 @@ const t = useTranslations(lang);
     </header>
 
     <div class="docs-body">
-      <!-- Left Sidebar: Nav links -->
-      <aside class="sidebar sidebar--install">
-        <div class="sidebar--install__inner">
-          <div class="sidebar--install__section">
-            <span class="sidebar--install__label">{lang === 'es' ? 'Primeros Pasos' : (lang === 'ru' ? 'Начало работы' : 'Getting Started')}</span>
-            <nav class="sidebar--install__nav">
-              <a href={getLocalizedPath('/install', lang)} class="sidebar--install__link sidebar--install__link--active">
-                <span class="sidebar--install__icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                </span>
-                {t('nav.install')}
-              </a>
-            </nav>
-          </div>
-          <div class="sidebar--install__section">
-            <span class="sidebar--install__label">{lang === 'es' ? 'Explorar' : (lang === 'ru' ? 'Обзор' : 'Browse')}</span>
-            <nav class="sidebar--install__nav">
-              <a href={getLocalizedPath('/docs/glass-button', lang)} class="sidebar--install__link">
-                <span class="sidebar--install__icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                </span>
-                {t('nav.components')}
-              </a>
-              <a href={getLocalizedPath('/sections', lang)} class="sidebar--install__link">
-                <span class="sidebar--install__icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                </span>
-                {t('nav.sections')}
-              </a>
-            </nav>
-          </div>
-        </div>
-      </aside>
+      <!-- Sidebar (same as the docs pages) -->
+      <Sidebar categories={categories} currentPath={currentPath} lang={lang} />
 
       <!-- Main content -->
       <main class="docs-main">
@@ -223,65 +194,6 @@ const t = useTranslations(lang);
     position: relative;
   }
 
-  /* Left sidebar: install nav */
-  .sidebar--install {
-    width: var(--sidebar-w);
-    flex-shrink: 0;
-    position: sticky;
-    top: var(--header-h);
-    height: calc(100vh - var(--header-h));
-    overflow-y: auto;
-    border-right: 1px solid var(--c-border);
-    padding: var(--sp-6) 0;
-  }
-  .sidebar--install__inner {
-    padding: 0 var(--sp-2);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-6);
-  }
-  .sidebar--install__label {
-    display: block;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--c-text-3);
-    padding: 0 var(--sp-3) var(--sp-2);
-  }
-  .sidebar--install__nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .sidebar--install__link {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    padding: 0.5rem var(--sp-3);
-    font-size: 0.85rem;
-    color: var(--c-text-2);
-    text-decoration: none;
-    border-radius: var(--r-sm);
-    transition: all 0.15s ease;
-  }
-  .sidebar--install__link:hover {
-    color: var(--c-text-1);
-    background: rgba(255,255,255,0.06);
-  }
-  .sidebar--install__link--active {
-    color: var(--c-primary-light);
-    background: linear-gradient(90deg, rgba(184, 134, 11, 0.1), rgba(184, 134, 11, 0.02));
-    font-weight: 600;
-  }
-  .sidebar--install__icon {
-    display: flex;
-    align-items: center;
-    color: var(--c-text-3);
-  }
-  .sidebar--install__link--active .sidebar--install__icon {
-    color: var(--c-primary-light);
-  }
 
   /* Main content */
   .docs-main {
@@ -356,18 +268,6 @@ const t = useTranslations(lang);
   @media (max-width: 768px) {
     .docs-body { max-width: 100%; }
     .docs-main { padding: var(--sp-6) var(--sp-4); max-width: 100%; }
-    .sidebar--install {
-      width: 60px;
-      padding: var(--sp-4) 0;
-    }
-    .sidebar--install__label,
-    .sidebar--install__link span:not(.sidebar--install__icon) {
-      display: none;
-    }
-    .sidebar--install__link {
-      justify-content: center;
-      padding: 0.6rem;
-    }
     .site-menu-toggle {
        display: flex; align-items: center; justify-content: center;
        background: transparent; border: none; color: var(--c-text-1); cursor: pointer;
