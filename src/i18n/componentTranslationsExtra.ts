@@ -464,4 +464,81 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Pie de página completo con marca, newsletter, columnas de enlaces, estado del sistema y redes.',
     ru: 'Полный футер сайта: бренд, подписка, колонки ссылок, статус системы и соцсети.',
   },
+  // ── Agency & Marketing ──────────────────────────────────────
+  'agency-header': {
+    es: "Navegación flotante tipo píldora para agencias: logo, enlaces, cambio de tema, CTA y menú móvil a pantalla completa animado.",
+    ru: "Плавающая навигация-«таблетка» для агентств: логотип, ссылки, смена темы, CTA и анимированное мобильное меню на весь экран.",
+  },
+  'agency-hero-kinetic': {
+    es: "Hero de agencia con titular gigante cuya última palabra rota resaltada como con rotulador, CTAs, prueba social y pegatinas flotantes.",
+    ru: "Hero агентства с огромным заголовком, последнее слово которого меняется с маркерной подсветкой, CTA, соцдоказательство и стикеры.",
+  },
+  'agency-page-hero': {
+    es: "Hero de página interior: migas de pan, antetítulo, titular gigante con palabra resaltada, intro, CTA y cifras clave.",
+    ru: "Hero внутренней страницы: хлебные крошки, надзаголовок, крупный заголовок с выделенным словом, вступление, CTA и ключевые цифры.",
+  },
+  'agency-service-pillars': {
+    es: "Tarjetas de servicios para agencia de marketing (Ads, SEO, Web): icono, propuesta, KPI destacado, entregables, precio y enlace.",
+    ru: "Карточки услуг маркетингового агентства (реклама, SEO, сайты): иконка, описание, ключевой KPI, состав работ, цена и ссылка.",
+  },
+  'agency-services-list': {
+    es: "Filas de servicios numeradas y desplegables: nombres grandes, propuesta, entregables, plazos y precio «desde».",
+    ru: "Нумерованные раскрывающиеся строки услуг: крупные названия, описание, состав работ, сроки и цена «от».",
+  },
+  'agency-results-band': {
+    es: "Franja de resultados grandes (€42M, 4.8×, +212%) que cuentan al hacer scroll, con etiquetas y letra pequeña.",
+    ru: "Полоса крупных результатов (€42M, 4.8×, +212%) со счётчиками при прокрутке, подписями и пояснениями.",
+  },
+  'agency-platforms-marquee': {
+    es: "Dos filas en movimiento opuesto con plataformas y herramientas (Google Ads, Meta, Search Console…) e insignias de partner.",
+    ru: "Две встречные бегущие строки платформ и инструментов (Google Ads, Meta, Search Console…) с партнёрскими бейджами.",
+  },
+  'agency-process-steps': {
+    es: "Línea de tiempo «Cómo trabajamos» con fases numeradas y duración, unidas por una línea que se rellena al hacer scroll.",
+    ru: "Таймлайн «Как мы работаем»: нумерованные этапы со сроками, соединённые линией, заполняющейся при прокрутке.",
+  },
+  'agency-audit-cta': {
+    es: "Gancho de captación «auditoría gratis»: formulario web + email con validación, escaneo animado y medidor de puntuación con hallazgos.",
+    ru: "Лид-магнит «бесплатный аудит»: форма сайта и email с проверкой, анимированное сканирование и шкала оценки с выводами.",
+  },
+  'agency-roi-calculator': {
+    es: "Calculadora de ROI para anuncios: deslizadores de inversión, CPC, conversión y ticket medio con ingresos, ROAS y proyección en vivo.",
+    ru: "Калькулятор ROI рекламы: ползунки бюджета, CPC, конверсии и среднего чека с выручкой, ROAS и прогнозом после оптимизации.",
+  },
+  'agency-pricing-packages': {
+    es: "Precios de agencia con una pestaña por servicio, tres paquetes cada una y selector mensual / 6 meses para las cuotas.",
+    ru: "Цены агентства: вкладка на каждую услугу, по три пакета и переключатель оплаты помесячно / 6 месяцев.",
+  },
+  'agency-service-overview': {
+    es: "Detalle de servicio: columna fija con propuesta, cifras de resultado, herramientas y CTA junto a una lista numerada de lo incluido.",
+    ru: "Описание услуги: закреплённая колонка с предложением, результатами, инструментами и CTA рядом с нумерованным списком «Что входит».",
+  },
+  'agency-work-grid': {
+    es: "Cuadrícula de casos de éxito con filtros por categoría, imágenes grandes, cliente, título, servicios y resultado destacado.",
+    ru: "Сетка кейсов с фильтрами по категориям, крупными обложками, клиентом, заголовком, услугами и главным результатом.",
+  },
+  'agency-case-study-hero': {
+    es: "Cabecera de caso de éxito: enlace atrás, cliente y categoría, titular, resumen, datos del proyecto y gran resultado sobre ilustración.",
+    ru: "Шапка кейса: ссылка назад, клиент и категория, заголовок, краткое описание, факты проекта и крупный результат на иллюстрации.",
+  },
+  'agency-case-results': {
+    es: "Cuerpo del caso: reto, enfoque numerado, tabla de métricas antes/después, gráfico SVG de 12 meses y cita del cliente.",
+    ru: "Тело кейса: задача, шаги решения, таблица «до/после», SVG-график за 12 месяцев и цитата клиента.",
+  },
+  'agency-quotes': {
+    es: "Testimonios de clientes con una cita principal grande, el resultado medible de cada uno, avatares y valoración media.",
+    ru: "Отзывы клиентов: крупная главная цитата, измеримый результат каждого, аватары и общий рейтинг.",
+  },
+  'agency-team-grid': {
+    es: "Retratos del equipo con cargo, ciudad, dato curioso al pasar el ratón o enfocar, redes y tarjeta «estamos contratando».",
+    ru: "Портреты команды с должностью, городом, интересным фактом при наведении или фокусе, соцсетями и карточкой вакансий.",
+  },
+  'agency-contact-brief': {
+    es: "Formulario «Empezar un proyecto»: servicios, presupuesto, plazos, datos y mensaje con validación, más contactos directos.",
+    ru: "Бриф «Начать проект»: услуги, бюджет, сроки, контакты и сообщение с проверкой, плюс прямые каналы связи.",
+  },
+  'agency-footer-cta': {
+    es: "Pie de agencia encabezado por un gigantesco «Hablemos», con columnas de enlaces, oficinas, redes y línea legal.",
+    ru: "Футер агентства с огромной ссылкой «Давайте поговорим», колонками ссылок, офисами, соцсетями и юридической строкой.",
+  },
 };

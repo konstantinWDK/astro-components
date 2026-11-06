@@ -1,0 +1,102 @@
+---
+/**
+ * AgencyPageHero — Inner-page hero for agency sites: breadcrumb, eyebrow, oversized headline with a
+ * highlighted *word*, intro text, optional CTA and a row of key facts.
+ *
+ * @param {string} eyebrow - Small label above the title. Default 'Services'.
+ * @param {string} title - Heading; wrap one word in *asterisks* to highlight it. Default 'Growth you can *measure*'.
+ * @param {string} text - Intro paragraph.
+ * @param {Array<{label: string, href?: string}>} breadcrumb - Trail (last item = current page).
+ * @param {{label: string, href: string}} cta - Optional call to action.
+ * @param {Array<{value: string, label: string}>} facts - Key figures shown under the intro (max 4).
+ * @param {string} align - Layout (left|center). Default 'left'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: breadcrumb nav with aria-current on the last item; the highlight is a <mark>
+ * so the heading reads as one sentence; facts use a description list.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  breadcrumb?: Array<{ label: string; href?: string }>;
+  cta?: { label: string; href: string };
+  facts?: Array<{ value: string; label: string }>;
+  align?: 'left' | 'center';
+  className?: string;
+}
+
+const {
+  eyebrow = 'Services',
+  title = 'Growth you can *measure*',
+  text = 'Paid ads, SEO and websites run by one senior team, with one dashboard and one goal: more revenue for every euro you invest.',
+  breadcrumb = [{ label: 'Home', href: '/' }, { label: 'Services' }],
+  cta,
+  facts = [
+    { value: '€42M', label: 'ad spend managed' },
+    { value: '4.8×', label: 'average ROAS' },
+    { value: '96%', label: 'client retention' },
+  ],
+  align = 'left',
+  className = '',
+} = Astro.props;
+
+const parts = title.split(/\*(.+?)\*/);
+---
+
+<div class="aph-cq">
+<section class:list={['aph', `aph--${align}`, className]}>
+  {breadcrumb.length > 0 && (
+    <nav class="aph__crumbs" aria-label="Breadcrumb">
+      <ol>
+        {breadcrumb.map((b, i) => (
+          <li>
+            {b.href && i < breadcrumb.length - 1 ? <a href={b.href}>{b.label}</a> : <span aria-current="page">{b.label}</span>}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )}
+  {eyebrow && <p class="aph__eyebrow"><span aria-hidden="true"></span>{eyebrow}</p>}
+  <h1 class="aph__title">{parts.map((p, i) => (i % 2 ? <mark>{p}</mark> : p))}</h1>
+  <div class="aph__foot">
+    {text && <p class="aph__text">{text}</p>}
+    {cta && <a class="aph__cta" href={cta.href}>{cta.label}<span aria-hidden="true">↗</span></a>}
+  </div>
+  {facts.length > 0 && (
+    <dl class="aph__facts">
+      {facts.slice(0, 4).map((f) => (
+        <div><dt>{f.label}</dt><dd>{f.value}</dd></div>
+      ))}
+    </dl>
+  )}
+</section>
+</div>
+
+<style>
+  .aph-cq { container-type: inline-size; }
+  .aph { max-width: 1280px; margin: 0 auto; padding: clamp(2.5rem, 7cqi, 5.5rem) clamp(1rem, 4cqi, 2.5rem) clamp(2rem, 5cqi, 4rem); color: var(--c-text-1, #fff); }
+  .aph--center { text-align: center; }
+  .aph__crumbs ol { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 var(--sp-6, 1.5rem); padding: 0; list-style: none; font-size: 0.85rem; color: var(--c-text-3, #8a8a8a); }
+  .aph--center .aph__crumbs ol { justify-content: center; }
+  .aph__crumbs li + li::before { content: '/'; margin-right: 0.4rem; opacity: 0.6; }
+  .aph__crumbs a { color: var(--c-text-2, #a3a3a3); text-decoration: none; }
+  .aph__crumbs a:hover { color: var(--c-text-1, #fff); text-decoration: underline; }
+  .aph__crumbs [aria-current] { color: var(--c-text-1, #fff); }
+  .aph__eyebrow { display: inline-flex; align-items: center; gap: 0.6rem; margin: 0 0 var(--sp-4, 1rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .aph__eyebrow span { width: 10px; height: 10px; border-radius: 50%; background: var(--agency-accent, var(--c-primary-light, #d4a017)); }
+  .aph__title { margin: 0; max-width: 16ch; font-size: clamp(2.6rem, 8cqi, 6.5rem); font-weight: 900; line-height: 0.95; letter-spacing: -0.055em; text-wrap: balance; }
+  .aph--center .aph__title { margin-inline: auto; }
+  .aph__title mark { padding: 0 0.1em; border-radius: 0.1em; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .aph__foot { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sp-6, 1.5rem); margin-top: clamp(1.5rem, 4cqi, 2.5rem); }
+  .aph--center .aph__foot { justify-content: center; }
+  .aph__text { margin: 0; max-width: 40rem; font-size: 1.15rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .aph__cta { display: inline-flex; align-items: center; gap: 8px; min-height: 54px; padding: 0 1.5rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-weight: 800; text-decoration: none; transition: transform 0.2s ease; }
+  .aph__cta:hover { transform: translateY(-2px) rotate(-1deg); color: var(--c-on-primary, #050505); }
+  .aph a:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .aph__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sp-4, 1rem); margin: clamp(2rem, 5cqi, 3.5rem) 0 0; padding-top: var(--sp-6, 1.5rem); border-top: 1.5px solid currentColor; }
+  .aph__facts div { display: flex; flex-direction: column-reverse; gap: 4px; }
+  .aph__facts dd { margin: 0; font-size: clamp(1.8rem, 4cqi, 2.6rem); font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+  .aph__facts dt { font-size: 0.9rem; color: var(--c-text-2, #a3a3a3); }
+  @media (prefers-reduced-motion: reduce) { .aph__cta { transition: none; } }
+</style>

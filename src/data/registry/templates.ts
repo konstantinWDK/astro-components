@@ -407,6 +407,150 @@ const data: LobbyData = {
 
 <DashboardPage data={data} theme="auto" />`,
   },
+  {
+    slug: 'agency',
+    name: { en: 'Marketing Agency', es: 'Agencia de marketing', ru: 'Маркетинговое агентство' },
+    tagline: {
+      en: 'A complete website for a performance marketing agency selling Paid Ads, SEO and web development.',
+      es: 'Una web completa para una agencia de marketing de resultados que vende Ads, SEO y desarrollo web.',
+      ru: 'Полноценный сайт агентства performance-маркетинга: реклама, SEO и разработка сайтов.',
+    },
+    description: {
+      en: 'Volta is an eight-page agency template built to turn visitors into qualified leads. A kinetic hero and animated results prove credibility, every service (Paid Ads, SEO, Web) has its own page with what is included, process, pricing and FAQ, case studies show before/after metrics with a 12-month chart, and two lead magnets — a free audit that "scans" the visitor’s site and an ads ROI calculator — feed the contact brief. Every block is a section in the library, so you can reuse the pricing, calculator or audit on any site, in dark or light mode.',
+      es: 'Volta es una plantilla de agencia de ocho páginas pensada para convertir visitas en leads cualificados. Un hero cinético y resultados animados aportan credibilidad, cada servicio (Ads, SEO, Web) tiene su propia página con lo incluido, proceso, precios y FAQ, los casos de éxito muestran métricas antes/después con un gráfico de 12 meses, y dos ganchos de captación — una auditoría gratis que «escanea» la web del visitante y una calculadora de ROI publicitario — llevan al formulario de contacto. Cada bloque es una sección de la librería, así que puedes reutilizar los precios, la calculadora o la auditoría en cualquier web, en modo oscuro o claro.',
+      ru: 'Volta — восьмистраничный шаблон агентства, который превращает посетителей в квалифицированные заявки. Кинетический hero и анимированные результаты создают доверие, у каждой услуги (реклама, SEO, сайты) есть своя страница с составом работ, процессом, ценами и FAQ, кейсы показывают метрики «до/после» с графиком за 12 месяцев, а два лид-магнита — бесплатный аудит, «сканирующий» сайт посетителя, и калькулятор ROI рекламы — ведут к брифу. Каждый блок — секция библиотеки: цены, калькулятор или аудит можно использовать на любом сайте в тёмной или светлой теме.',
+    },
+    highlights: {
+      en: ['8 pages: home, services, service detail, case studies, case study, pricing, about and contact', 'Free audit lead magnet with animated scan and score', 'Paid-ads ROI calculator with live ROAS', 'Pricing tabs per service with monthly / 6-month switch', 'Case studies with before/after table and SVG chart', 'Dark by default, light mode with a toggle', '19 reusable sections in Sections → Agency & Marketing'],
+      es: ['8 páginas: inicio, servicios, detalle de servicio, casos, caso de éxito, precios, nosotros y contacto', 'Gancho de auditoría gratis con escaneo animado y puntuación', 'Calculadora de ROI publicitario con ROAS en vivo', 'Precios por servicio en pestañas con selector mensual / 6 meses', 'Casos de éxito con tabla antes/después y gráfico SVG', 'Oscuro por defecto y modo claro con selector', '19 secciones reutilizables en Secciones → Agencia y Marketing'],
+      ru: ['8 страниц: главная, услуги, страница услуги, кейсы, кейс, цены, о нас и контакты', 'Лид-магнит «бесплатный аудит» с анимированным сканированием', 'Калькулятор ROI рекламы с живым ROAS', 'Цены по услугам во вкладках с оплатой помесячно / 6 месяцев', 'Кейсы с таблицей «до/после» и SVG-графиком', 'Тёмная тема по умолчанию и светлая с переключателем', '19 секций в разделе «Секции → Агентство и маркетинг»'],
+    },
+    tags: ['agency', 'marketing', 'seo', 'ads', 'web-design', 'lead-generation'],
+    previewBase: '/preview/agency/',
+    importPath: 'astro-component-kit/templates/agency',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Kinetic hero, platforms marquee, service pillars, animated results, case studies, process, quotes and free audit.', es: 'Hero cinético, plataformas, pilares de servicio, resultados animados, casos, proceso, testimonios y auditoría gratis.', ru: 'Кинетический hero, платформы, услуги, анимированные результаты, кейсы, процесс, отзывы и бесплатный аудит.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { AgencyHomePage } from 'astro-component-kit/templates/agency';
+---
+
+<AgencyHomePage theme="dark" />`,
+      },
+      {
+        id: 'services', path: 'services/',
+        name: { en: 'Services', es: 'Servicios', ru: 'Услуги' },
+        description: { en: 'Services overview with channel cards, expandable service rows, process, results and audit.', es: 'Resumen de servicios con tarjetas por canal, filas desplegables, proceso, resultados y auditoría.', ru: 'Обзор услуг: карточки каналов, раскрывающиеся строки, процесс, результаты и аудит.' },
+        file: 'src/pages/services/index.astro',
+        code: `---
+import { AgencyServicesPage } from 'astro-component-kit/templates/agency';
+---
+
+<AgencyServicesPage />`,
+      },
+      {
+        id: 'service', path: 'services/ads/',
+        name: { en: 'Service detail', es: 'Detalle de servicio', ru: 'Страница услуги' },
+        description: { en: 'One page per service: what is included, ROI calculator or free audit, process, results, pricing and FAQ.', es: 'Una página por servicio: qué incluye, calculadora de ROI o auditoría, proceso, resultados, precios y FAQ.', ru: 'Страница каждой услуги: состав, калькулятор ROI или аудит, процесс, результаты, цены и FAQ.' },
+        file: 'src/pages/services/[slug].astro',
+        code: `---
+import { AgencyServicePage, voltaAgency } from 'astro-component-kit/templates/agency';
+
+export function getStaticPaths() {
+  return voltaAgency.services.map((s) => ({ params: { slug: s.slug } }));
+}
+---
+
+<AgencyServicePage slug={Astro.params.slug} />`,
+      },
+      {
+        id: 'work', path: 'work/',
+        name: { en: 'Case studies', es: 'Casos de éxito', ru: 'Кейсы' },
+        description: { en: 'Filterable case-study grid (Ads, SEO, Web), results band and client quotes.', es: 'Cuadrícula filtrable de casos (Ads, SEO, Web), franja de resultados y testimonios.', ru: 'Сетка кейсов с фильтром (реклама, SEO, сайты), результаты и отзывы.' },
+        file: 'src/pages/work/index.astro',
+        code: `---
+import { AgencyWorkPage } from 'astro-component-kit/templates/agency';
+---
+
+<AgencyWorkPage />`,
+      },
+      {
+        id: 'case', path: 'work/nordlys-skincare/',
+        name: { en: 'Case study', es: 'Caso de éxito', ru: 'Кейс' },
+        description: { en: 'Headline result, challenge, approach, before/after metrics, 12-month chart, quote and more work.', es: 'Resultado principal, reto, enfoque, métricas antes/después, gráfico de 12 meses, cita y más casos.', ru: 'Главный результат, задача, решение, метрики «до/после», график за 12 месяцев, цитата и другие кейсы.' },
+        file: 'src/pages/work/[slug].astro',
+        code: `---
+import { AgencyCaseStudyPage, voltaAgency } from 'astro-component-kit/templates/agency';
+
+export function getStaticPaths() {
+  return voltaAgency.cases.map((c) => ({ params: { slug: c.slug } }));
+}
+---
+
+<AgencyCaseStudyPage slug={Astro.params.slug} />`,
+      },
+      {
+        id: 'pricing', path: 'pricing/',
+        name: { en: 'Pricing', es: 'Precios', ru: 'Цены' },
+        description: { en: 'Packages per service with billing switch, ads ROI calculator and pricing FAQ.', es: 'Paquetes por servicio con selector de facturación, calculadora de ROI y FAQ de precios.', ru: 'Пакеты по услугам с выбором оплаты, калькулятор ROI и FAQ по ценам.' },
+        file: 'src/pages/pricing.astro',
+        code: `---
+import { AgencyPricingPage } from 'astro-component-kit/templates/agency';
+---
+
+<AgencyPricingPage />`,
+      },
+      {
+        id: 'about', path: 'about/',
+        name: { en: 'About', es: 'Nosotros', ru: 'О нас' },
+        description: { en: 'Story, values, results, team with fun facts and hiring card, certified platforms.', es: 'Historia, valores, resultados, equipo con datos curiosos y vacantes, plataformas certificadas.', ru: 'История, ценности, результаты, команда с фактами и вакансиями, сертифицированные платформы.' },
+        file: 'src/pages/about.astro',
+        code: `---
+import { AgencyAboutPage } from 'astro-component-kit/templates/agency';
+---
+
+<AgencyAboutPage />`,
+      },
+      {
+        id: 'contact', path: 'contact/',
+        name: { en: 'Contact', es: 'Contacto', ru: 'Контакты' },
+        description: { en: 'Project brief with services, budget and timeline, direct contacts, office and FAQ.', es: 'Brief del proyecto con servicios, presupuesto y plazos, contactos directos, oficina y FAQ.', ru: 'Бриф проекта с услугами, бюджетом и сроками, прямые контакты, офис и FAQ.' },
+        file: 'src/pages/contact.astro',
+        code: `---
+import { AgencyContactPage } from 'astro-component-kit/templates/agency';
+---
+
+<!-- Pass action="https://your-backend/brief" to post the form -->
+<AgencyContactPage />`,
+      },
+    ],
+    newComponents: [
+      'agency-header', 'agency-hero-kinetic', 'agency-page-hero', 'agency-service-pillars', 'agency-services-list', 'agency-results-band', 'agency-platforms-marquee', 'agency-process-steps', 'agency-audit-cta', 'agency-roi-calculator', 'agency-pricing-packages', 'agency-service-overview', 'agency-work-grid', 'agency-case-study-hero', 'agency-case-results', 'agency-quotes', 'agency-team-grid', 'agency-contact-brief', 'agency-footer-cta'
+    ],
+    reusedComponents: ['faq-two-column'],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same site + routes to every page
+import { AgencyHomePage, voltaAgency, type AgencySite } from 'astro-component-kit/templates/agency';
+
+const site: AgencySite = {
+  ...voltaAgency,
+  name: 'Northwind',
+  email: 'hello@northwind.agency',
+  currency: 'USD',
+  locale: 'en-US',
+  // services, cases, pricing, team… — edit or replace any list
+};
+---
+
+<AgencyHomePage
+  site={site}
+  theme="auto"
+  routes={{ home: '/', services: '/services/', service: '/services/', work: '/work/', caseStudy: '/work/', pricing: '/pricing/', about: '/about/', contact: '/contact/' }}
+/>`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

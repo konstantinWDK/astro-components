@@ -1,0 +1,234 @@
+---
+/**
+ * AgencyAuditCta — "Free growth audit" lead magnet: website + email form with validation; on
+ * submit it runs an animated scan (checklist + progress) and reveals a score gauge with the top
+ * opportunities and a booking CTA. Pass an `action` URL to post the form to your backend instead.
+ *
+ * @param {string} eyebrow - Small label. Default 'Free growth audit'.
+ * @param {string} title - Heading. Default 'How much growth is your website leaving on the table?'.
+ * @param {string} text - Intro paragraph.
+ * @param {string} action - Form action. With '#' the demo scan runs in the browser. Default '#'.
+ * @param {string[]} checks - Labels shown while "scanning".
+ * @param {Array<{area: string, text: string}>} findings - Opportunities revealed after the scan.
+ * @param {{label: string, href: string}} cta - Booking CTA shown with the results.
+ * @param {string} note - Privacy line under the form.
+ * @param {string} id - Section id (anchor). Default 'audit'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: labelled inputs with inline errors (aria-invalid + aria-describedby); scan
+ * progress and results are announced through a polite live region; focus moves to the results.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  action?: string;
+  checks?: string[];
+  findings?: Array<{ area: string; text: string }>;
+  cta?: { label: string; href: string };
+  note?: string;
+  id?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'Free growth audit',
+  title = 'How much growth is your website leaving on the table?',
+  text = 'Enter your site and we will check speed, SEO and tracking in seconds. A strategist follows up with a full written audit within 48 hours — free.',
+  action = '#',
+  checks = ['Crawling your pages', 'Measuring Core Web Vitals', 'Checking indexation & metadata', 'Looking for tracking & pixels', 'Estimating paid search opportunity'],
+  findings = [
+    { area: 'Speed', text: 'Mobile pages load slower than 70% of competitors — every second costs conversions.' },
+    { area: 'SEO', text: 'Key service pages target no clear keyword and miss structured data.' },
+    { area: 'Ads', text: 'No server-side conversion tracking: platforms optimise on incomplete data.' },
+  ],
+  cta = { label: 'Book my free strategy call', href: '#contact' },
+  note = 'No spam. We only use your email to send the audit.',
+  id = 'audit',
+  className = '',
+} = Astro.props;
+---
+
+<div class="aac-cq">
+<section class:list={['aac', className]} id={id} data-audit>
+  <div class="aac__copy">
+    {eyebrow && <p class="aac__eyebrow"><span aria-hidden="true">●</span>{eyebrow}</p>}
+    <h2 class="aac__title">{title}</h2>
+    {text && <p class="aac__text">{text}</p>}
+  </div>
+
+  <div class="aac__panel">
+    <form class="aac__form" action={action} method="post" novalidate data-audit-form>
+      <div class="aac__field">
+        <label for={`${id}-url`}>Website</label>
+        <input id={`${id}-url`} name="website" type="text" inputmode="url" autocomplete="url" placeholder="yourbrand.com" required aria-describedby={`${id}-url-err`} />
+        <p class="aac__err" id={`${id}-url-err`} hidden>Enter a valid website, e.g. yourbrand.com</p>
+      </div>
+      <div class="aac__field">
+        <label for={`${id}-email`}>Work email</label>
+        <input id={`${id}-email`} name="email" type="email" autocomplete="email" placeholder="you@yourbrand.com" required aria-describedby={`${id}-email-err`} />
+        <p class="aac__err" id={`${id}-email-err`} hidden>Enter a valid email address</p>
+      </div>
+      <button class="aac__submit" type="submit">Run my free audit <span aria-hidden="true">→</span></button>
+      {note && <p class="aac__note">{note}</p>}
+    </form>
+
+    <div class="aac__scan" hidden data-scan>
+      <p class="aac__scan-site" data-site></p>
+      <div class="aac__bar" aria-hidden="true"><span data-bar></span></div>
+      <ul class="aac__checks">
+        {checks.map((c) => <li data-check><span class="aac__tick" aria-hidden="true"></span>{c}</li>)}
+      </ul>
+    </div>
+
+    <div class="aac__result" hidden tabindex="-1" data-result>
+      <div class="aac__score">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="50" class="aac__track" />
+          <circle cx="60" cy="60" r="50" class="aac__arc" pathLength="100" data-arc />
+        </svg>
+        <p><strong data-score>0</strong><span>/100</span></p>
+      </div>
+      <div class="aac__findings">
+        <p class="aac__result-title">Growth score for <span data-site-2></span></p>
+        <ul>
+          {findings.map((f) => <li><strong>{f.area}</strong>{f.text}</li>)}
+        </ul>
+        {cta && <a class="aac__submit aac__book" href={cta.href}>{cta.label} <span aria-hidden="true">↗</span></a>}
+      </div>
+    </div>
+    <p class="sr-only" aria-live="polite" data-live></p>
+  </div>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-audit]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const form = root.querySelector<HTMLFormElement>('[data-audit-form]')!;
+    const scan = root.querySelector<HTMLElement>('[data-scan]')!;
+    const result = root.querySelector<HTMLElement>('[data-result]')!;
+    const live = root.querySelector<HTMLElement>('[data-live]')!;
+    const bar = root.querySelector<HTMLElement>('[data-bar]')!;
+    const checks = Array.from(root.querySelectorAll<HTMLElement>('[data-check]'));
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const setError = (input: HTMLInputElement, bad: boolean) => {
+      input.setAttribute('aria-invalid', String(bad));
+      const err = root.querySelector<HTMLElement>(`#${input.getAttribute('aria-describedby')}`);
+      if (err) err.hidden = !bad;
+    };
+    const validUrl = (v: string) => /^(https?:\/\/)?([\w-]+\.)+[a-z]{2,}(\/\S*)?$/i.test(v.trim());
+    const validEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
+    form.addEventListener('submit', (e) => {
+      const url = form.elements.namedItem('website') as HTMLInputElement;
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const urlBad = !validUrl(url.value);
+      const emailBad = !validEmail(email.value);
+      setError(url, urlBad);
+      setError(email, emailBad);
+      if (urlBad || emailBad) { e.preventDefault(); (urlBad ? url : email).focus(); return; }
+      if (form.getAttribute('action') !== '#') return; // real backend
+
+      e.preventDefault();
+      const site = url.value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+      // Deterministic demo score (52–78) so the same site always gets the same result.
+      let h = 0;
+      for (const ch of site) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      const score = 52 + (h % 27);
+
+      form.hidden = true;
+      scan.hidden = false;
+      root.querySelector<HTMLElement>('[data-site]')!.textContent = `Scanning ${site}…`;
+      root.querySelector<HTMLElement>('[data-site-2]')!.textContent = site;
+      live.textContent = `Scanning ${site}`;
+
+      const step = reduce ? 80 : 650;
+      checks.forEach((c, i) => {
+        window.setTimeout(() => {
+          c.classList.add('is-done');
+          bar.style.width = `${((i + 1) / checks.length) * 100}%`;
+        }, step * (i + 1));
+      });
+      window.setTimeout(() => {
+        scan.hidden = true;
+        result.hidden = false;
+        const arc = root.querySelector<SVGCircleElement>('[data-arc]')!;
+        const out = root.querySelector<HTMLElement>('[data-score]')!;
+        requestAnimationFrame(() => arc.style.setProperty('--v', String(score)));
+        const t0 = performance.now();
+        const tick = (t: number) => {
+          const p = reduce ? 1 : Math.min(1, (t - t0) / 1000);
+          out.textContent = String(Math.round(score * p));
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        live.textContent = `Audit ready: ${site} scores ${score} out of 100. ${checks.length} checks completed.`;
+        result.focus();
+      }, step * (checks.length + 1));
+    });
+
+    form.querySelectorAll('input').forEach((input) => input.addEventListener('input', () => {
+      if (input.getAttribute('aria-invalid') === 'true') setError(input, input.name === 'email' ? !validEmail(input.value) : !validUrl(input.value));
+    }));
+  });
+</script>
+
+<style>
+  .aac-cq { container-type: inline-size; }
+  .aac { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(1.5rem, 5cqi, 4rem); align-items: center; padding: clamp(1.5rem, 5cqi, 4rem); border-radius: var(--r-xl, 28px); background: var(--c-bg-1, #0d0d0d); border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.12)); color: var(--c-text-1, #fff); }
+  .aac__eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 0 var(--sp-4, 1rem); padding: 0.35rem 0.8rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+  .aac__eyebrow span { font-size: 0.6rem; animation: aac-blink 1.4s ease-in-out infinite; }
+  @keyframes aac-blink { 50% { opacity: 0.2; } }
+  .aac__title { margin: 0; font-size: clamp(1.9rem, 4.5cqi, 3.4rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; text-wrap: balance; }
+  .aac__text { margin: var(--sp-4, 1rem) 0 0; font-size: 1.05rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+
+  .aac__panel { position: relative; padding: clamp(1.25rem, 3cqi, 2rem); border-radius: var(--r-lg, 20px); background: var(--c-bg, #050505); border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); min-height: 300px; display: grid; align-content: center; }
+  .aac__form { display: grid; gap: var(--sp-4, 1rem); }
+  .aac__field { display: grid; gap: 6px; }
+  .aac__field label { font-size: 0.85rem; font-weight: 800; }
+  .aac__field input { width: 100%; min-height: 54px; padding: 0 1.1rem; border-radius: 14px; border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.16)); background: var(--c-bg-1, #0d0d0d); color: var(--c-text-1, #fff); font: inherit; font-size: 1rem; }
+  .aac__field input::placeholder { color: var(--c-text-3, #777); }
+  .aac__field input:focus-visible { outline: none; border-color: var(--agency-accent, var(--c-primary-light, #d4a017)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--agency-accent, var(--c-primary-light, #d4a017)) 25%, transparent); }
+  .aac__field input[aria-invalid='true'] { border-color: var(--c-danger, #f87171); }
+  .aac__err { margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--c-danger, #f87171); }
+  .aac__submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; padding: 0 1.5rem; border: 0; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font: inherit; font-size: 1rem; font-weight: 900; text-decoration: none; cursor: pointer; transition: transform 0.2s ease; }
+  .aac__submit:hover { transform: translateY(-2px); color: var(--c-on-primary, #050505); }
+  .aac__submit:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 3px; }
+  .aac__note { margin: 0; font-size: 0.8rem; color: var(--c-text-3, #777); text-align: center; }
+
+  .aac__scan-site { margin: 0 0 var(--sp-3, 0.75rem); font-weight: 800; }
+  .aac__bar { height: 6px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.1); overflow: hidden; }
+  .aac__bar span { display: block; width: 0; height: 100%; background: var(--agency-accent, var(--c-primary-light, #d4a017)); transition: width 0.5s ease; }
+  .aac__checks { display: grid; gap: 10px; margin: var(--sp-5, 1.25rem) 0 0; padding: 0; list-style: none; color: var(--c-text-2, #a3a3a3); }
+  .aac__checks li { display: flex; align-items: center; gap: 10px; transition: color 0.3s ease; }
+  .aac__checks li.is-done { color: var(--c-text-1, #fff); }
+  .aac__tick { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid currentColor; flex-shrink: 0; }
+  .is-done .aac__tick { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; }
+  .is-done .aac__tick::after { content: ''; width: 9px; height: 5px; border-left: 2px solid var(--c-on-primary, #050505); border-bottom: 2px solid var(--c-on-primary, #050505); transform: translateY(-1px) rotate(-45deg); }
+
+  .aac__result { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: var(--sp-5, 1.25rem); align-items: start; outline: none; }
+  .aac__result[hidden] { display: none; }
+  .aac__score { position: relative; width: 140px; aspect-ratio: 1; }
+  .aac__score svg { width: 100%; transform: rotate(-90deg); }
+  .aac__track, .aac__arc { fill: none; stroke-width: 10; }
+  .aac__track { stroke: rgb(var(--ink-rgb, 255 255 255) / 0.1); }
+  .aac__arc { --v: 0; stroke: var(--agency-accent, var(--c-primary-light, #d4a017)); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--v)); transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1); }
+  .aac__score p { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; text-align: center; }
+  .aac__score strong { font-size: 2.6rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+  .aac__score span { font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .aac__result-title { margin: 0 0 var(--sp-3, 0.75rem); font-weight: 900; font-size: 1.15rem; }
+  .aac__findings ul { display: grid; gap: 10px; margin: 0 0 var(--sp-5, 1.25rem); padding: 0; list-style: none; }
+  .aac__findings li { display: grid; gap: 2px; padding-left: 12px; border-left: 3px solid var(--agency-accent, var(--c-primary-light, #d4a017)); font-size: 0.92rem; line-height: 1.45; color: var(--c-text-2, #a3a3a3); }
+  .aac__findings li strong { color: var(--c-text-1, #fff); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .aac__book { width: 100%; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 820px) { .aac { grid-template-columns: 1fr; } }
+  @container (max-width: 480px) { .aac__result { grid-template-columns: 1fr; justify-items: start; } }
+  @media (prefers-reduced-motion: reduce) {
+    .aac__eyebrow span { animation: none; }
+    .aac__arc, .aac__bar span, .aac__submit { transition: none; }
+  }
+</style>

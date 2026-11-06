@@ -1,0 +1,102 @@
+---
+/**
+ * AgencyProcessSteps — "How we work" timeline: numbered phases with duration chips joined by a
+ * line that fills as the section scrolls into view. Horizontal on wide containers, vertical on narrow.
+ *
+ * @param {string} eyebrow - Small label. Default 'How we work'.
+ * @param {string} title - Heading. Default 'From audit to growth in four steps'.
+ * @param {Array<{title: string, text: string, duration?: string}>} steps - Phases (3–5 work best).
+ * @param {{label: string, href: string}} cta - Optional call to action under the steps.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: an ordered list; the progress line is decorative and does not animate with
+ * reduced motion.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  steps?: Array<{ title: string; text: string; duration?: string }>;
+  cta?: { label: string; href: string };
+  className?: string;
+}
+
+const {
+  eyebrow = 'How we work',
+  title = 'From audit to growth in four steps',
+  steps = [
+    { title: 'Free audit', text: 'We review your ads, site and search presence and show you the biggest opportunities.', duration: 'Week 0' },
+    { title: 'Growth plan', text: 'A 90-day plan with targets, budget, channels and the first experiments.', duration: 'Week 1' },
+    { title: 'Launch', text: 'Tracking, campaigns, content and pages go live with the team that planned them.', duration: 'Weeks 2–4' },
+    { title: 'Optimise', text: 'Weekly tests, monthly reviews and budget that follows what is working.', duration: 'Ongoing' },
+  ],
+  cta,
+  className = '',
+} = Astro.props;
+---
+
+<div class="aps-cq">
+<section class:list={['aps', className]} data-process>
+  <header class="aps__head">
+    {eyebrow && <p class="aps__eyebrow">{eyebrow}</p>}
+    <h2 class="aps__title">{title}</h2>
+  </header>
+  <div class="aps__wrap">
+  <span class="aps__line" aria-hidden="true"><span></span></span>
+  <ol class="aps__list" style={`--n: ${steps.length}`}>
+    {steps.map((s, i) => (
+      <li class="aps__step" style={`--i: ${i}`}>
+        <span class="aps__dot" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+        {s.duration && <span class="aps__time">{s.duration}</span>}
+        <h3 class="aps__name">{s.title}</h3>
+        <p class="aps__text">{s.text}</p>
+      </li>
+    ))}
+  </ol>
+  </div>
+  {cta && <a class="aps__cta" href={cta.href}>{cta.label}<span aria-hidden="true">→</span></a>}
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-process]:not([data-bound])').forEach((el) => {
+    el.dataset.bound = '';
+    if (!('IntersectionObserver' in window)) { el.classList.add('is-in'); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { el.classList.add('is-in'); io.disconnect(); }
+    }, { threshold: 0.3 });
+    io.observe(el);
+  });
+</script>
+
+<style>
+  .aps-cq { container-type: inline-size; }
+  .aps { color: var(--c-text-1, #fff); }
+  .aps__head { margin-bottom: clamp(2rem, 5cqi, 3.5rem); }
+  .aps__eyebrow { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .aps__title { margin: 0; max-width: 18ch; font-size: clamp(2rem, 5cqi, 3.8rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; text-wrap: balance; }
+  .aps__wrap { position: relative; }
+  .aps__list { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: clamp(1rem, 3cqi, 2rem); margin: 0; padding: 0; list-style: none; }
+  .aps__line { position: absolute; top: 27px; left: 28px; right: 28px; height: 2px; background: var(--c-border, rgba(255, 255, 255, 0.14)); }
+  .aps__line span { display: block; height: 100%; width: 100%; background: var(--agency-accent, var(--c-primary-light, #d4a017)); transform: scaleX(0); transform-origin: left; transition: transform 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s; }
+  .is-in .aps__line span { transform: scaleX(1); }
+  .aps__step { position: relative; display: flex; flex-direction: column; gap: var(--sp-3, 0.75rem); }
+  .aps__dot { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--c-text-1, #fff); background: var(--c-bg, #050505); font-weight: 900; font-variant-numeric: tabular-nums; transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease; transition-delay: calc(0.3s + var(--i) * 0.35s); }
+  .is-in .aps__dot { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .aps__time { align-self: flex-start; padding: 0.25rem 0.65rem; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); font-size: 0.78rem; font-weight: 800; color: var(--c-text-2, #a3a3a3); }
+  .aps__name { margin: 0; font-size: 1.5rem; font-weight: 900; letter-spacing: -0.035em; }
+  .aps__text { margin: 0; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .aps__cta { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; margin-top: clamp(1.75rem, 4cqi, 2.75rem); padding: 0 1.4rem; border-radius: 999px; border: 1.5px solid currentColor; color: inherit; font-weight: 800; text-decoration: none; }
+  .aps__cta:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .aps__cta:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+
+  @container (max-width: 760px) {
+    .aps__list { grid-template-columns: 1fr; gap: var(--sp-6, 1.5rem); padding-left: 76px; }
+    .aps__line { top: 28px; bottom: 28px; left: 27px; right: auto; width: 2px; height: auto; }
+    .aps__line span { transform: scaleY(0); transform-origin: top; }
+    .is-in .aps__line span { transform: scaleY(1); }
+    .aps__dot { position: absolute; left: -76px; top: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aps__line span, .aps__dot { transition: none; }
+  }
+</style>

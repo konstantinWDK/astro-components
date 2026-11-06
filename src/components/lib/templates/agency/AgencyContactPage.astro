@@ -1,0 +1,62 @@
+---
+/**
+ * AgencyContactPage — Contact: page hero, project brief form (services, budget, timeline) with
+ * validation and success state, direct contacts and office, and FAQ.
+ *
+ * Usage (src/pages/contact.astro):
+ *   import { AgencyContactPage } from 'astro-component-kit/templates/agency';
+ *   <AgencyContactPage />
+ *
+ * @param {AgencySite} site - Content and settings. Default: Volta demo agency.
+ * @param {AgencyRoutes} routes - Page URLs.
+ * @param {string} action - Form action URL. With '#' the form validates and confirms locally. Default '#'.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import AgencyLayout from './AgencyLayout.astro';
+import AgencyPageHero from '../../sections/AgencyPageHero.astro';
+import AgencyContactBrief from '../../sections/AgencyContactBrief.astro';
+import FaqTwoColumn from '../../sections/FaqTwoColumn.astro';
+import { voltaAgency, agencyRoutes, type AgencySite, type AgencyRoutes } from './data';
+
+interface Props {
+  site?: AgencySite;
+  routes?: AgencyRoutes;
+  action?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { site = voltaAgency, routes = agencyRoutes, action = '#', theme = 'dark', noindex = false } = Astro.props;
+---
+
+<AgencyLayout title="Contact" description={`Book a free audit with ${site.name}.`} site={site} routes={routes} currentHref={routes.contact} theme={theme} noindex={noindex}>
+  <AgencyPageHero
+    eyebrow="Contact"
+    title="Let’s talk *growth*"
+    text="Tell us where you are and where you want to be. A strategist — not a salesperson — replies within one business day with next steps and a free audit."
+    breadcrumb={[{ label: 'Home', href: routes.home }, { label: 'Contact' }]}
+    facts={[]}
+  />
+
+  <div class="volta-wrap section-tight">
+    <AgencyContactBrief
+      title="Start with a free audit"
+      text="The more you share, the more useful our first call will be."
+      services={[...site.services.map((s) => s.name), 'Not sure yet']}
+      budgets={['< €2k / mo', '€2–5k / mo', '€5–10k / mo', '€10k+ / mo', 'One-off project']}
+      timelines={['As soon as possible', 'In the next month', 'In 1–3 months', 'Just exploring']}
+      action={action}
+      contacts={[
+        { label: 'New business', value: site.email, href: `mailto:${site.email}` },
+        { label: 'Call us', value: site.phone, href: `tel:${site.phone.replace(/\s+/g, '')}` },
+      ]}
+      office={site.offices[0]}
+      responseTime="We reply within one business day."
+    />
+  </div>
+
+  <div class="volta-wrap section-space">
+    <FaqTwoColumn title="Before you ask" subtitle="Quick answers to what clients ask us most." items={site.faqs.map((f) => ({ q: f.question, a: f.answer }))} support={{ label: `Email ${site.email}`, href: `mailto:${site.email}` }} />
+  </div>
+</AgencyLayout>

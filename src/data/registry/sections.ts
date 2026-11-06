@@ -71,6 +71,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/></svg>`,
   },
   {
+    id: 'agency',
+    name: 'Agency & Marketing',
+    description: 'Sections for marketing, SEO and web agencies: kinetic hero, services, results, ROI calculator, free audit, pricing, case studies and contact brief.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>`,
+  },
+  {
     id: 'commerce',
     name: 'E-commerce',
     description: 'Editorial store sections: shop header with mega menu, hero, collections, product rail, lookbook, reviews and footer.',

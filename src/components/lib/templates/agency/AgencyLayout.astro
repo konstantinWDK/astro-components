@@ -1,0 +1,166 @@
+---
+/**
+ * AgencyLayout — Full HTML document for the marketing agency template: AgencyHeader (pill nav
+ * with theme toggle and CTA), main slot and AgencyFooterCta. Owns the "Volta" look through design
+ * tokens: tight grotesque type, lime accent, near-black dark theme and a warm light theme.
+ *
+ * @param {string} title - Page title (agency name is appended).
+ * @param {string} description - Meta description.
+ * @param {AgencySite} site - Content and settings. Default: Volta demo agency.
+ * @param {AgencyRoutes} routes - Page URLs.
+ * @param {string} currentHref - Highlights the matching menu link.
+ * @param {string} theme - Initial theme (light|dark|auto). The header toggle overrides it per visitor. Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ * @param {string} lang - Document language. Default 'en'.
+ */
+import '../../../../styles/global.css';
+import AgencyHeader from '../../sections/AgencyHeader.astro';
+import AgencyFooterCta from '../../sections/AgencyFooterCta.astro';
+import { voltaAgency, agencyRoutes, agencyServiceHref, type AgencySite, type AgencyRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  site?: AgencySite;
+  routes?: AgencyRoutes;
+  currentHref?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description,
+  site = voltaAgency,
+  routes = agencyRoutes,
+  currentHref,
+  theme = 'dark',
+  noindex = false,
+  lang = 'en',
+} = Astro.props;
+
+const fullTitle = title.includes(site.name) ? title : `${title} — ${site.name}`;
+const links = [
+  { label: 'Services', href: routes.services },
+  { label: 'Work', href: routes.work },
+  { label: 'Pricing', href: routes.pricing },
+  { label: 'About', href: routes.about },
+];
+// Service and case-study pages highlight their parent menu item.
+const active = currentHref && links.find((l) => l.href !== routes.home && currentHref.startsWith(l.href))?.href;
+const footerColumns = [
+  { title: 'Services', links: site.services.map((s) => ({ label: s.name, href: agencyServiceHref(routes, s.slug) })) },
+  { title: 'Agency', links: [{ label: 'Case studies', href: routes.work }, { label: 'Pricing', href: routes.pricing }, { label: 'About', href: routes.about }, { label: 'Contact', href: routes.contact }] },
+  { title: 'Resources', links: [{ label: 'Free audit', href: `${routes.home}#audit` }, { label: 'ROI calculator', href: `${agencyServiceHref(routes, 'ads')}#roi` }, { label: 'Privacy', href: '#' }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-volta" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400..900&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class="volta">
+    <a class="volta__skip" href="#main">Skip to content</a>
+    <AgencyHeader brand={site.name} brandHref={routes.home} links={links} cta={{ label: 'Free audit', href: routes.contact }} currentHref={active || currentHref} />
+    <main id="main" class="volta__main" tabindex="-1">
+      <slot />
+    </main>
+    <AgencyFooterCta
+      kicker="Ready to grow?"
+      cta={{ label: "Let's talk", href: routes.contact }}
+      email={site.email}
+      columns={footerColumns}
+      offices={site.offices}
+      socials={site.socials}
+      brand={site.name}
+    />
+  </body>
+</html>
+
+<style is:global>
+  .theme-volta {
+    --font-sans: 'Inter Tight', 'Inter', system-ui, sans-serif;
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --agency-accent: #c8f23d;
+    --agency-header-h: 88px;
+  }
+  .theme-volta[data-theme='dark'] {
+    --c-bg: #0b0c0a;
+    --c-bg-1: #131510;
+    --c-bg-2: #1c1f17;
+    --c-surface: rgba(243, 245, 236, 0.03);
+    --c-border: rgba(243, 245, 236, 0.13);
+    --c-text-1: #f3f5ec;
+    --c-text-2: #b4b9a8;
+    --c-text-3: #8d9280;
+    --c-primary: #c8f23d;
+    --c-primary-light: #c8f23d;
+    --c-primary-glow: rgba(200, 242, 61, 0.16);
+    --c-accent: #e6fb9a;
+    --c-on-primary: #0b0c0a;
+    --agency-ink: #c8f23d;
+    --ink-rgb: 243 245 236;
+    --paper-rgb: 11 12 10;
+    --c-success: #8be28b;
+    --c-warning: #f5c56b;
+    --c-danger: #ff8a7a;
+    color-scheme: dark;
+  }
+  .theme-volta[data-theme='light'] {
+    --c-bg: #f3f2ec;
+    --c-bg-1: #ffffff;
+    --c-bg-2: #e7e6dd;
+    --c-surface: rgba(16, 17, 13, 0.03);
+    --c-border: rgba(16, 17, 13, 0.14);
+    --c-text-1: #10110d;
+    --c-text-2: #4a4d43;
+    --c-text-3: #63665b;
+    --c-primary: #3d6600;
+    --c-primary-light: #3d6600;
+    --c-primary-glow: rgba(61, 102, 0, 0.12);
+    --c-accent: #2c4a00;
+    --c-on-primary: #10110d;
+    --agency-ink: #3d6600;
+    --ink-rgb: 16 17 13;
+    --paper-rgb: 243 242 236;
+    --c-success: #1f7a33;
+    --c-warning: #8a5300;
+    --c-danger: #b42318;
+    color-scheme: light;
+  }
+  body.volta { margin: 0; background: var(--c-bg); color: var(--c-text-2); font-family: var(--font-sans); overflow-x: clip; }
+  body.volta::before { display: none; }
+  .volta h1, .volta h2, .volta h3 { font-family: var(--font-sans); }
+  .volta ::selection { background: var(--agency-accent); color: #0b0c0a; }
+  .volta__main { outline: none; }
+  .volta-wrap { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+  .volta .section-space { padding-block: clamp(3rem, 7vw, 6.5rem); }
+  .volta .section-tight { padding-block: clamp(1.5rem, 4vw, 3rem); }
+  .volta__skip { position: fixed; top: -60px; left: 12px; z-index: 2000; padding: 0.6rem 1rem; border-radius: 999px; background: var(--agency-accent); color: #0b0c0a; font-weight: 800; transition: top 0.2s ease; }
+  .volta__skip:focus { top: 12px; color: #0b0c0a; }
+
+  /* Reused library sections, tuned to the Volta look */
+  .volta .ftc { --ftc-py: 0; }
+  .volta .ftc__title { font-weight: 900; letter-spacing: -0.05em; }
+</style>

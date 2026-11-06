@@ -1,0 +1,99 @@
+---
+/**
+ * AgencyQuotes — Client testimonials for agencies: one large lead quote plus a grid of smaller
+ * ones, each with the measurable result it produced, initials avatar, name, role and company.
+ *
+ * @param {string} eyebrow - Small label. Default 'Client results'.
+ * @param {string} title - Heading. Default 'Don’t take our word for it'.
+ * @param {Array<{quote: string, name: string, role: string, company: string, result?: string}>} quotes - Testimonials (first one is the lead).
+ * @param {{value: string, label: string}} rating - Optional aggregate rating badge.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each testimonial is a <figure> with <blockquote> and <figcaption>; avatars are
+ * decorative initials.
+ */
+interface Quote { quote: string; name: string; role: string; company: string; result?: string }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  quotes?: Quote[];
+  rating?: { value: string; label: string };
+  className?: string;
+}
+
+const {
+  eyebrow = 'Client results',
+  title = 'Don’t take our word for it',
+  quotes = [
+    { quote: 'Volta treated our ad budget like their own money. We tripled revenue without tripling spend.', name: 'Freja Lund', role: 'Co-founder', company: 'Nordlys', result: '6.2× ROAS' },
+    { quote: 'For the first time our own website is our best salesperson.', name: 'Lucía Romero', role: 'Commercial director', company: 'Casa Alba', result: '+64% direct revenue' },
+    { quote: 'They speak finance and they speak CAC. Our sales team finally trusts marketing leads.', name: 'Tomás Ferreira', role: 'VP Growth', company: 'Fintrack', result: '−48% CPA' },
+    { quote: 'We hired two lawyers this year because of the leads coming from search.', name: 'Elena Prieto', role: 'Managing partner', company: 'Verde Legal', result: '3.1× organic leads' },
+  ],
+  rating = { value: '4.9/5', label: 'on Google and Clutch' },
+  className = '',
+} = Astro.props;
+
+const hues = [80, 190, 280, 25, 330, 150];
+const initials = (n: string) => n.split(/\s+/).slice(0, 2).map((p) => p[0]).join('');
+const [lead, ...rest] = quotes;
+---
+
+<div class="aq-cq">
+<section class:list={['aq', className]}>
+  <header class="aq__head">
+    <div>
+      {eyebrow && <p class="aq__eyebrow">{eyebrow}</p>}
+      <h2 class="aq__title">{title}</h2>
+    </div>
+    {rating && <p class="aq__rating"><strong>{rating.value}</strong><span aria-hidden="true">★★★★★</span><small>{rating.label}</small></p>}
+  </header>
+  <div class="aq__grid">
+    {lead && (
+      <figure class="aq__card aq__card--lead" style={`--lead-rows: ${Math.max(1, Math.min(3, rest.length))}`}>
+        {lead.result && <p class="aq__result">{lead.result}</p>}
+        <blockquote><p>“{lead.quote}”</p></blockquote>
+        <figcaption>
+          <span class="aq__avatar" style={`--h: ${hues[0]}`} aria-hidden="true">{initials(lead.name)}</span>
+          <span><strong>{lead.name}</strong><small>{lead.role}, {lead.company}</small></span>
+        </figcaption>
+      </figure>
+    )}
+    {rest.map((q, i) => (
+      <figure class="aq__card">
+        {q.result && <p class="aq__result">{q.result}</p>}
+        <blockquote><p>“{q.quote}”</p></blockquote>
+        <figcaption>
+          <span class="aq__avatar" style={`--h: ${hues[(i + 1) % hues.length]}`} aria-hidden="true">{initials(q.name)}</span>
+          <span><strong>{q.name}</strong><small>{q.role}, {q.company}</small></span>
+        </figcaption>
+      </figure>
+    ))}
+  </div>
+</section>
+</div>
+
+<style>
+  .aq-cq { container-type: inline-size; }
+  .aq { color: var(--c-text-1, #fff); }
+  .aq__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--sp-4, 1rem); margin-bottom: clamp(1.5rem, 4cqi, 2.5rem); }
+  .aq__eyebrow { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .aq__title { margin: 0; font-size: clamp(2rem, 5cqi, 3.6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; }
+  .aq__rating { display: grid; grid-template-columns: auto auto; align-items: center; gap: 2px 10px; margin: 0; }
+  .aq__rating strong { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; }
+  .aq__rating span { color: var(--agency-ink, var(--c-primary-light, #d4a017)); letter-spacing: 2px; }
+  .aq__rating small { grid-column: 1 / -1; color: var(--c-text-2, #a3a3a3); font-size: 0.82rem; }
+  .aq__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4, 1rem); }
+  .aq__card { display: flex; flex-direction: column; gap: var(--sp-4, 1rem); margin: 0; padding: clamp(1.25rem, 3cqi, 1.75rem); border-radius: var(--r-xl, 24px); border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: var(--c-bg-1, #0d0d0d); }
+  .aq__card--lead { grid-column: span 2; grid-row: span var(--lead-rows, 2); justify-content: space-between; background: var(--c-text-1, #fff); color: var(--c-bg, #050505); border-color: transparent; }
+  .aq__result { align-self: flex-start; margin: 0; padding: 0.3rem 0.75rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.85rem; font-weight: 900; }
+  .aq blockquote { margin: 0; }
+  .aq blockquote p { color: inherit; margin: 0; font-size: 1.05rem; line-height: 1.5; font-weight: 600; }
+  .aq__card--lead blockquote p { font-size: clamp(1.5rem, 3.6cqi, 2.6rem); font-weight: 800; line-height: 1.12; letter-spacing: -0.035em; text-wrap: balance; }
+  .aq figcaption { display: flex; align-items: center; gap: 12px; margin-top: auto; }
+  .aq figcaption strong { display: block; font-size: 0.95rem; }
+  .aq figcaption small { font-size: 0.82rem; opacity: 0.7; }
+  .aq__avatar { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: hsl(var(--h) 70% 60%); color: #0b0b0b; font-size: 0.8rem; font-weight: 900; }
+  @container (max-width: 900px) { .aq__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .aq__card--lead { grid-row: auto; } }
+  @container (max-width: 560px) { .aq__grid { grid-template-columns: 1fr; } .aq__card--lead { grid-column: auto; } }
+</style>

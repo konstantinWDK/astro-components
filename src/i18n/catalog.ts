@@ -148,6 +148,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Pies de Página', description: 'Pies de página completos con columnas de enlaces, newsletter y redes sociales.' },
     ru: { name: 'Футеры', description: 'Полные подвалы сайта с колонками ссылок, подпиской и соцсетями.' },
   },
+  agency: {
+    en: { name: 'Agency & Marketing', description: 'Sections for marketing, SEO and web agencies: kinetic hero, services, results, ROI calculator, free audit, pricing, case studies and contact brief.' },
+    es: { name: 'Agencia y Marketing', description: 'Secciones para agencias de marketing, SEO y desarrollo web: hero cinético, servicios, resultados, calculadora de ROI, auditoría gratis, precios, casos de éxito y brief de contacto.' },
+    ru: { name: 'Агентство и маркетинг', description: 'Секции для маркетинговых, SEO и веб-агентств: кинетический hero, услуги, результаты, калькулятор ROI, бесплатный аудит, цены, кейсы и бриф.' },
+  },
   commerce: {
     en: { name: 'E-commerce', description: 'Editorial store sections: shop header with mega menu, hero, collections, product rail, lookbook, reviews and footer.' },
     es: { name: 'E-commerce', description: 'Secciones editoriales para tiendas: cabecera con mega menú, hero, colecciones, carrusel de productos, lookbook, reseñas y footer.' },

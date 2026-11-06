@@ -141,7 +141,7 @@ export function createMcpServer(): McpServer {
   // 5. list_templates
   server.tool(
     'list_templates',
-    'List all multi-page production templates (e.g. E-Commerce Store, Editorial Shop, SaaS Hotel PMS) with page lists and features.',
+    'List all multi-page production templates (e.g. E-Commerce Store, Editorial Shop, SaaS Hotel PMS, Marketing Agency) with page lists and features.',
     {},
     async () => {
       const templates = listTemplates();
@@ -159,11 +159,11 @@ export function createMcpServer(): McpServer {
   // 6. get_template
   server.tool(
     'get_template',
-    'Get the complete multi-page template specification, architecture, pages, code, and routing instructions (e.g. "ecommerce", "ecommerce-editorial", "saas-hotel").',
+    'Get the complete multi-page template specification, architecture, pages, code, and routing instructions (e.g. "ecommerce", "ecommerce-editorial", "saas-hotel", "agency").',
     {
       slug: z
         .string()
-        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), or "saas-hotel" (The Lobby)'),
+        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby) or "agency" (Volta marketing agency)'),
     },
     async ({ slug }) => {
       const template = getTemplate(slug);
@@ -173,7 +173,7 @@ export function createMcpServer(): McpServer {
           content: [
             {
               type: 'text',
-              text: `Template "${slug}" not found. Valid slugs are: "ecommerce", "ecommerce-editorial", "saas-hotel". Use "list_templates" to inspect them.`,
+              text: `Template "${slug}" not found. Valid slugs are: "ecommerce", "ecommerce-editorial", "saas-hotel", "agency". Use "list_templates" to inspect them.`,
             },
           ],
         };

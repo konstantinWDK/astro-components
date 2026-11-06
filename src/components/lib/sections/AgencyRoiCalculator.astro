@@ -1,0 +1,205 @@
+---
+/**
+ * AgencyRoiCalculator — Paid-ads ROI calculator: sliders for monthly ad spend, cost per click,
+ * conversion rate and average order value; live clicks, sales, revenue and ROAS, plus the
+ * projection after agency optimisation (configurable uplift) on a comparison bar.
+ *
+ * @param {string} eyebrow - Small label. Default 'ROI calculator'.
+ * @param {string} title - Heading. Default 'What could your ad budget return?'.
+ * @param {string} text - Intro paragraph.
+ * @param {number} spend - Initial monthly spend. Default 10000.
+ * @param {number} cpc - Initial cost per click. Default 0.9.
+ * @param {number} cvr - Initial conversion rate (%). Default 2.2.
+ * @param {number} aov - Initial average order value. Default 85.
+ * @param {number} uplift - Expected improvement with the agency (%), applied to CPC and CVR. Default 25.
+ * @param {string} currency - ISO currency. Default 'EUR'.
+ * @param {string} locale - Number locale. Default 'en-IE'.
+ * @param {string} upliftLabel - Label of the optimised bar. Default 'With Volta'.
+ * @param {{label: string, href: string}} cta - Call to action.
+ * @param {string} disclaimer - Fine print.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: native range inputs with labels and aria-valuetext in plain language; results
+ * are summarised in a polite live region (debounced) so changes are announced without stealing focus.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  spend?: number;
+  cpc?: number;
+  cvr?: number;
+  aov?: number;
+  uplift?: number;
+  upliftLabel?: string;
+  currency?: string;
+  locale?: string;
+  cta?: { label: string; href: string };
+  disclaimer?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'ROI calculator',
+  title = 'What could your ad budget return?',
+  text = 'Move the sliders to match your account. We show what you earn today and what a typical Volta optimisation adds.',
+  spend = 10000,
+  cpc = 0.9,
+  cvr = 2.2,
+  aov = 85,
+  uplift = 25,
+  upliftLabel = 'With Volta',
+  currency = 'EUR',
+  locale = 'en-IE',
+  cta = { label: 'Get a custom forecast', href: '#contact' },
+  disclaimer = 'Estimates for illustration only. Results depend on market, offer and margins.',
+  className = '',
+} = Astro.props;
+
+const uid = `arc-${Math.random().toString(36).slice(2, 8)}`;
+const sliders = [
+  { key: 'spend', label: 'Monthly ad spend', min: 1000, max: 100000, step: 500, value: spend, kind: 'money' },
+  { key: 'cpc', label: 'Cost per click', min: 0.1, max: 5, step: 0.05, value: cpc, kind: 'money2' },
+  { key: 'cvr', label: 'Conversion rate', min: 0.2, max: 10, step: 0.1, value: cvr, kind: 'pct' },
+  { key: 'aov', label: 'Average order value', min: 10, max: 1000, step: 5, value: aov, kind: 'money' },
+];
+---
+
+<div class="arc-cq">
+<section class:list={['arc', className]} data-roi data-uplift={uplift} data-currency={currency} data-locale={locale}>
+  <div class="arc__intro">
+    {eyebrow && <p class="arc__eyebrow">{eyebrow}</p>}
+    <h2 class="arc__title">{title}</h2>
+    {text && <p class="arc__text">{text}</p>}
+  </div>
+
+  <div class="arc__inputs" role="group" aria-label="Your account">
+    {sliders.map((s) => (
+      <div class="arc__field">
+        <div class="arc__row">
+          <label for={`${uid}-${s.key}`}>{s.label}</label>
+          <output for={`${uid}-${s.key}`} data-out={s.key}></output>
+        </div>
+        <input type="range" id={`${uid}-${s.key}`} name={s.key} min={s.min} max={s.max} step={s.step} value={s.value} data-kind={s.kind} />
+      </div>
+    ))}
+  </div>
+
+  <div class="arc__results">
+    <div class="arc__out">
+      <dl class="arc__now">
+        <div><dt>Clicks</dt><dd data-r="clicks">–</dd></div>
+        <div><dt>Sales</dt><dd data-r="sales">–</dd></div>
+        <div><dt>Revenue</dt><dd data-r="revenue">–</dd></div>
+        <div><dt>ROAS</dt><dd data-r="roas">–</dd></div>
+      </dl>
+      <div class="arc__compare">
+        <p class="arc__compare-title">Monthly revenue</p>
+        <div class="arc__bar"><span>Today</span><span class="arc__fill" data-bar="now"></span><strong data-r="revenue2">–</strong></div>
+        <div class="arc__bar arc__bar--up"><span>{upliftLabel}</span><span class="arc__fill" data-bar="up"></span><strong data-r="upRevenue">–</strong></div>
+        <p class="arc__gain">+<span data-r="gain">–</span> per month · ROAS <span data-r="upRoas">–</span></p>
+      </div>
+    </div>
+    <p class="sr-only" aria-live="polite" data-live></p>
+    {cta && <a class="arc__cta" href={cta.href}>{cta.label}<span aria-hidden="true">→</span></a>}
+    {disclaimer && <p class="arc__disc">{disclaimer}</p>}
+  </div>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-roi]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const uplift = (Number(root.dataset.uplift) || 0) / 100;
+    const locale = root.dataset.locale || 'en';
+    const currency = root.dataset.currency || 'EUR';
+    const money = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 });
+    const money2 = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+    const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="range"]'));
+    const val = (k: string) => Number(inputs.find((i) => i.name === k)?.value ?? 0);
+    const show = (i: HTMLInputElement) => {
+      const v = Number(i.value);
+      const txt = i.dataset.kind === 'money2' ? money2.format(v) : i.dataset.kind === 'pct' ? `${v.toFixed(1)}%` : money.format(v);
+      const out = root.querySelector<HTMLElement>(`[data-out="${i.name}"]`);
+      if (out) out.textContent = txt;
+      i.setAttribute('aria-valuetext', txt);
+      const p = ((v - Number(i.min)) / (Number(i.max) - Number(i.min))) * 100;
+      i.style.setProperty('--p', `${p}%`);
+    };
+    const set = (k: string, t: string) => { const el = root.querySelector<HTMLElement>(`[data-r="${k}"]`); if (el) el.textContent = t; };
+    const calc = () => {
+      inputs.forEach(show);
+      const spend = val('spend'), cpc = val('cpc'), cvr = val('cvr') / 100, aov = val('aov');
+      const clicks = spend / cpc;
+      const sales = clicks * cvr;
+      const revenue = sales * aov;
+      const upClicks = spend / (cpc * (1 - uplift / 2));
+      const upRevenue = upClicks * cvr * (1 + uplift) * aov;
+      set('clicks', num.format(clicks));
+      set('sales', num.format(sales));
+      set('revenue', money.format(revenue));
+      set('revenue2', money.format(revenue));
+      set('roas', `${(revenue / spend).toFixed(1)}×`);
+      set('upRevenue', money.format(upRevenue));
+      set('upRoas', `${(upRevenue / spend).toFixed(1)}×`);
+      set('gain', money.format(Math.max(0, upRevenue - revenue)));
+      const max = Math.max(revenue, upRevenue, 1);
+      root.querySelector<HTMLElement>('[data-bar="now"]')?.style.setProperty('--w', `${(revenue / max) * 100}%`);
+      root.querySelector<HTMLElement>('[data-bar="up"]')?.style.setProperty('--w', `${(upRevenue / max) * 100}%`);
+    };
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    let timer = 0;
+    const announce = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const r = (k: string) => root.querySelector<HTMLElement>(`[data-r="${k}"]`)?.textContent ?? '';
+        if (live) live.textContent = `Revenue ${r('revenue')}, ROAS ${r('roas')}. Optimised: ${r('upRevenue')}, ROAS ${r('upRoas')}.`;
+      }, 700);
+    };
+    inputs.forEach((i) => i.addEventListener('input', () => { calc(); announce(); }));
+    calc();
+  });
+</script>
+
+<style>
+  .arc-cq { container-type: inline-size; }
+  .arc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'intro intro' 'inputs results'; gap: clamp(1.25rem, 4cqi, 3rem); padding: clamp(1.5rem, 5cqi, 3.5rem); border-radius: var(--r-xl, 28px); border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: var(--c-bg-1, #0d0d0d); color: var(--c-text-1, #fff); }
+  .arc__intro { grid-area: intro; max-width: 44rem; }
+  .arc__eyebrow { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .arc__title { margin: 0; font-size: clamp(1.9rem, 4.5cqi, 3.2rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; text-wrap: balance; }
+  .arc__text { margin: var(--sp-3, 0.75rem) 0 0; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+
+  .arc__inputs { grid-area: inputs; display: grid; gap: var(--sp-6, 1.5rem); align-content: start; }
+  .arc__row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 10px; }
+  .arc__row label { font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .arc__row output { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .arc input[type='range'] { --p: 50%; width: 100%; height: 28px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  .arc input[type='range']::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--agency-accent, var(--c-primary-light, #d4a017)) var(--p), rgb(var(--ink-rgb, 255 255 255) / 0.14) var(--p)); }
+  .arc input[type='range']::-moz-range-track { height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--agency-accent, var(--c-primary-light, #d4a017)) var(--p), rgb(var(--ink-rgb, 255 255 255) / 0.14) var(--p)); }
+  .arc input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -9px; border-radius: 50%; border: 3px solid var(--c-bg-1, #0d0d0d); background: var(--c-text-1, #fff); box-shadow: 0 0 0 1.5px var(--c-text-1, #fff); }
+  .arc input[type='range']::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--c-bg-1, #0d0d0d); background: var(--c-text-1, #fff); }
+  .arc input[type='range']:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 4px; border-radius: 999px; }
+
+  .arc__results { grid-area: results; display: grid; gap: var(--sp-4, 1rem); align-content: start; }
+  .arc__out { display: grid; gap: var(--sp-4, 1rem); }
+  .arc__now { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+  .arc__now div { padding: var(--sp-4, 1rem); border-radius: 16px; background: var(--c-bg, #050505); }
+  .arc__now dt { font-size: 0.8rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .arc__now dd { margin: 4px 0 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+  .arc__compare { padding: var(--sp-5, 1.25rem); border-radius: 18px; background: var(--c-bg, #050505); }
+  .arc__compare-title { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .arc__bar { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.85rem; font-weight: 700; }
+  .arc__fill { --w: 50%; height: 14px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.25); width: var(--w); transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  .arc__bar--up .arc__fill { background: var(--agency-accent, var(--c-primary-light, #d4a017)); }
+  .arc__bar strong { font-variant-numeric: tabular-nums; }
+  .arc__gain { margin: var(--sp-2, 0.5rem) 0 0; font-weight: 900; font-size: 1.05rem; color: var(--agency-ink, var(--c-primary-light, #d4a017)); }
+  .arc__cta { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 54px; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-weight: 900; text-decoration: none; }
+  .arc__cta:hover { color: var(--c-on-primary, #050505); filter: brightness(1.05); }
+  .arc__cta:focus-visible { outline: 2px solid var(--c-text-1, #fff); outline-offset: 3px; }
+  .arc__disc { margin: 0; font-size: 0.78rem; color: var(--c-text-3, #777); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @container (max-width: 760px) { .arc { grid-template-columns: 1fr; grid-template-areas: 'intro' 'inputs' 'results'; } }
+  @media (prefers-reduced-motion: reduce) { .arc__fill { transition: none; } }
+</style>

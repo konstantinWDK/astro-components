@@ -1,0 +1,79 @@
+---
+/**
+ * AgencyPlatformsMarquee — Two counter-scrolling rows of the platforms and tools an agency is
+ * certified in (Google Ads, Meta, Search Console…), with an intro line and badges.
+ *
+ * @param {string} title - Intro line. Default 'Certified on the platforms where your customers are'.
+ * @param {string[]} platforms - Names shown as pills (split across the two rows).
+ * @param {string[]} badges - Small certification badges under the title (optional).
+ * @param {number} speed - Seconds per loop. Default 38.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the platforms are a real list read once; the duplicated copy that makes the
+ * loop seamless is aria-hidden; the animation pauses on hover and stops with reduced motion.
+ */
+interface Props {
+  title?: string;
+  platforms?: string[];
+  badges?: string[];
+  speed?: number;
+  className?: string;
+}
+
+const {
+  title = 'Certified on the platforms where your customers are',
+  platforms = ['Google Ads', 'Meta', 'TikTok', 'LinkedIn', 'YouTube', 'Microsoft Ads', 'Google Analytics 4', 'Search Console', 'Shopify', 'HubSpot', 'Astro', 'Looker Studio'],
+  badges = ['Google Partner', 'Meta Business Partner', 'TikTok Agency Partner'],
+  speed = 38,
+  className = '',
+} = Astro.props;
+
+const half = Math.ceil(platforms.length / 2);
+const rows = [platforms.slice(0, half), platforms.slice(half)].filter((r) => r.length > 0);
+---
+
+<div class:list={['apm', className]} style={`--apm-speed: ${speed}s`}>
+  <div class="apm__head">
+    <p class="apm__title">{title}</p>
+    {badges.length > 0 && (
+      <ul class="apm__badges">
+        {badges.map((b) => <li><span aria-hidden="true">✓</span>{b}</li>)}
+      </ul>
+    )}
+  </div>
+  <ul class="apm__static">{platforms.map((p) => <li class="apm__pill">{p}</li>)}</ul>
+  <div class="apm__rows" aria-hidden="true">
+    {rows.map((row, r) => (
+      <div class:list={['apm__row', { 'apm__row--rev': r % 2 === 1 }]}>
+        <div class="apm__track">
+          {[...row, ...row, ...row, ...row].map((p, i) => (
+            <span class:list={['apm__pill', { 'is-accent': i % 5 === 2 }]}>{p}</span>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .apm { padding-block: clamp(2rem, 5vw, 3.5rem); color: var(--c-text-1, #fff); overflow: hidden; }
+  .apm__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-4, 1rem); max-width: 1280px; margin: 0 auto clamp(1.25rem, 3vw, 2rem); padding-inline: clamp(1rem, 3vw, 2.5rem); }
+  .apm__title { margin: 0; max-width: 32ch; font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 800; letter-spacing: -0.02em; }
+  .apm__badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .apm__badges li { display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 0.8rem; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); font-size: 0.8rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .apm__badges span { color: var(--agency-ink, var(--c-primary-light, #d4a017)); font-weight: 900; }
+  .apm__rows { display: grid; gap: 10px; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .apm__row { overflow: hidden; }
+  .apm__track { display: flex; gap: 10px; width: max-content; animation: apm-scroll var(--apm-speed, 38s) linear infinite; }
+  .apm__row--rev .apm__track { animation-direction: reverse; }
+  .apm:hover .apm__track { animation-play-state: paused; }
+  .apm__pill { padding: 0.85rem 1.5rem; border-radius: 999px; border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.14)); font-size: clamp(1rem, 2vw, 1.35rem); font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
+  .apm__pill.is-accent { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  @keyframes apm-scroll { to { transform: translateX(-50%); } }
+  /* Real list: read by screen readers, shown instead of the marquee with reduced motion */
+  .apm__static { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; list-style: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .apm__rows { display: none; }
+    .apm__static { position: static; width: auto; height: auto; clip: auto; display: flex; flex-wrap: wrap; gap: 10px; max-width: 1280px; margin: 0 auto; padding-inline: clamp(1rem, 3vw, 2.5rem); white-space: normal; }
+  }
+</style>

@@ -1,0 +1,164 @@
+---
+/**
+ * AgencyCaseResults — Body of a case study: the challenge, the numbered approach, a before/after
+ * metrics table, a 12-month results chart (SVG area line, no dependencies) and the client quote.
+ *
+ * @param {string} challengeTitle - Heading for the challenge. Default 'The challenge'.
+ * @param {string} challenge - Challenge text.
+ * @param {string} approachTitle - Heading for the approach. Default 'What we did'.
+ * @param {string[]} approach - Steps taken.
+ * @param {Array<{label: string, before: string, after: string, change: string}>} metrics - Before/after rows.
+ * @param {number[]} series - Values for the chart (e.g. 12 months).
+ * @param {string} seriesLabel - Chart caption. Default 'Revenue from ads (€k / month)'.
+ * @param {string[]} periods - X labels (defaults to M1…Mn).
+ * @param {{quote: string, name: string, role: string, company: string}} quote - Client quote (optional).
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: real <table> for metrics; the chart is a figure with a text summary (first,
+ * last and change) and a visually hidden data table.
+ */
+interface Props {
+  challengeTitle?: string;
+  challenge?: string;
+  approachTitle?: string;
+  approach?: string[];
+  metrics?: Array<{ label: string; before: string; after: string; change: string }>;
+  series?: number[];
+  seriesLabel?: string;
+  periods?: string[];
+  quote?: { quote: string; name: string; role: string; company: string };
+  className?: string;
+}
+
+const {
+  challengeTitle = 'The challenge',
+  challenge = 'Rising CPMs, a single hero ad that had fatigued and tracking that missed 30% of purchases after iOS changes.',
+  approachTitle = 'What we did',
+  approach = [
+    'Server-side tracking with Conversions API recovered the missing purchase data.',
+    'A simple three-campaign structure with broad audiences.',
+    'Twelve new creatives every two weeks, led by founder and customer videos.',
+  ],
+  metrics = [
+    { label: 'ROAS', before: '2.1×', after: '6.2×', change: '+195%' },
+    { label: 'Monthly revenue from ads', before: '€42k', after: '€188k', change: '+348%' },
+    { label: 'Cost per purchase', before: '€38', after: '€19', change: '−50%' },
+  ],
+  series = [42, 48, 55, 61, 78, 92, 104, 118, 131, 149, 166, 188],
+  seriesLabel = 'Revenue from ads (€k / month)',
+  periods,
+  quote = { quote: 'Volta treated our ad budget like their own money. We tripled revenue without tripling spend.', name: 'Freja Lund', role: 'Co-founder', company: 'Nordlys' },
+  className = '',
+} = Astro.props;
+
+const labels = periods ?? series.map((_, i) => `M${i + 1}`);
+const W = 600, H = 240, P = 8;
+const max = Math.max(...series) * 1.08;
+const min = Math.min(0, Math.min(...series));
+const x = (i: number) => P + (i * (W - P * 2)) / Math.max(1, series.length - 1);
+const y = (v: number) => H - P - ((v - min) / (max - min || 1)) * (H - P * 2);
+const line = series.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+const area = `${line} L${x(series.length - 1).toFixed(1)} ${H - P} L${x(0).toFixed(1)} ${H - P} Z`;
+const first = series[0];
+const last = series[series.length - 1];
+const pct = first ? Math.round(((last - first) / Math.abs(first)) * 100) : 0;
+const fmtV = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2));
+const gid = `acr-g-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class="acr-cq">
+<section class:list={['acr', className]}>
+  <div class="acr__story">
+    <div>
+      <h2 class="acr__h">{challengeTitle}</h2>
+      <p class="acr__p">{challenge}</p>
+    </div>
+    <div>
+      <h2 class="acr__h">{approachTitle}</h2>
+      <ol class="acr__steps">{approach.map((a) => <li>{a}</li>)}</ol>
+    </div>
+  </div>
+
+  <div class="acr__data">
+    <table class="acr__table">
+      <caption class="acr__h">Results</caption>
+      <thead><tr><th scope="col">Metric</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Change</th></tr></thead>
+      <tbody>
+        {metrics.map((m) => (
+          <tr><th scope="row">{m.label}</th><td>{m.before}</td><td><strong>{m.after}</strong></td><td><span class="acr__chg">{m.change}</span></td></tr>
+        ))}
+      </tbody>
+    </table>
+
+    <figure class="acr__chart">
+      <figcaption>
+        <span>{seriesLabel}</span>
+        <strong>{pct >= 0 ? '+' : ''}{pct}%</strong>
+      </figcaption>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${seriesLabel}: from ${fmtV(first)} to ${fmtV(last)} over ${series.length} periods (${pct >= 0 ? '+' : ''}${pct}%).`}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style="stop-color: var(--agency-accent, var(--c-primary-light, #d4a017)); stop-opacity: 0.45" />
+            <stop offset="100%" style="stop-color: var(--agency-accent, var(--c-primary-light, #d4a017)); stop-opacity: 0" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map((f) => <line x1="0" x2={W} y1={H * f} y2={H * f} class="acr__grid" />)}
+        <path d={area} fill={`url(#${gid})`} />
+        <path d={line} class="acr__line" pathLength="1" />
+        <circle cx={x(series.length - 1)} cy={y(last)} r="6" class="acr__dot" />
+      </svg>
+      <div class="acr__axis" aria-hidden="true"><span>{labels[0]}</span><span>{labels[labels.length - 1]}</span></div>
+      <table class="sr-only">
+        <caption>{seriesLabel}</caption>
+        <tbody>{series.map((v, i) => <tr><th scope="row">{labels[i]}</th><td>{fmtV(v)}</td></tr>)}</tbody>
+      </table>
+    </figure>
+  </div>
+
+  {quote && (
+    <figure class="acr__quote">
+      <blockquote><p>“{quote.quote}”</p></blockquote>
+      <figcaption><strong>{quote.name}</strong> — {quote.role}, {quote.company}</figcaption>
+    </figure>
+  )}
+</section>
+</div>
+
+<style>
+  .acr-cq { container-type: inline-size; }
+  .acr { display: grid; gap: clamp(2rem, 6cqi, 4rem); color: var(--c-text-1, #fff); }
+  .acr__story { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1.5rem, 5cqi, 4rem); }
+  .acr__h { margin: 0 0 var(--sp-4, 1rem); font-size: 0.85rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; text-align: left; color: var(--c-text-2, #a3a3a3); }
+  .acr__p { margin: 0; font-size: clamp(1.2rem, 2.4cqi, 1.5rem); line-height: 1.45; font-weight: 600; letter-spacing: -0.015em; }
+  .acr__steps { display: grid; gap: var(--sp-3, 0.75rem); margin: 0; padding: 0; list-style: none; counter-reset: acr; }
+  .acr__steps li { counter-increment: acr; display: grid; grid-template-columns: 40px 1fr; gap: 8px; line-height: 1.55; color: var(--c-text-2, #a3a3a3); }
+  .acr__steps li::before { content: counter(acr, decimal-leading-zero); font-weight: 900; color: var(--agency-ink, var(--c-primary-light, #d4a017)); }
+
+  .acr__data { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(1.25rem, 4cqi, 2.5rem); align-items: start; }
+  .acr__table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .acr__table th, .acr__table td { padding: 0.85rem 0.5rem; border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.14)); text-align: left; font-size: 0.95rem; }
+  .acr__table thead th { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-3, #777); }
+  .acr__table tbody th { font-weight: 700; }
+  .acr__table td { color: var(--c-text-2, #a3a3a3); }
+  .acr__table td strong { color: var(--c-text-1, #fff); font-size: 1.1rem; }
+  .acr__chg { padding: 0.2rem 0.55rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.82rem; font-weight: 900; white-space: nowrap; }
+
+  .acr__chart { margin: 0; padding: var(--sp-5, 1.25rem); border-radius: var(--r-xl, 24px); background: var(--c-bg-1, #0d0d0d); border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.12)); }
+  .acr__chart figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: var(--sp-3, 0.75rem); font-size: 0.9rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .acr__chart figcaption strong { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; color: var(--c-text-1, #fff); }
+  .acr__chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .acr__grid { stroke: var(--c-border, rgba(255, 255, 255, 0.12)); stroke-dasharray: 4 6; }
+  .acr__line { fill: none; stroke: var(--agency-ink, var(--c-primary-light, #d4a017)); stroke-width: 3; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: acr-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards; }
+  .acr__dot { fill: var(--agency-ink, var(--c-primary-light, #d4a017)); stroke: var(--c-bg-1, #0d0d0d); stroke-width: 3; vector-effect: non-scaling-stroke; }
+  @keyframes acr-draw { to { stroke-dashoffset: 0; } }
+  .acr__axis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.78rem; color: var(--c-text-3, #777); }
+
+  .acr__quote { margin: 0; padding: clamp(1.5rem, 5cqi, 3.5rem); border-radius: var(--r-xl, 28px); background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .acr__quote blockquote { margin: 0; }
+  .acr__quote p { color: inherit; margin: 0; font-size: clamp(1.5rem, 4cqi, 2.8rem); font-weight: 900; line-height: 1.08; letter-spacing: -0.04em; text-wrap: balance; }
+  .acr__quote figcaption { margin-top: var(--sp-5, 1.25rem); font-weight: 600; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 820px) { .acr__story, .acr__data { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .acr__line { animation: none; stroke-dashoffset: 0; } }
+</style>

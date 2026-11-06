@@ -1,0 +1,213 @@
+---
+/**
+ * AgencyPricingPackages — Agency pricing with one tab per service (Ads, SEO, Web…), three
+ * packages per tab and a billing switch (monthly / 6-month commitment with discount) for retainers.
+ * One-off project prices are shown as "fixed price". With a single tab the switcher is hidden.
+ *
+ * @param {string} eyebrow - Small label. Default 'Pricing'.
+ * @param {string} title - Heading. Default 'Transparent pricing, no percentage of spend'.
+ * @param {string} text - Intro paragraph.
+ * @param {Array<{id: string, label: string, packages: Array<{name: string, price: number, billing: 'monthly'|'project', note: string, features: string[], featured?: boolean}>}>} tabs - Services and their packages.
+ * @param {string} initial - Tab id selected first. Default: first tab.
+ * @param {number} discount - Discount (%) for the 6-month commitment. Default 10.
+ * @param {string} currency - ISO currency. Default 'EUR'.
+ * @param {string} locale - Number locale. Default 'en-IE'.
+ * @param {{label: string, href: string}} cta - Package button. Default 'Get started'.
+ * @param {string} footnote - Line under the cards.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: WAI-ARIA tabs (arrow keys, Home/End) and a switch (role="switch") for billing;
+ * prices update in place and the change is announced in a polite live region.
+ */
+interface Pkg { name: string; price: number; billing: 'monthly' | 'project'; note: string; features: string[]; featured?: boolean }
+interface Tab { id: string; label: string; packages: Pkg[] }
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  tabs?: Tab[];
+  initial?: string;
+  discount?: number;
+  currency?: string;
+  locale?: string;
+  cta?: { label: string; href: string };
+  footnote?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'Pricing',
+  title = 'Transparent pricing, no percentage of spend',
+  text = 'Fixed monthly fees for retainers, fixed prices for projects. Ad spend is paid directly to the platforms.',
+  tabs = [
+    { id: 'ads', label: 'Paid Ads', packages: [
+      { name: 'Launch', price: 1900, billing: 'monthly', note: 'Up to €15k / month ad spend.', features: ['2 ad platforms', '6 new ads / month', 'Conversion tracking', 'Monthly report'] },
+      { name: 'Growth', price: 3400, billing: 'monthly', note: '€15–60k / month ad spend.', features: ['4 ad platforms', '12 new ads / month', 'Server-side tracking', 'Landing page tests', 'Weekly report'], featured: true },
+      { name: 'Scale', price: 5900, billing: 'monthly', note: '€60k+ / month ad spend.', features: ['All platforms', 'Weekly creative', 'Marketing mix modelling', 'Dedicated team'] },
+    ] },
+    { id: 'seo', label: 'SEO', packages: [
+      { name: 'Foundations', price: 1500, billing: 'monthly', note: 'Fix the basics, grow one market.', features: ['Technical fixes', '4 pages / month', 'Rank tracking', 'Monthly report'] },
+      { name: 'Authority', price: 2900, billing: 'monthly', note: 'Win competitive keywords.', features: ['8 articles / month', 'Digital PR / quarter', 'Local SEO', 'Revenue dashboard'], featured: true },
+      { name: 'Enterprise', price: 4800, billing: 'monthly', note: 'Many markets, large sites.', features: ['International SEO', '16 articles / month', 'Monthly PR', 'Dev hours included'] },
+    ] },
+    { id: 'web', label: 'Websites', packages: [
+      { name: 'Landing page', price: 3200, billing: 'project', note: 'One page for a launch.', features: ['Copy & design', 'Astro build', 'A/B test setup'] },
+      { name: 'Website', price: 9500, billing: 'project', note: 'Up to 12 templates.', features: ['UX & content', 'Design system', 'Headless CMS', 'SEO migration'], featured: true },
+      { name: 'E-commerce', price: 18000, billing: 'project', note: 'Headless Shopify.', features: ['Shopify + Astro', 'Checkout UX', 'Integrations', 'CRO roadmap'] },
+    ] },
+  ],
+  initial,
+  discount = 10,
+  currency = 'EUR',
+  locale = 'en-IE',
+  cta = { label: 'Get started', href: '#contact' },
+  footnote = 'All prices exclude VAT. Retainers have a 3-month initial term, then roll monthly.',
+  className = '',
+} = Astro.props;
+
+const uid = `app-${Math.random().toString(36).slice(2, 8)}`;
+const first = tabs.find((t) => t.id === initial)?.id ?? tabs[0]?.id;
+const fmt = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
+const single = tabs.length < 2;
+const hasMonthly = (t: Tab) => t.packages.some((p) => p.billing === 'monthly');
+---
+
+<div class="app-cq">
+<section class:list={['app', className]} data-agency-pricing data-discount={discount} data-currency={currency} data-locale={locale}>
+  <header class="app__head">
+    {eyebrow && <p class="app__eyebrow">{eyebrow}</p>}
+    <h2 class="app__title">{title}</h2>
+    {text && <p class="app__text">{text}</p>}
+  </header>
+
+  <div class="app__controls">
+    {!single && (
+      <div class="app__tabs" role="tablist" aria-label="Service">
+        {tabs.map((t) => (
+          <button type="button" role="tab" class="app__tab" id={`${uid}-tab-${t.id}`} aria-controls={`${uid}-panel-${t.id}`} aria-selected={t.id === first ? 'true' : 'false'} tabindex={t.id === first ? 0 : -1} data-tab={t.id} data-monthly={hasMonthly(t) ? '' : undefined}>{t.label}</button>
+        ))}
+      </div>
+    )}
+    <div class="app__billing" data-billing-wrap hidden={!hasMonthly(tabs.find((t) => t.id === first) ?? tabs[0])}>
+      <span id={`${uid}-bill`}>Monthly</span>
+      <button type="button" role="switch" aria-checked="false" aria-labelledby={`${uid}-bill ${uid}-bill-6`} class="app__switch" data-billing><span></span></button>
+      <span id={`${uid}-bill-6`}>6-month plan <em>−{discount}%</em></span>
+    </div>
+  </div>
+
+  {tabs.map((t) => (
+    <div class="app__panel" role={single ? undefined : 'tabpanel'} id={`${uid}-panel-${t.id}`} aria-labelledby={single ? undefined : `${uid}-tab-${t.id}`} hidden={t.id !== first} tabindex={single ? undefined : 0}>
+      <div class="app__grid">
+        {t.packages.map((p) => (
+          <article class:list={['app__card', { 'is-featured': p.featured }]}>
+            {p.featured && <span class="app__flag">Most popular</span>}
+            <h3 class="app__name">{p.name}</h3>
+            <p class="app__note">{p.note}</p>
+            <p class="app__price">
+              <strong data-price={p.billing === 'monthly' ? p.price : undefined}>{fmt(p.price)}</strong>
+              <span>{p.billing === 'monthly' ? '/ month' : 'fixed price'}</span>
+            </p>
+            <ul class="app__features">
+              {p.features.map((f) => <li><span aria-hidden="true">✓</span>{f}</li>)}
+            </ul>
+            {cta && <a class="app__cta" href={cta.href}>{cta.label}<span class="sr-only"> — {t.label} {p.name}</span></a>}
+          </article>
+        ))}
+      </div>
+    </div>
+  ))}
+
+  {footnote && <p class="app__foot">{footnote}</p>}
+  <p class="sr-only" aria-live="polite" data-live></p>
+</section>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-agency-pricing]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const billingWrap = root.querySelector<HTMLElement>('[data-billing-wrap]');
+    const sw = root.querySelector<HTMLButtonElement>('[data-billing]');
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    const discount = Number(root.dataset.discount) || 0;
+    const fmt = new Intl.NumberFormat(root.dataset.locale || 'en', { style: 'currency', currency: root.dataset.currency || 'EUR', maximumFractionDigits: 0 });
+
+    const select = (tab: HTMLButtonElement, focus = false) => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        const panel = root.querySelector<HTMLElement>(`#${t.getAttribute('aria-controls')}`);
+        if (panel) panel.hidden = !on;
+      });
+      if (billingWrap) billingWrap.hidden = !tab.hasAttribute('data-monthly');
+      if (focus) tab.focus();
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => {
+        const k = e.key;
+        let n = -1;
+        if (k === 'ArrowRight') n = (i + 1) % tabs.length;
+        else if (k === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+        else if (k === 'Home') n = 0;
+        else if (k === 'End') n = tabs.length - 1;
+        if (n >= 0) { e.preventDefault(); select(tabs[n], true); }
+      });
+    });
+
+    sw?.addEventListener('click', () => {
+      const on = sw.getAttribute('aria-checked') !== 'true';
+      sw.setAttribute('aria-checked', String(on));
+      root.querySelectorAll<HTMLElement>('[data-price]').forEach((el) => {
+        const base = Number(el.dataset.price);
+        el.textContent = fmt.format(on ? Math.round(base * (1 - discount / 100)) : base);
+      });
+      if (live) live.textContent = on ? `6-month plan selected: ${discount}% off monthly prices.` : 'Monthly billing selected.';
+    });
+  });
+</script>
+
+<style>
+  .app-cq { container-type: inline-size; }
+  .app { color: var(--c-text-1, #fff); }
+  .app__head { max-width: 46rem; margin-bottom: clamp(1.5rem, 4cqi, 2.5rem); }
+  .app__eyebrow { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .app__title { margin: 0; font-size: clamp(2rem, 5cqi, 3.6rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; text-wrap: balance; }
+  .app__text { margin: var(--sp-4, 1rem) 0 0; font-size: 1.05rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+
+  .app__controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--sp-4, 1rem); margin-bottom: var(--sp-6, 1.5rem); }
+  .app__tabs { display: inline-flex; padding: 5px; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); }
+  .app__tab { min-height: 46px; padding: 0 1.25rem; border: 0; border-radius: 999px; background: none; color: var(--c-text-2, #a3a3a3); font: inherit; font-weight: 800; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
+  .app__tab[aria-selected='true'] { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .app__tab:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 2px; }
+  .app__billing { display: inline-flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .app__billing[hidden] { display: none; }
+  .app__billing em { font-style: normal; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-weight: 900; }
+  .app__switch { position: relative; width: 54px; height: 30px; border: 0; border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.18); cursor: pointer; transition: background 0.2s ease; }
+  .app__switch span { position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--c-text-1, #fff); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+  .app__switch[aria-checked='true'] { background: var(--agency-accent, var(--c-primary-light, #d4a017)); }
+  .app__switch[aria-checked='true'] span { transform: translateX(24px); background: var(--c-on-primary, #050505); }
+  .app__switch:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+
+  .app__panel:focus-visible { outline: none; }
+  .app__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: var(--sp-4, 1rem); }
+  .app__card { position: relative; display: flex; flex-direction: column; gap: var(--sp-3, 0.75rem); padding: clamp(1.4rem, 3cqi, 2rem); border-radius: var(--r-xl, 24px); border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.12)); background: var(--c-bg-1, #0d0d0d); }
+  .app__card.is-featured { border-color: var(--c-text-1, #fff); box-shadow: 8px 8px 0 var(--agency-accent, var(--c-primary-light, #d4a017)); }
+  .app__flag { position: absolute; top: -13px; right: 20px; padding: 0.3rem 0.75rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.75rem; font-weight: 900; }
+  .app__name { margin: 0; font-size: 1.5rem; font-weight: 900; letter-spacing: -0.03em; }
+  .app__note { margin: 0; font-size: 0.92rem; color: var(--c-text-2, #a3a3a3); }
+  .app__price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; margin: var(--sp-2, 0.5rem) 0; }
+  .app__price strong { font-size: clamp(2.2rem, 5cqi, 3rem); font-weight: 900; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .app__price span { font-size: 0.9rem; color: var(--c-text-2, #a3a3a3); }
+  .app__features { display: grid; gap: 8px; margin: 0 0 var(--sp-4, 1rem); padding: var(--sp-4, 1rem) 0 0; list-style: none; border-top: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); }
+  .app__features li { display: flex; gap: 8px; font-size: 0.95rem; }
+  .app__features span { color: var(--agency-ink, var(--c-primary-light, #d4a017)); font-weight: 900; }
+  .app__cta { display: inline-flex; justify-content: center; align-items: center; min-height: 52px; margin-top: auto; border-radius: 999px; border: 1.5px solid currentColor; color: inherit; font-weight: 800; text-decoration: none; transition: background 0.2s ease, color 0.2s ease; }
+  .app__cta:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #050505); }
+  .is-featured .app__cta { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .app__cta:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .app__foot { margin: var(--sp-6, 1.5rem) 0 0; font-size: 0.85rem; color: var(--c-text-3, #777); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .app__switch span, .app__tab, .app__cta { transition: none; } }
+</style>

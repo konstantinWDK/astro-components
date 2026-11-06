@@ -1,0 +1,109 @@
+---
+/**
+ * AgencyServiceOverview — Service detail block: a sticky column with the pitch, outcome figures,
+ * tool stack and CTA, next to a numbered "What's included" list.
+ *
+ * @param {string} eyebrow - Small label. Default "What's included".
+ * @param {string} title - Heading. Default 'Everything you need to scale paid ads'.
+ * @param {string} text - Pitch paragraph.
+ * @param {Array<{title: string, text: string}>} included - Included items.
+ * @param {Array<{value: string, label: string}>} outcomes - Outcome figures (max 3).
+ * @param {string[]} tools - Tool / platform stack.
+ * @param {string} toolsLabel - Label above the tools. Default 'Tools we use'.
+ * @param {{label: string, href: string}} cta - Optional call to action.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: included items are an ordered list with h3 headings; outcomes are a description list.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  included?: Array<{ title: string; text: string }>;
+  outcomes?: Array<{ value: string; label: string }>;
+  tools?: string[];
+  toolsLabel?: string;
+  cta?: { label: string; href: string };
+  className?: string;
+}
+
+const {
+  eyebrow = "What's included",
+  title = 'Everything you need to scale paid ads',
+  text = 'We plan, build and optimise paid campaigns across search, social and video. Every euro is tracked from impression to revenue.',
+  included = [
+    { title: 'Full-funnel strategy', text: 'Prospecting, retargeting and retention mapped to your margins and LTV.' },
+    { title: 'Creative that converts', text: 'Hooks, static and short-form video variants tested every two weeks.' },
+    { title: 'Tracking you can trust', text: 'GA4, Conversions API and server-side tagging.' },
+    { title: 'Budget pacing', text: 'Daily checks on spend, CPA and ROAS with automatic alerts.' },
+  ],
+  outcomes = [
+    { value: '4.8×', label: 'average ROAS' },
+    { value: '−38%', label: 'cost per acquisition' },
+  ],
+  tools = ['Google Ads', 'Meta Ads', 'TikTok Ads', 'GA4'],
+  toolsLabel = 'Tools we use',
+  cta = { label: 'Get a free ads audit', href: '#audit' },
+  className = '',
+} = Astro.props;
+---
+
+<div class="aso-cq">
+<section class:list={['aso', className]}>
+  <div class="aso__side">
+    <div class="aso__sticky">
+      {eyebrow && <p class="aso__eyebrow">{eyebrow}</p>}
+      <h2 class="aso__title">{title}</h2>
+      {text && <p class="aso__text">{text}</p>}
+      {outcomes.length > 0 && (
+        <dl class="aso__outcomes">
+          {outcomes.slice(0, 3).map((o) => <div><dt>{o.label}</dt><dd>{o.value}</dd></div>)}
+        </dl>
+      )}
+      {tools.length > 0 && (
+        <div class="aso__tools">
+          <p>{toolsLabel}</p>
+          <ul>{tools.map((t) => <li>{t}</li>)}</ul>
+        </div>
+      )}
+      {cta && <a class="aso__cta" href={cta.href}>{cta.label}<span aria-hidden="true">→</span></a>}
+    </div>
+  </div>
+  <ol class="aso__list">
+    {included.map((it, i) => (
+      <li class="aso__item">
+        <span class="aso__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <h3>{it.title}</h3>
+          <p>{it.text}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</section>
+</div>
+
+<style>
+  .aso-cq { container-type: inline-size; }
+  .aso { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: clamp(1.5rem, 6cqi, 5rem); color: var(--c-text-1, #fff); }
+  .aso__sticky { position: sticky; top: calc(var(--agency-header-h, 96px) + 16px); display: grid; gap: var(--sp-5, 1.25rem); }
+  .aso__eyebrow { margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .aso__title { margin: 0; font-size: clamp(2rem, 4.6cqi, 3.4rem); font-weight: 900; line-height: 1; letter-spacing: -0.05em; text-wrap: balance; }
+  .aso__text { margin: 0; font-size: 1.05rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+  .aso__outcomes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--sp-3, 0.75rem); margin: 0; }
+  .aso__outcomes div { display: flex; flex-direction: column-reverse; gap: 4px; padding: var(--sp-4, 1rem); border-radius: 18px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .aso__outcomes dd { margin: 0; font-size: 2rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+  .aso__outcomes dt { font-size: 0.85rem; font-weight: 700; }
+  .aso__tools p { margin: 0 0 8px; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-3, #777); }
+  .aso__tools ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .aso__tools li { padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--c-border, rgba(255, 255, 255, 0.16)); font-size: 0.82rem; font-weight: 700; }
+  .aso__cta { justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 1.4rem; border-radius: 999px; background: var(--c-text-1, #fff); color: var(--c-bg, #050505); font-weight: 900; text-decoration: none; }
+  .aso__cta:hover { color: var(--c-bg, #050505); transform: translateY(-1px); }
+  .aso__cta:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; }
+  .aso__list { margin: 0; padding: 0; list-style: none; border-top: 1.5px solid currentColor; }
+  .aso__item { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--sp-4, 1rem); padding-block: clamp(1.25rem, 3cqi, 1.75rem); border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.14)); }
+  .aso__num { font-size: 0.9rem; font-weight: 900; color: var(--agency-ink, var(--c-primary-light, #d4a017)); font-variant-numeric: tabular-nums; padding-top: 4px; }
+  .aso__item h3 { margin: 0 0 6px; font-size: clamp(1.25rem, 2.4cqi, 1.6rem); font-weight: 900; letter-spacing: -0.03em; }
+  .aso__item p { margin: 0; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  @container (max-width: 820px) { .aso { grid-template-columns: 1fr; } .aso__sticky { position: static; } }
+</style>

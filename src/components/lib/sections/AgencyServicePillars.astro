@@ -1,0 +1,142 @@
+---
+/**
+ * AgencyServicePillars — Three (or more) service cards for a marketing agency: icon, name, pitch,
+ * headline KPI, deliverables and a link. The middle card can be highlighted.
+ *
+ * @param {string} eyebrow - Small label. Default 'What we do'.
+ * @param {string} title - Heading; wrap a word in *asterisks* to highlight it. Default 'Three ways we *grow* your business'.
+ * @param {string} text - Intro paragraph (optional).
+ * @param {Array<{name: string, short: string, icon?: string, kpi?: {value: string, label: string}, deliverables?: string[], from?: string, href?: string}>} services - Cards. icon: ads|seo|web|social|email|data.
+ * @param {number} featured - Index of the highlighted card (-1 for none). Default 0.
+ * @param {string} linkLabel - Card link text. Default 'Explore'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each card is an article with an h3; the whole card is clickable through the
+ * heading link (stretched), so there is a single link per card for screen readers.
+ */
+interface Service {
+  name: string;
+  short: string;
+  icon?: 'ads' | 'seo' | 'web' | 'social' | 'email' | 'data';
+  kpi?: { value: string; label: string };
+  deliverables?: string[];
+  from?: string;
+  href?: string;
+}
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+  services?: Service[];
+  featured?: number;
+  linkLabel?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'What we do',
+  title = 'Three ways we *grow* your business',
+  text = 'Most clients start with one channel and add the others once the numbers prove it. One team, one plan, one dashboard.',
+  services = [
+    { name: 'Paid Ads', short: 'Google, Meta, TikTok and LinkedIn campaigns built around profit, not clicks.', icon: 'ads', kpi: { value: '4.8×', label: 'average ROAS' }, deliverables: ['Campaign build', 'Creative testing', 'Tracking'], from: 'From €1,900 / mo', href: '#ads' },
+    { name: 'SEO', short: 'Technical SEO, content and links that compound into traffic you do not pay for.', icon: 'seo', kpi: { value: '+212%', label: 'organic traffic' }, deliverables: ['Technical audit', 'Content', 'Digital PR'], from: 'From €1,500 / mo', href: '#seo' },
+    { name: 'Web Development', short: 'Fast, accessible websites and landing pages designed to turn visitors into leads.', icon: 'web', kpi: { value: '0.8s', label: 'median load time' }, deliverables: ['UX & design', 'Astro build', 'Headless CMS'], from: 'From €9,500', href: '#web' },
+  ],
+  featured = 0,
+  linkLabel = 'Explore',
+  className = '',
+} = Astro.props;
+
+const icons: Record<string, string> = {
+  ads: '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+  seo: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M7.5 12l2-2 1.5 1.5L13.5 9"/>',
+  web: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9.5 13l-2 2 2 2M14.5 13l2 2-2 2"/>',
+  social: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+  email: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  data: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+};
+const parts = title.split(/\*(.+?)\*/);
+---
+
+<div class="asp-cq">
+<section class:list={['asp', className]}>
+  <header class="asp__head">
+    {eyebrow && <p class="asp__eyebrow">{eyebrow}</p>}
+    <h2 class="asp__title">{parts.map((p, i) => (i % 2 ? <mark>{p}</mark> : p))}</h2>
+    {text && <p class="asp__text">{text}</p>}
+  </header>
+  <div class="asp__grid">
+    {services.map((s, i) => (
+      <article class:list={['asp__card', { 'is-featured': i === featured }]}>
+        <div class="asp__top">
+          <span class="asp__icon" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={icons[s.icon ?? 'data']}></svg>
+          </span>
+          <span class="asp__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+        </div>
+        <h3 class="asp__name">{s.href ? <a href={s.href}>{s.name}</a> : s.name}</h3>
+        <p class="asp__short">{s.short}</p>
+        {s.kpi && (
+          <p class="asp__kpi"><strong>{s.kpi.value}</strong><span>{s.kpi.label}</span></p>
+        )}
+        {s.deliverables && s.deliverables.length > 0 && (
+          <ul class="asp__tags">{s.deliverables.map((d) => <li>{d}</li>)}</ul>
+        )}
+        <div class="asp__foot">
+          {s.from && <span class="asp__from">{s.from}</span>}
+          {s.href && <span class="asp__go" aria-hidden="true">{linkLabel} <span>→</span></span>}
+        </div>
+      </article>
+    ))}
+  </div>
+</section>
+</div>
+
+<style>
+  .asp-cq { container-type: inline-size; }
+  .asp { color: var(--c-text-1, #fff); }
+  .asp__head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--sp-4, 1rem) var(--sp-10, 2.5rem); align-items: end; margin-bottom: clamp(1.75rem, 4cqi, 3rem); }
+  .asp__eyebrow { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .asp__title { margin: 0; font-size: clamp(2.2rem, 5.5cqi, 4.2rem); font-weight: 900; line-height: 0.98; letter-spacing: -0.05em; text-wrap: balance; }
+  .asp__title mark { padding: 0 0.08em; border-radius: 0.1em; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .asp__text { margin: 0; font-size: 1.05rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .asp__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--sp-4, 1rem); }
+  .asp__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    padding: clamp(1.4rem, 3cqi, 2rem);
+    border-radius: var(--r-xl, 24px);
+    border: 1.5px solid var(--c-border, rgba(255, 255, 255, 0.12));
+    background: var(--c-bg-1, #0d0d0d);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+  }
+  .asp__card:hover, .asp__card:focus-within { transform: translateY(-4px); border-color: var(--c-text-1, #fff); }
+  .asp__card.is-featured { background: var(--agency-accent, var(--c-primary-light, #d4a017)); border-color: transparent; color: var(--c-on-primary, #050505); }
+  .asp__top { display: flex; justify-content: space-between; align-items: center; }
+  .asp__icon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: rgb(var(--ink-rgb, 255 255 255) / 0.07); }
+  .is-featured .asp__icon { background: rgb(0 0 0 / 0.1); }
+  .asp__num { font-size: 0.85rem; font-weight: 800; opacity: 0.6; font-variant-numeric: tabular-nums; }
+  .asp__name { color: inherit; margin: var(--sp-2, 0.5rem) 0 0; font-size: clamp(1.6rem, 3cqi, 2.1rem); font-weight: 900; letter-spacing: -0.04em; line-height: 1.05; }
+  .asp__name a { color: inherit; text-decoration: none; }
+  .asp__name a::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+  .asp__name a:focus-visible { outline: none; }
+  .asp__card:has(.asp__name a:focus-visible) { outline: 3px solid var(--c-text-1, #fff); outline-offset: 3px; }
+  .asp__short { margin: 0; line-height: 1.55; color: var(--c-text-2, #a3a3a3); }
+  .is-featured .asp__short { color: inherit; opacity: 0.82; }
+  .asp__kpi { display: flex; align-items: baseline; gap: 0.6rem; margin: 0; padding-block: var(--sp-3, 0.75rem); border-block: 1px solid var(--c-border, rgba(255, 255, 255, 0.12)); }
+  .is-featured .asp__kpi { border-color: rgb(0 0 0 / 0.15); }
+  .asp__kpi strong { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+  .asp__kpi span { font-size: 0.9rem; opacity: 0.75; }
+  .asp__tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .asp__tags li { padding: 0.3rem 0.7rem; border-radius: 999px; border: 1px solid currentColor; font-size: 0.78rem; font-weight: 700; opacity: 0.8; }
+  .asp__foot { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3, 0.75rem); margin-top: auto; padding-top: var(--sp-2, 0.5rem); font-weight: 800; }
+  .asp__from { font-size: 0.9rem; }
+  .asp__go { display: inline-flex; gap: 6px; font-size: 0.9rem; }
+  .asp__go span { transition: transform 0.25s ease; }
+  .asp__card:hover .asp__go span { transform: translateX(4px); }
+
+  @container (max-width: 720px) { .asp__head { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .asp__card, .asp__go span { transition: none; } }
+</style>

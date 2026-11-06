@@ -1,0 +1,107 @@
+---
+/**
+ * AgencyCaseStudyHero — Case-study header: back link, client and category, headline, summary,
+ * a big headline result, project facts (industry, services, duration, year) and a generated art
+ * panel tinted by `hue` (or a real image).
+ *
+ * @param {string} client - Client name. Default 'Nordlys'.
+ * @param {string} category - Category chip (Ads, SEO, Web…). Default 'Ads'.
+ * @param {string} title - Headline.
+ * @param {string} summary - Short summary.
+ * @param {string} result - Headline result. Default '6.2× ROAS'.
+ * @param {string} resultLabel - Caption under the result. Default 'Headline result'.
+ * @param {Array<{label: string, value: string}>} facts - Project facts.
+ * @param {number} hue - Art colour (0–360). Default 190.
+ * @param {string} image - Optional image URL replacing the art.
+ * @param {string} imageAlt - Alt text for `image`. Default ''.
+ * @param {{label: string, href: string}} back - Back link. Default 'All case studies'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: h1 headline; facts as a description list; generated art is decorative and an
+ * image needs meaningful alt text via `imageAlt`.
+ */
+interface Props {
+  client?: string;
+  category?: string;
+  title?: string;
+  summary?: string;
+  result?: string;
+  resultLabel?: string;
+  facts?: Array<{ label: string; value: string }>;
+  hue?: number;
+  image?: string;
+  imageAlt?: string;
+  back?: { label: string; href: string };
+  className?: string;
+}
+
+const {
+  client = 'Nordlys',
+  category = 'Ads',
+  title = 'Scaling a skincare brand to 6.2× ROAS on Meta and Google',
+  summary = 'Nordlys had a loyal community but paid social stopped scaling past €20k a month. We rebuilt tracking, campaign structure and the creative engine.',
+  result = '6.2× ROAS',
+  resultLabel = 'Headline result',
+  facts = [
+    { label: 'Industry', value: 'Beauty · D2C e-commerce' },
+    { label: 'Services', value: 'Meta Ads, Google Shopping, Creative' },
+    { label: 'Duration', value: '9 months' },
+    { label: 'Year', value: '2026' },
+  ],
+  hue = 190,
+  image,
+  imageAlt = '',
+  back = { label: 'All case studies', href: '#' },
+  className = '',
+} = Astro.props;
+---
+
+<div class="ach-cq">
+<section class:list={['ach', className]} style={`--h: ${hue}`}>
+  <div class="ach__copy">
+    {back && <a class="ach__back" href={back.href}><span aria-hidden="true">←</span> {back.label}</a>}
+    <p class="ach__meta"><span class="ach__chip">{category}</span><span>{client}</span></p>
+    <h1 class="ach__title">{title}</h1>
+    {summary && <p class="ach__summary">{summary}</p>}
+    <dl class="ach__facts">
+      {facts.map((f) => <div><dt>{f.label}</dt><dd>{f.value}</dd></div>)}
+    </dl>
+  </div>
+  <div class="ach__art">
+    {image ? <img src={image} alt={imageAlt} loading="eager" /> : (
+      <svg viewBox="0 0 400 400" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+        <rect width="400" height="400" fill={`hsl(${hue} 55% 18%)`} />
+        <circle cx="300" cy="90" r="150" fill={`hsl(${hue} 70% 45%)`} opacity="0.55" />
+        <circle cx="80" cy="330" r="120" fill={`hsl(${(hue + 40) % 360} 75% 60%)`} opacity="0.45" />
+        <path d="M0 300 C 100 240, 160 330, 260 250 S 380 200, 400 150 V400 H0Z" fill={`hsl(${hue} 60% 10%)`} opacity="0.6" />
+        <g stroke={`hsl(${hue} 80% 85%)`} stroke-width="2" fill="none" opacity="0.7">
+          <path d="M40 260 L120 220 L190 236 L260 160 L330 120" />
+          <circle cx="330" cy="120" r="7" fill={`hsl(${hue} 80% 85%)`} />
+        </g>
+      </svg>
+    )}
+    <p class="ach__result"><strong>{result}</strong><span>{resultLabel}</span></p>
+  </div>
+</section>
+</div>
+
+<style>
+  .ach-cq { container-type: inline-size; }
+  .ach { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(1.5rem, 5cqi, 4rem); align-items: stretch; max-width: 1280px; margin: 0 auto; padding: clamp(2rem, 6cqi, 4.5rem) clamp(1rem, 4cqi, 2.5rem); color: var(--c-text-1, #fff); }
+  .ach__back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-bottom: var(--sp-4, 1rem); color: var(--c-text-2, #a3a3a3); font-weight: 700; text-decoration: none; }
+  .ach__back:hover { color: var(--c-text-1, #fff); }
+  .ach__back:focus-visible { outline: 2px solid var(--agency-accent, var(--c-primary-light, #d4a017)); outline-offset: 3px; border-radius: 6px; }
+  .ach__meta { display: flex; align-items: center; gap: 10px; margin: 0 0 var(--sp-4, 1rem); font-weight: 800; }
+  .ach__chip { padding: 0.3rem 0.75rem; border-radius: 999px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); font-size: 0.8rem; }
+  .ach__title { margin: 0; font-size: clamp(2.2rem, 5.6cqi, 4.4rem); font-weight: 900; line-height: 0.98; letter-spacing: -0.055em; text-wrap: balance; }
+  .ach__summary { margin: var(--sp-5, 1.25rem) 0 0; max-width: 40rem; font-size: 1.1rem; line-height: 1.6; color: var(--c-text-2, #a3a3a3); }
+  .ach__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4, 1rem); margin: clamp(1.5rem, 4cqi, 2.5rem) 0 0; padding-top: var(--sp-5, 1.25rem); border-top: 1.5px solid currentColor; }
+  .ach__facts dt { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-3, #777); }
+  .ach__facts dd { margin: 4px 0 0; font-weight: 700; }
+  .ach__art { position: relative; min-height: 360px; border-radius: var(--r-xl, 28px); overflow: hidden; }
+  .ach__art svg, .ach__art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ach__result { position: absolute; left: 16px; right: 16px; bottom: 16px; display: grid; gap: 2px; margin: 0; padding: var(--sp-5, 1.25rem); border-radius: 20px; background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .ach__result strong { font-size: clamp(2.4rem, 6cqi, 3.8rem); font-weight: 900; letter-spacing: -0.06em; line-height: 0.95; }
+  .ach__result span { font-size: 0.85rem; font-weight: 800; }
+  @container (max-width: 820px) { .ach { grid-template-columns: 1fr; } .ach__art { min-height: 300px; } }
+</style>

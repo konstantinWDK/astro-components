@@ -1,0 +1,61 @@
+---
+/**
+ * AgencyPricingPage — Pricing: page hero, packages per service with a billing switch, the ads ROI
+ * calculator, FAQ and audit CTA.
+ *
+ * Usage (src/pages/pricing.astro):
+ *   import { AgencyPricingPage } from 'astro-component-kit/templates/agency';
+ *   <AgencyPricingPage />
+ *
+ * @param {AgencySite} site - Content and settings. Default: Volta demo agency.
+ * @param {AgencyRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import AgencyLayout from './AgencyLayout.astro';
+import AgencyPageHero from '../../sections/AgencyPageHero.astro';
+import AgencyPricingPackages from '../../sections/AgencyPricingPackages.astro';
+import AgencyRoiCalculator from '../../sections/AgencyRoiCalculator.astro';
+import FaqTwoColumn from '../../sections/FaqTwoColumn.astro';
+import { voltaAgency, agencyRoutes, type AgencySite, type AgencyRoutes } from './data';
+
+interface Props {
+  site?: AgencySite;
+  routes?: AgencyRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { site = voltaAgency, routes = agencyRoutes, theme = 'dark', noindex = false } = Astro.props;
+const tabs = site.services.map((s) => ({ id: s.slug, label: s.name, packages: site.pricing[s.slug] }));
+---
+
+<AgencyLayout title="Pricing" description={`Transparent pricing for paid ads, SEO and websites by ${site.name}.`} site={site} routes={routes} currentHref={routes.pricing} theme={theme} noindex={noindex}>
+  <AgencyPageHero
+    eyebrow="Pricing"
+    title="Fixed fees. *No* surprises."
+    text="We never take a percentage of your ad spend. Pick a retainer for ongoing growth or a fixed-price project for your website."
+    breadcrumb={[{ label: 'Home', href: routes.home }, { label: 'Pricing' }]}
+    facts={[
+      { value: '3 months', label: 'initial term, then monthly' },
+      { value: '0%', label: 'commission on ad spend' },
+      { value: '48h', label: 'to your free audit' },
+    ]}
+  />
+
+  <div class="volta-wrap section-tight">
+    <AgencyPricingPackages title="Choose a service" text="" tabs={tabs} currency={site.currency} locale={site.locale} cta={{ label: 'Get started', href: routes.contact }} />
+  </div>
+
+  <div class="volta-wrap section-space" id="roi">
+    <AgencyRoiCalculator upliftLabel={`With ${site.name}`} currency={site.currency} locale={site.locale} cta={{ label: 'Get a custom forecast', href: routes.contact }} />
+  </div>
+
+  <div class="volta-wrap section-space home-tight">
+    <FaqTwoColumn title="Pricing questions" subtitle="Everything about contracts, ad budgets and what is included." items={site.faqs.map((f) => ({ q: f.question, a: f.answer }))} support={{ label: 'Talk to us', href: routes.contact }} />
+  </div>
+</AgencyLayout>
+
+<style>
+  .home-tight { padding-top: 0; }
+</style>

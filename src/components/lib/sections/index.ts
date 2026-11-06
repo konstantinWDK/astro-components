@@ -65,3 +65,24 @@ export { default as ShopReviewsEditorial } from './ShopReviewsEditorial.astro';
 export { default as ShopNewsletterEditorial } from './ShopNewsletterEditorial.astro';
 export { default as ShopFooterWordmark } from './ShopFooterWordmark.astro';
 export { default as ShopCategoryHero } from './ShopCategoryHero.astro';
+
+// Agency & Marketing
+export { default as AgencyHeader } from './AgencyHeader.astro';
+export { default as AgencyHeroKinetic } from './AgencyHeroKinetic.astro';
+export { default as AgencyPageHero } from './AgencyPageHero.astro';
+export { default as AgencyServicePillars } from './AgencyServicePillars.astro';
+export { default as AgencyServicesList } from './AgencyServicesList.astro';
+export { default as AgencyResultsBand } from './AgencyResultsBand.astro';
+export { default as AgencyPlatformsMarquee } from './AgencyPlatformsMarquee.astro';
+export { default as AgencyProcessSteps } from './AgencyProcessSteps.astro';
+export { default as AgencyAuditCta } from './AgencyAuditCta.astro';
+export { default as AgencyRoiCalculator } from './AgencyRoiCalculator.astro';
+export { default as AgencyPricingPackages } from './AgencyPricingPackages.astro';
+export { default as AgencyServiceOverview } from './AgencyServiceOverview.astro';
+export { default as AgencyWorkGrid } from './AgencyWorkGrid.astro';
+export { default as AgencyCaseStudyHero } from './AgencyCaseStudyHero.astro';
+export { default as AgencyCaseResults } from './AgencyCaseResults.astro';
+export { default as AgencyQuotes } from './AgencyQuotes.astro';
+export { default as AgencyTeamGrid } from './AgencyTeamGrid.astro';
+export { default as AgencyContactBrief } from './AgencyContactBrief.astro';
+export { default as AgencyFooterCta } from './AgencyFooterCta.astro';

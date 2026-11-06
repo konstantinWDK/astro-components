@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — Marketing agency template ("Volta")
+- **New template `templates/agency`**: an 8-page site for a performance marketing agency selling Paid Ads, SEO and web development — home, services, service detail (`/services/[slug]`), case studies, case study (`/work/[slug]`), pricing, about and contact. Dark by default with a light theme toggle; live preview at `/preview/agency/`.
+- **New section category "Agency & Marketing"** with 19 sections: 12 new (`AgencyPageHero`, `AgencyServicePillars`, `AgencyResultsBand`, `AgencyPlatformsMarquee`, `AgencyProcessSteps`, `AgencyAuditCta`, `AgencyRoiCalculator`, `AgencyPricingPackages`, `AgencyServiceOverview`, `AgencyCaseStudyHero`, `AgencyCaseResults`, `AgencyQuotes`) plus the 7 agency sections that shipped in 0.4.1 but were never listed or exported (`AgencyHeader`, `AgencyHeroKinetic`, `AgencyServicesList`, `AgencyWorkGrid`, `AgencyTeamGrid`, `AgencyContactBrief`, `AgencyFooterCta`).
+- Interactive lead magnets: free audit with animated scan and score gauge, and an ads ROI calculator with live ROAS.
+
+### Changed
+- The menu "Components" link opens the Installation page, which now shows the full docs sidebar.
+- Template pages show the number of new sections next to pages and components.
+
+### Fixed
+- `AgencyHeader`: the mobile "Start a project" button was visible on desktop and lost its style inside the mobile menu.
+
 ## [0.5.1] - 2026-11-04
 
 ### Added — Model Context Protocol (MCP) Server & AI Integrations

@@ -1,0 +1,107 @@
+---
+/**
+ * AgencyResultsBand — Proof band of big results that count up when scrolled into view
+ * (€42M, 4.8×, +212%…), each with a label and a fine-print detail.
+ *
+ * @param {string} eyebrow - Small label. Default 'Results, not reports'.
+ * @param {string} title - Optional heading.
+ * @param {Array<{value: string, label: string, detail?: string}>} stats - Figures. Numbers inside value animate; prefix/suffix are kept.
+ * @param {string} variant - Style (accent|outline|dark). Default 'accent'.
+ * @param {number} duration - Count-up duration in ms. Default 1400.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the final value is in the HTML (the animation only rewrites the visible text and
+ * is skipped with prefers-reduced-motion); figures form a description list.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  stats?: Array<{ value: string; label: string; detail?: string }>;
+  variant?: 'accent' | 'outline' | 'dark';
+  duration?: number;
+  className?: string;
+}
+
+const {
+  eyebrow = 'Results, not reports',
+  title,
+  stats = [
+    { value: '€42M', label: 'ad spend managed', detail: 'across Google, Meta, TikTok and LinkedIn' },
+    { value: '4.8×', label: 'average client ROAS', detail: 'last 12 months, e-commerce clients' },
+    { value: '+212%', label: 'median organic growth', detail: 'after 12 months of SEO' },
+    { value: '96%', label: 'client retention', detail: 'clients renewing after year one' },
+  ],
+  variant = 'accent',
+  duration = 1400,
+  className = '',
+} = Astro.props;
+---
+
+<div class="arb-cq">
+<section class:list={['arb', `arb--${variant}`, className]} data-results-band data-duration={duration}>
+  <div class="arb__head">
+    {eyebrow && <p class="arb__eyebrow">{eyebrow}</p>}
+    {title && <h2 class="arb__title">{title}</h2>}
+  </div>
+  <dl class="arb__grid">
+    {stats.map((s) => (
+      <div class="arb__item">
+        <dt class="arb__label">{s.label}{s.detail && <small>{s.detail}</small>}</dt>
+        <dd class="arb__value" data-count={s.value}>{s.value}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
+</div>
+
+<script>
+  const animate = (el: HTMLElement, ms: number) => {
+    const final = el.dataset.count ?? el.textContent ?? '';
+    const m = final.match(/^(\D*?)([\d.,]+)(.*)$/);
+    if (!m) return;
+    const [, pre, num, post] = m;
+    const decimals = (num.split('.')[1] ?? '').length;
+    const target = parseFloat(num.replace(/,/g, ''));
+    if (!isFinite(target)) return;
+    const start = performance.now();
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / ms);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const v = (target * eased).toFixed(decimals);
+      el.textContent = `${pre}${num.includes(',') ? Number(v).toLocaleString('en') : v}${post}`;
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = final;
+    };
+    requestAnimationFrame(step);
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-results-band]:not([data-bound])').forEach((band) => {
+    band.dataset.bound = '';
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+    const ms = Number(band.dataset.duration) || 1400;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        band.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => animate(el, ms));
+      });
+    }, { threshold: 0.35 });
+    io.observe(band);
+  });
+</script>
+
+<style>
+  .arb-cq { container-type: inline-size; }
+  .arb { padding: clamp(1.75rem, 5cqi, 3.5rem); border-radius: var(--r-xl, 28px); color: var(--c-text-1, #fff); }
+  .arb--accent { background: var(--agency-accent, var(--c-primary-light, #d4a017)); color: var(--c-on-primary, #050505); }
+  .arb--outline { border: 1.5px solid var(--c-text-1, #fff); }
+  .arb--dark { background: #0b0c0a; color: #f3f5ec; }
+  .arb__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-bottom: clamp(1.5rem, 4cqi, 2.5rem); }
+  .arb__eyebrow { margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }
+  .arb__title { color: inherit; margin: 0; max-width: 24ch; font-size: clamp(1.5rem, 3cqi, 2.2rem); font-weight: 900; letter-spacing: -0.04em; line-height: 1.05; }
+  .arb__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: clamp(1.25rem, 3cqi, 2rem); margin: 0; }
+  .arb__item { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: var(--sp-3, 0.75rem); padding-top: var(--sp-4, 1rem); border-top: 1.5px solid currentColor; }
+  .arb__value { margin: 0; font-size: clamp(2.8rem, 7cqi, 5rem); font-weight: 900; letter-spacing: -0.06em; line-height: 0.9; font-variant-numeric: tabular-nums; }
+  .arb__label { display: grid; gap: 4px; font-size: 1rem; font-weight: 800; }
+  .arb__label small { font-size: 0.82rem; font-weight: 500; opacity: 0.72; }
+</style>
