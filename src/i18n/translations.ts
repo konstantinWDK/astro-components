@@ -109,6 +109,22 @@ export const ui = {
     'gh.star': "Star on GitHub",
     'gh.later': "Maybe later",
     'gh.close': "Close star prompt",
+
+    // Sections page & relations
+    'sections.partOfTemplate': 'Part of a complete template',
+    'sections.partOfTemplateDesc': 'This section was crafted as a core block for the following template. You can preview the full interactive multi-page experience or explore all related components.',
+    'sections.viewTemplate': 'View full template',
+    'sections.moreSections': 'More Sections to Explore',
+    'sections.moreSectionsDesc': 'Discover other full-width landing blocks and production-ready sections from our library.',
+    'sections.exploreAll': 'All sections',
+
+    // Footer
+    'footer.builtWith': 'Built with ❤️ for the Astro community',
+    'footer.license': 'MIT License · Free and open-source',
+    'footer.tagline': 'Accessible, dark-mode-first components, sections, and full templates for Astro.',
+    'footer.navTitle': 'Navigation',
+    'footer.communityTitle': 'Community',
+    'footer.starOnGh': 'Star on GitHub',
   },
   es: {
     // Nav
@@ -217,6 +233,22 @@ export const ui = {
     'gh.star': "Dar una estrella",
     'gh.later': "Quizás luego",
     'gh.close': "Cerrar aviso de GitHub",
+
+    // Sections page & relations
+    'sections.partOfTemplate': 'Forma parte de una plantilla',
+    'sections.partOfTemplateDesc': 'Esta sección fue diseñada como un bloque clave para la siguiente plantilla. Puedes ver la experiencia multipágina interactiva completa o explorar todos sus componentes.',
+    'sections.viewTemplate': 'Ver plantilla completa',
+    'sections.moreSections': 'Más secciones para explorar',
+    'sections.moreSectionsDesc': 'Descubre otros bloques para landing pages y secciones listas para producción de nuestra librería.',
+    'sections.exploreAll': 'Todas las secciones',
+
+    // Footer
+    'footer.builtWith': 'Creado con ❤️ para la comunidad de Astro',
+    'footer.license': 'Licencia MIT · Libre y de código abierto',
+    'footer.tagline': 'Componentes, secciones y plantillas completas para Astro, accesibles y dark-mode nativo.',
+    'footer.navTitle': 'Navegación',
+    'footer.communityTitle': 'Comunidad',
+    'footer.starOnGh': 'Danos una estrella en GitHub',
   },
   ru: {
     // Nav
@@ -325,6 +357,22 @@ export const ui = {
     'gh.star': "Поставить звезду",
     'gh.later': "Может, позже",
     'gh.close': "Закрыть подсказку GitHub",
+
+    // Sections page & relations
+    'sections.partOfTemplate': 'Входит в состав шаблона',
+    'sections.partOfTemplateDesc': 'Эта секция разработана как ключевой блок для следующего шаблона. Вы можете открыть полный многостраничный интерактивный сайт или изучить все связанные компоненты.',
+    'sections.viewTemplate': 'Открыть весь шаблон',
+    'sections.moreSections': 'Ещё секции для изучения',
+    'sections.moreSectionsDesc': 'Откройте для себя другие готовые блоки для лендингов и страниц из нашей библиотеки.',
+    'sections.exploreAll': 'Все секции',
+
+    // Footer
+    'footer.builtWith': 'Создано с ❤️ для сообщества Astro',
+    'footer.license': 'Лицензия MIT · Свободный и открытый исходный код',
+    'footer.tagline': 'Доступные dark-mode компоненты, секции и готовые шаблоны для Astro.',
+    'footer.navTitle': 'Навигация',
+    'footer.communityTitle': 'Сообщество',
+    'footer.starOnGh': 'Поставить звезду на GitHub',
   },
 } as const;
 

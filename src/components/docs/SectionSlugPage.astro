@@ -4,6 +4,7 @@ import DocsLayout from '../../layouts/DocsLayout.astro';
 import CodeBlock from './CodeBlock.astro';
 import { sections, getSectionBySlug, getSectionCategoryById } from '../../data/registry/sections';
 import { categories } from '../../data/registry/index';
+import { templates } from '../../data/registry/templates';
 import type { Locale } from '../../config/site';
 import { useTranslations, getLocalizedPath } from '../../i18n/translations';
 import { getLocalizedCategory, getLocalizedSectionCategory, getLocalizedComponent, getComponentSeoMeta } from '../../i18n/catalog';
@@ -88,6 +89,27 @@ import { ${componentName} } from 'astro-component-kit';
 
 ${displayUsage}`;
 }
+
+// Detect if this section belongs to any complete template
+const parentTemplates = templates.filter((tpl) =>
+  tpl.newComponents?.includes(rawSection.slug) ||
+  tpl.reusedComponents?.includes(rawSection.slug)
+);
+
+// Related sections (prioritize same sectionCategory, then fill up to 4 items)
+const sameCategorySections = sections.filter(
+  (s) => s.slug !== rawSection.slug && s.sectionCategory && s.sectionCategory === rawSection.sectionCategory
+);
+const otherSections = sections.filter(
+  (s) => s.slug !== rawSection.slug && (!rawSection.sectionCategory || s.sectionCategory !== rawSection.sectionCategory)
+);
+const relatedSections = [...sameCategorySections, ...otherSections]
+  .slice(0, 4)
+  .map((s) => ({
+    raw: s,
+    loc: getLocalizedComponent(s as any, lang),
+    category: getSectionCategoryById(s.sectionCategory || ''),
+  }));
 ---
 
 <DocsLayout title={seo.title} description={seo.description} lang={lang}>
@@ -163,6 +185,98 @@ ${displayUsage}`;
       </div>
       <div style="margin-top: var(--sp-4)">
         <CodeBlock code={rawSection.code} lang="astro" id={`code-${rawSection.slug}`} />
+      </div>
+    </section>
+
+    <!-- 4. Template Showcase (if this section is part of a template) -->
+    {parentTemplates.length > 0 && (
+      <section class="doc-section anim-slide-up" id="section-template-showcase" style="animation-delay: 0.25s">
+        <div class="tpl-showcase-box">
+          <div class="tpl-showcase-box__header">
+            <span class="tpl-showcase-box__badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span>{t('sections.partOfTemplate')}</span>
+            </span>
+            <p class="tpl-showcase-box__lead">{t('sections.partOfTemplateDesc')}</p>
+          </div>
+
+          <div class="tpl-showcase-list">
+            {parentTemplates.map((tpl) => {
+              const tplName = tpl.name[lang] || tpl.name.en;
+              const tplTagline = tpl.tagline[lang] || tpl.tagline.en;
+              const tplUrl = getLocalizedPath(`/templates/${tpl.slug}`, lang);
+              const totalComponents = (tpl.newComponents?.length || 0) + (tpl.reusedComponents?.length || 0);
+
+              return (
+                <div class="tpl-card">
+                  <div class="tpl-card__meta">
+                    <span class="tpl-card__chip">{t('templates.badge')}</span>
+                    <span class="tpl-card__stats">{tpl.pages?.length || 0} {t('templates.pagesCount')} · {totalComponents} {t('templates.componentsCount')}</span>
+                  </div>
+
+                  <h3 class="tpl-card__title">
+                    <a href={tplUrl}>{tplName}</a>
+                  </h3>
+                  <p class="tpl-card__desc">{tplTagline}</p>
+
+                  <div class="tpl-card__actions">
+                    <a href={tplUrl} class="tpl-btn tpl-btn--primary">
+                      <span>{t('sections.viewTemplate')}</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    {tpl.previewBase && (
+                      <a href={tpl.previewBase} target="_blank" rel="noopener noreferrer" class="tpl-btn tpl-btn--ghost">
+                        <span>{t('templates.openPreview')}</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- 5. More Sections to Explore -->
+    <section class="doc-section anim-slide-up" id="section-more-sections" style="animation-delay: 0.3s">
+      <div class="more-sections-header">
+        <div>
+          <h2 class="doc-section__title" id="more-sections-heading" style="margin-bottom: var(--sp-1); border-bottom: none;">
+            {t('sections.moreSections')}
+          </h2>
+          <p class="doc-section__subtitle" style="margin-bottom: 0;">
+            {t('sections.moreSectionsDesc')}
+          </p>
+        </div>
+        <a href={getLocalizedPath('/sections', lang)} class="more-sections-all-link">
+          <span>{t('sections.exploreAll')}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+
+      <div class="more-sections-grid">
+        {relatedSections.map(({ raw: r, loc: s, category: cat }) => {
+          const localizedCat = cat ? getLocalizedSectionCategory(cat, lang) : null;
+          const sUrl = getLocalizedPath(`/sections/${r.slug}`, lang);
+
+          return (
+            <a href={sUrl} class="more-section-card">
+              <div class="more-section-card__top">
+                <span class="more-section-card__badge">{localizedCat?.name || 'Section'}</span>
+              </div>
+              <h3 class="more-section-card__title">{s.name}</h3>
+              <p class="more-section-card__desc">{s.description}</p>
+              <div class="more-section-card__footer">
+                <span class="more-section-card__cta">{t('templates.viewSection')}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </section>
   </div>
@@ -287,4 +401,237 @@ ${displayUsage}`;
   .manual-box { display: flex; flex-direction: column; gap: var(--sp-2); }
   .manual-box p { font-size: 0.95rem; color: var(--c-text-2); line-height: 1.6; margin: 0; }
   .manual-box code { color: #facc15; background: rgba(255,255,255,0.05); padding: 0.1rem 0.3rem; border-radius: 4px; overflow-wrap: anywhere; }
+
+  /* Template Showcase Box */
+  .tpl-showcase-box {
+    margin-top: var(--sp-2);
+    padding: clamp(var(--sp-5), 3vw, var(--sp-8));
+    border-radius: var(--r-xl);
+    background: radial-gradient(circle at top left, rgba(234, 179, 8, 0.08), transparent 70%), rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.4);
+  }
+  .tpl-showcase-box__header {
+    margin-bottom: var(--sp-6);
+  }
+  .tpl-showcase-box__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    color: #facc15;
+    margin-bottom: var(--sp-3);
+  }
+  .tpl-showcase-box__badge svg {
+    color: #facc15;
+  }
+  .tpl-showcase-box__lead {
+    font-size: 0.95rem;
+    color: var(--c-text-2);
+    margin: 0;
+    line-height: 1.6;
+    max-width: 720px;
+  }
+  .tpl-showcase-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+  .tpl-card {
+    position: relative;
+    padding: var(--sp-6);
+    border-radius: var(--r-lg);
+    background: rgba(10, 14, 23, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+  }
+  .tpl-card:hover {
+    border-color: rgba(234, 179, 8, 0.4);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+  .tpl-card__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+    flex-wrap: wrap;
+  }
+  .tpl-card__chip {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+  .tpl-card__stats {
+    font-size: 0.78rem;
+    color: var(--c-text-3);
+  }
+  .tpl-card__title {
+    margin: 0 0 var(--sp-2) 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+  .tpl-card__title a {
+    color: var(--c-text-1);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .tpl-card__title a:hover {
+    color: #facc15;
+  }
+  .tpl-card__desc {
+    margin: 0 0 var(--sp-5) 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--c-text-2);
+  }
+  .tpl-card__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+  }
+  .tpl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .tpl-btn--primary {
+    background: #facc15;
+    color: #0b0f19;
+    border: 1px solid #facc15;
+  }
+  .tpl-btn--primary:hover {
+    background: #fde047;
+    color: #000000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3);
+  }
+  .tpl-btn--ghost {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--c-text-1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .tpl-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+  }
+
+  /* More Sections Block */
+  .more-sections-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: var(--sp-6);
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+  }
+  .more-sections-all-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #facc15;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+  }
+  .more-sections-all-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transform: translateX(2px);
+  }
+  .more-sections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--sp-4);
+  }
+  .more-section-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-5);
+    border-radius: var(--r-lg);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--c-border);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .more-section-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(234, 179, 8, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  .more-section-card__top {
+    margin-bottom: var(--sp-3);
+  }
+  .more-section-card__badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(234, 179, 8, 0.1);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.25);
+  }
+  .more-section-card__title {
+    margin: 0 0 var(--sp-2) 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+    line-height: 1.35;
+  }
+  .more-section-card__desc {
+    margin: 0 0 var(--sp-4) 0;
+    font-size: 0.8rem;
+    color: var(--c-text-3);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .more-section-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #facc15;
+    margin-top: auto;
+    padding-top: var(--sp-3);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .more-section-card svg {
+    transition: transform 0.2s ease;
+  }
+  .more-section-card:hover svg {
+    transform: translateX(3px);
+  }
 </style>
