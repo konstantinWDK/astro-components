@@ -71,6 +71,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/></svg>`,
   },
   {
+    id: 'portfolio',
+    name: 'Developer Portfolio',
+    description: 'Monochrome, keyboard-inspired sections for developer portfolios: retyping hero, 3D projects showcase, typing 3D keyboard, repository list, 3D contribution matrix, 3D monitor, project case study, blog and contact.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>`,
+  },
+  {
     id: 'agency',
     name: 'Agency & Marketing',
     description: 'Sections for marketing, SEO and web agencies: kinetic hero, services, results, ROI calculator, free audit, pricing, case studies and contact brief.',

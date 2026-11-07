@@ -1,0 +1,239 @@
+---
+/**
+ * DevContactForm — Project inquiry form for developer portfolios ("Keycap" design): name, email,
+ * project-type keys, budget, timeline and message, with inline validation and a success state;
+ * an aside lists availability, response time and direct contacts.
+ *
+ * @param {string} action - Form endpoint. Without it the form validates and shows the success state (demo).
+ * @param {string} method - HTTP method. Default 'post'.
+ * @param {string[]} topics - Project types. Default Website / Web app / 3D & creative / Consulting.
+ * @param {string[]} budgets - Budget options.
+ * @param {string} availability - Availability line. Default 'Available for new projects'.
+ * @param {string} response - Response-time line. Default 'Replies within 24 hours'.
+ * @param {Array<{label: string, value: string, href: string}>} contacts - Direct contacts in the aside.
+ * @param {object} labels - Field labels and messages: { name, email, topic, budget, message, submit, sending, success, required, invalidEmail }.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: native labels, required fields marked and validated with aria-invalid and
+ * aria-describedby error text; topic keys are a radio group (fieldset/legend); the status message
+ * is announced in a live region and receives focus on success.
+ */
+interface Props {
+  action?: string;
+  method?: 'post' | 'get';
+  topics?: string[];
+  budgets?: string[];
+  availability?: string;
+  response?: string;
+  contacts?: Array<{ label: string; value: string; href: string }>;
+  labels?: Partial<Record<'name' | 'email' | 'topic' | 'budget' | 'message' | 'submit' | 'sending' | 'success' | 'required' | 'invalidEmail', string>>;
+  className?: string;
+}
+
+const {
+  action,
+  method = 'post',
+  topics = ['Website', 'Web app', '3D & creative', 'Consulting'],
+  budgets = ['< €5k', '€5k – €15k', '€15k – €40k', '€40k +'],
+  availability = 'Available for new projects',
+  response = 'Replies within 24 hours',
+  contacts = [],
+  labels = {},
+  className = '',
+} = Astro.props;
+const L = {
+  name: 'Your name', email: 'Email', topic: 'What are we building?', budget: 'Budget', message: 'Tell me about the project',
+  submit: 'Send message', sending: 'Sending…', success: "Thanks! Your message is on its way — I'll reply soon.",
+  required: 'This field is required.', invalidEmail: 'Enter a valid email address.',
+  ...labels,
+};
+const id = `dvcf-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['dvcf', className]}>
+  <div class="dvcf__wrap">
+    <form class="dvcf__form" data-dev-form action={action} method={method} novalidate data-demo={action ? undefined : ''}>
+      <div class="dvcf__row">
+        <div class="dvcf__field">
+          <label for={`${id}-name`}>{L.name} <span aria-hidden="true">*</span></label>
+          <input id={`${id}-name`} name="name" type="text" autocomplete="name" required aria-describedby={`${id}-name-err`} />
+          <p class="dvcf__err" id={`${id}-name-err`} data-err></p>
+        </div>
+        <div class="dvcf__field">
+          <label for={`${id}-email`}>{L.email} <span aria-hidden="true">*</span></label>
+          <input id={`${id}-email`} name="email" type="email" autocomplete="email" required aria-describedby={`${id}-email-err`} />
+          <p class="dvcf__err" id={`${id}-email-err`} data-err></p>
+        </div>
+      </div>
+
+      <fieldset class="dvcf__topics">
+        <legend>{L.topic}</legend>
+        <div class="dvcf__keys">
+          {topics.map((t, i) => (
+            <label class="dvcf__key">
+              <input type="radio" name="topic" value={t} checked={i === 0} />
+              <span>{t}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div class="dvcf__field">
+        <label for={`${id}-budget`}>{L.budget}</label>
+        <select id={`${id}-budget`} name="budget">
+          {budgets.map((b) => <option value={b}>{b}</option>)}
+        </select>
+      </div>
+
+      <div class="dvcf__field">
+        <label for={`${id}-msg`}>{L.message} <span aria-hidden="true">*</span></label>
+        <textarea id={`${id}-msg`} name="message" rows="6" required aria-describedby={`${id}-msg-err`}></textarea>
+        <p class="dvcf__err" id={`${id}-msg-err`} data-err></p>
+      </div>
+
+      <button class="dvcf__submit" type="submit" data-submit data-label={L.submit} data-sending={L.sending}>{L.submit} <span aria-hidden="true">→</span></button>
+      <p class="dvcf__status" role="status" tabindex="-1" data-status data-success={L.success} data-required={L.required} data-invalid-email={L.invalidEmail}></p>
+    </form>
+
+    <aside class="dvcf__aside">
+      <p class="dvcf__avail"><span aria-hidden="true"></span>{availability}</p>
+      <p class="dvcf__resp">{response}</p>
+      {contacts.length > 0 && (
+        <ul class="dvcf__contacts">
+          {contacts.map((c) => (
+            <li><span>{c.label}</span><a href={c.href}>{c.value}</a></li>
+          ))}
+        </ul>
+      )}
+    </aside>
+  </div>
+</section>
+
+<style>
+  .dvcf { padding: 0 0 clamp(3rem, 7vw, 5rem); color: var(--c-text-1); }
+  .dvcf__wrap { max-width: 1040px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 1.5rem); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+  .dvcf__form { display: grid; gap: 1.25rem; padding: clamp(1.25rem, 3vw, 2rem); border: 2px solid var(--c-text-1); border-radius: 4px; box-shadow: 6px 6px 0 var(--c-text-1); background: var(--c-bg); }
+  .dvcf__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .dvcf__field { display: grid; gap: 0.4rem; }
+  .dvcf label, .dvcf legend { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c-text-2); }
+  .dvcf label span { color: var(--c-text-1); }
+  .dvcf input[type='text'], .dvcf input[type='email'], .dvcf select, .dvcf textarea {
+    width: 100%;
+    min-height: 46px;
+    padding: 0.7rem 0.85rem;
+    border: 1.5px solid rgb(var(--ink-rgb, 0 0 0) / 0.25);
+    border-radius: 2px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font: inherit;
+    font-size: 1rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .dvcf textarea { resize: vertical; min-height: 140px; }
+  .dvcf input:focus, .dvcf select:focus, .dvcf textarea:focus { outline: none; border-color: var(--c-text-1); box-shadow: 2px 2px 0 var(--c-text-1); }
+  .dvcf [aria-invalid='true'] { border-color: var(--c-danger, #dc2626); }
+  .dvcf__err { min-height: 1em; margin: 0; font-size: 0.78rem; color: var(--c-danger, #dc2626); }
+  .dvcf__topics { margin: 0; padding: 0; border: 0; }
+  .dvcf__topics legend { margin-bottom: 0.6rem; }
+  .dvcf__keys { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .dvcf__key { position: relative; }
+  .dvcf__key input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .dvcf__key span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 0.9rem;
+    border: 1.5px solid var(--c-text-1);
+    border-radius: 3px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    box-shadow: 0 3px 0 var(--c-text-1);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .dvcf__key input:checked + span { background: var(--c-text-1); color: var(--c-bg); transform: translateY(3px); box-shadow: none; }
+  .dvcf__key input:focus-visible + span { outline: 2px solid var(--c-text-1); outline-offset: 3px; }
+  .dvcf__submit {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 48px;
+    padding: 0 1.5rem;
+    border: 1.5px solid var(--c-text-1);
+    border-radius: 2px;
+    background: var(--c-text-1);
+    color: var(--c-bg);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 3px 3px 0 var(--c-text-3);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .dvcf__submit:hover { transform: translateY(-1px); box-shadow: 4px 4px 0 var(--c-text-3); }
+  .dvcf__submit:disabled { opacity: 0.6; cursor: progress; }
+  .dvcf__submit:focus-visible { outline: 2px solid var(--c-text-1); outline-offset: 3px; }
+  .dvcf__status { margin: 0; font-size: 0.92rem; font-weight: 600; }
+  .dvcf__status:empty { display: none; }
+  .dvcf__status.is-success { padding: 0.85rem 1rem; border: 1.5px dashed var(--c-text-1); border-radius: 4px; }
+  .dvcf__status:focus { outline: 2px solid var(--c-text-1); outline-offset: 3px; }
+
+  .dvcf__aside { display: grid; gap: 0.75rem; position: sticky; top: 6rem; }
+  .dvcf__avail { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; }
+  .dvcf__avail span { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success, #10b981); box-shadow: 0 0 8px var(--c-success, #10b981); }
+  .dvcf__resp { margin: 0 0 0.75rem; font-size: 0.9rem; color: var(--c-text-2); }
+  .dvcf__contacts { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+  .dvcf__contacts li { display: grid; gap: 0.15rem; padding: 0.85rem 1rem; border: 1px solid var(--c-border); border-radius: 4px; }
+  .dvcf__contacts span { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-3); }
+  .dvcf__contacts a { overflow-wrap: anywhere; color: var(--c-text-1); font-weight: 500; text-decoration: none; }
+  .dvcf__contacts a:hover { text-decoration: underline; }
+  @media (max-width: 860px) { .dvcf__wrap { grid-template-columns: 1fr; } .dvcf__aside { position: static; } }
+  @media (max-width: 560px) { .dvcf__row { grid-template-columns: 1fr; } }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-dev-form]:not([data-bound])').forEach((form) => {
+    form.dataset.bound = '';
+    const status = form.querySelector<HTMLElement>('[data-status]')!;
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+    const fields = Array.from(form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[required], textarea[required]'));
+
+    const check = (f: HTMLInputElement | HTMLTextAreaElement) => {
+      const err = f.closest('.dvcf__field')?.querySelector<HTMLElement>('[data-err]');
+      let msg = '';
+      if (!f.value.trim()) msg = status.dataset.required ?? '';
+      else if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.value.trim())) msg = status.dataset.invalidEmail ?? '';
+      f.setAttribute('aria-invalid', String(!!msg));
+      if (err) err.textContent = msg;
+      return !msg;
+    };
+    fields.forEach((f) => f.addEventListener('blur', () => f.getAttribute('aria-invalid') !== null && check(f)));
+
+    form.addEventListener('submit', async (e) => {
+      const invalid = fields.filter((f) => !check(f));
+      if (invalid.length) {
+        e.preventDefault();
+        invalid[0].focus();
+        return;
+      }
+      if (!form.hasAttribute('data-demo')) return; // real endpoint: let the browser submit
+      e.preventDefault();
+      submit.disabled = true;
+      submit.textContent = submit.dataset.sending ?? '';
+      await new Promise((r) => setTimeout(r, 700));
+      form.reset();
+      fields.forEach((f) => f.removeAttribute('aria-invalid'));
+      form.querySelectorAll<HTMLElement>('[data-err]').forEach((el) => (el.textContent = ''));
+      submit.disabled = false;
+      submit.innerHTML = `${submit.dataset.label} <span aria-hidden="true">→</span>`;
+      status.textContent = status.dataset.success ?? '';
+      status.classList.add('is-success');
+      status.focus();
+    });
+  });
+</script>

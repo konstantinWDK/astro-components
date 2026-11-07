@@ -1,0 +1,226 @@
+---
+/**
+ * DevRepoList — Frosted-glass list of open-source repositories ("Keycap" design): profile link,
+ * one row per repo with language dot, stars, description, a source link and a live-site link whose
+ * eye opens on hover. Shows the first rows and reveals the rest with "Show all".
+ *
+ * @param {Array<{name: string, description: string, language?: string, color?: string, stars?: number, url: string, homepage?: string}>} repos - Repositories, in display order.
+ * @param {{label: string, href: string}} profile - Profile link in the header (e.g. github.com/user).
+ * @param {number} visible - Rows shown before "Show all". Default 7.
+ * @param {string} moreLabel - Expand button text. Default 'Show all repositories'.
+ * @param {string} title - Optional heading.
+ * @param {boolean} glass - Frosted panel (for use over DevKeyboard). Default true.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a real list; icon links have aria-labels with the repo name; the expand button is
+ * a disclosure (aria-expanded / aria-controls) and moves focus to the first revealed repo.
+ */
+interface Repo {
+  name: string;
+  description: string;
+  language?: string;
+  color?: string;
+  stars?: number;
+  url: string;
+  homepage?: string;
+}
+interface Props {
+  repos: Repo[];
+  profile?: { label: string; href: string };
+  visible?: number;
+  moreLabel?: string;
+  title?: string;
+  glass?: boolean;
+  className?: string;
+}
+
+const {
+  repos = [
+    { name: 'orbit-ui', description: 'Accessible, typed React component kit', language: 'TypeScript', color: '#3178c6', stars: 1240, url: '#', homepage: '#' },
+    { name: 'tidy', description: 'Reclaim disk space from stale developer caches', language: 'Rust', color: '#dea584', stars: 486, url: '#' },
+    { name: 'waveform', description: 'Batch audio converter that runs in the browser', language: 'TypeScript', color: '#3178c6', stars: 212, url: '#', homepage: '#' },
+    { name: 'pg-snap', description: 'Point-in-time Postgres snapshots for local development', language: 'Go', color: '#00add8', stars: 41, url: '#' },
+  ],
+  profile,
+  visible = 7, moreLabel = 'Show all repositories', title, glass = true, className = '',
+} = Astro.props;
+const listId = `dvrl-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['dvrl', { 'dvrl--glass': glass }, className]} data-dev-repos aria-label={title ?? profile?.label ?? 'Repositories'}>
+  {(profile || title) && (
+    <div class="dvrl__head">
+      {title && <h2 class="dvrl__title">{title}</h2>}
+      {profile && (
+        <a class="dvrl__profile" href={profile.href} target="_blank" rel="noopener noreferrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          <span>{profile.label}</span>
+          <svg class="dvrl__ext" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+        </a>
+      )}
+    </div>
+  )}
+
+  <ul class="dvrl__list" id={listId}>
+    {repos.map((r, i) => (
+      <li class="dvrl__row" hidden={i >= visible ? true : undefined} data-extra={i >= visible ? '' : undefined}>
+        <div class="dvrl__main">
+          <p class="dvrl__line">
+            <a class="dvrl__name" href={r.url} target="_blank" rel="noopener noreferrer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+              <span>{r.name}</span>
+            </a>
+            {r.language && <span class="dvrl__lang"><span class="dvrl__dot" style={`background:${r.color ?? 'currentColor'}`} aria-hidden="true"></span>{r.language}</span>}
+            {!!r.stars && <span class="dvrl__stars" aria-label={`${r.stars} stars`}>★ {r.stars.toLocaleString('en')}</span>}
+          </p>
+          {r.description && <p class="dvrl__desc">{r.description}</p>}
+        </div>
+        <div class="dvrl__actions">
+          <a class="dvrl__icon" href={r.url} target="_blank" rel="noopener noreferrer" aria-label={`Source code of ${r.name}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          </a>
+          {r.homepage && (
+            <a class="dvrl__icon dvrl__live" href={r.homepage} target="_blank" rel="noopener noreferrer" aria-label={`Live site of ${r.name}`}>
+              <svg class="dvrl__eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3 7 10 7 10-7 10-7"/><path d="m15 18-.72-3.25M20 15l-1.73-2.05M4 15l1.73-2.05M9 18l.72-3.25"/></svg>
+              <svg class="dvrl__eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </a>
+          )}
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  {repos.length > visible && (
+    <div class="dvrl__more">
+      <button class="dvrl__more-btn" type="button" data-more aria-expanded="false" aria-controls={listId}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        {moreLabel}
+      </button>
+    </div>
+  )}
+</section>
+
+<style>
+  .dvrl { color: var(--c-text-1); }
+  .dvrl--glass {
+    padding: 1.75rem 2rem;
+    border-radius: 20px;
+    background: rgb(var(--paper-rgb, 255 255 255) / 0.85);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.09);
+    box-shadow: 0 24px 50px rgb(var(--ink-rgb, 0 0 0) / 0.06), 0 2px 8px rgb(var(--ink-rgb, 0 0 0) / 0.03);
+  }
+  .dvrl__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; padding-bottom: 0.9rem; margin-bottom: 0.4rem; border-bottom: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.08); }
+  .dvrl__title { margin: 0; font-size: 1.15rem; font-weight: 700; }
+  .dvrl__profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 32px;
+    padding: 0 0.6rem;
+    border-radius: 3px;
+    border: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.12);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .dvrl__profile:hover { background: var(--c-text-1); color: var(--c-bg); }
+  .dvrl__ext { opacity: 0.45; transition: transform 0.2s ease, opacity 0.2s ease; }
+  .dvrl__profile:hover .dvrl__ext { opacity: 1; transform: translate(1px, -1px); }
+
+  .dvrl__list { list-style: none; margin: 0; padding: 0; }
+  .dvrl__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.06);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+  .dvrl__row:hover { background: rgb(var(--ink-rgb, 0 0 0) / 0.025); }
+  .dvrl__row.is-new { animation: dvrl-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .dvrl__main { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; flex: 1; }
+  .dvrl__line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+  .dvrl__name { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--c-text-1); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+  .dvrl__name svg { color: var(--c-text-3); flex-shrink: 0; }
+  .dvrl__name:hover span { text-decoration: underline; text-underline-offset: 3px; }
+  .dvrl__lang { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.08rem 0.38rem; border-radius: 3px; background: rgb(var(--ink-rgb, 0 0 0) / 0.04); font-family: var(--font-mono); font-size: 0.64rem; color: var(--c-text-2); }
+  .dvrl__dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dvrl__stars { padding: 0.08rem 0.42rem; border-radius: 3px; border: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.18); font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700; color: var(--c-text-1); }
+  .dvrl__desc { margin: 0; max-width: 640px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; color: var(--c-text-2); }
+  .dvrl__actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
+  .dvrl__icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    color: var(--c-text-2);
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .dvrl__icon:hover { color: var(--c-text-1); background: rgb(var(--ink-rgb, 0 0 0) / 0.05); border-color: rgb(var(--ink-rgb, 0 0 0) / 0.1); transform: scale(1.06); }
+  .dvrl__eye-open { display: none; }
+  .dvrl__row:hover .dvrl__eye-open,
+  .dvrl__live:focus-visible .dvrl__eye-open { display: block; }
+  .dvrl__row:hover .dvrl__eye-closed,
+  .dvrl__live:focus-visible .dvrl__eye-closed { display: none; }
+
+  .dvrl__more { display: flex; justify-content: center; margin-top: 1rem; }
+  .dvrl__more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 0;
+    background: none;
+    color: var(--c-text-2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    animation: dvrl-nudge 6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  }
+  .dvrl__more-btn:hover { color: var(--c-text-1); animation: none; }
+  .dvrl :focus-visible { outline: 2px solid var(--c-text-1); outline-offset: 2px; }
+
+  @keyframes dvrl-in { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes dvrl-nudge {
+    0%, 85%, 100% { transform: none; }
+    90% { transform: rotateX(20deg) scale(1.08); color: var(--c-text-1); }
+    94% { transform: rotateX(-12deg) scale(1.08); color: var(--c-text-1); }
+  }
+  @media (max-width: 640px) {
+    .dvrl--glass { padding: 1.25rem 1rem; }
+    .dvrl__row { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+    .dvrl__desc { white-space: normal; }
+    .dvrl__actions { align-self: flex-end; }
+  }
+  @media (prefers-reduced-motion: reduce) { .dvrl__more-btn, .dvrl__row.is-new { animation: none; } }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-dev-repos]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const btn = root.querySelector<HTMLButtonElement>('[data-more]');
+    btn?.addEventListener('click', () => {
+      const extra = Array.from(root.querySelectorAll<HTMLElement>('[data-extra]'));
+      extra.forEach((row, i) => {
+        row.hidden = false;
+        row.classList.add('is-new');
+        row.style.animationDelay = `${Math.min(i, 10) * 35}ms`;
+      });
+      btn.setAttribute('aria-expanded', 'true');
+      btn.closest('.dvrl__more')?.remove();
+      extra[0]?.querySelector<HTMLElement>('a')?.focus();
+    });
+  });
+</script>

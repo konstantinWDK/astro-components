@@ -510,4 +510,111 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ["footer", "cta", "agency"],
     usage: `<AgencyFooterCta brand="Volta" email="hello@volta.agency" />`,
   }),
+
+  // === DEVELOPER PORTFOLIO ("Keycap") ===
+  section({
+    slug: 'dev-header', name: 'Dev Header', file: 'DevHeader.astro', sectionCategory: 'portfolio',
+    description: "Floating navigation with a split logo that collapses on scroll (N·OALINDQVIST·.DEV → N.DEV), pill links, light/dark toggle and a full-screen mobile menu.",
+    tags: ["header", "navbar", "portfolio", "theme-toggle"], featured: true,
+    usage: `<DevHeader logo={{ initial: 'K', middle: 'EYCAP', suffix: '.DEV' }} links={[{ label: 'Projects', href: '/projects/' }, { label: 'Blog', href: '/blog/' }]} />`,
+  }),
+  section({
+    slug: 'dev-hero', name: 'Dev Hero', file: 'DevHero.astro', sectionCategory: 'portfolio',
+    description: "Developer hero: an oversized title that retypes itself, the name dropping in with floating blocks, a status pill and an endless tape of skill cards with tooltips, over a 3D dot matrix that parts around the cursor.",
+    tags: ["hero", "portfolio", "three", "typewriter", "skills"], featured: true,
+    usage: `<!-- npm install three -->
+<DevHero
+  titles={[{ base: 'Soft', ext: 'ware', role: 'Developer' }, { base: 'Front', ext: 'end', role: 'Engineer' }]}
+  name="Noa Lindqvist"
+  status="Available for freelance"
+  skills={[{ category: 'Frontend', skills: [{ name: 'React', description: 'Component architecture and design systems.' }] }]}
+/>`,
+  }),
+  section({
+    slug: 'dev-projects-showcase', name: 'Dev Projects Showcase 3D', file: 'DevProjectsShowcase.astro', sectionCategory: 'portfolio',
+    description: "3D projects slider: paper cards with ink outlines fanned out in perspective, each with an animated visual chosen by data (code, terminal, equalizer, monitor, endpoints, paint, atom). Drag, keys or arrows to move; click to open a project sheet.",
+    tags: ["projects", "slider", "three", "3d", "portfolio", "carousel"], featured: true,
+    usage: `<!-- npm install three -->
+<DevProjectsShowcase projects={[
+  { title: 'Orbit UI', tagline: 'Accessible React kit', category: 'Frontend', description: 'Typed, accessible components.', technologies: ['React', 'TypeScript'], visual: { kind: 'atom' } },
+  { title: 'Tidy', tagline: 'Frees disk space', category: 'Developer Tools', description: 'Removes stale caches safely.', technologies: ['Rust'], visual: { kind: 'terminal' } },
+]} />`,
+  }),
+  section({
+    slug: 'dev-keyboard', name: 'Dev Keyboard 3D', file: 'DevKeyboard.astro', sectionCategory: 'portfolio',
+    description: "Full-width 3D mechanical keyboard that types your stack by itself and echoes each word as a huge backdrop; slot content (e.g. a repo list) floats over the lower rows.",
+    tags: ["keyboard", "three", "3d", "typing", "portfolio"], featured: true,
+    usage: `<!-- npm install three -->
+<DevKeyboard phrases={['ASTRO', 'REACT', 'TYPESCRIPT']}>
+  <DevRepoList repos={repos} />
+</DevKeyboard>`,
+  }),
+  section({
+    slug: 'dev-repo-list', name: 'Dev Repo List', file: 'DevRepoList.astro', sectionCategory: 'portfolio',
+    description: "Frosted list of open-source repositories with language dot, stars, description, source link and a live-site eye; reveals the rest with “Show all”.",
+    tags: ["github", "repositories", "list", "portfolio"],
+    usage: `<DevRepoList profile={{ label: 'github.com/you', href: 'https://github.com/you' }} repos={[{ name: 'orbit-ui', description: 'React kit', language: 'TypeScript', color: '#3178c6', stars: 120, url: '#' }]} />`,
+  }),
+  section({
+    slug: 'dev-contributions', name: 'Dev Contributions 3D', file: 'DevContributions.astro', sectionCategory: 'portfolio',
+    description: "GitHub-style contribution matrix in 3D: barely-rounded cubes fly in from the sky and assemble, keep rebuilding, and ripple like water around the cursor; tooltips with date and count. Pass weeks, a URL or use demo data.",
+    tags: ["github", "contributions", "calendar", "three", "3d", "portfolio"], featured: true,
+    usage: `<!-- npm install three -->
+<DevContributions title="A year of commits" src="/api/contributions.json" />`,
+  }),
+  section({
+    slug: 'dev-monitor', name: 'Dev Monitor 3D', file: 'DevMonitor.astro', sectionCategory: 'portfolio',
+    description: "3D CRT monitor with ink outlines that drops into place, sways with the cursor and types terminal lines on an inverted screen.",
+    tags: ["terminal", "monitor", "three", "3d", "portfolio"],
+    usage: `<!-- npm install three -->
+<DevMonitor lines={['$ npm run build', '> built in 1.2s']} />`,
+  }),
+  section({
+    slug: 'dev-contact', name: 'Dev Contact', file: 'DevContact.astro', sectionCategory: 'portfolio',
+    description: "Contact block with a glass capsule of cards (email, GitHub, LinkedIn…) and an optional CTA to the contact page.",
+    tags: ["contact", "cta", "portfolio"],
+    usage: `<DevContact contacts={[{ kind: 'email', label: 'Email', value: 'hi@you.dev', href: 'mailto:hi@you.dev' }]} cta={{ label: 'Start a project', href: '/contact/' }} />`,
+  }),
+  section({
+    slug: 'dev-footer', name: 'Dev Footer', file: 'DevFooter.astro', sectionCategory: 'portfolio',
+    description: "Minimal footer with a row of mono links, copyright and a small “built with” note.",
+    tags: ["footer", "portfolio", "minimal"],
+    usage: `<DevFooter name="Noa Lindqvist" links={[{ label: 'Blog', href: '/blog/' }]} note="Built with Astro" />`,
+  }),
+  section({
+    slug: 'dev-page-hero', name: 'Dev Page Hero', file: 'DevPageHero.astro', sectionCategory: 'portfolio',
+    description: "Inner-page hero with breadcrumb, HUD label, two-line sliding title, intro and an optional slot on the right (e.g. a 3D monitor).",
+    tags: ["hero", "inner-page", "breadcrumb", "portfolio"],
+    usage: `<DevPageHero label="PROJECTS // INDEX" title="Things I've" titleAccent="built & shipped." />`,
+  }),
+  section({
+    slug: 'dev-project-grid', name: 'Dev Project Grid', file: 'DevProjectGrid.astro', sectionCategory: 'portfolio',
+    description: "Keycap-style project cards (ink outline, hard shadow that presses on hover) with number, category, stack, status and stars, plus category filter keys.",
+    tags: ["projects", "grid", "filter", "portfolio"],
+    usage: `<DevProjectGrid projects={[{ title: 'Orbit UI', tagline: 'Accessible React kit', category: 'Frontend', href: '/projects/orbit-ui/', status: 'Live' }]} />`,
+  }),
+  section({
+    slug: 'dev-project-detail', name: 'Dev Project Detail', file: 'DevProjectDetail.astro', sectionCategory: 'portfolio',
+    description: "Project case study: overview, challenge, solution and highlights next to a sticky spec sheet (role, year, status, stack, metrics, links), with previous / next keys.",
+    tags: ["case-study", "project", "spec-sheet", "portfolio"],
+    usage: `<DevProjectDetail project={{ title: 'Tidy', description: 'Frees disk space.', technologies: ['Rust'], role: 'Author', year: '2025' }} />`,
+  }),
+  section({
+    slug: 'dev-post-list', name: 'Dev Post List', file: 'DevPostList.astro', sectionCategory: 'portfolio',
+    description: "Blog index with a featured latest post and a hairline list (date, category, reading time, excerpt) filtered by category.",
+    tags: ["blog", "posts", "list", "portfolio"],
+    usage: `<DevPostList posts={[{ title: 'Damped springs', excerpt: 'Why per-frame tweens feel rubbery.', href: '/blog/springs/', date: '2026-09-14', category: 'animation' }]} />`,
+  }),
+  section({
+    slug: 'dev-article', name: 'Dev Article', file: 'DevArticle.astro', sectionCategory: 'portfolio',
+    description: "Blog post layout: meta line, title, lead, tags, reading-progress bar, monochrome prose with code blocks and previous / next keys.",
+    tags: ["blog", "article", "prose", "portfolio"],
+    usage: `<DevArticle title="Damped springs" date="2026-09-14" category="animation" html="<p>…</p>" />`,
+  }),
+  section({
+    slug: 'dev-contact-form', name: 'Dev Contact Form', file: 'DevContactForm.astro', sectionCategory: 'portfolio',
+    description: "Project inquiry form with project-type keys, budget and message, inline validation, success state and an aside with availability and direct contacts.",
+    tags: ["contact", "form", "validation", "portfolio"],
+    usage: `<DevContactForm action="https://your-backend/contact" contacts={[{ label: 'Email', value: 'hi@you.dev', href: 'mailto:hi@you.dev' }]} />`,
+  }),
 ];

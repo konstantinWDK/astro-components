@@ -1,0 +1,417 @@
+---
+/**
+ * DevHero — Developer portfolio hero ("Keycap" design): an oversized title that retypes itself
+ * (Software Developer → Frontend Engineer…), the name dropping in with floating blocks, a status
+ * pill and an endless vertical tape of skill cards with tooltips. Optional 3D dot-matrix background
+ * that breathes and parts around the cursor (needs the optional `three` peer dependency).
+ *
+ * @param {Array<{base: string, ext: string, role: string}>} titles - Rotating titles. The `ext` part is revealed on hover.
+ * @param {string} name - Name under the title (split into words).
+ * @param {string} tagline - Mono line under the name.
+ * @param {string} status - Status pill text. Empty hides it.
+ * @param {Array<{category: string, skills: Array<{name: string, description: string}>}>} skills - Skill groups for the tape.
+ * @param {string} tapeLabel - Label above the tape. Default 'Stack & skills'.
+ * @param {string} background - Background (dots|none). Default 'dots'.
+ * @param {number} interval - Milliseconds between titles. Default 4500.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the h1 exposes the first title as its accessible name while the animation is
+ * aria-hidden; skill pills are buttons whose tooltip also opens on focus and is linked with
+ * aria-describedby; the tape pauses on hover/focus and with prefers-reduced-motion.
+ */
+interface Skill { name: string; description: string }
+interface Props {
+  titles?: Array<{ base: string; ext: string; role: string }>;
+  name?: string;
+  tagline?: string;
+  status?: string;
+  skills?: Array<{ category: string; skills: Skill[] }>;
+  tapeLabel?: string;
+  background?: 'dots' | 'none';
+  interval?: number;
+  className?: string;
+}
+
+const {
+  titles = [{ base: 'Soft', ext: 'ware', role: 'Developer' }],
+  name = 'Noa Lindqvist',
+  tagline = 'Full Stack · Backend · Frontend · Creative 3D',
+  status = 'Available for freelance',
+  skills = [
+    { category: 'Frontend', skills: [{ name: 'React', description: 'Component architecture, hooks and design systems.' }, { name: 'Astro', description: 'Content sites with near-zero JavaScript.' }, { name: 'Three.js', description: 'Interactive 3D scenes that stay smooth on phones.' }] },
+    { category: 'Backend', skills: [{ name: 'Node.js', description: 'APIs, queues and real-time services.' }, { name: 'PostgreSQL', description: 'Schema design, indexes and query tuning.' }] },
+    { category: 'Infra', skills: [{ name: 'Docker', description: 'Reproducible builds and compose stacks.' }, { name: 'Linux', description: 'Hardened VPS, Nginx and zero-downtime deploys.' }] },
+  ],
+  tapeLabel = 'Stack & skills',
+  background = 'dots',
+  interval = 4500,
+  className = '',
+} = Astro.props;
+
+const first = titles[0];
+const words = name.split(/\s+/).filter(Boolean);
+const uid = Math.random().toString(36).slice(2, 8);
+const tipId = `dvhr-tip-${uid}`;
+---
+
+<section class:list={['dvhr', className]} data-dev-hero data-titles={JSON.stringify(titles)} data-interval={interval}>
+  {background === 'dots' && <div class="dvhr__bg" data-dots aria-hidden="true"></div>}
+
+  <div class="dvhr__wrap">
+    <div class="dvhr__main">
+      <h1 class="dvhr__title" aria-label={`${first.base}${first.ext} ${first.role}${name ? ` — ${name}` : ''}`}>
+        <span class="dvhr__line dvhr__line--1" aria-hidden="true"><span data-base>{first.base}</span><span class="dvhr__ext" data-ext>{first.ext}</span></span>
+        <span class="dvhr__line dvhr__line--2" aria-hidden="true" data-role>{first.role}</span>
+      </h1>
+
+      {words.length > 0 && (
+        <p class="dvhr__name" aria-hidden="true">
+          <span class="dvhr__block dvhr__block--1"></span>
+          <span class="dvhr__block dvhr__block--2"></span>
+          {words.map((w, i) => <span class="dvhr__word" style={`animation-delay:${0.3 + i * 0.15}s`}>{w}</span>)}
+        </p>
+      )}
+
+      {tagline && <p class="dvhr__tagline">{tagline}</p>}
+
+      {status && (
+        <p class="dvhr__status"><span class="dvhr__dot" aria-hidden="true"></span>{status}</p>
+      )}
+    </div>
+
+    {skills.length > 0 && (
+      <div class="dvhr__tape">
+        <p class="dvhr__tape-label">{tapeLabel}</p>
+        <div class="dvhr__viewport" data-viewport>
+          <div class="dvhr__track">
+            {[0, 1].map((copy) => (
+              <div class="dvhr__set" aria-hidden={copy === 1 ? 'true' : undefined}>
+                {skills.map((group, i) => (
+                  <div class="dvhr__card">
+                    <div class="dvhr__card-head">
+                      <h2 class="dvhr__card-title">{group.category}</h2>
+                      <span class="dvhr__card-num">{String(i + 1).padStart(2, '0')}</span>
+                    </div>
+                    <ul class="dvhr__pills">
+                      {group.skills.map((s) => (
+                        <li>
+                          <button
+                            type="button"
+                            class="dvhr__pill"
+                            tabindex={copy === 1 ? -1 : undefined}
+                            data-name={s.name}
+                            data-cat={group.category}
+                            data-desc={s.description}
+                            aria-describedby={copy === 0 ? tipId : undefined}
+                          >
+                            <span class="dvhr__pill-mark" aria-hidden="true"></span>{s.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+
+  <div class="dvhr__tip" id={tipId} role="tooltip" data-tip>
+    <span class="dvhr__tip-head"><span class="dvhr__tip-cat" data-tip-cat></span><strong data-tip-name></strong></span>
+    <span class="dvhr__tip-desc" data-tip-desc></span>
+  </div>
+</section>
+
+<style>
+  .dvhr {
+    --dvhr-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --kc-ink: var(--c-text-1);
+    position: relative;
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    padding: clamp(6.5rem, 12vw, 8rem) 0 3rem;
+    overflow: hidden;
+    color: var(--c-text-1);
+  }
+  .dvhr__bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .dvhr__wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: 3rem;
+  }
+  .dvhr__main { display: flex; flex-direction: column; align-items: flex-start; }
+  .dvhr__title { display: flex; flex-direction: column; margin: 0; font-weight: 700; }
+  .dvhr__line {
+    font-size: clamp(3rem, 7.5vw, 5.5rem);
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    opacity: 0;
+    transform: translateY(40px);
+    animation: dvhr-reveal 0.8s var(--dvhr-ease) forwards;
+  }
+  .dvhr__line--1 { animation-delay: 0.1s; cursor: default; }
+  .dvhr__line--2 { animation-delay: 0.25s; min-height: 0.9em; }
+  .dvhr__ext {
+    display: inline-block;
+    max-width: 0;
+    overflow: hidden;
+    white-space: pre;
+    vertical-align: top;
+    opacity: 0;
+    transition: max-width 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  }
+  .dvhr__line--1:hover .dvhr__ext,
+  .dvhr.is-revealed .dvhr__ext { max-width: 8ch; opacity: 1; }
+
+  .dvhr__name {
+    position: relative;
+    display: inline-flex;
+    gap: 0.5rem;
+    margin: 0.5rem 0 0;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--c-text-2);
+  }
+  .dvhr__word { display: inline-block; opacity: 0; animation: dvhr-drop 1.2s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards; }
+  .dvhr__block { position: absolute; width: 8px; height: 8px; border-radius: 2px; z-index: -1; opacity: 0; }
+  .dvhr__block--1 { top: -5px; left: 20%; background: var(--c-text-1); animation: dvhr-in 0.5s ease 0.8s forwards, dvhr-b1 5s ease-in-out 1.3s infinite alternate; }
+  .dvhr__block--2 { bottom: -2px; right: 25%; border: 1px solid var(--c-text-3); animation: dvhr-in 0.5s ease 1s forwards, dvhr-b2 6s ease-in-out 1.5s infinite alternate; }
+
+  .dvhr__tagline {
+    margin: 1.75rem 0 0;
+    font-family: var(--font-mono);
+    font-size: clamp(0.75rem, 1.1vw, 0.85rem);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: dvhr-reveal 0.6s var(--dvhr-ease) 0.65s forwards;
+  }
+  .dvhr__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--c-border);
+    background: rgb(var(--ink-rgb, 0 0 0) / 0.03);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--c-text-2);
+    opacity: 0;
+    transform: translateY(16px);
+    animation: dvhr-reveal 0.6s var(--dvhr-ease) 0.6s forwards;
+  }
+  .dvhr__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-success, #10b981); box-shadow: 0 0 8px var(--c-success, #10b981); }
+
+  .dvhr__tape { display: flex; flex-direction: column; gap: 0.6rem; opacity: 0; transform: translateY(30px); animation: dvhr-reveal 0.8s var(--dvhr-ease) 0.35s forwards; }
+  .dvhr__tape-label { margin: 0; padding: 0 0.35rem; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-3); }
+  .dvhr__viewport {
+    height: 380px;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 0.25rem;
+    mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 90%, transparent 100%);
+  }
+  .dvhr__track { display: flex; flex-direction: column; animation: dvhr-tape 28s linear infinite; will-change: transform; }
+  .dvhr__viewport:hover .dvhr__track,
+  .dvhr__viewport:focus-within .dvhr__track { animation-play-state: paused; }
+  .dvhr__set { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 1rem; }
+  .dvhr__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1.15rem 1.35rem;
+    border-radius: 16px;
+    background: rgb(var(--paper-rgb, 255 255 255) / 0.72);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    box-shadow: 0 8px 24px -4px rgb(var(--ink-rgb, 0 0 0) / 0.05), 0 0 0 1px rgb(var(--ink-rgb, 0 0 0) / 0.06);
+    transition: transform 0.25s var(--dvhr-ease), box-shadow 0.25s var(--dvhr-ease);
+  }
+  .dvhr__card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -4px rgb(var(--ink-rgb, 0 0 0) / 0.1), 0 0 0 1px rgb(var(--ink-rgb, 0 0 0) / 0.12); }
+  .dvhr__card-head { display: flex; align-items: center; justify-content: space-between; }
+  .dvhr__card-title { margin: 0; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-1); }
+  .dvhr__card-num { font-family: var(--font-mono); font-size: 0.7rem; color: var(--c-text-3); }
+  .dvhr__pills { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
+  .dvhr__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 32px;
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.08);
+    background: rgb(var(--paper-rgb, 255 255 255) / 0.65);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 500;
+    cursor: help;
+    transition: transform 0.2s var(--dvhr-ease), border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .dvhr__pill:hover,
+  .dvhr__pill:focus-visible { border-color: var(--c-text-1); transform: translateY(-1.5px); box-shadow: 0 4px 10px rgb(var(--ink-rgb, 0 0 0) / 0.08); outline: none; }
+  .dvhr__pill-mark { width: 6px; height: 6px; border-radius: 1.5px; border: 1.5px solid currentColor; opacity: 0.55; }
+
+  .dvhr__tip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    max-width: 280px;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    background: rgb(15 17 21 / 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgb(255 255 255 / 0.16);
+    box-shadow: 0 16px 36px -4px rgb(0 0 0 / 0.4);
+    color: #fff;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+  }
+  .dvhr__tip.is-visible { opacity: 1; visibility: visible; }
+  .dvhr__tip-head { display: flex; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.35rem; padding-bottom: 0.35rem; border-bottom: 1px solid rgb(255 255 255 / 0.12); }
+  .dvhr__tip-cat { font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: rgb(255 255 255 / 0.6); }
+  .dvhr__tip-head strong { font-size: 0.85rem; }
+  .dvhr__tip-desc { display: block; font-size: 0.78rem; line-height: 1.45; color: rgb(255 255 255 / 0.88); }
+
+  @keyframes dvhr-reveal { to { opacity: 1; transform: none; } }
+  @keyframes dvhr-in { to { opacity: 0.4; } }
+  @keyframes dvhr-tape { to { transform: translateY(-50%); } }
+  @keyframes dvhr-drop {
+    0% { opacity: 0; transform: translateY(-30px) scale(0.9); }
+    40% { opacity: 1; transform: translateY(8px) scale(1.05); }
+    65% { transform: translateY(-4px) scale(0.98); }
+    100% { opacity: 1; transform: none; }
+  }
+  @keyframes dvhr-b1 {
+    33% { transform: translate(15px, 12px) rotate(45deg) scale(0.8); }
+    66% { transform: translate(-8px, 6px) rotate(120deg) scale(1.2); }
+    100% { transform: translate(-12px, -4px) rotate(180deg) scale(0.9); }
+  }
+  @keyframes dvhr-b2 {
+    33% { transform: translate(-18px, -10px) rotate(-60deg) scale(1.1); }
+    66% { transform: translate(10px, -5px) rotate(-110deg) scale(0.8); }
+    100% { transform: translate(15px, 8px) rotate(-180deg) scale(1.2); }
+  }
+
+  @media (max-width: 900px) {
+    .dvhr__wrap { grid-template-columns: 1fr; gap: 2.5rem; }
+    .dvhr__tape { max-width: 480px; width: 100%; }
+    .dvhr__viewport { height: 320px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dvhr__line, .dvhr__word, .dvhr__tagline, .dvhr__status, .dvhr__tape { animation: none; opacity: 1; transform: none; }
+    .dvhr__block { animation: none; opacity: 0.4; }
+    .dvhr__track { animation: none; }
+    .dvhr__viewport { overflow-y: auto; }
+    .dvhr__set[aria-hidden] { display: none; }
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+  import { mountDotMatrix } from '../three/dot-matrix-scene';
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-dev-hero]:not([data-bound])').forEach((hero) => {
+    hero.dataset.bound = '';
+
+    const bg = hero.querySelector<HTMLElement>('[data-dots]');
+    if (bg) mountDotMatrix(bg, THREE);
+
+    // Rotating, retyped title
+    const titles = JSON.parse(hero.dataset.titles || '[]') as Array<{ base: string; ext: string; role: string }>;
+    const els = { base: hero.querySelector<HTMLElement>('[data-base]'), ext: hero.querySelector<HTMLElement>('[data-ext]'), role: hero.querySelector<HTMLElement>('[data-role]') };
+    const retype = async (el: HTMLElement | null, text: string, speed = 50) => {
+      if (!el) return;
+      const old = el.textContent ?? '';
+      for (let i = old.length; i >= 0; i--) {
+        el.textContent = old.slice(0, i);
+        await new Promise((r) => setTimeout(r, speed / 2));
+      }
+      for (let i = 1; i <= text.length; i++) {
+        el.textContent = text.slice(0, i);
+        await new Promise((r) => setTimeout(r, speed));
+      }
+    };
+    if (titles.length > 1 && !reduced) {
+      let idx = 0;
+      window.setInterval(() => {
+        if (document.hidden) return;
+        idx = (idx + 1) % titles.length;
+        const t = titles[idx];
+        retype(els.base, t.base);
+        retype(els.ext, t.ext);
+        retype(els.role, t.role);
+      }, Number(hero.dataset.interval) || 4500);
+    }
+    // Touch screens cannot hover: reveal the title extension.
+    if (window.matchMedia('(hover: none)').matches) hero.classList.add('is-revealed');
+
+    // Skill tooltips (pointer and keyboard)
+    const tip = hero.querySelector<HTMLElement>('[data-tip]');
+    if (!tip) return;
+    document.body.appendChild(tip);
+    const fill = (pill: HTMLElement) => {
+      tip.querySelector('[data-tip-cat]')!.textContent = pill.dataset.cat ?? '';
+      tip.querySelector('[data-tip-name]')!.textContent = pill.dataset.name ?? '';
+      tip.querySelector('[data-tip-desc]')!.textContent = pill.dataset.desc ?? '';
+    };
+    const place = (x: number, y: number) => {
+      const r = tip.getBoundingClientRect();
+      let px = x + 16;
+      let py = y + 16;
+      if (px + r.width > window.innerWidth - 12) px = x - r.width - 14;
+      if (py + r.height > window.innerHeight - 12) py = y - r.height - 14;
+      tip.style.transform = `translate3d(${Math.max(12, Math.round(px))}px, ${Math.max(12, Math.round(py))}px, 0)`;
+    };
+    const show = () => tip.classList.add('is-visible');
+    const hide = () => tip.classList.remove('is-visible');
+
+    hero.addEventListener('pointerover', (e) => {
+      const pill = (e.target as HTMLElement).closest<HTMLElement>('.dvhr__pill');
+      if (!pill) return;
+      fill(pill);
+      place(e.clientX, e.clientY);
+      show();
+    });
+    hero.addEventListener('pointermove', (e) => {
+      if ((e.target as HTMLElement).closest('.dvhr__pill')) place(e.clientX, e.clientY);
+      else hide();
+    });
+    hero.addEventListener('pointerleave', hide);
+    hero.addEventListener('focusin', (e) => {
+      const pill = (e.target as HTMLElement).closest<HTMLElement>('.dvhr__pill');
+      if (!pill) return;
+      fill(pill);
+      const r = pill.getBoundingClientRect();
+      place(r.left, r.bottom);
+      show();
+    });
+    hero.addEventListener('focusout', hide);
+    document.addEventListener('keydown', (e) => e.key === 'Escape' && hide());
+  });
+</script>

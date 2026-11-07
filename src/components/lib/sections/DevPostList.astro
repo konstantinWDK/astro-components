@@ -1,0 +1,126 @@
+---
+/**
+ * DevPostList — Blog index for developer portfolios ("Keycap" design): a featured first post,
+ * then a hairline list with date, category, reading time, title, excerpt and a "Read" link, plus
+ * category filter keys.
+ *
+ * @param {Array<{title: string, excerpt: string, href: string, date: string, category?: string, readingTime?: string}>} posts - Posts, newest first. `date` is ISO (YYYY-MM-DD).
+ * @param {boolean} featured - Highlight the first post. Default true.
+ * @param {boolean} filters - Category filter keys. Default true.
+ * @param {string} locale - Date locale. Default 'en-US'.
+ * @param {object} labels - { all, read, empty }.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each post is an article with a heading link; dates use <time datetime>; filters
+ * are toggle buttons and the visible count is announced politely.
+ */
+interface Post { title: string; excerpt: string; href: string; date: string; category?: string; readingTime?: string }
+interface Props {
+  posts?: Post[];
+  featured?: boolean;
+  filters?: boolean;
+  locale?: string;
+  labels?: Partial<Record<'all' | 'read' | 'empty', string>>;
+  className?: string;
+}
+
+const { posts = [
+  { title: 'Instanced meshes for UI: drawing 400 cubes in one call', excerpt: 'How a contribution matrix went from 371 meshes to a single draw call.', href: '#', date: '2026-10-28', category: 'three.js', readingTime: '7 min' },
+  { title: 'Damped springs instead of per-frame tweens', excerpt: 'Why a tween per frame makes a slider feel rubbery, and the one-line fix.', href: '#', date: '2026-09-14', category: 'animation', readingTime: '5 min' },
+  { title: 'Making 3D sections accessible', excerpt: 'Giving every WebGL block a real HTML counterpart.', href: '#', date: '2026-07-02', category: 'accessibility', readingTime: '6 min' },
+], featured = true, filters = true, locale = 'en-US', labels = {}, className = '' } = Astro.props;
+const L = { all: 'All', read: 'Read article', empty: 'No articles yet — come back soon.', ...labels };
+const fmt = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+const date = (iso: string) => fmt.format(new Date(`${iso}T00:00:00Z`));
+const categories = [...new Set(posts.map((p) => p.category).filter(Boolean))] as string[];
+---
+
+<section class:list={['dvpl', className]} data-dev-posts>
+  <div class="dvpl__wrap">
+    {filters && categories.length > 1 && (
+      <div class="dvpl__filters" role="group" aria-label="Filter articles">
+        <button type="button" aria-pressed="true" data-filter="">{L.all}</button>
+        {categories.map((c) => <button type="button" aria-pressed="false" data-filter={c}>/{c}</button>)}
+      </div>
+    )}
+    <p class="dvpl__live" aria-live="polite" data-live></p>
+
+    {posts.length === 0 ? (
+      <p class="dvpl__empty">{L.empty}</p>
+    ) : (
+      <div class="dvpl__list">
+        {posts.map((p, i) => (
+          <article class:list={['dvpl__item', { 'dvpl__item--featured': featured && i === 0 }]} data-category={p.category ?? ''}>
+            <p class="dvpl__meta">
+              <time datetime={p.date}>{date(p.date)}</time>
+              {p.category && <><span aria-hidden="true">•</span><span class="dvpl__cat">/{p.category}</span></>}
+              {p.readingTime && <><span aria-hidden="true">•</span><span>{p.readingTime}</span></>}
+            </p>
+            <h2 class="dvpl__title"><a href={p.href}>{p.title}</a></h2>
+            <p class="dvpl__excerpt">{p.excerpt}</p>
+            <a class="dvpl__read" href={p.href} aria-hidden="true" tabindex="-1">{L.read} →</a>
+          </article>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .dvpl { padding: 0 0 clamp(3rem, 7vw, 5rem); color: var(--c-text-1); }
+  .dvpl__wrap { max-width: 860px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 1.5rem); }
+  .dvpl__filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .dvpl__filters button {
+    min-height: 36px;
+    padding: 0 0.8rem;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--c-text-2);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .dvpl__filters button:hover { border-color: var(--c-text-1); color: var(--c-text-1); }
+  .dvpl__filters button[aria-pressed='true'] { background: var(--c-text-1); border-color: var(--c-text-1); color: var(--c-bg); }
+  .dvpl__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .dvpl__item { position: relative; padding: 1.75rem 0; border-bottom: 1px solid var(--c-border); }
+  .dvpl__item[hidden] { display: none; }
+  .dvpl__item--featured { padding: 2rem; margin-bottom: 0.5rem; border: 2px solid var(--c-text-1); border-radius: 4px; box-shadow: 6px 6px 0 var(--c-text-1); }
+  .dvpl__item--featured .dvpl__title { font-size: clamp(1.5rem, 3.2vw, 2rem); }
+  .dvpl__meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--c-text-3); }
+  .dvpl__cat { color: var(--c-text-2); }
+  .dvpl__title { margin: 0 0 0.6rem; font-size: clamp(1.2rem, 2.5vw, 1.45rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
+  .dvpl__title a { color: inherit; text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat; transition: background-size 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+  .dvpl__title a::after { content: ''; position: absolute; inset: 0; }
+  .dvpl__item:hover .dvpl__title a { background-size: 100% 1.5px; }
+  .dvpl__title a:focus-visible { outline: none; }
+  .dvpl__item:focus-within { outline: 2px solid var(--c-text-1); outline-offset: 6px; border-radius: 4px; }
+  .dvpl__excerpt { margin: 0 0 0.85rem; font-size: 0.95rem; line-height: 1.7; color: var(--c-text-2); }
+  .dvpl__read { position: relative; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--c-text-1); text-decoration: none; }
+  .dvpl__empty { font-family: var(--font-mono); color: var(--c-text-3); }
+  @media (prefers-reduced-motion: reduce) { .dvpl__title a { transition: none; } }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-dev-posts]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-category]'));
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    buttons.forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const f = btn.dataset.filter ?? '';
+        buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+        let n = 0;
+        items.forEach((it) => {
+          const on = !f || it.dataset.category === f;
+          it.hidden = !on;
+          if (on) n++;
+        });
+        if (live) live.textContent = `${n} ${n === 1 ? 'article' : 'articles'}`;
+      }),
+    );
+  });
+</script>

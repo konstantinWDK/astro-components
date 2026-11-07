@@ -1,0 +1,40 @@
+---
+/**
+ * PortfolioBlogPage — Blog index: page hero, a featured latest article and a filterable list of
+ * posts with date, category and reading time.
+ *
+ * Usage (src/pages/blog/index.astro):
+ *   import { PortfolioBlogPage } from 'astro-component-kit/templates/portfolio';
+ *   <PortfolioBlogPage />
+ *
+ * @param {PortfolioSite} site - Content and settings.
+ * @param {PortfolioRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import PortfolioLayout from './PortfolioLayout.astro';
+import DevPageHero from '../../sections/DevPageHero.astro';
+import DevPostList from '../../sections/DevPostList.astro';
+import { keycapPortfolio, portfolioRoutes, portfolioPostHref, type PortfolioSite, type PortfolioRoutes } from './data';
+
+interface Props {
+  site?: PortfolioSite;
+  routes?: PortfolioRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { site = keycapPortfolio, routes = portfolioRoutes, theme = 'light', noindex = false } = Astro.props;
+const posts = [...site.posts].sort((a, b) => b.date.localeCompare(a.date));
+---
+
+<PortfolioLayout title="Blog" description={`Articles by ${site.name} about web development, 3D on the web, performance and design systems.`} site={site} routes={routes} currentHref={routes.blog} theme={theme} noindex={noindex}>
+  <DevPageHero
+    label="Articles & notes"
+    hud={false}
+    title="Notes on"
+    titleAccent="building for the web."
+    text="Technical write-ups about 3D on the web, animation, accessibility and shipping component libraries."
+  />
+  <DevPostList posts={posts.map((p) => ({ title: p.title, excerpt: p.excerpt, date: p.date, category: p.category, readingTime: p.readingTime, href: portfolioPostHref(routes, p.slug) }))} />
+</PortfolioLayout>

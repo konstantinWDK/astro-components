@@ -1,0 +1,75 @@
+---
+/**
+ * DevPageHero — Inner-page hero for developer portfolios ("Keycap" design): a HUD badge or mono
+ * label, a two-line title that slides up line by line, an intro and an optional slot on the right
+ * (e.g. a DevMonitor or stats).
+ *
+ * @param {string} label - Mono label above the title.
+ * @param {string} title - First title line.
+ * @param {string} titleAccent - Second title line (muted). Optional.
+ * @param {string} text - Intro paragraph.
+ * @param {Array<{label: string, href?: string}>} breadcrumb - Optional breadcrumb.
+ * @param {boolean} hud - Wrap the label in [ HUD ] brackets. Default true.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: single h1; breadcrumb is a labelled nav with aria-current on the last item;
+ * reduced motion disables the slide-up.
+ */
+interface Props {
+  label?: string;
+  title?: string;
+  titleAccent?: string;
+  text?: string;
+  breadcrumb?: Array<{ label: string; href?: string }>;
+  hud?: boolean;
+  className?: string;
+}
+
+const { label = 'PROJECTS // INDEX', title = "Things I've", titleAccent = 'built & shipped.', text = 'Products, libraries and experiments — each one with a short case study.', breadcrumb = [], hud = true, className = '' } = Astro.props;
+const hasAside = Astro.slots.has('default');
+---
+
+<header class:list={['dvph', { 'dvph--split': hasAside }, className]}>
+  <div class="dvph__wrap">
+    <div class="dvph__text">
+      {breadcrumb.length > 0 && (
+        <nav class="dvph__crumbs" aria-label="Breadcrumb">
+          <ol>
+            {breadcrumb.map((b, i) => (
+              <li>
+                {b.href && i < breadcrumb.length - 1 ? <a href={b.href}>{b.label}</a> : <span aria-current={i === breadcrumb.length - 1 ? 'page' : undefined}>{b.label}</span>}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      {label && <p class="dvph__label">{hud ? <><b>[</b>{` ${label} `}<b>]</b></> : label}</p>}
+      <h1 class="dvph__title">
+        <span class="dvph__line">{title}</span>
+        {titleAccent && <span class:list={['dvph__line', 'dvph__line--accent', { 'dvph__line--long': titleAccent.length > 22 }]}>{titleAccent}</span>}
+      </h1>
+      {text && <p class="dvph__intro">{text}</p>}
+    </div>
+    {hasAside && <div class="dvph__aside"><slot /></div>}
+  </div>
+</header>
+
+<style>
+  .dvph { padding: clamp(7rem, 14vw, 9rem) 0 clamp(2rem, 5vw, 3rem); color: var(--c-text-1); }
+  .dvph__wrap { max-width: 1040px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 1.5rem); }
+  .dvph--split .dvph__wrap { display: grid; grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 2rem; }
+  .dvph__crumbs ol { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 0.72rem; color: var(--c-text-3); }
+  .dvph__crumbs li + li::before { content: '/'; margin-right: 0.4rem; }
+  .dvph__crumbs a { color: var(--c-text-2); text-decoration: none; }
+  .dvph__crumbs a:hover { color: var(--c-text-1); text-decoration: underline; }
+  .dvph__label { margin: 0 0 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-3); }
+  .dvph__label b { color: var(--c-text-1); }
+  .dvph__title { display: flex; flex-direction: column; margin: 0; font-size: clamp(2.4rem, 6.5vw, 4.5rem); font-weight: 700; letter-spacing: -0.04em; line-height: 0.95; }
+  .dvph__line { opacity: 0; transform: translateY(30px); animation: dvph-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards; }
+  .dvph__line--accent { color: var(--c-text-3); animation-delay: 0.22s; }
+  .dvph__line--long { margin-top: 0.35em; font-size: 0.5em; letter-spacing: -0.03em; line-height: 1.1; }
+  .dvph__intro { margin: 1.5rem 0 0; max-width: 560px; font-size: 1rem; line-height: 1.7; color: var(--c-text-2); opacity: 0; animation: dvph-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards; }
+  @keyframes dvph-up { to { opacity: 1; transform: none; } }
+  @media (max-width: 860px) { .dvph--split .dvph__wrap { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .dvph__line, .dvph__intro { animation: none; opacity: 1; transform: none; } }
+</style>

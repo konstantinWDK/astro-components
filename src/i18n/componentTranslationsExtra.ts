@@ -541,4 +541,65 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Pie de agencia encabezado por un gigantesco «Hablemos», con columnas de enlaces, oficinas, redes y línea legal.",
     ru: "Футер агентства с огромной ссылкой «Давайте поговорим», колонками ссылок, офисами, соцсетями и юридической строкой.",
   },
+  // ── Developer Portfolio ("Keycap") ───────────────────────────
+  'dev-header': {
+    es: "Navegación flotante con un logo partido que se contrae al hacer scroll (N·OALINDQVIST·.DEV → N.DEV), enlaces en píldora, cambio de tema claro/oscuro y menú móvil a pantalla completa.",
+    ru: "Плавающая навигация с разделённым логотипом, который сворачивается при прокрутке (N·OALINDQVIST·.DEV → N.DEV), ссылки-«таблетки», переключатель темы и мобильное меню на весь экран.",
+  },
+  'dev-hero': {
+    es: "Hero de desarrollador: un título enorme que se reescribe solo, el nombre cayendo con bloques flotantes, un indicador de estado y una cinta infinita de habilidades con tooltips, sobre una matriz de puntos 3D que se aparta del cursor.",
+    ru: "Hero разработчика: огромный заголовок, который перепечатывается сам, имя с падающими блоками, статус и бесконечная лента навыков с подсказками на фоне 3D-матрицы точек, расступающейся вокруг курсора.",
+  },
+  'dev-projects-showcase': {
+    es: "Slider 3D de proyectos: tarjetas de papel con contornos de tinta en perspectiva, cada una con un visual animado elegido por datos (código, terminal, ecualizador, monitor, endpoints, pintura, átomo). Arrastra, usa las teclas o las flechas; haz clic para abrir la ficha.",
+    ru: "3D-слайдер проектов: бумажные карточки с чернильным контуром в перспективе, у каждой анимированный визуал по данным (код, терминал, эквалайзер, монитор, эндпоинты, рисунок, атом). Перетаскивайте, используйте клавиши или стрелки; клик открывает карточку проекта.",
+  },
+  'dev-keyboard': {
+    es: "Teclado mecánico 3D a todo el ancho que escribe tu stack solo y lo repite como una palabra gigante de fondo; el contenido del slot (p. ej. una lista de repos) flota sobre las filas inferiores.",
+    ru: "3D-механическая клавиатура во всю ширину, которая сама печатает ваш стек и повторяет каждое слово огромными буквами на фоне; содержимое слота (например, список репозиториев) лежит поверх нижних рядов.",
+  },
+  'dev-repo-list': {
+    es: "Lista esmerilada de repositorios open source con lenguaje, estrellas, descripción, enlace al código y un ojo para la web en vivo; muestra el resto con «Ver todos».",
+    ru: "Матовый список open-source репозиториев: язык, звёзды, описание, ссылка на код и «глаз» живого сайта; остальные раскрываются кнопкой «Показать все».",
+  },
+  'dev-contributions': {
+    es: "Matriz de contribuciones estilo GitHub en 3D: cubos apenas redondeados que llegan volando y se montan, se siguen reconstruyendo y ondulan como agua alrededor del cursor; tooltips con fecha y número. Acepta semanas, una URL o datos demo.",
+    ru: "3D-матрица вкладов в стиле GitHub: слегка скруглённые кубики прилетают и собираются, продолжают перестраиваться и расходятся волнами вокруг курсора; подсказки с датой и числом. Данные — недели, URL или демо.",
+  },
+  'dev-monitor': {
+    es: "Monitor CRT 3D con contornos de tinta que cae en su sitio, se mece con el cursor y escribe líneas de terminal en una pantalla invertida.",
+    ru: "3D-монитор CRT с чернильными контурами: опускается на место, покачивается за курсором и печатает строки терминала на инвертированном экране.",
+  },
+  'dev-contact': {
+    es: "Bloque de contacto con una cápsula de tarjetas (email, GitHub, LinkedIn…) y un CTA opcional a la página de contacto.",
+    ru: "Блок контактов с капсулой карточек (email, GitHub, LinkedIn…) и необязательной кнопкой на страницу контактов.",
+  },
+  'dev-footer': {
+    es: "Pie de página mínimo con una fila de enlaces monoespaciados, copyright y una nota de «hecho con».",
+    ru: "Минималистичный футер: строка моноширинных ссылок, копирайт и короткая заметка «сделано на».",
+  },
+  'dev-page-hero': {
+    es: "Hero de página interior con migas de pan, etiqueta HUD, título en dos líneas que se desliza, intro y un slot opcional a la derecha (p. ej. un monitor 3D).",
+    ru: "Hero внутренней страницы: хлебные крошки, HUD-метка, двухстрочный выезжающий заголовок, вступление и необязательный слот справа (например, 3D-монитор).",
+  },
+  'dev-project-grid': {
+    es: "Tarjetas de proyecto estilo tecla (contorno de tinta y sombra dura que se «pulsa» al pasar el ratón) con número, categoría, stack, estado y estrellas, más filtros por categoría.",
+    ru: "Карточки проектов в виде клавиш (чернильный контур и жёсткая тень, которая «нажимается» при наведении): номер, категория, стек, статус и звёзды, плюс фильтры по категориям.",
+  },
+  'dev-project-detail': {
+    es: "Caso de proyecto: resumen, reto, solución y puntos clave junto a una ficha técnica fija (rol, año, estado, stack, métricas, enlaces), con teclas anterior / siguiente.",
+    ru: "Кейс проекта: обзор, задача, решение и ключевые пункты рядом с закреплённым техпаспортом (роль, год, статус, стек, метрики, ссылки) и клавиши «назад / вперёд».",
+  },
+  'dev-post-list': {
+    es: "Índice del blog con el último artículo destacado y una lista fina (fecha, categoría, tiempo de lectura, extracto) filtrable por categoría.",
+    ru: "Список статей блога: последняя статья выделена, остальные — тонкий список (дата, категория, время чтения, анонс) с фильтром по категориям.",
+  },
+  'dev-article': {
+    es: "Plantilla de artículo: línea de metadatos, título, entradilla, etiquetas, barra de progreso de lectura, prosa monocroma con bloques de código y teclas anterior / siguiente.",
+    ru: "Шаблон статьи: метаданные, заголовок, лид, теги, индикатор прогресса чтения, монохромная типографика с блоками кода и клавиши «назад / вперёд».",
+  },
+  'dev-contact-form': {
+    es: "Formulario de solicitud de proyecto con teclas de tipo de proyecto, presupuesto y mensaje, validación en línea, estado de éxito y un lateral con disponibilidad y contactos directos.",
+    ru: "Форма заявки на проект: клавиши типа проекта, бюджет и сообщение, встроенная проверка, состояние успеха и колонка с доступностью и прямыми контактами.",
+  },
 };

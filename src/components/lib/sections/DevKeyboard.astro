@@ -1,0 +1,113 @@
+---
+/**
+ * DevKeyboard — Full-width 3D mechanical keyboard ("Keycap" design) that types a list of words by
+ * itself and echoes each one as a huge backdrop word. Clicking a key presses it. Anything passed
+ * in the default slot floats over the lower part of the keyboard (e.g. a repository list), leaving
+ * the top rows visible. Light/dark aware. Needs the optional `three` peer dependency.
+ *
+ * @param {string[]} phrases - Words typed in a loop.
+ * @param {string} reveal - Space kept free above the slot content so the keys show. Default '24rem'.
+ * @param {string} minHeight - Height when the slot is empty. Default '560px'.
+ * @param {number} speed - Milliseconds per keystroke. Default 140.
+ * @param {string} label - Accessible description of the animation. Default 'Animated keyboard typing'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the canvas is decorative (role="img" with a label listing the words); the typed
+ * word is aria-hidden; with prefers-reduced-motion the board is static and shows the first word.
+ */
+interface Props {
+  phrases?: string[];
+  reveal?: string;
+  minHeight?: string;
+  speed?: number;
+  label?: string;
+  className?: string;
+}
+
+const {
+  phrases = ['ASTRO', 'REACT', 'TYPESCRIPT', 'THREE.JS', 'NODE.JS'],
+  reveal = '24rem',
+  minHeight = '560px',
+  speed = 140,
+  label = 'Animated keyboard typing',
+  className = '',
+} = Astro.props;
+const hasSlot = Astro.slots.has('default');
+---
+
+<section
+  class:list={['dvkb', { 'dvkb--empty': !hasSlot }, className]}
+  style={`--dvkb-reveal:${reveal};--dvkb-min:${minHeight}`}
+  data-dev-keyboard
+  data-phrases={JSON.stringify(phrases)}
+  data-speed={speed}
+>
+  <div class="dvkb__stage">
+    <div class="dvkb__word" aria-hidden="true"><span data-typed></span><span class="dvkb__cursor">_</span></div>
+    <div class="dvkb__canvas" data-canvas role="img" aria-label={`${label}: ${phrases.join(', ')}`}></div>
+  </div>
+  {hasSlot && <div class="dvkb__content"><slot /></div>}
+</section>
+
+<style>
+  .dvkb {
+    --kc-ink: var(--c-text-1);
+    --kc-paper: var(--c-bg);
+    --kc-muted: var(--c-text-3);
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: var(--c-bg);
+  }
+  .dvkb--empty { min-height: var(--dvkb-min); }
+  /* The board lives in the top band; slot content overlaps its lower rows. */
+  .dvkb__stage { position: absolute; inset: 0 0 auto; height: calc(var(--dvkb-reveal) + 18rem); }
+  .dvkb--empty .dvkb__stage { height: 100%; }
+  .dvkb__canvas { position: relative; z-index: 1; width: 100%; height: 100%; cursor: pointer; }
+  .dvkb__word {
+    position: absolute;
+    top: 15%;
+    left: 57%;
+    z-index: 0;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-mono);
+    font-size: clamp(3.2rem, 9.2vw, 8.2rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: rgb(var(--ink-rgb, 0 0 0) / 0.12);
+    pointer-events: none;
+    user-select: none;
+  }
+  .dvkb__cursor { margin-left: 0.15ch; font-weight: 300; color: rgb(var(--ink-rgb, 0 0 0) / 0.45); animation: dvkb-blink 0.85s ease-in-out infinite; }
+  .dvkb__content {
+    position: relative;
+    z-index: 2;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: var(--dvkb-reveal) clamp(1rem, 3vw, 1.5rem) 1.5rem;
+    pointer-events: none;
+  }
+  .dvkb__content > :global(*) { pointer-events: auto; }
+  @keyframes dvkb-blink { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0; } }
+  @media (max-width: 768px) {
+    .dvkb__content { padding-top: calc(var(--dvkb-reveal) * 0.75); }
+  }
+  @media (prefers-reduced-motion: reduce) { .dvkb__cursor { animation: none; } }
+</style>
+
+<script>
+  import * as THREE from 'three';
+  import { mountKeyboard } from '../three/keyboard-scene';
+
+  document.querySelectorAll<HTMLElement>('[data-dev-keyboard]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    mountKeyboard(root.querySelector<HTMLElement>('[data-canvas]')!, THREE, {
+      phrases: JSON.parse(root.dataset.phrases || '[]'),
+      typedEl: root.querySelector<HTMLElement>('[data-typed]'),
+      speed: Number(root.dataset.speed) || 140,
+    });
+  });
+</script>

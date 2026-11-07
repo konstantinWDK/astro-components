@@ -1,0 +1,168 @@
+---
+/**
+ * DevProjectGrid — Project index for developer portfolios ("Keycap" design): keycap-like cards
+ * (ink outline, hard offset shadow that "presses" on hover) with number, category, title, tagline,
+ * stack chips, status and stars, plus category filter keys.
+ *
+ * @param {Array<{title: string, tagline: string, category: string, href: string, technologies?: string[], status?: string, year?: string, stars?: number}>} projects - Projects.
+ * @param {boolean} filters - Show category filter keys. Default true.
+ * @param {string} allLabel - "All" filter label. Default 'All'.
+ * @param {string} emptyLabel - Shown when a filter has no results. Default 'No projects in this category yet.'
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: filters are toggle buttons (aria-pressed) and the result count is announced in a
+ * polite live region; each card is one link with the title as its name.
+ */
+interface Project {
+  title: string;
+  tagline: string;
+  category: string;
+  href: string;
+  technologies?: string[];
+  status?: string;
+  year?: string;
+  stars?: number;
+}
+interface Props {
+  projects?: Project[];
+  filters?: boolean;
+  allLabel?: string;
+  emptyLabel?: string;
+  className?: string;
+}
+
+const { projects = [
+  { title: 'Orbit UI', tagline: 'Accessible component kit for React', category: 'Frontend', href: '#', technologies: ['React', 'TypeScript', 'CSS'], status: 'Live', year: '2026', stars: 1240 },
+  { title: 'Tidy', tagline: 'Reclaims disk space from dev caches', category: 'Tools', href: '#', technologies: ['Rust', 'CLI'], status: 'Live', year: '2025', stars: 486 },
+  { title: 'Relay', tagline: 'Declarative API mocks in minutes', category: 'Backend', href: '#', technologies: ['Node.js', 'OpenAPI'], status: 'In progress', year: '2026', stars: 57 },
+], filters = true, allLabel = 'All', emptyLabel = 'No projects in this category yet.', className = '' } = Astro.props;
+const categories = [...new Set(projects.map((p) => p.category))];
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<section class:list={['dvpg', className]} data-dev-grid>
+  <div class="dvpg__wrap">
+    {filters && categories.length > 1 && (
+      <div class="dvpg__filters" role="group" aria-label="Filter projects">
+        <button type="button" class="dvpg__filter" aria-pressed="true" data-filter="">{allLabel} <span>{projects.length}</span></button>
+        {categories.map((c) => (
+          <button type="button" class="dvpg__filter" aria-pressed="false" data-filter={c}>{c} <span>{projects.filter((p) => p.category === c).length}</span></button>
+        ))}
+      </div>
+    )}
+    <p class="dvpg__live" aria-live="polite" data-live></p>
+
+    <ul class="dvpg__grid">
+      {projects.map((p, i) => (
+        <li data-category={p.category}>
+          <a class="dvpg__card" href={p.href}>
+            <span class="dvpg__top">
+              <span class="dvpg__num">{pad(i + 1)}</span>
+              <span class="dvpg__cat">{p.category}</span>
+              {p.year && <span class="dvpg__year">{p.year}</span>}
+            </span>
+            <span class="dvpg__title">{p.title}</span>
+            <span class="dvpg__tagline">{p.tagline}</span>
+            {p.technologies && p.technologies.length > 0 && (
+              <span class="dvpg__chips">{p.technologies.slice(0, 4).map((t) => <span>{t}</span>)}</span>
+            )}
+            <span class="dvpg__foot">
+              {p.status && <span class="dvpg__status" data-status={p.status.toLowerCase().replace(/\s+/g, '-')}><i aria-hidden="true"></i>{p.status}</span>}
+              {!!p.stars && <span class="dvpg__stars">★ {p.stars.toLocaleString('en')}</span>}
+              <span class="dvpg__arrow" aria-hidden="true">↗</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <p class="dvpg__empty" data-empty hidden>{emptyLabel}</p>
+  </div>
+</section>
+
+<style>
+  .dvpg { padding: 0 0 clamp(3rem, 7vw, 5rem); color: var(--c-text-1); }
+  .dvpg__wrap { max-width: 1040px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 1.5rem); }
+  .dvpg__filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.75rem; }
+  .dvpg__filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 40px;
+    padding: 0 0.9rem;
+    border: 1.5px solid var(--c-text-1);
+    border-radius: 3px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    font-weight: 600;
+    box-shadow: 0 3px 0 var(--c-text-1);
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .dvpg__filter span { opacity: 0.5; }
+  .dvpg__filter:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--c-text-1); }
+  .dvpg__filter[aria-pressed='true'] { background: var(--c-text-1); color: var(--c-bg); transform: translateY(3px); box-shadow: none; }
+  .dvpg__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+  .dvpg__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin: 0; padding: 0; list-style: none; }
+  .dvpg__grid li[hidden] { display: none; }
+  .dvpg__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    height: 100%;
+    padding: 1.4rem;
+    border: 1.5px solid var(--c-text-1);
+    border-radius: 4px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    text-decoration: none;
+    box-shadow: 4px 4px 0 var(--c-text-1);
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .dvpg__card:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--c-text-1); }
+  .dvpg__card:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--c-text-1); }
+  .dvpg__card:focus-visible { outline: 2px solid var(--c-text-1); outline-offset: 4px; }
+  .dvpg__top { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--c-text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+  .dvpg__num { padding: 0.1rem 0.4rem; border-radius: 2px; background: var(--c-text-1); color: var(--c-bg); font-weight: 700; }
+  .dvpg__year { margin-left: auto; }
+  .dvpg__title { margin-top: 0.4rem; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .dvpg__tagline { font-size: 0.9rem; line-height: 1.55; color: var(--c-text-2); }
+  .dvpg__chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; }
+  .dvpg__chips span { padding: 0.2rem 0.5rem; border: 1px solid rgb(var(--ink-rgb, 0 0 0) / 0.2); border-radius: 2px; font-family: var(--font-mono); font-size: 0.66rem; }
+  .dvpg__foot { display: flex; align-items: center; gap: 0.75rem; margin-top: auto; padding-top: 0.8rem; border-top: 1px dashed rgb(var(--ink-rgb, 0 0 0) / 0.15); font-family: var(--font-mono); font-size: 0.7rem; color: var(--c-text-2); }
+  .dvpg__status { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .dvpg__status i { width: 7px; height: 7px; border-radius: 50%; background: var(--c-text-3); }
+  .dvpg__status[data-status='live'] i { background: var(--c-success, #10b981); box-shadow: 0 0 6px var(--c-success, #10b981); }
+  .dvpg__status[data-status='in-progress'] i { background: var(--c-warning, #f59e0b); }
+  .dvpg__arrow { margin-left: auto; font-size: 1rem; color: var(--c-text-1); transition: transform 0.2s ease; }
+  .dvpg__card:hover .dvpg__arrow { transform: translate(2px, -2px); }
+  .dvpg__empty { margin: 2rem 0 0; font-family: var(--font-mono); font-size: 0.85rem; color: var(--c-text-3); }
+  @media (prefers-reduced-motion: reduce) { .dvpg__card, .dvpg__filter, .dvpg__arrow { transition: none; } }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-dev-grid]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const items = Array.from(root.querySelectorAll<HTMLElement>('li[data-category]'));
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+    buttons.forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const f = btn.dataset.filter ?? '';
+        buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+        let shown = 0;
+        items.forEach((li) => {
+          const on = !f || li.dataset.category === f;
+          li.hidden = !on;
+          if (on) shown++;
+        });
+        if (empty) empty.hidden = shown > 0;
+        if (live) live.textContent = `${shown} ${shown === 1 ? 'project' : 'projects'}`;
+      }),
+    );
+  });
+</script>

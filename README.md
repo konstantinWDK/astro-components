@@ -14,7 +14,7 @@
 ## ✨ Features
 
 - 🤖 **Official MCP Server & AI development** — connect Cursor, Claude, Codex, Lovable, or any MCP client (`https://mcp.astrocomponents.dev/sse` or `npx astro-component-kit mcp install <client>`)
-- 🛍️ **Multi-page production templates** — 3 complete templates (E-commerce Store, Editorial Boutique, SaaS Hotel) with state management, cart persistence, and live previews
+- 🛍️ **Multi-page production templates** — 5 complete templates (E-commerce Store, Editorial Boutique, SaaS Hotel, Marketing Agency, Developer Portfolio) with state management, cart persistence, 3D sections and live previews
 - 🎨 **Dark & Light theme** — dark mode first with official `[data-theme="light"]` support, adaptive tokens, and glassmorphism
 - ⚡ **Full-page sections** — 41+ production-ready landing sections (Heroes, Bento Grids, Pricing Matrices, Testimonials, CTAs, FAQs, Teams, Footers)
 - 📈 **Zero-dependency SVG charts** — 41 pure-SVG data visualization components rendered at build time with keyboard tooltips and data table fallbacks
@@ -133,7 +133,7 @@ Add this endpoint to your editor's MCP settings (`claude_desktop_config.json`, C
 | `get_component` | Detailed component metadata, TypeScript `Props`, import statements, and usage code |
 | `get_component_code` | Raw `.astro` source code ready to inject into your project |
 | `list_categories` | Overview of all 13 component categories with item counts |
-| `list_templates` | Overview of the 3 multi-page production templates (Nova Store, Forma Studio, The Lobby) |
+| `list_templates` | Overview of the multi-page production templates (Nova Store, Forma Studio, The Lobby, Volta, Keycap) |
 | `get_template` | Complete template architecture, pages, store configuration, and routing guide |
 | `get_design_tokens` | CSS tokens, color variables, spacing scale, and dark/light theme setup |
 | `get_library_info` | High-level overview, active version, total counts, and quickstart guide |
@@ -142,7 +142,7 @@ Add this endpoint to your editor's MCP settings (`claude_desktop_config.json`, C
 
 ## 📚 Component & Section Library
 
-**320+ components & full-page sections** across 13 categories plus 3 complete templates:
+**320+ components & full-page sections** across 13 categories plus 5 complete templates:
 
 | Category | Components | Description |
 |----------|:----------:|-------------|
@@ -214,6 +214,27 @@ import { DashboardPage } from 'astro-component-kit/templates/saas-hotel';
 
 - **Pages included:** `DashboardPage`, `RoomsPage` (Room Rack timeline), `ReservationsPage`, `GuestsPage`, `ReportsPage`, `SettingsPage`, `SignInPage`, and `LandingPage`.
 - **Import path:** `astro-component-kit/templates/saas-hotel`
+
+### 4. Marketing Agency (Volta)
+An eight-page site for a performance marketing agency: services, case studies, pricing, a free-audit lead magnet and an ads ROI calculator.
+
+- **Import path:** `astro-component-kit/templates/agency`
+
+### 5. Developer Portfolio (Keycap)
+A monochrome, keyboard-inspired personal site (designed for [konstantink.dev](https://konstantink.dev)) with 3D sections: a projects showcase whose cards animate from your data, a mechanical keyboard that types your stack, a GitHub-style contribution matrix of flying cubes and a 3D monitor. Light by default with a dark mode the 3D scenes follow.
+
+```astro
+---
+// src/pages/index.astro   (npm install three — optional peer dependency for the 3D sections)
+import { PortfolioHomePage } from 'astro-component-kit/templates/portfolio';
+---
+
+<PortfolioHomePage contributionsSrc="/api/contributions.json" />
+```
+
+- **Pages included:** `PortfolioHomePage`, `PortfolioProjectsPage`, `PortfolioProjectPage`, `PortfolioBlogPage`, `PortfolioPostPage`, `PortfolioContactPage` and `PortfolioLayout`.
+- **Sections:** 15 `Dev*` sections in Sections → Developer Portfolio, usable on any site.
+- **Import path:** `astro-component-kit/templates/portfolio`
 
 ---
 

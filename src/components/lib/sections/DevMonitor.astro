@@ -1,0 +1,56 @@
+---
+/**
+ * DevMonitor — 3D CRT monitor ("Keycap" design): a paper body with ink outlines that drops into
+ * place, sways with the cursor and types terminal lines on an inverted screen. Use it as a visual
+ * in heroes or project pages. Light/dark aware. Needs the optional `three` peer dependency.
+ *
+ * @param {string[]} lines - Lines typed in a loop. Lines starting with "$ " get the prompt.
+ * @param {string} prompt - Shell prompt. Default 'dev@keycap:~$'.
+ * @param {string} height - Canvas height. Default '420px'.
+ * @param {string} label - Accessible description. Default 'Terminal on a 3D monitor'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: role="img" whose label includes the terminal lines; reduced motion shows every
+ * line at once with no drop or typing.
+ */
+interface Props {
+  lines?: string[];
+  prompt?: string;
+  height?: string;
+  label?: string;
+  className?: string;
+}
+
+const { lines = ['$ whoami', '> full-stack developer'], prompt = 'dev@keycap:~$', height = '420px', label = 'Terminal on a 3D monitor', className = '' } = Astro.props;
+---
+
+<div
+  class:list={['dvmn', className]}
+  style={`--dvmn-h:${height}`}
+  data-dev-monitor
+  data-lines={JSON.stringify(lines)}
+  data-prompt={prompt}
+  role="img"
+  aria-label={`${label}: ${lines.join(' — ')}`}
+></div>
+
+<style>
+  .dvmn {
+    --kc-ink: var(--c-text-1);
+    --kc-paper: var(--c-bg);
+    --kc-muted: var(--c-text-3);
+    position: relative;
+    width: 100%;
+    height: var(--dvmn-h);
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+  import { mountMonitor } from '../three/monitor-scene';
+
+  document.querySelectorAll<HTMLElement>('[data-dev-monitor]:not([data-bound])').forEach((el) => {
+    el.dataset.bound = '';
+    mountMonitor(el, THREE, { lines: JSON.parse(el.dataset.lines || '[]'), prompt: el.dataset.prompt });
+  });
+</script>

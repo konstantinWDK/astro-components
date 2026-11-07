@@ -86,3 +86,20 @@ export { default as AgencyQuotes } from './AgencyQuotes.astro';
 export { default as AgencyTeamGrid } from './AgencyTeamGrid.astro';
 export { default as AgencyContactBrief } from './AgencyContactBrief.astro';
 export { default as AgencyFooterCta } from './AgencyFooterCta.astro';
+
+// Developer Portfolio ("Keycap") — 3D sections need the optional `three` peer dependency
+export { default as DevHeader } from './DevHeader.astro';
+export { default as DevHero } from './DevHero.astro';
+export { default as DevProjectsShowcase } from './DevProjectsShowcase.astro';
+export { default as DevKeyboard } from './DevKeyboard.astro';
+export { default as DevRepoList } from './DevRepoList.astro';
+export { default as DevContributions } from './DevContributions.astro';
+export { default as DevMonitor } from './DevMonitor.astro';
+export { default as DevContact } from './DevContact.astro';
+export { default as DevFooter } from './DevFooter.astro';
+export { default as DevPageHero } from './DevPageHero.astro';
+export { default as DevProjectGrid } from './DevProjectGrid.astro';
+export { default as DevProjectDetail } from './DevProjectDetail.astro';
+export { default as DevPostList } from './DevPostList.astro';
+export { default as DevArticle } from './DevArticle.astro';
+export { default as DevContactForm } from './DevContactForm.astro';

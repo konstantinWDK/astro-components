@@ -1,0 +1,43 @@
+---
+/**
+ * PortfolioContactPage — Contact: page hero with a 3D monitor, project inquiry form (type keys,
+ * budget, message, inline validation) and an aside with availability and direct contacts.
+ *
+ * Usage (src/pages/contact.astro):
+ *   import { PortfolioContactPage } from 'astro-component-kit/templates/portfolio';
+ *   <PortfolioContactPage action="https://your-backend/contact" />
+ *
+ * @param {string} action - Form endpoint. Without it the form runs in demo mode (validates and shows success).
+ * @param {PortfolioSite} site - Content and settings.
+ * @param {PortfolioRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import PortfolioLayout from './PortfolioLayout.astro';
+import DevPageHero from '../../sections/DevPageHero.astro';
+import DevMonitor from '../../sections/DevMonitor.astro';
+import DevContactForm from '../../sections/DevContactForm.astro';
+import { keycapPortfolio, portfolioRoutes, type PortfolioSite, type PortfolioRoutes } from './data';
+
+interface Props {
+  action?: string;
+  site?: PortfolioSite;
+  routes?: PortfolioRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { action, site = keycapPortfolio, routes = portfolioRoutes, theme = 'light', noindex = false } = Astro.props;
+---
+
+<PortfolioLayout title="Contact" description={`Contact ${site.name} — ${site.status.toLowerCase()}.`} site={site} routes={routes} currentHref={routes.contact} theme={theme} noindex={noindex}>
+  <DevPageHero label="CONTACT // OPEN_CHANNEL" title="Let's build" titleAccent="something good." text={`${site.status} · ${site.location}. Share a few details and I'll get back to you with next steps.`}>
+    <DevMonitor
+      lines={['$ ping ' + site.githubUser, '> 64 bytes: time=0.4ms', '$ status --availability', `> ${site.status.toLowerCase()}`, '$ mail --to hello', '> ready when you are']}
+      prompt="guest@contact:~$"
+      height="340px"
+      label="Contact terminal"
+    />
+  </DevPageHero>
+  <DevContactForm action={action} contacts={site.contacts.map((c) => ({ label: c.label, value: c.value, href: c.href }))} />
+</PortfolioLayout>

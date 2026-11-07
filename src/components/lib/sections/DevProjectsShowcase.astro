@@ -1,0 +1,462 @@
+---
+/**
+ * DevProjectsShowcase — 3D projects slider ("Keycap" design). Projects become architectural cards
+ * (paper boxes with ink outlines) fanned out in perspective, each with a small animated visual
+ * chosen by data: code | terminal | equalizer | monitor | endpoints | paint | atom. Drag, swipe,
+ * horizontal trackpad, arrow buttons, a keycap row or ←/→ move between cards; clicking the centred
+ * card brings it forward and opens a project sheet. Light/dark aware. Needs the optional `three`
+ * peer dependency.
+ *
+ * @param {string} eyebrow - HUD badge above the title.
+ * @param {string} title - Section title. Default 'Selected projects'.
+ * @param {string} subtitle - Intro text.
+ * @param {Array<object>} projects - { title, tagline, category, badge?, description, technologies[], visual?: { kind, lines? }, liveUrl?, repoUrl?, stars?, href? }
+ * @param {object} labels - UI strings: { prev, next, hint, close, live, code, details, open, key, stack }.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: every project is also reachable through real buttons (arrows and keycap row with
+ * aria-current); the project sheet is a modal dialog (focus trapped, Escape closes, focus returns);
+ * ←/→ only act while the section is on screen and no field is focused; reduced motion freezes the
+ * animated visuals.
+ */
+import type { ShowcaseVisualKind } from '../three/showcase-scene';
+
+interface ShowcaseItem {
+  title: string;
+  tagline: string;
+  category: string;
+  badge?: string;
+  description: string;
+  technologies: string[];
+  visual?: { kind: ShowcaseVisualKind; lines?: string[] };
+  liveUrl?: string;
+  repoUrl?: string;
+  stars?: number;
+  href?: string;
+}
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  projects: ShowcaseItem[];
+  labels?: Partial<Record<'prev' | 'next' | 'hint' | 'close' | 'live' | 'code' | 'details' | 'open' | 'key' | 'stack', string>>;
+  className?: string;
+}
+
+const {
+  eyebrow = '3D SYSTEM // MONOCHROME',
+  title = 'Selected projects',
+  subtitle,
+  projects = [
+    { title: 'Orbit UI', tagline: 'Accessible component kit for React', category: 'Frontend & UI System', badge: 'Popular', description: 'Typed, accessible React components with light and dark themes and zero runtime dependencies.', technologies: ['React', 'TypeScript', 'CSS'], visual: { kind: 'atom' }, stars: 1240 },
+    { title: 'Atelier', tagline: 'Online platform for contemporary art', category: 'Web Platform', badge: 'Live', description: 'Artists, galleries and venues publish works, events and art routes.', technologies: ['Next.js', 'PostgreSQL', 'Mapbox'], visual: { kind: 'paint', lines: ['Works', 'Artists', 'Spaces', 'Events'] } },
+    { title: 'Tidy', tagline: 'Reclaims disk space from dev caches', category: 'Developer Tools', badge: 'New', description: 'A CLI that safely removes stale build caches, with a dry run and an undo log.', technologies: ['Rust', 'CLI'], visual: { kind: 'terminal' } },
+    { title: 'Relay', tagline: 'Declarative API mocks in minutes', category: 'Backend & API', description: 'One schema drives the mock server, validation and docs.', technologies: ['Node.js', 'OpenAPI'], visual: { kind: 'endpoints' } },
+  ],
+  labels = {},
+  className = '',
+} = Astro.props;
+const L = {
+  prev: 'Previous project',
+  next: 'Next project',
+  hint: 'Drag to explore · Click to open',
+  close: 'ESC / CLOSE',
+  live: 'Visit live site',
+  code: 'View source code',
+  details: 'Case study',
+  open: '[ CLICK TO OPEN ↗ ]',
+  key: 'KEY',
+  stack: 'TECH_STACK:',
+  ...labels,
+};
+const pad = (n: number) => String(n).padStart(2, '0');
+const uid = Math.random().toString(36).slice(2, 8);
+---
+
+<section class:list={['dvps', className]} data-dev-showcase data-labels={JSON.stringify({ open: L.open, key: L.key })}>
+  <div class="dvps__grid-bg" aria-hidden="true"></div>
+
+  <div class="dvps__head">
+    <div class="dvps__intro">
+      {eyebrow && <p class="dvps__badge"><span>[</span>{` ${eyebrow} `}<span>]</span></p>}
+      <h2 class="dvps__title" id={`dvps-title-${uid}`}>{title}</h2>
+      {subtitle && <p class="dvps__subtitle">{subtitle}</p>}
+    </div>
+    <div class="dvps__nav">
+      <button class="dvps__arrow" type="button" data-prev aria-label={L.prev}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <p class="dvps__counter" aria-live="polite"><span class="dvps__dim">[</span> <strong data-current>01</strong> <span class="dvps__dim">/ {pad(projects.length)} ]</span></p>
+      <button class="dvps__arrow" type="button" data-next aria-label={L.next}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="dvps__viewport">
+    <div class="dvps__ruler dvps__ruler--top" aria-hidden="true"><span>+</span><i></i><em>SYSTEM_SPEC // KEYBOARD_AESTHETICS</em><i></i><span>+</span></div>
+    <div class="dvps__canvas" data-canvas role="img" aria-labelledby={`dvps-title-${uid}`}></div>
+    <p class="dvps__hint" data-hint aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      {L.hint}
+    </p>
+    <div class="dvps__ruler dvps__ruler--bottom" aria-hidden="true"><span>+</span><i></i><em>WIREFRAME_EDGES // INK // PAPER</em><i></i><span>+</span></div>
+
+    <div class="dvps__overlay" data-overlay hidden>
+      <div class="dvps__backdrop" data-close></div>
+      <div class="dvps__sheet" role="dialog" aria-modal="true" aria-labelledby={`dvps-sheet-${uid}`} data-sheet tabindex="-1">
+        <button class="dvps__close" type="button" data-close>{L.close}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        {projects.map((p, i) => (
+          <article class="dvps__card" data-sheet-item={i} hidden>
+            <p class="dvps__meta">
+              <strong>{L.key} // {pad(i + 1)}</strong><span class="dvps__dim">/</span><span>{p.category}</span>
+              {p.badge && <span class="dvps__tag">{p.badge}</span>}
+              {!!p.stars && <span class="dvps__tag">★ {p.stars}</span>}
+            </p>
+            <h3 class="dvps__sheet-title" id={i === 0 ? `dvps-sheet-${uid}` : undefined} data-sheet-title>{p.title}</h3>
+            <p class="dvps__tagline">{p.tagline}</p>
+            <hr class="dvps__rule" />
+            <p class="dvps__desc">{p.description}</p>
+            <p class="dvps__stack-label">{L.stack}</p>
+            <ul class="dvps__chips">{p.technologies.map((t) => <li>{t}</li>)}</ul>
+            <div class="dvps__actions">
+              {p.liveUrl && (
+                <a class="dvps__btn dvps__btn--primary" href={p.liveUrl} target="_blank" rel="noopener noreferrer">{L.live}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg>
+                </a>
+              )}
+              {p.href && <a class="dvps__btn" href={p.href}>{L.details} →</a>}
+              {p.repoUrl && (
+                <a class="dvps__btn dvps__btn--icon" href={p.repoUrl} target="_blank" rel="noopener noreferrer" aria-label={`${L.code}: ${p.title}`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <nav class="dvps__keys" aria-label={title}>
+    {projects.map((p, i) => (
+      <button type="button" class:list={['dvps__key', { 'is-active': i === 0 }]} data-key={i} aria-current={i === 0 ? 'true' : 'false'} aria-label={p.title}>
+        <span class="dvps__key-num">{pad(i + 1)}</span><span class="dvps__key-label">{p.title}</span>
+      </button>
+    ))}
+  </nav>
+
+  <script is:inline type="application/json" data-projects set:html={JSON.stringify(projects.map(({ title, tagline, category, badge, technologies, visual }) => ({ title, tagline, category, badge, technologies, visual })))} />
+</section>
+
+<style>
+  .dvps {
+    --kc-ink: var(--c-text-1);
+    --kc-paper: var(--c-bg);
+    --kc-muted: var(--c-text-3);
+    --dvps-line: var(--c-text-1);
+    position: relative;
+    padding: clamp(3rem, 7vw, 4.5rem) 0 clamp(2rem, 5vw, 3rem);
+    overflow: hidden;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+  }
+  .dvps__grid-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.6;
+    pointer-events: none;
+    background-image: linear-gradient(to right, rgb(var(--ink-rgb, 0 0 0) / 0.035) 1px, transparent 1px), linear-gradient(to bottom, rgb(var(--ink-rgb, 0 0 0) / 0.035) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 85%);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 30%, transparent 85%);
+  }
+  .dvps__head {
+    position: relative;
+    z-index: 2;
+    max-width: 1040px;
+    margin: 0 auto 2rem;
+    padding: 0 clamp(1rem, 3vw, 1.5rem);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+  }
+  .dvps__intro { max-width: 680px; }
+  .dvps__badge { margin: 0 0 0.4rem; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--c-text-3); }
+  .dvps__badge span { color: var(--c-text-1); font-weight: 700; }
+  .dvps__title { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.02em; }
+  .dvps__subtitle { margin: 0.6rem 0 0; font-size: 0.95rem; line-height: 1.6; color: var(--c-text-2); }
+
+  .dvps__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0.6rem;
+    border: 1.5px solid var(--dvps-line);
+    border-radius: 4px;
+    background: var(--c-bg);
+    box-shadow: 2px 2px 0 var(--dvps-line);
+  }
+  .dvps__arrow {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid var(--dvps-line);
+    border-radius: 2px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+  .dvps__arrow:hover { background: var(--c-text-1); color: var(--c-bg); transform: translateY(-1px); }
+  .dvps__counter { margin: 0; padding: 0 0.4rem; font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.06em; }
+  .dvps__dim { color: var(--c-text-3); }
+
+  .dvps__viewport { position: relative; z-index: 1; height: 780px; max-height: 85vh; }
+  .dvps__canvas { width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+  .dvps__canvas:active { cursor: grabbing; }
+  .dvps__ruler {
+    position: absolute;
+    left: 2rem;
+    right: 2rem;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--c-text-3);
+  }
+  .dvps__ruler--top { top: 0.5rem; }
+  .dvps__ruler--bottom { bottom: 0.5rem; }
+  .dvps__ruler i { flex: 1; height: 1px; background: var(--c-text-1); opacity: 0.15; }
+  .dvps__ruler span { font-weight: 700; color: var(--c-text-1); }
+  .dvps__ruler em { font-style: normal; }
+  .dvps__hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    z-index: 10;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1.1rem;
+    border: 1.5px solid var(--dvps-line);
+    border-radius: 2px;
+    background: var(--c-bg);
+    box-shadow: 2px 2px 0 var(--dvps-line);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .dvps__hint svg { animation: dvps-nudge 1.6s ease-in-out infinite; }
+  .dvps__hint.is-hidden { opacity: 0; transform: translate(-50%, 8px); }
+
+  .dvps__overlay { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; }
+  .dvps__overlay[hidden] { display: none; }
+  .dvps__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(var(--paper-rgb, 255 255 255) / 0.82);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    animation: dvps-fade 0.3s ease;
+  }
+  .dvps__sheet {
+    position: relative;
+    width: min(680px, calc(100% - 2rem));
+    max-height: calc(100% - 2rem);
+    overflow-y: auto;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 2px solid var(--dvps-line);
+    border-radius: 4px;
+    background: var(--c-bg);
+    box-shadow: 6px 6px 0 var(--dvps-line);
+    outline: none;
+    animation: dvps-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  }
+  .dvps__close {
+    position: absolute;
+    top: 1.1rem;
+    right: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 36px;
+    padding: 0 0.8rem;
+    border: 1.5px solid var(--dvps-line);
+    border-radius: 2px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .dvps__close:hover { background: var(--c-text-1); color: var(--c-bg); }
+  .dvps__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0 0 0.75rem; padding-right: 8.5rem; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-text-2); }
+  .dvps__meta strong { color: var(--c-text-1); }
+  .dvps__tag { padding: 0.15rem 0.5rem; border-radius: 2px; background: var(--c-text-1); color: var(--c-bg); font-weight: 700; font-size: 0.68rem; }
+  .dvps__sheet-title { margin: 0 0 0.3rem; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; }
+  .dvps__tagline { margin: 0 0 1.25rem; font-size: 1.05rem; font-weight: 500; color: var(--c-text-2); }
+  .dvps__rule { border: 0; height: 1.5px; background: var(--c-text-1); margin: 0 0 1.4rem; }
+  .dvps__desc { margin: 0 0 1.6rem; font-size: 0.98rem; line-height: 1.7; color: var(--c-text-2); }
+  .dvps__stack-label { margin: 0 0 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: var(--c-text-3); }
+  .dvps__chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 2rem; padding: 0; list-style: none; }
+  .dvps__chips li { padding: 0.35rem 0.75rem; border: 1.5px solid var(--dvps-line); border-radius: 2px; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600; }
+  .dvps__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+  .dvps__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    padding: 0 1.25rem;
+    border: 1.5px solid var(--dvps-line);
+    border-radius: 2px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 2px 2px 0 var(--dvps-line);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .dvps__btn:hover { transform: translateY(-1px); box-shadow: 3px 3px 0 var(--dvps-line); }
+  .dvps__btn--primary { background: var(--c-text-1); color: var(--c-bg); box-shadow: 2px 2px 0 var(--c-text-3); }
+  .dvps__btn--icon { width: 44px; padding: 0; }
+  .dvps__btn--icon:hover { background: var(--c-text-1); color: var(--c-bg); }
+
+  .dvps__keys { position: relative; z-index: 2; max-width: 1040px; margin: 1.25rem auto 0; padding: 0 1rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+  .dvps__key {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 40px;
+    padding: 0 0.85rem;
+    border: 1.5px solid var(--dvps-line);
+    border-radius: 3px;
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    box-shadow: 0 3px 0 var(--dvps-line);
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease, color 0.2s ease;
+  }
+  .dvps__key-num { font-weight: 700; opacity: 0.45; }
+  .dvps__key:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--dvps-line); }
+  .dvps__key.is-active { background: var(--c-text-1); color: var(--c-bg); transform: translateY(3px); box-shadow: none; }
+  .dvps__key.is-active .dvps__key-num { opacity: 0.7; }
+  .dvps :focus-visible { outline: 2px solid var(--c-text-1); outline-offset: 3px; }
+
+  @keyframes dvps-nudge { 50% { transform: translateX(4px); } }
+  @keyframes dvps-fade { from { opacity: 0; } }
+  @keyframes dvps-pop { from { opacity: 0; transform: translateY(35px) scale(0.95); } }
+
+  @media (max-width: 768px) {
+    .dvps__key-label, .dvps__ruler em { display: none; }
+    .dvps__key { width: 44px; height: 44px; justify-content: center; padding: 0; }
+    .dvps__meta { padding-right: 0; margin-top: 2.5rem; }
+  }
+  @media (max-width: 640px) { .dvps__viewport { height: 420px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dvps__hint svg, .dvps__backdrop, .dvps__sheet { animation: none; }
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+  import { mountShowcase, type ShowcaseProject } from '../three/showcase-scene';
+
+  document.querySelectorAll<HTMLElement>('[data-dev-showcase]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const canvas = root.querySelector<HTMLElement>('[data-canvas]')!;
+    const projects = JSON.parse(root.querySelector('[data-projects]')?.textContent || '[]') as ShowcaseProject[];
+    const labels = JSON.parse(root.dataset.labels || '{}');
+    const current = root.querySelector<HTMLElement>('[data-current]');
+    const keys = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-key]'));
+    const hint = root.querySelector<HTMLElement>('[data-hint]');
+    const overlay = root.querySelector<HTMLElement>('[data-overlay]')!;
+    const sheet = root.querySelector<HTMLElement>('[data-sheet]')!;
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-sheet-item]'));
+    let returnFocus: HTMLElement | null = null;
+    let visible = false;
+
+    const openSheet = (i: number) => {
+      returnFocus = document.activeElement as HTMLElement | null;
+      items.forEach((it, j) => {
+        it.hidden = j !== i;
+        const t = it.querySelector('[data-sheet-title]');
+        if (t) t.id = j === i ? sheet.getAttribute('aria-labelledby')! : '';
+      });
+      overlay.hidden = false;
+      sheet.focus();
+    };
+    const closeSheet = () => {
+      if (overlay.hidden) return;
+      overlay.hidden = true;
+      api.close();
+      returnFocus?.focus?.();
+    };
+
+    const api = mountShowcase(canvas, THREE, {
+      projects,
+      labels,
+      onIndex: (i) => {
+        if (current) current.textContent = String(i + 1).padStart(2, '0');
+        keys.forEach((k, j) => {
+          k.classList.toggle('is-active', j === i);
+          k.setAttribute('aria-current', String(j === i));
+        });
+      },
+      onOpen: (i) => openSheet(i),
+      onInteract: () => hint?.classList.add('is-hidden'),
+    });
+
+    root.querySelector('[data-prev]')?.addEventListener('click', () => { closeSheet(); api.prev(); });
+    root.querySelector('[data-next]')?.addEventListener('click', () => { closeSheet(); api.next(); });
+    keys.forEach((k, i) => k.addEventListener('click', () => { closeSheet(); api.goTo(i); }));
+    root.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeSheet));
+
+    // Focus trap inside the sheet
+    sheet.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const f = Array.from(sheet.querySelectorAll<HTMLElement>('a[href], button')).filter((el) => !el.closest('[hidden]'));
+      if (!f.length) return;
+      const first = f[0];
+      const last = f[f.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === sheet)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+
+    new IntersectionObserver((entries) => (visible = entries[0].isIntersecting), { threshold: 0.25 }).observe(root);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') return closeSheet();
+      if (!visible || !overlay.hidden) return;
+      const t = e.target as HTMLElement;
+      if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      if (e.key === 'ArrowLeft') api.prev();
+      else if (e.key === 'ArrowRight') api.next();
+    });
+  });
+</script>

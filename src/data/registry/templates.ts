@@ -29,6 +29,8 @@ export interface TemplateDoc {
   /** Existing library components reused by the template (registry slugs). */
   reusedComponents: string[];
   storeConfigExample: string;
+  /** Optional peer dependencies the template needs (shown instead of "0 deps"). */
+  peerDeps?: string[];
 }
 
 const IMPORT = 'astro-component-kit/templates/ecommerce';
@@ -549,6 +551,132 @@ const site: AgencySite = {
   site={site}
   theme="auto"
   routes={{ home: '/', services: '/services/', service: '/services/', work: '/work/', caseStudy: '/work/', pricing: '/pricing/', about: '/about/', contact: '/contact/' }}
+/>`,
+  },
+  {
+    slug: 'portfolio',
+    name: { en: 'Developer Portfolio', es: 'Portfolio de desarrollador', ru: 'Портфолио разработчика' },
+    tagline: {
+      en: 'A monochrome, keyboard-inspired portfolio with 3D projects, a typing keyboard and a contribution matrix of flying cubes.',
+      es: 'Un portfolio monocromo inspirado en un teclado, con proyectos en 3D, un teclado que escribe y una matriz de contribuciones de cubos que vuelan.',
+      ru: 'Монохромное портфолио в стиле клавиатуры: 3D-проекты, печатающая клавиатура и матрица вкладов из летающих кубиков.',
+    },
+    description: {
+      en: 'Keycap is a six-page personal site for developers, designed for konstantink.dev and rebuilt as reusable sections. The home page pairs a retyping hero over a breathing dot matrix with a 3D projects showcase whose cards animate code, terminals, equalizers or a paint canvas from your data, a mechanical keyboard that types your stack under your repositories, and a GitHub-style contribution matrix whose cubes fly in and ripple like water. Projects get filterable keycap cards and case studies with a 3D monitor and a spec sheet; the blog has a featured index and a reading-progress article layout; the contact page validates a project brief. Pure white and black by default, with a dark mode the 3D scenes follow.',
+      es: 'Keycap es una web personal de seis páginas para desarrolladores, diseñada para konstantink.dev y reconstruida como secciones reutilizables. La home combina un hero que se reescribe sobre una matriz de puntos que respira con un escaparate 3D de proyectos cuyas tarjetas animan código, terminales, ecualizadores o un lienzo de pintura a partir de tus datos, un teclado mecánico que escribe tu stack bajo tus repositorios y una matriz de contribuciones estilo GitHub cuyos cubos llegan volando y ondulan como agua. Los proyectos tienen tarjetas tipo tecla filtrables y casos con un monitor 3D y ficha técnica; el blog tiene índice con destacado y artículo con barra de progreso; el contacto valida un brief de proyecto. Blanco y negro puros por defecto, con un modo oscuro que siguen también las escenas 3D.',
+      ru: 'Keycap — шестистраничный персональный сайт для разработчиков, созданный для konstantink.dev и пересобранный из переиспользуемых секций. На главной — перепечатывающийся hero на «дышащей» матрице точек, 3D-витрина проектов, где карточки по вашим данным анимируют код, терминал, эквалайзер или холст для рисования, механическая клавиатура, печатающая ваш стек под списком репозиториев, и матрица вкладов в стиле GitHub, кубики которой прилетают и расходятся волнами. У проектов — карточки-клавиши с фильтром и кейсы с 3D-монитором и техпаспортом; у блога — список с избранной статьёй и статья с индикатором чтения; контакты проверяют бриф. По умолчанию чистый белый и чёрный, есть тёмная тема, которой следуют и 3D-сцены.',
+    },
+    highlights: {
+      en: ['6 pages: home, projects, project case study, blog, article and contact', '3D projects showcase with 7 data-driven card visuals', 'Typing 3D keyboard and a 3D monitor', '3D contribution matrix: flying cubes and water ripples, real or demo data', 'Light and dark mode — the 3D scenes redraw with the theme', 'Accessible: real buttons and dialogs beside every 3D block, reduced motion respected', '15 reusable sections in Sections → Developer Portfolio'],
+      es: ['6 páginas: inicio, proyectos, caso de proyecto, blog, artículo y contacto', 'Escaparate 3D de proyectos con 7 visuales de tarjeta según tus datos', 'Teclado 3D que escribe y un monitor 3D', 'Matriz de contribuciones 3D: cubos que vuelan y ondas de agua, con datos reales o demo', 'Modo claro y oscuro: las escenas 3D se redibujan con el tema', 'Accesible: botones y diálogos reales junto a cada bloque 3D y respeto a «reducir movimiento»', '15 secciones reutilizables en Secciones → Portfolio de desarrollador'],
+      ru: ['6 страниц: главная, проекты, кейс проекта, блог, статья и контакты', '3D-витрина проектов с 7 визуалами карточек по данным', 'Печатающая 3D-клавиатура и 3D-монитор', '3D-матрица вкладов: летающие кубики и волны, реальные или демо-данные', 'Светлая и тёмная тема — 3D-сцены перерисовываются', 'Доступность: настоящие кнопки и диалоги рядом с каждым 3D-блоком, учёт reduced motion', '15 секций в разделе «Секции → Портфолио разработчика»'],
+    },
+    tags: ['portfolio', 'developer', 'personal', 'three', '3d', 'blog', 'resume'],
+    previewBase: '/preview/portfolio/',
+    importPath: 'astro-component-kit/templates/portfolio',
+    peerDeps: ['three'],
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Retyping hero with skill tape, 3D projects showcase, typing 3D keyboard with repositories, 3D contribution matrix and contact.', es: 'Hero que se reescribe con cinta de habilidades, escaparate 3D de proyectos, teclado 3D con repositorios, matriz 3D de contribuciones y contacto.', ru: 'Перепечатывающийся hero с лентой навыков, 3D-витрина проектов, 3D-клавиатура с репозиториями, 3D-матрица вкладов и контакты.' },
+        file: 'src/pages/index.astro',
+        code: `---
+// npm install three
+import { PortfolioHomePage } from 'astro-component-kit/templates/portfolio';
+---
+
+<!-- contributionsSrc: a URL returning { weeks: [{ days: [{ date, count }] }] } -->
+<PortfolioHomePage theme="light" />`,
+      },
+      {
+        id: 'projects', path: 'projects/',
+        name: { en: 'Projects', es: 'Proyectos', ru: 'Проекты' },
+        description: { en: 'Keycap-style project cards with category filter keys, stack, status and stars.', es: 'Tarjetas de proyecto tipo tecla con filtros por categoría, stack, estado y estrellas.', ru: 'Карточки проектов в виде клавиш с фильтрами по категориям, стеком, статусом и звёздами.' },
+        file: 'src/pages/projects/index.astro',
+        code: `---
+import { PortfolioProjectsPage } from 'astro-component-kit/templates/portfolio';
+---
+
+<PortfolioProjectsPage />`,
+      },
+      {
+        id: 'project', path: 'projects/tidy/',
+        name: { en: 'Project case study', es: 'Caso de proyecto', ru: 'Кейс проекта' },
+        description: { en: 'Hero with a 3D monitor typing the project terminal, overview, challenge, solution, highlights and a sticky spec sheet.', es: 'Hero con un monitor 3D que escribe el terminal del proyecto, resumen, reto, solución, puntos clave y ficha técnica fija.', ru: 'Hero с 3D-монитором, печатающим терминал проекта, обзор, задача, решение, ключевые пункты и закреплённый техпаспорт.' },
+        file: 'src/pages/projects/[slug].astro',
+        code: `---
+import { PortfolioProjectPage, keycapPortfolio } from 'astro-component-kit/templates/portfolio';
+
+export function getStaticPaths() {
+  return keycapPortfolio.projects.map((p) => ({ params: { slug: p.slug } }));
+}
+---
+
+<PortfolioProjectPage slug={Astro.params.slug} />`,
+      },
+      {
+        id: 'blog', path: 'blog/',
+        name: { en: 'Blog', es: 'Blog', ru: 'Блог' },
+        description: { en: 'Featured latest article and a filterable list with date, category and reading time.', es: 'Último artículo destacado y lista filtrable con fecha, categoría y tiempo de lectura.', ru: 'Избранная последняя статья и список с фильтром, датой, категорией и временем чтения.' },
+        file: 'src/pages/blog/index.astro',
+        code: `---
+import { PortfolioBlogPage } from 'astro-component-kit/templates/portfolio';
+---
+
+<PortfolioBlogPage />`,
+      },
+      {
+        id: 'post', path: 'blog/instanced-meshes-for-ui/',
+        name: { en: 'Article', es: 'Artículo', ru: 'Статья' },
+        description: { en: 'Meta line, lead, tags, reading-progress bar, monochrome prose with code blocks and previous / next keys.', es: 'Metadatos, entradilla, etiquetas, barra de progreso de lectura, prosa monocroma con código y teclas anterior / siguiente.', ru: 'Метаданные, лид, теги, индикатор чтения, монохромная типографика с кодом и клавиши «назад / вперёд».' },
+        file: 'src/pages/blog/[slug].astro',
+        code: `---
+import { PortfolioPostPage, keycapPortfolio } from 'astro-component-kit/templates/portfolio';
+
+export function getStaticPaths() {
+  return keycapPortfolio.posts.map((p) => ({ params: { slug: p.slug } }));
+}
+---
+
+<PortfolioPostPage slug={Astro.params.slug} />`,
+      },
+      {
+        id: 'contact', path: 'contact/',
+        name: { en: 'Contact', es: 'Contacto', ru: 'Контакты' },
+        description: { en: 'Hero with a 3D monitor, project brief with type keys, budget and message, inline validation and direct contacts.', es: 'Hero con monitor 3D, brief del proyecto con teclas de tipo, presupuesto y mensaje, validación en línea y contactos directos.', ru: 'Hero с 3D-монитором, бриф с клавишами типа проекта, бюджетом и сообщением, проверка полей и прямые контакты.' },
+        file: 'src/pages/contact.astro',
+        code: `---
+import { PortfolioContactPage } from 'astro-component-kit/templates/portfolio';
+---
+
+<!-- Pass action="https://your-backend/contact" to post the form -->
+<PortfolioContactPage />`,
+      },
+    ],
+    newComponents: [
+      'dev-header', 'dev-hero', 'dev-projects-showcase', 'dev-keyboard', 'dev-repo-list', 'dev-contributions', 'dev-monitor', 'dev-contact', 'dev-footer', 'dev-page-hero', 'dev-project-grid', 'dev-project-detail', 'dev-post-list', 'dev-article', 'dev-contact-form'
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same site + routes to every page
+import { PortfolioHomePage, keycapPortfolio, type PortfolioSite } from 'astro-component-kit/templates/portfolio';
+
+const site: PortfolioSite = {
+  ...keycapPortfolio,
+  name: 'Ada Example',
+  logo: { initial: 'A', middle: 'DAEXAMPLE', suffix: '.DEV' },
+  phrases: ['ASTRO', 'SVELTE', 'GO'],
+  // projects (with visual: { kind: 'code' | 'terminal' | 'equalizer' | 'monitor' | 'endpoints' | 'paint' | 'atom' }),
+  // repos, posts, skills, contacts… — edit or replace any list
+};
+---
+
+<PortfolioHomePage
+  site={site}
+  theme="auto"
+  contributionsSrc="/api/contributions.json"
+  routes={{ home: '/', projects: '/projects/', project: '/projects/', blog: '/blog/', post: '/blog/', contact: '/contact/' }}
 />`,
   },
 ];

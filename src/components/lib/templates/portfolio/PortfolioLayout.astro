@@ -1,0 +1,139 @@
+---
+/**
+ * PortfolioLayout — Full HTML document for the developer portfolio template ("Keycap"): DevHeader,
+ * main slot and DevFooter. Owns the monochrome keyboard look through design tokens: pure white
+ * paper and black ink in light mode (default), near-black paper and white ink in dark mode. The 3D
+ * sections read the same tokens and redraw when the theme changes.
+ *
+ * @param {string} title - Page title (site name is appended).
+ * @param {string} description - Meta description.
+ * @param {PortfolioSite} site - Content and settings. Default: Keycap demo developer.
+ * @param {PortfolioRoutes} routes - Page URLs.
+ * @param {string} currentHref - Highlights the matching menu link.
+ * @param {string} theme - Initial theme (light|dark|auto). The header toggle overrides it per visitor. Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ * @param {string} lang - Document language. Default 'en'.
+ */
+import '../../../../styles/global.css';
+import DevHeader from '../../sections/DevHeader.astro';
+import DevFooter from '../../sections/DevFooter.astro';
+import { keycapPortfolio, portfolioRoutes, type PortfolioSite, type PortfolioRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  site?: PortfolioSite;
+  routes?: PortfolioRoutes;
+  currentHref?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const { title, description, site = keycapPortfolio, routes = portfolioRoutes, currentHref, theme = 'light', noindex = false, lang = 'en' } = Astro.props;
+
+const fullTitle = title.includes(site.name) ? title : `${title} · ${site.name}`;
+const links = [
+  { label: 'Home', href: routes.home },
+  { label: 'Projects', href: routes.projects },
+  { label: 'Blog', href: routes.blog },
+  { label: 'Contact', href: routes.contact },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-keycap" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..900&family=JetBrains+Mono:wght@400..800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class="keycap">
+    <a class="keycap__skip" href="#main">Skip to content</a>
+    <DevHeader logo={site.logo} logoHref={routes.home} links={links} currentHref={currentHref} />
+    <main id="main" class="keycap__main" tabindex="-1">
+      <slot />
+    </main>
+    <DevFooter
+      name={site.name}
+      links={[...links, { label: 'GitHub', href: site.contacts.find((c) => c.kind === 'github')?.href ?? '#' }]}
+      note="Keycap theme · Astro & Three.js"
+    />
+  </body>
+</html>
+
+<style is:global>
+  .theme-keycap {
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --r-sm: 4px;
+    --r-md: 8px;
+    --r-lg: 16px;
+    --r-xl: 20px;
+  }
+  .theme-keycap[data-theme='light'] {
+    --c-bg: #ffffff;
+    --c-bg-1: #fafafa;
+    --c-bg-2: #f2f2f2;
+    --c-surface: rgba(0, 0, 0, 0.02);
+    --c-border: #e5e5e5;
+    --c-text-1: #000000;
+    --c-text-2: #555555;
+    --c-text-3: #6b6b6b;
+    --c-primary: #000000;
+    --c-primary-light: #000000;
+    --c-primary-glow: rgba(0, 0, 0, 0.08);
+    --c-accent: #000000;
+    --c-on-primary: #ffffff;
+    --ink-rgb: 0 0 0;
+    --paper-rgb: 255 255 255;
+    --kc-level: #475569;
+    --c-success: #059669;
+    --c-warning: #b45309;
+    --c-danger: #b91c1c;
+    color-scheme: light;
+  }
+  .theme-keycap[data-theme='dark'] {
+    --c-bg: #0a0a0a;
+    --c-bg-1: #111111;
+    --c-bg-2: #1a1a1a;
+    --c-surface: rgba(255, 255, 255, 0.03);
+    --c-border: rgba(255, 255, 255, 0.12);
+    --c-text-1: #f5f5f5;
+    --c-text-2: #b3b3b3;
+    --c-text-3: #8f8f8f;
+    --c-primary: #f5f5f5;
+    --c-primary-light: #f5f5f5;
+    --c-primary-glow: rgba(255, 255, 255, 0.08);
+    --c-accent: #f5f5f5;
+    --c-on-primary: #0a0a0a;
+    --ink-rgb: 245 245 245;
+    --paper-rgb: 10 10 10;
+    --kc-level: #cbd5e1;
+    --c-success: #34d399;
+    --c-warning: #fbbf24;
+    --c-danger: #f87171;
+    color-scheme: dark;
+  }
+  body.keycap { margin: 0; background: var(--c-bg); color: var(--c-text-1); font-family: var(--font-sans); overflow-x: clip; -webkit-font-smoothing: antialiased; }
+  body.keycap::before { display: none; }
+  .keycap ::selection { background: var(--c-text-1); color: var(--c-bg); }
+  .keycap h1, .keycap h2, .keycap h3 { font-family: var(--font-sans); color: var(--c-text-1); }
+  .keycap__main { outline: none; }
+  .keycap__skip { position: fixed; top: -60px; left: 12px; z-index: 2000; padding: 0.6rem 1rem; border-radius: 4px; background: var(--c-text-1); color: var(--c-bg); font-weight: 700; transition: top 0.2s ease; }
+  .keycap__skip:focus { top: 12px; }
+</style>

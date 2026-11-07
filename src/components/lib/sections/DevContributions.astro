@@ -1,0 +1,185 @@
+---
+/**
+ * DevContributions — Full-width 3D contribution matrix (GitHub style, "Keycap" design). Each day is
+ * a barely-rounded cube whose height and tone encode activity. On first view the cubes fly in from
+ * the sky and from both sides and assemble on a board; afterwards a few keep detaching and flying
+ * back, and hovering sends water-like ripples around the cursor. Tooltips show the date and count.
+ * Needs the optional `three` peer dependency.
+ *
+ * Data: pass `weeks` directly, or `src` (a URL returning `{ weeks: [{ days: [{ date, count }] }] }`),
+ * or nothing for a deterministic demo year (`seed`).
+ *
+ * @param {Array<{days: Array<{date: string, count: number}>}>} weeks - Contribution weeks (Sunday first).
+ * @param {string} src - URL to fetch the weeks from on the client.
+ * @param {number} seed - Demo data seed. Default 7.
+ * @param {string} title - Heading above the board (optional).
+ * @param {string} summary - Text next to the heading, e.g. "1,284 contributions in the last year".
+ * @param {string} locale - Date locale for tooltips. Default 'en-US'.
+ * @param {object} labels - { months[12], weekdays[7], weekdaysLong[7], less, more, one, many }.
+ * @param {[number, number, number]} thresholds - Upper bounds of levels 1–3. Default [2, 5, 8].
+ * @param {boolean} debris - Loose cubes drifting in front of the board. Default true.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the board has role="img" with an aria-label summarising the year; the tooltip is
+ * mirrored to a polite live region; reduced motion renders the board fully assembled and still.
+ */
+import { demoContributions, type ContributionWeek } from '../three/contributions-scene';
+
+interface Props {
+  weeks?: ContributionWeek[];
+  src?: string;
+  seed?: number;
+  title?: string;
+  summary?: string;
+  locale?: string;
+  labels?: Partial<{ months: string[]; weekdays: string[]; weekdaysLong: string[]; less: string; more: string; one: string; many: string }>;
+  thresholds?: [number, number, number];
+  debris?: boolean;
+  className?: string;
+}
+
+const { weeks, src, seed = 7, title, summary, locale = 'en-US', labels = {}, thresholds = [2, 5, 8], debris = true, className = '' } = Astro.props;
+const L = {
+  months: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'],
+  weekdays: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
+  weekdaysLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  less: 'LESS',
+  more: 'MORE',
+  one: 'contribution',
+  many: 'contributions',
+  ...labels,
+};
+const data = weeks ?? (src ? undefined : demoContributions(seed));
+const total = data?.reduce((n, w) => n + w.days.reduce((m, d) => m + d.count, 0), 0);
+const aria = total !== undefined ? `${total.toLocaleString(locale)} ${L.many}` : (summary ?? L.many);
+---
+
+<section
+  class:list={['dvct', className]}
+  data-dev-contrib
+  data-src={src}
+  data-locale={locale}
+  data-labels={JSON.stringify(L)}
+  data-thresholds={JSON.stringify(thresholds)}
+  data-debris={debris ? '1' : '0'}
+>
+  {(title || summary) && (
+    <div class="dvct__head">
+      {title && <h2 class="dvct__title">{title}</h2>}
+      {summary && <p class="dvct__summary">{summary}</p>}
+    </div>
+  )}
+  <div class="dvct__viewport">
+    <div class="dvct__tip" data-tip aria-hidden="true"><strong data-tip-a></strong><span>•</span><span data-tip-b></span></div>
+    <div class="dvct__canvas" data-canvas role="img" aria-label={aria}></div>
+  </div>
+  <p class="dvct__live" aria-live="polite" data-live></p>
+  {data && <script is:inline type="application/json" data-weeks set:html={JSON.stringify(data)} />}
+</section>
+
+<style>
+  .dvct {
+    --kc-ink: var(--c-text-1);
+    --kc-paper: var(--c-bg);
+    --kc-muted: var(--c-text-3);
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    color: var(--c-text-1);
+  }
+  .dvct__head { max-width: 1040px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 1.5rem); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1rem; }
+  .dvct__title { margin: 0; font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.02em; }
+  .dvct__summary { margin: 0; font-family: var(--font-mono); font-size: 0.75rem; color: var(--c-text-3); }
+  .dvct__viewport { position: relative; height: 380px; max-height: 48vh; user-select: none; touch-action: pan-y; }
+  .dvct__canvas { width: 100%; height: 100%; cursor: grab; }
+  .dvct__canvas:active { cursor: grabbing; }
+  .dvct__tip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 4px;
+    border: 1.5px solid rgb(255 255 255 / 0.25);
+    background: #000;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -140%);
+    transition: opacity 0.15s ease;
+  }
+  .dvct__tip span:first-of-type { color: #777; }
+  .dvct__tip span:last-child { color: #e5e7eb; font-weight: 500; }
+  .dvct__tip.is-visible { opacity: 1; }
+  :global([data-theme='dark']) .dvct__tip { background: #fff; color: #000; border-color: rgb(0 0 0 / 0.2); }
+  :global([data-theme='dark']) .dvct__tip span:last-child { color: #333; }
+  .dvct__live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  @media (max-width: 1024px) { .dvct__viewport { height: 320px; } }
+  @media (max-width: 768px) { .dvct__viewport { height: 270px; } .dvct__tip { font-size: 0.72rem; padding: 0.35rem 0.75rem; } }
+  @media (max-width: 480px) { .dvct__viewport { height: 240px; } }
+</style>
+
+<script>
+  import * as THREE from 'three';
+  import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+  import { mountContributions, demoContributions, type ContributionWeek } from '../three/contributions-scene';
+
+  document.querySelectorAll<HTMLElement>('[data-dev-contrib]:not([data-bound])').forEach(async (root) => {
+    root.dataset.bound = '';
+    const L = JSON.parse(root.dataset.labels || '{}');
+    const locale = root.dataset.locale || 'en-US';
+    const tip = root.querySelector<HTMLElement>('[data-tip]')!;
+    const a = root.querySelector<HTMLElement>('[data-tip-a]')!;
+    const b = root.querySelector<HTMLElement>('[data-tip-b]')!;
+    const live = root.querySelector<HTMLElement>('[data-live]');
+
+    let weeks: ContributionWeek[] = [];
+    const inline = root.querySelector('[data-weeks]')?.textContent;
+    if (inline) weeks = JSON.parse(inline);
+    else if (root.dataset.src) {
+      try {
+        const res = await fetch(root.dataset.src);
+        const json = await res.json();
+        weeks = Array.isArray(json?.weeks) ? json.weeks : [];
+      } catch {
+        weeks = [];
+      }
+      if (!weeks.length) weeks = demoContributions();
+    }
+
+    const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    mountContributions(root.querySelector<HTMLElement>('[data-canvas]')!, THREE, RoundedBoxGeometry, {
+      weeks,
+      months: L.months,
+      weekdays: L.weekdays,
+      legend: { less: L.less, more: L.more },
+      thresholds: JSON.parse(root.dataset.thresholds || '[2,5,8]'),
+      debris: root.dataset.debris !== '0',
+      onHover: (info, x, y) => {
+        if (!info) {
+          tip.classList.remove('is-visible');
+          return;
+        }
+        if (info.kind === 'day') {
+          a.textContent = `${info.count.toLocaleString(locale)} ${info.count === 1 ? L.one : L.many}`;
+          b.textContent = fmt.format(new Date(`${info.date}T00:00:00Z`));
+        } else {
+          a.textContent = L.weekdaysLong?.[info.index] ?? '';
+          b.textContent = L.weekdays?.[info.index] ?? '';
+        }
+        tip.style.left = `${x}px`;
+        tip.style.top = `${y}px`;
+        tip.classList.add('is-visible');
+        if (live) live.textContent = `${a.textContent}, ${b.textContent}`;
+      },
+    });
+  });
+</script>

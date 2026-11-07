@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Developer portfolio template ("Keycap")
+- **New template `templates/portfolio`**: a six-page developer portfolio — home, projects, project case study (`/projects/[slug]`), blog, article (`/blog/[slug]`) and contact. Monochrome keyboard design originally made for konstantink.dev; light by default with a dark mode; live preview at `/preview/portfolio/`.
+- **New section category "Developer Portfolio"** with 15 sections: `DevHeader`, `DevHero`, `DevProjectsShowcase`, `DevKeyboard`, `DevRepoList`, `DevContributions`, `DevMonitor`, `DevContact`, `DevFooter`, `DevPageHero`, `DevProjectGrid`, `DevProjectDetail`, `DevPostList`, `DevArticle`, `DevContactForm`.
+- **3D sections** (optional `three` peer dependency): projects showcase with 7 data-driven card visuals, a typing mechanical keyboard, a GitHub-style contribution matrix whose cubes fly in and ripple like water, a CRT monitor and a dot-matrix hero background. Scenes live in framework-agnostic modules (`lib/three/*-scene.ts`), read the theme tokens and redraw when the theme changes, pause off-screen and respect reduced motion.
+- Templates can declare optional peer dependencies (`peerDeps`); the template page shows them instead of "0 deps".
+
 ### Added — Marketing agency template ("Volta")
 - **New template `templates/agency`**: an 8-page site for a performance marketing agency selling Paid Ads, SEO and web development — home, services, service detail (`/services/[slug]`), case studies, case study (`/work/[slug]`), pricing, about and contact. Dark by default with a light theme toggle; live preview at `/preview/agency/`.
 - **New section category "Agency & Marketing"** with 19 sections: 12 new (`AgencyPageHero`, `AgencyServicePillars`, `AgencyResultsBand`, `AgencyPlatformsMarquee`, `AgencyProcessSteps`, `AgencyAuditCta`, `AgencyRoiCalculator`, `AgencyPricingPackages`, `AgencyServiceOverview`, `AgencyCaseStudyHero`, `AgencyCaseResults`, `AgencyQuotes`) plus the 7 agency sections that shipped in 0.4.1 but were never listed or exported (`AgencyHeader`, `AgencyHeroKinetic`, `AgencyServicesList`, `AgencyWorkGrid`, `AgencyTeamGrid`, `AgencyContactBrief`, `AgencyFooterCta`).
