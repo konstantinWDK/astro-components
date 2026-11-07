@@ -1,0 +1,512 @@
+---
+/**
+ * DentalTreatmentPlanBuilder — Clinical dental treatment planner and quote estimator.
+ * Organizes dental care into phases with ADA codes, insurance coverage estimates, and patient copay.
+ *
+ * @param {string} patientName - Patient name.
+ * @param {string} insurance - Insurance provider.
+ * @param {Array<any>} phases - Treatment phases with items.
+ * @param {string} className - Optional CSS class.
+ */
+interface TreatmentItem {
+  id: string;
+  tooth?: number;
+  fdi?: string;
+  code: string;
+  description: string;
+  fee: number;
+  insuranceCoveragePercent: number;
+  status: 'accepted' | 'proposed' | 'completed';
+}
+
+interface TreatmentPhase {
+  phaseNumber: number;
+  title: string;
+  items: TreatmentItem[];
+}
+
+interface Props {
+  patientName?: string;
+  insurance?: string;
+  phases?: TreatmentPhase[];
+  className?: string;
+}
+
+const defaultPhases: TreatmentPhase[] = [
+  {
+    phaseNumber: 1,
+    title: 'Phase 1 · Disease Control & Hygiene Prioritization',
+    items: [
+      { id: 't-1', tooth: 14, fdi: '26', code: 'D2391', description: 'Composite Resin — 2 Surfaces (MOD), Posterior', fee: 140, insuranceCoveragePercent: 80, status: 'accepted' },
+      { id: 't-2', code: 'D1110', description: 'Comprehensive Ultrasonic Scaling & AirFlow Biofilm Care', fee: 85, insuranceCoveragePercent: 100, status: 'completed' },
+      { id: 't-3', code: 'D0274', description: 'Bitewing X-Rays — Four Radiographic Images', fee: 55, insuranceCoveragePercent: 100, status: 'completed' },
+    ],
+  },
+  {
+    phaseNumber: 2,
+    title: 'Phase 2 · Functional Restorations & Endodontics',
+    items: [
+      { id: 't-4', tooth: 19, fdi: '36', code: 'D2740', description: 'Crown — Porcelain / Ceramic Substrate (CEREC Single Visit)', fee: 480, insuranceCoveragePercent: 50, status: 'accepted' },
+      { id: 't-5', tooth: 19, fdi: '36', code: 'D2950', description: 'Core Buildup, Including Any Pins and Structural Post', fee: 120, insuranceCoveragePercent: 50, status: 'proposed' },
+    ],
+  },
+  {
+    phaseNumber: 3,
+    title: 'Phase 3 · Aesthetic Finishing & Protection',
+    items: [
+      { id: 't-6', code: 'D9944', description: 'Occlusal Guard (Nightguard for Bruxim Prevention)', fee: 260, insuranceCoveragePercent: 50, status: 'proposed' },
+    ],
+  },
+];
+
+const {
+  patientName = 'Lucía Santos Morales',
+  insurance = 'Sanitas Dental Premium (80% Basic / 50% Major)',
+  phases = defaultPhases,
+  className = '',
+} = Astro.props;
+
+// Compute totals
+let totalFee = 0;
+let totalInsuranceCovered = 0;
+let totalPatientShare = 0;
+
+phases.forEach((phase) => {
+  phase.items.forEach((item) => {
+    totalFee += item.fee;
+    const covered = (item.fee * item.insuranceCoveragePercent) / 100;
+    totalInsuranceCovered += covered;
+    totalPatientShare += item.fee - covered;
+  });
+});
+
+const monthlyTwelve = Math.round(totalPatientShare / 12);
+---
+
+<div class={`treatment-plan-builder ${className}`}>
+  <!-- Header Card -->
+  <div class="plan-header-card">
+    <div class="plan-header-info">
+      <span class="plan-badge">Treatment Plan #TP-2026-89</span>
+      <h3 class="plan-patient-name">{patientName}</h3>
+      <div class="insurance-pill">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>{insurance}</span>
+      </div>
+    </div>
+
+    <!-- Quick Financial Snapshot -->
+    <div class="plan-snapshot-boxes">
+      <div class="snap-box">
+        <span class="snap-label">Total Procedure Fee</span>
+        <strong class="snap-value">€{totalFee.toFixed(2)}</strong>
+      </div>
+      <div class="snap-box snap-box--covered">
+        <span class="snap-label">Est. Insurance Benefit</span>
+        <strong class="snap-value">- €{totalInsuranceCovered.toFixed(2)}</strong>
+      </div>
+      <div class="snap-box snap-box--due">
+        <span class="snap-label">Patient Out-of-Pocket</span>
+        <strong class="snap-value">€{totalPatientShare.toFixed(2)}</strong>
+        <span class="snap-financing">or €{monthlyTwelve}/mo (12x, 0% APR)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phases & Procedures Accordion/List -->
+  <div class="phases-container">
+    {phases.map((phase) => (
+      <div class="phase-card">
+        <div class="phase-header">
+          <span class="phase-pill">Phase {phase.phaseNumber}</span>
+          <h4 class="phase-title">{phase.title}</h4>
+        </div>
+
+        <div class="phase-table-wrap">
+          <table class="phase-table">
+            <thead>
+              <tr>
+                <th>Tooth</th>
+                <th>ADA Code</th>
+                <th>Procedure Description</th>
+                <th>Status</th>
+                <th class="num-col">Fee</th>
+                <th class="num-col">Insurance</th>
+                <th class="num-col">Patient Co-Pay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {phase.items.map((item) => {
+                const covered = (item.fee * item.insuranceCoveragePercent) / 100;
+                const copay = item.fee - covered;
+                return (
+                  <tr class={`row--${item.status}`}>
+                    <td class="tooth-col">
+                      {item.tooth ? (
+                        <span class="tooth-tag">#{item.tooth} <small>({item.fdi})</small></span>
+                      ) : (
+                        <span class="full-mouth-tag">Full Mouth</span>
+                      )}
+                    </td>
+                    <td class="code-col">
+                      <code>{item.code}</code>
+                    </td>
+                    <td class="desc-col">
+                      <strong>{item.description}</strong>
+                    </td>
+                    <td>
+                      <span class={`status-tag status-tag--${item.status}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td class="num-col">€{item.fee.toFixed(2)}</td>
+                    <td class="num-col insurance-col">
+                      {item.insuranceCoveragePercent > 0 ? (
+                        <span>{item.insuranceCoveragePercent}% (€{covered.toFixed(0)})</span>
+                      ) : (
+                        <span class="not-covered">0%</span>
+                      )}
+                    </td>
+                    <td class="num-col copay-col">
+                      <strong>€{copay.toFixed(2)}</strong>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- Actions Bar -->
+  <div class="plan-actions-bar">
+    <div class="guarantee-note">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      <span>All restorative ceramic work includes a 5-year clinical warranty.</span>
+    </div>
+
+    <div class="actions-group">
+      <button type="button" class="btn-action btn-action--secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <path d="M6 14h12v8H6z"/>
+        </svg>
+        Print Formal PDF
+      </button>
+      <button type="button" class="btn-action btn-action--primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m5 12 5 5L20 7"/>
+        </svg>
+        Patient Acceptance Signed
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .treatment-plan-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .plan-header-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--dental-shadow-md);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .plan-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .plan-patient-name {
+    margin: 4px 0 8px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .insurance-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    color: var(--c-text-2);
+  }
+
+  .insurance-pill svg {
+    color: var(--c-accent);
+  }
+
+  .plan-snapshot-boxes {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .snap-box {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .snap-box--covered {
+    background: rgba(16, 185, 129, 0.06);
+    border-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .snap-box--covered .snap-value {
+    color: var(--c-accent);
+  }
+
+  .snap-box--due {
+    background: rgba(2, 132, 199, 0.06);
+    border-color: rgba(2, 132, 199, 0.25);
+  }
+
+  .snap-box--due .snap-value {
+    color: var(--c-primary);
+  }
+
+  .snap-label {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .snap-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .snap-financing {
+    font-size: 0.72rem;
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  /* Phases list */
+  .phases-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .phase-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--dental-shadow-sm);
+  }
+
+  .phase-header {
+    background: var(--c-bg-subtle);
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .phase-pill {
+    background: var(--c-primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+  }
+
+  .phase-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .phase-table-wrap {
+    overflow-x: auto;
+  }
+
+  .phase-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 680px;
+  }
+
+  .phase-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    background: rgba(var(--ink-rgb), 0.02);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .phase-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--c-border);
+    color: var(--c-text-2);
+  }
+
+  .tooth-tag {
+    background: var(--dental-surface-hover);
+    border: 1px solid var(--c-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    color: var(--c-primary);
+    font-size: 0.78rem;
+  }
+
+  .full-mouth-tag {
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+  }
+
+  .code-col code {
+    background: var(--c-bg-subtle);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: var(--c-text-3);
+  }
+
+  .desc-col strong {
+    color: var(--c-text-1);
+  }
+
+  .status-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 9999px;
+  }
+
+  .status-tag--completed {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+
+  .status-tag--accepted {
+    background: rgba(2, 132, 199, 0.12);
+    color: #0284c7;
+  }
+
+  .status-tag--proposed {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+
+  .num-col {
+    text-align: right;
+  }
+
+  .insurance-col {
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  .copay-col strong {
+    color: var(--c-text-1);
+  }
+
+  /* Actions Bar */
+  .plan-actions-bar {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .guarantee-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--c-text-3);
+  }
+
+  .guarantee-note svg {
+    color: var(--c-accent);
+  }
+
+  .actions-group {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .btn-action--secondary {
+    background: var(--c-bg-subtle);
+    color: var(--c-text-2);
+    border: 1px solid var(--c-border);
+  }
+
+  .btn-action--secondary:hover {
+    background: var(--dental-surface-hover);
+    color: var(--c-text-1);
+  }
+
+  .btn-action--primary {
+    background: var(--c-primary);
+    color: #fff;
+  }
+
+  .btn-action--primary:hover {
+    background: var(--c-primary-dark);
+  }
+</style>
+

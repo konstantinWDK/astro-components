@@ -1,0 +1,280 @@
+---
+/**
+ * DentalTreatmentsGrid — Comprehensive grid of dental treatments with pricing, procedure time, and booking CTAs.
+ *
+ * @param {DentalTreatment[]} treatments - Treatments list.
+ * @param {string} bookBase - Base URL for booking. Default '/preview/dental/book'.
+ * @param {string} title - Section title.
+ * @param {string} subtitle - Section subtitle.
+ * @param {string} className - Optional CSS class.
+ */
+import type { DentalTreatment } from '../templates/dental/data';
+import { dentalTreatments } from '../templates/dental/data';
+
+interface Props {
+  treatments?: DentalTreatment[];
+  bookBase?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  treatments = dentalTreatments,
+  bookBase = '/preview/dental/book',
+  title = 'Comprehensive Dental Specializations',
+  subtitle = 'Transparent pricing, cutting-edge Swiss technology, and zero hidden fees.',
+  className = '',
+} = Astro.props;
+---
+
+<section id="treatments" class={`dental-treatments-section ${className}`}>
+  <div class="treatments-container">
+    <div class="section-head">
+      <span class="section-badge">Clinical Excellence</span>
+      <h2 class="section-title">{title}</h2>
+      <p class="section-desc">{subtitle}</p>
+    </div>
+
+    <div class="treatments-grid">
+      {treatments.map((t) => (
+        <div class={`treatment-card ${t.popular ? 'treatment-card--popular' : ''}`}>
+          {t.popular && <span class="card-pop-tag">Most Requested</span>}
+
+          <div class="card-head">
+            <span class="category-badge">{t.category}</span>
+            <span class="ada-code">ADA {t.code}</span>
+          </div>
+
+          <h3 class="treatment-name">{t.name}</h3>
+          <p class="treatment-desc">{t.description}</p>
+
+          <div class="treatment-meta">
+            <div class="meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+              </svg>
+              <span>{t.durationMin} mins</span>
+            </div>
+
+            <div class="meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span>{t.anesthesia}</span>
+            </div>
+          </div>
+
+          <div class="card-bottom">
+            <div class="price-wrap">
+              <span class="price-from">From</span>
+              <strong class="price-val">€{t.priceStarting}</strong>
+              {t.priceMax && <span class="price-range"> – €{t.priceMax}</span>}
+            </div>
+
+            <a href={`${bookBase}?treatment=${t.id}`} class="btn-book-treatment">
+              Book Visit
+              <span class="arrow">→</span>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .dental-treatments-section {
+    padding: 5rem 1.5rem;
+    background: var(--c-bg);
+  }
+
+  .treatments-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .section-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    color: var(--c-text-1);
+    letter-spacing: -0.02em;
+    margin: 0 0 0.75rem;
+  }
+
+  .section-desc {
+    font-size: 1.05rem;
+    color: var(--c-text-2);
+    margin: 0;
+  }
+
+  .treatments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .treatment-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.75rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.25s ease;
+  }
+
+  .treatment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--dental-shadow-md);
+    border-color: var(--c-primary-light);
+  }
+
+  .treatment-card--popular {
+    border-color: var(--c-primary);
+    box-shadow: 0 4px 20px rgba(2, 132, 199, 0.12);
+  }
+
+  .card-pop-tag {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: var(--c-primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .category-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    background: rgba(2, 132, 199, 0.08);
+    padding: 3px 8px;
+    border-radius: 9999px;
+  }
+
+  .ada-code {
+    font-size: 0.72rem;
+    font-family: monospace;
+    color: var(--c-text-3);
+  }
+
+  .treatment-name {
+    margin: 0 0 0.5rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+    line-height: 1.35;
+  }
+
+  .treatment-desc {
+    font-size: 0.88rem;
+    color: var(--c-text-2);
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
+    flex: 1;
+  }
+
+  .treatment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--c-border);
+    margin-bottom: 1.25rem;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--c-text-3);
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .price-from {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    display: block;
+  }
+
+  .price-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .price-range {
+    font-size: 0.85rem;
+    color: var(--c-text-3);
+  }
+
+  .btn-book-treatment {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--c-bg-subtle);
+    color: var(--c-text-1);
+    border: 1px solid var(--c-border);
+    padding: 8px 14px;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+
+  .btn-book-treatment:hover {
+    background: var(--c-primary);
+    color: #fff;
+    border-color: var(--c-primary);
+  }
+
+  .arrow {
+    transition: transform 0.2s;
+  }
+
+  .btn-book-treatment:hover .arrow {
+    transform: translateX(3px);
+  }
+</style>
+

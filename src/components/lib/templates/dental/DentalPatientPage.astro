@@ -1,0 +1,276 @@
+---
+/**
+ * DentalPatientPage — Patient dental chart record with interactive Odontogram,
+ * clinical findings, periodontal summary, and treatment plan phases.
+ *
+ * @param {string} patientId - Patient identifier.
+ * @param {DentalRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import DentalLayout from './DentalLayout.astro';
+import DentalOdontogram from '../../app/DentalOdontogram.astro';
+import DentalTreatmentPlanBuilder from '../../app/DentalTreatmentPlanBuilder.astro';
+import { dentalRoutes, dentalData, type DentalRoutes } from './data';
+
+interface Props {
+  patientId?: string;
+  routes?: DentalRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const {
+  patientId = 'pat-101',
+  routes = dentalRoutes,
+  theme = 'light',
+  noindex = true,
+} = Astro.props;
+
+const patient = dentalData.patients.find((p) => p.id === patientId) || dentalData.patients[0]!;
+---
+
+<DentalLayout
+  title={`Patient Dental Chart · ${patient.name}`}
+  current="patients"
+  routes={routes}
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="patient-chart-view">
+    <!-- Patient Top Banner -->
+    <div class="patient-banner">
+      <div class="pb-left">
+        <a href={routes.patients} class="back-link">← All Patients</a>
+        <div class="pb-main-info">
+          <div class="pb-avatar">{patient.name[0]}</div>
+          <div>
+            <div class="pb-title-row">
+              <h2 class="pb-name">{patient.name}</h2>
+              <span class="patient-id-badge">MRN #{patient.id}</span>
+              <span class={`recall-pill recall-pill--${patient.recallStatus}`}>
+                Recall: {patient.recallStatus.toUpperCase()}
+              </span>
+            </div>
+            <div class="pb-meta-row">
+              <span>{patient.dob}</span>
+              <span>·</span>
+              <span>{patient.phone}</span>
+              <span>·</span>
+              <span>{patient.insuranceProvider} ({patient.policyNumber})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical Alerts & Actions -->
+      <div class="pb-right">
+        <div class="alerts-box">
+          <span class="alerts-label">Medical Alerts & Allergies:</span>
+          <div class="alerts-tags">
+            {patient.medicalAlerts.map((alert) => (
+              <span class="alert-chip">⚠️ {alert}</span>
+            ))}
+          </div>
+        </div>
+
+        <div class="pb-actions">
+          <button class="btn-pb-action">+ Add Clinical Note</button>
+          <a href={routes.treatmentPlans} class="btn-pb-primary">+ New Treatment Phase</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive 32-Tooth Odontogram Chart -->
+    <DentalOdontogram teeth={patient.teeth} />
+
+    <!-- Treatment Plan & Clinical Records -->
+    <DentalTreatmentPlanBuilder
+      patientName={patient.name}
+      insurance={`${patient.insuranceProvider} (Est. 80% Preventive / 50% Major)`}
+    />
+  </div>
+</DentalLayout>
+
+<style>
+  .patient-chart-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .patient-banner {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem 2rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-primary);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+  }
+
+  .pb-main-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .pb-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-accent));
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .pb-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pb-name {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .patient-id-badge {
+    font-size: 0.72rem;
+    font-family: monospace;
+    color: var(--c-text-3);
+    background: var(--c-bg-subtle);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .recall-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+
+  .recall-pill--due {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+
+  .recall-pill--overdue {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+  }
+
+  .recall-pill--up-to-date {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+
+  .pb-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--c-text-3);
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .pb-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  @media (max-width: 900px) {
+    .pb-right {
+      align-items: flex-start;
+      width: 100%;
+    }
+  }
+
+  .alerts-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .alerts-box {
+      align-items: flex-start;
+    }
+  }
+
+  .alerts-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+  }
+
+  .alerts-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .alert-chip {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .pb-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-pb-action {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    padding: 8px 14px;
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    cursor: pointer;
+  }
+
+  .btn-pb-primary {
+    background: var(--c-primary);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+  }
+</style>
+

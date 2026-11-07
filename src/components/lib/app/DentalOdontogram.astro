@@ -1,0 +1,555 @@
+---
+/**
+ * DentalOdontogram — Visual interactive 32-tooth dental arch chart (Universal & FDI numbering).
+ * Displays clinical conditions (sound, caries, composite filling, ceramic crown, implant, endodontics, missing).
+ * Clicking any tooth reveals a clinical summary drawer with condition notes and proposed treatment.
+ *
+ * @param {ToothCondition[]} teeth - Array of 32 teeth with conditions.
+ * @param {boolean} editable - Whether tooth status can be toggled/selected. Default true.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { ToothCondition, ToothStatus } from '../templates/dental/data';
+import { dentalData } from '../templates/dental/data';
+
+interface Props {
+  teeth?: ToothCondition[];
+  editable?: boolean;
+  className?: string;
+}
+
+const { teeth = dentalData.patients[0].teeth, editable = true, className = '' } = Astro.props;
+
+// Split teeth into upper arch (1-16) and lower arch (32-17)
+const upperTeeth = teeth.filter((t) => t.toothNumber >= 1 && t.toothNumber <= 16);
+// Lower arch is conventionally rendered from right to left (32 to 17) to match clinical vantage
+const lowerTeeth = [...teeth.filter((t) => t.toothNumber >= 17 && t.toothNumber <= 32)].sort(
+  (a, b) => b.toothNumber - a.toothNumber
+);
+
+const legend: { status: ToothStatus; label: string; color: string }[] = [
+  { status: 'sound', label: 'Sound / Healthy', color: '#10b981' },
+  { status: 'caries', label: 'Caries / Decay', color: '#ef4444' },
+  { status: 'filling', label: 'Composite Filling', color: '#0284c7' },
+  { status: 'crown', label: 'Porcelain Crown', color: '#f59e0b' },
+  { status: 'implant', label: 'Dental Implant', color: '#8b5cf6' },
+  { status: 'endo', label: 'Root Canal (Endo)', color: '#ec4899' },
+  { status: 'missing', label: 'Missing / Extracted', color: '#94a3b8' },
+];
+
+function statusColor(status: ToothStatus): string {
+  switch (status) {
+    case 'sound': return '#10b981';
+    case 'caries': return '#ef4444';
+    case 'filling': return '#0284c7';
+    case 'crown': return '#f59e0b';
+    case 'implant': return '#8b5cf6';
+    case 'endo': return '#ec4899';
+    case 'missing': return '#94a3b8';
+    default: return '#10b981';
+  }
+}
+---
+
+<div class={`dental-odontogram ${className}`} data-interactive={editable ? 'true' : 'false'}>
+  <!-- Header / Legend Bar -->
+  <div class="odontogram-header">
+    <div class="odontogram-title-group">
+      <h3 class="odontogram-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2C9 2 7 3.5 6 6c-1 3-1 6-.5 9 .5 3 2 7 3.5 7s2-3 3-5c1 2 1.5 5 3 5s3-4 3.5-7c.5-3 .5-6-.5-9-1-2.5-3-4-6-4z"/>
+        </svg>
+        Adult Odontogram & Tooth Chart (32 Teeth)
+      </h3>
+      <span class="odontogram-subtitle">Universal System #1–32 (with ISO/FDI notation)</span>
+    </div>
+
+    <!-- Status Legend -->
+    <div class="odontogram-legend" role="list" aria-label="Tooth condition legend">
+      {legend.map((item) => (
+        <div class="legend-item" role="listitem">
+          <span class="legend-dot" style={`background-color: ${item.color};`} />
+          <span class="legend-label">{item.label}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Main Chart Canvas -->
+  <div class="odontogram-viewport">
+    <!-- Upper Maxillary Arch -->
+    <div class="arch-section">
+      <div class="arch-badge">Upper Arch (Maxilla)</div>
+      <div class="teeth-row teeth-row--upper" role="grid" aria-label="Upper Dental Arch">
+        {upperTeeth.map((t) => (
+          <button
+            type="button"
+            class={`tooth-btn tooth-btn--${t.status}`}
+            data-tooth={t.toothNumber}
+            data-fdi={t.fdiNumber}
+            data-name={t.name}
+            data-status={t.status}
+            data-notes={t.notes || ''}
+            data-proposed={t.proposedTreatment || ''}
+            data-cost={t.estimatedCost || 0}
+            aria-label={`Tooth #${t.toothNumber} (${t.fdiNumber}): ${t.name}, Status: ${t.status}`}
+          >
+            <span class="tooth-num">#{t.toothNumber}</span>
+            <div class="tooth-visual">
+              <svg viewBox="0 0 40 46" width="36" height="42" class="tooth-svg">
+                <!-- Tooth Crown Body -->
+                {t.status === 'missing' ? (
+                  <path d="M 10 10 L 30 36 M 30 10 L 10 36" stroke="#94a3b8" stroke-width="2.5" stroke-dasharray="2 2" fill="none" />
+                ) : t.status === 'implant' ? (
+                  <g>
+                    <!-- Implant screw threads -->
+                    <rect x="15" y="4" width="10" height="18" rx="2" fill="#8b5cf6" />
+                    <line x1="12" y1="8" x2="28" y2="8" stroke="#ffffff" stroke-width="1.5" />
+                    <line x1="12" y1="13" x2="28" y2="13" stroke="#ffffff" stroke-width="1.5" />
+                    <line x1="12" y1="18" x2="28" y2="18" stroke="#ffffff" stroke-width="1.5" />
+                    <!-- Abutment/Crown -->
+                    <path d="M 11 22 Q 20 20 29 22 L 27 40 Q 20 43 13 40 Z" fill="#8b5cf6" opacity="0.85" />
+                  </g>
+                ) : (
+                  <g>
+                    <!-- Anatomical tooth crown with 5 surfaces -->
+                    <!-- Outer crown contour -->
+                    <path
+                      d="M 12 5 Q 20 3 28 5 Q 36 12 34 26 Q 32 40 20 42 Q 8 40 6 26 Q 4 12 12 5 Z"
+                      fill={t.status === 'sound' ? 'var(--c-card-bg)' : statusColor(t.status)}
+                      stroke={statusColor(t.status)}
+                      stroke-width="1.8"
+                      class="tooth-contour"
+                    />
+                    <!-- Occlusal surface center diamond -->
+                    <polygon
+                      points="20,16 26,23 20,30 14,23"
+                      fill={t.surfaces?.includes('O') ? statusColor(t.status) : 'rgba(var(--ink-rgb), 0.06)'}
+                      stroke={statusColor(t.status)}
+                      stroke-width="1"
+                    />
+                    <!-- Cross lines for quadrants -->
+                    <line x1="12" y1="5" x2="14" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                    <line x1="28" y1="5" x2="26" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                    <line x1="6" y1="26" x2="14" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                    <line x1="34" y1="26" x2="26" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                  </g>
+                )}
+              </svg>
+            </div>
+            <span class="tooth-fdi">FDI {t.fdiNumber}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- Arch Divider with Midline Indicator -->
+    <div class="arch-divider">
+      <div class="midline-indicator">
+        <span>RIGHT</span>
+        <div class="midline-line"></div>
+        <span class="midline-center">MIDLINE</span>
+        <div class="midline-line"></div>
+        <span>LEFT</span>
+      </div>
+    </div>
+
+    <!-- Lower Mandibular Arch -->
+    <div class="arch-section">
+      <div class="arch-badge">Lower Arch (Mandible)</div>
+      <div class="teeth-row teeth-row--lower" role="grid" aria-label="Lower Dental Arch">
+        {lowerTeeth.map((t) => (
+          <button
+            type="button"
+            class={`tooth-btn tooth-btn--${t.status}`}
+            data-tooth={t.toothNumber}
+            data-fdi={t.fdiNumber}
+            data-name={t.name}
+            data-status={t.status}
+            data-notes={t.notes || ''}
+            data-proposed={t.proposedTreatment || ''}
+            data-cost={t.estimatedCost || 0}
+            aria-label={`Tooth #${t.toothNumber} (${t.fdiNumber}): ${t.name}, Status: ${t.status}`}
+          >
+            <span class="tooth-num">#{t.toothNumber}</span>
+            <div class="tooth-visual">
+              <svg viewBox="0 0 40 46" width="36" height="42" class="tooth-svg">
+                {t.status === 'missing' ? (
+                  <path d="M 10 10 L 30 36 M 30 10 L 10 36" stroke="#94a3b8" stroke-width="2.5" stroke-dasharray="2 2" fill="none" />
+                ) : t.status === 'implant' ? (
+                  <g>
+                    <!-- Crown atop -->
+                    <path d="M 13 6 Q 20 3 27 6 L 29 24 Q 20 26 11 24 Z" fill="#8b5cf6" opacity="0.85" />
+                    <!-- Implant threads below -->
+                    <rect x="15" y="24" width="10" height="18" rx="2" fill="#8b5cf6" />
+                    <line x1="12" y1="28" x2="28" y2="28" stroke="#ffffff" stroke-width="1.5" />
+                    <line x1="12" y1="33" x2="28" y2="33" stroke="#ffffff" stroke-width="1.5" />
+                    <line x1="12" y1="38" x2="28" y2="38" stroke="#ffffff" stroke-width="1.5" />
+                  </g>
+                ) : (
+                  <g>
+                    <path
+                      d="M 12 41 Q 20 43 28 41 Q 36 34 34 20 Q 32 6 20 4 Q 8 6 6 20 Q 4 34 12 41 Z"
+                      fill={t.status === 'sound' ? 'var(--c-card-bg)' : statusColor(t.status)}
+                      stroke={statusColor(t.status)}
+                      stroke-width="1.8"
+                      class="tooth-contour"
+                    />
+                    <polygon
+                      points="20,16 26,23 20,30 14,23"
+                      fill={t.surfaces?.includes('O') ? statusColor(t.status) : 'rgba(var(--ink-rgb), 0.06)'}
+                      stroke={statusColor(t.status)}
+                      stroke-width="1"
+                    />
+                    <line x1="12" y1="41" x2="14" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                    <line x1="28" y1="41" x2="26" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                    <line x1="6" y1="20" x2="14" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                    <line x1="34" y1="20" x2="26" y2="23" stroke={statusColor(t.status)} stroke-width="0.8" opacity="0.6" />
+                  </g>
+                )}
+              </svg>
+            </div>
+            <span class="tooth-fdi">FDI {t.fdiNumber}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Clinical Detail Drawer / Card -->
+  <div class="tooth-detail-panel" id="tooth-detail-panel" aria-live="polite">
+    <div class="panel-header">
+      <div class="panel-title-wrap">
+        <span class="panel-pill" id="panel-tooth-id">Tooth #14 · FDI 26</span>
+        <h4 class="panel-name" id="panel-tooth-name">Upper Left 1st Molar</h4>
+      </div>
+      <span class="panel-status-tag" id="panel-tooth-status">Caries / Decay</span>
+    </div>
+
+    <div class="panel-body">
+      <div class="panel-block">
+        <span class="block-label">Clinical Findings & History</span>
+        <p class="block-content" id="panel-tooth-notes">Moderate interproximal decay detected via bitewing X-ray.</p>
+      </div>
+
+      <div class="panel-block" id="panel-treatment-block">
+        <span class="block-label">Recommended Treatment Plan</span>
+        <div class="treatment-pill-row">
+          <strong id="panel-tooth-proposed">Class II Composite Restoration (MOD)</strong>
+          <span class="treatment-cost" id="panel-tooth-cost">Est. €125</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initOdontogram() {
+    const root = document.querySelector('.dental-odontogram');
+    if (!root) return;
+
+    const buttons = root.querySelectorAll('.tooth-btn');
+    const idEl = root.querySelector('#panel-tooth-id');
+    const nameEl = root.querySelector('#panel-tooth-name');
+    const statusEl = root.querySelector('#panel-tooth-status');
+    const notesEl = root.querySelector('#panel-tooth-notes');
+    const proposedEl = root.querySelector('#panel-tooth-proposed');
+    const costEl = root.querySelector('#panel-tooth-cost');
+    const treatmentBlock = root.querySelector('#panel-treatment-block');
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('tooth-btn--selected'));
+        btn.classList.add('tooth-btn--selected');
+
+        const tooth = btn.getAttribute('data-tooth');
+        const fdi = btn.getAttribute('data-fdi');
+        const name = btn.getAttribute('data-name');
+        const status = btn.getAttribute('data-status');
+        const notes = btn.getAttribute('data-notes');
+        const proposed = btn.getAttribute('data-proposed');
+        const cost = btn.getAttribute('data-cost');
+
+        if (idEl) idEl.textContent = `Tooth #${tooth} · FDI ${fdi}`;
+        if (nameEl) nameEl.textContent = name || `Tooth #${tooth}`;
+        if (statusEl) {
+          statusEl.textContent = status?.toUpperCase() || 'SOUND';
+          statusEl.className = `panel-status-tag status--${status}`;
+        }
+        if (notesEl) {
+          notesEl.textContent = notes || 'No active pathology recorded. Enamel intact.';
+        }
+
+        if (proposed && proposed.trim().length > 0) {
+          if (treatmentBlock) (treatmentBlock as HTMLElement).style.display = 'block';
+          if (proposedEl) proposedEl.textContent = proposed;
+          if (costEl) costEl.textContent = Number(cost) > 0 ? `Est. €${cost}` : 'Covered';
+        } else {
+          if (treatmentBlock) (treatmentBlock as HTMLElement).style.display = 'none';
+        }
+      });
+    });
+  }
+
+  initOdontogram();
+  document.addEventListener('astro:page-load', initOdontogram);
+</script>
+
+<style>
+  .dental-odontogram {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--dental-shadow-md);
+  }
+
+  .odontogram-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .odontogram-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+    margin: 0;
+  }
+
+  .odontogram-title svg {
+    color: var(--c-primary);
+  }
+
+  .odontogram-subtitle {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--c-text-3);
+    margin-top: 2px;
+  }
+
+  .odontogram-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--c-text-2);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .odontogram-viewport {
+    padding: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .arch-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arch-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+    background: var(--c-bg-subtle);
+    padding: 2px 10px;
+    border-radius: 9999px;
+  }
+
+  .teeth-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    min-width: 650px;
+    padding: 0.5rem 0;
+  }
+
+  .tooth-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    padding: 6px 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tooth-btn:hover {
+    background: var(--dental-surface-hover);
+    border-color: var(--c-primary-light);
+    transform: translateY(-2px);
+  }
+
+  .tooth-btn--selected {
+    background: var(--dental-surface-hover);
+    border-color: var(--c-primary) !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+  }
+
+  .tooth-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-text-2);
+  }
+
+  .tooth-fdi {
+    font-size: 0.65rem;
+    color: var(--c-text-3);
+    font-family: monospace;
+  }
+
+  .tooth-visual {
+    padding: 2px;
+  }
+
+  .arch-divider {
+    margin: 1rem 0;
+    padding: 0 1rem;
+  }
+
+  .midline-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--c-text-3);
+  }
+
+  .midline-line {
+    flex: 1;
+    height: 1px;
+    background: var(--c-border);
+  }
+
+  .midline-center {
+    color: var(--c-primary);
+  }
+
+  /* Detail Panel */
+  .tooth-detail-panel {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--c-border);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .panel-pill {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .panel-name {
+    margin: 2px 0 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .panel-status-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+  }
+
+  .status--sound { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+  .status--caries { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  .status--filling { background: rgba(2, 132, 199, 0.15); color: #0284c7; }
+  .status--crown { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+  .status--implant { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+  .status--endo { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+  .status--missing { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+  .panel-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .panel-body {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .block-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .block-content {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--c-text-2);
+    line-height: 1.4;
+  }
+
+  .treatment-pill-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    padding: 8px 12px;
+    border-radius: var(--r-md);
+    margin-top: 4px;
+  }
+
+  .treatment-pill-row strong {
+    font-size: 0.88rem;
+    color: var(--c-text-1);
+  }
+
+  .treatment-cost {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-accent);
+  }
+</style>
+

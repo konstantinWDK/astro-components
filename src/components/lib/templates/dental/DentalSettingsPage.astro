@@ -1,0 +1,332 @@
+---
+/**
+ * DentalSettingsPage — Dental practice configuration and operatory chairs settings.
+ *
+ * @param {DentalRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import DentalLayout from './DentalLayout.astro';
+import { dentalRoutes, dentalData, type DentalRoutes } from './data';
+
+interface Props {
+  routes?: DentalRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = dentalRoutes, theme = 'light', noindex = true } = Astro.props;
+---
+
+<DentalLayout
+  title="Clinic Settings"
+  current="settings"
+  routes={routes}
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="settings-page-view">
+    <div class="settings-top-bar">
+      <div>
+        <h2 class="page-title">Dental Practice Settings</h2>
+        <p class="page-subtitle">Configure operatory chairs, operating schedule, and insurance fee tables</p>
+      </div>
+    </div>
+
+    <div class="settings-sections-list">
+      <!-- Section 1: Clinic Profile -->
+      <div class="settings-card">
+        <h3 class="card-title">Practice Profile & Branding</h3>
+        <p class="card-desc">Public clinic information displayed on invoices and booking portal.</p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Practice Name</label>
+            <input type="text" value={dentalData.workspace.name} class="set-input" />
+          </div>
+          <div class="form-field">
+            <label>Emergency Telephone Hotline</label>
+            <input type="text" value={dentalData.workspace.emergencyPhone} class="set-input" />
+          </div>
+          <div class="form-field">
+            <label>Physical Address</label>
+            <input type="text" value={dentalData.workspace.address} class="set-input" />
+          </div>
+          <div class="form-field">
+            <label>City & Postal Code</label>
+            <input type="text" value={dentalData.workspace.city} class="set-input" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Operatories & Chairs -->
+      <div class="settings-card">
+        <div class="card-head-row">
+          <div>
+            <h3 class="card-title">Dental Operatories & Dental Chairs</h3>
+            <p class="card-desc">Active dental treatment rooms and equipment capabilities.</p>
+          </div>
+          <button class="btn-add-chair">+ Add Chair</button>
+        </div>
+
+        <div class="chairs-setup-list">
+          {dentalData.chairs.map((chair) => (
+            <div class="chair-setup-item">
+              <div class="cs-info">
+                <span class="cs-code">{chair.code}</span>
+                <strong>{chair.name}</strong>
+                <span class="cs-type">{chair.type}</span>
+              </div>
+              <div class="cs-actions">
+                <span class="cs-status-tag">{chair.status}</span>
+                <button class="btn-edit-chair">Configure</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Section 3: Recall Automation Defaults -->
+      <div class="settings-card">
+        <h3 class="card-title">Preventative Recall Automation Rules</h3>
+        <p class="card-desc">Automatic hygiene reminder triggers via SMS and WhatsApp.</p>
+
+        <div class="automation-switches">
+          <div class="switch-row">
+            <div>
+              <strong>Send 6-Month Hygiene Recall SMS</strong>
+              <span>Dispatches automated WhatsApp/SMS invite 14 days before due date.</span>
+            </div>
+            <input type="checkbox" checked class="set-checkbox" />
+          </div>
+
+          <div class="switch-row">
+            <div>
+              <strong>Post-Op Checkup Automation (24h)</strong>
+              <span>Sends patient comfort survey 24 hours after surgical implant or extraction.</span>
+            </div>
+            <input type="checkbox" checked class="set-checkbox" />
+          </div>
+
+          <div class="switch-row">
+            <div>
+              <strong>Emergency Slot Notification</strong>
+              <span>Alerts front-desk when an emergency toothache slot is booked online.</span>
+            </div>
+            <input type="checkbox" checked class="set-checkbox" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DentalLayout>
+
+<style>
+  .settings-page-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 1000px;
+  }
+
+  .settings-top-bar {
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .page-subtitle {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--c-text-3);
+  }
+
+  .settings-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .settings-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.75rem;
+    box-shadow: var(--dental-shadow-sm);
+  }
+
+  .card-title {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .card-desc {
+    margin: 0 0 1.25rem;
+    font-size: 0.82rem;
+    color: var(--c-text-3);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-field label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--c-text-2);
+  }
+
+  .set-input {
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .set-input:focus {
+    border-color: var(--c-primary);
+  }
+
+  .card-head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .btn-add-chair {
+    background: var(--c-primary);
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .chairs-setup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chair-setup-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--c-bg-subtle);
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+  }
+
+  .cs-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cs-code {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--c-primary);
+    background: var(--dental-surface-hover);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .cs-info strong {
+    font-size: 0.9rem;
+    color: var(--c-text-1);
+  }
+
+  .cs-type {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+  }
+
+  .cs-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cs-status-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-accent);
+  }
+
+  .btn-edit-chair {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    padding: 5px 10px;
+    border-radius: var(--r-sm);
+    font-size: 0.75rem;
+    color: var(--c-text-2);
+    cursor: pointer;
+  }
+
+  .automation-switches {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .switch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .switch-row:last-child {
+    border-bottom: none;
+  }
+
+  .switch-row strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--c-text-1);
+  }
+
+  .switch-row span {
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+  }
+
+  .set-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--c-primary);
+  }
+</style>
+

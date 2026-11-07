@@ -1,0 +1,339 @@
+---
+/**
+ * DentalRecallManager — Preventative hygiene recall and patient reminder center.
+ * Tracks 6-month checkups, periodontal maintenance, and automated patient communication triggers.
+ *
+ * @param {DentalRecallItem[]} recalls - Recall items list.
+ * @param {string} className - Optional CSS class.
+ */
+import type { DentalRecallItem } from '../templates/dental/data';
+import { dentalData } from '../templates/dental/data';
+
+interface Props {
+  recalls?: DentalRecallItem[];
+  className?: string;
+}
+
+const { recalls = dentalData.recalls, className = '' } = Astro.props;
+
+const overdueCount = recalls.filter((r) => r.status === 'overdue').length;
+const dueCount = recalls.filter((r) => r.status === 'due').length;
+---
+
+<div class={`dental-recall-manager ${className}`}>
+  <!-- KPI Metrics Row -->
+  <div class="recall-kpi-row">
+    <div class="kpi-card">
+      <span class="kpi-label">Due for 6-Mo Hygiene Recall</span>
+      <strong class="kpi-value text-primary">{dueCount} Patients</strong>
+      <span class="kpi-hint">Due this month · Preventative care</span>
+    </div>
+
+    <div class="kpi-card kpi-card--warning">
+      <span class="kpi-label">Overdue Cleanings (>6 Months)</span>
+      <strong class="kpi-value text-danger">{overdueCount} Patients</strong>
+      <span class="kpi-hint">Immediate outreach recommended</span>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Hygiene Retention Rate</span>
+      <strong class="kpi-value text-success">88.4%</strong>
+      <span class="kpi-hint">+3.2% vs industry average</span>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Recall Recall ROI Est.</span>
+      <strong class="kpi-value">€14,800</strong>
+      <span class="kpi-hint">Projected hygiene & restoration value</span>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="recall-table-card">
+    <div class="table-header-wrap">
+      <div>
+        <h4 class="table-title">Preventative Care Recall Queue</h4>
+        <span class="table-subtitle">Automated SMS & WhatsApp appointment booking invites</span>
+      </div>
+
+      <div class="table-controls">
+        <button class="filter-chip active">All ({recalls.length})</button>
+        <button class="filter-chip">Overdue ({overdueCount})</button>
+        <button class="filter-chip">Due Soon ({dueCount})</button>
+      </div>
+    </div>
+
+    <div class="recall-table-wrap">
+      <table class="recall-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Phone</th>
+            <th>Recall Type</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th class="action-th">1-Click Outreach</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recalls.map((r) => (
+            <tr class={`row-status--${r.status}`}>
+              <td class="patient-cell">
+                <strong>{r.patientName}</strong>
+                <span class="patient-id">ID #{r.patientId}</span>
+              </td>
+              <td class="phone-cell">{r.phone}</td>
+              <td class="type-cell">
+                <span class="type-tag">{r.recallType}</span>
+              </td>
+              <td class="date-cell">
+                <code>{r.dueDate}</code>
+              </td>
+              <td>
+                <span class={`status-pill status-pill--${r.status}`}>
+                  {r.status === 'overdue' ? 'Overdue ⚠️' : r.status === 'due' ? 'Due This Month' : 'Contacted'}
+                </span>
+              </td>
+              <td class="action-cell">
+                <div class="outreach-btn-group">
+                  <button type="button" class="btn-outreach btn-outreach--wa" title="Send WhatsApp Booking Link">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                    WhatsApp
+                  </button>
+                  <button type="button" class="btn-outreach btn-outreach--sms" title="Send SMS Reminder">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="18" height="18" x="3" y="3" rx="2"/><path d="m3 9 9 6 9-6"/>
+                    </svg>
+                    SMS
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dental-recall-manager {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .recall-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .kpi-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .kpi-card--warning {
+    border-left: 4px solid var(--c-emergency);
+  }
+
+  .kpi-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .text-primary { color: var(--c-primary); }
+  .text-danger { color: var(--c-emergency); }
+  .text-success { color: var(--c-accent); }
+
+  .kpi-hint {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+  }
+
+  /* Table Card */
+  .recall-table-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--dental-shadow-md);
+  }
+
+  .table-header-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .table-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .table-subtitle {
+    font-size: 0.8rem;
+    color: var(--c-text-3);
+  }
+
+  .table-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .filter-chip {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-chip.active,
+  .filter-chip:hover {
+    background: var(--c-primary);
+    color: #fff;
+    border-color: var(--c-primary);
+  }
+
+  .recall-table-wrap {
+    overflow-x: auto;
+  }
+
+  .recall-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 680px;
+  }
+
+  .recall-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    background: var(--c-bg-subtle);
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  .recall-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: middle;
+  }
+
+  .patient-cell strong {
+    display: block;
+    color: var(--c-text-1);
+    font-size: 0.9rem;
+  }
+
+  .patient-id {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+  }
+
+  .phone-cell {
+    font-family: monospace;
+    color: var(--c-text-2);
+  }
+
+  .type-tag {
+    background: var(--dental-surface-hover);
+    border: 1px solid var(--c-border);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+  }
+
+  .date-cell code {
+    font-size: 0.82rem;
+    color: var(--c-text-2);
+  }
+
+  .status-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 9999px;
+  }
+
+  .status-pill--overdue {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+  }
+
+  .status-pill--due {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+
+  .status-pill--contacted {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+
+  .outreach-btn-group {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-outreach {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--c-border);
+    background: var(--c-bg-subtle);
+    color: var(--c-text-2);
+    transition: all 0.15s;
+  }
+
+  .btn-outreach--wa:hover {
+    background: #25d366;
+    color: #fff;
+    border-color: #25d366;
+  }
+
+  .btn-outreach--sms:hover {
+    background: var(--c-primary);
+    color: #fff;
+    border-color: var(--c-primary);
+  }
+</style>
+

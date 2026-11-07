@@ -1109,6 +1109,200 @@ const data: CyberData = {
   routes={{ home: '/', protocol: '/protocol/', pricing: '/pricing/', manifesto: '/manifesto/', logs: '/logs/', terminal: '/terminal/' }}
 />`,
   },
+  {
+    slug: 'dental',
+    name: { en: 'Dental Clinic & Practice OS', es: 'Clínica Dental y Gestión de Citas', ru: 'Стоматологическая клиника и онлайн-запись' },
+    tagline: {
+      en: 'A comprehensive dental practice solution: public clinic site, treatments catalog, 4-step booking wizard, and practice backoffice with interactive 32-tooth odontogram and chair agenda.',
+      es: 'Una solución dental integral: web pública de la clínica, catálogo de tratamientos, reservas en 4 pasos y gestión de clínica con odontograma interactivo de 32 dientes y agenda de sillones.',
+      ru: 'Комплексное решение для стоматологии: публичный сайт, каталог услуг, онлайн-запись в 4 шага и панель управления с интерактивной зубной формулой и расписанием кресел.',
+    },
+    description: {
+      en: 'Dentis is a complete dental clinic website and backoffice management SaaS. Patients book visits in four intuitive steps with .ics calendar export; dentists and clinic staff manage real-time operatory chair occupancy, inspect visual 32-tooth odontograms with surface-level decay and restorations, build phased treatment plans with ADA codes and insurance co-pays, and automate 6-month hygiene recall reminders via SMS and WhatsApp.',
+      es: 'Dentis es una plantilla completa de web para clínica dental y SaaS de gestión de consultas odontológicas. Los pacientes reservan cita en cuatro pasos con exportación a calendario .ics; los dentistas y el equipo gestionan la ocupación de sillones en tiempo real, consultan un odontograma interactivo de 32 dientes con patologías y restauraciones, generan presupuestos por fases con códigos ADA y copago de seguro, y automatizan recordatorios de higiene preventiva por SMS y WhatsApp.',
+      ru: 'Dentis — полноценный сайт стоматологии и SaaS-система управления клиникой. Пациенты записываются на приём за 4 шага с экспортом .ics в календарь; врачи и администраторы контролируют занятость кресел в реальном времени, ведут интерактивную зубную формулу из 32 зубов, составляют поэтапные планы лечения с расчётом страховки и автоматизируют напоминания о гигиене через SMS и WhatsApp.',
+    },
+    highlights: {
+      en: [
+        '11 pages: clinic website, treatments, online booking, staff login and a 7-screen practice app',
+        'Interactive 32-tooth Odontogram with Universal and FDI numbering',
+        'Multi-operatory chair turnover and live schedule timeline',
+        '4-step patient booking wizard with .ics calendar invitation',
+        'Phased treatment plan builder with ADA codes and insurance estimates',
+        'Preventative hygiene recall manager with automated WhatsApp/SMS outreach',
+        'Emergency 24/7 dental triage banner and acute toothache protocol',
+        'Light and dark mode, zero runtime dependencies, WCAG AA',
+      ],
+      es: [
+        '11 páginas: web de clínica, tratamientos, reserva online, acceso y app de 7 pantallas',
+        'Odontograma interactivo de 32 dientes con numeración Universal y FDI',
+        'Monitor de ocupación e higiene de sillones dentales en tiempo real',
+        'Asistente de reserva para pacientes en 4 pasos con descarga .ics',
+        'Generador de planes de tratamiento por fases con códigos ADA y copagos',
+        'Gestión de revisiones e higiene preventiva con avisos por WhatsApp y SMS',
+        'Banner de urgencias dentales 24/7 y protocolo de dolor agudo',
+        'Modo claro y oscuro, cero dependencias en runtime, WCAG AA',
+      ],
+      ru: [
+        '11 страниц: сайт клиники, услуги, онлайн-запись, вход и приложение из 7 экранов',
+        'Интерактивная зубная формула на 32 зуба (системы Universal и FDI)',
+        'Мониторинг занятости и стерилизации стоматологических кресел',
+        'Мастер онлайн-записи пациента за 4 шага с сохранением события .ics',
+        'Конструктор поэтапных планов лечения с кодами ADA и расчётом страховки',
+        'Управление профилактическими визитами и авторассылка в WhatsApp/SMS',
+        'Блок экстренной стоматологической помощи 24/7 и триаж острой боли',
+        'Светлая и тёмная темы, 0 runtime-зависимостей, WCAG AA',
+      ],
+    },
+    tags: ['dental', 'dentist', 'clinic', 'odontogram', 'booking', 'appointments', 'saas', 'healthcare'],
+    previewBase: '/preview/dental/',
+    importPath: 'astro-component-kit/templates/dental',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Clinic home', es: 'Home de la clínica', ru: 'Главная клиники' },
+        description: { en: 'Dental landing hero with emergency hotline, treatments grid, before/after smile transformations, specialists directory and emergency care banner.', es: 'Hero dental con teléfono de urgencias, catálogo de tratamientos, transformaciones antes/después, especialistas y urgencias.', ru: 'Главная с телефоном неотложной помощи, услугами, фото до/после, врачами и экстренной помощью.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { DentalHomePage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalHomePage />`,
+      },
+      {
+        id: 'treatments', path: 'treatments/',
+        name: { en: 'Treatments & fees', es: 'Tratamientos y tarifas', ru: 'Услуги и цены' },
+        description: { en: 'Transparent procedure fee schedule with procedure duration, anesthesia details and starting prices.', es: 'Tarifario transparente con duración de citas, tipo de anestesia y precios desde.', ru: 'Прозрачный прайс-лист с длительностью процедур, анестезией и ценами.' },
+        file: 'src/pages/treatments.astro',
+        code: `---
+import { DentalTreatmentsPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalTreatmentsPage />`,
+      },
+      {
+        id: 'book', path: 'book/',
+        name: { en: 'Patient booking wizard', es: 'Reserva de citas para pacientes', ru: 'Онлайн-запись пациента' },
+        description: { en: '4-step appointment booking wizard with specialist selection, live slot matrix, insurance selection and .ics calendar export.', es: 'Asistente de reserva en 4 pasos con selección de doctor, horario, seguro dental y descarga de evento .ics.', ru: 'Мастер записи в 4 шага: выбор услуги, врача, времени, страховки и сохранение .ics.' },
+        file: 'src/pages/book.astro',
+        code: `---
+import { DentalBookingPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalBookingPage />`,
+      },
+      {
+        id: 'sign-in', path: 'sign-in/',
+        name: { en: 'Staff sign in', es: 'Acceso de personal', ru: 'Вход для персонала' },
+        description: { en: 'Dental team login with 1-click fast login presets for Lead Dentist, Orthodontist, and Office Manager.', es: 'Acceso de equipo con perfiles rápidos de 1 clic para Dentista Titular, Ortodoncista y Recepción.', ru: 'Вход для сотрудников с демо-кнопками в 1 клик для главного врача, ортодонта и администратора.' },
+        file: 'src/pages/sign-in.astro',
+        code: `---
+import { DentalSignInPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'Practice dashboard', es: 'Dashboard de la clínica', ru: 'Дашборд клиники' },
+        description: { en: 'Real-time operatory chair monitor, daily revenue KPIs, next patient arrivals, and pending treatment estimates.', es: 'Monitor de sillones dentales en vivo, ingresos del día, próximas llegadas de pacientes y presupuestos pendientes.', ru: 'Монитор стоматологических кресел в реальном времени, выручка, прибытие пациентов и сметы.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { DentalDashboardPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalDashboardPage />`,
+      },
+      {
+        id: 'schedule', path: 'app/schedule/',
+        name: { en: 'Operatories schedule', es: 'Agenda de sillones', ru: 'Расписание кресел' },
+        description: { en: 'Multi-chair timeline schedule with chair turnover, sanitation state, and patient chair check-in.', es: 'Agenda en cuadrícula por sillones con control de desinfección y asignación rápida de pacientes.', ru: 'Сетка расписания по креслам со статусами дезинфекции и приёмом пациентов.' },
+        file: 'src/pages/app/schedule.astro',
+        code: `---
+import { DentalSchedulePage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalSchedulePage />`,
+      },
+      {
+        id: 'patients', path: 'app/patients/',
+        name: { en: 'Patients directory', es: 'Directorio de pacientes', ru: 'База пациентов' },
+        description: { en: 'Patient records list with insurance policy numbers, last prophylaxis date, recall status, and outstanding balances.', es: 'Directorio de pacientes con pólizas de seguro, fecha de última limpieza, estado de revisión y saldo pendiente.', ru: 'Список пациентов с полисами страхования, датой последней гигиены и статусом профосмотра.' },
+        file: 'src/pages/app/patients/index.astro',
+        code: `---
+import { DentalPatientsPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalPatientsPage />`,
+      },
+      {
+        id: 'patient', path: 'app/patients/pat-101/',
+        name: { en: 'Patient dental chart', es: 'Ficha dental y odontograma', ru: 'Зубная карта пациента' },
+        description: { en: 'Interactive 32-tooth odontogram with condition flags, medical alerts, bitewing radiographic notes, and treatment plan overview.', es: 'Odontograma interactivo de 32 piezas dentales con registro de caries, coronas, implantes y endodoncias.', ru: 'Интерактивная зубная карта на 32 зуба с отметками кариеса, коронок, имплантов и эндодонтии.' },
+        file: 'src/pages/app/patients/[id].astro',
+        code: `---
+import { DentalPatientPage, dentalData } from 'astro-component-kit/templates/dental';
+
+export function getStaticPaths() {
+  return dentalData.patients.map((p) => ({ params: { id: p.id } }));
+}
+---
+
+<DentalPatientPage patientId={Astro.params.id} />`,
+      },
+      {
+        id: 'treatment-plans', path: 'app/treatment-plans/',
+        name: { en: 'Treatment plans', es: 'Presupuestos y planes', ru: 'Планы лечения' },
+        description: { en: 'Phased clinical quote generator with ADA/CDT codes, insurance benefit deductions, patient co-pays, and signature status.', es: 'Generador de presupuestos clínicos por fases con códigos ADA, deducción de seguro y estado de firma.', ru: 'Генератор поэтапных смет с кодами ADA, расчётом страховки и статусом согласования.' },
+        file: 'src/pages/app/treatment-plans.astro',
+        code: `---
+import { DentalTreatmentPlansPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalTreatmentPlansPage />`,
+      },
+      {
+        id: 'recalls', path: 'app/recalls/',
+        name: { en: 'Hygiene recalls', es: 'Revisiones preventivas', ru: 'Профосмотры и гигиена' },
+        description: { en: 'Preventative recall center for 6-month cleanings with 1-click WhatsApp and SMS patient reactivation.', es: 'Gestor de revisiones semestrales y periodontales con envío rápido de recordatorios por WhatsApp y SMS.', ru: 'Центр профосмотров для 6-месячной гигиены с быстрой отправкой приглашений в WhatsApp и SMS.' },
+        file: 'src/pages/app/recalls.astro',
+        code: `---
+import { DentalRecallsPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalRecallsPage />`,
+      },
+      {
+        id: 'settings', path: 'app/settings/',
+        name: { en: 'Practice settings', es: 'Ajustes de la clínica', ru: 'Настройки клиники' },
+        description: { en: 'Operatory chairs setup, clinical hours, recall automation triggers, and insurance fee schedule tables.', es: 'Configuración de sillones, horario de la clínica, automatización de avisos y baremos de aseguradoras.', ru: 'Настройка кресел, графика работы, правил авторассылки и страховых тарифов.' },
+        file: 'src/pages/app/settings.astro',
+        code: `---
+import { DentalSettingsPage } from 'astro-component-kit/templates/dental';
+---
+
+<DentalSettingsPage />`,
+      },
+    ],
+    newComponents: [
+      'dental-odontogram', 'dental-chair-timeline', 'dental-treatment-plan-builder', 'dental-recall-manager',
+      'dental-hero', 'dental-treatments-grid', 'dental-before-after', 'dental-booking-wizard', 'dental-team-directory', 'dental-emergency-banner',
+    ],
+    reusedComponents: [
+      'app-sidebar', 'app-topbar', 'page-header', 'data-table', 'settings-section', 'switch-row', 'footer-mega-section', 'badge', 'modern-select',
+    ],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same data + routes across all dental pages
+import { DentalHomePage, dentalData, type DentalClinicData } from 'astro-component-kit/templates/dental';
+
+const data: DentalClinicData = {
+  ...dentalData,
+  workspace: { ...dentalData.workspace, name: 'Aura Dental Studio' },
+};
+---
+
+<DentalHomePage />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

@@ -178,6 +178,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'E-commerce', description: 'Secciones editoriales para tiendas: cabecera con mega menú, hero, colecciones, carrusel de productos, lookbook, reseñas y footer.' },
     ru: { name: 'E-commerce', description: 'Редакционные секции магазина: шапка с мега-меню, hero, коллекции, карусель товаров, лукбук, отзывы и футер.' },
   },
+  dental: {
+    en: { name: 'Dental Care', description: 'Sections for dental practices: hero with urgent toothache hotline, treatment fee catalog, smile transformation before/after gallery, 4-step dental booking wizard, specialists directory, and emergency care banner.' },
+    es: { name: 'Odontología y Dental', description: 'Secciones para clínicas dentales: hero con teléfono de urgencias, catálogo de tarifas, transformaciones antes/después, asistente de reserva en 4 pasos, especialistas y urgencias 24/7.' },
+    ru: { name: 'Стоматология', description: 'Секции для стоматологических клиник: главный экран с горячей линией острой боли, прайс-лист, фото до/после, мастер записи в 4 шага, каталог врачей и экстренная помощь.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

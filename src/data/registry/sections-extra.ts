@@ -790,4 +790,42 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['footer', 'newsletter', 'cyberpunk', 'wordmark'],
     usage: `<CyberFooter brand="NULL/SECTOR" />`,
   }),
+
+  // === DENTAL CARE ("Dentis") ===
+  section({
+    slug: 'dental-hero', name: 'Dental Hero', file: 'DentalHero.astro', sectionCategory: 'dental',
+    description: 'Dental clinic hero with smile satisfaction metrics, emergency toothache hotline pill, trust signals (painless anesthesia, zero waiting), and interactive appointment booking card.',
+    tags: ['dental', 'hero', 'appointments', 'healthcare', 'emergency'], featured: true,
+    usage: `<DentalHero bookHref="/preview/dental/book" emergencyPhone="+34 600 911 200" />`,
+  }),
+  section({
+    slug: 'dental-treatments-grid', name: 'Dental Treatments Grid', file: 'DentalTreatmentsGrid.astro', sectionCategory: 'dental',
+    description: 'Catalog grid of dental services (prophylaxis, Invisalign, titanium implants, composite bonding, Zoom whitening) with procedure duration, anesthesia details, and starting fees.',
+    tags: ['dental', 'treatments', 'pricing', 'grid', 'healthcare'], featured: true,
+    usage: `<DentalTreatmentsGrid bookBase="/preview/dental/book" />`,
+  }),
+  section({
+    slug: 'dental-before-after', name: 'Dental Before After', file: 'DentalBeforeAfter.astro', sectionCategory: 'dental',
+    description: 'Smile transformation gallery highlighting porcelain veneers, clear aligners, and dental implants with optical shade metrics and patient testimonials.',
+    tags: ['dental', 'before-after', 'smile', 'gallery', 'cosmetic'], featured: true,
+    usage: `<DentalBeforeAfter />`,
+  }),
+  section({
+    slug: 'dental-booking-wizard', name: 'Dental Booking Wizard', file: 'DentalBookingWizard.astro', sectionCategory: 'dental',
+    description: '4-step dental patient appointment wizard: treatment selection, specialist picker, date & time slot selection, insurance info, and instant .ics calendar export.',
+    tags: ['dental', 'booking', 'wizard', 'calendar', 'appointments', 'form'], featured: true,
+    usage: `<DentalBookingWizard />`,
+  }),
+  section({
+    slug: 'dental-team-directory', name: 'Dental Team Directory', file: 'DentalTeamDirectory.astro', sectionCategory: 'dental',
+    description: 'Dental specialists faculty: Lead cosmetic dentist, orthodontist, endodontist, and hygienist with credentials, ratings, and direct booking CTA.',
+    tags: ['dental', 'team', 'doctors', 'specialists', 'faculty'],
+    usage: `<DentalTeamDirectory bookBase="/preview/dental/book" />`,
+  }),
+  section({
+    slug: 'dental-emergency-banner', name: 'Dental Emergency Banner', file: 'DentalEmergencyBanner.astro', sectionCategory: 'dental',
+    description: 'Urgent dental care triage banner: acute toothache instructions, knocked-out tooth protocol, 24/7 hotline, WhatsApp triage, and same-day emergency slot booking.',
+    tags: ['dental', 'emergency', 'triage', 'banner', 'cta'],
+    usage: `<DentalEmergencyBanner phone="+34 600 911 200" whatsapp="+34600911200" />`,
+  }),
 ];

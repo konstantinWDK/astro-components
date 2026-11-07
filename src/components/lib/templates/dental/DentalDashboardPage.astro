@@ -1,0 +1,455 @@
+---
+/**
+ * DentalDashboardPage — Practice overview dashboard for dental clinics.
+ * Displays operatory chair occupancy, daily appointment KPIs, incoming patients, and emergency slots.
+ *
+ * @param {DentalRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import DentalLayout from './DentalLayout.astro';
+import DentalChairTimeline from '../../app/DentalChairTimeline.astro';
+import { dentalRoutes, dentalData, type DentalRoutes } from './data';
+
+interface Props {
+  routes?: DentalRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = dentalRoutes, theme = 'light', noindex = true } = Astro.props;
+
+const occupiedChairs = dentalData.chairs.filter((c) => c.status === 'occupied').length;
+const totalChairs = dentalData.chairs.length;
+const confirmedToday = dentalData.appointments.length;
+---
+
+<DentalLayout
+  title="Practice Dashboard"
+  current="dashboard"
+  routes={routes}
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="dental-dashboard-view">
+    <!-- Top Welcome & Practice Status -->
+    <div class="dash-banner">
+      <div>
+        <span class="dash-date">Saturday, November 7, 2026 · Clinical Morning Session</span>
+        <h2 class="dash-welcome">Good morning, Dr. Adrián Ramos</h2>
+        <p class="dash-sub">
+          {dentalData.workspace.name} · {occupiedChairs} of {totalChairs} dental operatories currently active.
+        </p>
+      </div>
+
+      <div class="dash-banner-actions">
+        <a href={routes.book} target="_blank" class="btn-public-book">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Open Public Booking Page
+        </a>
+        <a href={routes.schedule} class="btn-primary-action">
+          + Add Appointment
+        </a>
+      </div>
+    </div>
+
+    <!-- 4 KPI Metrics -->
+    <div class="dash-kpi-grid">
+      <div class="dash-kpi">
+        <span class="kpi-label">Today's Visits</span>
+        <strong class="kpi-num">{confirmedToday} Scheduled</strong>
+        <span class="kpi-sub">2 in-chair · 3 upcoming</span>
+      </div>
+
+      <div class="dash-kpi">
+        <span class="kpi-label">Operatory Occupancy</span>
+        <strong class="kpi-num text-primary">{Math.round((occupiedChairs / totalChairs) * 100)}%</strong>
+        <span class="kpi-sub">{occupiedChairs} active operatories</span>
+      </div>
+
+      <div class="dash-kpi">
+        <span class="kpi-label">Today's Production Est.</span>
+        <strong class="kpi-num text-success">€3,840.00</strong>
+        <span class="kpi-sub">82% covered by dental insurance</span>
+      </div>
+
+      <div class="dash-kpi">
+        <span class="kpi-label">Hygiene Recalls Due</span>
+        <strong class="kpi-num text-warning">{dentalData.recalls.length} Patients</strong>
+        <span class="kpi-sub">Due for 6-month checkup</span>
+      </div>
+    </div>
+
+    <!-- Real-time Operatories & Day Agenda Matrix -->
+    <DentalChairTimeline chairs={dentalData.chairs} appointments={dentalData.appointments} />
+
+    <!-- Incoming Patients & Quick Actions Row -->
+    <div class="dash-bottom-grid">
+      <!-- Waiting / Incoming Queue -->
+      <div class="dash-card">
+        <div class="card-header">
+          <h4 class="card-title">Next Scheduled Arrivals</h4>
+          <a href={routes.schedule} class="card-link">View Full Timeline →</a>
+        </div>
+
+        <div class="arrivals-list">
+          {dentalData.appointments.slice(0, 3).map((appt) => (
+            <div class="arrival-item">
+              <div class="arrival-time">{appt.time}</div>
+              <div class="arrival-info">
+                <strong>{appt.patientName}</strong>
+                <span>{appt.treatmentName}</span>
+                <small>{appt.chairName} · {appt.doctorName}</small>
+              </div>
+              <div class="arrival-actions">
+                <span class="arrival-status-tag">{appt.status}</span>
+                <a href={`${routes.patients}pat-101`} class="btn-open-chart" title="Open Patient Dental Chart">
+                  Open Chart
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Quick Triage & Treatment Plans -->
+      <div class="dash-card">
+        <div class="card-header">
+          <h4 class="card-title">Pending Treatment Estimates</h4>
+          <a href={routes.treatmentPlans} class="card-link">View All Quotes →</a>
+        </div>
+
+        <div class="pending-plans-list">
+          <div class="plan-item">
+            <div>
+              <strong>Lucía Santos Morales</strong>
+              <span>Phase 2 Restorative (Porcelain Crown #19)</span>
+            </div>
+            <div class="plan-price-block">
+              <strong>€605.00</strong>
+              <span class="badge-pending">Awaiting Sig</span>
+            </div>
+          </div>
+
+          <div class="plan-item">
+            <div>
+              <strong>Beatriz Navarro Peña</strong>
+              <span>Full Invisalign Alignment (22 Trays)</span>
+            </div>
+            <div class="plan-price-block">
+              <strong>€3,200.00</strong>
+              <span class="badge-pending">Presented</span>
+            </div>
+          </div>
+
+          <div class="plan-item">
+            <div>
+              <strong>Carlos Mendoza Ruiz</strong>
+              <span>Guided Titanium Implant #30 & Crown</span>
+            </div>
+            <div class="plan-price-block">
+              <strong>€1,450.00</strong>
+              <span class="badge-accepted">Accepted</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DentalLayout>
+
+<style>
+  .dental-dashboard-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .dash-banner {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.75rem 2rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+
+  .dash-date {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .dash-welcome {
+    margin: 0 0 4px;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+    letter-spacing: -0.02em;
+  }
+
+  .dash-sub {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--c-text-3);
+  }
+
+  .dash-banner-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn-public-book {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    padding: 9px 14px;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-public-book:hover {
+    background: var(--dental-surface-hover);
+    color: var(--c-text-1);
+  }
+
+  .btn-primary-action {
+    background: var(--c-primary);
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    transition: all 0.2s;
+  }
+
+  .btn-primary-action:hover {
+    background: var(--c-primary-dark);
+  }
+
+  /* KPI Grid */
+  .dash-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .dash-kpi {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+  }
+
+  .kpi-num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .text-primary { color: var(--c-primary); }
+  .text-success { color: var(--c-accent); }
+  .text-warning { color: #f59e0b; }
+
+  .kpi-sub {
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+  }
+
+  /* Bottom Grid */
+  .dash-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .dash-bottom-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .dash-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--dental-shadow-sm);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .card-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .card-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-primary);
+    text-decoration: none;
+  }
+
+  .arrivals-list,
+  .pending-plans-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .arrival-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--c-bg-subtle);
+    border-radius: var(--r-md);
+  }
+
+  .arrival-time {
+    font-size: 0.85rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--c-primary);
+  }
+
+  .arrival-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .arrival-info strong {
+    font-size: 0.88rem;
+    color: var(--c-text-1);
+  }
+
+  .arrival-info span {
+    font-size: 0.78rem;
+    color: var(--c-text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .arrival-info small {
+    font-size: 0.7rem;
+    color: var(--c-text-3);
+  }
+
+  .arrival-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .arrival-status-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(2, 132, 199, 0.12);
+    color: var(--c-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .btn-open-chart {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--c-primary);
+    text-decoration: none;
+  }
+
+  .plan-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--c-bg-subtle);
+    border-radius: var(--r-md);
+  }
+
+  .plan-item strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--c-text-1);
+  }
+
+  .plan-item span {
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+  }
+
+  .plan-price-block {
+    text-align: right;
+  }
+
+  .plan-price-block strong {
+    font-size: 0.95rem;
+    color: var(--c-text-1);
+  }
+
+  .badge-pending {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .badge-accepted {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+</style>
+

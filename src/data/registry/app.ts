@@ -138,4 +138,22 @@ export const app: ComponentDoc[] = [
     description: 'Weekly consultation hours: per-day switches and time ranges, in-person / video per range, copy to weekdays, overlap checks and a slots summary.',
     tags: ['healthcare', 'availability', 'settings', 'hours', 'form'],
     usage: `<MedAvailabilityEditor slot={20} week={[{ day: 'Monday', ranges: [{ from: '09:00', to: '13:00', mode: 'both' }] }]} />` }),
+
+  // Dental practice apps ("Dentis")
+  item({ slug: 'dental-odontogram', name: 'Dental Odontogram', file: 'DentalOdontogram.astro', featured: true,
+    description: 'Interactive 32-tooth dental arch chart (Universal & FDI numbering) with color-coded conditions (sound, caries, composite filling, crown, implant, endodontics, missing) and clinical detail drawer.',
+    tags: ['dental', 'odontogram', 'tooth-chart', 'healthcare', 'chart', 'interactive'],
+    usage: `<DentalOdontogram teeth={teethList} editable={true} />` }),
+  item({ slug: 'dental-chair-timeline', name: 'Dental Chair Timeline', file: 'DentalChairTimeline.astro', featured: true,
+    description: 'Multi-operatory dental chair schedule and chair turnover monitor: live status (occupied, ready, sanitizing), ongoing treatments, and day timeline grid.',
+    tags: ['dental', 'operatory', 'chairs', 'schedule', 'timeline', 'appointments'],
+    usage: `<DentalChairTimeline chairs={chairs} appointments={appointments} />` }),
+  item({ slug: 'dental-treatment-plan-builder', name: 'Dental Treatment Plan Builder', file: 'DentalTreatmentPlanBuilder.astro', featured: true,
+    description: 'Phased dental care planner and quote estimator: procedure lines with ADA/CDT codes, insurance benefit coverage calculations, patient co-pay, and patient acceptance.',
+    tags: ['dental', 'treatment-plan', 'quotes', 'insurance', 'billing', 'ada-codes'],
+    usage: `<DentalTreatmentPlanBuilder patientName="Lucía Santos" insurance="Sanitas Dental (80% Basic / 50% Major)" />` }),
+  item({ slug: 'dental-recall-manager', name: 'Dental Recall Manager', file: 'DentalRecallManager.astro',
+    description: 'Preventative dental hygiene recall manager: tracks 6-month prophy and perio due dates with 1-click automated WhatsApp and SMS patient reminders.',
+    tags: ['dental', 'recall', 'hygiene', 'prevention', 'reminders', 'sms'],
+    usage: `<DentalRecallManager recalls={recallsList} />` }),
 ];

@@ -1,0 +1,282 @@
+---
+/**
+ * DentalSiteLayout — Public website layout for modern dental clinics ("Dentis").
+ * Sticky header with brand, emergency phone, consultation CTA, theme switcher and footer.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'light'.
+ * @param {DentalRoutes} routes - Template route URLs.
+ */
+import '../../../../styles/global.css';
+import './dental-theme.css';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import { dentalRoutes, dentalData, type DentalRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  routes?: DentalRoutes;
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Dentis Dental Studio — Modern cosmetic & restorative dentistry in Madrid. Zero pain, 3D guided implants, clear aligners and same-day emergency relief.',
+  theme = 'light',
+  routes = dentalRoutes,
+  noindex = false,
+  lang = 'en',
+} = Astro.props;
+
+const navLinks = [
+  { label: 'Treatments & Fees', href: routes.treatments },
+  { label: 'Smile Transformations', href: `${routes.home}#transformations` },
+  { label: 'Specialists', href: `${routes.home}#team` },
+  { label: 'Emergency Care', href: `${routes.home}#emergency` },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-dental" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="dentis">
+    <!-- Top Announcement Bar -->
+    <div class="top-announcement">
+      <div class="top-announcement__inner">
+        <span class="announcement-pill">New</span>
+        <span>Guided Biofilm AirFlow Cleanings & Invisalign 3D Scans Now Available</span>
+        <a href={routes.book} class="announcement-link">Book Online →</a>
+      </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="dental-header">
+      <div class="dental-header__inner">
+        <!-- Brand -->
+        <a href={routes.home} class="dental-brand">
+          <div class="brand-tooth-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2C9 2 7 3.5 6 6c-1 3-1 6-.5 9 .5 3 2 7 3.5 7s2-3 3-5c1 2 1.5 5 3 5s3-4 3.5-7c.5-3 .5-6-.5-9-1-2.5-3-4-6-4z"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <strong class="brand-name">Dentis</strong>
+            <span class="brand-tag">Dental Studio</span>
+          </div>
+        </a>
+
+        <!-- Desktop Nav -->
+        <nav class="dental-nav">
+          {navLinks.map((item) => (
+            <a href={item.href} class="nav-link">{item.label}</a>
+          ))}
+          <a href={routes.dashboard} class="nav-link nav-link--app" title="Access Practice Management SaaS">
+            Practice App ⚡
+          </a>
+        </nav>
+
+        <!-- Right CTAs -->
+        <div class="dental-header__actions">
+          <a href={`tel:${dentalData.workspace.phone}`} class="header-phone">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span>{dentalData.workspace.phone}</span>
+          </a>
+
+          <a href={routes.book} class="header-btn-book">
+            Book Appointment
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <FooterMegaSection />
+  </body>
+</html>
+
+<style>
+  .top-announcement {
+    background: var(--c-primary-dark);
+    color: #fff;
+    font-size: 0.78rem;
+    padding: 6px 1.5rem;
+    text-align: center;
+  }
+
+  .top-announcement__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .announcement-pill {
+    background: var(--c-accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .announcement-link {
+    color: #38bdf8;
+    font-weight: 700;
+  }
+
+  .dental-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(var(--paper-rgb), 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--c-border);
+    padding: 0.85rem 1.5rem;
+  }
+
+  .dental-header__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .dental-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .brand-tooth-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .brand-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-tag {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--c-primary);
+    letter-spacing: 0.05em;
+  }
+
+  .dental-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 860px) {
+    .dental-nav {
+      display: none;
+    }
+  }
+
+  .nav-link {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    transition: color 0.15s;
+  }
+
+  .nav-link:hover {
+    color: var(--c-primary);
+  }
+
+  .nav-link--app {
+    color: var(--c-primary);
+    background: rgba(2, 132, 199, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .dental-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-phone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-text-2);
+  }
+
+  @media (max-width: 640px) {
+    .header-phone {
+      display: none;
+    }
+  }
+
+  .header-btn-book {
+    background: var(--c-primary);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: var(--r-md);
+    font-size: 0.88rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    transition: all 0.2s;
+  }
+
+  .header-btn-book:hover {
+    background: var(--c-primary-dark);
+    transform: translateY(-1px);
+  }
+</style>
+

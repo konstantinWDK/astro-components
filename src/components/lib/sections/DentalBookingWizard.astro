@@ -1,0 +1,884 @@
+---
+/**
+ * DentalBookingWizard — 4-step interactive dental appointment booking wizard.
+ * Includes treatment selection, specialist picker, date & time slot selection, insurance info,
+ * and instant confirmation with downloadable .ics calendar file.
+ *
+ * @param {string} className - Optional CSS class.
+ */
+import { dentalDoctors, dentalTreatments } from '../templates/dental/data';
+
+interface Props {
+  className?: string;
+}
+
+const { className = '' } = Astro.props;
+
+const slotsMorning = ['09:00', '09:45', '10:30', '11:15', '12:00', '12:45'];
+const slotsAfternoon = ['14:30', '15:15', '16:00', '16:45', '17:30', '18:15', '19:00'];
+---
+
+<div class={`dental-booking-wizard ${className}`} id="dental-booking-wizard">
+  <!-- Progress Header -->
+  <div class="wizard-progress-bar">
+    <div class="step-indicator active" data-step="1">
+      <span class="step-num">1</span>
+      <span class="step-label">Treatment</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-indicator" data-step="2">
+      <span class="step-num">2</span>
+      <span class="step-label">Doctor</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-indicator" data-step="3">
+      <span class="step-num">3</span>
+      <span class="step-label">Date & Time</span>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-indicator" data-step="4">
+      <span class="step-num">4</span>
+      <span class="step-label">Patient Details</span>
+    </div>
+  </div>
+
+  <div class="wizard-card">
+    <!-- STEP 1: Treatment Selection -->
+    <div class="wizard-step step--1 active" data-step="1">
+      <div class="step-head">
+        <h3 class="step-title">Select Dental Treatment</h3>
+        <p class="step-subtitle">Choose the primary reason for your visit today</p>
+      </div>
+
+      <div class="treatments-select-grid">
+        {dentalTreatments.map((t, i) => (
+          <label class={`treatment-radio-card ${i === 0 ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="wizard-treatment"
+              value={t.id}
+              data-name={t.name}
+              data-price={t.priceStarting}
+              data-duration={t.durationMin}
+              checked={i === 0}
+            />
+            <div class="radio-content">
+              <div class="rc-top">
+                <span class="rc-badge">{t.category}</span>
+                <span class="rc-price">From €{t.priceStarting}</span>
+              </div>
+              <strong class="rc-name">{t.name}</strong>
+              <p class="rc-desc">{t.description}</p>
+              <div class="rc-duration">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+                <span>{t.durationMin} minutes · {t.anesthesia}</span>
+              </div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      <div class="wizard-nav-btns">
+        <div></div>
+        <button type="button" class="btn-wizard-next" data-to="2">
+          Continue to Select Doctor →
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Doctor Selection -->
+    <div class="wizard-step step--2" data-step="2">
+      <div class="step-head">
+        <h3 class="step-title">Choose Your Specialist</h3>
+        <p class="step-subtitle">Select a dedicated dental specialist or first available appointment</p>
+      </div>
+
+      <div class="doctors-select-grid">
+        <label class="doctor-radio-card selected">
+          <input type="radio" name="wizard-doctor" value="any" data-name="First Available Specialist" checked />
+          <div class="doc-radio-inner">
+            <div class="doc-avatar doc-avatar--first">★</div>
+            <div class="doc-info">
+              <strong>First Available Specialist</strong>
+              <span>Fastest appointment in our schedule</span>
+              <span class="doc-avail">Recommended for urgent visits</span>
+            </div>
+          </div>
+        </label>
+
+        {dentalDoctors.map((doc) => (
+          <label class="doctor-radio-card">
+            <input type="radio" name="wizard-doctor" value={doc.id} data-name={doc.name} />
+            <div class="doc-radio-inner">
+              <div class="doc-avatar">{doc.name.split(' ')[1]?.[0] || 'D'}</div>
+              <div class="doc-info">
+                <strong>{doc.name}</strong>
+                <span>{doc.specialty}</span>
+                <span class="doc-rating">★ {doc.rating} ({doc.reviewsCount} reviews)</span>
+              </div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      <div class="wizard-nav-btns">
+        <button type="button" class="btn-wizard-prev" data-to="1">
+          ← Back to Treatment
+        </button>
+        <button type="button" class="btn-wizard-next" data-to="3">
+          Continue to Pick Time →
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Date & Slot Selection -->
+    <div class="wizard-step step--3" data-step="3">
+      <div class="step-head">
+        <h3 class="step-title">Pick Date & Time Slot</h3>
+        <p class="step-subtitle">All appointments are guaranteed zero-wait chair reservations</p>
+      </div>
+
+      <div class="date-picker-wrap">
+        <label for="wizard-date-input" class="date-label">Select Date:</label>
+        <input type="date" id="wizard-date-input" class="wizard-date-input" value="2026-11-09" min="2026-11-07" />
+      </div>
+
+      <div class="slots-container">
+        <div class="slot-group">
+          <span class="slot-group-title">Morning Schedule</span>
+          <div class="slots-chips-grid">
+            {slotsMorning.map((slot, i) => (
+              <button type="button" class={`slot-chip ${i === 1 ? 'selected' : ''}`} data-slot={slot}>
+                {slot}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div class="slot-group">
+          <span class="slot-group-title">Afternoon Schedule</span>
+          <div class="slots-chips-grid">
+            {slotsAfternoon.map((slot) => (
+              <button type="button" class="slot-chip" data-slot={slot}>
+                {slot}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-nav-btns">
+        <button type="button" class="btn-wizard-prev" data-to="2">
+          ← Back to Doctor
+        </button>
+        <button type="button" class="btn-wizard-next" data-to="4">
+          Continue to Patient Info →
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Patient Info & Confirmation -->
+    <div class="wizard-step step--4" data-step="4">
+      <div class="step-head">
+        <h3 class="step-title">Patient Contact & Insurance</h3>
+        <p class="step-subtitle">Enter contact details for automated SMS appointment reminders</p>
+      </div>
+
+      <form id="wizard-final-form" class="wizard-patient-form">
+        <div class="form-row">
+          <div class="input-group">
+            <label for="p-name">Full Name *</label>
+            <input type="text" id="p-name" required placeholder="Lucía Santos" class="w-input" />
+          </div>
+          <div class="input-group">
+            <label for="p-phone">Mobile Phone (for SMS confirmation) *</label>
+            <input type="tel" id="p-phone" required placeholder="+34 612 849 012" class="w-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="input-group">
+            <label for="p-email">Email Address *</label>
+            <input type="email" id="p-email" required placeholder="lucia@example.com" class="w-input" />
+          </div>
+          <div class="input-group">
+            <label for="p-insurance">Dental Insurance Provider</label>
+            <select id="p-insurance" class="w-input">
+              <option value="none">Private / Self-Pay (0% Financing Available)</option>
+              <option value="sanitas">Sanitas Dental</option>
+              <option value="adeslas">Adeslas Dental</option>
+              <option value="bupa">Bupa Global</option>
+              <option value="mapfre">Mapfre Dental</option>
+              <option value="asisa">Asisa Dental</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="p-notes">Dental Symptoms or Medical Notes (Optional)</label>
+          <textarea id="p-notes" rows="2" placeholder="e.g. Tooth sensitivity on lower right, penicillin allergy..." class="w-input"></textarea>
+        </div>
+
+        <div class="booking-summary-box">
+          <div class="summary-line">
+            <span class="sum-label">Selected Treatment:</span>
+            <strong id="sum-treatment">Ultrasonic Hygiene & AirFlow Polish</strong>
+          </div>
+          <div class="summary-line">
+            <span class="sum-label">Specialist:</span>
+            <strong id="sum-doctor">First Available Specialist</strong>
+          </div>
+          <div class="summary-line">
+            <span class="sum-label">Date & Time:</span>
+            <strong id="sum-datetime">Monday, Nov 9, 2026 at 09:45</strong>
+          </div>
+        </div>
+
+        <div class="wizard-nav-btns">
+          <button type="button" class="btn-wizard-prev" data-to="3">
+            ← Back to Time
+          </button>
+          <button type="submit" class="btn-confirm-booking">
+            Confirm Appointment & Generate .ICS Calendar 📅
+          </button>
+        </div>
+      </form>
+
+      <!-- Confirmation Success State -->
+      <div id="booking-success" class="booking-success-box" style="display: none;">
+        <div class="success-icon">✓</div>
+        <h4 class="success-title">Appointment Confirmed!</h4>
+        <p class="success-desc">
+          Your dental visit has been registered in our clinic calendar. An instant SMS reminder has been dispatched.
+        </p>
+        <div class="success-actions">
+          <a id="btn-download-ics" href="#" download="dentis-appointment.ics" class="btn-ics-download">
+            Download .ICS Calendar Event
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initBookingWizard() {
+    const root = document.getElementById('dental-booking-wizard');
+    if (!root) return;
+
+    let currentStep = 1;
+    let selectedTreatment = 'Ultrasonic Hygiene & AirFlow Polish';
+    let selectedDoctor = 'First Available Specialist';
+    let selectedDate = '2026-11-09';
+    let selectedTime = '09:45';
+
+    const steps = root.querySelectorAll('.wizard-step');
+    const indicators = root.querySelectorAll('.step-indicator');
+    const nextBtns = root.querySelectorAll('.btn-wizard-next');
+    const prevBtns = root.querySelectorAll('.btn-wizard-prev');
+
+    function goToStep(stepNum: number) {
+      currentStep = stepNum;
+      steps.forEach((s) => {
+        const sNum = Number(s.getAttribute('data-step'));
+        s.classList.toggle('active', sNum === currentStep);
+      });
+      indicators.forEach((ind) => {
+        const indNum = Number(ind.getAttribute('data-step'));
+        ind.classList.toggle('active', indNum <= currentStep);
+      });
+
+      // Update summary on step 4
+      if (currentStep === 4) {
+        const trEl = root?.querySelector('#sum-treatment');
+        const docEl = root?.querySelector('#sum-doctor');
+        const dtEl = root?.querySelector('#sum-datetime');
+        if (trEl) trEl.textContent = selectedTreatment;
+        if (docEl) docEl.textContent = selectedDoctor;
+        if (dtEl) dtEl.textContent = `${selectedDate} at ${selectedTime}`;
+      }
+    }
+
+    nextBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const to = Number(btn.getAttribute('data-to'));
+        goToStep(to);
+      });
+    });
+
+    prevBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const to = Number(btn.getAttribute('data-to'));
+        goToStep(to);
+      });
+    });
+
+    // Step 1: Radio Card Selection
+    const treatmentRadios = root.querySelectorAll('input[name="wizard-treatment"]');
+    treatmentRadios.forEach((radio) => {
+      radio.addEventListener('change', (e) => {
+        root.querySelectorAll('.treatment-radio-card').forEach((c) => c.classList.remove('selected'));
+        (radio.closest('.treatment-radio-card') as HTMLElement)?.classList.add('selected');
+        selectedTreatment = (e.target as HTMLInputElement).getAttribute('data-name') || '';
+      });
+    });
+
+    // Step 2: Doctor Radio Selection
+    const docRadios = root.querySelectorAll('input[name="wizard-doctor"]');
+    docRadios.forEach((radio) => {
+      radio.addEventListener('change', (e) => {
+        root.querySelectorAll('.doctor-radio-card').forEach((c) => c.classList.remove('selected'));
+        (radio.closest('.doctor-radio-card') as HTMLElement)?.classList.add('selected');
+        selectedDoctor = (e.target as HTMLInputElement).getAttribute('data-name') || '';
+      });
+    });
+
+    // Step 3: Slots
+    const slotChips = root.querySelectorAll('.slot-chip');
+    slotChips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        slotChips.forEach((c) => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedTime = chip.getAttribute('data-slot') || '09:45';
+      });
+    });
+
+    const dateInput = root.querySelector('#wizard-date-input') as HTMLInputElement;
+    if (dateInput) {
+      dateInput.addEventListener('change', (e) => {
+        selectedDate = (e.target as HTMLInputElement).value;
+      });
+    }
+
+    // Step 4: Submission & .ics generation
+    const form = root.querySelector('#wizard-final-form') as HTMLFormElement;
+    const successBox = root.querySelector('#booking-success') as HTMLElement;
+    const icsBtn = root.querySelector('#btn-download-ics') as HTMLAnchorElement;
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        form.style.display = 'none';
+        if (successBox) successBox.style.display = 'flex';
+
+        // Build .ics string
+        const startFormatted = selectedDate.replace(/-/g, '') + 'T' + selectedTime.replace(':', '') + '00';
+        const icsContent = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'PRODID:-//Dentis Dental Studio//Appointment//EN',
+          'BEGIN:VEVENT',
+          `SUMMARY:Dentis Dental Appointment - ${selectedTreatment}`,
+          `DESCRIPTION:Dental visit with ${selectedDoctor}. Address: Calle Serrano 48, Madrid.`,
+          'LOCATION:Dentis Dental Studio, Calle Serrano 48, 1º Izquierda, Madrid',
+          `DTSTART:${startFormatted}`,
+          `DTEND:${startFormatted}`,
+          'STATUS:CONFIRMED',
+          'END:VEVENT',
+          'END:VCALENDAR',
+        ].join('\r\n');
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        if (icsBtn) {
+          icsBtn.href = URL.createObjectURL(blob);
+        }
+      });
+    }
+  }
+
+  initBookingWizard();
+  document.addEventListener('astro:page-load', initBookingWizard);
+</script>
+
+<style>
+  .dental-booking-wizard {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Progress Bar */
+  .wizard-progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+  }
+
+  .step-indicator.active {
+    opacity: 1;
+  }
+
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--c-bg-subtle);
+    border: 2px solid var(--c-border);
+    color: var(--c-text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  .step-indicator.active .step-num {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #fff;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+  }
+
+  .step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--c-border);
+    margin: 0 10px 20px;
+  }
+
+  /* Card Container */
+  .wizard-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 2.5rem;
+    box-shadow: var(--dental-shadow-md);
+  }
+
+  .wizard-step {
+    display: none;
+  }
+
+  .wizard-step.active {
+    display: block;
+  }
+
+  .step-head {
+    margin-bottom: 1.75rem;
+  }
+
+  .step-title {
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .step-subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--c-text-3);
+  }
+
+  /* Step 1: Treatments */
+  .treatments-select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .treatment-radio-card {
+    position: relative;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    cursor: pointer;
+    background: var(--c-bg);
+    transition: all 0.2s ease;
+  }
+
+  .treatment-radio-card:hover {
+    border-color: var(--c-primary-light);
+    background: var(--dental-surface-hover);
+  }
+
+  .treatment-radio-card.selected {
+    border-color: var(--c-primary);
+    background: var(--dental-surface-hover);
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  }
+
+  .treatment-radio-card input {
+    position: absolute;
+    opacity: 0;
+  }
+
+  .rc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .rc-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    background: rgba(2, 132, 199, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .rc-price {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .rc-name {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+    margin-bottom: 4px;
+  }
+
+  .rc-desc {
+    font-size: 0.78rem;
+    color: var(--c-text-3);
+    line-height: 1.4;
+    margin: 0 0 8px;
+  }
+
+  .rc-duration {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+  }
+
+  /* Step 2: Doctors */
+  .doctors-select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .doctor-radio-card {
+    position: relative;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    cursor: pointer;
+    background: var(--c-bg);
+    transition: all 0.2s ease;
+  }
+
+  .doctor-radio-card:hover {
+    border-color: var(--c-primary-light);
+  }
+
+  .doctor-radio-card.selected {
+    border-color: var(--c-primary);
+    background: var(--dental-surface-hover);
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  }
+
+  .doctor-radio-card input {
+    position: absolute;
+    opacity: 0;
+  }
+
+  .doc-radio-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .doc-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .doc-avatar--first {
+    background: var(--c-accent);
+  }
+
+  .doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .doc-info strong {
+    font-size: 0.9rem;
+    color: var(--c-text-1);
+  }
+
+  .doc-info span {
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+  }
+
+  .doc-avail {
+    color: var(--c-accent) !important;
+    font-weight: 600;
+  }
+
+  .doc-rating {
+    color: #f59e0b !important;
+    font-weight: 600;
+  }
+
+  /* Step 3: Dates & Slots */
+  .date-picker-wrap {
+    margin-bottom: 1.5rem;
+  }
+
+  .date-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-text-2);
+    margin-bottom: 6px;
+  }
+
+  .wizard-date-input {
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-size: 0.95rem;
+    outline: none;
+  }
+
+  .slot-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .slot-group-title {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .slots-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .slot-chip {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    padding: 8px 16px;
+    border-radius: var(--r-md);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--c-text-1);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .slot-chip:hover {
+    border-color: var(--c-primary);
+    background: var(--dental-surface-hover);
+  }
+
+  .slot-chip.selected {
+    background: var(--c-primary);
+    color: #fff;
+    border-color: var(--c-primary);
+  }
+
+  /* Step 4: Patient Form */
+  .wizard-patient-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .input-group label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-text-2);
+  }
+
+  .w-input {
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-bg);
+    color: var(--c-text-1);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .w-input:focus {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  }
+
+  .booking-summary-box {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 0.5rem;
+  }
+
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+  }
+
+  .sum-label {
+    color: var(--c-text-3);
+  }
+
+  .summary-line strong {
+    color: var(--c-text-1);
+  }
+
+  /* Nav buttons */
+  .wizard-nav-btns {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .btn-wizard-next,
+  .btn-confirm-booking {
+    background: var(--c-primary);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: var(--r-md);
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-wizard-next:hover,
+  .btn-confirm-booking:hover {
+    background: var(--c-primary-dark);
+  }
+
+  .btn-wizard-prev {
+    background: var(--c-bg-subtle);
+    color: var(--c-text-2);
+    border: 1px solid var(--c-border);
+    padding: 10px 16px;
+    border-radius: var(--r-md);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  /* Success box */
+  .booking-success-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2.5rem 1rem;
+    gap: 1rem;
+  }
+
+  .success-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--c-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+  }
+
+  .success-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .success-desc {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--c-text-2);
+    max-width: 480px;
+  }
+
+  .btn-ics-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--c-primary);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: var(--r-md);
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-top: 1rem;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-ics-download:hover {
+    background: var(--c-primary-dark);
+    transform: translateY(-2px);
+  }
+</style>
+

@@ -1,0 +1,489 @@
+---
+/**
+ * DentalChairTimeline — Real-time multi-operatory dental chair schedule and chair turnover view.
+ * Displays dental chairs side by side with current occupancy status, ongoing treatment, and day timeline.
+ *
+ * @param {DentalChair[]} chairs - List of dental operatories/chairs.
+ * @param {DentalAppointment[]} appointments - Today's appointment schedule.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { DentalChair, DentalAppointment } from '../templates/dental/data';
+import { dentalData } from '../templates/dental/data';
+
+interface Props {
+  chairs?: DentalChair[];
+  appointments?: DentalAppointment[];
+  className?: string;
+}
+
+const { chairs = dentalData.chairs, appointments = dentalData.appointments, className = '' } = Astro.props;
+
+const timeSlots = ['08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '14:00', '15:00', '16:00', '17:00'];
+
+function getStatusBadge(status: DentalChair['status']) {
+  switch (status) {
+    case 'occupied': return { label: 'In Treatment', class: 'dental-badge--occupied' };
+    case 'ready': return { label: 'Chair Ready', class: 'dental-badge--ready' };
+    case 'sanitizing': return { label: 'Sanitizing (5m)', class: 'dental-badge--sanitizing' };
+    case 'maintenance': return { label: 'Maintenance', class: 'dental-badge--emergency' };
+    default: return { label: 'Ready', class: 'dental-badge--ready' };
+  }
+}
+---
+
+<div class={`dental-chair-timeline ${className}`}>
+  <!-- Operatories Overview Grid -->
+  <div class="chairs-overview-grid">
+    {chairs.map((chair) => {
+      const badge = getStatusBadge(chair.status);
+      return (
+        <div class={`chair-card chair-card--${chair.status}`} data-chair-id={chair.id}>
+          <div class="chair-card-top">
+            <div>
+              <span class="chair-code">{chair.code}</span>
+              <h4 class="chair-name">{chair.name}</h4>
+            </div>
+            <span class={`dental-badge ${badge.class}`}>{badge.label}</span>
+          </div>
+
+          {chair.status === 'occupied' ? (
+            <div class="chair-patient-box">
+              <div class="patient-line">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                </svg>
+                <strong>{chair.currentPatient}</strong>
+              </div>
+              <div class="treatment-line">
+                <span>{chair.currentTreatment}</span>
+                <span class="chair-doctor">{chair.currentDoctor}</span>
+              </div>
+              <div class="chair-elapsed">
+                <span class="elapsed-dot"></span> In chair since {chair.since}
+              </div>
+            </div>
+          ) : chair.status === 'sanitizing' ? (
+            <div class="chair-sanitizing-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              <span>Autoclave & UV Surface Protocol Active</span>
+            </div>
+          ) : (
+            <div class="chair-ready-box">
+              <span class="ready-check">✓</span>
+              <span>Available for Next Arrival</span>
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  <!-- Agenda Schedule by Chair -->
+  <div class="schedule-matrix-card">
+    <div class="matrix-header">
+      <div class="matrix-title-wrap">
+        <h4 class="matrix-title">Today's Chair Schedule</h4>
+        <span class="matrix-date">Saturday, November 7, 2026</span>
+      </div>
+
+      <div class="matrix-actions">
+        <button class="btn-filter active">All Operatories (4)</button>
+        <button class="btn-filter">Restorative</button>
+        <button class="btn-filter">Hygiene</button>
+        <button class="btn-filter">Surgery</button>
+      </div>
+    </div>
+
+    <div class="matrix-table-wrap">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="time-col">Time</th>
+            {chairs.map((c) => (
+              <th>
+                <div class="th-chair">
+                  <span>{c.code}</span>
+                  <strong>{c.name.split('·')[0]}</strong>
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {timeSlots.map((slot) => (
+            <tr>
+              <td class="time-cell">{slot}</td>
+              {chairs.map((chair) => {
+                const appt = appointments.find((a) => a.chairId === chair.id && a.time === slot);
+                return (
+                  <td class="slot-cell">
+                    {appt ? (
+                      <div class={`appt-block appt-block--${appt.status}`}>
+                        <div class="appt-time-status">
+                          <span>{appt.time} ({appt.durationMin}m)</span>
+                          <span class="appt-status-tag">{appt.status}</span>
+                        </div>
+                        <strong class="appt-patient">{appt.patientName}</strong>
+                        <div class="appt-treatment">{appt.treatmentName}</div>
+                        <div class="appt-doc">{appt.doctorName}</div>
+                      </div>
+                    ) : (
+                      <div class="empty-slot" title={`Available slot at ${slot} in ${chair.name}`}>
+                        <span class="plus-icon">+</span>
+                      </div>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dental-chair-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .chairs-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .chair-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .chair-card--occupied {
+    border-left: 4px solid var(--c-primary);
+  }
+
+  .chair-card--ready {
+    border-left: 4px solid var(--c-accent);
+  }
+
+  .chair-card--sanitizing {
+    border-left: 4px solid #f59e0b;
+  }
+
+  .chair-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .chair-code {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+  }
+
+  .chair-name {
+    margin: 2px 0 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .chair-patient-box {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .patient-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--c-text-1);
+  }
+
+  .treatment-line {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+    color: var(--c-text-2);
+  }
+
+  .chair-doctor {
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+  }
+
+  .chair-elapsed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--c-primary);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .elapsed-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .chair-sanitizing-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: var(--r-md);
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: #f59e0b;
+    font-weight: 600;
+  }
+
+  .chair-ready-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--r-md);
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  .ready-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+  }
+
+  /* Matrix table */
+  .schedule-matrix-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--dental-shadow-md);
+  }
+
+  .matrix-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .matrix-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1);
+  }
+
+  .matrix-date {
+    font-size: 0.8rem;
+    color: var(--c-text-3);
+  }
+
+  .matrix-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-filter {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-filter.active,
+  .btn-filter:hover {
+    background: var(--c-primary);
+    color: #fff;
+    border-color: var(--c-primary);
+  }
+
+  .matrix-table-wrap {
+    overflow-x: auto;
+  }
+
+  .matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 780px;
+  }
+
+  .matrix-table th {
+    background: var(--c-bg-subtle);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  .th-chair span {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--c-text-3);
+  }
+
+  .th-chair strong {
+    font-size: 0.88rem;
+    color: var(--c-text-1);
+  }
+
+  .time-col {
+    width: 70px;
+    font-size: 0.75rem;
+    color: var(--c-text-3);
+    font-weight: 600;
+  }
+
+  .matrix-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: top;
+  }
+
+  .time-cell {
+    font-size: 0.78rem;
+    font-family: monospace;
+    color: var(--c-text-3);
+    padding-top: 12px;
+  }
+
+  .slot-cell {
+    width: calc((100% - 70px) / 4);
+    height: 70px;
+  }
+
+  .appt-block {
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    border-left: 3px solid var(--c-primary);
+    border-radius: var(--r-sm);
+    padding: 6px 8px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: transform 0.15s ease;
+  }
+
+  .appt-block:hover {
+    transform: scale(1.02);
+    box-shadow: var(--dental-shadow-sm);
+  }
+
+  .appt-block--in-chair {
+    border-left-color: #0284c7;
+    background: rgba(2, 132, 199, 0.08);
+  }
+
+  .appt-block--confirmed {
+    border-left-color: #10b981;
+  }
+
+  .appt-time-status {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--c-text-3);
+  }
+
+  .appt-status-tag {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+  }
+
+  .appt-patient {
+    font-size: 0.82rem;
+    color: var(--c-text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .appt-treatment {
+    font-size: 0.74rem;
+    color: var(--c-text-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .appt-doc {
+    font-size: 0.68rem;
+    color: var(--c-text-3);
+    margin-top: auto;
+  }
+
+  .empty-slot {
+    height: 100%;
+    border: 1px dashed rgba(var(--ink-rgb), 0.12);
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-3);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .empty-slot:hover {
+    border-color: var(--c-primary);
+    color: var(--c-primary);
+    background: var(--dental-surface-hover);
+  }
+
+  .plus-icon {
+    font-size: 1.1rem;
+    opacity: 0.5;
+  }
+</style>
+

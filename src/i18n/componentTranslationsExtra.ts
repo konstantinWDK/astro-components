@@ -737,4 +737,45 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Banda de fidelización para tiendas de juguetes y coleccionables: ventajas, tarjeta de sellos animada, niveles de socio y formulario de alta con validación en línea.",
     ru: "Блок программы лояльности для магазинов игрушек: преимущества, анимированная карта штампов, уровни участия и форма вступления с проверкой полей.",
   },
+  // ── Dental Practice & Clinic ──────────────────────────────────
+  'dental-odontogram': {
+    es: "Odontograma interactivo de 32 piezas dentales con numeración Universal y FDI, estados clínicos por color (sano, caries, obturación, corona, implante, ausente), filtros por arcada y cajón de hallazgos.",
+    ru: "Интерактивная зубная формула (одонтограмма) на 32 зуба с нотацией Universal и FDI, цветовыми статусами и панелью клинических находок.",
+  },
+  'dental-chair-timeline': {
+    es: "Cronograma y matriz de sillones dentales por gabinete (quirófano, higiene, boxes) con estados de ocupación, desinfección entre citas y panel de detalles.",
+    ru: "Расписание стоматологических кресел по кабинетам с индикацией занятости, санобработки и карточкой пациента.",
+  },
+  'dental-treatment-plan-builder': {
+    es: "Constructor de planes de tratamiento y presupuestos dentales por fases con códigos de procedimiento ADA, cobertura de aseguradora y copago estimado.",
+    ru: "Конструктор планов лечения и смет по этапам с кодами процедур ADA, процентом страховки и расчётом доплаты пациента.",
+  },
+  'dental-recall-manager': {
+    es: "Gestor de revisiones y limpiezas periódicas semestrales con filtro por vencimiento (vencidas, próximas) y recordatorios automáticos por WhatsApp y SMS.",
+    ru: "Менеджер профилактических визитов и гигиены с фильтрами по срокам и шаблонами автоматических напоминаний по WhatsApp и SMS.",
+  },
+  'dental-hero': {
+    es: "Hero para clínica dental de estética y cirugía con teléfono de urgencias por dolor agudo, formulario rápido de primera consulta y métricas clínicas de confianza.",
+    ru: "Главный экран стоматологической клиники с круглосуточной горячей линией острой боли, быстрой записью и метриками доверия.",
+  },
+  'dental-treatments-grid': {
+    es: "Catálogo de tratamientos odontológicos con filtrado por especialidad, duración del procedimiento, tipo de anestesia y precio base estimado.",
+    ru: "Каталог стоматологических услуг с фильтром по направлениям, длительностью, типом анестезии и ориентировочной ценой.",
+  },
+  'dental-before-after': {
+    es: "Galería de casos clínicos antes y después de sonrisas (carillas, ortodoncia invisible, implantes) con ficha de duración y especialista.",
+    ru: "Галерея преображения улыбок до и после (виниры, элайнеры, имплантаты) с описанием процедур и лечащего врача.",
+  },
+  'dental-booking-wizard': {
+    es: "Asistente de reserva dental en 4 pasos (motivo de consulta, doctor o sillón, fecha/hora y datos del paciente) con generación de archivo de calendario .ics.",
+    ru: "Пошаговый мастер онлайн-записи к стоматологу в 4 шага с выбором причины, врача, времени и созданием события календаря .ics.",
+  },
+  'dental-team-directory': {
+    es: "Directorio de odontólogos, ortodoncistas y cirujanos maxilofaciales con número de colegiado, biografía y botón directo de reserva.",
+    ru: "Каталог врачей-стоматологов, ортодонтов и хирургов с номером лицензии, описанием квалификации и кнопкой записи.",
+  },
+  'dental-emergency-banner': {
+    es: "Banner de urgencias odontológicas 24/7 para dolor agudo, traumatismos y flemones con botón de llamada inmediata y huecos reservados el mismo día.",
+    ru: "Баннер экстренной стоматологической помощи 24/7 при острой боли и травмах с кнопкой прямого звонка и слотами «день в день».",
+  },
 };

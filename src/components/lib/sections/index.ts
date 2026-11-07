@@ -118,6 +118,14 @@ export { default as MedHero } from './MedHero.astro';
 export { default as MedDoctorDirectory } from './MedDoctorDirectory.astro';
 export { default as MedBookingWizard } from './MedBookingWizard.astro';
 
+// Dental ("Dentis") — dental clinics & dental booking SaaS
+export { default as DentalHero } from './DentalHero.astro';
+export { default as DentalTreatmentsGrid } from './DentalTreatmentsGrid.astro';
+export { default as DentalBeforeAfter } from './DentalBeforeAfter.astro';
+export { default as DentalBookingWizard } from './DentalBookingWizard.astro';
+export { default as DentalTeamDirectory } from './DentalTeamDirectory.astro';
+export { default as DentalEmergencyBanner } from './DentalEmergencyBanner.astro';
+
 // Cyberpunk / futuristic brutalist ("NULL/SECTOR")
 export { default as CyberHeader } from './CyberHeader.astro';
 export { default as CyberHero } from './CyberHero.astro';

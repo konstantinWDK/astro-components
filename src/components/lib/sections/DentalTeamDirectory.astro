@@ -1,0 +1,277 @@
+---
+/**
+ * DentalTeamDirectory — Specialists directory for dental clinics.
+ * Shows doctors with credentials, clinical specialties, rating, and direct booking button.
+ *
+ * @param {DentalDoctor[]} doctors - Doctor list.
+ * @param {string} bookBase - Base booking link.
+ * @param {string} title - Section title.
+ * @param {string} subtitle - Section subtitle.
+ * @param {string} className - Optional CSS class.
+ */
+import type { DentalDoctor } from '../templates/dental/data';
+import { dentalDoctors } from '../templates/dental/data';
+
+interface Props {
+  doctors?: DentalDoctor[];
+  bookBase?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  doctors = dentalDoctors,
+  bookBase = '/preview/dental/book',
+  title = 'World-Class Dental Specialists',
+  subtitle = 'Board-certified dentists and university professors committed to gentle, evidence-based care.',
+  className = '',
+} = Astro.props;
+---
+
+<section class={`dental-team-section ${className}`}>
+  <div class="team-container">
+    <div class="section-head">
+      <span class="section-badge">Medical Faculty</span>
+      <h2 class="section-title">{title}</h2>
+      <p class="section-desc">{subtitle}</p>
+    </div>
+
+    <div class="team-grid">
+      {doctors.map((doc) => (
+        <div class="doc-profile-card">
+          <div class="doc-card-top">
+            <div class="doc-avatar-large">
+              {doc.name.split(' ')[1]?.[0] || 'D'}
+            </div>
+            <div class="doc-rating-badge">
+              <span class="star">★</span>
+              <strong>{doc.rating}</strong>
+              <small>({doc.reviewsCount})</small>
+            </div>
+          </div>
+
+          <h3 class="doc-name">{doc.name}</h3>
+          <span class="doc-spec-pill">{doc.specialty}</span>
+          <p class="doc-title">{doc.title}</p>
+          <p class="doc-bio">{doc.bio}</p>
+
+          <div class="doc-edu-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            <span>{doc.education}</span>
+          </div>
+
+          <div class="doc-card-bottom">
+            <div class="avail-days">
+              <span class="avail-label">Schedule:</span>
+              <span class="avail-tags">{doc.availableDays.join(' · ')}</span>
+            </div>
+            <a href={`${bookBase}?doctor=${doc.id}`} class="btn-book-doc">
+              Book with Doctor →
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .dental-team-section {
+    padding: 5rem 1.5rem;
+    background: var(--c-bg);
+  }
+
+  .team-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .section-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    color: var(--c-text-1);
+    letter-spacing: -0.02em;
+    margin: 0 0 0.75rem;
+  }
+
+  .section-desc {
+    font-size: 1.05rem;
+    color: var(--c-text-2);
+    margin: 0;
+  }
+
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 1.75rem;
+  }
+
+  .doc-profile-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.75rem;
+    box-shadow: var(--dental-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+  }
+
+  .doc-profile-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--dental-shadow-md);
+    border-color: var(--c-primary-light);
+  }
+
+  .doc-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
+
+  .doc-avatar-large {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-accent));
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .doc-rating-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    padding: 4px 8px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    color: var(--c-text-1);
+  }
+
+  .doc-rating-badge .star {
+    color: #f59e0b;
+  }
+
+  .doc-rating-badge small {
+    color: var(--c-text-3);
+  }
+
+  .doc-name {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .doc-spec-pill {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    background: rgba(2, 132, 199, 0.08);
+    padding: 2px 8px;
+    border-radius: 9999px;
+    margin-bottom: 8px;
+  }
+
+  .doc-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-2);
+    margin: 0 0 8px;
+  }
+
+  .doc-bio {
+    font-size: 0.82rem;
+    color: var(--c-text-3);
+    line-height: 1.45;
+    margin: 0 0 1rem;
+    flex: 1;
+  }
+
+  .doc-edu-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--c-bg-subtle);
+    border-radius: var(--r-md);
+    font-size: 0.75rem;
+    color: var(--c-text-2);
+    margin-bottom: 1.25rem;
+  }
+
+  .doc-edu-box svg {
+    color: var(--c-accent);
+    flex-shrink: 0;
+  }
+
+  .doc-card-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .avail-days {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+  }
+
+  .avail-label {
+    color: var(--c-text-3);
+  }
+
+  .avail-tags {
+    font-weight: 600;
+    color: var(--c-text-2);
+  }
+
+  .btn-book-doc {
+    display: block;
+    text-align: center;
+    background: var(--c-primary);
+    color: #fff;
+    padding: 9px;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-book-doc:hover {
+    background: var(--c-primary-dark);
+  }
+</style>
+

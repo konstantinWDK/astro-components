@@ -1,0 +1,191 @@
+---
+/**
+ * DentalLayout — Backoffice practice management app shell for dental clinics ("Dentis").
+ * Integrates AppSidebar, AppTopbar, live chair occupancy metrics, and dental theme styling.
+ *
+ * @param {string} title - Page title.
+ * @param {string} current - Active route key (dashboard | schedule | patients | treatmentPlans | recalls | settings).
+ * @param {DentalRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import '../../../../styles/global.css';
+import './dental-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { dentalRoutes, dentalData, type DentalRoutes } from './data';
+
+type Key = 'dashboard' | 'schedule' | 'patients' | 'treatmentPlans' | 'recalls' | 'settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: DentalRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Dentis Backoffice Practice Management SaaS',
+  current = 'dashboard',
+  routes = dentalRoutes,
+  theme = 'light',
+  noindex = true,
+  lang = 'en',
+} = Astro.props;
+
+const occupiedChairs = dentalData.chairs.filter((c) => c.status === 'occupied').length;
+const totalChairs = dentalData.chairs.length;
+const dueRecalls = dentalData.recalls.filter((r) => r.status === 'overdue' || r.status === 'due').length;
+
+const notifications = [
+  { title: 'Urgent hygiene recall', text: 'Beatriz Mendoza (6m perio maintenance)', time: '12 min ago', unread: true, tone: 'warning' as const },
+  { title: 'New online appointment', text: 'Dr. Valenzuela · Esthetic veneers', time: '35 min ago', unread: true, tone: 'info' as const },
+  { title: 'Operatory 3 ready', text: 'Hygiene Bay sterilization complete', time: '1 h ago', tone: 'success' as const },
+];
+
+const sidebarGroups = [
+  {
+    label: 'Practice & Care',
+    items: [
+      { label: 'Dashboard', href: routes.dashboard, icon: 'dashboard' },
+      { label: 'Chair Schedule', href: routes.schedule, icon: 'calendar', badge: occupiedChairs || undefined },
+      { label: 'Patients & Charts', href: routes.patients, icon: 'users' },
+      { label: 'Treatment Plans', href: routes.treatmentPlans, icon: 'clipboard' },
+      { label: 'Hygiene Recalls', href: routes.recalls, icon: 'sparkle', badge: dueRecalls || undefined },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { label: 'Clinic Settings', href: routes.settings, icon: 'settings' },
+      { label: 'Public Clinic Site', href: routes.home, icon: 'building' },
+      { label: 'Patient Booking', href: routes.book, icon: 'calendar' },
+    ],
+  },
+];
+
+const currentHref = routes[current] || routes.dashboard;
+---
+
+<!doctype html>
+<html lang={lang} class="theme-dental" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} · ${dentalData.workspace.name} (Dentis App)`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="dentis app-body">
+    <!-- Sidebar -->
+    <AppSidebar
+      workspace={{
+        name: dentalData.workspace.name,
+        plan: `${occupiedChairs}/${totalChairs} Chairs Active`,
+        initials: 'DS',
+      }}
+      groups={sidebarGroups}
+      currentHref={currentHref}
+      promo={{
+        title: 'Hygiene Recall Engine',
+        text: `${dueRecalls} patients due this week. Auto-SMS active.`,
+        href: routes.recalls,
+        cta: 'Review Recalls',
+        progress: 74,
+      }}
+    />
+
+    <!-- Main Workspace -->
+    <div class="app-main-pane">
+      <AppTopbar
+        searchPlaceholder="Search patients, phone, tooth #, or ADA code…"
+        notifications={notifications}
+        user={{
+          name: 'Dr. Adrián Ramos',
+          role: 'Lead Dentist & Owner',
+          email: 'ramos@dentis.studio',
+        }}
+        userLinks={[
+          { label: 'Practice Settings', href: routes.settings },
+          { label: 'Operatory Schedule', href: routes.schedule },
+          { label: 'Recall Queue', href: routes.recalls },
+        ]}
+        signOutHref={routes.signIn}
+      >
+        <div slot="actions" class="topbar-chair-indicator">
+          <span class="chair-live-dot"></span>
+          <span>{occupiedChairs} of {totalChairs} Chairs Occupied</span>
+        </div>
+      </AppTopbar>
+
+      <main class="app-content-area">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  .app-body {
+    display: flex;
+    min-height: 100vh;
+    background: var(--c-bg);
+  }
+
+  .app-main-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .app-content-area {
+    padding: 1.5rem;
+    flex: 1;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  .topbar-chair-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(2, 132, 199, 0.08);
+    border: 1px solid rgba(2, 132, 199, 0.2);
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+  }
+
+  .chair-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    animation: p-blue 1.5s infinite;
+  }
+
+  @keyframes p-blue {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+</style>
+

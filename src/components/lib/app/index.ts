@@ -23,6 +23,11 @@ export { default as MedConsultationNote } from './MedConsultationNote.astro';
 export { default as MedPrescriptionPad } from './MedPrescriptionPad.astro';
 export { default as MedVideoVisit } from './MedVideoVisit.astro';
 export { default as MedAvailabilityEditor } from './MedAvailabilityEditor.astro';
+// Dental practice apps
+export { default as DentalOdontogram } from './DentalOdontogram.astro';
+export { default as DentalChairTimeline } from './DentalChairTimeline.astro';
+export { default as DentalTreatmentPlanBuilder } from './DentalTreatmentPlanBuilder.astro';
+export { default as DentalRecallManager } from './DentalRecallManager.astro';
 
 export { appIcons, appIcon, initials, hueFrom } from './app-icons';
 export type { AppIcon } from './app-icons';

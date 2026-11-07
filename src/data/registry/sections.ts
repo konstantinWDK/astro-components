@@ -107,6 +107,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>`,
   },
   {
+    id: 'dental',
+    name: 'Dental Care',
+    description: 'Sections for dental practices: hero with urgent toothache hotline, treatment fee catalog, smile transformation before/after gallery, 4-step dental booking wizard, specialists directory, and emergency care banner.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C9 2 7 3.5 6 6c-1 3-1 6-.5 9 .5 3 2 7 3.5 7s2-3 3-5c1 2 1.5 5 3 5s3-4 3.5-7c.5-3 .5-6-.5-9-1-2.5-3-4-6-4z"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

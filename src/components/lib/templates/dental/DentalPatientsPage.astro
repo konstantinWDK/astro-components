@@ -1,0 +1,306 @@
+---
+/**
+ * DentalPatientsPage — Patients directory for dental clinics.
+ *
+ * @param {DentalRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import DentalLayout from './DentalLayout.astro';
+import { dentalRoutes, dentalData, type DentalRoutes } from './data';
+
+interface Props {
+  routes?: DentalRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = dentalRoutes, theme = 'light', noindex = true } = Astro.props;
+---
+
+<DentalLayout
+  title="Dental Patients"
+  current="patients"
+  routes={routes}
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="patients-page-view">
+    <div class="patients-top-bar">
+      <div>
+        <h2 class="page-title">Dental Patients Directory</h2>
+        <p class="page-subtitle">Patient records, insurance policies, and clinical odontograms</p>
+      </div>
+
+      <div class="patients-actions">
+        <input type="search" placeholder="Filter by patient name or insurance..." class="patient-search-input" />
+        <button class="btn-new-patient">+ Register New Patient</button>
+      </div>
+    </div>
+
+    <!-- Patients Table Card -->
+    <div class="patients-table-card">
+      <div class="table-wrap">
+        <table class="patients-table">
+          <thead>
+            <tr>
+              <th>Patient Name</th>
+              <th>Contact</th>
+              <th>Dental Insurance</th>
+              <th>Last Prophy / Clean</th>
+              <th>Recall Status</th>
+              <th>Plan Balance</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dentalData.patients.map((p) => (
+              <tr>
+                <td class="name-td">
+                  <div class="patient-name-wrap">
+                    <div class="avatar-circle">{p.name[0]}</div>
+                    <div>
+                      <strong>{p.name}</strong>
+                      <span class="dob-tag">{p.dob}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="contact-td">
+                  <span>{p.phone}</span>
+                  <small>{p.email}</small>
+                </td>
+                <td class="insurance-td">
+                  <strong>{p.insuranceProvider}</strong>
+                  <small>#{p.policyNumber}</small>
+                </td>
+                <td class="date-td">{p.lastCleaningDate}</td>
+                <td>
+                  <span class={`recall-status recall-status--${p.recallStatus}`}>
+                    {p.recallStatus === 'overdue' ? 'Overdue ⚠️' : p.recallStatus === 'due' ? 'Due Soon' : 'Up to date'}
+                  </span>
+                </td>
+                <td class="balance-td">
+                  <strong>€{p.treatmentPlanTotal.toFixed(2)}</strong>
+                  {p.outstandingBalance > 0 && <small class="text-danger">€{p.outstandingBalance} due</small>}
+                </td>
+                <td class="action-td">
+                  <a href={`${routes.patients}${p.id}`} class="btn-view-chart">
+                    View Chart & Odontogram →
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</DentalLayout>
+
+<style>
+  .patients-page-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .patients-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--c-text-1);
+  }
+
+  .page-subtitle {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--c-text-3);
+  }
+
+  .patients-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .patient-search-input {
+    padding: 8px 12px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-card-bg);
+    color: var(--c-text-1);
+    font-size: 0.85rem;
+    min-width: 260px;
+    outline: none;
+  }
+
+  .patient-search-input:focus {
+    border-color: var(--c-primary);
+  }
+
+  .btn-new-patient {
+    background: var(--c-primary);
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+  }
+
+  .patients-table-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--dental-shadow-md);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .patients-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    min-width: 820px;
+  }
+
+  .patients-table th {
+    background: var(--c-bg-subtle);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--c-border);
+  }
+
+  .patients-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: middle;
+  }
+
+  .patient-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .patient-name-wrap strong {
+    display: block;
+    color: var(--c-text-1);
+  }
+
+  .dob-tag {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+  }
+
+  .contact-td span {
+    display: block;
+    font-family: monospace;
+    color: var(--c-text-2);
+  }
+
+  .contact-td small {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+  }
+
+  .insurance-td strong {
+    display: block;
+    color: var(--c-text-1);
+    font-size: 0.82rem;
+  }
+
+  .insurance-td small {
+    font-size: 0.72rem;
+    color: var(--c-text-3);
+  }
+
+  .date-td {
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--c-text-2);
+  }
+
+  .recall-status {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 9999px;
+  }
+
+  .recall-status--overdue {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+  }
+
+  .recall-status--due {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+  }
+
+  .recall-status--up-to-date {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+  }
+
+  .balance-td strong {
+    display: block;
+    color: var(--c-text-1);
+  }
+
+  .text-danger {
+    color: #ef4444;
+  }
+
+  .btn-view-chart {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: var(--r-md);
+    background: var(--c-bg-subtle);
+    border: 1px solid var(--c-border);
+    color: var(--c-primary);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-view-chart:hover {
+    background: var(--c-primary);
+    color: #fff;
+    border-color: var(--c-primary);
+  }
+</style>
+
