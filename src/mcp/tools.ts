@@ -163,7 +163,7 @@ export function createMcpServer(): McpServer {
     {
       slug: z
         .string()
-        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby), "agency" (Volta marketing agency), "portfolio" (Keycap developer portfolio), "toy-store" (Kapow action-figure store) "saas-clinic" (Pulso medical consultations SaaS) or "cyberpunk" (NULL/SECTOR futuristic-brutalist site)'),
+        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby), "agency" (Volta marketing agency), "portfolio" (Keycap developer portfolio), "toy-store" (Kapow action-figure store), "saas-clinic" (Pulso medical consultations SaaS), or "cyberpunk" (NULL/SECTOR futuristic-brutalist site)'),
     },
     async ({ slug }) => {
       const template = getTemplate(slug);

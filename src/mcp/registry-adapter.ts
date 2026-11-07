@@ -299,7 +299,7 @@ export function getLibraryStats(): LibraryStats {
   const cats = listCategories();
   return {
     name: pkg.name || 'astro-component-kit',
-    version: pkg.version || '0.5.0',
+    version: pkg.version || '0.6.1',
     description: pkg.description || 'A free, open-source accessible UI component library for Astro',
     totalComponents: components.length,
     totalCategories: cats.length,
