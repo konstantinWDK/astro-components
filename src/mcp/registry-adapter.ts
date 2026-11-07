@@ -29,7 +29,7 @@ export function getPackageMeta() {
     const pkgRaw = fs.readFileSync(PKG_PATH, 'utf8');
     return JSON.parse(pkgRaw);
   } catch {
-    return { name: 'astro-component-kit', version: '0.5.1' };
+    return { name: 'astro-component-kit', version: '0.6.0' };
   }
 }
 

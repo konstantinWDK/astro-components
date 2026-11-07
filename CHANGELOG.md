@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-07
+
 ### Added — Developer portfolio template ("Keycap")
 - **New template `templates/portfolio`**: a six-page developer portfolio — home, projects, project case study (`/projects/[slug]`), blog, article (`/blog/[slug]`) and contact. Monochrome keyboard design originally made for konstantink.dev; light by default with a dark mode; live preview at `/preview/portfolio/`.
 - **New section category "Developer Portfolio"** with 15 sections: `DevHeader`, `DevHero`, `DevProjectsShowcase`, `DevKeyboard`, `DevRepoList`, `DevContributions`, `DevMonitor`, `DevContact`, `DevFooter`, `DevPageHero`, `DevProjectGrid`, `DevProjectDetail`, `DevPostList`, `DevArticle`, `DevContactForm`.
