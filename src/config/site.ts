@@ -62,7 +62,7 @@ export const siteConfig = {
   ogImage: '/og-image.png',
   
   // Google Services (configurable via environment variables)
-  googleTagManagerId: import.meta.env.PUBLIC_GTM_ID || '',
+  googleTagManagerId: import.meta.env.PUBLIC_GTM_ID || 'GTM-NJH7S9G3',
   googleAnalyticsId: import.meta.env.PUBLIC_GA_ID || '',
   googleSearchConsoleVerification: import.meta.env.PUBLIC_GSC_VERIFICATION || '',
 
