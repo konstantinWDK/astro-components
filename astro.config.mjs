@@ -2,6 +2,17 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import path from 'path';
 
+function ackPreviewBarIntegration() {
+  return {
+    name: 'ack-preview-bar-integration',
+    hooks: {
+      'astro:config:setup': ({ injectScript }) => {
+        injectScript('page', `import '/src/scripts/preview-bar.ts';`);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   site: 'https://astrocomponents.dev',
   i18n: {
@@ -21,6 +32,7 @@ export default defineConfig({
         locales: { en: 'en', es: 'es', ru: 'ru' },
       },
     }),
+    ackPreviewBarIntegration(),
   ],
   vite: {
     resolve: {
