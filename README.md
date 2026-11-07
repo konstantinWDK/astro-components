@@ -133,7 +133,7 @@ Add this endpoint to your editor's MCP settings (`claude_desktop_config.json`, C
 | `get_component` | Detailed component metadata, TypeScript `Props`, import statements, and usage code |
 | `get_component_code` | Raw `.astro` source code ready to inject into your project |
 | `list_categories` | Overview of all 13 component categories with item counts |
-| `list_templates` | Overview of the multi-page production templates (Nova Store, Forma Studio, The Lobby, Volta, Keycap) |
+| `list_templates` | Overview of the multi-page production templates (Nova Store, Forma Studio, The Lobby, Volta, Keycap, Kapow, Pulso, NULL/SECTOR) |
 | `get_template` | Complete template architecture, pages, store configuration, and routing guide |
 | `get_design_tokens` | CSS tokens, color variables, spacing scale, and dark/light theme setup |
 | `get_library_info` | High-level overview, active version, total counts, and quickstart guide |
@@ -235,6 +235,54 @@ import { PortfolioHomePage } from 'astro-component-kit/templates/portfolio';
 - **Pages included:** `PortfolioHomePage`, `PortfolioProjectsPage`, `PortfolioProjectPage`, `PortfolioBlogPage`, `PortfolioPostPage`, `PortfolioContactPage` and `PortfolioLayout`.
 - **Sections:** 15 `Dev*` sections in Sections → Developer Portfolio, usable on any site.
 - **Import path:** `astro-component-kit/templates/portfolio`
+
+### 6. Toy Store (Kapow)
+A comic-book "toy box" store for action figures, vehicles, playsets and collector editions. Shoppers filter by character from an avatar rail or the sidebar (plus universe, age group, scale, type and price — all in the URL), browse a character roster with profile pages and power levels, and use a gift finder by age. Light and dark mode.
+
+```astro
+---
+// src/pages/shop.astro — /shop/?character=vex,raikou&age=kids
+import { ToyShopPage } from 'astro-component-kit/templates/toy-store';
+---
+
+<ToyShopPage />
+```
+
+- **Pages included:** `ToyHomePage`, `ToyShopPage`, `ToyCharactersPage`, `ToyCharacterPage`, `ToyProductPage`, `ToyCheckoutPage` and `ToyLayout`.
+- **Sections:** 7 `Toy*` sections in Sections → Toy Store, plus `ToyFigureCard` and `ToyFigureGrid` in E-commerce.
+- **Import path:** `astro-component-kit/templates/toy-store`
+
+### 7. Medical consultations SaaS (Pulso)
+Practice software for clinics: a landing page, the clinic's public booking page (find-a-doctor + four-step booking) and an app with dashboard, live waiting room, week/day schedule, patient records, SOAP consultation notes, e-prescriptions with allergy checks, video visits, reports and settings.
+
+```astro
+---
+// src/pages/app/index.astro
+import { ClinicDashboardPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicDashboardPage theme="auto" />
+```
+
+- **Pages included:** `ClinicLandingPage`, `ClinicBookingPage`, `ClinicSignInPage`, `ClinicDashboardPage`, `ClinicSchedulePage`, `ClinicPatientsPage`, `ClinicPatientPage`, `ClinicConsultationPage`, `ClinicTelehealthPage`, `ClinicReportsPage`, `ClinicSettingsPage`, plus `ClinicLayout` and `ClinicSiteLayout`.
+- **New blocks:** 8 `Med*` app components and 3 sections in Sections → Healthcare.
+- **Import path:** `astro-component-kit/templates/saas-clinic`
+
+### 8. Cyberpunk · Futuristic brutalist (NULL/SECTOR)
+A six-page tech-product site with glitch headlines, HUD telemetry, a dot-matrix node map, a classified spec sheet that decrypts, usage-based pricing, a manifesto, crew badges, an uptime board and a command-line contact form. NIGHT and concrete DAY themes.
+
+```astro
+---
+// src/pages/index.astro
+import { CyberHomePage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<CyberHomePage />
+```
+
+- **Pages included:** `CyberHomePage`, `CyberProtocolPage`, `CyberPricingPage`, `CyberManifestoPage`, `CyberLogsPage`, `CyberTerminalPage` and `CyberLayout`.
+- **Sections:** 13 `Cyber*` sections in Sections → Cyberpunk & Brutalist.
+- **Import path:** `astro-component-kit/templates/cyberpunk`
 
 ---
 

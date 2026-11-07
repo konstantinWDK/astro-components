@@ -1,0 +1,174 @@
+---
+/**
+ * CyberPricing — Brutalist pricing: monthly / annual switch, a usage slider (GPU-hours per month)
+ * that recalculates each tier's estimated bill live, hard-ruled tier columns with an inverted
+ * featured plan, included credits, compute rate and feature lists with CyberpunkButton CTAs.
+ *
+ * @param {string} eyebrow - Index label. Default '[01] RATES'.
+ * @param {string} title - Heading. Default 'Pay for the second you burn'.
+ * @param {Array<{id: string, name: string, tagline?: string, monthly: number, annual: number, rate: number, credits?: number, features: string[], cta: string, href?: string, featured?: boolean}>} plans - Tiers (rate = credits per GPU-hour).
+ * @param {number} hours - Initial GPU-hours on the slider. Default 200.
+ * @param {number} maxHours - Slider maximum. Default 5000.
+ * @param {string} currency - Currency symbol. Default '$'.
+ * @param {string} unit - Rate unit label. Default 'CR / GPU-H'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: billing is a radio group; the slider has a visible label and value; estimates
+ * update in a polite live region; the featured plan is labelled in text ("Most picked").
+ */
+import CyberpunkButton from '../buttons/CyberpunkButton.astro';
+
+interface Plan {
+  id: string;
+  name: string;
+  tagline?: string;
+  monthly: number;
+  annual: number;
+  rate: number;
+  credits?: number;
+  features: string[];
+  cta: string;
+  href?: string;
+  featured?: boolean;
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  plans?: Plan[];
+  hours?: number;
+  maxHours?: number;
+  currency?: string;
+  unit?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = '[01] RATES',
+  title = 'Pay for the second you burn',
+  plans = [
+    { id: 'ghost', name: 'GHOST', tagline: 'Hobbyists', monthly: 0, annual: 0, rate: 0.62, credits: 50, features: ['Spot GPUs up to RTX 4090', '1 concurrent job'], cta: 'Start free' },
+    { id: 'runner', name: 'RUNNER', tagline: 'Indie studios', monthly: 49, annual: 39, rate: 0.48, credits: 400, features: ['H100 & L40S', '10 concurrent jobs', 'Priority queue'], cta: 'Jack in', featured: true },
+    { id: 'syndicate', name: 'SYNDICATE', tagline: 'Labs', monthly: 499, annual: 399, rate: 0.36, credits: 5000, features: ['H200 reserved pools', 'EU-only routing', 'SSO & DPA'], cta: 'Contact ops' },
+  ],
+  hours = 200,
+  maxHours = 5000,
+  currency = '$',
+  unit = 'CR / GPU-H',
+  className = '',
+} = Astro.props;
+
+const est = (p: Plan, h: number, annual: boolean) => Math.max(0, Math.round((annual ? p.annual : p.monthly) + Math.max(0, h * p.rate - (p.credits ?? 0))));
+---
+
+<section class:list={['cyprice', className]} aria-labelledby="cyprice-title" data-cyprice data-currency={currency} data-plans={JSON.stringify(plans.map((p) => ({ id: p.id, monthly: p.monthly, annual: p.annual, rate: p.rate, credits: p.credits ?? 0 })))}>
+  <header class="cyprice__head">
+    <div>
+      {eyebrow && <p class="cyprice__eyebrow">{eyebrow}</p>}
+      <h2 class="cyprice__title" id="cyprice-title">{title}</h2>
+    </div>
+    <fieldset class="cyprice__billing">
+      <legend class="sr-only">Billing period</legend>
+      <label><input type="radio" name="cyprice-billing" value="monthly" checked data-cyprice-billing /><span>Monthly</span></label>
+      <label><input type="radio" name="cyprice-billing" value="annual" data-cyprice-billing /><span>Annual −20%</span></label>
+    </fieldset>
+  </header>
+
+  <div class="cyprice__usage">
+    <label class="cyprice__usage-label" for="cyprice-hours">Estimated usage <strong><output for="cyprice-hours" data-cyprice-hours-out>{hours.toLocaleString('en-US')}</output> GPU-hours / month</strong></label>
+    <input id="cyprice-hours" type="range" min="0" max={maxHours} step="50" value={hours} data-cyprice-hours />
+    <div class="cyprice__scale" aria-hidden="true"><span>0</span><span>{(maxHours / 2).toLocaleString('en-US')}</span><span>{maxHours.toLocaleString('en-US')}</span></div>
+  </div>
+
+  <ul class="cyprice__grid">
+    {plans.map((p) => (
+      <li class:list={['cyprice__plan', { 'is-featured': p.featured }]} data-plan={p.id}>
+        {p.featured && <p class="cyprice__flag">Most picked</p>}
+        <h3 class="cyprice__name">{p.name}</h3>
+        {p.tagline && <p class="cyprice__tag">{p.tagline}</p>}
+        <p class="cyprice__price">
+          <span class="cyprice__amount"><span data-cyprice-base>{currency}{p.monthly}</span></span>
+          <span class="cyprice__per">/ month</span>
+        </p>
+        <p class="cyprice__rate"><strong>{p.rate.toFixed(2)}</strong> {unit}{p.credits ? <> · <strong>{p.credits.toLocaleString('en-US')}</strong> CR included</> : null}</p>
+        <p class="cyprice__est" aria-live="polite">Est. bill <strong data-cyprice-est>{currency}{est(p, hours, false).toLocaleString('en-US')}</strong></p>
+        <ul class="cyprice__features">
+          {p.features.map((f) => <li>{f}</li>)}
+        </ul>
+        <div class="cyprice__cta">
+          <CyberpunkButton href={p.href ?? '#'} label={p.cta} size="md" primaryColor={p.featured ? '#050507' : 'var(--cy-cta-bg, #d1002f)'} secondaryColor="var(--cy-cyan, #00f0ff)">{p.cta}</CyberpunkButton>
+        </div>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cyprice]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const plans: Array<{ id: string; monthly: number; annual: number; rate: number; credits: number }> = JSON.parse(root.dataset.plans || '[]');
+    const cur = root.dataset.currency || '$';
+    const slider = root.querySelector<HTMLInputElement>('[data-cyprice-hours]')!;
+    const out = root.querySelector<HTMLOutputElement>('[data-cyprice-hours-out]')!;
+    const update = () => {
+      const h = Number(slider.value);
+      const annual = root.querySelector<HTMLInputElement>('[data-cyprice-billing]:checked')?.value === 'annual';
+      out.textContent = h.toLocaleString('en-US');
+      plans.forEach((p) => {
+        const card = root.querySelector<HTMLElement>(`[data-plan="${p.id}"]`);
+        if (!card) return;
+        const base = annual ? p.annual : p.monthly;
+        card.querySelector('[data-cyprice-base]')!.textContent = `${cur}${base}`;
+        card.querySelector('[data-cyprice-est]')!.textContent = `${cur}${Math.max(0, Math.round(base + Math.max(0, h * p.rate - p.credits))).toLocaleString('en-US')}`;
+      });
+    };
+    slider.addEventListener('input', update);
+    root.querySelectorAll('[data-cyprice-billing]').forEach((r) => r.addEventListener('change', update));
+    update();
+  });
+</script>
+
+<style>
+  .cyprice { --cpr-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); --cpr-acid: var(--cy-acid, #d4ff00); color: var(--c-text-1, #f2f2f2); font-family: var(--font-mono, 'JetBrains Mono', monospace); container-type: inline-size; }
+  .cyprice__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sp-4, 1rem); margin-bottom: var(--sp-6, 1.5rem); }
+  .cyprice__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cpr-acid)); }
+  .cyprice__title { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.8rem, 5cqi, 3.4rem); font-weight: 900; line-height: 1; text-transform: uppercase; }
+  .cyprice__billing { display: flex; margin: 0; padding: 0; border: 2px solid var(--cpr-edge); }
+  .cyprice__billing label { position: relative; cursor: pointer; }
+  .cyprice__billing input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .cyprice__billing span { display: flex; align-items: center; min-height: 44px; padding: 0 var(--sp-4, 1rem); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+  .cyprice__billing label + label span { border-left: 2px solid var(--cpr-edge); }
+  .cyprice__billing input:checked + span { background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); }
+  .cyprice__billing input:focus-visible + span { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: -3px; }
+
+  .cyprice__usage { display: grid; gap: var(--sp-2, 0.5rem); margin-bottom: var(--sp-6, 1.5rem); padding: var(--sp-5, 1.25rem); border: 2px solid var(--cpr-edge); background: repeating-linear-gradient(-45deg, transparent 0 10px, rgb(var(--ink-rgb, 242 242 242) / 0.03) 10px 20px); }
+  .cyprice__usage-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2, 0.5rem); font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-2, #a6a6b4); }
+  .cyprice__usage-label strong { color: var(--c-text-1, #f2f2f2); }
+  .cyprice__usage-label output { color: var(--cy-accent-text, var(--cpr-acid)); font-size: 1.2rem; }
+  .cyprice__usage input { width: 100%; height: 28px; accent-color: var(--cpr-acid); cursor: pointer; }
+  .cyprice__usage input:focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cyprice__scale { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--c-text-3, #8a8a99); }
+
+  .cyprice__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--cpr-edge); border-left: 2px solid var(--cpr-edge); }
+  .cyprice__plan { position: relative; display: flex; flex-direction: column; gap: var(--sp-3, 0.75rem); padding: var(--sp-6, 1.5rem); border-right: 2px solid var(--cpr-edge); border-bottom: 2px solid var(--cpr-edge); }
+  .cyprice__plan.is-featured { background: var(--cpr-acid); color: #050507; --c-text-1: #050507; --c-text-2: #2b2b2b; --cy-accent-text: #050507; }
+  .cyprice__flag { position: absolute; top: -2px; right: -2px; margin: 0; padding: 4px 10px; background: #050507; color: var(--cpr-acid); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+  .cyprice__name { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 1.6rem; font-weight: 900; letter-spacing: 0.04em; }
+  .cyprice__tag { margin: 0; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-2, #a6a6b4); }
+  .cyprice__price { display: flex; align-items: baseline; gap: 6px; margin: var(--sp-2, 0.5rem) 0 0; }
+  .cyprice__amount { font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(2.4rem, 6cqi, 3.6rem); font-weight: 900; line-height: 1; }
+  .cyprice__per { font-size: 0.8rem; color: var(--c-text-2, #a6a6b4); }
+  .cyprice__rate { margin: 0; font-size: 0.8rem; color: var(--c-text-2, #a6a6b4); }
+  .cyprice__rate strong { color: var(--c-text-1, #f2f2f2); }
+  .cyprice__est { margin: 0; padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border: 2px dashed currentColor; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .cyprice__est strong { font-size: 1.05rem; }
+  .cyprice__features { display: grid; gap: var(--sp-2, 0.5rem); margin: var(--sp-2, 0.5rem) 0 0; padding: 0; list-style: none; font-size: 0.88rem; }
+  .cyprice__features li { display: flex; gap: var(--sp-2, 0.5rem); }
+  .cyprice__features li::before { content: '▸'; color: var(--cy-accent-text, var(--cpr-acid)); }
+  .cyprice__cta { margin-top: auto; padding-top: var(--sp-4, 1rem); }
+  .cyprice__cta :global(.cyber-btn) { width: 100%; }
+  .cyprice__plan :global(.cyber-btn:focus-visible) { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 3px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 860px) { .cyprice__grid { grid-template-columns: 1fr; } }
+</style>

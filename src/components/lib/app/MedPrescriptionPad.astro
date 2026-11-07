@@ -1,0 +1,307 @@
+---
+/**
+ * MedPrescriptionPad — e-Prescription builder: search a formulary, add medicines with dose,
+ * frequency and duration (quantity is calculated), get allergy and duplicate-therapy alerts against
+ * the patient's record, then print or send to the pharmacy.
+ *
+ * @param {string} patient - Patient name. Default 'Elena Duarte'.
+ * @param {Array<{name: string, class?: string}>} allergies - Patient allergies; `class` is matched to medicine classes.
+ * @param {string[]} current - Classes the patient already takes (duplicate-therapy warning).
+ * @param {Array<{id: string, name: string, strength: string, form: string, class?: string}>} formulary - Searchable medicines.
+ * @param {string} prescriber - Prescriber name for the footer. Default 'Dr. Laura Navarro'.
+ * @param {string} pharmacy - Default pharmacy label. Default 'Farmacia Alameda · 0.4 km'.
+ * @param {string} id - Base id. Default 'rx'.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the medicine search is a labelled input with a results list of buttons; each
+ * line's fields are labelled with the medicine name; safety alerts use role="alert" and include
+ * the reason in text; the sent state is announced politely. Emits `app:rx-sent` with the lines.
+ */
+
+interface Med { id: string; name: string; strength: string; form: string; class?: string }
+
+interface Props {
+  patient?: string;
+  allergies?: Array<{ name: string; class?: string }>;
+  current?: string[];
+  formulary?: Med[];
+  prescriber?: string;
+  pharmacy?: string;
+  id?: string;
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  patient = 'Elena Duarte',
+  allergies = [{ name: 'Penicillin', class: 'penicillin' }],
+  current = ['ace-inhibitor', 'antihistamine'],
+  formulary = [
+    { id: 'amoxicillin-500', name: 'Amoxicillin', strength: '500 mg', form: 'capsule', class: 'penicillin' },
+    { id: 'azithromycin-500', name: 'Azithromycin', strength: '500 mg', form: 'tablet', class: 'macrolide' },
+    { id: 'paracetamol-1g', name: 'Paracetamol', strength: '1 g', form: 'tablet', class: 'analgesic' },
+    { id: 'ibuprofen-400', name: 'Ibuprofen', strength: '400 mg', form: 'tablet', class: 'nsaid' },
+    { id: 'enalapril-10', name: 'Enalapril', strength: '10 mg', form: 'tablet', class: 'ace-inhibitor' },
+    { id: 'omeprazole-20', name: 'Omeprazole', strength: '20 mg', form: 'capsule', class: 'ppi' },
+  ],
+  prescriber = 'Dr. Laura Navarro',
+  pharmacy = 'Farmacia Alameda · 0.4 km',
+  id = 'rx',
+  variant = 'card',
+  className = '',
+} = Astro.props;
+---
+
+<section
+  class:list={['rx', `rx--${variant}`, className]}
+  aria-labelledby={`${id}-title`}
+  data-rx
+  data-id={id}
+  data-formulary={JSON.stringify(formulary)}
+  data-allergies={JSON.stringify(allergies)}
+  data-current={JSON.stringify(current)}
+>
+  <header class="rx__head">
+    <div>
+      <h2 class="rx__title" id={`${id}-title`}>Prescription</h2>
+      <p class="rx__sub">For <strong>{patient}</strong>{allergies.length > 0 && <> · allergies: {allergies.map((a) => a.name).join(', ')}</>}</p>
+    </div>
+    <span class="rx__badge" aria-hidden="true">Rx</span>
+  </header>
+
+  <div class="rx__search">
+    <label class="rx__label" for={`${id}-search`}>Add a medicine</label>
+    <input class="rx__input" id={`${id}-search`} type="search" autocomplete="off" placeholder="Search by name, e.g. paracetamol" aria-describedby={`${id}-search-hint`} data-rx-search />
+    <p class="rx__hint" id={`${id}-search-hint`}>Results appear below; press Tab to reach them.</p>
+    <ul class="rx__results" aria-label="Matching medicines" data-rx-results></ul>
+  </div>
+
+  <div class="rx__alerts" data-rx-alerts></div>
+
+  <ol class="rx__lines" aria-label="Medicines on this prescription" data-rx-lines></ol>
+  <p class="rx__empty" data-rx-empty>No medicines yet. Search above to add one.</p>
+
+  <footer class="rx__foot">
+    <p class="rx__meta">
+      <span>Prescriber: <strong>{prescriber}</strong></span>
+      <label class="rx__pharm">Pharmacy
+        <select data-rx-pharmacy>
+          <option>{pharmacy}</option>
+          <option>Farmacia Central · 1.2 km</option>
+          <option>Patient picks any pharmacy (e-code)</option>
+        </select>
+      </label>
+    </p>
+    <div class="rx__actions">
+      <button type="button" class="rx__btn" data-rx-print>Print</button>
+      <button type="button" class="rx__btn rx__btn--primary" data-rx-send disabled>Send to pharmacy</button>
+    </div>
+    <p class="rx__status" role="status" aria-live="polite" data-rx-status></p>
+  </footer>
+</section>
+
+<script>
+  type Med = { id: string; name: string; strength: string; form: string; class?: string };
+  const FREQ: Array<[string, number]> = [['Once daily', 1], ['Twice daily', 2], ['Three times daily', 3], ['Every 8 hours', 3], ['At night', 1], ['As needed (max 3/day)', 3]];
+
+  document.querySelectorAll<HTMLElement>('[data-rx]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const base = root.dataset.id || 'rx';
+    const formulary: Med[] = JSON.parse(root.dataset.formulary || '[]');
+    const allergies: Array<{ name: string; class?: string }> = JSON.parse(root.dataset.allergies || '[]');
+    const current: string[] = JSON.parse(root.dataset.current || '[]');
+    const search = root.querySelector<HTMLInputElement>('[data-rx-search]')!;
+    const results = root.querySelector<HTMLUListElement>('[data-rx-results]')!;
+    const linesEl = root.querySelector<HTMLOListElement>('[data-rx-lines]')!;
+    const empty = root.querySelector<HTMLElement>('[data-rx-empty]')!;
+    const alerts = root.querySelector<HTMLElement>('[data-rx-alerts]')!;
+    const send = root.querySelector<HTMLButtonElement>('[data-rx-send]')!;
+    const status = root.querySelector<HTMLElement>('[data-rx-status]')!;
+    const lines: Med[] = [];
+    let n = 0;
+
+    const renderAlerts = () => {
+      alerts.innerHTML = '';
+      const msgs: Array<['danger' | 'warning', string]> = [];
+      lines.forEach((m) => {
+        const hit = allergies.find((a) => a.class && a.class === m.class);
+        if (hit) msgs.push(['danger', `${m.name} belongs to the ${m.class} group — the patient is allergic to ${hit.name}. Choose an alternative.`]);
+        else if (m.class && current.includes(m.class)) msgs.push(['warning', `${m.name} duplicates a ${m.class} the patient already takes. Check before adding.`]);
+      });
+      msgs.forEach(([tone, text]) => {
+        const p = document.createElement('p');
+        p.className = `rx__alert rx__alert--${tone}`;
+        p.setAttribute('role', 'alert');
+        p.innerHTML = `<strong>${tone === 'danger' ? 'Allergy' : 'Check'}:</strong> `;
+        p.append(text);
+        alerts.append(p);
+      });
+      const blocked = msgs.some(([t]) => t === 'danger');
+      send.disabled = lines.length === 0 || blocked;
+      send.title = blocked ? 'Remove the medicine the patient is allergic to first' : '';
+    };
+
+    const add = (m: Med) => {
+      lines.push(m);
+      const k = ++n;
+      const li = document.createElement('li');
+      li.className = 'rx__line';
+      li.dataset.med = m.id;
+      li.innerHTML = `
+        <div class="rx__line-head"><strong></strong><span class="rx__form"></span><button type="button" class="rx__remove">Remove</button></div>
+        <div class="rx__fields">
+          <label>Dose<input type="text" name="dose" value="1 ${m.form}"></label>
+          <label>Frequency<select name="freq">${FREQ.map(([l, v]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+          <label>Days<input type="number" name="days" min="1" max="365" value="7" inputmode="numeric"></label>
+          <label>Quantity<output name="qty"></output></label>
+        </div>
+        <label class="rx__note">Instructions for the patient<input type="text" name="note" placeholder="e.g. take with food"></label>`;
+      li.querySelector('strong')!.textContent = `${m.name} ${m.strength}`;
+      li.querySelector('.rx__form')!.textContent = m.form;
+      li.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((f) => {
+        f.id = `${base}-${k}-${f.getAttribute('name')}`;
+        f.setAttribute('aria-label', `${f.closest('label')?.firstChild?.textContent?.trim()} for ${m.name}`);
+      });
+      const qty = li.querySelector<HTMLOutputElement>('output')!;
+      const calc = () => {
+        const per = Number((li.querySelector('[name="freq"]') as HTMLSelectElement).value);
+        const days = Number((li.querySelector('[name="days"]') as HTMLInputElement).value) || 0;
+        qty.textContent = `${per * days} ${m.form}${per * days === 1 ? '' : 's'}`;
+      };
+      li.addEventListener('input', calc);
+      calc();
+      const rm = li.querySelector<HTMLButtonElement>('.rx__remove')!;
+      rm.setAttribute('aria-label', `Remove ${m.name}`);
+      rm.addEventListener('click', () => {
+        lines.splice(lines.indexOf(m), 1);
+        li.remove();
+        empty.hidden = lines.length > 0;
+        renderAlerts();
+        search.focus();
+      });
+      linesEl.append(li);
+      empty.hidden = true;
+      status.textContent = `${m.name} added.`;
+      renderAlerts();
+      (li.querySelector('[name="dose"]') as HTMLInputElement).focus();
+    };
+
+    const renderResults = () => {
+      const q = search.value.trim().toLowerCase();
+      results.innerHTML = '';
+      if (!q) return;
+      formulary.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 6).forEach((m) => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'rx__result';
+        const allergic = allergies.some((a) => a.class && a.class === m.class);
+        b.innerHTML = `<span><strong></strong> <span></span></span>${allergic ? '<span class="rx__flag">Allergy</span>' : ''}`;
+        b.querySelector('strong')!.textContent = m.name;
+        b.querySelector('span span')!.textContent = `${m.strength} · ${m.form}`;
+        b.addEventListener('click', () => { search.value = ''; results.innerHTML = ''; add(m); });
+        li.append(b);
+        results.append(li);
+      });
+      if (!results.children.length) {
+        const li = document.createElement('li');
+        li.className = 'rx__none';
+        li.textContent = 'No medicine found';
+        results.append(li);
+      }
+    };
+    search.addEventListener('input', renderResults);
+    search.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); results.querySelector<HTMLButtonElement>('button')?.click(); }
+      if (e.key === 'Escape') { search.value = ''; results.innerHTML = ''; }
+    });
+
+    root.querySelector('[data-rx-print]')?.addEventListener('click', () => window.print());
+    send.addEventListener('click', () => {
+      const pharmacy = root.querySelector<HTMLSelectElement>('[data-rx-pharmacy]')?.value;
+      status.textContent = `Sent to ${pharmacy}. The patient gets the e-code by SMS.`;
+      send.disabled = true;
+      send.textContent = 'Sent';
+      document.dispatchEvent(new CustomEvent('app:rx-sent', { detail: { lines: lines.map((l) => l.id), pharmacy } }));
+    });
+  });
+</script>
+
+<style>
+  .rx { --rx-accent: var(--app-accent, var(--c-primary-light, #0e7490)); min-width: 0; container-type: inline-size; }
+  .rx--card { padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+  .rx__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-bottom: var(--sp-4, 1rem); }
+  .rx__title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .rx__sub { margin: 2px 0 0; font-size: 0.85rem; color: var(--c-text-2, #3d5a63); }
+  .rx__sub strong { color: var(--c-text-1, #0b2a33); }
+  .rx__badge { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: color-mix(in srgb, var(--rx-accent) 12%, transparent); color: var(--rx-accent); font-weight: 800; font-style: italic; font-family: Georgia, serif; font-size: 1.1rem; }
+
+  .rx__label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; color: var(--c-text-1, #0b2a33); }
+  .rx__input, .rx select, .rx :global(.rx__fields input), .rx :global(.rx__note input) {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18));
+    border-radius: var(--r-sm, 8px);
+    background: var(--c-bg, #f3f8f9);
+    color: var(--c-text-1, #0b2a33);
+    font: inherit;
+    font-size: 0.92rem;
+  }
+  .rx :is(input, select):focus-visible { outline: 3px solid color-mix(in srgb, var(--rx-accent) 45%, transparent); outline-offset: 1px; border-color: var(--rx-accent); }
+  .rx__hint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .rx__results { display: grid; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; }
+  .rx__results:empty { display: none; }
+  .rx__results :global(.rx__result) { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2, 0.5rem); width: 100%; min-height: 44px; padding: 0 var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.12)); border-radius: var(--r-sm, 8px); background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; }
+  .rx__results :global(.rx__result span span) { color: var(--c-text-2, #3d5a63); }
+  .rx__results :global(.rx__result:hover) { border-color: var(--rx-accent); }
+  .rx__results :global(.rx__result:focus-visible) { outline: 3px solid var(--rx-accent); outline-offset: 1px; }
+  .rx__results :global(.rx__flag) { padding: 2px 8px; border-radius: 999px; background: var(--c-danger, #b91c1c); color: #fff; font-size: 0.72rem; font-weight: 700; }
+  .rx__results :global(.rx__none) { padding: var(--sp-2, 0.5rem); font-size: 0.85rem; color: var(--c-text-3, #5b747c); }
+
+  .rx__alerts { display: grid; gap: var(--sp-2, 0.5rem); margin-top: var(--sp-3, 0.75rem); }
+  .rx__alerts:empty { display: none; }
+  .rx__alerts :global(.rx__alert) { margin: 0; padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-radius: var(--r-md, 10px); font-size: 0.88rem; line-height: 1.45; color: var(--c-text-1, #0b2a33); }
+  .rx__alerts :global(.rx__alert--danger) { border: 1px solid var(--c-danger, #b91c1c); background: color-mix(in srgb, var(--c-danger, #b91c1c) 8%, transparent); }
+  .rx__alerts :global(.rx__alert--danger strong) { color: var(--c-danger, #b91c1c); }
+  .rx__alerts :global(.rx__alert--warning) { border: 1px solid var(--c-warning, #a16207); background: color-mix(in srgb, var(--c-warning, #a16207) 8%, transparent); }
+  .rx__alerts :global(.rx__alert--warning strong) { color: var(--c-warning, #a16207); }
+
+  .rx__lines { display: grid; gap: var(--sp-3, 0.75rem); margin: var(--sp-4, 1rem) 0 0; padding: 0; list-style: none; counter-reset: rx; }
+  .rx__lines:empty { display: none; }
+  .rx__lines :global(.rx__line) { padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-md, 10px); background: var(--c-bg, #f3f8f9); }
+  .rx__lines :global(.rx__line-head) { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin-bottom: var(--sp-2, 0.5rem); color: var(--c-text-1, #0b2a33); }
+  .rx__lines :global(.rx__form) { font-size: 0.8rem; color: var(--c-text-3, #5b747c); }
+  .rx__lines :global(.rx__remove) { margin-left: auto; min-height: 36px; padding: 0 var(--sp-3, 0.75rem); border: 0; border-radius: 6px; background: transparent; color: var(--c-danger, #b91c1c); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .rx__lines :global(.rx__remove:hover) { background: color-mix(in srgb, var(--c-danger, #b91c1c) 8%, transparent); }
+  .rx__lines :global(.rx__remove:focus-visible) { outline: 3px solid var(--c-danger, #b91c1c); outline-offset: 1px; }
+  .rx__lines :global(.rx__fields) { display: grid; grid-template-columns: 1.2fr 1.6fr 0.7fr 1fr; gap: var(--sp-2, 0.5rem); }
+  .rx__lines :global(label) { display: grid; gap: 3px; font-size: 0.75rem; font-weight: 600; color: var(--c-text-2, #3d5a63); }
+  .rx__lines :global(output) { display: flex; align-items: center; min-height: 44px; font-size: 0.92rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .rx__lines :global(.rx__note) { margin-top: var(--sp-2, 0.5rem); }
+  .rx__empty { margin: var(--sp-4, 1rem) 0 0; padding: var(--sp-5, 1.25rem); border: 1px dashed var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: var(--r-md, 10px); text-align: center; font-size: 0.88rem; color: var(--c-text-2, #3d5a63); }
+  .rx__empty[hidden] { display: none; }
+
+  .rx__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-top: var(--sp-4, 1rem); padding-top: var(--sp-4, 1rem); border-top: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); }
+  .rx__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem) var(--sp-4, 1rem); margin: 0; font-size: 0.85rem; color: var(--c-text-2, #3d5a63); }
+  .rx__meta strong { color: var(--c-text-1, #0b2a33); }
+  .rx__pharm { display: inline-flex; align-items: center; gap: var(--sp-2, 0.5rem); }
+  .rx__pharm select { width: auto; }
+  .rx__actions { display: flex; gap: var(--sp-2, 0.5rem); }
+  .rx__btn { min-height: 44px; padding: 0 var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: var(--r-sm, 8px); background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+  .rx__btn--primary { border-color: var(--rx-accent); background: var(--rx-accent); color: var(--c-on-primary, #fff); }
+  .rx__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .rx__btn:focus-visible { outline: 3px solid var(--rx-accent); outline-offset: 2px; }
+  .rx__status { width: 100%; margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--c-success, #15803d); }
+  .rx__status:empty { display: none; }
+
+  @container (max-width: 560px) {
+    .rx__lines :global(.rx__fields) { grid-template-columns: 1fr 1fr; }
+    .rx__actions { width: 100%; }
+    .rx__btn { flex: 1; }
+  }
+  @media print {
+    .rx__search, .rx__actions, .rx__lines :global(.rx__remove) { display: none; }
+  }
+</style>

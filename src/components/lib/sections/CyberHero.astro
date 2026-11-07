@@ -1,0 +1,198 @@
+---
+/**
+ * CyberHero — Futuristic-brutalist hero: HUD top bar with a live UTC clock, colossal stacked
+ * headline (one glitching line, one outlined line), subtitle, CyberpunkButton + NeonBorderButton
+ * CTAs, and a bracketed live readout panel over a perspective grid floor with scanlines.
+ *
+ * @param {string} eyebrow - Label in the HUD bar. Default 'SYS:// DECENTRALISED COMPUTE GRID'.
+ * @param {string[]} lines - Headline lines. Default ['RENT THE', 'DARK SIDE', 'OF THE GRID'].
+ * @param {number} glitch - Index of the glitching line (-1 for none). Default 1.
+ * @param {number} outline - Index of the outlined line (-1 for none). Default 2.
+ * @param {string} subtitle - Supporting copy.
+ * @param {{label: string, href: string}} primary - Main CTA (CyberpunkButton).
+ * @param {{label: string, href: string}} secondary - Secondary CTA (NeonBorderButton, optional).
+ * @param {Array<{label: string, value: number, suffix?: string, live?: boolean}>} readout - HUD stats; `live` values drift slightly.
+ * @param {string} variant - Backdrop (grid|plain). Default 'grid'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1 containing the full headline as text (glitch copies are decorative
+ * pseudo-elements); the clock and drifting numbers are not live regions; every animation
+ * (glitch, grid scroll, drift) stops with prefers-reduced-motion.
+ */
+import CyberpunkButton from '../buttons/CyberpunkButton.astro';
+import NeonBorderButton from '../buttons/NeonBorderButton.astro';
+
+interface Props {
+  eyebrow?: string;
+  lines?: string[];
+  glitch?: number;
+  outline?: number;
+  subtitle?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  readout?: Array<{ label: string; value: number; suffix?: string; live?: boolean }>;
+  variant?: 'grid' | 'plain';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  eyebrow = 'SYS:// DECENTRALISED COMPUTE GRID',
+  lines = ['RENT THE', 'DARK SIDE', 'OF THE GRID'],
+  glitch = 1,
+  outline = 2,
+  subtitle = 'Spin up GPU clusters on idle hardware across 38 cities. No data centres, no lock-in, no logs — just raw compute, billed by the second.',
+  primary = { label: 'Jack in', href: '#' },
+  secondary = { label: 'Read the protocol', href: '#' },
+  readout = [
+    { label: 'NODES ONLINE', value: 2417, live: true },
+    { label: 'GPUS IDLE', value: 8932, live: true },
+    { label: 'AVG LATENCY', value: 38, suffix: 'MS', live: true },
+    { label: 'COST VS CLOUD', value: -71, suffix: '%' },
+  ],
+  variant = 'grid',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+---
+
+<section class:list={['cyhero', `cyhero--${variant}`, `cyhero--${size}`, className]} aria-labelledby="cyhero-title" data-cyhero>
+  <div class="cyhero__hud" aria-hidden="true">
+    <span>{eyebrow}</span>
+    <span class="cyhero__hud-mid">LAT 52.37 · LON 4.89</span>
+    <span>UTC <time data-cyhero-clock>--:--:--</time></span>
+  </div>
+
+  <div class="cyhero__inner">
+    <div class="cyhero__copy">
+      <h1 class="cyhero__title" id="cyhero-title">
+        {lines.map((l, i) => (
+          <span class:list={['cyhero__line', { 'is-glitch': i === glitch, 'is-outline': i === outline }]} data-text={l}>{l}</span>
+        ))}
+      </h1>
+      {subtitle && <p class="cyhero__sub"><span class="cyhero__prompt" aria-hidden="true">&gt;_</span> {subtitle}</p>}
+      <div class="cyhero__ctas">
+        {primary && <CyberpunkButton href={primary.href} label={primary.label} primaryColor="var(--cy-cta-bg, #d1002f)" secondaryColor="var(--cy-cyan, #00f0ff)" size="lg">{primary.label}</CyberpunkButton>}
+        {secondary && <NeonBorderButton href={secondary.href} color="var(--cy-acid, #d4ff00)" size="lg">{secondary.label}</NeonBorderButton>}
+      </div>
+    </div>
+
+    {readout.length > 0 && (
+      <dl class="cyhero__readout">
+        <span class="cyhero__corner cyhero__corner--tl" aria-hidden="true"></span>
+        <span class="cyhero__corner cyhero__corner--br" aria-hidden="true"></span>
+        <p class="cyhero__readout-title" aria-hidden="true">// LIVE TELEMETRY</p>
+        {readout.map((r) => (
+          <div class="cyhero__stat">
+            <dt>{r.label}</dt>
+            <dd><span data-cyhero-live={r.live ? r.value : undefined}>{fmt(r.value)}</span>{r.suffix && <small>{r.suffix}</small>}</dd>
+            <span class="cyhero__bar" aria-hidden="true"><span style={`width: ${30 + (Math.abs(r.value) % 60)}%`}></span></span>
+          </div>
+        ))}
+      </dl>
+    )}
+  </div>
+
+  {variant === 'grid' && <div class="cyhero__floor" aria-hidden="true"></div>}
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cyhero]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const clock = root.querySelector<HTMLTimeElement>('[data-cyhero-clock]');
+    const tick = () => { if (clock) clock.textContent = new Date().toISOString().slice(11, 19); };
+    tick();
+    window.setInterval(tick, 1000);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const live = Array.from(root.querySelectorAll<HTMLElement>('[data-cyhero-live]'));
+    window.setInterval(() => {
+      live.forEach((el) => {
+        const base = Number(el.dataset.cyheroLive);
+        const spread = Math.max(1, Math.round(Math.abs(base) * 0.01));
+        el.textContent = (base + Math.round((Math.random() - 0.5) * 2 * spread)).toLocaleString('en-US');
+      });
+    }, 1600);
+  });
+</script>
+
+<style>
+  .cyhero {
+    --ch-edge: var(--cy-edge, var(--c-text-1, #f2f2f2));
+    --ch-acid: var(--cy-acid, #d4ff00);
+    --ch-mag: var(--cy-magenta, #ff2bd6);
+    --ch-cyan: var(--cy-cyan, #00f0ff);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-bottom: 2px solid var(--ch-edge);
+    color: var(--c-text-1, #f2f2f2);
+    container-type: inline-size;
+  }
+  .cyhero__hud { display: flex; justify-content: space-between; gap: var(--sp-4, 1rem); padding: var(--sp-2, 0.5rem) var(--sp-5, 1.25rem); border-bottom: 1px solid rgb(var(--ink-rgb, 242 242 242) / 0.2); font-family: var(--font-mono, monospace); font-size: 0.7rem; letter-spacing: 0.14em; color: var(--c-text-2, #a6a6b4); }
+  .cyhero__hud time { color: var(--cy-accent-text, var(--ch-acid)); font-variant-numeric: tabular-nums; }
+
+  .cyhero__inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); align-items: end; gap: clamp(2rem, 5vw, 4rem); max-width: 1440px; margin: 0 auto; padding: clamp(3rem, 8vw, 7rem) var(--sp-5, 1.25rem) clamp(4rem, 10vw, 9rem); }
+  .cyhero--sm .cyhero__inner { padding-block: clamp(2rem, 5vw, 4rem); }
+  .cyhero--lg .cyhero__inner { padding-block: clamp(4rem, 11vw, 10rem); }
+
+  .cyhero__title { display: grid; margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(2.6rem, 10cqi, 8.5rem); font-weight: 900; line-height: 0.9; letter-spacing: -0.02em; text-transform: uppercase; }
+  .cyhero__line { position: relative; display: block; width: fit-content; }
+  .cyhero__line.is-outline { color: transparent; -webkit-text-stroke: 2px var(--c-text-1, #f2f2f2); }
+  .cyhero__line.is-glitch { color: var(--cy-accent-text, var(--ch-acid)); text-shadow: 0 0 24px color-mix(in srgb, var(--ch-acid) 35%, transparent); }
+  .cyhero__line.is-glitch::before, .cyhero__line.is-glitch::after { content: attr(data-text); position: absolute; inset: 0; pointer-events: none; }
+  .cyhero__line.is-glitch::before { color: var(--ch-mag); transform: translate(-3px, 0); clip-path: inset(0 0 62% 0); mix-blend-mode: screen; animation: ch-glitch-a 3.2s steps(1) infinite; }
+  .cyhero__line.is-glitch::after { color: var(--ch-cyan); transform: translate(3px, 0); clip-path: inset(58% 0 0 0); mix-blend-mode: screen; animation: ch-glitch-b 2.6s steps(1) infinite; }
+  :global([data-theme='light']) .cyhero__line.is-glitch::before, :global([data-theme='light']) .cyhero__line.is-glitch::after { mix-blend-mode: multiply; }
+
+  .cyhero__sub { max-width: 42rem; margin: var(--sp-8, 2rem) 0 0; font-family: var(--font-mono, monospace); font-size: 1.02rem; line-height: 1.7; color: var(--c-text-2, #a6a6b4); }
+  .cyhero__prompt { color: var(--cy-accent-text, var(--ch-acid)); font-weight: 700; }
+  .cyhero__ctas { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-5, 1.25rem); margin-top: var(--sp-8, 2rem); }
+
+  .cyhero__readout { position: relative; display: grid; gap: var(--sp-4, 1rem); margin: 0; padding: var(--sp-5, 1.25rem); border: 2px solid var(--ch-edge); background: rgb(var(--paper-rgb, 5 5 7) / 0.82); backdrop-filter: blur(6px); font-family: var(--font-mono, monospace); }
+  .cyhero__readout-title { margin: 0; font-size: 0.7rem; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--ch-acid)); }
+  .cyhero__corner { position: absolute; width: 18px; height: 18px; border: 3px solid var(--ch-acid); }
+  .cyhero__corner--tl { top: -8px; left: -8px; border-right: 0; border-bottom: 0; }
+  .cyhero__corner--br { bottom: -8px; right: -8px; border-left: 0; border-top: 0; }
+  .cyhero__stat { display: grid; grid-template-columns: 1fr auto; gap: 4px var(--sp-3, 0.75rem); }
+  .cyhero__stat dt { font-size: 0.72rem; letter-spacing: 0.12em; color: var(--c-text-2, #a6a6b4); }
+  .cyhero__stat dd { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--c-text-1, #f2f2f2); font-variant-numeric: tabular-nums; text-align: right; }
+  .cyhero__stat small { margin-left: 3px; font-size: 0.65rem; color: var(--c-text-2, #a6a6b4); }
+  .cyhero__bar { grid-column: 1 / -1; height: 4px; background: rgb(var(--ink-rgb, 242 242 242) / 0.12); }
+  .cyhero__bar span { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--ch-acid) 0 6px, transparent 6px 8px); }
+
+  .cyhero__floor {
+    position: absolute;
+    inset: auto -20% -10% -20%;
+    z-index: -1;
+    height: 42%;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--ch-mag) 55%, transparent) 1.5px, transparent 1.5px),
+      linear-gradient(90deg, color-mix(in srgb, var(--ch-mag) 55%, transparent) 1.5px, transparent 1.5px);
+    background-size: 64px 64px;
+    transform: perspective(420px) rotateX(62deg);
+    transform-origin: 50% 0;
+    mask-image: linear-gradient(to bottom, transparent, #000 40%);
+    animation: ch-floor 3s linear infinite;
+    opacity: 0.55;
+  }
+  .cyhero--grid::before { content: ''; position: absolute; inset: auto 0 30% 0; z-index: -1; height: 30%; background: radial-gradient(60% 100% at 50% 100%, color-mix(in srgb, var(--ch-mag) 30%, transparent), transparent 70%); pointer-events: none; }
+
+  @keyframes ch-floor { to { background-position: 0 64px, 0 0; } }
+  @keyframes ch-glitch-a { 0%, 88%, 100% { transform: translate(-3px, 0); clip-path: inset(0 0 62% 0); } 90% { transform: translate(-9px, 2px); clip-path: inset(20% 0 50% 0); } 94% { transform: translate(6px, -2px); clip-path: inset(0 0 80% 0); } }
+  @keyframes ch-glitch-b { 0%, 84%, 100% { transform: translate(3px, 0); clip-path: inset(58% 0 0 0); } 86% { transform: translate(10px, 0); clip-path: inset(70% 0 10% 0); } 92% { transform: translate(-5px, 1px); clip-path: inset(40% 0 30% 0); } }
+
+  @container (max-width: 860px) {
+    .cyhero__inner { grid-template-columns: 1fr; }
+    .cyhero__hud-mid { display: none; }
+  }
+  @container (max-width: 480px) {
+    .cyhero__inner { padding-inline: var(--sp-4, 1rem); }
+    .cyhero__line.is-outline { -webkit-text-stroke-width: 1.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cyhero__floor, .cyhero__line.is-glitch::before, .cyhero__line.is-glitch::after { animation: none; }
+  }
+</style>

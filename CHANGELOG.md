@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Futuristic-brutalist cyberpunk template ("NULL/SECTOR")
+- **New template `templates/cyberpunk`**: six pages for a fictional decentralised GPU network — home, protocol, pricing, manifesto, logs (status + changelog) and terminal (contact). Orbitron + JetBrains Mono, zero radius, 2px ink rules, acid / magenta / cyan, CRT scanlines; NIGHT by default with a concrete DAY theme. Live preview at `/preview/cyberpunk/`.
+- **New section category "Cyberpunk & Brutalist"** with 13 sections: `CyberHeader`, `CyberHero`, `CyberTicker`, `CyberBento`, `CyberNodeMap`, `CyberPageHero`, `CyberSpecTable`, `CyberPricing`, `CyberManifesto`, `CyberCrewGrid`, `CyberStatusBoard`, `CyberTerminalForm`, `CyberFooter`.
+- Reuses `CyberpunkButton`, `NeonBorderButton`, `CyberFeatureCard`, `CyberGlitchAlert`, `CyberpunkCheckbox`, `HackerDecodeText`, `NeonSpinner`, `LogoWallGrid`, `StatsCounterBand`, `FaqTwoColumn`, `ChangelogSection` and `StatusTimelineFeed`.
+
+### Added — Medical consultations SaaS template ("Pulso")
+- **New template `templates/saas-clinic`**: eleven pages — marketing landing, the clinic's public booking page, sign-in and a practice app with dashboard, schedule, patients, patient record (`/app/patients/[id]`), consultation, video visits, reports and settings. Medical teal, Figtree, light by default with a dark mode; live preview at `/preview/saas-clinic/`. All people and records are fictional.
+- **8 new App components**: `MedAgendaTimeline`, `MedWaitingRoom`, `MedScheduleCalendar`, `MedPatientSummary`, `MedConsultationNote` (SOAP, vitals flags, ICD-10 combobox, autosave, sign & lock), `MedPrescriptionPad` (allergy and duplicate-therapy checks), `MedVideoVisit` (telemedicine room UI) and `MedAvailabilityEditor`.
+- **New section category "Healthcare"** with `MedHero`, `MedDoctorDirectory` and `MedBookingWizard` (four-step booking with an .ics calendar file; pre-select with `?doctor=` / `?specialty=`).
+- 7 new app icons: `stethoscope`, `pulse`, `pill`, `video`, `clipboard`, `clock`, `heart`.
+
+### Fixed
+- `HeatmapChart` mixed every cell with a hard-coded near-black, so light themes showed dark cells; the ramp now starts from `--chart-surface`. The strong value text colour can be themed with `--hm-strong-text`.
+
+### Added — Toy store template ("Kapow")
+- **New template `templates/toy-store`**: a six-page store for action figures and collectibles — home, shop, characters, character profile (`/characters/[id]`), product (`/product/[slug]`) and checkout. Comic "toy box" design (Russo One, ink outlines, hard shadows, halftone panels), light by default with a dark mode; live preview at `/preview/toy-store/`. All characters and universes are original.
+- **New section category "Toy Store"** with 7 sections: `ToyHero`, `ToyCharacterRail` (links or filter mode), `ToyCharacterGrid`, `ToyCharacterHero`, `ToyAgeFinder`, `ToySpecSheet`, `ToyCollectorClub`.
+- **New e-commerce components**: `ToyFigureCard` (trading-card product card with character, scale, age, articulation, pre-order and limited-edition notes) and `ToyFigureGrid`.
+- **Facet filters**: `Product.facets` (e.g. `{ character: ['vex'], scale: '6in' }`) is exposed on product cards as `data-f-*`; `FilterSidebar` takes a `facets` prop that renders extra checkbox groups, filters on them and syncs each one with `?<name>=` in the URL. New helpers `facetAttrs` and `matchesFacets`.
+- `FilterSidebar`: `categoryLabel` prop and `?max=` URL support (budget links).
+- 9 new product illustrations: `figure`, `robot`, `dino`, `monster`, `ninja`, `rocket`, `mech`, `castle`, `mystery`.
+
+### Fixed
+- `FilterSidebar` was always collapsed behind its "Filters" button on desktop, because its container query measured the (narrow) sidebar itself; it now collapses by viewport width (≤ 900px).
+
 ## [0.6.0] - 2026-11-07
 
 ### Added — Developer portfolio template ("Keycap")

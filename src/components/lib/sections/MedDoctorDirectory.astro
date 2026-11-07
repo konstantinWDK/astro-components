@@ -1,0 +1,232 @@
+---
+/**
+ * MedDoctorDirectory — Find-a-doctor section for clinic websites: search by name, specialty
+ * chips and a "video visits" toggle filter clinician cards (avatar, specialty, rating, languages,
+ * fee, next available day, short bio) with a "Book" link per clinician and a live result count.
+ *
+ * @param {string} eyebrow - Small label. Default 'Our team'.
+ * @param {string} title - Heading. Default 'Find your doctor'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<{id: string, name: string}>} specialties - Filter chips.
+ * @param {Array<{id: string, name: string, specialty: string, hue?: number, rating?: number, reviews?: number, languages?: string[], fee?: number, telehealth?: boolean, days?: number[], bio?: string}>} doctors - Cards.
+ * @param {string} bookHref - Booking page URL; `?doctor=<id>` is appended. Default '#'.
+ * @param {string[]} dayNames - Weekday names (0 = Monday) for "next available". Default Mon–Sun.
+ * @param {string} currency - ISO currency for fees. Default 'EUR'.
+ * @param {string} locale - Number locale. Default 'en-GB'.
+ * @param {number} columns - Desktop columns (2–4). Default 3.
+ * @param {string} variant - Card style (card|plain). Default 'card'.
+ * @param {string} id - Base id. Default 'doctors'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: search has a visible label; chips are toggle buttons (aria-pressed); the video
+ * filter is a native switch; each card is an article with an h3 and a "Book with …" link; the
+ * result count is a polite live region.
+ */
+interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  hue?: number;
+  rating?: number;
+  reviews?: number;
+  languages?: string[];
+  fee?: number;
+  telehealth?: boolean;
+  days?: number[];
+  bio?: string;
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  specialties?: Array<{ id: string; name: string }>;
+  doctors?: Doctor[];
+  bookHref?: string;
+  dayNames?: string[];
+  currency?: string;
+  locale?: string;
+  columns?: number;
+  variant?: 'card' | 'plain';
+  id?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'Our team',
+  title = 'Find your doctor',
+  subtitle,
+  specialties = [
+    { id: 'general', name: 'General practice' },
+    { id: 'pediatrics', name: 'Pediatrics' },
+    { id: 'cardiology', name: 'Cardiology' },
+  ],
+  doctors = [
+    { id: 'dr-navarro', name: 'Dr. Laura Navarro', specialty: 'general', hue: 190, rating: 4.9, reviews: 312, languages: ['Spanish', 'English'], fee: 60, telehealth: true, days: [0, 1, 2, 3, 4], bio: 'Family doctor with 15 years in primary care.' },
+    { id: 'dr-sato', name: 'Dr. Emi Sato', specialty: 'pediatrics', hue: 150, rating: 5, reviews: 241, languages: ['English', 'Japanese'], fee: 70, telehealth: false, days: [0, 1, 3, 4], bio: 'Calm visits, clear answers and a drawer full of stickers.' },
+    { id: 'dr-okafor', name: 'Dr. Daniel Okafor', specialty: 'cardiology', hue: 350, rating: 4.8, reviews: 189, languages: ['English', 'French'], fee: 95, telehealth: true, days: [0, 2, 4], bio: 'Hypertension, arrhythmias and cardiac rehab.' },
+  ],
+  bookHref = '#',
+  dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+  currency = 'EUR',
+  locale = 'en-GB',
+  columns = 3,
+  variant = 'card',
+  id = 'doctors',
+  className = '',
+} = Astro.props;
+
+const specName = Object.fromEntries(specialties.map((s) => [s.id, s.name]));
+const money = (v: number) => new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(v);
+const initialsOf = (n: string) => n.replace(/^(Dr\.|Dra\.)\s*/, '').split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+const cols = Math.min(4, Math.max(2, columns));
+const sep = bookHref.includes('?') ? '&' : '?';
+---
+
+<section class:list={['mdd', `mdd--${variant}`, className]} aria-labelledby={`${id}-title`} data-mdd style={`--mdd-cols: ${cols}`}>
+  <header class="mdd__head">
+    {eyebrow && <p class="mdd__eyebrow">{eyebrow}</p>}
+    <h2 class="mdd__title" id={`${id}-title`}>{title}</h2>
+    {subtitle && <p class="mdd__sub">{subtitle}</p>}
+  </header>
+
+  <div class="mdd__filters">
+    <label class="mdd__search">
+      <span class="mdd__search-label">Search by name or language</span>
+      <span class="mdd__search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" placeholder="e.g. Navarro or French" data-mdd-search />
+      </span>
+    </label>
+    <ul class="mdd__chips" aria-label="Filter by specialty">
+      {specialties.map((s) => (
+        <li><button type="button" class="mdd__chip" aria-pressed="false" data-mdd-spec={s.id}>{s.name}</button></li>
+      ))}
+    </ul>
+    <label class="mdd__toggle">
+      <input type="checkbox" role="switch" data-mdd-video />
+      <span class="mdd__track" aria-hidden="true"></span>
+      Video visits only
+    </label>
+    <p class="mdd__count" aria-live="polite"><strong data-mdd-count>{doctors.length}</strong> clinicians</p>
+  </div>
+
+  <ul class="mdd__grid" data-mdd-grid>
+    {doctors.map((d) => {
+      const next = d.days?.length ? dayNames[d.days[0]] : undefined;
+      return (
+        <li data-spec={d.specialty} data-video={d.telehealth ? '' : undefined} data-text={`${d.name} ${(d.languages ?? []).join(' ')} ${specName[d.specialty] ?? ''}`.toLowerCase()}>
+          <article class="mdd__card" aria-labelledby={`${id}-${d.id}`}>
+            <div class="mdd__top">
+              <span class="mdd__avatar" style={`--h: ${d.hue ?? 190}`} aria-hidden="true">{initialsOf(d.name)}</span>
+              <div>
+                <h3 class="mdd__name" id={`${id}-${d.id}`}>{d.name}</h3>
+                <p class="mdd__spec">{specName[d.specialty] ?? d.specialty}</p>
+              </div>
+            </div>
+            {d.bio && <p class="mdd__bio">{d.bio}</p>}
+            <ul class="mdd__facts">
+              {d.rating !== undefined && <li><span aria-hidden="true">★</span> {d.rating.toFixed(1)}{d.reviews !== undefined && <span class="mdd__muted"> ({d.reviews} reviews)</span>}<span class="sr-only"> out of 5</span></li>}
+              {d.languages && <li>{d.languages.join(' · ')}</li>}
+              <li>{d.telehealth ? 'In person & video' : 'In person only'}</li>
+            </ul>
+            <div class="mdd__foot">
+              <p class="mdd__price">
+                {d.fee !== undefined && <><strong>{money(d.fee)}</strong><span class="mdd__muted"> / visit</span></>}
+                {next && <span class="mdd__next">Sees patients from {next}</span>}
+              </p>
+              <a class="mdd__book" href={bookHref === '#' ? '#' : `${bookHref}${sep}doctor=${encodeURIComponent(d.id)}`}>Book<span class="sr-only"> with {d.name}</span></a>
+            </div>
+          </article>
+        </li>
+      );
+    })}
+  </ul>
+  <p class="mdd__empty" role="status" data-mdd-empty hidden>No clinician matches. Try another specialty or clear the search.</p>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-mdd]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-mdd-grid] > li'));
+    const search = root.querySelector<HTMLInputElement>('[data-mdd-search]')!;
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-mdd-spec]'));
+    const video = root.querySelector<HTMLInputElement>('[data-mdd-video]')!;
+    const count = root.querySelector<HTMLElement>('[data-mdd-count]')!;
+    const empty = root.querySelector<HTMLElement>('[data-mdd-empty]')!;
+    const apply = () => {
+      const q = search.value.trim().toLowerCase();
+      const specs = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.mddSpec);
+      let n = 0;
+      items.forEach((li) => {
+        const ok = (!q || (li.dataset.text || '').includes(q)) && (!specs.length || specs.includes(li.dataset.spec)) && (!video.checked || li.dataset.video !== undefined);
+        li.hidden = !ok;
+        if (ok) n++;
+      });
+      count.textContent = String(n);
+      empty.hidden = n > 0;
+    };
+    search.addEventListener('input', apply);
+    video.addEventListener('change', apply);
+    chips.forEach((c) => c.addEventListener('click', () => { c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true')); apply(); }));
+    const want = new URLSearchParams(window.location.search).get('specialty');
+    if (want) chips.find((c) => c.dataset.mddSpec === want)?.click();
+  });
+</script>
+
+<style>
+  .mdd { --mdd-accent: var(--app-accent, var(--c-primary-light, #0e7490)); container-type: inline-size; }
+  .mdd__head { margin-bottom: var(--sp-5, 1.25rem); }
+  .mdd__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mdd-accent); }
+  .mdd__title { margin: 0; font-size: clamp(1.6rem, 4vw, 2.3rem); font-weight: 800; letter-spacing: -0.02em; color: var(--c-text-1, #0b2a33); }
+  .mdd__sub { margin: var(--sp-2, 0.5rem) 0 0; max-width: 56ch; font-size: 1.02rem; line-height: 1.6; color: var(--c-text-2, #3d5a63); }
+
+  .mdd__filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-3, 0.75rem) var(--sp-4, 1rem); margin-bottom: var(--sp-5, 1.25rem); }
+  .mdd__search { display: grid; gap: 4px; flex: 1 1 240px; max-width: 340px; }
+  .mdd__search-label { font-size: 0.82rem; font-weight: 600; color: var(--c-text-1, #0b2a33); }
+  .mdd__search-box { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); min-height: 46px; padding: 0 var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: var(--r-sm, 10px); background: var(--c-bg-1, #fff); color: var(--c-text-2, #3d5a63); }
+  .mdd__search-box:focus-within { outline: 3px solid color-mix(in srgb, var(--mdd-accent) 45%, transparent); border-color: var(--mdd-accent); }
+  .mdd__search-box input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--c-text-1, #0b2a33); font: inherit; font-size: 1rem; outline: none; }
+  .mdd__chips { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .mdd__chip { min-height: 44px; padding: 0 var(--sp-4, 1rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: 999px; background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .mdd__chip[aria-pressed='true'] { border-color: var(--mdd-accent); background: var(--mdd-accent); color: var(--c-on-primary, #fff); }
+  .mdd__chip:focus-visible, .mdd__book:focus-visible { outline: 3px solid var(--mdd-accent); outline-offset: 2px; }
+  .mdd__toggle { position: relative; display: inline-flex; align-items: center; gap: var(--sp-2, 0.5rem); min-height: 44px; font-size: 0.9rem; font-weight: 600; color: var(--c-text-1, #0b2a33); cursor: pointer; }
+  .mdd__toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .mdd__track { position: relative; width: 40px; height: 24px; border-radius: 999px; background: rgb(var(--ink-rgb, 15 23 42) / 0.18); transition: background 0.2s ease; }
+  .mdd__track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); transition: transform 0.2s ease; }
+  .mdd__toggle input:checked + .mdd__track { background: var(--mdd-accent); }
+  .mdd__toggle input:checked + .mdd__track::after { transform: translateX(16px); }
+  .mdd__toggle input:focus-visible + .mdd__track { outline: 3px solid var(--mdd-accent); outline-offset: 2px; }
+  .mdd__count { margin: 0 0 0 auto; align-self: center; font-size: 0.88rem; color: var(--c-text-2, #3d5a63); }
+  .mdd__count strong { color: var(--c-text-1, #0b2a33); }
+
+  .mdd__grid { display: grid; grid-template-columns: repeat(var(--mdd-cols), minmax(0, 1fr)); gap: var(--sp-4, 1rem); margin: 0; padding: 0; list-style: none; }
+  .mdd__grid > [hidden] { display: none; }
+  .mdd__card { display: flex; flex-direction: column; gap: var(--sp-3, 0.75rem); height: 100%; padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+  .mdd--plain .mdd__card { border: 0; padding: 0; background: transparent; }
+  .mdd__top { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); }
+  .mdd__avatar { display: grid; place-items: center; flex-shrink: 0; width: 56px; height: 56px; border-radius: 50%; background: hsl(var(--h) 55% 88%); color: hsl(var(--h) 60% 24%); font-weight: 800; }
+  .mdd__name { margin: 0; font-size: 1.08rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .mdd__spec { margin: 2px 0 0; font-size: 0.86rem; font-weight: 600; color: var(--mdd-accent); }
+  .mdd__bio { margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--c-text-2, #3d5a63); }
+  .mdd__facts { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 0.86rem; color: var(--c-text-1, #0b2a33); }
+  .mdd__facts span[aria-hidden] { color: #b45309; }
+  .mdd__muted { color: var(--c-text-3, #5b747c); }
+  .mdd__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-top: auto; padding-top: var(--sp-3, 0.75rem); border-top: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); }
+  .mdd__price { display: grid; margin: 0; font-size: 0.9rem; color: var(--c-text-1, #0b2a33); }
+  .mdd__next { font-size: 0.78rem; color: var(--c-text-2, #3d5a63); }
+  .mdd__book { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--sp-5, 1.25rem); border-radius: var(--r-sm, 10px); background: var(--mdd-accent); color: var(--c-on-primary, #fff); font-weight: 700; text-decoration: none; }
+  .mdd__book:hover { color: var(--c-on-primary, #fff); filter: brightness(1.08); }
+  .mdd__empty { padding: var(--sp-8, 2rem); border: 1px dashed var(--c-border, rgba(0, 0, 0, 0.2)); border-radius: var(--r-lg, 14px); text-align: center; color: var(--c-text-2, #3d5a63); }
+  .mdd__empty[hidden] { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 900px) { .mdd__grid { grid-template-columns: repeat(min(var(--mdd-cols), 2), minmax(0, 1fr)); } }
+  @container (max-width: 560px) {
+    .mdd__grid { grid-template-columns: 1fr; }
+    .mdd__search { max-width: none; }
+    .mdd__count { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mdd__track, .mdd__track::after { transition: none; } }
+</style>

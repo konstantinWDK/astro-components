@@ -1,0 +1,303 @@
+---
+/**
+ * ToyCharacterGrid — Character roster as collectible trading cards: avatar, name, alias, universe,
+ * hero / villain tag, top power meters and figure count. A toolbar filters the roster instantly by
+ * side (all / heroes / villains) and by universe, with a live count.
+ *
+ * @param {string} eyebrow - Small label. Default 'The roster'.
+ * @param {string} title - Heading. Default 'Meet the characters'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<{id: string, name: string, alias?: string, icon?: string, hue?: number, href: string, universe?: string, universeId?: string, faction?: 'hero'|'villain', count?: number, powers?: Array<{label: string, value: number}>}>} characters - Cards.
+ * @param {Array<{id: string, name: string}>} universes - Universe filter chips (empty hides them).
+ * @param {boolean} filters - Show the side + universe toolbar. Default true.
+ * @param {number} columns - Desktop columns (2–5). Default 4.
+ * @param {number} powers - Power meters per card (0 hides them). Default 2.
+ * @param {string} countLabel - Text after the figure count. Default 'figures'.
+ * @param {string} variant - Card style (comic|soft). Default 'comic'.
+ * @param {string} size - Card density (sm|md|lg). Default 'md'.
+ * @param {string} headingLevel - Section heading element (h1|h2). Default 'h2'.
+ * @param {string} id - Base id. Default 'character-grid'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each card is one link (stretched) with a visible name; side filters are a radio
+ * group, universe chips are toggle buttons (aria-pressed); the result count is a polite live region;
+ * power meters are text ("Speed 8 of 10") with decorative bars.
+ */
+import { productIcon } from '../ecommerce/product-icons';
+
+interface Character {
+  id: string;
+  name: string;
+  alias?: string;
+  icon?: string;
+  hue?: number;
+  href: string;
+  universe?: string;
+  universeId?: string;
+  faction?: 'hero' | 'villain';
+  count?: number;
+  powers?: Array<{ label: string; value: number }>;
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  characters?: Character[];
+  universes?: Array<{ id: string; name: string }>;
+  filters?: boolean;
+  columns?: number;
+  powers?: number;
+  countLabel?: string;
+  variant?: 'comic' | 'soft';
+  size?: 'sm' | 'md' | 'lg';
+  headingLevel?: 'h1' | 'h2';
+  id?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'The roster',
+  title = 'Meet the characters',
+  subtitle,
+  characters = [
+    { id: 'captain-nova', name: 'Captain Nova', alias: 'Leader of the Star Rangers', icon: 'figure', hue: 212, href: '#', universe: 'Star Rangers', universeId: 'star-rangers', faction: 'hero', count: 5, powers: [{ label: 'Courage', value: 10 }, { label: 'Speed', value: 8 }] },
+    { id: 'vex', name: 'Vex', alias: 'The Void Empress', icon: 'figure', hue: 286, href: '#', universe: 'Star Rangers', universeId: 'star-rangers', faction: 'villain', count: 3, powers: [{ label: 'Cunning', value: 10 }, { label: 'Tech', value: 9 }] },
+    { id: 'bolt-x', name: 'Bolt-X', alias: 'Rescue mech, model 7', icon: 'robot', hue: 194, href: '#', universe: 'Mech Legion', universeId: 'mech-legion', faction: 'hero', count: 3, powers: [{ label: 'Strength', value: 9 }, { label: 'Armor', value: 9 }] },
+    { id: 'raikou', name: 'Raikou', alias: 'Storm oni', icon: 'ninja', hue: 252, href: '#', universe: 'Shadow Clan', universeId: 'shadow-clan', faction: 'villain', count: 3, powers: [{ label: 'Storm', value: 10 }, { label: 'Speed', value: 9 }] },
+  ],
+  universes = [
+    { id: 'star-rangers', name: 'Star Rangers' },
+    { id: 'mech-legion', name: 'Mech Legion' },
+    { id: 'shadow-clan', name: 'Shadow Clan' },
+  ],
+  filters = true,
+  columns = 4,
+  powers = 2,
+  countLabel = 'figures',
+  variant = 'comic',
+  size = 'md',
+  headingLevel = 'h2',
+  id = 'character-grid',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const CardHeading = headingLevel === 'h1' ? 'h2' : 'h3';
+const cols = Math.min(5, Math.max(2, columns));
+const titleId = `${id}-title`;
+const sorted = (list: Array<{ label: string; value: number }> = []) => [...list].sort((a, b) => b.value - a.value).slice(0, powers);
+---
+
+<section class:list={['tcg', `tcg--${variant}`, `tcg--${size}`, className]} aria-labelledby={titleId} data-tcg>
+  <div class="tcg__head">
+    {eyebrow && <p class="tcg__eyebrow">{eyebrow}</p>}
+    <Heading class="tcg__title" id={titleId}>{title}</Heading>
+    {subtitle && <p class="tcg__sub">{subtitle}</p>}
+  </div>
+
+  {filters && (
+    <div class="tcg__bar">
+      <fieldset class="tcg__side">
+        <legend class="sr-only">Show</legend>
+        {[['all', 'All'], ['hero', 'Heroes'], ['villain', 'Villains']].map(([value, label], i) => (
+          <label>
+            <input type="radio" name={`${id}-side`} value={value} checked={i === 0} data-tcg-side />
+            <span>{label}</span>
+          </label>
+        ))}
+      </fieldset>
+      {universes.length > 0 && (
+        <ul class="tcg__chips" aria-label="Filter by universe">
+          {universes.map((u) => (
+            <li><button type="button" class="tcg__chip" aria-pressed="false" data-tcg-universe={u.id}>{u.name}</button></li>
+          ))}
+        </ul>
+      )}
+      <p class="tcg__count" aria-live="polite"><strong data-tcg-count>{characters.length}</strong> characters</p>
+    </div>
+  )}
+
+  <ul class="tcg__grid" style={`--tcg-cols: ${cols}`} data-tcg-grid>
+    {characters.map((c) => (
+      <li class="tcg__card" style={`--c-hue: ${c.hue ?? 10}`} data-faction={c.faction} data-universe={c.universeId}>
+        <div class="tcg__art" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={productIcon(c.icon ?? 'figure')} /></svg>
+        </div>
+        {c.faction && (
+          <span class:list={['tcg__side-tag', `tcg__side-tag--${c.faction}`]}>{c.faction === 'villain' ? 'Villain' : 'Hero'}</span>
+        )}
+        <div class="tcg__body">
+          {c.universe && <p class="tcg__universe">{c.universe}</p>}
+          <CardHeading class="tcg__name"><a href={c.href}>{c.name}</a></CardHeading>
+          {c.alias && <p class="tcg__alias">{c.alias}</p>}
+          {powers > 0 && c.powers && c.powers.length > 0 && (
+            <ul class="tcg__powers">
+              {sorted(c.powers).map((p) => (
+                <li>
+                  <span class="tcg__power-label">{p.label} <span class="sr-only">{p.value} of 10</span></span>
+                  <span class="tcg__bar-track" aria-hidden="true"><span style={`width: ${Math.min(10, Math.max(0, p.value)) * 10}%`}></span></span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {c.count !== undefined && <p class="tcg__figures">{c.count} {countLabel} <span aria-hidden="true">→</span></p>}
+        </div>
+      </li>
+    ))}
+  </ul>
+  <p class="tcg__empty" role="status" data-tcg-empty hidden>No characters match. Try another universe.</p>
+</section>
+
+<script>
+  function initGrids() {
+    document.querySelectorAll<HTMLElement>('[data-tcg]:not([data-tcg-bound])').forEach((root) => {
+      root.dataset.tcgBound = '';
+      const cards = Array.from(root.querySelectorAll<HTMLElement>('.tcg__card'));
+      const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tcg-universe]'));
+      const count = root.querySelector<HTMLElement>('[data-tcg-count]');
+      const empty = root.querySelector<HTMLElement>('[data-tcg-empty]');
+
+      const apply = () => {
+        const side = root.querySelector<HTMLInputElement>('[data-tcg-side]:checked')?.value ?? 'all';
+        const unis = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.tcgUniverse);
+        let visible = 0;
+        cards.forEach((card) => {
+          const ok = (side === 'all' || card.dataset.faction === side) && (!unis.length || unis.includes(card.dataset.universe));
+          card.hidden = !ok;
+          if (ok) visible++;
+        });
+        if (count) count.textContent = String(visible);
+        if (empty) empty.hidden = visible > 0;
+      };
+
+      root.querySelectorAll<HTMLInputElement>('[data-tcg-side]').forEach((r) => r.addEventListener('change', apply));
+      chips.forEach((chip) => chip.addEventListener('click', () => {
+        chip.setAttribute('aria-pressed', String(chip.getAttribute('aria-pressed') !== 'true'));
+        apply();
+      }));
+    });
+  }
+  initGrids();
+  document.addEventListener('astro:page-load', initGrids);
+</script>
+
+<style>
+  .tcg {
+    --tcg-edge: var(--toy-edge, var(--c-text-1, #17121f));
+    --tcg-drop: var(--toy-drop, var(--tcg-edge));
+    container-type: inline-size;
+  }
+  .tcg__head { margin-bottom: var(--sp-6, 1.5rem); }
+  .tcg__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .tcg__title { margin: 0; font-family: var(--font-display, inherit); font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 400; line-height: 1; color: var(--c-text-1, #fff); }
+  .tcg__sub { margin: var(--sp-3, 0.75rem) 0 0; max-width: 52ch; color: var(--c-text-2, #a3a3a3); line-height: 1.6; }
+
+  .tcg__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3, 0.75rem) var(--sp-4, 1rem); margin-bottom: var(--sp-6, 1.5rem); }
+  .tcg__side { display: inline-flex; margin: 0; padding: 3px; border: 2.5px solid var(--tcg-edge); border-radius: 999px; background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a)); box-shadow: 3px 3px 0 var(--tcg-drop); }
+  .tcg__side label { position: relative; cursor: pointer; }
+  .tcg__side input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .tcg__side span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 var(--sp-4, 1rem); border-radius: 999px; font-weight: 800; font-size: 0.88rem; color: var(--c-text-2, #a3a3a3); transition: background 0.2s ease, color 0.2s ease; }
+  .tcg__side input:checked + span { background: var(--c-primary-light, #d4a017); color: var(--c-on-primary, #050505); }
+  .tcg__side input:focus-visible + span { outline: 3px solid var(--toy-yellow, #ffd23f); outline-offset: 2px; }
+
+  .tcg__chips { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .tcg__chip {
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 2px solid var(--tcg-edge);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .tcg__chip:hover { transform: translateY(-1px); }
+  .tcg__chip[aria-pressed='true'] { background: var(--toy-yellow, #ffd23f); color: #17121f; }
+  .tcg__chip:focus-visible { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .tcg__count { margin: 0 0 0 auto; font-size: 0.88rem; color: var(--c-text-2, #a3a3a3); }
+  .tcg__count strong { color: var(--c-text-1, #fff); }
+
+  .tcg__grid { display: grid; grid-template-columns: repeat(var(--tcg-cols), minmax(0, 1fr)); gap: var(--sp-6, 1.5rem) var(--sp-5, 1.25rem); margin: 0; padding: 0 6px 8px 0; list-style: none; }
+  .tcg__grid > [hidden] { display: none; }
+  .tcg__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 3px solid var(--tcg-edge);
+    border-radius: var(--r-lg, 20px);
+    background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a));
+    box-shadow: 5px 5px 0 var(--tcg-drop);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  }
+  .tcg--soft .tcg__card { border-width: 1px; border-color: var(--c-border, rgba(255, 255, 255, 0.08)); box-shadow: none; }
+  .tcg__card:hover { transform: translate(-2px, -4px) rotate(-1deg); box-shadow: 8px 9px 0 var(--tcg-drop); }
+  .tcg__card:focus-within { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+  .tcg__art {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 5 / 4;
+    border-bottom: 3px solid var(--tcg-edge);
+    background:
+      radial-gradient(rgb(0 0 0 / 0.14) 1.3px, transparent 1.8px) 0 0 / 9px 9px,
+      radial-gradient(circle at 50% 40%, hsl(var(--c-hue) 95% 72%), hsl(var(--c-hue) 82% 52%) 75%);
+    color: var(--toy-art-ink, #17121f);
+  }
+  .tcg--soft .tcg__art { border-bottom: 0; }
+  .tcg__art svg { width: 52%; height: auto; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .tcg__card:hover .tcg__art svg { transform: scale(1.08) rotate(-5deg); }
+  .tcg--sm .tcg__art { aspect-ratio: 1 / 1; }
+
+  .tcg__side-tag {
+    position: absolute;
+    top: var(--sp-3, 0.75rem);
+    left: var(--sp-3, 0.75rem);
+    padding: 3px 10px;
+    border: 2px solid #17121f;
+    border-radius: 6px;
+    font-family: var(--font-display, inherit);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transform: rotate(-4deg);
+  }
+  .tcg__side-tag--hero { background: #fff; color: #17121f; }
+  .tcg__side-tag--villain { background: #17121f; color: #ff8a95; }
+
+  .tcg__body { display: flex; flex-direction: column; gap: 4px; flex: 1; padding: var(--sp-4, 1rem); }
+  .tcg--lg .tcg__body { padding: var(--sp-5, 1.25rem); }
+  .tcg__universe { margin: 0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .tcg__name { margin: 0; font-family: var(--font-display, inherit); font-size: 1.3rem; font-weight: 400; line-height: 1.1; }
+  .tcg__name a { color: var(--c-text-1, #fff); text-decoration: none; }
+  .tcg__name a::after { content: ''; position: absolute; inset: 0; }
+  .tcg__name a:focus-visible { outline: none; }
+  .tcg__alias { margin: 0; font-size: 0.85rem; color: var(--c-text-2, #a3a3a3); }
+
+  .tcg__powers { display: grid; gap: 6px; margin: var(--sp-3, 0.75rem) 0 0; padding: 0; list-style: none; }
+  .tcg__powers li { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: var(--sp-2, 0.5rem); font-size: 0.74rem; font-weight: 700; color: var(--c-text-2, #a3a3a3); }
+  .tcg__bar-track { height: 10px; overflow: hidden; border: 2px solid var(--tcg-edge); border-radius: 999px; background: rgb(var(--ink-rgb, 255 255 255) / 0.06); }
+  .tcg__bar-track span { display: block; height: 100%; background: repeating-linear-gradient(-45deg, hsl(var(--c-hue) 85% 58%) 0 5px, hsl(var(--c-hue) 85% 50%) 5px 10px); }
+  .tcg__figures { margin: auto 0 0; padding-top: var(--sp-3, 0.75rem); font-size: 0.85rem; font-weight: 800; color: var(--c-text-1, #fff); }
+
+  .tcg__empty { padding: var(--sp-10, 2.5rem); border: 3px dashed var(--tcg-edge); border-radius: var(--r-lg, 20px); text-align: center; font-family: var(--font-display, inherit); font-size: 1.2rem; color: var(--c-text-1, #fff); }
+  .tcg__empty[hidden] { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 1000px) { .tcg__grid { grid-template-columns: repeat(min(var(--tcg-cols), 3), minmax(0, 1fr)); } }
+  @container (max-width: 700px) {
+    .tcg__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4, 1rem) var(--sp-3, 0.75rem); }
+    .tcg__count { margin-left: 0; width: 100%; }
+    .tcg__powers li { grid-template-columns: 1fr; gap: 2px; }
+    .tcg__chips { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; padding-bottom: 4px; }
+    .tcg__chips li { flex-shrink: 0; }
+  }
+  @container (max-width: 360px) { .tcg__grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    .tcg__card, .tcg__art svg, .tcg__chip { transition: none; }
+    .tcg__card:hover { transform: none; }
+  }
+</style>

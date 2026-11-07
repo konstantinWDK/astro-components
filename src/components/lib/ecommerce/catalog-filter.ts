@@ -9,6 +9,25 @@ export interface CatalogState {
   minRating: number;
   inStockOnly: boolean;
   sort: 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'name' | string;
+  /** Facet name → accepted values (OR within a facet, AND across facets). Matches `data-f-<name>`. */
+  facets?: Record<string, string[]>;
+}
+
+/** Turns `product.facets` into `data-f-<key>` attributes for any product card. */
+export function facetAttrs(facets?: Record<string, string | string[]>): Record<string, string> {
+  if (!facets) return {};
+  return Object.fromEntries(
+    Object.entries(facets).map(([key, value]) => [`data-f-${key}`, (Array.isArray(value) ? value : [value]).join(',')]),
+  );
+}
+
+/** True when a card's `data-f-<name>` values intersect every non-empty facet selection. */
+export function matchesFacets(card: HTMLElement, facets: Record<string, string[]> = {}): boolean {
+  return Object.entries(facets).every(([name, wanted]) => {
+    if (!wanted.length) return true;
+    const have = (card.getAttribute(`data-f-${name}`) || '').split(',').filter(Boolean);
+    return wanted.some((w) => have.includes(w));
+  });
 }
 
 /** Filters and re-orders the cards inside `grid`. Returns the number of visible cards. */
@@ -25,7 +44,8 @@ export function applyCatalogFilter(grid: HTMLElement, state: CatalogState): numb
       Number(d.price) <= state.maxPrice &&
       Number(d.rating || 0) >= state.minRating &&
       (!state.inStockOnly || d.stock === 'in') &&
-      (!state.colors.length || state.colors.some((c) => colors.includes(c)));
+      (!state.colors.length || state.colors.some((c) => colors.includes(c))) &&
+      matchesFacets(card, state.facets);
     // Cards may be wrapped (e.g. in <li>): hide the direct child of the grid.
     const item = card.parentElement === grid ? card : (card.closest(`#${CSS.escape(grid.id)} > *`) as HTMLElement | null) ?? card;
     item.hidden = !ok;

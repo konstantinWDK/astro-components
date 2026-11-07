@@ -1,0 +1,62 @@
+---
+/**
+ * ClinicSignInPage — Split-screen sign-in (or sign-up) for the clinic SaaS using AuthCard.
+ *
+ * Usage (src/pages/sign-in.astro):
+ *   import { ClinicSignInPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicSignInPage />
+ *
+ * @param {string} mode - 'signin' or 'signup'. Default 'signin'.
+ * @param {ClinicRoutes} routes - Page URLs (demo sign-in goes to `routes.dashboard`).
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import '../../../../styles/global.css';
+import './pulso-theme.css';
+import AuthCard from '../../app/AuthCard.astro';
+import { clinicRoutes, type ClinicRoutes } from './data';
+
+interface Props {
+  mode?: 'signin' | 'signup';
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { mode = 'signin', routes = clinicRoutes, theme = 'light', noindex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="theme-pulso" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{mode === 'signin' ? 'Sign in' : 'Start your free trial'} — Pulso</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="pulso">
+    <main>
+      <AuthCard
+        mode={mode}
+        brand="Pulso"
+        subtitle="Sign in to your practice workspace. Two-factor sign-in keeps patient data safe."
+        successHref={routes.dashboard}
+        switchHref={routes.landing}
+        providers={['Google', 'Microsoft']}
+        testimonial={{ quote: 'I finish my notes before the next patient sits down.', author: 'Dr. Laura Navarro', role: 'GP, Clínica Alameda' }}
+        stats={[{ value: '1,800+', label: 'practices' }, { value: '−41%', label: 'no-shows' }, { value: '6 h', label: 'saved / week' }]}
+      />
+    </main>
+  </body>
+</html>

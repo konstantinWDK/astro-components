@@ -1,0 +1,254 @@
+---
+/**
+ * CyberTerminalForm — Contact form you drive like a command line: a terminal window logs each
+ * answer while it asks one question at a time (handle, email, topic, message), supports commands
+ * (/help, /back, /clear, /status), and confirms with a ticket ID. One click switches to a plain
+ * form with every field visible. Uses CyberpunkCheckbox and NeonSpinner.
+ *
+ * @param {string} host - Prompt host. Default 'ops@nullsector'.
+ * @param {string} title - Window title. Default 'secure channel — e2e encrypted'.
+ * @param {string[]} topics - Topic options.
+ * @param {string[]} boot - Lines printed before the first question.
+ * @param {string} action - Form action URL. Empty = demo (nothing is sent).
+ * @param {string} newsletterLabel - Checkbox label. Default 'Receive transmissions (monthly changelog)'.
+ * @param {string} mode - Initial mode (terminal|form). Default 'terminal'.
+ * @param {string} id - Base id. Default 'cyterm'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: it is a real <form> with labelled fields at all times — terminal mode only hides
+ * the fields you are not answering; the transcript is a polite log; errors are announced and
+ * linked with aria-describedby; "Use plain form" is always available; works without JS as a form.
+ * Emits `app:terminal-sent` with the form data.
+ */
+import CyberpunkCheckbox from '../forms/CyberpunkCheckbox.astro';
+import NeonSpinner from '../feedback/NeonSpinner.astro';
+
+interface Props {
+  host?: string;
+  title?: string;
+  topics?: string[];
+  boot?: string[];
+  action?: string;
+  newsletterLabel?: string;
+  mode?: 'terminal' | 'form';
+  id?: string;
+  className?: string;
+}
+
+const {
+  host = 'ops@nullsector',
+  title = 'secure channel — e2e encrypted',
+  topics = ['Enterprise / Syndicate plan', 'Become an operator', 'Security report', 'Press', 'Something else'],
+  boot = ['handshake ............ OK', 'cipher ............... X25519 / ChaCha20', 'operator on duty ..... 2 online', 'type /help for commands'],
+  action = '',
+  newsletterLabel = 'Receive transmissions (monthly changelog)',
+  mode = 'terminal',
+  id = 'cyterm',
+  className = '',
+} = Astro.props;
+---
+
+<section class:list={['cyterm', className]} aria-labelledby={`${id}-title`} data-cyterm data-host={host} data-mode={mode}>
+  <div class="cyterm__window">
+    <div class="cyterm__bar">
+      <span class="cyterm__lights" aria-hidden="true"><i></i><i></i><i></i></span>
+      <h2 class="cyterm__title" id={`${id}-title`}>{title}</h2>
+      <button type="button" class="cyterm__switch" data-cyterm-switch aria-pressed={mode === 'form' ? 'true' : 'false'}>Use plain form</button>
+    </div>
+
+    <ol class="cyterm__log" role="log" aria-live="polite" aria-label="Transcript" data-cyterm-log>
+      {boot.map((l) => <li class="cyterm__sys">{l}</li>)}
+    </ol>
+
+    <form class="cyterm__form" action={action || undefined} method="post" novalidate data-cyterm-form data-demo={action ? undefined : ''}>
+      <div class="cyterm__step" data-step="name">
+        <label for={`${id}-name`}><span class="cyterm__ps" aria-hidden="true">{host}:~$</span> Your name or handle</label>
+        <input id={`${id}-name`} name="name" type="text" autocomplete="name" required aria-describedby={`${id}-err`} />
+      </div>
+      <div class="cyterm__step" data-step="email">
+        <label for={`${id}-email`}><span class="cyterm__ps" aria-hidden="true">{host}:~$</span> Email to reply to</label>
+        <input id={`${id}-email`} name="email" type="email" autocomplete="email" required aria-describedby={`${id}-err`} />
+      </div>
+      <div class="cyterm__step" data-step="topic">
+        <label for={`${id}-topic`}><span class="cyterm__ps" aria-hidden="true">{host}:~$</span> Topic</label>
+        <select id={`${id}-topic`} name="topic">
+          {topics.map((t) => <option>{t}</option>)}
+        </select>
+      </div>
+      <div class="cyterm__step" data-step="message">
+        <label for={`${id}-message`}><span class="cyterm__ps" aria-hidden="true">{host}:~$</span> Message <span class="cyterm__hint">(Ctrl + Enter to continue)</span></label>
+        <textarea id={`${id}-message`} name="message" rows="4" required aria-describedby={`${id}-err`}></textarea>
+      </div>
+      <div class="cyterm__step cyterm__step--last" data-step="confirm">
+        <CyberpunkCheckbox id={`${id}-news`} name="newsletter" label={newsletterLabel} />
+        <div class="cyterm__actions">
+          <button type="submit" class="cyterm__send">Transmit <span aria-hidden="true">↵</span></button>
+          <button type="button" class="cyterm__ghost" data-cyterm-back>Back</button>
+        </div>
+      </div>
+      <button type="button" class="cyterm__next" data-cyterm-next>Next <span aria-hidden="true">↵</span></button>
+      <p class="cyterm__error" id={`${id}-err`} role="alert" data-cyterm-error></p>
+    </form>
+
+    <div class="cyterm__sending" data-cyterm-sending hidden>
+      <NeonSpinner size="sm" color="var(--cy-acid, #d4ff00)" />
+      <span>encrypting & transmitting…</span>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cyterm]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const host = root.dataset.host || 'ops';
+    const form = root.querySelector<HTMLFormElement>('[data-cyterm-form]')!;
+    const log = root.querySelector<HTMLOListElement>('[data-cyterm-log]')!;
+    const error = root.querySelector<HTMLElement>('[data-cyterm-error]')!;
+    const next = root.querySelector<HTMLButtonElement>('[data-cyterm-next]')!;
+    const sw = root.querySelector<HTMLButtonElement>('[data-cyterm-switch]')!;
+    const sending = root.querySelector<HTMLElement>('[data-cyterm-sending]')!;
+    const steps = Array.from(form.querySelectorAll<HTMLElement>('[data-step]'));
+    let i = 0;
+    let terminal = root.dataset.mode !== 'form';
+
+    const print = (text: string, cls = 'cyterm__out') => {
+      const li = document.createElement('li');
+      li.className = cls;
+      li.textContent = text;
+      log.append(li);
+      log.scrollTop = log.scrollHeight;
+    };
+    const field = (s: HTMLElement) => s.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input:not([type=checkbox]), textarea, select');
+    const valid = (s: HTMLElement): string => {
+      const f = field(s);
+      if (!f) return '';
+      const v = f.value.trim();
+      if (f.name === 'name' && v.length < 2) return 'ERR: handle must be at least 2 characters.';
+      if (f.name === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'ERR: that email does not parse. Try name@domain.tld';
+      if (f.name === 'message' && v.length < 10) return 'ERR: message too short (min 10 characters).';
+      return '';
+    };
+    const render = () => {
+      root.classList.toggle('is-terminal', terminal);
+      sw.setAttribute('aria-pressed', String(!terminal));
+      sw.textContent = terminal ? 'Use plain form' : 'Use terminal';
+      steps.forEach((s, n) => { s.hidden = terminal && n !== i; });
+      next.hidden = !terminal || i === steps.length - 1;
+      if (terminal) (field(steps[i]) ?? steps[i].querySelector<HTMLElement>('input, button'))?.focus();
+    };
+    const showError = (msg: string, f?: Element | null) => {
+      error.textContent = msg;
+      if (f) f.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      if (msg && terminal) print(msg, 'cyterm__err');
+    };
+    const advance = () => {
+      const s = steps[i];
+      const f = field(s);
+      const v = f?.value.trim() ?? '';
+      if (v.startsWith('/')) { command(v, f!); return; }
+      const msg = valid(s);
+      showError(msg, f);
+      if (msg) return;
+      const label = s.querySelector('label')?.textContent?.replace(`${host}:~$`, '').replace(/\(.*\)/, '').trim();
+      print(`${host}:~$ ${label}: ${f?.name === 'message' ? v.slice(0, 60) + (v.length > 60 ? '…' : '') : v}`, 'cyterm__in');
+      i = Math.min(steps.length - 1, i + 1);
+      if (i === steps.length - 1) print('ready. review and press TRANSMIT, or /back to edit.', 'cyterm__sys');
+      render();
+    };
+    const command = (cmd: string, f: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) => {
+      f.value = '';
+      const c = cmd.toLowerCase();
+      print(`${host}:~$ ${cmd}`, 'cyterm__in');
+      if (c === '/help') print('commands: /back  /clear  /status  /help — or just answer the prompt.', 'cyterm__sys');
+      else if (c === '/back') { i = Math.max(0, i - 1); render(); }
+      else if (c === '/clear') { log.innerHTML = ''; }
+      else if (c === '/status') print('grid nominal · 2,417 nodes · ops reply time ~4 h', 'cyterm__sys');
+      else print(`unknown command ${cmd}. try /help`, 'cyterm__err');
+    };
+
+    next.addEventListener('click', advance);
+    form.addEventListener('keydown', (e) => {
+      if (!terminal) return;
+      const t = e.target as HTMLElement;
+      if (e.key === 'Enter' && t.matches('input:not([type=checkbox])')) { e.preventDefault(); advance(); }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && t.matches('textarea')) { e.preventDefault(); advance(); }
+    });
+    form.querySelector('[data-cyterm-back]')?.addEventListener('click', () => { i = Math.max(0, i - 1); render(); });
+    sw.addEventListener('click', () => { terminal = !terminal; error.textContent = ''; render(); });
+
+    form.addEventListener('submit', (e) => {
+      // Validate everything (plain form mode, or final step).
+      for (let n = 0; n < steps.length; n++) {
+        const msg = valid(steps[n]);
+        if (msg) {
+          e.preventDefault();
+          if (terminal) { i = n; render(); }
+          showError(msg, field(steps[n]));
+          field(steps[n])?.focus();
+          return;
+        }
+      }
+      if (form.dataset.demo === undefined) return;
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      form.hidden = true;
+      sending.hidden = false;
+      window.setTimeout(() => {
+        sending.hidden = true;
+        const ticket = `NS-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
+        print('transmission received ✓', 'cyterm__ok');
+        print(`ticket ${ticket} · an operator will reply to ${String(data.email)} within 4 hours.`, 'cyterm__ok');
+        print('connection closed.', 'cyterm__sys');
+        log.focus();
+        root.dispatchEvent(new CustomEvent('app:terminal-sent', { bubbles: true, detail: { ...data, ticket } }));
+      }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 200 : 1400);
+    });
+
+    log.tabIndex = -1;
+    render();
+  });
+</script>
+
+<style>
+  .cyterm { --ct-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); --ct-acid: var(--cy-acid, #d4ff00); font-family: var(--font-mono, 'JetBrains Mono', monospace); }
+  .cyterm__window { border: 2px solid var(--ct-edge); background: #07070b; color: #e8e8ee; box-shadow: 10px 10px 0 var(--cy-magenta, #ff2bd6); }
+  .cyterm__bar { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border-bottom: 2px solid var(--ct-edge); background: var(--ct-acid); color: #050507; }
+  .cyterm__lights { display: flex; gap: 6px; }
+  .cyterm__lights i { width: 12px; height: 12px; border: 2px solid #050507; }
+  .cyterm__lights i:first-child { background: #050507; }
+  .cyterm__title { flex: 1; margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .cyterm__switch { min-height: 36px; padding: 0 var(--sp-3, 0.75rem); border: 2px solid #050507; background: transparent; color: #050507; font: inherit; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+  .cyterm__switch:hover { background: #050507; color: var(--ct-acid); }
+
+  .cyterm__log { max-height: 280px; margin: 0; padding: var(--sp-4, 1rem) var(--sp-4, 1rem) var(--sp-2, 0.5rem); overflow-y: auto; list-style: none; font-size: 0.85rem; line-height: 1.7; outline: none; }
+  .cyterm__log :global(li) { white-space: pre-wrap; word-break: break-word; }
+  .cyterm__log :global(.cyterm__sys) { color: #8f8fa3; }
+  .cyterm__log :global(.cyterm__sys)::before { content: '# '; }
+  .cyterm__log :global(.cyterm__in) { color: #e8e8ee; }
+  .cyterm__log :global(.cyterm__err) { color: #ff6b81; }
+  .cyterm__log :global(.cyterm__ok) { color: var(--ct-acid); font-weight: 700; }
+
+  .cyterm__form { display: grid; gap: var(--sp-4, 1rem); padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem) var(--sp-5, 1.25rem); }
+  .cyterm__form[hidden] { display: none; }
+  .cyterm__step { display: grid; gap: 6px; }
+  .cyterm__step[hidden] { display: none; }
+  .cyterm__step label { font-size: 0.88rem; font-weight: 700; color: #e8e8ee; }
+  .cyterm__ps { color: var(--ct-acid); margin-right: 4px; }
+  .cyterm__hint { font-weight: 400; color: #8f8fa3; }
+  .cyterm__step :is(input, select, textarea) { width: 100%; min-height: 46px; padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border: 2px solid #3a3a48; border-radius: 0; background: #0e0e15; color: #f4f4f8; font: inherit; font-size: 1rem; caret-color: var(--ct-acid); }
+  .cyterm__step textarea { resize: vertical; }
+  .cyterm__step :is(input, select, textarea):focus-visible { outline: none; border-color: var(--ct-acid); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ct-acid) 35%, transparent); }
+  .cyterm__step [aria-invalid='true'] { border-color: #ff6b81; }
+  .cyterm.is-terminal .cyterm__step :is(input, textarea, select) { border-width: 0 0 2px; background: transparent; }
+  .cyterm__step--last :global(label) { color: #e8e8ee; }
+  .cyterm__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin-top: var(--sp-2, 0.5rem); }
+  .cyterm__send, .cyterm__next { justify-self: start; min-height: 46px; padding: 0 var(--sp-6, 1.5rem); border: 2px solid var(--ct-acid); background: var(--ct-acid); color: #050507; font: inherit; font-size: 0.88rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+  .cyterm__send:hover, .cyterm__next:hover { background: var(--cy-magenta, #ff2bd6); border-color: var(--cy-magenta, #ff2bd6); }
+  .cyterm__next[hidden], .cyterm:not(.is-terminal) .cyterm__next { display: none; }
+  .cyterm__ghost { min-height: 46px; padding: 0 var(--sp-5, 1.25rem); border: 2px solid #3a3a48; background: transparent; color: #e8e8ee; font: inherit; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+  .cyterm:not(.is-terminal) .cyterm__ghost { display: none; }
+  .cyterm__error { margin: 0; min-height: 1.2em; font-size: 0.82rem; font-weight: 700; color: #ff6b81; }
+  .cyterm :is(button):focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cyterm__sending { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); padding: var(--sp-5, 1.25rem); font-size: 0.85rem; color: var(--ct-acid); }
+  .cyterm__sending[hidden] { display: none; }
+</style>

@@ -158,6 +158,21 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Agencia y Marketing', description: 'Secciones para agencias de marketing, SEO y desarrollo web: hero cinético, servicios, resultados, calculadora de ROI, auditoría gratis, precios, casos de éxito y brief de contacto.' },
     ru: { name: 'Агентство и маркетинг', description: 'Секции для маркетинговых, SEO и веб-агентств: кинетический hero, услуги, результаты, калькулятор ROI, бесплатный аудит, цены, кейсы и бриф.' },
   },
+  cyberpunk: {
+    en: { name: 'Cyberpunk & Brutalist', description: 'Futuristic-brutalist sections with neon, glitch and HUD effects: header, hero with live telemetry, ticker, bento, node map, spec sheet, pricing calculator, manifesto, crew badges, status board, terminal contact form and footer.' },
+    es: { name: 'Cyberpunk y brutalista', description: 'Secciones futuristas brutalistas con neón, glitch y efectos HUD: cabecera, hero con telemetría en vivo, ticker, bento, mapa de nodos, ficha técnica, calculadora de precios, manifiesto, credenciales del equipo, panel de estado, formulario de contacto tipo terminal y footer.' },
+    ru: { name: 'Киберпанк и брутализм', description: 'Футуристичные бруталистские секции с неоном, глитчем и HUD: шапка, hero с живой телеметрией, бегущая строка, бенто, карта узлов, техпаспорт, калькулятор цен, манифест, бейджи команды, панель статуса, контактная форма-терминал и футер.' },
+  },
+  healthcare: {
+    en: { name: 'Healthcare', description: 'Sections for clinics and medical SaaS: healthcare landing hero, find-a-doctor directory with filters and a four-step online appointment booking wizard.' },
+    es: { name: 'Salud', description: 'Secciones para clínicas y SaaS médicos: hero de landing sanitaria, directorio de médicos con filtros y asistente de reserva de citas online en cuatro pasos.' },
+    ru: { name: 'Медицина', description: 'Секции для клиник и медицинских SaaS: hero для медицинского лендинга, каталог врачей с фильтрами и мастер онлайн-записи на приём в четыре шага.' },
+  },
+  toys: {
+    en: { name: 'Toy Store', description: 'Comic "toy box" sections for toy and collectibles stores: hero, shop-by-character rail and filters, character roster and profile, gift finder by age, figure spec sheet and collector club.' },
+    es: { name: 'Juguetería', description: 'Secciones estilo cómic para tiendas de juguetes y coleccionables: hero, carril y filtros por personaje, plantel y ficha de personajes, buscador de regalos por edad, ficha técnica de figura y club de coleccionistas.' },
+    ru: { name: 'Магазин игрушек', description: 'Секции в стиле комикса для магазинов игрушек и коллекционных фигурок: hero, лента и фильтры по персонажам, каталог и профиль персонажа, подбор подарка по возрасту, характеристики фигурки и клуб коллекционеров.' },
+  },
   commerce: {
     en: { name: 'E-commerce', description: 'Editorial store sections: shop header with mega menu, hero, collections, product rail, lookbook, reviews and footer.' },
     es: { name: 'E-commerce', description: 'Secciones editoriales para tiendas: cabecera con mega menú, hero, colecciones, carrusel de productos, lookbook, reseñas y footer.' },

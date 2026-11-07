@@ -1,0 +1,580 @@
+---
+/**
+ * MedBookingWizard — Online appointment booking for clinics in four steps: specialty → clinician
+ * and visit type (in person / video) → day and time slot → patient details and consent, ending in a
+ * confirmation with a booking reference and an "Add to calendar" (.ics) file.
+ *
+ * Pre-select with the URL: `?specialty=cardiology` or `?doctor=dr-okafor` (jumps ahead).
+ *
+ * @param {string} eyebrow - Small label. Default 'Book online'.
+ * @param {string} title - Heading. Default 'Book an appointment'.
+ * @param {string} subtitle - Supporting copy.
+ * @param {string} clinic - Clinic name used in the confirmation and calendar file. Default 'Clínica Alameda'.
+ * @param {string} address - Address for in-person visits. Default 'Calle Alameda 12, Madrid'.
+ * @param {Array<{id: string, name: string, description?: string}>} specialties - Step 1 options.
+ * @param {Array<{id: string, name: string, specialty: string, hue?: number, rating?: number, languages?: string[], fee?: number, telehealth?: boolean, days?: number[]}>} doctors - Step 2 options (days: 0 = Monday).
+ * @param {string[]} slots - Daily slot times. Default every 20 min, 09:00–13:00 and 16:00–18:00.
+ * @param {number} horizon - Days ahead offered. Default 14.
+ * @param {string} currency - ISO currency for fees. Default 'EUR'.
+ * @param {string} locale - Date / number locale. Default 'en-GB'.
+ * @param {string} action - Form action. Empty = demo (nothing is sent).
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} id - Base id. Default 'booking'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a real form with one fieldset per step and native radios; a step list with
+ * aria-current="step"; focus moves to each step's heading; errors are text linked to the fields
+ * and announced; booked slots are disabled and say so; the confirmation receives focus.
+ * Emits `app:booking-confirmed` with the booking.
+ */
+
+interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  hue?: number;
+  rating?: number;
+  languages?: string[];
+  fee?: number;
+  telehealth?: boolean;
+  days?: number[];
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  clinic?: string;
+  address?: string;
+  specialties?: Array<{ id: string; name: string; description?: string }>;
+  doctors?: Doctor[];
+  slots?: string[];
+  horizon?: number;
+  currency?: string;
+  locale?: string;
+  action?: string;
+  variant?: 'card' | 'plain';
+  id?: string;
+  className?: string;
+}
+
+const defaultSlots = [
+  ...['09:00', '09:20', '09:40', '10:00', '10:20', '10:40', '11:00', '11:20', '11:40', '12:00', '12:20', '12:40'],
+  ...['16:00', '16:20', '16:40', '17:00', '17:20', '17:40'],
+];
+
+const {
+  eyebrow = 'Book online',
+  title = 'Book an appointment',
+  subtitle = 'Choose what you need, pick a time that suits you and get a confirmation in seconds. No phone queue.',
+  clinic = 'Clínica Alameda',
+  address = 'Calle Alameda 12, Madrid',
+  specialties = [
+    { id: 'general', name: 'General practice', description: 'Check-ups, colds, prescriptions and referrals.' },
+    { id: 'pediatrics', name: 'Pediatrics', description: 'Care for babies, children and teenagers.' },
+    { id: 'cardiology', name: 'Cardiology', description: 'Heart health, blood pressure and ECG.' },
+  ],
+  doctors = [
+    { id: 'dr-navarro', name: 'Dr. Laura Navarro', specialty: 'general', hue: 190, rating: 4.9, languages: ['Spanish', 'English'], fee: 60, telehealth: true, days: [0, 1, 2, 3, 4] },
+    { id: 'dr-sato', name: 'Dr. Emi Sato', specialty: 'pediatrics', hue: 150, rating: 5, languages: ['English', 'Japanese'], fee: 70, telehealth: false, days: [0, 1, 3, 4] },
+    { id: 'dr-okafor', name: 'Dr. Daniel Okafor', specialty: 'cardiology', hue: 350, rating: 4.8, languages: ['English', 'French'], fee: 95, telehealth: true, days: [0, 2, 4] },
+  ],
+  slots = defaultSlots,
+  horizon = 14,
+  currency = 'EUR',
+  locale = 'en-GB',
+  action = '',
+  variant = 'card',
+  id = 'booking',
+  className = '',
+} = Astro.props;
+
+const money = (v: number) => new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(v);
+const initialsOf = (n: string) => n.replace(/^(Dr\.|Dra\.)\s*/, '').split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+const steps = ['Service', 'Clinician', 'Date & time', 'Your details'];
+---
+
+<section
+  class:list={['bkw', `bkw--${variant}`, className]}
+  aria-labelledby={`${id}-title`}
+  data-bkw
+  data-id={id}
+  data-clinic={clinic}
+  data-address={address}
+  data-locale={locale}
+  data-horizon={horizon}
+  data-slots={JSON.stringify(slots)}
+  data-doctors={JSON.stringify(doctors)}
+  data-specialties={JSON.stringify(specialties)}
+>
+  <header class="bkw__head">
+    {eyebrow && <p class="bkw__eyebrow">{eyebrow}</p>}
+    <h2 class="bkw__title" id={`${id}-title`}>{title}</h2>
+    {subtitle && <p class="bkw__sub">{subtitle}</p>}
+  </header>
+
+  <ol class="bkw__steps" aria-label="Booking steps" data-bkw-steps>
+    {steps.map((s, i) => (
+      <li aria-current={i === 0 ? 'step' : undefined} class:list={{ 'is-active': i === 0 }}>
+        <span class="bkw__num" aria-hidden="true">{i + 1}</span><span class="bkw__step-label">{s}</span>
+      </li>
+    ))}
+  </ol>
+
+  <form class="bkw__form" action={action || undefined} method="post" novalidate data-bkw-form>
+    <!-- Step 1 -->
+    <fieldset class="bkw__panel" data-step="0">
+      <legend class="bkw__legend" tabindex="-1">What do you need?</legend>
+      <div class="bkw__grid bkw__grid--3">
+        {specialties.map((s, i) => (
+          <label class="bkw__option">
+            <input type="radio" name="specialty" value={s.id} checked={i === 0} />
+            <span class="bkw__option-body">
+              <strong>{s.name}</strong>
+              {s.description && <span>{s.description}</span>}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <!-- Step 2 -->
+    <fieldset class="bkw__panel" data-step="1" hidden>
+      <legend class="bkw__legend" tabindex="-1">Choose your clinician</legend>
+      <div class="bkw__grid bkw__grid--2" data-bkw-doctors>
+        {doctors.map((d) => (
+          <label class="bkw__option bkw__option--doctor" data-specialty={d.specialty}>
+            <input type="radio" name="doctor" value={d.id} />
+            <span class="bkw__avatar" style={`--h: ${d.hue ?? 190}`} aria-hidden="true">{initialsOf(d.name)}</span>
+            <span class="bkw__option-body">
+              <strong>{d.name}</strong>
+              <span>
+                {d.rating !== undefined && <>★ {d.rating.toFixed(1)} · </>}
+                {d.languages?.join(', ')}
+              </span>
+              <span class="bkw__fee">
+                {d.fee !== undefined && <>{money(d.fee)} · </>}
+                {d.telehealth ? 'In person or video' : 'In person only'}
+              </span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p class="bkw__error" id={`${id}-err-doctor`} data-error="doctor" hidden>Choose a clinician to continue.</p>
+
+      <fieldset class="bkw__type">
+        <legend>Visit type</legend>
+        <label><input type="radio" name="type" value="in-person" checked /> <span>In person</span></label>
+        <label><input type="radio" name="type" value="video" data-bkw-video /> <span>Video call</span></label>
+        <p class="bkw__hint" data-bkw-video-hint hidden>This clinician only sees patients in person.</p>
+      </fieldset>
+    </fieldset>
+
+    <!-- Step 3 -->
+    <fieldset class="bkw__panel" data-step="2" hidden>
+      <legend class="bkw__legend" tabindex="-1">Pick a day and time</legend>
+      <div class="bkw__dates" role="radiogroup" aria-label="Day" data-bkw-dates></div>
+      <div class="bkw__slots" role="radiogroup" aria-label="Time" data-bkw-slots></div>
+      <p class="bkw__error" id={`${id}-err-slot`} data-error="slot" hidden>Choose a time to continue.</p>
+      <noscript><p class="bkw__error">Online booking needs JavaScript. Please call us to book.</p></noscript>
+    </fieldset>
+
+    <!-- Step 4 -->
+    <fieldset class="bkw__panel" data-step="3" hidden>
+      <legend class="bkw__legend" tabindex="-1">Your details</legend>
+      <div class="bkw__fields">
+        <label class="bkw__field">Full name<input type="text" name="name" autocomplete="name" required aria-describedby={`${id}-err-name`} /></label>
+        <label class="bkw__field">Date of birth<input type="date" name="dob" autocomplete="bday" required aria-describedby={`${id}-err-dob`} /></label>
+        <label class="bkw__field">Email<input type="email" name="email" autocomplete="email" required aria-describedby={`${id}-err-email`} /></label>
+        <label class="bkw__field">Mobile phone<input type="tel" name="phone" autocomplete="tel" required aria-describedby={`${id}-err-phone`} /></label>
+      </div>
+      <p class="bkw__error" id={`${id}-err-name`} data-error="name" hidden>Enter your full name.</p>
+      <p class="bkw__error" id={`${id}-err-dob`} data-error="dob" hidden>Enter your date of birth.</p>
+      <p class="bkw__error" id={`${id}-err-email`} data-error="email" hidden>Enter a valid email address.</p>
+      <p class="bkw__error" id={`${id}-err-phone`} data-error="phone" hidden>Enter a phone number so we can send reminders.</p>
+      <fieldset class="bkw__type">
+        <legend>Is this your first visit with us?</legend>
+        <label><input type="radio" name="first" value="yes" /> <span>Yes</span></label>
+        <label><input type="radio" name="first" value="no" checked /> <span>No</span></label>
+      </fieldset>
+      <label class="bkw__field">Reason for the visit <span class="bkw__opt">(optional — only your clinician sees it)</span>
+        <textarea name="reason" rows="3"></textarea>
+      </label>
+      <label class="bkw__consent">
+        <input type="checkbox" name="consent" required aria-describedby={`${id}-err-consent`} />
+        <span>I agree that {clinic} processes my health data to manage this appointment, as described in the privacy notice.</span>
+      </label>
+      <p class="bkw__error" id={`${id}-err-consent`} data-error="consent" hidden>Please accept to book the appointment.</p>
+    </fieldset>
+
+    <aside class="bkw__summary" aria-label="Your booking so far" data-bkw-summary></aside>
+
+    <div class="bkw__nav" data-bkw-nav>
+      <button type="button" class="bkw__btn" data-bkw-back hidden>Back</button>
+      <button type="submit" class="bkw__btn bkw__btn--primary" data-bkw-next>Continue</button>
+    </div>
+
+    <div class="bkw__done" tabindex="-1" data-bkw-done hidden>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>
+      <h3 class="bkw__done-title">You’re booked</h3>
+      <p data-bkw-done-text></p>
+      <p class="bkw__ref">Reference <strong data-bkw-ref></strong></p>
+      <div class="bkw__done-actions">
+        <a class="bkw__btn bkw__btn--primary" href="#" download="appointment.ics" data-bkw-ics>Add to calendar</a>
+        <button type="button" class="bkw__btn" data-bkw-again>Book another</button>
+      </div>
+    </div>
+  </form>
+  <p class="sr-only" role="status" aria-live="polite" data-bkw-live></p>
+</section>
+
+<script>
+  type Doctor = { id: string; name: string; specialty: string; fee?: number; telehealth?: boolean; days?: number[] };
+
+  document.querySelectorAll<HTMLElement>('[data-bkw]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const form = root.querySelector<HTMLFormElement>('[data-bkw-form]')!;
+    const panels = Array.from(root.querySelectorAll<HTMLFieldSetElement>('[data-step]'));
+    const stepItems = Array.from(root.querySelectorAll<HTMLLIElement>('[data-bkw-steps] li'));
+    const back = root.querySelector<HTMLButtonElement>('[data-bkw-back]')!;
+    const next = root.querySelector<HTMLButtonElement>('[data-bkw-next]')!;
+    const live = root.querySelector<HTMLElement>('[data-bkw-live]')!;
+    const summary = root.querySelector<HTMLElement>('[data-bkw-summary]')!;
+    const doctors: Doctor[] = JSON.parse(root.dataset.doctors || '[]');
+    const specs: Array<{ id: string; name: string }> = JSON.parse(root.dataset.specialties || '[]');
+    const slots: string[] = JSON.parse(root.dataset.slots || '[]');
+    const locale = root.dataset.locale || 'en-GB';
+    const horizon = Number(root.dataset.horizon) || 14;
+    let step = 0;
+    let picked: { date: Date; time: string } | null = null;
+
+    const val = (name: string) => (form.elements.namedItem(name) as RadioNodeList | HTMLInputElement | null)?.value ?? '';
+    const doctor = () => doctors.find((d) => d.id === val('doctor'));
+    const dayLabel = (d: Date, opts: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' }) => new Intl.DateTimeFormat(locale, opts).format(d);
+
+    /* Step 2: filter clinicians by specialty */
+    const filterDoctors = () => {
+      const s = val('specialty');
+      let first: HTMLInputElement | null = null;
+      root.querySelectorAll<HTMLElement>('[data-bkw-doctors] [data-specialty]').forEach((card) => {
+        const show = card.dataset.specialty === s;
+        card.hidden = !show;
+        const input = card.querySelector('input')!;
+        if (!show && input.checked) input.checked = false;
+        if (show && !first) first = input;
+      });
+      const visible = root.querySelectorAll('[data-bkw-doctors] [data-specialty]:not([hidden])');
+      if (visible.length === 1 && first) (first as HTMLInputElement).checked = true;
+    };
+    const syncVideo = () => {
+      const d = doctor();
+      const video = root.querySelector<HTMLInputElement>('[data-bkw-video]')!;
+      const hint = root.querySelector<HTMLElement>('[data-bkw-video-hint]')!;
+      const ok = !d || d.telehealth !== false;
+      video.disabled = !ok;
+      hint.hidden = ok;
+      if (!ok && video.checked) (form.querySelector('input[name="type"][value="in-person"]') as HTMLInputElement).checked = true;
+    };
+
+    /* Step 3: dates + slots (built in the browser so they are always current) */
+    const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+    const buildDates = () => {
+      const d = doctor();
+      const box = root.querySelector<HTMLElement>('[data-bkw-dates]')!;
+      box.innerHTML = '';
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let first: HTMLInputElement | null = null;
+      for (let i = 1; i <= horizon; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const wd = (date.getDay() + 6) % 7;
+        if (wd > 4) continue;
+        const works = !d?.days || d.days.includes(wd);
+        const label = document.createElement('label');
+        label.className = 'bkw__date';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'date';
+        // Local Y-M-D (toISOString would shift to UTC and change the day east of Greenwich).
+        input.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        input.disabled = !works;
+        const top = document.createElement('span');
+        top.className = 'bkw__date-wd';
+        top.textContent = dayLabel(date, { weekday: 'short' });
+        const num = document.createElement('span');
+        num.className = 'bkw__date-day';
+        num.textContent = dayLabel(date, { day: 'numeric' });
+        const mon = document.createElement('span');
+        mon.className = 'bkw__date-mon';
+        mon.textContent = works ? dayLabel(date, { month: 'short' }) : 'Off';
+        input.setAttribute('aria-label', works ? dayLabel(date) : `${dayLabel(date)}, not available`);
+        label.append(input, top, num, mon);
+        box.append(label);
+        if (works && !first) first = input;
+      }
+      if (first) { (first as HTMLInputElement).checked = true; buildSlots(); }
+    };
+    const buildSlots = () => {
+      const box = root.querySelector<HTMLElement>('[data-bkw-slots]')!;
+      box.innerHTML = '';
+      picked = null;
+      const date = val('date');
+      if (!date) return;
+      const seed = hash(`${val('doctor')}${date}`);
+      slots.forEach((t, i) => {
+        const taken = ((seed >> (i % 24)) & 3) === 0 || (i * 7 + seed) % 5 === 0;
+        const label = document.createElement('label');
+        label.className = 'bkw__slot';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'slot';
+        input.value = t;
+        input.disabled = taken;
+        const span = document.createElement('span');
+        span.textContent = t;
+        if (taken) { const s = document.createElement('span'); s.className = 'sr-only'; s.textContent = ' (booked)'; span.append(s); }
+        label.append(input, span);
+        box.append(label);
+      });
+      const free = box.querySelectorAll('input:not(:disabled)').length;
+      live.textContent = `${free} free times on ${dayLabel(new Date(`${date}T00:00`))}.`;
+    };
+
+    /* Summary */
+    const renderSummary = () => {
+      const s = specs.find((x) => x.id === val('specialty'));
+      const d = doctor();
+      const parts: string[] = [];
+      if (s) parts.push(s.name);
+      if (d && step >= 1) parts.push(`${d.name} · ${val('type') === 'video' ? 'video call' : 'in person'}`);
+      if (picked && step >= 2) parts.push(`${dayLabel(picked.date)} at ${picked.time}`);
+      summary.textContent = parts.length ? parts.join('  ·  ') : '';
+      summary.hidden = !parts.length || step === 0;
+    };
+
+    const go = (n: number) => {
+      step = n;
+      panels.forEach((p, i) => { p.hidden = i !== n; });
+      stepItems.forEach((li, i) => {
+        li.classList.toggle('is-active', i === n);
+        li.classList.toggle('is-done', i < n);
+        if (i === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      });
+      back.hidden = n === 0;
+      next.textContent = n === panels.length - 1 ? 'Confirm booking' : 'Continue';
+      if (n === 1) { filterDoctors(); syncVideo(); }
+      if (n === 2 && !root.querySelector('[data-bkw-dates] input')) buildDates();
+      renderSummary();
+      panels[n].querySelector<HTMLElement>('.bkw__legend')?.focus();
+    };
+
+    const showError = (key: string, on: boolean) => {
+      const e = root.querySelector<HTMLElement>(`[data-error="${key}"]`);
+      if (e) e.hidden = !on;
+    };
+    const validate = (): boolean => {
+      root.querySelectorAll<HTMLElement>('[data-error]').forEach((e) => { e.hidden = true; });
+      if (step === 1 && !val('doctor')) { showError('doctor', true); root.querySelector<HTMLInputElement>('[data-bkw-doctors] [data-specialty]:not([hidden]) input')?.focus(); return false; }
+      if (step === 2 && !picked) { showError('slot', true); root.querySelector<HTMLInputElement>('[data-bkw-slots] input:not(:disabled)')?.focus(); return false; }
+      if (step === 3) {
+        const checks: Array<[string, boolean]> = [
+          ['name', val('name').trim().length > 1],
+          ['dob', Boolean(val('dob'))],
+          ['email', /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val('email').trim())],
+          ['phone', val('phone').replace(/\D/g, '').length >= 7],
+          ['consent', (form.elements.namedItem('consent') as HTMLInputElement).checked],
+        ];
+        let firstBad: HTMLElement | null = null;
+        checks.forEach(([k, ok]) => {
+          showError(k, !ok);
+          const f = form.elements.namedItem(k) as HTMLInputElement;
+          f.setAttribute('aria-invalid', String(!ok));
+          if (!ok && !firstBad) firstBad = f;
+        });
+        if (firstBad) { (firstBad as HTMLElement).focus(); live.textContent = 'Some details are missing.'; return false; }
+      }
+      return true;
+    };
+
+    form.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.name === 'specialty') { filterDoctors(); root.querySelector('[data-bkw-dates]')!.innerHTML = ''; }
+      if (t.name === 'doctor') { syncVideo(); root.querySelector('[data-bkw-dates]')!.innerHTML = ''; }
+      if (t.name === 'date') buildSlots();
+      if (t.name === 'slot') picked = { date: new Date(`${val('date')}T00:00`), time: t.value };
+      if (t.getAttribute('aria-invalid') === 'true') t.removeAttribute('aria-invalid');
+      renderSummary();
+    });
+    back.addEventListener('click', () => go(Math.max(0, step - 1)));
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+      if (step < panels.length - 1) { go(step + 1); return; }
+      // Confirm
+      const d = doctor()!;
+      const ref = `ALM-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      const when = `${dayLabel(picked!.date)} at ${picked!.time}`;
+      const video = val('type') === 'video';
+      const where = video ? 'a secure video link sent by email and SMS' : (root.dataset.address || '');
+      const done = root.querySelector<HTMLElement>('[data-bkw-done]')!;
+      root.querySelector('[data-bkw-done-text]')!.textContent = `${when} with ${d.name}, ${video ? 'by video call' : 'in person'} — ${where}. We sent the details to ${val('email')}.`;
+      root.querySelector('[data-bkw-ref]')!.textContent = ref;
+      // .ics file
+      const [h, m] = picked!.time.split(':').map(Number);
+      const startAt = new Date(picked!.date); startAt.setHours(h, m, 0, 0);
+      const endAt = new Date(startAt.getTime() + 20 * 60000);
+      const stamp = (x: Date) => x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Pulso//Booking//EN', 'BEGIN:VEVENT', `UID:${ref}@pulso`, `DTSTAMP:${stamp(new Date())}`, `DTSTART:${stamp(startAt)}`, `DTEND:${stamp(endAt)}`, `SUMMARY:Appointment with ${d.name}`, `LOCATION:${video ? 'Video call' : root.dataset.address}`, `DESCRIPTION:${root.dataset.clinic} · ref ${ref}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+      root.querySelector<HTMLAnchorElement>('[data-bkw-ics]')!.href = `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
+      panels.forEach((p) => { p.hidden = true; });
+      root.querySelector<HTMLElement>('[data-bkw-nav]')!.hidden = true;
+      summary.hidden = true;
+      stepItems.forEach((li) => { li.classList.add('is-done'); li.classList.remove('is-active'); li.removeAttribute('aria-current'); });
+      done.hidden = false;
+      done.focus();
+      root.dispatchEvent(new CustomEvent('app:booking-confirmed', { bubbles: true, detail: { ref, doctor: d.id, date: val('date'), time: picked!.time, type: val('type') } }));
+    });
+
+    root.querySelector('[data-bkw-again]')?.addEventListener('click', () => {
+      form.reset();
+      picked = null;
+      root.querySelector('[data-bkw-dates]')!.innerHTML = '';
+      root.querySelector('[data-bkw-slots]')!.innerHTML = '';
+      root.querySelector<HTMLElement>('[data-bkw-done]')!.hidden = true;
+      root.querySelector<HTMLElement>('[data-bkw-nav]')!.hidden = false;
+      go(0);
+    });
+
+    // Pre-select from the URL (?specialty= / ?doctor=)
+    const params = new URLSearchParams(window.location.search);
+    const wantDoc = doctors.find((d) => d.id === params.get('doctor'));
+    const wantSpec = wantDoc?.specialty ?? params.get('specialty');
+    if (wantSpec) {
+      const r = form.querySelector<HTMLInputElement>(`input[name="specialty"][value="${CSS.escape(wantSpec)}"]`);
+      if (r) {
+        r.checked = true;
+        filterDoctors();
+        if (wantDoc) {
+          const dr = form.querySelector<HTMLInputElement>(`input[name="doctor"][value="${CSS.escape(wantDoc.id)}"]`);
+          if (dr) dr.checked = true;
+        }
+        step = wantDoc ? 1 : 0;
+        panels.forEach((p, i) => { p.hidden = i !== step; });
+        stepItems.forEach((li, i) => { li.classList.toggle('is-active', i === step); li.classList.toggle('is-done', i < step); if (i === step) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current'); });
+        back.hidden = step === 0;
+        syncVideo();
+        renderSummary();
+      }
+    }
+    renderSummary();
+  });
+</script>
+
+<style>
+  .bkw { --bk-accent: var(--app-accent, var(--c-primary-light, #0e7490)); min-width: 0; container-type: inline-size; }
+  .bkw--card .bkw__form { padding: clamp(1rem, 3vw, 1.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-xl, 18px); background: var(--c-bg-1, #fff); box-shadow: 0 20px 50px -30px rgb(0 0 0 / 0.3); }
+  .bkw__head { margin-bottom: var(--sp-5, 1.25rem); }
+  .bkw__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bk-accent); }
+  .bkw__title { margin: 0; font-size: clamp(1.6rem, 4vw, 2.3rem); font-weight: 800; letter-spacing: -0.02em; color: var(--c-text-1, #0b2a33); }
+  .bkw__sub { margin: var(--sp-2, 0.5rem) 0 0; max-width: 56ch; font-size: 1.02rem; line-height: 1.6; color: var(--c-text-2, #3d5a63); }
+
+  .bkw__steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-2, 0.5rem); margin: 0 0 var(--sp-4, 1rem); padding: 0; list-style: none; counter-reset: s; }
+  .bkw__steps li { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); padding-top: var(--sp-2, 0.5rem); border-top: 3px solid var(--c-border, rgba(0, 0, 0, 0.12)); font-size: 0.85rem; font-weight: 600; color: var(--c-text-3, #5b747c); }
+  .bkw__steps li.is-active { border-color: var(--bk-accent); color: var(--c-text-1, #0b2a33); }
+  .bkw__steps li.is-done { border-color: color-mix(in srgb, var(--bk-accent) 55%, transparent); color: var(--c-text-2, #3d5a63); }
+  .bkw__num { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: rgb(var(--ink-rgb, 15 23 42) / 0.08); font-size: 0.75rem; font-weight: 800; }
+  .is-active .bkw__num { background: var(--bk-accent); color: var(--c-on-primary, #fff); }
+  .is-done .bkw__num { background: color-mix(in srgb, var(--bk-accent) 18%, transparent); color: var(--bk-accent); }
+
+  .bkw__form { display: grid; gap: var(--sp-4, 1rem); }
+  .bkw__panel { display: grid; gap: var(--sp-4, 1rem); margin: 0; padding: 0; border: 0; min-width: 0; }
+  .bkw__panel[hidden] { display: none; }
+  .bkw__legend { padding: 0; margin-bottom: var(--sp-1, 0.25rem); font-size: 1.2rem; font-weight: 700; color: var(--c-text-1, #0b2a33); outline: none; }
+  .bkw__legend:focus-visible { outline: 3px solid var(--bk-accent); outline-offset: 4px; border-radius: 4px; }
+
+  .bkw__grid { display: grid; gap: var(--sp-3, 0.75rem); }
+  .bkw__grid--3 { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .bkw__grid--2 { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .bkw__option { position: relative; display: flex; align-items: flex-start; gap: var(--sp-3, 0.75rem); padding: var(--sp-4, 1rem); border: 1.5px solid var(--c-border, rgba(0, 0, 0, 0.15)); border-radius: var(--r-md, 12px); background: var(--c-bg-1, #fff); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
+  .bkw__option[hidden] { display: none; }
+  .bkw__option:hover { border-color: color-mix(in srgb, var(--bk-accent) 60%, transparent); }
+  .bkw__option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .bkw__option:has(input:checked) { border-color: var(--bk-accent); background: color-mix(in srgb, var(--bk-accent) 7%, var(--c-bg-1, #fff)); box-shadow: 0 0 0 1px var(--bk-accent); }
+  .bkw__option:has(input:focus-visible) { outline: 3px solid var(--bk-accent); outline-offset: 2px; }
+  .bkw__option-body { display: grid; gap: 3px; }
+  .bkw__option-body strong { color: var(--c-text-1, #0b2a33); }
+  .bkw__option-body span { font-size: 0.86rem; line-height: 1.45; color: var(--c-text-2, #3d5a63); }
+  .bkw__option:has(input:checked)::after { content: ''; position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: var(--bk-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 12px no-repeat; }
+  .bkw__avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: hsl(var(--h) 55% 88%); color: hsl(var(--h) 60% 24%); font-weight: 800; font-size: 0.85rem; }
+  .bkw__fee { font-weight: 600; color: var(--c-text-1, #0b2a33) !important; }
+
+  .bkw__type { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem) var(--sp-4, 1rem); margin: 0; padding: 0; border: 0; }
+  .bkw__type legend { float: left; margin-right: var(--sp-3, 0.75rem); padding: 0; font-size: 0.9rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .bkw__type label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 0.92rem; color: var(--c-text-1, #0b2a33); cursor: pointer; }
+  .bkw__type input { width: 18px; height: 18px; accent-color: var(--bk-accent); }
+  .bkw__type label:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+  .bkw__hint { width: 100%; margin: 0; font-size: 0.84rem; color: var(--c-text-2, #3d5a63); }
+  .bkw__hint[hidden] { display: none; }
+
+  .bkw__dates { display: flex; gap: var(--sp-2, 0.5rem); padding-bottom: 6px; overflow-x: auto; scrollbar-width: thin; }
+  .bkw__dates :global(.bkw__date) { position: relative; display: grid; justify-items: center; flex: 0 0 auto; width: 68px; padding: var(--sp-2, 0.5rem) 0; border: 1.5px solid var(--c-border, rgba(0, 0, 0, 0.15)); border-radius: var(--r-md, 12px); background: var(--c-bg-1, #fff); cursor: pointer; }
+  .bkw__dates :global(.bkw__date input) { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .bkw__dates :global(.bkw__date-wd), .bkw__dates :global(.bkw__date-mon) { font-size: 0.72rem; font-weight: 600; color: var(--c-text-2, #3d5a63); text-transform: uppercase; }
+  .bkw__dates :global(.bkw__date-day) { font-size: 1.3rem; font-weight: 800; color: var(--c-text-1, #0b2a33); }
+  .bkw__dates :global(.bkw__date:has(input:checked)) { border-color: var(--bk-accent); background: var(--bk-accent); }
+  .bkw__dates :global(.bkw__date:has(input:checked) span) { color: var(--c-on-primary, #fff); }
+  .bkw__dates :global(.bkw__date:has(input:disabled)) { opacity: 0.45; cursor: not-allowed; background: var(--c-bg, #f3f8f9); }
+  .bkw__dates :global(.bkw__date:has(input:focus-visible)) { outline: 3px solid var(--bk-accent); outline-offset: 2px; }
+
+  .bkw__slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: var(--sp-2, 0.5rem); }
+  .bkw__slots :global(.bkw__slot) { position: relative; cursor: pointer; }
+  .bkw__slots :global(.bkw__slot input) { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .bkw__slots :global(.bkw__slot > span) { display: grid; place-items: center; min-height: 44px; border: 1.5px solid var(--c-border, rgba(0, 0, 0, 0.15)); border-radius: var(--r-sm, 8px); background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bkw__slots :global(.bkw__slot:hover > span) { border-color: var(--bk-accent); }
+  .bkw__slots :global(.bkw__slot input:checked + span) { border-color: var(--bk-accent); background: var(--bk-accent); color: var(--c-on-primary, #fff); }
+  .bkw__slots :global(.bkw__slot input:disabled + span) { background: var(--c-bg, #f3f8f9); color: var(--c-text-3, #5b747c); text-decoration: line-through; cursor: not-allowed; }
+  .bkw__slots :global(.bkw__slot input:focus-visible + span) { outline: 3px solid var(--bk-accent); outline-offset: 2px; }
+
+  .bkw__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3, 0.75rem); }
+  .bkw__field { display: grid; gap: 4px; font-size: 0.88rem; font-weight: 600; color: var(--c-text-1, #0b2a33); }
+  .bkw__opt { font-weight: 400; color: var(--c-text-3, #5b747c); }
+  .bkw__field :is(input, textarea) { min-height: 46px; padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: var(--r-sm, 8px); background: var(--c-bg, #f3f8f9); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 1rem; font-weight: 400; }
+  .bkw__field textarea { resize: vertical; }
+  .bkw__field :is(input, textarea):focus-visible { outline: 3px solid color-mix(in srgb, var(--bk-accent) 45%, transparent); border-color: var(--bk-accent); }
+  .bkw [aria-invalid='true'] { border-color: var(--c-danger, #b91c1c) !important; }
+  .bkw__consent { display: flex; align-items: flex-start; gap: var(--sp-3, 0.75rem); font-size: 0.88rem; line-height: 1.5; color: var(--c-text-1, #0b2a33); cursor: pointer; }
+  .bkw__consent input { flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; accent-color: var(--bk-accent); }
+  .bkw__error { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--c-danger, #b91c1c); }
+  .bkw__error[hidden] { display: none; }
+
+  .bkw__summary { padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-radius: var(--r-md, 10px); background: color-mix(in srgb, var(--bk-accent) 8%, transparent); font-size: 0.88rem; font-weight: 600; color: var(--c-text-1, #0b2a33); }
+  .bkw__summary[hidden] { display: none; }
+  .bkw__nav { display: flex; justify-content: space-between; gap: var(--sp-2, 0.5rem); }
+  .bkw__nav[hidden] { display: none; }
+  .bkw__nav .bkw__btn--primary { margin-left: auto; }
+  .bkw__btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 var(--sp-6, 1.5rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: var(--r-sm, 10px); background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 0.95rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+  .bkw__btn[hidden] { display: none; }
+  .bkw__btn--primary { border-color: var(--bk-accent); background: var(--bk-accent); color: var(--c-on-primary, #fff); }
+  .bkw__btn--primary:hover { color: var(--c-on-primary, #fff); filter: brightness(1.08); }
+  .bkw__btn:focus-visible { outline: 3px solid var(--bk-accent); outline-offset: 2px; }
+
+  .bkw__done { display: grid; justify-items: center; gap: var(--sp-2, 0.5rem); padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem); text-align: center; outline: none; }
+  .bkw__done[hidden] { display: none; }
+  .bkw__done svg { color: var(--c-success, #15803d); }
+  .bkw__done-title { margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--c-text-1, #0b2a33); }
+  .bkw__done p { margin: 0; max-width: 52ch; line-height: 1.6; color: var(--c-text-2, #3d5a63); }
+  .bkw__ref strong { font-family: var(--font-mono, monospace); color: var(--c-text-1, #0b2a33); }
+  .bkw__done-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2, 0.5rem); margin-top: var(--sp-3, 0.75rem); }
+  .bkw__done:focus-visible { outline: 3px solid var(--bk-accent); outline-offset: 4px; border-radius: 12px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 560px) {
+    .bkw__steps .bkw__step-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .bkw__steps li.is-active .bkw__step-label { position: static; width: auto; height: auto; clip: auto; }
+    .bkw__fields { grid-template-columns: 1fr; }
+    .bkw__nav .bkw__btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { .bkw__option { transition: none; } }
+</style>

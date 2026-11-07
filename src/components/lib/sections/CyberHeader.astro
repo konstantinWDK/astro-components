@@ -1,0 +1,213 @@
+---
+/**
+ * CyberHeader — Brutalist cyberpunk navigation bar: bracketed logo, numbered links, a blinking
+ * system-status readout, NIGHT / DAY theme switch, CTA, and a full-screen mobile menu.
+ *
+ * @param {string} brand - Wordmark. Default 'NULL/SECTOR'.
+ * @param {string} brandHref - Logo link. Default '/'.
+ * @param {Array<{label: string, href: string}>} links - Navigation links (numbered automatically).
+ * @param {string} currentHref - Marks the matching link with aria-current.
+ * @param {{label: string, href: string}} cta - Call to action (optional).
+ * @param {string} status - Status readout text (empty hides it). Default 'GRID NOMINAL'.
+ * @param {boolean} themeToggle - Show the NIGHT / DAY switch (sets html[data-theme], remembered). Default true.
+ * @param {boolean} sticky - Stick to the top. Default true.
+ * @param {string} variant - Style (solid|glass). Default 'solid'.
+ * @param {string} size - Height (sm|md). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a labelled nav landmark; the mobile menu is a disclosure button with
+ * aria-expanded that closes with Escape and returns focus; the theme switch is a toggle button
+ * with aria-pressed; the blinking dot is decorative and stops with reduced motion.
+ */
+interface Props {
+  brand?: string;
+  brandHref?: string;
+  links?: Array<{ label: string; href: string }>;
+  currentHref?: string;
+  cta?: { label: string; href: string };
+  status?: string;
+  themeToggle?: boolean;
+  sticky?: boolean;
+  variant?: 'solid' | 'glass';
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+const {
+  brand = 'NULL/SECTOR',
+  brandHref = '/',
+  links = [
+    { label: 'Protocol', href: '#' },
+    { label: 'Pricing', href: '#' },
+    { label: 'Manifesto', href: '#' },
+    { label: 'Logs', href: '#' },
+  ],
+  currentHref,
+  cta = { label: 'Jack in', href: '#' },
+  status = 'GRID NOMINAL',
+  themeToggle = true,
+  sticky = true,
+  variant = 'solid',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const [left, right] = brand.includes('/') ? [brand.split('/')[0], brand.split('/').slice(1).join('/')] : [brand, ''];
+---
+
+<header class:list={['cyh', `cyh--${variant}`, `cyh--${size}`, { 'cyh--sticky': sticky }, className]} data-cyh>
+  <div class="cyh__inner">
+    <a class="cyh__brand" href={brandHref} aria-label={`${brand} — home`}>
+      <span class="cyh__bracket" aria-hidden="true">[</span>{left}{right && <span class="cyh__slash" aria-hidden="true">/</span>}{right}<span class="cyh__bracket" aria-hidden="true">]</span>
+    </a>
+
+    {status && (
+      <p class="cyh__status"><span class="cyh__dot" aria-hidden="true"></span>{status}</p>
+    )}
+
+    <nav class="cyh__nav" aria-label="Main">
+      <ul>
+        {links.map((l, i) => (
+          <li>
+            <a href={l.href} aria-current={currentHref === l.href ? 'page' : undefined}>
+              <span class="cyh__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>{l.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="cyh__tools">
+      {themeToggle && (
+        <button type="button" class="cyh__theme" aria-pressed="false" data-cyh-theme>
+          <span class="sr-only">Day mode</span>
+          <span aria-hidden="true" class="cyh__theme-n">NIGHT</span>
+          <span aria-hidden="true" class="cyh__theme-d">DAY</span>
+        </button>
+      )}
+      {cta && <a class="cyh__cta" href={cta.href}>{cta.label}<span aria-hidden="true"> ↗</span></a>}
+      <button type="button" class="cyh__burger" aria-expanded="false" aria-controls="cyh-menu" data-cyh-burger>
+        <span class="sr-only">Menu</span>
+        <span class="cyh__burger-lines" aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="cyh__menu" id="cyh-menu" hidden data-cyh-menu>
+    <ul>
+      {links.map((l, i) => (
+        <li><a href={l.href} aria-current={currentHref === l.href ? 'page' : undefined}><span aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>{l.label}</a></li>
+      ))}
+      {cta && <li><a class="cyh__menu-cta" href={cta.href}>{cta.label} ↗</a></li>}
+    </ul>
+  </div>
+</header>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cyh]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const theme = root.querySelector<HTMLButtonElement>('[data-cyh-theme]');
+    const sync = () => theme?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
+    sync();
+    theme?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('ack-theme', next); } catch { /* ignore */ }
+      sync();
+    });
+
+    const burger = root.querySelector<HTMLButtonElement>('[data-cyh-burger]')!;
+    const menu = root.querySelector<HTMLElement>('[data-cyh-menu]')!;
+    const setOpen = (open: boolean) => {
+      burger.setAttribute('aria-expanded', String(open));
+      menu.hidden = !open;
+      root.classList.toggle('is-open', open);
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+      if (open) menu.querySelector('a')?.focus();
+    };
+    burger.addEventListener('click', () => setOpen(burger.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && burger.getAttribute('aria-expanded') === 'true') { setOpen(false); burger.focus(); }
+    });
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+  });
+</script>
+
+<style>
+  .cyh {
+    --cyh-edge: var(--cy-edge, var(--c-text-1, #f2f2f2));
+    --cyh-acid: var(--cy-acid, #d4ff00);
+    --cyh-h: 64px;
+    position: relative;
+    z-index: 60;
+    border-bottom: 2px solid var(--cyh-edge);
+    background: var(--c-bg, #050507);
+    color: var(--c-text-1, #f2f2f2);
+    font-family: var(--font-mono, 'JetBrains Mono', ui-monospace, monospace);
+  }
+  .cyh--sm { --cyh-h: 52px; }
+  .cyh--sticky { position: sticky; top: 0; }
+  .cyh--glass { background: rgb(var(--paper-rgb, 5 5 7) / 0.78); backdrop-filter: blur(12px); }
+  .cyh__inner { display: flex; align-items: stretch; gap: 0; height: var(--cyh-h); max-width: 1440px; margin: 0 auto; }
+
+  .cyh__brand { display: flex; align-items: center; padding: 0 var(--sp-5, 1.25rem); border-right: 2px solid var(--cyh-edge); color: inherit; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 1.05rem; font-weight: 900; letter-spacing: 0.04em; text-decoration: none; white-space: nowrap; }
+  .cyh__bracket { color: var(--cy-accent-text, var(--cyh-acid)); }
+  .cyh__slash { color: var(--cy-magenta, #ff2bd6); margin: 0 1px; }
+
+  .cyh__status { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 var(--sp-4, 1rem); border-right: 2px solid var(--cyh-edge); font-size: 0.7rem; letter-spacing: 0.12em; color: var(--c-text-2, #a6a6b4); white-space: nowrap; }
+  .cyh__dot { width: 8px; height: 8px; background: var(--c-success, #39ff88); box-shadow: 0 0 10px var(--c-success, #39ff88); animation: cyh-blink 1.2s steps(2) infinite; }
+
+  .cyh__nav { flex: 1; display: flex; }
+  .cyh__nav ul { display: flex; margin: 0; padding: 0; list-style: none; }
+  .cyh__nav li { display: flex; }
+  .cyh__nav a { display: flex; align-items: center; gap: 8px; padding: 0 var(--sp-5, 1.25rem); border-right: 1px solid rgb(var(--ink-rgb, 242 242 242) / 0.14); color: inherit; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; transition: background 0.15s ease, color 0.15s ease; }
+  .cyh__num { font-size: 0.68rem; color: var(--cy-accent-text, var(--cyh-acid)); }
+  .cyh__nav a:hover { background: var(--cyh-acid); color: #050507; }
+  .cyh__nav a:hover .cyh__num { color: #050507; }
+  .cyh__nav a[aria-current='page'] { background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); }
+  .cyh__nav a[aria-current='page'] .cyh__num { color: inherit; }
+
+  .cyh__tools { display: flex; align-items: stretch; margin-left: auto; }
+  .cyh__theme { position: relative; display: flex; align-items: center; gap: 6px; padding: 0 var(--sp-4, 1rem); border: 0; border-left: 2px solid var(--cyh-edge); background: transparent; color: inherit; font: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; cursor: pointer; }
+  .cyh__theme span[aria-hidden] { padding: 3px 6px; opacity: 0.45; }
+  .cyh__theme[aria-pressed='false'] .cyh__theme-n, .cyh__theme[aria-pressed='true'] .cyh__theme-d { opacity: 1; background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); }
+  .cyh__cta { display: flex; align-items: center; padding: 0 var(--sp-6, 1.5rem); background: var(--cyh-acid); color: #050507; font-size: 0.85rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; white-space: nowrap; transition: background 0.15s ease; }
+  .cyh__cta:hover { background: var(--cy-magenta, #ff2bd6); color: #050507; }
+  .cyh__burger { display: none; place-items: center; width: var(--cyh-h); border: 0; border-left: 2px solid var(--cyh-edge); background: transparent; color: inherit; cursor: pointer; }
+  .cyh__burger-lines, .cyh__burger-lines::before, .cyh__burger-lines::after { display: block; width: 22px; height: 2px; background: currentColor; transition: transform 0.2s ease; }
+  .cyh__burger-lines { position: relative; }
+  .cyh__burger-lines::before, .cyh__burger-lines::after { content: ''; position: absolute; left: 0; }
+  .cyh__burger-lines::before { top: -7px; }
+  .cyh__burger-lines::after { top: 7px; }
+  .cyh.is-open .cyh__burger-lines { background: transparent; }
+  .cyh.is-open .cyh__burger-lines::before { transform: translateY(7px) rotate(45deg); }
+  .cyh.is-open .cyh__burger-lines::after { transform: translateY(-7px) rotate(-45deg); }
+
+  .cyh :is(a, button):focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: -3px; }
+
+  .cyh__menu { position: fixed; inset: var(--cyh-h) 0 0; z-index: 59; overflow-y: auto; background: var(--c-bg, #050507); border-top: 2px solid var(--cyh-edge); }
+  .cyh__menu[hidden] { display: none; }
+  .cyh__menu ul { margin: 0; padding: 0; list-style: none; }
+  .cyh__menu a { display: flex; align-items: baseline; gap: var(--sp-3, 0.75rem); padding: var(--sp-5, 1.25rem); border-bottom: 2px solid var(--cyh-edge); color: inherit; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.8rem, 9vw, 3rem); font-weight: 900; text-transform: uppercase; text-decoration: none; }
+  .cyh__menu a span { font-family: var(--font-mono, monospace); font-size: 0.9rem; color: var(--cy-accent-text, var(--cyh-acid)); }
+  .cyh__menu a[aria-current='page'] { background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); }
+  .cyh__menu .cyh__menu-cta { background: var(--cyh-acid); color: #050507; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @keyframes cyh-blink { 50% { opacity: 0.2; } }
+  @media (max-width: 1180px) { .cyh__status { display: none; } }
+  @media (max-width: 960px) {
+    .cyh__nav { display: none; }
+    .cyh__burger { display: grid; }
+  }
+  @media (max-width: 560px) {
+    .cyh__cta { display: none; }
+    .cyh__brand { padding: 0 var(--sp-3, 0.75rem); font-size: 0.9rem; }
+    .cyh__theme { padding: 0 var(--sp-2, 0.5rem); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cyh__dot { animation: none; }
+    .cyh__nav a, .cyh__cta, .cyh__burger-lines, .cyh__burger-lines::before, .cyh__burger-lines::after { transition: none; }
+  }
+</style>

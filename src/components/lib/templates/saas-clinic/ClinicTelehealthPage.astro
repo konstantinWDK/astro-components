@@ -1,0 +1,67 @@
+---
+/**
+ * ClinicTelehealthPage — Video visit in progress: MedVideoVisit (stage, self-view, timer, controls,
+ * chat, end-of-call summary) with the patient's summary and today's remaining video visits.
+ *
+ * Usage (src/pages/app/telehealth.astro):
+ *   import { ClinicTelehealthPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicTelehealthPage />
+ *
+ * @param {ClinicData} data - Workspace data.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import MedVideoVisit from '../../app/MedVideoVisit.astro';
+import MedPatientSummary from '../../app/MedPatientSummary.astro';
+import MedAgendaTimeline from '../../app/MedAgendaTimeline.astro';
+import { clinicData, clinicRoutes, clinicPatient, clinicDoctor, todaysAppointments, patientVitals, patientHref, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+
+const videos = todaysAppointments(data).filter((a) => a.type === 'video');
+const live = videos.find((a) => a.status === 'confirmed') ?? videos[0];
+const p = clinicPatient(data, live.patient)!;
+const doc = clinicDoctor(data, live.doctor)!;
+const list = videos.map((a) => {
+  const pt = clinicPatient(data, a.patient)!;
+  return { id: a.id, start: a.start, duration: a.duration, patient: { name: pt.name, sub: clinicDoctor(data, a.doctor)?.name }, type: a.type, reason: a.reason, status: a.id === live.id ? 'in-progress' as const : a.status, href: patientHref(routes, pt.id) };
+});
+---
+
+<ClinicLayout title="Video visit" current="telehealth" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Video visits"
+    description={`${videos.length} video visits today · patients join from the link in their confirmation, no app needed.`}
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Video visits' }]}
+    actions={[{ label: 'Test camera & mic', icon: 'video' }, { label: 'Copy waiting-room link', icon: 'plus' }]}
+    periods={[]}
+  />
+
+  <MedVideoVisit
+    patient={{ name: p.name, sub: p.age < 14 ? `${p.age} y · with a parent` : `${p.age} y` }}
+    clinician={doc.name}
+    reason={live.reason}
+    noteHref={routes.consultation}
+  />
+
+  <div class="pulso-grid pulso-grid--1-1">
+    <MedPatientSummary
+      patient={{ name: p.name, age: p.age, sex: p.sex, mrn: p.mrn, phone: p.phone, insurance: p.insurance }}
+      allergies={p.allergies}
+      vitals={patientVitals(p).slice(1, 3)}
+      conditions={p.conditions}
+      medications={p.medications}
+      visits={[]}
+      actions={[{ label: 'Open record', href: patientHref(routes, p.id), icon: 'clipboard' }]}
+    />
+    <MedAgendaTimeline title="Video visits today" subtitle="All clinicians" appointments={list} now={data.now} filters={false} density="compact" id="video-agenda" />
+  </div>
+</ClinicLayout>

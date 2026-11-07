@@ -602,4 +602,139 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Formulario de solicitud de proyecto con teclas de tipo de proyecto, presupuesto y mensaje, validación en línea, estado de éxito y un lateral con disponibilidad y contactos directos.",
     ru: "Форма заявки на проект: клавиши типа проекта, бюджет и сообщение, встроенная проверка, состояние успеха и колонка с доступностью и прямыми контактами.",
   },
+  // ── Toy Store ("Kapow") ───────────────────────────
+  'toy-figure-card': {
+    es: "Tarjeta de producto tipo cromo para juguetes y coleccionables: franja de universo y escala, panel con trama de puntos, personaje, chips de edad y articulaciones, notas de preventa y edición limitada.",
+    ru: "Карточка товара в виде коллекционной карточки для игрушек: полоса со вселенной и масштабом, панель с растром, персонаж, чипы возраста и точек артикуляции, предзаказ и лимитированная серия.",
+  },
+  'toy-figure-grid': {
+    es: "Cuadrícula responsive de Toy Figure Cards con estado vacío; las facetas de FilterSidebar (personaje, universo, escala, edad) y la ordenación la filtran al instante.",
+    ru: "Адаптивная сетка карточек Toy Figure Card с пустым состоянием; фасеты FilterSidebar (персонаж, вселенная, масштаб, возраст) и сортировка фильтруют её мгновенно.",
+  },
+  'toy-hero': {
+    es: "Hero de tienda estilo cómic: etiqueta explosiva, titular gigante con palabra resaltada, CTAs y cifras junto a un escenario con trama de puntos, la figura destacada, una pegatina de precio en estrella y avatares flotantes.",
+    ru: "Hero магазина в стиле комикса: взрывной ярлык, огромный заголовок с выделенным словом, кнопки и цифры рядом со сценой с растром, избранной фигуркой, ценником-звездой и летающими аватарами.",
+  },
+  'toy-character-rail': {
+    es: "Carril «compra por personaje» con avatares redondos de cómic. Enlaza a la página de cada personaje o, en modo filtro, activa la faceta de personaje de FilterSidebar para ver solo sus figuras — selección múltiple y sincronizada con la URL.",
+    ru: "Лента «покупки по персонажу» с круглыми комикс-аватарами. Ведёт на страницы персонажей или в режиме фильтра включает фасет персонажа в FilterSidebar, показывая только его фигурки — мультивыбор и синхронизация с URL.",
+  },
+  'toy-character-grid': {
+    es: "Plantel de personajes como cromos (avatar, alias, universo, sello héroe / villano, medidores de poder, número de figuras) con filtros instantáneos por bando y universo y contador en vivo.",
+    ru: "Каталог персонажей в виде коллекционных карточек (аватар, прозвище, вселенная, отметка герой / злодей, шкалы силы, число фигурок) с мгновенными фильтрами по стороне и вселенной и живым счётчиком.",
+  },
+  'toy-character-hero': {
+    es: "Cabecera de ficha de personaje: viñeta de cómic con ilustración, sello héroe / villano y bocadillo con su frase, más universo, nombre, alias, biografía, medidores de poder, datos y CTAs.",
+    ru: "Шапка профиля персонажа: комикс-панель с рисунком, отметкой герой / злодей и репликой в облачке, а также вселенная, имя, прозвище, биография, шкалы силы, факты и кнопки.",
+  },
+  'toy-age-finder': {
+    es: "Buscador de regalos «¿Para quién es?»: tarjetas de colores por edad (rango, nombre, descripción, número de juguetes) que llevan al catálogo filtrado, más enlaces opcionales por presupuesto.",
+    ru: "Подбор подарка «Для кого?»: яркие плитки возрастных групп (диапазон, название, описание, число игрушек) ведут в отфильтрованный каталог; дополнительно — ссылки по бюджету.",
+  },
+  'toy-spec-sheet': {
+    es: "«Ficha de figura» para páginas de producto: especificaciones (escala, tamaño, edad, materiales, pilas), insignia de articulaciones, lista «En la caja» y aviso de seguridad por piezas pequeñas.",
+    ru: "«Досье фигурки» для страницы товара: характеристики (масштаб, размер, возраст, материалы, батарейки), значок точек артикуляции, список «В коробке» и предупреждение о мелких деталях.",
+  },
+  // ── Cyberpunk / Brutalist ("NULL/SECTOR") ───────────────────────────
+  'cyber-header': {
+    es: 'Navegación cyberpunk brutalista: logotipo entre corchetes, enlaces numerados sobre reglas gruesas, estado del sistema parpadeante, interruptor NOCHE / DÍA, CTA ácido y menú móvil a pantalla completa.',
+    ru: 'Бруталистская киберпанк-навигация: логотип в скобках, нумерованные ссылки на жёстких линиях, мигающий статус системы, переключатель НОЧЬ / ДЕНЬ, кислотная кнопка и полноэкранное мобильное меню.',
+  },
+  'cyber-hero': {
+    es: 'Hero futurista brutalista: barra HUD con reloj UTC en vivo, titular gigante con una línea con glitch y otra en contorno, CTAs CyberpunkButton + NeonBorderButton y panel de telemetría sobre un suelo de rejilla en perspectiva.',
+    ru: 'Футуристичный бруталистский hero: HUD-полоса с часами UTC, огромный заголовок со строкой-глитчем и контурной строкой, кнопки CyberpunkButton + NeonBorderButton и панель живой телеметрии над перспективной сеткой.',
+  },
+  'cyber-ticker': {
+    es: 'Marquesina de estado brutalista en ácido, tinta o contorno, inclinable y reversible, con botón de pausa y versión estática con movimiento reducido.',
+    ru: 'Бруталистская бегущая строка статусов: кислотная, чернильная или контурная, с наклоном и реверсом, кнопкой паузы и статичным видом при reduced motion.',
+  },
+  'cyber-bento': {
+    es: 'Rejilla de funciones sobre reglas gruesas con celdas numeradas, anchas y altas, y grandes cifras; cada celda es un CyberFeatureCard.',
+    ru: 'Сетка возможностей на жёстких линиях: нумерованные ячейки, широкие и высокие, с крупными цифрами; каждая ячейка — CyberFeatureCard.',
+  },
+  'cyber-node-map': {
+    es: 'Mapa del mundo en matriz de puntos con nodos por latitud / longitud, enlaces animados, anillos de estado y barrido de escáner, junto a una tabla de regiones en vivo.',
+    ru: 'Карта мира из точек с узлами по широте / долготе, анимированными связями, пульсирующими кольцами статуса и сканером рядом с живой таблицей регионов.',
+  },
+  'cyber-page-hero': {
+    es: 'Cabecera de página interior: migas SYS://, enorme número índice en contorno, título en mayúsculas con línea en contorno, entradilla y etiquetas; fondo de escaneo, liso o ácido.',
+    ru: 'Шапка внутренней страницы: крошки SYS://, огромный контурный номер, заголовок капсом с контурной строкой, вступление и теги; фон-сканлайн, простой или кислотный.',
+  },
+  'cyber-spec-table': {
+    es: 'Ficha técnica agrupada sobre rejilla brutalista con valores clasificados que se descifran con efecto de codificación, botón para descifrar todo y título HackerDecodeText.',
+    ru: 'Техпаспорт по группам на бруталистской сетке: засекреченные значения расшифровываются с эффектом перебора, кнопка «расшифровать всё» и заголовок HackerDecodeText.',
+  },
+  'cyber-pricing': {
+    es: 'Precios brutalistas con interruptor mensual / anual y un deslizador de uso que recalcula en vivo la factura estimada de cada plan; plan destacado invertido en ácido y CTAs CyberpunkButton.',
+    ru: 'Бруталистские тарифы с переключателем месяц / год и ползунком использования, который пересчитывает счёт каждого тарифа; выделенный тариф в кислотной инверсии и кнопки CyberpunkButton.',
+  },
+  'cyber-manifesto': {
+    es: 'Tesis numeradas con números gigantes en contorno y declaraciones en mayúsculas que se iluminan al entrar en pantalla, con una firma final.',
+    ru: 'Нумерованные тезисы с огромными контурными цифрами и заявлениями капсом, которые подсвечиваются при прокрутке, с подписью в конце.',
+  },
+  'cyber-crew-grid': {
+    es: 'El equipo como credenciales de acceso: avatares de píxeles generados, alias, código ID, rol, ubicación y nivel de acceso, con desplazamiento glitch al pasar el ratón.',
+    ru: 'Команда в виде пропусков: сгенерированные пиксельные аватары, ник, ID, роль, город и уровень допуска, с глитч-сдвигом при наведении.',
+  },
+  'cyber-status-board': {
+    es: 'Panel de disponibilidad: banner de estado general y una fila por región con franja de 60 días, % de uptime, ping y estado actual.',
+    ru: 'Панель доступности: общий баннер статуса и строка на регион с полосой за 60 дней, процентом аптайма, пингом и текущим состоянием.',
+  },
+  'cyber-terminal-form': {
+    es: 'Formulario de contacto que se usa como línea de comandos: una pregunta cada vez, comandos /help /back /clear /status, ticket al enviar y cambio a formulario normal. Usa CyberpunkCheckbox y NeonSpinner.',
+    ru: 'Контактная форма в виде командной строки: по одному вопросу, команды /help /back /clear /status, номер тикета после отправки и переключение на обычную форму. Использует CyberpunkCheckbox и NeonSpinner.',
+  },
+  'cyber-footer': {
+    es: 'Footer brutalista con suscripción «uplink», columnas de enlaces sobre reglas gruesas, contador de bloques en vivo y un logotipo gigante en contorno.',
+    ru: 'Бруталистский футер с подпиской «uplink», колонками ссылок на жёстких линиях, живым счётчиком блоков и огромным контурным логотипом.',
+  },
+  // ── Healthcare ("Pulso") ───────────────────────────
+  'med-agenda-timeline': {
+    es: "La jornada de un profesional en una línea de tiempo: citas con estado, presencial o vídeo, sala y motivo, marcador de «ahora», resumen y filtros rápidos.",
+    ru: "День врача на шкале времени: приёмы со статусом, очно или по видео, кабинет и причина, отметка «сейчас», сводка и быстрые фильтры.",
+  },
+  'med-waiting-room': {
+    es: "Cola de sala de espera en vivo: prioridad, tiempos de espera que pasan a ámbar y rojo al superar el objetivo y acciones de llamar y empezar la consulta.",
+    ru: "Живая очередь в зале ожидания: приоритет, таймеры ожидания (жёлтый и красный при превышении цели) и кнопки «вызвать» и «начать приём».",
+  },
+  'med-schedule-calendar': {
+    es: "Calendario semanal / diario de la clínica: citas coloreadas por profesional con carriles para solapes, línea de «ahora», filtros por médico, leyenda de vídeo y panel de detalle.",
+    ru: "Календарь клиники на неделю / день: приёмы с цветом врача, дорожки для пересечений, линия «сейчас», фильтры по врачам, легенда видео и панель деталей.",
+  },
+  'med-patient-summary': {
+    es: "Resumen de historia clínica: identidad, alerta de alergias, constantes con minigráficos de tendencia y rangos, problemas activos, medicación y últimas visitas.",
+    ru: "Сводка медкарты: данные пациента, предупреждение об аллергиях, показатели с мини-графиками и нормами, активные проблемы, лекарства и последние визиты.",
+  },
+  'med-consultation-note': {
+    es: "Nota clínica SOAP con aviso de constantes fuera de rango, buscador combobox de diagnósticos CIE-10, plantillas, autoguardado local y firma con bloqueo.",
+    ru: "Протокол приёма SOAP: отметка показателей вне нормы, поиск диагнозов МКБ-10 (combobox), шаблоны, автосохранение и подпись с блокировкой.",
+  },
+  'med-prescription-pad': {
+    es: "Receta electrónica: búsqueda en el vademécum, dosis, frecuencia y duración con cantidad automática, alertas de alergia y duplicidad, imprimir y enviar a farmacia.",
+    ru: "Электронный рецепт: поиск по справочнику, доза, частота и длительность с расчётом количества, предупреждения об аллергии и дублировании, печать и отправка в аптеку.",
+  },
+  'med-video-visit': {
+    es: "Interfaz de videoconsulta: escena del paciente, vista propia, temporizador, calidad de conexión, controles de micro, cámara, pantalla y chat, panel de chat y resumen al terminar.",
+    ru: "Интерфейс видеоприёма: окно пациента, своё изображение, таймер, качество связи, кнопки микрофона, камеры, экрана и чата, панель чата и итог звонка.",
+  },
+  'med-availability-editor': {
+    es: "Horario semanal de consulta: interruptor y franjas por día, presencial / vídeo por franja, copiar a días laborables, control de solapes y resumen de huecos.",
+    ru: "Недельный график приёма: переключатель и интервалы по дням, очно / видео для каждого интервала, копирование на будни, проверка пересечений и сводка слотов.",
+  },
+  'med-hero': {
+    es: "Hero para software sanitario: insignia, titular con frase destacada, CTAs y puntos de confianza junto a una maqueta HTML con la agenda del día, una videoconsulta y un aviso de reserva.",
+    ru: "Hero для медицинского ПО: бейдж, заголовок с выделенной фразой, кнопки и пункты доверия рядом с HTML-макетом расписания, видеоприёма и уведомления о записи.",
+  },
+  'med-doctor-directory': {
+    es: "Sección «encuentra a tu médico»: búsqueda por nombre o idioma, chips de especialidad y filtro de vídeo sobre tarjetas con valoración, precio, disponibilidad y botón de reservar.",
+    ru: "Раздел «найдите врача»: поиск по имени или языку, чипы специальностей и фильтр видео для карточек с рейтингом, ценой, доступностью и кнопкой записи.",
+  },
+  'med-booking-wizard': {
+    es: "Reserva de citas online en cuatro pasos accesibles — servicio, profesional y tipo de visita, día y hora, datos y consentimiento — con referencia y archivo .ics para el calendario.",
+    ru: "Онлайн-запись на приём в четыре доступных шага — услуга, врач и тип визита, день и время, данные и согласие — с номером записи и файлом .ics для календаря.",
+  },
+  'toy-collector-club': {
+    es: "Banda de fidelización para tiendas de juguetes y coleccionables: ventajas, tarjeta de sellos animada, niveles de socio y formulario de alta con validación en línea.",
+    ru: "Блок программы лояльности для магазинов игрушек: преимущества, анимированная карта штампов, уровни участия и форма вступления с проверкой полей.",
+  },
 };

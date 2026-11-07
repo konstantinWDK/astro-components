@@ -1,0 +1,95 @@
+---
+/**
+ * ClinicPatientsPage — Patient directory: searchable, sortable DataTable (age, clinician, last
+ * visit, insurance, status, tags) next to a summary of the selected patient.
+ *
+ * Usage (src/pages/app/patients/index.astro):
+ *   import { ClinicPatientsPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicPatientsPage />
+ *
+ * @param {ClinicData} data - Workspace data.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import DataTable from '../../app/DataTable.astro';
+import MedPatientSummary from '../../app/MedPatientSummary.astro';
+import { clinicData, clinicRoutes, clinicDoctor, patientVitals, patientVisits, patientHref, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+
+const rows = data.patients.map((p) => ({
+  patient: { name: p.name, sub: `${p.mrn} · ${p.email}` },
+  age: p.age,
+  clinician: clinicDoctor(data, p.doctor)?.name ?? '',
+  lastVisit: p.lastVisit,
+  insurance: p.insurance,
+  status: p.status,
+  tags: p.tags,
+}));
+const first = data.patients[0];
+---
+
+<ClinicLayout title="Patients" current="patients" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Patients"
+    description={`${data.patients.length} patients · ${data.patients.filter((p) => p.status === 'New').length} new this month · ${data.patients.filter((p) => p.allergies.some((a) => a.severity === 'severe')).length} with severe allergies`}
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Patients' }]}
+    actions={[{ label: 'Import CSV', icon: 'download' }, { label: 'New patient', icon: 'plus', primary: true }]}
+    periods={[]}
+  />
+
+  <div class="pulso-grid pulso-grid--1-1 patients">
+    <div class="patients__list">
+      <DataTable
+        id="patients"
+        title="Patient directory"
+        columns={[
+          { key: 'patient', label: 'Patient', type: 'person', sortable: true },
+          { key: 'age', label: 'Age', type: 'number', align: 'right', sortable: true },
+          { key: 'clinician', label: 'Clinician', sortable: true },
+          { key: 'lastVisit', label: 'Last visit', sortable: true },
+          { key: 'status', label: 'Status', type: 'status' },
+          { key: 'tags', label: 'Tags', type: 'tags' },
+        ]}
+        rows={rows}
+        statusTones={{ Active: 'success', New: 'info', 'Follow-up': 'warning', Inactive: 'default' }}
+        filterKey="status"
+        bulkActions={['Send recall', 'Export']}
+        searchPlaceholder="Search name, MRN or email…"
+        pageSize={8}
+        density="compact"
+      />
+      <ul class="patients__links" aria-label="Open a patient record">
+        {data.patients.slice(0, 6).map((p) => <li><a href={patientHref(routes, p.id)}>{p.name}</a></li>)}
+      </ul>
+    </div>
+    <MedPatientSummary
+      patient={first}
+      allergies={first.allergies}
+      vitals={patientVitals(first)}
+      conditions={first.conditions}
+      medications={first.medications}
+      visits={patientVisits(data, first).slice(0, 3)}
+      actions={[{ label: 'Open record', href: patientHref(routes, first.id), icon: 'clipboard' }, { label: 'Start consultation', href: routes.consultation, icon: 'stethoscope', primary: true }]}
+    />
+  </div>
+</ClinicLayout>
+
+<style>
+  .patients { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  .patients__list { display: grid; gap: var(--sp-3); min-width: 0; }
+  .patients__links { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; font-size: 0.85rem; }
+  .patients__links::before { content: 'Quick open:'; align-self: center; color: var(--c-text-3); }
+  .patients__links a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--sp-3); border: 1px solid var(--c-border); border-radius: 999px; background: var(--c-bg-1); color: var(--c-text-1); font-weight: 600; }
+  .patients__links a:hover { border-color: var(--app-accent); }
+  .patients__links a:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 2px; }
+  @media (max-width: 1200px) { .patients { grid-template-columns: 1fr; } }
+</style>

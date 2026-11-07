@@ -1,0 +1,94 @@
+---
+/**
+ * CyberManifesto — Numbered theses in a brutalist column: giant outlined numbers, uppercase
+ * statements that light up as they scroll into view, supporting text and a signed closing line.
+ *
+ * @param {string} eyebrow - Index label. Default '[01] MANIFESTO'.
+ * @param {string} title - Heading. Default 'Five rules for a grid with no centre'.
+ * @param {Array<{title: string, text?: string}>} theses - Statements.
+ * @param {string} signature - Closing line (optional). Default '— THE SYNDICATE · BLOCK 18,204,113'.
+ * @param {boolean} reveal - Highlight theses as they enter the viewport. Default true.
+ * @param {string} variant - Layout (stack|split). Default 'split'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: an ordered list so numbering is announced; all text is present without JS
+ * (the reveal only changes colour); the effect is skipped with reduced motion.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  theses?: Array<{ title: string; text?: string }>;
+  signature?: string;
+  reveal?: boolean;
+  variant?: 'stack' | 'split';
+  className?: string;
+}
+
+const {
+  eyebrow = '[01] MANIFESTO',
+  title = 'Five rules for a grid with no centre',
+  theses = [
+    { title: 'Compute is a commons.', text: 'There are more idle GPUs in bedrooms and studios than in all the clouds combined.' },
+    { title: 'No centre, no single kill switch.', text: 'A grid with no headquarters cannot be switched off by one company.' },
+    { title: 'Privacy is not a premium tier.', text: 'Every job runs sealed. The operator is blind by default.' },
+  ],
+  signature = '— THE SYNDICATE · BLOCK 18,204,113',
+  reveal = true,
+  variant = 'split',
+  className = '',
+} = Astro.props;
+---
+
+<section class:list={['cyman', `cyman--${variant}`, className]} aria-labelledby="cyman-title" data-cyman data-reveal={reveal ? '' : undefined}>
+  <header class="cyman__head">
+    {eyebrow && <p class="cyman__eyebrow">{eyebrow}</p>}
+    <h2 class="cyman__title" id="cyman-title">{title}</h2>
+  </header>
+  <ol class="cyman__list">
+    {theses.map((t, i) => (
+      <li class="cyman__item" data-cyman-item>
+        <span class="cyman__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <p class="cyman__thesis">{t.title}</p>
+          {t.text && <p class="cyman__text">{t.text}</p>}
+        </div>
+      </li>
+    ))}
+  </ol>
+  {signature && <p class="cyman__sig">{signature}</p>}
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cyman][data-reveal]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+    root.classList.add('is-armed');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-lit'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -30% 0px' });
+    root.querySelectorAll('[data-cyman-item]').forEach((el) => io.observe(el));
+  });
+</script>
+
+<style>
+  .cyman { --cmn-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); color: var(--c-text-1, #f2f2f2); container-type: inline-size; }
+  .cyman--split { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr); gap: var(--sp-8, 2rem) clamp(2rem, 5vw, 4rem); align-items: start; }
+  .cyman__head { position: sticky; top: 96px; }
+  .cyman--stack .cyman__head { position: static; margin-bottom: var(--sp-6, 1.5rem); }
+  .cyman__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyman__title { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.6rem, 3.6cqi, 2.6rem); font-weight: 900; line-height: 1.05; text-transform: uppercase; }
+  .cyman__list { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--cmn-edge); }
+  .cyman__item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-5, 1.25rem); padding: var(--sp-6, 1.5rem) 0; border-bottom: 2px solid var(--cmn-edge); }
+  .cyman__num { font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(2.6rem, 8cqi, 5.4rem); font-weight: 900; line-height: 0.85; color: transparent; -webkit-text-stroke: 2px var(--cy-magenta, #ff2bd6); }
+  .cyman__thesis { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.4rem, 4cqi, 2.6rem); font-weight: 900; line-height: 1.05; text-transform: uppercase; transition: color 0.5s ease; }
+  .cyman__text { max-width: 52ch; margin: var(--sp-3, 0.75rem) 0 0; font-family: var(--font-mono, monospace); line-height: 1.7; color: var(--c-text-2, #a6a6b4); }
+  .cyman.is-armed .cyman__item:not(.is-lit) .cyman__thesis { color: rgb(var(--ink-rgb, 242 242 242) / 0.3); }
+  .cyman.is-armed .cyman__item.is-lit .cyman__num { -webkit-text-stroke-color: var(--cy-acid, #d4ff00); }
+  :global([data-theme='light']) .cyman.is-armed .cyman__item.is-lit .cyman__num { -webkit-text-stroke-color: var(--c-text-1, #0a0a0a); }
+  .cyman__sig { grid-column: 1 / -1; margin: var(--sp-6, 1.5rem) 0 0; font-family: var(--font-mono, monospace); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.16em; text-align: right; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  @container (max-width: 760px) {
+    .cyman--split { grid-template-columns: 1fr; }
+    .cyman__head { position: static; }
+  }
+  @media (prefers-reduced-motion: reduce) { .cyman__thesis { transition: none; } }
+</style>

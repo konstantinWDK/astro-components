@@ -256,7 +256,7 @@ export const ecommerce: ComponentDoc[] = [
   }),
   item({
     slug: 'product-media', name: 'Product Media', file: 'ProductMedia.astro',
-    description: 'Product visual: a real photo, or a hue-tinted backdrop with one of 16 line-art product illustrations.',
+    description: 'Product visual: a real photo, or a hue-tinted backdrop with one of 25 line-art product illustrations (including action figures, robots, dinos and playsets).',
     tags: ['image', 'illustration', 'placeholder'],
     usage: `<ProductMedia icon="sneaker" hue={0} ratio="4 / 3" />`,
   }),
@@ -265,5 +265,25 @@ export const ecommerce: ComponentDoc[] = [
     description: 'Read-only star rating with fractional fill, value and review count, exposed as a single accessible label.',
     tags: ['rating', 'stars', 'reviews'],
     usage: `<ProductRating value={4.6} count={128} size="md" />`,
+  }),
+  item({
+    slug: 'toy-figure-card', name: 'Toy Figure Card', file: 'ToyFigureCard.astro', featured: true,
+    description: 'Trading-card product card for toys and collectibles: universe and scale strip, halftone panel, character, age and articulation chips, pre-order and limited-edition notes.',
+    tags: ['card', 'product', 'toys', 'collectibles', 'action-figures'], deps: ['Product Media', 'Product Rating', 'Badge'],
+    usage: `<ToyFigureCard
+  href="/product/captain-nova-6in/"
+  product={{ slug: 'captain-nova-6in', name: 'Captain Nova · Hero Pose', price: 24.99, category: 'figures',
+    rating: 4.8, reviews: 412, icon: 'figure', hue: 212, facets: { character: 'captain-nova' } }}
+  meta={{ character: 'Captain Nova', universe: 'Star Rangers', scale: '6 in', age: '4+', articulation: 28 }}
+/>`,
+  }),
+  item({
+    slug: 'toy-figure-grid', name: 'Toy Figure Grid', file: 'ToyFigureGrid.astro',
+    description: 'Responsive grid of Toy Figure Cards with an empty state; FilterSidebar facets (character, universe, scale, age) and sorting filter it instantly.',
+    tags: ['grid', 'catalog', 'toys', 'filters', 'facets'], deps: ['Toy Figure Card', 'Product Media', 'Product Rating', 'Badge'],
+    usage: `<FilterSidebar target="toy-grid" id="toy-filters" categoryLabel="Type" colors={[]}
+  facets={[{ name: 'character', label: 'Character', options: [{ id: 'vex', name: 'Vex' }, { id: 'rexa', name: 'Rexa' }] }]} />
+<ToyFigureGrid id="toy-grid" products={products} meta={meta} productBase="/product/" />
+<!-- each product: facets: { character: ['vex'] } → filtered by ?character=vex -->`,
   }),
 ];

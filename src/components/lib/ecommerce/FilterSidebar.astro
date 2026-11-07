@@ -1,13 +1,17 @@
 ---
 /**
- * FilterSidebar — Catalog filters (category, max price, colour, rating, stock) that filter
- * and sort a ProductGrid instantly in the browser. Collapses behind a "Filters" button on mobile.
+ * FilterSidebar — Catalog filters (category, custom facets, max price, colour, rating, stock) that
+ * filter and sort a ProductGrid instantly in the browser. Collapses behind a "Filters" button on mobile.
  *
  * @param {string} target - id of the ProductGrid to filter. Default 'product-grid'.
  * @param {string} id - Form id; ProductToolbar's sort select uses `${id}-sort`. Default 'catalog-filters'.
  * @param {Array<{id: string, name: string, count?: number}>} categories - Category checkboxes.
  * @param {string[]} selected - Pre-checked category ids (also read from `?category=` in the URL).
- * @param {number} maxPrice - Upper bound of the price slider. Default 300.
+ * @param {string} categoryLabel - Legend of the category group. Default 'Category'.
+ * @param {Array<{name: string, label: string, options: Array<{id: string, name: string, count?: number}>, selected?: string[]}>} facets -
+ *   Extra checkbox groups (e.g. character, scale, age). Cards match on `data-f-<name>` (see `product.facets`);
+ *   each facet is synced with `?<name>=a,b` in the URL. Names must not be category|color|max|rating|stock.
+ * @param {number} maxPrice - Upper bound of the price slider (`?max=` in the URL pre-sets it). Default 300.
  * @param {Array<{name: string, hex: string}>} colors - Colour swatches.
  * @param {string} currency - ISO currency. Default 'USD'.
  * @param {string} locale - Number format locale. Default 'en-US'.
@@ -25,6 +29,8 @@ interface Props {
   id?: string;
   categories?: Array<{ id: string; name: string; count?: number }>;
   selected?: string[];
+  categoryLabel?: string;
+  facets?: Array<{ name: string; label: string; options: Array<{ id: string; name: string; count?: number }>; selected?: string[] }>;
   maxPrice?: number;
   colors?: Array<{ name: string; hex: string }>;
   currency?: string;
@@ -44,6 +50,8 @@ const {
     { id: 'home', name: 'Home', count: 3 },
   ],
   selected = [],
+  categoryLabel = 'Category',
+  facets = [],
   maxPrice = 300,
   colors = [
     { name: 'Graphite', hex: '#2b2b2f' },
@@ -70,17 +78,33 @@ const money = { currency, locale };
   </button>
 
   <form class="filters__form" id={id} data-filters={target} data-currency={currency} data-locale={locale} aria-label="Product filters">
-    <fieldset class="filters__group">
-      <legend>Category</legend>
-      {categories.map((c) => (
-        <label class="filters__check">
-          <input type="checkbox" name="category" value={c.id} checked={selected.includes(c.id)} />
-          <span class="filters__box" aria-hidden="true"></span>
-          <span class="filters__label">{c.name}</span>
-          {c.count !== undefined && <span class="filters__count">{c.count}</span>}
-        </label>
-      ))}
-    </fieldset>
+    {categories.length > 0 && (
+      <fieldset class="filters__group">
+        <legend>{categoryLabel}</legend>
+        {categories.map((c) => (
+          <label class="filters__check">
+            <input type="checkbox" name="category" value={c.id} checked={selected.includes(c.id)} />
+            <span class="filters__box" aria-hidden="true"></span>
+            <span class="filters__label">{c.name}</span>
+            {c.count !== undefined && <span class="filters__count">{c.count}</span>}
+          </label>
+        ))}
+      </fieldset>
+    )}
+
+    {facets.map((f) => (
+      <fieldset class="filters__group" data-facet={f.name}>
+        <legend>{f.label}</legend>
+        {f.options.map((o) => (
+          <label class="filters__check">
+            <input type="checkbox" name={f.name} value={o.id} checked={(f.selected ?? []).includes(o.id)} />
+            <span class="filters__box" aria-hidden="true"></span>
+            <span class="filters__label">{o.name}</span>
+            {o.count !== undefined && <span class="filters__count">{o.count}</span>}
+          </label>
+        ))}
+      </fieldset>
+    ))}
 
     <fieldset class="filters__group">
       <legend>Price</legend>
@@ -135,6 +159,7 @@ const money = { currency, locale };
 
 <script>
   import { formatMoney } from './cart-store';
+  import { matchesFacets } from './catalog-filter';
 
   document.querySelectorAll<HTMLFormElement>('form[data-filters]:not([data-bound])').forEach((form) => {
     form.dataset.bound = '';
@@ -161,6 +186,14 @@ const money = { currency, locale };
       form.querySelectorAll<HTMLInputElement>('input[name="category"]').forEach((i) => { i.checked = fromUrl.includes(i.value); });
     }
     if (sort && params.get('sort')) sort.value = params.get('sort')!;
+    const maxFromUrl = Number(params.get('max'));
+    if (maxFromUrl > 0) priceInput.value = String(Math.min(ceiling, maxFromUrl));
+    const facetNames = Array.from(form.querySelectorAll<HTMLElement>('[data-facet]')).map((f) => f.dataset.facet!);
+    facetNames.forEach((name) => {
+      const wanted = (params.get(name) || '').split(',').filter(Boolean);
+      if (!wanted.length) return;
+      form.querySelectorAll<HTMLInputElement>(`input[name="${CSS.escape(name)}"]`).forEach((i) => { i.checked = wanted.includes(i.value); });
+    });
 
     function apply() {
       const data = new FormData(form);
@@ -169,6 +202,8 @@ const money = { currency, locale };
       const max = Number(data.get('max'));
       const minRating = Number(data.get('rating') || 0);
       const stockOnly = data.get('stock') === 'in';
+      const facets = Object.fromEntries(facetNames.map((name) => [name, data.getAll(name) as string[]]));
+      const facetCount = Object.values(facets).reduce((n, v) => n + v.length, 0);
       let visible = 0;
 
       cards.forEach((card) => {
@@ -179,7 +214,8 @@ const money = { currency, locale };
           Number(d.price) <= max &&
           Number(d.rating) >= minRating &&
           (!stockOnly || d.stock === 'in') &&
-          (!colors.length || colors.some((c) => cardColors.includes(c)));
+          (!colors.length || colors.some((c) => cardColors.includes(c))) &&
+          matchesFacets(card, facets);
         card.hidden = !ok;
         if (ok) visible++;
       });
@@ -199,12 +235,18 @@ const money = { currency, locale };
       if (priceOut) priceOut.textContent = formatMoney(max, money);
       document.querySelectorAll<HTMLElement>(`[data-result-count="${grid.id}"]`).forEach((n) => { n.textContent = String(visible); });
 
-      const active = cats.length + colors.length + (max < ceiling ? 1 : 0) + (minRating > 0 ? 1 : 0) + (stockOnly ? 1 : 0);
+      const active = cats.length + facetCount + colors.length + (max < ceiling ? 1 : 0) + (minRating > 0 ? 1 : 0) + (stockOnly ? 1 : 0);
       if (activeBadge) { activeBadge.hidden = active === 0; activeBadge.textContent = String(active); }
 
       const url = new URL(window.location.href);
       if (cats.length) url.searchParams.set('category', cats.join(','));
       else url.searchParams.delete('category');
+      Object.entries(facets).forEach(([name, values]) => {
+        if (values.length) url.searchParams.set(name, values.join(','));
+        else url.searchParams.delete(name);
+      });
+      if (max < ceiling) url.searchParams.set('max', String(max));
+      else url.searchParams.delete('max');
       if (mode !== 'featured') url.searchParams.set('sort', mode);
       else url.searchParams.delete('sort');
       window.history.replaceState(null, '', url);
@@ -394,7 +436,8 @@ const money = { currency, locale };
 
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  @container (max-width: 900px) {
+  /* Collapse on narrow viewports (the sidebar itself is always narrow, so not a container query). */
+  @media (max-width: 900px) {
     .filters__toggle { display: inline-flex; }
     .filters__form { display: none; margin-top: var(--sp-3, 0.75rem); }
     .filters.is-open .filters__form { display: grid; }

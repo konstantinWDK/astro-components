@@ -1,0 +1,335 @@
+---
+/**
+ * ToyCharacterRail — "Shop by character" rail of round comic avatars. In `link` mode each avatar
+ * goes to a character page; in `filter` mode they become toggle buttons that filter a product grid
+ * by character, kept in sync with a FilterSidebar facet (multi-select, with an "All" reset).
+ *
+ * @param {string} eyebrow - Small label above the title. Default 'Pick your hero'.
+ * @param {string} title - Heading (empty hides the header). Default 'Shop by character'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<{id: string, name: string, alias?: string, icon?: string, hue?: number, href?: string, count?: number, faction?: 'hero'|'villain'}>} characters - Avatars.
+ * @param {string} mode - Behaviour (link|filter). Default 'link'.
+ * @param {string} filters - Filter mode: id of the FilterSidebar form to drive. Default 'catalog-filters'.
+ * @param {string} facet - Filter mode: facet name (checkbox name in the form). Default 'character'.
+ * @param {string} allLabel - Filter mode: label of the reset avatar. Default 'All'.
+ * @param {{label: string, href: string}} link - Optional "see all" link in the header.
+ * @param {string} variant - Style (comic|soft). Default 'comic'.
+ * @param {string} size - Avatar size (sm|md|lg). Default 'md'.
+ * @param {string} headingLevel - Heading element (h2|h3). Default 'h2'.
+ * @param {string} id - Base id. Default 'character-rail'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: filter avatars are buttons with aria-pressed inside a labelled group; link avatars
+ * are a list of links; the rail scrolls horizontally with keyboard (Tab) and with the arrow buttons;
+ * villains are labelled in text, not only by colour.
+ */
+import { productIcon } from '../ecommerce/product-icons';
+
+interface Character {
+  id: string;
+  name: string;
+  alias?: string;
+  icon?: string;
+  hue?: number;
+  href?: string;
+  count?: number;
+  faction?: 'hero' | 'villain';
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  characters?: Character[];
+  mode?: 'link' | 'filter';
+  filters?: string;
+  facet?: string;
+  allLabel?: string;
+  link?: { label: string; href: string };
+  variant?: 'comic' | 'soft';
+  size?: 'sm' | 'md' | 'lg';
+  headingLevel?: 'h2' | 'h3';
+  id?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = 'Pick your hero',
+  title = 'Shop by character',
+  subtitle,
+  characters = [
+    { id: 'captain-nova', name: 'Captain Nova', icon: 'figure', hue: 212, count: 5, faction: 'hero', href: '#' },
+    { id: 'vex', name: 'Vex', icon: 'figure', hue: 286, count: 3, faction: 'villain', href: '#' },
+    { id: 'bolt-x', name: 'Bolt-X', icon: 'robot', hue: 194, count: 3, faction: 'hero', href: '#' },
+    { id: 'ironmaw', name: 'Ironmaw', icon: 'robot', hue: 20, count: 2, faction: 'villain', href: '#' },
+    { id: 'terra-titan', name: 'Terra Titan', icon: 'monster', hue: 150, count: 3, faction: 'hero', href: '#' },
+    { id: 'kira-blaze', name: 'Kira Blaze', icon: 'ninja', hue: 12, count: 3, faction: 'hero', href: '#' },
+    { id: 'raikou', name: 'Raikou', icon: 'ninja', hue: 252, count: 3, faction: 'villain', href: '#' },
+    { id: 'rexa', name: 'Rexa', icon: 'dino', hue: 40, count: 2, faction: 'hero', href: '#' },
+  ],
+  mode = 'link',
+  filters = 'catalog-filters',
+  facet = 'character',
+  allLabel = 'All',
+  link,
+  variant = 'comic',
+  size = 'md',
+  headingLevel = 'h2',
+  id = 'character-rail',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const titleId = `${id}-title`;
+const isFilter = mode === 'filter';
+---
+
+<section
+  class:list={['tcr', `tcr--${variant}`, `tcr--${size}`, className]}
+  aria-labelledby={title ? titleId : undefined}
+  aria-label={title ? undefined : 'Characters'}
+  data-tcr
+  data-mode={mode}
+  data-filters={isFilter ? filters : undefined}
+  data-facet={isFilter ? facet : undefined}
+>
+  {title && (
+    <div class="tcr__head">
+      <div>
+        {eyebrow && <p class="tcr__eyebrow">{eyebrow}</p>}
+        <Heading class="tcr__title" id={titleId}>{title}</Heading>
+        {subtitle && <p class="tcr__sub">{subtitle}</p>}
+      </div>
+      <div class="tcr__tools">
+        {link && <a class="tcr__link" href={link.href}>{link.label} <span aria-hidden="true">→</span></a>}
+        <button class="tcr__arrow" type="button" data-tcr-prev aria-controls={`${id}-list`} aria-label="Scroll characters left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="tcr__arrow" type="button" data-tcr-next aria-controls={`${id}-list`} aria-label="Scroll characters right">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  )}
+
+  <ul class="tcr__list" id={`${id}-list`} role={isFilter ? 'group' : undefined} aria-label={isFilter ? 'Filter by character' : undefined} data-tcr-list>
+    {isFilter && (
+      <li>
+        <button class="tcr__item" type="button" aria-pressed="true" data-tcr-all>
+          <span class="tcr__avatar tcr__avatar--all" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M3.5 19c.6-3.4 3-5.5 5.5-5.5s4.9 2.1 5.5 5.5M14.5 14.2c.6-.3 1.3-.5 2-.5 2 0 3.7 1.6 4.1 4.3"/></svg>
+          </span>
+          <span class="tcr__name">{allLabel}</span>
+        </button>
+      </li>
+    )}
+    {characters.map((c) => {
+      const inner = (
+        <>
+          <span class="tcr__avatar" style={`--av-hue: ${c.hue ?? 10}`} aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={productIcon(c.icon ?? 'figure')} /></svg>
+            {c.faction === 'villain' && <span class="tcr__villain" />}
+          </span>
+          <span class="tcr__name">{c.name}</span>
+          {(c.count !== undefined || c.faction) && (
+            <span class="tcr__meta">
+              {c.faction === 'villain' ? 'Villain' : c.faction === 'hero' ? 'Hero' : ''}
+              {c.faction && c.count !== undefined ? ' · ' : ''}
+              {c.count !== undefined && `${c.count} ${c.count === 1 ? 'item' : 'items'}`}
+            </span>
+          )}
+        </>
+      );
+      return (
+        <li>
+          {isFilter ? (
+            <button class="tcr__item" type="button" aria-pressed="false" data-tcr-id={c.id}>{inner}</button>
+          ) : (
+            <a class="tcr__item" href={c.href ?? '#'}>{inner}</a>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+</section>
+
+<script>
+  function initRails() {
+    document.querySelectorAll<HTMLElement>('[data-tcr]:not([data-tcr-bound])').forEach((rail) => {
+      rail.dataset.tcrBound = '';
+      const list = rail.querySelector<HTMLElement>('[data-tcr-list]')!;
+      const step = () => Math.max(160, list.clientWidth * 0.7);
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      rail.querySelector('[data-tcr-prev]')?.addEventListener('click', () => list.scrollBy({ left: -step(), behavior: reduce ? 'auto' : 'smooth' }));
+      rail.querySelector('[data-tcr-next]')?.addEventListener('click', () => list.scrollBy({ left: step(), behavior: reduce ? 'auto' : 'smooth' }));
+
+      if (rail.dataset.mode !== 'filter') return;
+      const facet = rail.dataset.facet || 'character';
+      const form = document.getElementById(rail.dataset.filters || '') as HTMLFormElement | null;
+      const all = rail.querySelector<HTMLButtonElement>('[data-tcr-all]');
+      const buttons = Array.from(rail.querySelectorAll<HTMLButtonElement>('[data-tcr-id]'));
+      const inputs = () => (form ? Array.from(form.querySelectorAll<HTMLInputElement>(`input[name="${CSS.escape(facet)}"]`)) : []);
+
+      // Without a form, the rail keeps its own selection and announces it with an event.
+      const own = new Set<string>();
+      const selected = () => (form ? inputs().filter((i) => i.checked).map((i) => i.value) : Array.from(own));
+
+      const sync = () => {
+        const chosen = selected();
+        buttons.forEach((b) => b.setAttribute('aria-pressed', String(chosen.includes(b.dataset.tcrId!))));
+        all?.setAttribute('aria-pressed', String(chosen.length === 0));
+      };
+
+      const commit = (values: string[]) => {
+        if (form) {
+          inputs().forEach((i) => { i.checked = values.includes(i.value); });
+          form.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          own.clear();
+          values.forEach((v) => own.add(v));
+          rail.dispatchEvent(new CustomEvent('ack:character-filter', { bubbles: true, detail: { facet, values } }));
+        }
+        sync();
+      };
+
+      buttons.forEach((b) => b.addEventListener('click', () => {
+        const id = b.dataset.tcrId!;
+        const chosen = selected();
+        commit(chosen.includes(id) ? chosen.filter((v) => v !== id) : [...chosen, id]);
+      }));
+      all?.addEventListener('click', () => commit([]));
+      form?.addEventListener('change', sync);
+      form?.addEventListener('reset', () => window.setTimeout(sync, 0));
+      // Initial state: FilterSidebar pre-checks from ?<facet>= but may run after this script,
+      // so mirror the URL into the form ourselves, then sync again once everything has loaded.
+      const fromUrl = (new URLSearchParams(window.location.search).get(facet) || '').split(',').filter(Boolean);
+      if (fromUrl.length) {
+        if (form) inputs().forEach((i) => { if (fromUrl.includes(i.value)) i.checked = true; });
+        else fromUrl.forEach((v) => own.add(v));
+      }
+      sync();
+      window.addEventListener('load', sync, { once: true });
+    });
+  }
+  initRails();
+  document.addEventListener('astro:page-load', initRails);
+</script>
+
+<style>
+  .tcr {
+    --tcr-edge: var(--toy-edge, var(--c-text-1, #17121f));
+    --tcr-drop: var(--toy-drop, var(--tcr-edge));
+    --tcr-size: 96px;
+    container-type: inline-size;
+  }
+  .tcr--sm { --tcr-size: 68px; }
+  .tcr--lg { --tcr-size: 124px; }
+
+  .tcr__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4, 1rem); margin-bottom: var(--sp-5, 1.25rem); }
+  .tcr__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .tcr__title { margin: 0; font-family: var(--font-display, inherit); font-size: clamp(1.6rem, 3.6vw, 2.4rem); font-weight: 400; line-height: 1.05; color: var(--c-text-1, #fff); }
+  .tcr__sub { margin: var(--sp-2, 0.5rem) 0 0; max-width: 46ch; color: var(--c-text-2, #a3a3a3); }
+  .tcr__tools { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); flex-shrink: 0; }
+  .tcr__link { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; margin-right: var(--sp-2, 0.5rem); font-weight: 800; white-space: nowrap; }
+  .tcr__arrow {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2.5px solid var(--tcr-edge);
+    border-radius: 50%;
+    background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a));
+    color: var(--c-text-1, #fff);
+    box-shadow: 3px 3px 0 var(--tcr-drop);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .tcr__arrow:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--tcr-drop); }
+  .tcr__arrow:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  .tcr__list {
+    display: flex;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 6px 8px 12px 4px;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .tcr__list::-webkit-scrollbar { display: none; }
+  .tcr__list > li { flex: 0 0 auto; scroll-snap-align: start; }
+
+  .tcr__item {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    width: calc(var(--tcr-size) + 28px);
+    padding: var(--sp-2, 0.5rem) 2px;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: none;
+    color: var(--c-text-1, #fff);
+    font: inherit;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tcr__avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--tcr-size);
+    height: var(--tcr-size);
+    border-radius: 50%;
+    border: 3px solid var(--tcr-edge);
+    background:
+      radial-gradient(rgb(0 0 0 / 0.14) 1.2px, transparent 1.6px) 0 0 / 8px 8px,
+      radial-gradient(circle at 50% 38%, hsl(var(--av-hue) 95% 72%), hsl(var(--av-hue) 82% 52%) 75%);
+    box-shadow: 4px 4px 0 var(--tcr-drop);
+    color: var(--toy-art-ink, #17121f);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  }
+  .tcr--soft .tcr__avatar { border-width: 0; box-shadow: none; }
+  .tcr__avatar svg { width: 62%; height: 62%; }
+  .tcr__avatar--all { --av-hue: 48; }
+  .tcr__avatar--all svg { width: 50%; height: 50%; }
+  .tcr__villain {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 30%;
+    height: 30%;
+    border: 2.5px solid var(--tcr-edge);
+    border-radius: 50%;
+    background: #17121f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff5c6c' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 9l4 2M18 9l-4 2M8 16c2.5-2 5.5-2 8 0'/%3E%3C/svg%3E") center / 70% no-repeat;
+  }
+  .tcr__name { font-family: var(--font-display, inherit); font-size: 0.92rem; line-height: 1.15; }
+  .tcr--sm .tcr__name { font-size: 0.8rem; }
+  .tcr__meta { font-size: 0.72rem; color: var(--c-text-2, #a3a3a3); }
+
+  .tcr__item:hover .tcr__avatar { transform: translateY(-4px) rotate(-5deg); }
+  .tcr__item[aria-pressed='true'] .tcr__avatar {
+    outline: 4px solid var(--toy-yellow, #ffd23f);
+    outline-offset: 3px;
+    transform: translateY(-3px);
+  }
+  .tcr__item[aria-pressed='true'] .tcr__name {
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--toy-yellow, #ffd23f);
+    color: #17121f;
+  }
+  .tcr__item:focus-visible { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .tcr__arrow:focus-visible, .tcr__link:focus-visible { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+
+  @container (max-width: 640px) {
+    .tcr__arrow { display: none; }
+    .tcr { --tcr-size: 76px; }
+    .tcr--sm { --tcr-size: 60px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tcr__avatar, .tcr__arrow { transition: none; }
+    .tcr__item:hover .tcr__avatar { transform: none; }
+  }
+</style>

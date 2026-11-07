@@ -1,0 +1,173 @@
+---
+/**
+ * ToySpecSheet — "Figure file" for toy product pages: a spec list (scale, height, articulation,
+ * age, materials, batteries…), an articulation badge, an "In the box" checklist of accessories and
+ * a safety warning strip.
+ *
+ * @param {string} title - Heading. Default 'Figure file'.
+ * @param {Array<{label: string, value: string}>} specs - Spec rows.
+ * @param {number} articulation - Points of articulation shown on the badge (0 hides it).
+ * @param {string} boxTitle - Accessories heading. Default 'In the box'.
+ * @param {string[]} accessories - Items included.
+ * @param {string} warning - Safety note (empty hides it). Default small-parts warning.
+ * @param {string} variant - Style (comic|plain). Default 'comic'.
+ * @param {string} size - Density (sm|md). Default 'md'.
+ * @param {string} headingLevel - Heading element (h2|h3). Default 'h2'.
+ * @param {string} id - Base id. Default 'spec-sheet'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: specs are a description list; accessories a real list; the warning has role="note"
+ * and a text prefix so it does not rely on the icon or colour.
+ */
+
+interface Props {
+  title?: string;
+  specs?: Array<{ label: string; value: string }>;
+  articulation?: number;
+  boxTitle?: string;
+  accessories?: string[];
+  warning?: string;
+  variant?: 'comic' | 'plain';
+  size?: 'sm' | 'md';
+  headingLevel?: 'h2' | 'h3';
+  id?: string;
+  className?: string;
+}
+
+const {
+  title = 'Figure file',
+  specs = [
+    { label: 'Scale', value: '6 in · 15 cm' },
+    { label: 'Height', value: '15 cm / 6 in' },
+    { label: 'Recommended age', value: '4+' },
+    { label: 'Materials', value: 'PVC and ABS plastic, painted by hand.' },
+    { label: 'Universe', value: 'Star Rangers' },
+  ],
+  articulation = 28,
+  boxTitle = 'In the box',
+  accessories = ['Star blaster', 'Soft-goods cape', '2 swap hands', 'Display stand'],
+  warning = 'Choking hazard — small parts. Not for children under 3 years.',
+  variant = 'comic',
+  size = 'md',
+  headingLevel = 'h2',
+  id = 'spec-sheet',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h2' ? 'h3' : 'h4';
+const titleId = `${id}-title`;
+---
+
+<section class:list={['tss', `tss--${variant}`, `tss--${size}`, className]} aria-labelledby={titleId}>
+  <div class="tss__grid">
+  <div class="tss__file">
+    <div class="tss__head">
+      <Heading class="tss__title" id={titleId}>{title}</Heading>
+      {articulation > 0 && (
+        <p class="tss__badge"><strong>{articulation}</strong> <span>points of articulation</span></p>
+      )}
+    </div>
+    <dl class="tss__specs">
+      {specs.map((s) => (
+        <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+      ))}
+    </dl>
+  </div>
+
+  {accessories.length > 0 && (
+    <div class="tss__box">
+      <Sub class="tss__box-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>
+        {boxTitle}
+      </Sub>
+      <ul class="tss__items">
+        {accessories.map((a) => <li>{a}</li>)}
+      </ul>
+    </div>
+  )}
+
+  {warning && (
+    <p class="tss__warning" role="note">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>
+      <span><strong>Warning:</strong> {warning}</span>
+    </p>
+  )}
+  </div>
+</section>
+
+<style>
+  .tss {
+    --tss-edge: var(--toy-edge, var(--c-text-1, #17121f));
+    --tss-drop: var(--toy-drop, var(--tss-edge));
+    container-type: inline-size;
+  }
+  .tss__grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--sp-5, 1.25rem); }
+  .tss__file, .tss__box {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a));
+  }
+  .tss--sm .tss__file, .tss--sm .tss__box { padding: var(--sp-4, 1rem); }
+  .tss--comic .tss__file, .tss--comic .tss__box { border: 3px solid var(--tss-edge); box-shadow: 5px 5px 0 var(--tss-drop); }
+  .tss--plain .tss__file, .tss--plain .tss__box { border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08)); }
+
+  .tss__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-bottom: var(--sp-4, 1rem); }
+  .tss__title { margin: 0; font-family: var(--font-display, inherit); font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 400; color: var(--c-text-1, #fff); }
+  .tss__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0.3rem 0.9rem 0.3rem 0.35rem;
+    border: 2.5px solid var(--tss-edge);
+    border-radius: 999px;
+    background: var(--toy-yellow, #ffd23f);
+    color: #17121f;
+    font-size: 0.8rem;
+    font-weight: 800;
+    transform: rotate(-2deg);
+  }
+  .tss__badge strong { display: grid; place-items: center; min-width: 36px; height: 36px; border-radius: 50%; background: #17121f; color: #fff; font-family: var(--font-display, inherit); font-size: 1rem; font-weight: 400; }
+
+  .tss__specs { display: grid; margin: 0; }
+  .tss__specs div { display: grid; grid-template-columns: minmax(110px, 0.6fr) 1fr; gap: var(--sp-4, 1rem); padding: var(--sp-3, 0.75rem) 0; border-top: 2px dashed rgb(var(--ink-rgb, 255 255 255) / 0.16); }
+  .tss__specs dt { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-2, #a3a3a3); }
+  .tss__specs dd { margin: 0; color: var(--c-text-1, #fff); line-height: 1.5; }
+
+  .tss__box-title { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0 0 var(--sp-4, 1rem); font-family: var(--font-display, inherit); font-size: 1.3rem; font-weight: 400; color: var(--c-text-1, #fff); }
+  .tss__box-title svg { color: var(--c-primary-light, #d4a017); }
+  .tss__items { display: grid; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .tss__items li { display: flex; align-items: flex-start; gap: var(--sp-3, 0.75rem); color: var(--c-text-1, #fff); line-height: 1.45; }
+  .tss__items li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    border: 2px solid var(--tss-edge);
+    border-radius: 6px;
+    background: var(--toy-yellow, #ffd23f) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317121f' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 13px no-repeat;
+  }
+
+  .tss__warning {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 2.5px solid #17121f;
+    border-radius: var(--r-md, 12px);
+    background: repeating-linear-gradient(-45deg, #ffd23f 0 14px, #ffe27a 14px 28px);
+    color: #17121f;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .tss__warning svg { flex-shrink: 0; }
+
+  @container (max-width: 720px) {
+    .tss__grid { grid-template-columns: 1fr; }
+    .tss__specs div { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

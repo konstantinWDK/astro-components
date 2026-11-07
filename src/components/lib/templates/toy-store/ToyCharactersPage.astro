@@ -1,0 +1,83 @@
+---
+/**
+ * ToyCharactersPage — Character roster for the toy store: ToyCharacterGrid with hero / villain and
+ * universe filters, then "shop by universe" tiles and the gift finder by age.
+ *
+ * Usage (src/pages/characters/index.astro):
+ *   import { ToyCharactersPage } from 'astro-component-kit/templates/toy-store';
+ *   <ToyCharactersPage />
+ *
+ * @param {ToyStore} store - Catalogue and settings. Default: Kapow demo store.
+ * @param {ToyRoutes} routes - Page URLs.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import ToyLayout from './ToyLayout.astro';
+import ToyCharacterGrid from '../../sections/ToyCharacterGrid.astro';
+import ToyAgeFinder from '../../sections/ToyAgeFinder.astro';
+import CategoryTiles from '../../ecommerce/CategoryTiles.astro';
+import { kapowStore, toyRoutes, toyCharacterItems, toyProducts, toyShopHref, type ToyStore, type ToyRoutes } from './data';
+
+interface Props {
+  store?: ToyStore;
+  routes?: ToyRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { store = kapowStore, routes = toyRoutes, seedCart = false, noindex = false, theme = 'light' } = Astro.props;
+
+const all = toyProducts(store);
+const universes = store.universes.map((u) => ({
+  ...u,
+  href: toyShopHref(routes, { universe: u.id }),
+  count: all.filter((p) => (p.facets?.universe as string[]).includes(u.id)).length,
+}));
+const ages = store.ages.map((a) => ({
+  ...a,
+  href: toyShopHref(routes, { age: a.id }),
+  count: all.filter((p) => (p.facets?.age as string[]).includes(a.id)).length,
+}));
+---
+
+<ToyLayout theme={theme} title="Characters" description={`Meet all ${store.characters.length} heroes and villains and shop their figures.`} store={store} routes={routes} currentHref={routes.characters} seedCart={seedCart} noindex={noindex}>
+  <div class="kapow-container roster">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={routes.home}>Home</a></li>
+        <li><span aria-current="page">Characters</span></li>
+      </ol>
+    </nav>
+
+    <ToyCharacterGrid
+      headingLevel="h1"
+      eyebrow={`${store.universes.length} universes · ${store.characters.length} characters`}
+      title="Pick a side"
+      subtitle="Every hero has a nemesis. Open a character to read their file, check their power levels and shop all of their figures."
+      characters={toyCharacterItems(store, routes)}
+      universes={store.universes.map((u) => ({ id: u.id, name: u.name }))}
+      powers={2}
+    />
+
+    <div class="roster__block">
+      <CategoryTiles title="Shop by universe" categories={universes} columns={5} countLabel="toys" />
+    </div>
+
+    <div class="roster__block">
+      <ToyAgeFinder groups={ages} variant="pills" title="Shopping for someone?" eyebrow="Gift finder" />
+    </div>
+  </div>
+</ToyLayout>
+
+<style>
+  .roster { padding-block: var(--sp-6) clamp(3rem, 7vw, 5rem); }
+  .roster__block { margin-top: clamp(3rem, 7vw, 5rem); }
+  .crumbs ol { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0 0 var(--sp-6); padding: 0; list-style: none; font-size: 0.85rem; }
+  .crumbs li { display: flex; align-items: center; gap: var(--sp-2); color: var(--c-text-2); }
+  .crumbs li + li::before { content: '/'; opacity: 0.5; }
+  .crumbs a { color: var(--c-text-2); }
+  .crumbs a:hover { color: var(--c-text-1); }
+  .crumbs [aria-current='page'] { color: var(--c-text-1); font-weight: 700; }
+</style>

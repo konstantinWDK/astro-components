@@ -1,0 +1,87 @@
+---
+/**
+ * ClinicSchedulePage — Practice schedule: MedScheduleCalendar (week / day, per-clinician colours,
+ * overlap lanes, now line, detail panel) and today's full appointment list in a DataTable.
+ *
+ * Usage (src/pages/app/schedule.astro):
+ *   import { ClinicSchedulePage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicSchedulePage />
+ *
+ * @param {ClinicData} data - Workspace data.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import MedScheduleCalendar from '../../app/MedScheduleCalendar.astro';
+import DataTable from '../../app/DataTable.astro';
+import { clinicData, clinicRoutes, clinicPatient, clinicDoctor, todaysAppointments, patientHref, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+
+const short = (name: string) => name.replace(/^Dr\. (\w+) /, 'Dr. ').replace(/^(\w)\w+ (\w+), PsyD$/, '$1. $2');
+const doctors = data.doctors.map((d) => ({ id: d.id, name: short(d.name), hue: d.hue }));
+const appointments = data.appointments.map((a) => ({
+  id: a.id,
+  day: a.day,
+  start: a.start,
+  duration: a.duration,
+  doctor: a.doctor,
+  patient: clinicPatient(data, a.patient)?.name ?? '',
+  type: a.type,
+  reason: a.reason,
+  status: a.status,
+  href: a.type === 'video' ? routes.telehealth : routes.consultation,
+  recordHref: patientHref(routes, a.patient),
+}));
+const statusLabel: Record<string, string> = { confirmed: 'Confirmed', 'checked-in': 'Waiting', 'in-progress': 'In consultation', completed: 'Completed', 'no-show': 'No-show', cancelled: 'Cancelled' };
+const rows = todaysAppointments(data).map((a) => {
+  const p = clinicPatient(data, a.patient)!;
+  return {
+    time: a.start,
+    patient: { name: p.name, sub: p.mrn },
+    clinician: clinicDoctor(data, a.doctor)?.name ?? '',
+    type: a.type === 'video' ? 'Video' : 'In person',
+    reason: a.reason,
+    status: statusLabel[a.status],
+  };
+});
+---
+
+<ClinicLayout title="Schedule" current="schedule" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Schedule"
+    description={`${data.appointments.filter((a) => a.status !== 'cancelled').length} appointments this week across ${data.doctors.length} clinicians.`}
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Schedule' }]}
+    actions={[{ label: 'Print day sheet', icon: 'download' }, { label: 'New appointment', icon: 'plus', primary: true }]}
+    periods={['Day', 'Week', 'Month']}
+    activePeriod={1}
+  />
+
+  <MedScheduleCalendar hourHeight={84} days={data.days} today={data.today} now={data.now} doctors={doctors} appointments={appointments} />
+
+  <DataTable
+    id="today-appointments"
+    title={`Today · ${data.days[data.today]}`}
+    columns={[
+      { key: 'time', label: 'Time', sortable: true },
+      { key: 'patient', label: 'Patient', type: 'person', sortable: true },
+      { key: 'clinician', label: 'Clinician', sortable: true },
+      { key: 'type', label: 'Type' },
+      { key: 'reason', label: 'Reason' },
+      { key: 'status', label: 'Status', type: 'status' },
+    ]}
+    rows={rows}
+    statusTones={{ Confirmed: 'info', Waiting: 'warning', 'In consultation': 'info', Completed: 'success', 'No-show': 'danger', Cancelled: 'default' }}
+    filterKey="status"
+    bulkActions={['Send reminder', 'Export']}
+    searchPlaceholder="Search today’s list…"
+    pageSize={8}
+  />
+</ClinicLayout>

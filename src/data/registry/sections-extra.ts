@@ -617,4 +617,177 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ["contact", "form", "validation", "portfolio"],
     usage: `<DevContactForm action="https://your-backend/contact" contacts={[{ label: 'Email', value: 'hi@you.dev', href: 'mailto:hi@you.dev' }]} />`,
   }),
+
+  // === TOY STORE ("Kapow") ===
+  section({
+    slug: 'toy-hero', name: 'Toy Hero', file: 'ToyHero.astro', sectionCategory: 'toys',
+    description: "Comic-book store hero: burst eyebrow, oversized headline with a highlighted word, CTAs and stats beside a halftone stage with the featured figure, a starburst price sticker and floating sidekick avatars.",
+    tags: ["hero", "toys", "comic", "ecommerce"], featured: true,
+    usage: `<ToyHero
+  title="Every hero needs a"
+  highlight="sidekick"
+  primary={{ label: 'Shop all figures', href: '/shop/' }}
+  product={{ slug: 'captain-nova-6in', name: 'Captain Nova', price: 24.99, category: 'figures', icon: 'figure', hue: 212 }}
+  productHref="/product/captain-nova-6in/"
+/>`,
+  }),
+  section({
+    slug: 'toy-character-rail', name: 'Toy Character Rail', file: 'ToyCharacterRail.astro', sectionCategory: 'toys',
+    description: "Shop-by-character rail of round comic avatars. Links to character pages, or (filter mode) toggles a FilterSidebar character facet so the grid shows only that character's figures — multi-select, URL-synced.",
+    tags: ["characters", "filters", "avatars", "toys", "carousel"], featured: true,
+    usage: `<!-- Link mode -->
+<ToyCharacterRail characters={[{ id: 'vex', name: 'Vex', icon: 'figure', hue: 286, faction: 'villain', href: '/characters/vex/' }]} />
+
+<!-- Filter mode: drives FilterSidebar's "character" facet -->
+<ToyCharacterRail mode="filter" filters="toy-filters" facet="character" title="" characters={characters} />`,
+  }),
+  section({
+    slug: 'toy-character-grid', name: 'Toy Character Grid', file: 'ToyCharacterGrid.astro', sectionCategory: 'toys',
+    description: "Character roster as trading cards (avatar, alias, universe, hero / villain stamp, power meters, figure count) with instant side and universe filters and a live count.",
+    tags: ["characters", "grid", "filters", "toys", "cards"], featured: true,
+    usage: `<ToyCharacterGrid
+  characters={[{ id: 'vex', name: 'Vex', alias: 'The Void Empress', icon: 'figure', hue: 286, href: '/characters/vex/',
+    universe: 'Star Rangers', universeId: 'star-rangers', faction: 'villain', count: 3, powers: [{ label: 'Cunning', value: 10 }] }]}
+  universes={[{ id: 'star-rangers', name: 'Star Rangers' }]}
+/>`,
+  }),
+  section({
+    slug: 'toy-character-hero', name: 'Toy Character Hero', file: 'ToyCharacterHero.astro', sectionCategory: 'toys',
+    description: "Character profile header: comic panel with art, hero / villain stamp and speech-bubble quote, plus universe, name, alias, bio, power-level meters, facts and CTAs.",
+    tags: ["character", "profile", "hero", "toys", "meter"],
+    usage: `<ToyCharacterHero
+  character={{ name: 'Kira Blaze', alias: 'Fire-blade ninja', icon: 'ninja', hue: 12, faction: 'hero', universe: 'Shadow Clan',
+    quote: 'Fear is just fuel.', powers: [{ label: 'Speed', value: 10 }, { label: 'Focus', value: 9 }] }}
+  count={3}
+  primary={{ label: 'Shop Kira Blaze', href: '#figures' }}
+/>`,
+  }),
+  section({
+    slug: 'toy-age-finder', name: 'Toy Age Finder', file: 'ToyAgeFinder.astro', sectionCategory: 'toys',
+    description: "\"Who is it for?\" gift finder: colourful age-group tiles (range, name, description, toy count) that link to a pre-filtered catalogue, plus optional budget links.",
+    tags: ["gift-finder", "age", "toys", "navigation"],
+    usage: `<ToyAgeFinder
+  groups={[{ id: 'kids', name: 'Kids', range: '6–8', icon: 'figure', hue: 8, href: '/shop/?age=kids', count: 14 }]}
+  budgets={[{ label: 'Under $25', href: '/shop/?max=25' }]}
+/>`,
+  }),
+  section({
+    slug: 'toy-spec-sheet', name: 'Toy Spec Sheet', file: 'ToySpecSheet.astro', sectionCategory: 'toys',
+    description: "\"Figure file\" for toy product pages: specs (scale, size, age, materials, batteries), articulation badge, \"In the box\" checklist and a small-parts safety warning.",
+    tags: ["specs", "product-page", "toys", "safety"],
+    usage: `<ToySpecSheet
+  specs={[{ label: 'Scale', value: '6 in · 15 cm' }, { label: 'Recommended age', value: '4+' }]}
+  articulation={28}
+  accessories={['Star blaster', 'Display stand']}
+/>`,
+  }),
+  section({
+    slug: 'toy-collector-club', name: 'Toy Collector Club', file: 'ToyCollectorClub.astro', sectionCategory: 'toys',
+    description: "Loyalty band for toy and collectibles stores: perks, an animated stamp card, membership tiers and a join form with inline validation.",
+    tags: ["loyalty", "newsletter", "membership", "toys", "form"],
+    usage: `<ToyCollectorClub filled={6} stamps={10} action="https://your-backend/club" />`,
+  }),
+
+  // === HEALTHCARE ("Pulso") ===
+  section({
+    slug: 'med-hero', name: 'Med Hero', file: 'MedHero.astro', sectionCategory: 'healthcare',
+    description: "Landing hero for healthcare software: badge, headline with a highlighted phrase, CTAs and trust points beside an HTML mock-up of today's agenda, a video visit and a booking notice.",
+    tags: ["hero", "healthcare", "saas", "clinic"], featured: true,
+    usage: `<MedHero title="Run your practice," highlight="not your paperwork" primary={{ label: 'Start free', href: '/sign-in/' }} />`,
+  }),
+  section({
+    slug: 'med-doctor-directory', name: 'Med Doctor Directory', file: 'MedDoctorDirectory.astro', sectionCategory: 'healthcare',
+    description: "Find-a-doctor section: search by name or language, specialty chips and a video toggle filter clinician cards with rating, fee, availability and a Book link.",
+    tags: ["doctors", "directory", "filters", "healthcare", "team"], featured: true,
+    usage: `<MedDoctorDirectory bookHref="/book/#book"
+  specialties={[{ id: 'general', name: 'General practice' }]}
+  doctors={[{ id: 'dr-navarro', name: 'Dr. Laura Navarro', specialty: 'general', rating: 4.9, fee: 60, telehealth: true, days: [0, 2, 4] }]} />`,
+  }),
+  section({
+    slug: 'med-booking-wizard', name: 'Med Booking Wizard', file: 'MedBookingWizard.astro', sectionCategory: 'healthcare',
+    description: "Online appointment booking in four accessible steps — service, clinician and visit type, day and slot, patient details and consent — with a reference and an .ics calendar file.",
+    tags: ["booking", "appointments", "form", "wizard", "healthcare"], featured: true,
+    usage: `<!-- Pre-select with ?doctor=dr-navarro or ?specialty=general -->
+<MedBookingWizard clinic="Clínica Alameda" specialties={specialties} doctors={doctors} />`,
+  }),
+
+  // === CYBERPUNK / BRUTALIST ("NULL/SECTOR") ===
+  section({
+    slug: 'cyber-header', name: 'Cyber Header', file: 'CyberHeader.astro', sectionCategory: 'cyberpunk',
+    description: 'Brutalist cyberpunk navigation: bracketed wordmark, numbered links on hard rules, blinking system status, NIGHT / DAY switch, acid CTA and a full-screen mobile menu.',
+    tags: ['header', 'navbar', 'cyberpunk', 'brutalist'], featured: true,
+    usage: `<CyberHeader brand="NULL/SECTOR" links={[{ label: 'Protocol', href: '/protocol/' }]} cta={{ label: 'Jack in', href: '/pricing/' }} />`,
+  }),
+  section({
+    slug: 'cyber-hero', name: 'Cyber Hero', file: 'CyberHero.astro', sectionCategory: 'cyberpunk',
+    description: 'Futuristic-brutalist hero: HUD bar with live UTC clock, colossal headline with a glitching and an outlined line, CyberpunkButton + NeonBorderButton CTAs and a live telemetry panel over a perspective grid floor.',
+    tags: ['hero', 'cyberpunk', 'glitch', 'hud'], featured: true,
+    usage: `<CyberHero lines={['RENT THE', 'DARK SIDE', 'OF THE GRID']} glitch={1} primary={{ label: 'Jack in', href: '/pricing/' }} />`,
+  }),
+  section({
+    slug: 'cyber-ticker', name: 'Cyber Ticker', file: 'CyberTicker.astro', sectionCategory: 'cyberpunk',
+    description: 'Brutalist status marquee in acid, ink or outline style, tiltable and reversible, with a pause button and a static fallback for reduced motion.',
+    tags: ['marquee', 'ticker', 'cyberpunk', 'status'],
+    usage: `<CyberTicker items={['NODE TYO-04 ONLINE', 'BLOCK 18,204,113 SEALED']} variant="acid" />`,
+  }),
+  section({
+    slug: 'cyber-bento', name: 'Cyber Bento', file: 'CyberBento.astro', sectionCategory: 'cyberpunk',
+    description: 'Feature grid on hard rules with numbered cells, wide and tall spans and big stat readouts; each cell is a CyberFeatureCard.',
+    tags: ['features', 'bento', 'grid', 'cyberpunk'], featured: true,
+    usage: `<CyberBento features={[{ code: '01', title: 'Spot clusters in 9 seconds', text: '…', stat: '9S', span: 'wide' }]} />`,
+  }),
+  section({
+    slug: 'cyber-node-map', name: 'Cyber Node Map', file: 'CyberNodeMap.astro', sectionCategory: 'cyberpunk',
+    description: 'Dot-matrix world map with nodes by latitude / longitude, animated links, pulsing status rings and a scanner sweep, next to a live regions table.',
+    tags: ['map', 'network', 'infrastructure', 'cyberpunk', 'svg'], featured: true,
+    usage: `<CyberNodeMap nodes={[{ id: 'ams', city: 'Amsterdam', lat: 52.4, lon: 4.9, gpus: 5260, latency: 22 }]} connections={[['ams', 'nyc']]} />`,
+  }),
+  section({
+    slug: 'cyber-page-hero', name: 'Cyber Page Hero', file: 'CyberPageHero.astro', sectionCategory: 'cyberpunk',
+    description: 'Inner-page header: SYS:// breadcrumb, giant outlined index number, uppercase title with an outlined line, intro and meta tags; scan, plain or acid background.',
+    tags: ['header', 'page-hero', 'cyberpunk', 'brutalist'],
+    usage: `<CyberPageHero index="02" title="PAY PER" outline="SECOND" variant="acid" />`,
+  }),
+  section({
+    slug: 'cyber-spec-table', name: 'Cyber Spec Table', file: 'CyberSpecTable.astro', sectionCategory: 'cyberpunk',
+    description: 'Grouped spec sheet on a brutalist grid with classified values that decrypt with a scramble effect, a decrypt-all switch and a HackerDecodeText heading.',
+    tags: ['specs', 'table', 'redacted', 'cyberpunk'],
+    usage: `<CyberSpecTable groups={[{ group: 'SECURITY', rows: [{ key: 'Key custody', value: 'Customer-held', redacted: true }] }]} />`,
+  }),
+  section({
+    slug: 'cyber-pricing', name: 'Cyber Pricing', file: 'CyberPricing.astro', sectionCategory: 'cyberpunk',
+    description: "Brutalist pricing with monthly / annual switch and a usage slider that recalculates every tier's estimated bill live; inverted acid featured plan and CyberpunkButton CTAs.",
+    tags: ['pricing', 'calculator', 'slider', 'cyberpunk'], featured: true,
+    usage: `<CyberPricing hours={200} plans={[{ id: 'runner', name: 'RUNNER', monthly: 49, annual: 39, rate: 0.48, credits: 400, features: ['H100'], cta: 'Jack in', featured: true }]} />`,
+  }),
+  section({
+    slug: 'cyber-manifesto', name: 'Cyber Manifesto', file: 'CyberManifesto.astro', sectionCategory: 'cyberpunk',
+    description: 'Numbered theses with giant outlined numbers and uppercase statements that light up as they scroll into view, with a signed closing line.',
+    tags: ['manifesto', 'about', 'scroll', 'cyberpunk'],
+    usage: `<CyberManifesto theses={[{ title: 'Compute is a commons.', text: '…' }]} />`,
+  }),
+  section({
+    slug: 'cyber-crew-grid', name: 'Cyber Crew Grid', file: 'CyberCrewGrid.astro', sectionCategory: 'cyberpunk',
+    description: 'Team as access badges: generated pixel-glyph avatars, handle, ID code, role, location and a clearance meter, with a glitch shift on hover.',
+    tags: ['team', 'badges', 'identicon', 'cyberpunk'],
+    usage: `<CyberCrewGrid crew={[{ name: 'Mara Okonkwo', handle: 'm4ra', role: 'Founder', clearance: 5 }]} />`,
+  }),
+  section({
+    slug: 'cyber-status-board', name: 'Cyber Status Board', file: 'CyberStatusBoard.astro', sectionCategory: 'cyberpunk',
+    description: 'Uptime board: overall status banner and one row per region with a 60-day strip, uptime %, ping and current state.',
+    tags: ['status', 'uptime', 'monitoring', 'cyberpunk'],
+    usage: `<CyberStatusBoard regions={[{ name: 'EU-WEST', city: 'Amsterdam', uptime: 100, latency: 22 }]} />`,
+  }),
+  section({
+    slug: 'cyber-terminal-form', name: 'Cyber Terminal Form', file: 'CyberTerminalForm.astro', sectionCategory: 'cyberpunk',
+    description: 'Contact form driven like a command line: one prompt at a time, /help /back /clear /status commands, ticket on send, and a plain-form switch. Uses CyberpunkCheckbox and NeonSpinner.',
+    tags: ['contact', 'form', 'terminal', 'cyberpunk'], featured: true,
+    usage: `<CyberTerminalForm action="https://your-backend/contact" />`,
+  }),
+  section({
+    slug: 'cyber-footer', name: 'Cyber Footer', file: 'CyberFooter.astro', sectionCategory: 'cyberpunk',
+    description: 'Brutalist footer with an uplink sign-up, link columns on hard rules, live block counter and a colossal outlined wordmark.',
+    tags: ['footer', 'newsletter', 'cyberpunk', 'wordmark'],
+    usage: `<CyberFooter brand="NULL/SECTOR" />`,
+  }),
 ];

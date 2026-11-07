@@ -1,0 +1,87 @@
+---
+/**
+ * CyberHomePage — NULL/SECTOR home: CyberHero with live telemetry, status ticker, partner wall,
+ * CyberBento of capabilities (CyberFeatureCard), CyberNodeMap, stats band, an "access window"
+ * breach banner (CyberGlitchAlert + CyberpunkButton) and a reversed ticker.
+ *
+ * Usage (src/pages/index.astro):
+ *   import { CyberHomePage } from 'astro-component-kit/templates/cyberpunk';
+ *   <CyberHomePage />
+ *
+ * @param {CyberData} data - Site content. Default: NULL/SECTOR demo.
+ * @param {CyberRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import CyberLayout from './CyberLayout.astro';
+import CyberHero from '../../sections/CyberHero.astro';
+import CyberTicker from '../../sections/CyberTicker.astro';
+import CyberBento from '../../sections/CyberBento.astro';
+import CyberNodeMap from '../../sections/CyberNodeMap.astro';
+import LogoWallGrid from '../../sections/LogoWallGrid.astro';
+import StatsCounterBand from '../../sections/StatsCounterBand.astro';
+import CyberGlitchAlert from '../../feedback/CyberGlitchAlert.astro';
+import CyberpunkButton from '../../buttons/CyberpunkButton.astro';
+import { nullSector, cyberRoutes, type CyberData, type CyberRoutes } from './data';
+
+interface Props {
+  data?: CyberData;
+  routes?: CyberRoutes;
+  theme?: 'dark' | 'light' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = nullSector, routes = cyberRoutes, theme = 'dark', noindex = false } = Astro.props;
+const h = data.hero;
+---
+
+<CyberLayout title={`${data.brand} — decentralised GPU compute`} description={data.tagline} data={data} routes={routes} current="home" theme={theme} noindex={noindex}>
+  <CyberHero
+    eyebrow={h.eyebrow}
+    lines={h.lines}
+    glitch={h.glitch}
+    subtitle={h.subtitle}
+    primary={{ label: h.primary.label, href: routes.pricing }}
+    secondary={{ label: h.secondary.label, href: routes.protocol }}
+    readout={h.readout}
+  />
+
+  <CyberTicker items={data.ticker} />
+
+  <div class="ns-wrap">
+    <LogoWallGrid title="Running on the grid right now" columns={6} variant="divided" logos={data.partners} />
+  </div>
+
+  <div class="ns-wrap">
+    <CyberBento eyebrow="[02] CAPABILITIES" title="Built for workloads that refuse to wait" subtitle="Everything the hyperscalers sell you — minus the data centre, the lock-in and the logs." features={data.features} />
+  </div>
+
+  <div class="ns-wrap">
+    <CyberNodeMap eyebrow="[03] THE GRID" title="Live on six continents" subtitle="Every square is a city where idle GPUs are waiting for your job. Links show the busiest routes right now." nodes={data.nodes} connections={data.connections} />
+  </div>
+
+  <div class="ns-wrap">
+    <StatsCounterBand title="The grid in numbers" stats={data.stats} variant="divided" />
+  </div>
+
+  <section class="ns-wrap ns-wrap--last" aria-labelledby="breach-title">
+    <div class="breach">
+      <div class="breach__alert"><CyberGlitchAlert message={data.breach.message} accentColor="var(--cy-cyan, #00f0ff)" /></div>
+      <div class="breach__copy">
+        <h2 id="breach-title">500 free GPU-hours</h2>
+        <p>{data.breach.text}</p>
+      </div>
+      <CyberpunkButton href={routes.pricing} label="Claim access" size="lg" primaryColor="var(--cy-cta-bg, #d1002f)" secondaryColor="var(--cy-cyan, #00f0ff)">Claim access</CyberpunkButton>
+    </div>
+  </section>
+
+  <CyberTicker items={data.ticker.slice().reverse()} variant="outline" size="lg" reverse speed={60} label="Grid events, reversed" />
+</CyberLayout>
+
+<style>
+  .breach { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; align-items: center; gap: var(--sp-6); padding: var(--sp-6); border: 2px solid var(--cy-edge); background: repeating-linear-gradient(-45deg, transparent 0 16px, rgb(var(--ink-rgb) / 0.04) 16px 32px); }
+  .breach h2 { margin: 0; font-size: clamp(1.6rem, 3.6vw, 2.6rem); line-height: 1; color: var(--c-text-1); }
+  .breach p { margin: var(--sp-3) 0 0; line-height: 1.7; }
+  .breach__alert :global(*) { max-width: 100%; }
+  @media (max-width: 960px) { .breach { grid-template-columns: 1fr; } }
+</style>

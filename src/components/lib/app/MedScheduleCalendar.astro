@@ -1,0 +1,373 @@
+---
+/**
+ * MedScheduleCalendar — Clinic schedule: a week / day time grid with appointments coloured by
+ * clinician, overlap lanes, a "now" line, doctor filter chips, an in-person / video legend and a
+ * detail panel for the selected appointment (patient, time, reason, actions).
+ *
+ * @param {string[]} days - Column labels (e.g. ['Mon 3', 'Tue 4', …]).
+ * @param {number} today - Index of today's column (-1 for none). Default 2.
+ * @param {string} now - Current time "HH:MM" for the now line (empty hides it). Default '10:40'.
+ * @param {number} startHour - First hour shown. Default 8.
+ * @param {number} endHour - Last hour shown (exclusive). Default 19.
+ * @param {number} hourHeight - Pixel height of one hour. Default 64.
+ * @param {Array<{id: string, name: string, hue: number}>} doctors - Clinicians (colour + filter).
+ * @param {Array<{id: string, day: number, start: string, duration: number, doctor: string, patient: string, type: 'in-person'|'video', reason?: string, status?: string, href?: string, recordHref?: string}>} appointments - Events.
+ * @param {string} view - Initial view (week|day). Default 'week'.
+ * @param {string} id - Base id. Default 'schedule'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: appointments are buttons with a full text label (day, time, patient, clinician,
+ * type, status); the detail panel is a labelled live region that receives the selection; filter
+ * chips are toggle buttons; the view switch is a radio group; the grid scrolls horizontally inside
+ * a focusable, labelled region on small screens.
+ */
+import { appIcon } from './app-icons';
+
+interface Doctor { id: string; name: string; hue: number }
+interface Appt {
+  id: string;
+  day: number;
+  start: string;
+  duration: number;
+  doctor: string;
+  patient: string;
+  type: 'in-person' | 'video';
+  reason?: string;
+  status?: string;
+  href?: string;
+  recordHref?: string;
+}
+
+interface Props {
+  days?: string[];
+  today?: number;
+  now?: string;
+  startHour?: number;
+  endHour?: number;
+  hourHeight?: number;
+  doctors?: Doctor[];
+  appointments?: Appt[];
+  view?: 'week' | 'day';
+  id?: string;
+  className?: string;
+}
+
+const {
+  days = ['Mon 2', 'Tue 3', 'Wed 4', 'Thu 5', 'Fri 6'],
+  today = 2,
+  now = '10:40',
+  startHour = 8,
+  endHour = 19,
+  hourHeight = 64,
+  doctors = [
+    { id: 'navarro', name: 'Dr. Navarro', hue: 190 },
+    { id: 'okafor', name: 'Dr. Okafor', hue: 350 },
+    { id: 'sato', name: 'Dr. Sato', hue: 150 },
+  ],
+  appointments = [
+    { id: '1', day: 2, start: '09:00', duration: 30, doctor: 'okafor', patient: 'James Whitfield', type: 'in-person', reason: 'AF follow-up', status: 'completed' },
+    { id: '2', day: 2, start: '10:30', duration: 30, doctor: 'navarro', patient: 'Elena Duarte', type: 'in-person', reason: 'Blood pressure follow-up', status: 'in-progress' },
+    { id: '3', day: 2, start: '10:30', duration: 30, doctor: 'okafor', patient: 'David Cohen', type: 'in-person', reason: 'Hypertension review', status: 'checked-in' },
+    { id: '4', day: 1, start: '10:00', duration: 20, doctor: 'sato', patient: 'Mei Chen', type: 'in-person', reason: 'Allergy review', status: 'completed' },
+    { id: '5', day: 3, start: '11:30', duration: 20, doctor: 'navarro', patient: 'Lucas Silva', type: 'video', reason: 'Inhaler technique', status: 'confirmed' },
+  ],
+  view = 'week',
+  id = 'schedule',
+  className = '',
+} = Astro.props;
+
+const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+const doctorById = Object.fromEntries(doctors.map((d) => [d.id, d]));
+const statusLabel: Record<string, string> = {
+  confirmed: 'Confirmed', 'checked-in': 'Waiting', 'in-progress': 'In consultation', completed: 'Completed', 'no-show': 'No-show', cancelled: 'Cancelled',
+};
+
+// Overlap lanes per day: clusters of overlapping events share the column width.
+type Placed = Appt & { lane: number; lanes: number; top: number; height: number };
+const placed: Placed[] = [];
+days.forEach((_, d) => {
+  const list = appointments.filter((a) => a.day === d).sort((a, b) => toMin(a.start) - toMin(b.start));
+  let cluster: Placed[] = [];
+  let clusterEnd = -1;
+  let laneEnds: number[] = [];
+  const flush = () => { const n = Math.max(1, laneEnds.length); cluster.forEach((c) => { c.lanes = n; }); placed.push(...cluster); cluster = []; laneEnds = []; };
+  for (const a of list) {
+    const s = toMin(a.start);
+    const e = s + a.duration;
+    if (s >= clusterEnd && cluster.length) flush();
+    let lane = laneEnds.findIndex((end) => end <= s);
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(e); } else laneEnds[lane] = e;
+    clusterEnd = Math.max(clusterEnd, e);
+    cluster.push({ ...a, lane, lanes: 1, top: ((s - startHour * 60) / 60) * hourHeight, height: Math.max(22, (a.duration / 60) * hourHeight - 3) });
+  }
+  if (cluster.length) flush();
+});
+const nowTop = now && today >= 0 ? ((toMin(now) - startHour * 60) / 60) * hourHeight : -1;
+const showNow = nowTop >= 0 && nowTop <= hours.length * hourHeight;
+---
+
+<section class:list={['cal', { 'cal--day': view === 'day' }, className]} aria-labelledby={`${id}-title`} data-cal data-today={today} style={`--cal-hour: ${hourHeight}px; --cal-days: ${days.length}`}>
+  <div class="cal__toolbar">
+    <h2 class="cal__title" id={`${id}-title`}>Schedule</h2>
+    <fieldset class="cal__view">
+      <legend class="sr-only">View</legend>
+      <label><input type="radio" name={`${id}-view`} value="week" checked={view === 'week'} data-cal-view /><span>Week</span></label>
+      <label><input type="radio" name={`${id}-view`} value="day" checked={view === 'day'} data-cal-view /><span>Day</span></label>
+    </fieldset>
+    <ul class="cal__doctors" aria-label="Show clinicians">
+      {doctors.map((d) => (
+        <li><button type="button" class="cal__doc" aria-pressed="true" data-cal-doctor={d.id} style={`--dh: ${d.hue}`}><span aria-hidden="true"></span>{d.name}</button></li>
+      ))}
+    </ul>
+    <p class="cal__legend" aria-hidden="true">
+      <span class="cal__legend-item"><i class="cal__swatch"></i>In person</span>
+      <span class="cal__legend-item"><i class="cal__swatch cal__swatch--video"></i>Video</span>
+    </p>
+  </div>
+
+  <div class="cal__layout">
+    <div class="cal__scroll" role="region" aria-label="Schedule grid" tabindex="0">
+      <div class="cal__grid">
+        <div class="cal__corner" aria-hidden="true"></div>
+        {days.map((d, i) => (
+          <button type="button" class:list={['cal__dayhead', { 'is-today': i === today, 'is-selected': i === today }]} data-cal-dayhead={i} aria-label={`Show ${d} only`}>
+            {d}{i === today && <span class="cal__today">Today</span>}
+          </button>
+        ))}
+
+        <div class="cal__hours" aria-hidden="true">
+          {hours.map((h) => <span style={`top: ${(h - startHour) * hourHeight}px`}>{String(h).padStart(2, '0')}:00</span>)}
+        </div>
+
+        {days.map((dayLabel, i) => (
+          <div class:list={['cal__col', { 'is-today': i === today, 'is-selected': i === today }]} data-cal-col={i} style={`height: ${hours.length * hourHeight}px`}>
+            {i === today && showNow && <span class="cal__now" style={`top: ${nowTop}px`} aria-hidden="true"><span>{now}</span></span>}
+            {placed.filter((a) => a.day === i).map((a) => {
+              const doc = doctorById[a.doctor];
+              const end = fmt(toMin(a.start) + a.duration);
+              const status = a.status ? statusLabel[a.status] ?? a.status : '';
+              const detail = JSON.stringify({ patient: a.patient, day: dayLabel, time: `${a.start}–${end}`, doctor: doc?.name ?? '', type: a.type, reason: a.reason ?? '', status, href: a.href ?? '', recordHref: a.recordHref ?? '' });
+              return (
+                <button
+                  type="button"
+                  class:list={['cal__event', `cal__event--${a.type}`, a.status && `is-${a.status}`, { 'is-short': a.height < 40 }]}
+                  style={`top: ${a.top}px; height: ${a.height}px; left: calc(${(a.lane / a.lanes) * 100}% + 2px); width: calc(${100 / a.lanes}% - 4px); --dh: ${doc?.hue ?? 190}`}
+                  data-cal-event
+                  data-doctor={a.doctor}
+                  data-detail={detail}
+                  aria-label={`${dayLabel}, ${a.start} to ${end}: ${a.patient} with ${doc?.name ?? ''}, ${a.type === 'video' ? 'video visit' : 'in person'}${status ? `, ${status}` : ''}`}
+                >
+                  <span class="cal__event-time">{a.start}</span>
+                  <span class="cal__event-name">{a.patient}</span>
+                  {a.height > 40 && a.reason && <span class="cal__event-reason">{a.reason}</span>}
+                  {a.type === 'video' && (
+                    <svg class="cal__event-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><Fragment set:html={appIcon('video')} /></svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <aside class="cal__detail" aria-labelledby={`${id}-detail-title`} aria-live="polite" data-cal-detail>
+      <h3 class="cal__detail-title" id={`${id}-detail-title`}>Appointment</h3>
+      <p class="cal__detail-empty" data-cal-empty>Select an appointment to see the details.</p>
+      <div class="cal__detail-body" data-cal-body hidden>
+        <p class="cal__detail-patient" data-f="patient"></p>
+        <dl>
+          <div><dt>When</dt><dd><span data-f="day"></span> · <span data-f="time"></span></dd></div>
+          <div><dt>Clinician</dt><dd data-f="doctor"></dd></div>
+          <div><dt>Type</dt><dd data-f="type"></dd></div>
+          <div><dt>Reason</dt><dd data-f="reason"></dd></div>
+          <div><dt>Status</dt><dd data-f="status"></dd></div>
+        </dl>
+        <div class="cal__detail-actions">
+          <a class="cal__btn cal__btn--primary" data-f-href="href" href="#">Open visit</a>
+          <a class="cal__btn" data-f-href="recordHref" href="#">Patient record</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cal]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const today = Number(root.dataset.today);
+    const cols = Array.from(root.querySelectorAll<HTMLElement>('[data-cal-col]'));
+    const heads = Array.from(root.querySelectorAll<HTMLElement>('[data-cal-dayhead]'));
+    const events = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cal-event]'));
+    const body = root.querySelector<HTMLElement>('[data-cal-body]');
+    const empty = root.querySelector<HTMLElement>('[data-cal-empty]');
+    let selected = today >= 0 ? today : 0;
+
+    const setDay = (i: number) => {
+      selected = i;
+      cols.forEach((c, n) => c.classList.toggle('is-selected', n === i));
+      heads.forEach((h, n) => h.classList.toggle('is-selected', n === i));
+    };
+    const setView = (v: string) => {
+      root.classList.toggle('cal--day', v === 'day');
+      root.querySelectorAll<HTMLInputElement>('[data-cal-view]').forEach((r) => { r.checked = r.value === v; });
+    };
+    root.querySelectorAll<HTMLInputElement>('[data-cal-view]').forEach((r) => r.addEventListener('change', () => setView(r.value)));
+    heads.forEach((h) => h.addEventListener('click', () => { setDay(Number(h.dataset.calDayhead)); setView('day'); }));
+
+    root.querySelectorAll<HTMLButtonElement>('[data-cal-doctor]').forEach((chip) => chip.addEventListener('click', () => {
+      chip.setAttribute('aria-pressed', String(chip.getAttribute('aria-pressed') !== 'true'));
+      const on = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cal-doctor][aria-pressed="true"]')).map((c) => c.dataset.calDoctor);
+      events.forEach((e) => { e.hidden = !on.includes(e.dataset.doctor); });
+    }));
+
+    events.forEach((e) => e.addEventListener('click', () => {
+      events.forEach((x) => x.classList.toggle('is-active', x === e));
+      const d = JSON.parse(e.dataset.detail || '{}');
+      if (!body || !empty) return;
+      empty.hidden = true;
+      body.hidden = false;
+      body.querySelectorAll<HTMLElement>('[data-f]').forEach((n) => {
+        const k = n.dataset.f!;
+        n.textContent = k === 'type' ? (d.type === 'video' ? 'Video visit' : 'In person') : d[k] || '—';
+      });
+      body.querySelectorAll<HTMLAnchorElement>('[data-f-href]').forEach((a) => {
+        const href = d[a.dataset.fHref!];
+        a.hidden = !href;
+        if (href) a.href = href;
+        if (a.dataset.fHref === 'href') a.textContent = d.type === 'video' ? 'Join video visit' : 'Open visit';
+      });
+    }));
+    setDay(selected);
+  });
+</script>
+
+<style>
+  .cal { --cal-accent: var(--app-accent, var(--c-primary-light, #0e7490)); min-width: 0; padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+  .cal__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3, 0.75rem) var(--sp-4, 1rem); margin-bottom: var(--sp-4, 1rem); }
+  .cal__title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .cal__view { display: inline-flex; margin: 0; padding: 3px; border: 1px solid var(--c-border, rgba(0, 0, 0, 0.12)); border-radius: 10px; background: var(--c-bg, #f3f8f9); }
+  .cal__view label { position: relative; cursor: pointer; }
+  .cal__view input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .cal__view span { display: inline-flex; align-items: center; min-height: 34px; padding: 0 var(--sp-3, 0.75rem); border-radius: 7px; font-size: 0.84rem; font-weight: 600; color: var(--c-text-2, #3d5a63); }
+  .cal__view input:checked + span { background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+  .cal__view input:focus-visible + span { outline: 3px solid var(--cal-accent); outline-offset: 1px; }
+  .cal__doctors { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .cal__doc { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.12)); border-radius: 999px; background: transparent; color: var(--c-text-2, #3d5a63); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+  .cal__doc span { width: 10px; height: 10px; border-radius: 50%; background: hsl(var(--dh) 65% 45%); }
+  .cal__doc[aria-pressed='true'] { border-color: hsl(var(--dh) 55% 45%); color: var(--c-text-1, #0b2a33); background: hsl(var(--dh) 60% 50% / 0.1); }
+  .cal__doc[aria-pressed='false'] span { background: transparent; box-shadow: inset 0 0 0 2px hsl(var(--dh) 40% 55%); }
+  .cal__doc:focus-visible, .cal__dayhead:focus-visible, .cal__btn:focus-visible { outline: 3px solid var(--cal-accent); outline-offset: 2px; }
+  .cal__legend { display: flex; gap: var(--sp-3, 0.75rem); margin: 0 0 0 auto; font-size: 0.78rem; color: var(--c-text-2, #3d5a63); }
+  .cal__legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .cal__swatch { width: 14px; height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--cal-accent) 20%, transparent); border-left: 3px solid var(--cal-accent); }
+  .cal__swatch--video { background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--cal-accent) 22%, transparent) 0 3px, transparent 3px 6px); }
+
+  .cal__layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: var(--sp-4, 1rem); align-items: start; }
+  .cal__scroll { overflow-x: auto; border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-md, 10px); }
+  .cal__scroll:focus-visible { outline: 3px solid var(--cal-accent); outline-offset: 2px; }
+  .cal__grid { display: grid; grid-template-columns: 56px repeat(var(--cal-days), minmax(120px, 1fr)); min-width: calc(56px + var(--cal-days) * 120px); }
+  .cal--day .cal__grid { grid-template-columns: 56px minmax(0, 1fr); min-width: 0; }
+  .cal--day .cal__dayhead:not(.is-selected), .cal--day .cal__col:not(.is-selected) { display: none; }
+
+  .cal__corner { position: sticky; top: 0; border-bottom: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); background: var(--c-bg-1, #fff); }
+  .cal__dayhead {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    border: 0;
+    border-left: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
+    border-bottom: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
+    background: var(--c-bg-1, #fff);
+    color: var(--c-text-1, #0b2a33);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cal__dayhead:hover { background: var(--c-bg, #f3f8f9); }
+  .cal__dayhead.is-today { color: var(--cal-accent); }
+  .cal__today { padding: 1px 7px; border-radius: 999px; background: var(--cal-accent); color: var(--c-on-primary, #fff); font-size: 0.68rem; }
+
+  .cal__hours { position: relative; }
+  .cal__hours span { position: absolute; right: 8px; transform: translateY(-50%); font-size: 0.72rem; color: var(--c-text-3, #5b747c); font-variant-numeric: tabular-nums; }
+  .cal__hours span:first-child { transform: none; top: 4px !important; }
+
+  .cal__col {
+    position: relative;
+    border-left: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
+    background-image:
+      linear-gradient(var(--c-border, rgba(0, 0, 0, 0.1)) 1px, transparent 1px),
+      linear-gradient(rgb(var(--ink-rgb, 15 23 42) / 0.035) 1px, transparent 1px);
+    background-size: 100% var(--cal-hour), 100% calc(var(--cal-hour) / 2);
+  }
+  .cal__col.is-today { background-color: color-mix(in srgb, var(--cal-accent) 4%, transparent); }
+
+  .cal__event {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 3px 6px 3px 8px;
+    overflow: hidden;
+    border: 0;
+    border-left: 3px solid hsl(var(--dh) 60% 40%);
+    border-radius: 6px;
+    background: hsl(var(--dh) 70% 92%);
+    color: hsl(var(--dh) 60% 18%);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  :global([data-theme='dark']) .cal__event { background: hsl(var(--dh) 35% 22%); color: hsl(var(--dh) 70% 90%); border-left-color: hsl(var(--dh) 65% 60%); }
+  .cal__event--video { background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.45) 0 4px, transparent 4px 8px); }
+  :global([data-theme='dark']) .cal__event--video { background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.06) 0 4px, transparent 4px 8px); }
+  .cal__event[hidden] { display: none; }
+  .cal__event:hover { z-index: 2; box-shadow: 0 4px 12px rgb(0 0 0 / 0.15); }
+  .cal__event.is-active { z-index: 3; outline: 2px solid hsl(var(--dh) 60% 40%); outline-offset: 1px; }
+  .cal__event:focus-visible { z-index: 3; outline: 3px solid var(--cal-accent); outline-offset: 2px; }
+  .cal__event.is-cancelled, .cal__event.is-no-show { opacity: 0.55; }
+  .cal__event.is-cancelled .cal__event-name, .cal__event.is-no-show .cal__event-name { text-decoration: line-through; }
+  .cal__event.is-in-progress { box-shadow: 0 0 0 2px hsl(var(--dh) 60% 40%); }
+  .cal__event.is-short { flex-direction: row; align-items: center; gap: 4px; padding-block: 0; }
+  .cal__event.is-short .cal__event-icon { position: static; flex-shrink: 0; margin-left: auto; }
+  .cal__event-time { flex-shrink: 0; font-size: 0.68rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cal__event-name { max-width: 100%; overflow: hidden; font-size: 0.76rem; font-weight: 700; line-height: 1.2; white-space: nowrap; text-overflow: ellipsis; }
+  .cal__event-reason { max-width: 100%; overflow: hidden; font-size: 0.7rem; white-space: nowrap; text-overflow: ellipsis; opacity: 0.85; }
+  .cal__event-icon { position: absolute; top: 4px; right: 4px; }
+
+  .cal__now { position: absolute; left: 0; right: 0; z-index: 4; height: 2px; background: var(--c-danger, #b91c1c); pointer-events: none; }
+  .cal__now::before { content: ''; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--c-danger, #b91c1c); }
+  .cal__now span { position: absolute; right: 4px; top: -9px; padding: 0 5px; border-radius: 4px; background: var(--c-danger, #b91c1c); color: #fff; font-size: 0.65rem; font-weight: 700; }
+
+  .cal__detail { position: sticky; top: 80px; padding: var(--sp-4, 1rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-md, 10px); background: var(--c-bg, #f3f8f9); }
+  .cal__detail-title { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-2, #3d5a63); }
+  .cal__detail-empty { margin: 0; font-size: 0.88rem; color: var(--c-text-2, #3d5a63); }
+  .cal__detail-empty[hidden], .cal__detail-body[hidden] { display: none; }
+  .cal__detail-patient { margin: 0 0 var(--sp-3, 0.75rem); font-size: 1.05rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .cal__detail dl { display: grid; gap: var(--sp-2, 0.5rem); margin: 0; }
+  .cal__detail dl div { display: grid; grid-template-columns: 76px 1fr; gap: var(--sp-2, 0.5rem); font-size: 0.85rem; }
+  .cal__detail dt { color: var(--c-text-3, #5b747c); }
+  .cal__detail dd { margin: 0; color: var(--c-text-1, #0b2a33); }
+  .cal__detail-actions { display: grid; gap: var(--sp-2, 0.5rem); margin-top: var(--sp-4, 1rem); }
+  .cal__btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 var(--sp-4, 1rem); border: 1px solid var(--cal-accent); border-radius: var(--r-sm, 8px); color: var(--cal-accent); font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+  .cal__btn[hidden] { display: none; }
+  .cal__btn--primary { background: var(--cal-accent); color: var(--c-on-primary, #fff); }
+  .cal__btn--primary:hover { color: var(--c-on-primary, #fff); filter: brightness(1.08); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 1100px) {
+    .cal__layout { grid-template-columns: 1fr; }
+    .cal__detail { position: static; }
+    .cal__legend { margin-left: 0; }
+  }
+  @media (max-width: 560px) { .cal { padding: var(--sp-3, 0.75rem); } }
+  @media (prefers-reduced-motion: reduce) { .cal__event { transition: none; } }
+</style>

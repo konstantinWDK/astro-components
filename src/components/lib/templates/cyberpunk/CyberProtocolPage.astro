@@ -1,0 +1,73 @@
+---
+/**
+ * CyberProtocolPage — How the grid works: CyberPageHero, the boot sequence of the five layers
+ * (StatusTimelineFeed), CyberSpecTable with classified rows that decrypt, a capabilities bento
+ * and FAQ (FaqTwoColumn).
+ *
+ * Usage (src/pages/protocol.astro):
+ *   import { CyberProtocolPage } from 'astro-component-kit/templates/cyberpunk';
+ *   <CyberProtocolPage />
+ *
+ * @param {CyberData} data - Site content.
+ * @param {CyberRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import CyberLayout from './CyberLayout.astro';
+import CyberPageHero from '../../sections/CyberPageHero.astro';
+import CyberSpecTable from '../../sections/CyberSpecTable.astro';
+import CyberBento from '../../sections/CyberBento.astro';
+import StatusTimelineFeed from '../../data/StatusTimelineFeed.astro';
+import FaqTwoColumn from '../../sections/FaqTwoColumn.astro';
+import { nullSector, cyberRoutes, type CyberData, type CyberRoutes } from './data';
+
+interface Props {
+  data?: CyberData;
+  routes?: CyberRoutes;
+  theme?: 'dark' | 'light' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = nullSector, routes = cyberRoutes, theme = 'dark', noindex = false } = Astro.props;
+---
+
+<CyberLayout title="Protocol" description="How NULL/SECTOR turns idle GPUs into sealed, attested clusters in nine seconds." data={data} routes={routes} current="protocol" theme={theme} noindex={noindex}>
+  <CyberPageHero
+    index="01"
+    path={[{ label: 'SYS', href: routes.home }, { label: 'PROTOCOL' }]}
+    title="THE"
+    outline="PROTOCOL"
+    intro="Five layers between a gamer’s idle GPU and your training run. Each one is sealed, attested and replaceable — so no single operator, region or company can see or stop your job."
+    tags={['v4.2 GHOSTWIRE', 'STATUS: NOMINAL', 'AUDITED 2026-10']}
+  />
+
+  <section class="ns-wrap boot" aria-labelledby="boot-title">
+    <div class="boot__intro">
+      <p class="boot__eyebrow">[01] BOOT SEQUENCE</p>
+      <h2 id="boot-title">From cold metal to your container in 9.2 seconds</h2>
+      <p>What happens between “jack in” and the first token of your job, layer by layer.</p>
+    </div>
+    <div class="boot__feed"><StatusTimelineFeed events={data.layers} /></div>
+  </section>
+
+  <div class="ns-wrap">
+    <CyberSpecTable groups={data.specs} />
+  </div>
+
+  <div class="ns-wrap">
+    <CyberBento eyebrow="[03] GUARANTEES" title="What the protocol promises" features={data.features.slice(1, 5).map((f) => ({ ...f, span: undefined }))} columns={4} variant="flat" />
+  </div>
+
+  <div class="ns-wrap ns-wrap--last">
+    <FaqTwoColumn title="Interrogation" subtitle="Questions operators and engineers ask before they trust the grid." items={data.faqProtocol} support={{ label: 'Open a channel', href: routes.terminal }} />
+  </div>
+</CyberLayout>
+
+<style>
+  .boot { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+  .boot__eyebrow { margin: 0 0 var(--sp-2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text); }
+  .boot h2 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.6rem); line-height: 1.05; color: var(--c-text-1); }
+  .boot__intro p:last-child { margin: var(--sp-4) 0 0; line-height: 1.7; }
+  .boot__feed { padding: var(--sp-5); border: 2px solid var(--cy-edge); background: var(--c-bg-1); }
+  @media (max-width: 900px) { .boot { grid-template-columns: 1fr; } }
+</style>

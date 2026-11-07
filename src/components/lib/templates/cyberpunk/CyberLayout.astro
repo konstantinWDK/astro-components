@@ -1,0 +1,200 @@
+---
+/**
+ * CyberLayout — Full HTML document for the futuristic-brutalist cyberpunk template ("NULL/SECTOR"):
+ * CyberHeader, main slot and CyberFooter, with the look owned by tokens: Orbitron + JetBrains Mono,
+ * zero radius, 2px ink rules, acid / magenta / cyan, CRT scanlines. NIGHT (dark) by default and a
+ * concrete DAY mode, switchable from the header.
+ *
+ * @param {string} title - Page title (brand is appended).
+ * @param {string} description - Meta description.
+ * @param {CyberData} data - Site content. Default: NULL/SECTOR demo.
+ * @param {CyberRoutes} routes - Page URLs.
+ * @param {string} current - Route key of the active page (home|protocol|pricing|manifesto|logs|terminal).
+ * @param {string} theme - Initial theme (dark|light|auto). The header switch overrides it. Default 'dark'.
+ * @param {boolean} scanlines - CRT scanline overlay. Default true.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ * @param {string} lang - Document language. Default 'en'.
+ */
+import '../../../../styles/global.css';
+import CyberHeader from '../../sections/CyberHeader.astro';
+import CyberFooter from '../../sections/CyberFooter.astro';
+import { nullSector, cyberRoutes, cyberHref, type CyberData, type CyberRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  data?: CyberData;
+  routes?: CyberRoutes;
+  current?: keyof CyberRoutes;
+  theme?: 'dark' | 'light' | 'auto';
+  scanlines?: boolean;
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description,
+  data = nullSector,
+  routes = cyberRoutes,
+  current = 'home',
+  theme = 'dark',
+  scanlines = true,
+  noindex = false,
+  lang = 'en',
+} = Astro.props;
+
+const fullTitle = title.includes(data.brand) ? title : `${title} — ${data.brand}`;
+const links = data.links.map((l) => ({ label: l.label, href: routes[l.key] }));
+const footer = data.footer.map((c) => ({ title: c.title, links: c.links.map((l) => ({ label: l.label, href: cyberHref(routes, l.key) })) }));
+---
+
+<!doctype html>
+<html lang={lang} class="theme-nullsector" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <meta name="theme-color" content="#050507" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class:list={['nullsector', { 'nullsector--scan': scanlines }]}>
+    <a class="nullsector__skip" href="#main">Skip to content</a>
+    <CyberHeader
+      brand={data.brand}
+      brandHref={routes.home}
+      links={links}
+      currentHref={current === 'home' ? undefined : routes[current]}
+      cta={{ label: 'Jack in', href: routes.pricing }}
+      status={data.status}
+    />
+    <main id="main" class="nullsector__main" tabindex="-1">
+      <slot />
+    </main>
+    <CyberFooter
+      brand={data.brand}
+      tagline={data.tagline}
+      columns={footer}
+      status={data.status}
+      copyright={`© ${new Date().getFullYear()} ${data.brand} · fictional demo built with Astro Components Kit`}
+    />
+  </body>
+</html>
+
+<style is:global>
+  .theme-nullsector {
+    --font-display: 'Orbitron', 'Arial Black', system-ui, sans-serif;
+    --font-sans: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --r-sm: 0;
+    --r-md: 0;
+    --r-lg: 0;
+    --r-xl: 0;
+    --r-full: 0;
+  }
+  .theme-nullsector[data-theme='dark'] {
+    --c-bg: #050507;
+    --c-bg-1: #0c0c12;
+    --c-bg-2: #14141c;
+    --c-surface: rgba(242, 242, 242, 0.03);
+    --c-border: rgba(242, 242, 242, 0.16);
+    --c-text-1: #f2f2f2;
+    --c-text-2: #a9a9b8;
+    --c-text-3: #8a8a99;
+    --c-primary: #d4ff00;
+    --c-primary-light: #d4ff00;
+    --c-primary-glow: rgba(212, 255, 0, 0.16);
+    --c-accent: #ff2bd6;
+    --c-on-primary: #050507;
+    --ink-rgb: 242 242 242;
+    --paper-rgb: 5 5 7;
+    --c-success: #39ff88;
+    --c-warning: #ffcc00;
+    --c-danger: #ff3b5c;
+    --cy-edge: #f2f2f2;
+    --cy-acid: #d4ff00;
+    --cy-magenta: #ff2bd6;
+    --cy-cyan: #00f0ff;
+    --cy-accent-text: #d4ff00;
+    --cy-cta-bg: #d1002f;
+    --cy-scan: rgba(0, 0, 0, 0.22);
+    color-scheme: dark;
+  }
+  .theme-nullsector[data-theme='light'] {
+    --c-bg: #e7e4dc;
+    --c-bg-1: #f3f1eb;
+    --c-bg-2: #d8d4ca;
+    --c-surface: rgba(10, 10, 10, 0.03);
+    --c-border: rgba(10, 10, 10, 0.2);
+    --c-text-1: #0a0a0a;
+    --c-text-2: #38383d;
+    --c-text-3: #55555c;
+    --c-primary: #7a006a;
+    --c-primary-light: #7a006a;
+    --c-primary-glow: rgba(122, 0, 106, 0.14);
+    --c-accent: #7a006a;
+    --c-on-primary: #ffffff;
+    --ink-rgb: 10 10 10;
+    --paper-rgb: 231 228 220;
+    --c-success: #0a7a3a;
+    --c-warning: #8a5a00;
+    --c-danger: #c0102e;
+    --cy-edge: #0a0a0a;
+    --cy-acid: #d4ff00;
+    --cy-magenta: #c2008f;
+    --cy-cyan: #00798c;
+    --cy-accent-text: #7a006a;
+    --cy-cta-bg: #c2002c;
+    --cy-scan: rgba(10, 10, 10, 0.06);
+    color-scheme: light;
+  }
+
+  body.nullsector { overflow-x: clip; background: var(--c-bg); color: var(--c-text-2); font-family: var(--font-mono); }
+  body.nullsector::before { display: none; }
+  body.nullsector--scan::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, var(--cy-scan) 0 1px, transparent 1px 3px);
+  }
+  .nullsector__main { position: relative; outline: none; }
+  .nullsector__skip { position: fixed; top: -60px; left: 12px; z-index: 9500; padding: 0.6rem 1rem; background: var(--cy-acid); color: #050507; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+  .nullsector__skip:focus { top: 12px; color: #050507; }
+  .ns-wrap { max-width: 1440px; margin: 0 auto; padding: clamp(3.5rem, 8vw, 6.5rem) var(--sp-5) 0; }
+  .ns-wrap--last { padding-bottom: clamp(3.5rem, 8vw, 6.5rem); }
+  .ns-rule { border-top: 2px solid var(--cy-edge); }
+
+  /* Reused library sections in the NULL/SECTOR look */
+  .theme-nullsector h1, .theme-nullsector h2 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: -0.01em; }
+  .theme-nullsector :is(.lwg, .scb, .ftc, .cls) :is(h2, h3) { color: var(--c-text-1); }
+  html.theme-nullsector .scb { border-block: 2px solid var(--cy-edge); }
+  html.theme-nullsector .scb__value { font-family: var(--font-display); }
+  html.theme-nullsector .status-feed { max-width: none; }
+  html.theme-nullsector .cyber-btn { font-family: var(--font-mono); letter-spacing: 0.08em; }
+  html.theme-nullsector .cyber-btn:focus-visible, html.theme-nullsector .neon-border-btn:focus-visible { outline: 3px solid var(--cy-magenta); outline-offset: 4px; }
+  html.theme-nullsector .neon-border-btn__content { border: 2px solid var(--cy-edge); background: var(--c-bg); box-shadow: 5px 5px 0 var(--neon-accent); font-family: var(--font-mono); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-1); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  html.theme-nullsector .neon-border-btn:hover .neon-border-btn__content { background: var(--neon-accent); color: #050507; transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--cy-magenta); }
+  html.theme-nullsector .neon-border-btn__border { display: none; }
+  html.theme-nullsector .glitch-alert { --c-primary: var(--cy-cta-bg); --c-text-1: #ffffff; border-color: var(--cy-edge); box-shadow: 8px 8px 0 var(--cy-cyan); }
+  html.theme-nullsector .glitch-alert .glitch-text { font-family: var(--font-mono); }
+  @media (prefers-reduced-motion: reduce) {
+    html.theme-nullsector .cyber-btn:hover::before, html.theme-nullsector .cyber-btn:hover::after, html.theme-nullsector .cyber-btn:hover .cyber-btn__glitch { animation: none; }
+    html.theme-nullsector .neon-border-btn__border, html.theme-nullsector .neon-border-btn__glow { animation: none; }
+    html.theme-nullsector .glitch-alert .glitch-text::before, html.theme-nullsector .glitch-alert .glitch-text::after { animation: none; display: none; }
+  }
+</style>

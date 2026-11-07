@@ -19,6 +19,16 @@ export const productIcons = {
   shirt: '<path d="M22 8l-14 8 5 12 7-3v31h24V25l7 3 5-12-14-8c-1 4-5 6-10 6s-9-2-10-6z"/>',
   bag: '<path d="M12 22h40l-4 34H16z"/><path d="M24 22v-6a8 8 0 0 1 16 0v6"/><path d="M24 30v2M40 30v2"/>',
   phone: '<rect x="18" y="4" width="28" height="56" rx="7"/><path d="M28 10h8"/><circle cx="32" cy="52" r="2"/>',
+  // Toys & action figures
+  figure: '<circle cx="31" cy="11" r="6"/><path d="M24 21h15l-2 17H26z"/><path d="M24 21l-8 12 3 5"/><path d="M39 21l7-10"/><circle cx="47.5" cy="8.5" r="2.5"/><path d="M26 30h12"/><path d="M27 38l-3 19h6l2-12 2 12h6l-3-19"/><path d="M24 22c-6 9-8 20-7 31l8-3"/>',
+  robot: '<rect x="22" y="7" width="20" height="14" rx="3"/><path d="M32 7V2"/><circle cx="28" cy="14" r="2"/><circle cx="36" cy="14" r="2"/><rect x="18" y="23" width="28" height="20" rx="4"/><path d="M26 30h12M26 36h12"/><rect x="8" y="25" width="8" height="15" rx="3"/><rect x="48" y="25" width="8" height="15" rx="3"/><rect x="22" y="45" width="8" height="14" rx="2"/><rect x="34" y="45" width="8" height="14" rx="2"/>',
+  dino: '<path d="M8 41c4-13 14-20 26-20h9c6 0 11 4 11 9v4h-9l-2 3c-2 4-6 6-10 6l-2 14h-6l-2-9-4 9h-6l3-13c-4 0-6-1-8-3z"/><circle cx="46" cy="27" r="1.6"/><path d="M38 36l4 4M45 34h3"/><path d="M14 33l-4-5M20 27l-3-6M27 23l-1-6"/>',
+  monster: '<path d="M16 58V31c0-10 7-18 16-18s16 8 16 18v27"/><path d="M21 18l-5-11 11 6M43 18l5-11-11 6"/><path d="M24 28l6 2M40 28l-6 2"/><path d="M23 40h18l-3 5-3-4-3 4-3-4-3 4z"/><path d="M16 38l-9 7M48 38l9 7M14 58h12M38 58h12"/>',
+  ninja: '<circle cx="32" cy="14" r="8"/><path d="M24 13h16"/><path d="M28 15h2M34 15h2"/><path d="M40 12l9-4M40 15l8 3"/><path d="M24 25h16l3 15H21z"/><path d="M50 18 18 56"/><path d="M25 40l-3 18M39 40l3 18"/><path d="M24 26l-8 10M40 26l7 8"/>',
+  rocket: '<path d="M32 4c8 6 12 16 12 28v14H20V32c0-12 4-22 12-28z"/><circle cx="32" cy="24" r="5"/><path d="M20 36l-8 10v7h8M44 36l8 10v7h-8"/><path d="M27 50c0 6 2 10 5 10s5-4 5-10"/>',
+  mech: '<path d="M18 13h28l4 15H14z"/><rect x="26" y="17" width="12" height="7" rx="2"/><path d="M7 18h11M46 18h11"/><path d="M21 28l-5 14 4 16M43 28l5 14-4 16"/><circle cx="16" cy="42" r="2.5"/><circle cx="48" cy="42" r="2.5"/><path d="M15 58h10M39 58h10"/>',
+  castle: '<path d="M8 58V25h7v6h6v-6h7v6h8v-6h7v6h6v-6h7v33z"/><path d="M26 58V47a6 6 0 0 1 12 0v11"/><path d="M32 25V8l10 4-10 4"/><path d="M15 38h4M45 38h4"/>',
+  mystery: '<path d="M12 21l20-9 20 9v25l-20 11-20-11z"/><path d="M12 21l20 9 20-9M32 30v27"/><path d="M19 35c0-4 6-4 6 0 0 3-3 3-3 6M22 46v1"/><path d="M39 36l6-3M39 42l6-3"/>',
 } as const;
 
 export type ProductIcon = keyof typeof productIcons;

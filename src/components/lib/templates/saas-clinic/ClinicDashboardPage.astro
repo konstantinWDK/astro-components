@@ -1,0 +1,99 @@
+---
+/**
+ * ClinicDashboardPage — Clinic overview: KPI tiles, the clinician's agenda for today, live waiting
+ * room, weekly consultations (in person vs video), visits by specialty, busy hours and activity.
+ *
+ * Usage (src/pages/app/index.astro):
+ *   import { ClinicDashboardPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicDashboardPage />
+ *
+ * @param {ClinicData} data - Workspace data. Default: Clínica Alameda demo.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import MedAgendaTimeline from '../../app/MedAgendaTimeline.astro';
+import MedWaitingRoom from '../../app/MedWaitingRoom.astro';
+import KpiStatTile from '../../charts/KpiStatTile.astro';
+import StackedBarChart from '../../charts/StackedBarChart.astro';
+import PieChart from '../../charts/PieChart.astro';
+import HeatmapChart from '../../charts/HeatmapChart.astro';
+import StatusTimelineFeed from '../../data/StatusTimelineFeed.astro';
+import { clinicData, clinicRoutes, clinicPatient, clinicDoctor, todaysAppointments, patientHref, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+
+const me = data.doctors[0];
+const agenda = todaysAppointments(data, me.id).map((a) => {
+  const p = clinicPatient(data, a.patient)!;
+  return {
+    id: a.id,
+    start: a.start,
+    duration: a.duration,
+    patient: { name: p.name, sub: `${p.age} · ${p.sex}` },
+    type: a.type,
+    reason: a.reason,
+    status: a.status,
+    room: me.room,
+    href: a.status === 'in-progress' ? routes.consultation : patientHref(routes, p.id),
+  };
+});
+const waiting = todaysAppointments(data)
+  .filter((a) => a.status === 'checked-in')
+  .map((a, i) => {
+    const p = clinicPatient(data, a.patient)!;
+    return {
+      id: a.id,
+      name: p.name,
+      waited: [12, 4, 31, 7][i % 4],
+      appointment: a.start,
+      doctor: clinicDoctor(data, a.doctor)?.name.replace(/^Dr\. (\w)\w+ /, 'Dr. $1. '),
+      reason: a.reason,
+      priority: (p.conditions.some((c) => /heart failure/i.test(c)) ? 'urgent' : p.age < 14 ? 'priority' : 'routine') as 'urgent' | 'priority' | 'routine',
+      href: routes.consultation,
+    };
+  });
+---
+
+<ClinicLayout title="Dashboard" description="Your practice at a glance" current="dashboard" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title={`Good morning, ${data.user.name.replace(/^Dr\.\s*/, '').split(' ')[0]}`}
+    description={`${data.days[data.today]} · ${agenda.length} visits on your list, ${waiting.length} patients in the waiting room.`}
+    actions={[{ label: 'Book visit', icon: 'plus', href: routes.schedule }, { label: 'Start next visit', icon: 'stethoscope', primary: true, href: routes.consultation }]}
+    periods={['Today', 'Week', 'Month']}
+    activePeriod={0}
+  />
+
+  <div class="pulso-grid pulso-grid--kpis">
+    {data.kpis.map((k) => <KpiStatTile label={k.label} value={k.value} change={k.change} invert={k.invert} trend={k.trend} period="vs last week" variant="solid" />)}
+  </div>
+
+  <div class="pulso-grid pulso-grid--3-2">
+    <MedAgendaTimeline title="Your day" subtitle={`${me.name} · ${me.room}`} appointments={agenda} now={data.now} />
+    <div class="pulso-stack">
+      <MedWaitingRoom patients={waiting} target={15} />
+      <section class="pulso-card" aria-labelledby="activity-title">
+        <h2 id="activity-title" class="pulso-card__title">Activity</h2>
+        <StatusTimelineFeed events={data.activity} />
+      </section>
+    </div>
+  </div>
+
+  <div class="pulso-grid pulso-grid--2-1">
+    <StackedBarChart title="Consultations per week" subtitle="In person and video, last 8 weeks" categories={data.volume.categories} series={data.volume.series} variant="solid" height={260} />
+    <PieChart prefix="" title="Visits by specialty" subtitle="Share of visits, last 30 days" slices={data.bySpecialty} donut centerLabel="1,342 visits" suffix="%" variant="solid" />
+  </div>
+
+  <HeatmapChart title="Busy hours" subtitle="Average patients per hour, last 4 weeks — plan staffing and open video slots where it’s quiet" rows={data.busyHours.rows} columns={data.busyHours.columns} values={data.busyHours.values} showValues={false} variant="solid" />
+</ClinicLayout>
+
+<style>
+  .pulso-stack { display: grid; gap: var(--sp-5); align-content: start; min-width: 0; }
+</style>

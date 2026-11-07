@@ -1,0 +1,230 @@
+---
+/**
+ * MedPatientSummary — Patient chart summary for clinical apps: identity header (age, sex, DOB,
+ * MRN, insurance, blood type) with an allergy alert banner, vitals tiles with trend sparklines and
+ * range flags, active conditions, current medications and a recent-visits timeline.
+ *
+ * @param {{name: string, age?: number, sex?: string, dob?: string, mrn?: string, phone?: string, email?: string, insurance?: string, bloodType?: string}} patient - Identity.
+ * @param {Array<{name: string, severity?: 'mild'|'moderate'|'severe'}>} allergies - Allergies (empty shows "No known allergies").
+ * @param {Array<{label: string, value: string, unit?: string, trend?: number[], status?: 'normal'|'high'|'low', range?: string}>} vitals - Latest vitals.
+ * @param {string[]} conditions - Active problems.
+ * @param {Array<{name: string, dose?: string}>} medications - Current medications.
+ * @param {Array<{date: string, title: string, doctor?: string, type?: 'in-person'|'video'}>} visits - Recent visits, newest first.
+ * @param {Array<{label: string, href?: string, icon?: string, primary?: boolean}>} actions - Header buttons.
+ * @param {string} headingLevel - Name heading (h1|h2). Default 'h2'.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: allergies sit in a role="alert"-free but prominent region with text severity;
+ * vitals flags are written ("High") not just coloured; sparklines are decorative next to the
+ * value; contact details are real tel:/mailto: links.
+ */
+import SparklineChart from '../charts/SparklineChart.astro';
+import { appIcon, initials, hueFrom } from './app-icons';
+
+interface Props {
+  patient?: { name: string; age?: number; sex?: string; dob?: string; mrn?: string; phone?: string; email?: string; insurance?: string; bloodType?: string };
+  allergies?: Array<{ name: string; severity?: 'mild' | 'moderate' | 'severe' }>;
+  vitals?: Array<{ label: string; value: string; unit?: string; trend?: number[]; status?: 'normal' | 'high' | 'low'; range?: string }>;
+  conditions?: string[];
+  medications?: Array<{ name: string; dose?: string }>;
+  visits?: Array<{ date: string; title: string; doctor?: string; type?: 'in-person' | 'video' }>;
+  actions?: Array<{ label: string; href?: string; icon?: string; primary?: boolean }>;
+  headingLevel?: 'h1' | 'h2';
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  patient = { name: 'Elena Duarte', age: 42, sex: 'F', dob: '1984-03-12', mrn: 'MRN-001042', phone: '+34 612 345 678', email: 'elena.duarte@example.com', insurance: 'Sanitas · Plus', bloodType: 'A+' },
+  allergies = [{ name: 'Penicillin', severity: 'severe' }, { name: 'Pollen', severity: 'mild' }],
+  vitals = [
+    { label: 'Blood pressure', value: '136/86', unit: 'mmHg', trend: [148, 145, 142, 139, 141, 136], status: 'high', range: '< 135/85' },
+    { label: 'Heart rate', value: '72', unit: 'bpm', trend: [74, 71, 75, 72, 70, 72], status: 'normal', range: '60–100' },
+    { label: 'Weight', value: '71.0', unit: 'kg', trend: [73, 72.6, 72.1, 71.8, 71.4, 71], status: 'normal', range: 'BMI 24.1' },
+    { label: 'SpO₂', value: '98', unit: '%', trend: [97, 98, 98, 97, 99, 98], status: 'normal', range: '≥ 95%' },
+  ],
+  conditions = ['Hypertension (stage 1)', 'Seasonal allergic rhinitis'],
+  medications = [{ name: 'Enalapril', dose: '10 mg · once daily' }, { name: 'Cetirizine', dose: '10 mg · as needed' }],
+  visits = [
+    { date: 'Mon 3', title: 'BP check', doctor: 'Dr. Navarro', type: 'in-person' },
+    { date: '12 Sep', title: 'Annual check-up', doctor: 'Dr. Navarro', type: 'in-person' },
+    { date: '03 Jun', title: 'Hypertension review', doctor: 'Dr. Navarro', type: 'video' },
+  ],
+  actions = [{ label: 'Message', icon: 'mail' }, { label: 'Start consultation', icon: 'stethoscope', primary: true }],
+  headingLevel = 'h2',
+  variant = 'card',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const sexLabel: Record<string, string> = { F: 'Female', M: 'Male', X: 'Non-binary' };
+const flag = { high: 'High', low: 'Low', normal: 'In range' } as const;
+const severe = allergies.some((a) => a.severity === 'severe');
+---
+
+<article class:list={['pt-sum', `pt-sum--${variant}`, className]} aria-labelledby="pt-sum-name">
+  <header class="pt-sum__head">
+    <span class="pt-sum__avatar" style={`--av-h: ${hueFrom(patient.name)}`} aria-hidden="true">{initials(patient.name)}</span>
+    <div class="pt-sum__id">
+      <Heading class="pt-sum__name" id="pt-sum-name">{patient.name}</Heading>
+      <p class="pt-sum__meta">
+        {patient.age !== undefined && <span>{patient.age} y</span>}
+        {patient.sex && <span>{sexLabel[patient.sex] ?? patient.sex}</span>}
+        {patient.dob && <span>DOB {patient.dob}</span>}
+        {patient.mrn && <span class="pt-sum__mono">{patient.mrn}</span>}
+        {patient.bloodType && <span>Blood {patient.bloodType}</span>}
+      </p>
+      <p class="pt-sum__contact">
+        {patient.phone && <a href={`tel:${patient.phone.replace(/\s/g, '')}`}>{patient.phone}</a>}
+        {patient.email && <a href={`mailto:${patient.email}`}>{patient.email}</a>}
+        {patient.insurance && <span>{patient.insurance}</span>}
+      </p>
+    </div>
+    {actions.length > 0 && (
+      <div class="pt-sum__actions">
+        {actions.map((a) => {
+          const Tag = a.href ? 'a' : 'button';
+          return (
+            <Tag class:list={['pt-sum__btn', { 'pt-sum__btn--primary': a.primary }]} href={a.href} type={a.href ? undefined : 'button'}>
+              {a.icon && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon(a.icon)} /></svg>}
+              {a.label}
+            </Tag>
+          );
+        })}
+      </div>
+    )}
+  </header>
+
+  <section class:list={['pt-sum__allergies', { 'is-severe': severe, 'is-none': allergies.length === 0 }]} aria-label="Allergies">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>
+    <strong>Allergies:</strong>
+    {allergies.length === 0 ? <span>No known allergies</span> : (
+      <ul>
+        {allergies.map((a) => <li class={`pt-sum__allergy pt-sum__allergy--${a.severity ?? 'mild'}`}>{a.name}{a.severity && <span> ({a.severity})</span>}</li>)}
+      </ul>
+    )}
+  </section>
+
+  {vitals.length > 0 && (
+    <section class="pt-sum__block" aria-labelledby="pt-sum-vitals">
+      <Sub class="pt-sum__title" id="pt-sum-vitals">Latest vitals</Sub>
+      <ul class="pt-sum__vitals">
+        {vitals.map((v) => (
+          <li class={`pt-sum__vital pt-sum__vital--${v.status ?? 'normal'}`}>
+            <span class="pt-sum__vital-label">{v.label}</span>
+            <span class="pt-sum__vital-value">{v.value}{v.unit && <small> {v.unit}</small>}</span>
+            <span class="pt-sum__vital-flag">{flag[v.status ?? 'normal']}{v.range && <span> · ref {v.range}</span>}</span>
+            {v.trend && v.trend.length > 1 && (
+              <span class="pt-sum__spark" aria-hidden="true"><SparklineChart data={v.trend} variant="area" size="sm" /></span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <div class="pt-sum__cols">
+    <section class="pt-sum__block" aria-labelledby="pt-sum-cond">
+      <Sub class="pt-sum__title" id="pt-sum-cond">Active problems</Sub>
+      {conditions.length ? (
+        <ul class="pt-sum__list">{conditions.map((c) => <li>{c}</li>)}</ul>
+      ) : <p class="pt-sum__none">None recorded</p>}
+    </section>
+    <section class="pt-sum__block" aria-labelledby="pt-sum-meds">
+      <Sub class="pt-sum__title" id="pt-sum-meds">Current medications</Sub>
+      {medications.length ? (
+        <ul class="pt-sum__list pt-sum__list--meds">
+          {medications.map((m) => (
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('pill')} /></svg>
+              <span><strong>{m.name}</strong>{m.dose && <span class="pt-sum__dose">{m.dose}</span>}</span>
+            </li>
+          ))}
+        </ul>
+      ) : <p class="pt-sum__none">None</p>}
+    </section>
+  </div>
+
+  {visits.length > 0 && (
+    <section class="pt-sum__block" aria-labelledby="pt-sum-visits">
+      <Sub class="pt-sum__title" id="pt-sum-visits">Recent visits</Sub>
+      <ol class="pt-sum__visits">
+        {visits.map((v) => (
+          <li>
+            <span class="pt-sum__visit-date">{v.date}</span>
+            <span class="pt-sum__visit-title">{v.title}</span>
+            <span class="pt-sum__visit-meta">{v.doctor}{v.type && ` · ${v.type === 'video' ? 'Video' : 'In person'}`}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )}
+</article>
+
+<style>
+  .pt-sum { --pt-accent: var(--app-accent, var(--c-primary-light, #0e7490)); display: grid; gap: var(--sp-5, 1.25rem); min-width: 0; container-type: inline-size; }
+  .pt-sum--card { padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+
+  .pt-sum__head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-4, 1rem); }
+  .pt-sum__avatar { display: grid; place-items: center; flex-shrink: 0; width: 56px; height: 56px; border-radius: 50%; background: hsl(var(--av-h) 55% 88%); color: hsl(var(--av-h) 60% 24%); font-size: 1.1rem; font-weight: 800; }
+  .pt-sum__id { flex: 1; min-width: 220px; }
+  .pt-sum__name { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.01em; color: var(--c-text-1, #0b2a33); }
+  .pt-sum__meta, .pt-sum__contact { display: flex; flex-wrap: wrap; gap: 0 var(--sp-3, 0.75rem); margin: 4px 0 0; font-size: 0.86rem; color: var(--c-text-2, #3d5a63); }
+  .pt-sum__mono { font-family: var(--font-mono, monospace); font-size: 0.82rem; }
+  .pt-sum__contact a { color: var(--pt-accent); font-weight: 600; }
+  .pt-sum__contact a:focus-visible { outline: 3px solid var(--pt-accent); outline-offset: 2px; border-radius: 4px; }
+  .pt-sum__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); }
+  .pt-sum__btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 var(--sp-4, 1rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.15)); border-radius: var(--r-sm, 8px); background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .pt-sum__btn:hover { background: var(--c-bg, #f3f8f9); color: var(--c-text-1, #0b2a33); }
+  .pt-sum__btn--primary { border-color: var(--pt-accent); background: var(--pt-accent); color: var(--c-on-primary, #fff); }
+  .pt-sum__btn--primary:hover { background: var(--pt-accent); color: var(--c-on-primary, #fff); filter: brightness(1.08); }
+  .pt-sum__btn:focus-visible { outline: 3px solid var(--pt-accent); outline-offset: 2px; }
+
+  .pt-sum__allergies { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem); padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border: 1px solid color-mix(in srgb, var(--c-warning, #a16207) 40%, transparent); border-radius: var(--r-md, 10px); background: color-mix(in srgb, var(--c-warning, #a16207) 9%, transparent); color: var(--c-text-1, #0b2a33); font-size: 0.9rem; }
+  .pt-sum__allergies svg { color: var(--c-warning, #a16207); }
+  .pt-sum__allergies.is-severe { border-color: var(--c-danger, #b91c1c); background: color-mix(in srgb, var(--c-danger, #b91c1c) 9%, transparent); }
+  .pt-sum__allergies.is-severe svg { color: var(--c-danger, #b91c1c); }
+  .pt-sum__allergies.is-none { border-color: var(--c-border, rgba(0, 0, 0, 0.1)); background: var(--c-bg, #f3f8f9); }
+  .pt-sum__allergies.is-none svg { color: var(--c-success, #15803d); }
+  .pt-sum__allergies ul { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .pt-sum__allergy { padding: 2px 10px; border-radius: 999px; background: var(--c-bg-1, #fff); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.12)); font-weight: 700; }
+  .pt-sum__allergy span { font-weight: 500; color: var(--c-text-2, #3d5a63); }
+  .pt-sum__allergy--severe { border-color: var(--c-danger, #b91c1c); color: var(--c-danger, #b91c1c); }
+
+  .pt-sum__title { margin: 0 0 var(--sp-3, 0.75rem); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-text-2, #3d5a63); }
+  .pt-sum__vitals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3, 0.75rem); margin: 0; padding: 0; list-style: none; }
+  .pt-sum__vital { position: relative; display: grid; gap: 2px; padding: var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-md, 10px); background: var(--c-bg, #f3f8f9); overflow: hidden; }
+  .pt-sum__vital-label { font-size: 0.78rem; color: var(--c-text-2, #3d5a63); }
+  .pt-sum__vital-value { font-size: 1.35rem; font-weight: 800; color: var(--c-text-1, #0b2a33); font-variant-numeric: tabular-nums; }
+  .pt-sum__vital-value small { font-size: 0.75rem; font-weight: 600; color: var(--c-text-2, #3d5a63); }
+  .pt-sum__vital-flag { font-size: 0.74rem; font-weight: 700; color: var(--c-success, #15803d); }
+  .pt-sum__vital-flag span { font-weight: 500; color: var(--c-text-3, #5b747c); }
+  .pt-sum__vital--high .pt-sum__vital-flag, .pt-sum__vital--low .pt-sum__vital-flag { color: var(--c-danger, #b91c1c); }
+  .pt-sum__vital--high { border-color: color-mix(in srgb, var(--c-danger, #b91c1c) 45%, transparent); }
+  .pt-sum__spark { margin-top: 4px; color: var(--pt-accent); }
+  .pt-sum__spark :global(*) { max-width: 100%; }
+
+  .pt-sum__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5, 1.25rem); }
+  .pt-sum__list { display: grid; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .pt-sum__list li { display: flex; align-items: flex-start; gap: var(--sp-2, 0.5rem); padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem); border-radius: var(--r-sm, 8px); background: var(--c-bg, #f3f8f9); color: var(--c-text-1, #0b2a33); font-size: 0.9rem; }
+  .pt-sum__list--meds svg { flex-shrink: 0; margin-top: 2px; color: var(--pt-accent); }
+  .pt-sum__dose { display: block; font-size: 0.8rem; color: var(--c-text-2, #3d5a63); }
+  .pt-sum__none { margin: 0; font-size: 0.88rem; color: var(--c-text-3, #5b747c); }
+
+  .pt-sum__visits { position: relative; display: grid; gap: var(--sp-3, 0.75rem); margin: 0; padding: 0 0 0 var(--sp-5, 1.25rem); list-style: none; }
+  .pt-sum__visits::before { content: ''; position: absolute; left: 5px; top: 6px; bottom: 6px; width: 2px; background: var(--c-border, rgba(0, 0, 0, 0.1)); }
+  .pt-sum__visits li { position: relative; display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 0 var(--sp-3, 0.75rem); font-size: 0.88rem; }
+  .pt-sum__visits li::before { content: ''; position: absolute; left: calc(var(--sp-5, 1.25rem) * -1 + 1px); top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--c-bg-1, #fff); border: 2px solid var(--pt-accent); }
+  .pt-sum__visit-date { grid-row: span 2; font-weight: 700; color: var(--c-text-2, #3d5a63); font-variant-numeric: tabular-nums; }
+  .pt-sum__visit-title { font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .pt-sum__visit-meta { font-size: 0.8rem; color: var(--c-text-3, #5b747c); }
+
+  @container (max-width: 760px) { .pt-sum__vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 520px) {
+    .pt-sum__cols { grid-template-columns: 1fr; }
+    .pt-sum__actions { width: 100%; }
+    .pt-sum__btn { flex: 1; justify-content: center; }
+  }
+</style>

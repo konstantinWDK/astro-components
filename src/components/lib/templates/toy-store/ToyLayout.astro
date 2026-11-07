@@ -1,0 +1,302 @@
+---
+/**
+ * ToyLayout — Full HTML document for the toy store template ("Kapow"): PromoBar, StoreHeader with
+ * Shop / Characters / Universes menus, CartDrawer, CartToast, LiveActivityToast and FooterMegaSection.
+ * Owns the comic "toy box" look through design tokens: Russo One display type, Chakra Petch UI type,
+ * thick ink outlines, hard offset shadows, red / yellow / blue palette, light + dark.
+ *
+ * @param {string} title - Page title (store name is appended).
+ * @param {string} description - Meta description.
+ * @param {ToyStore} store - Catalogue and settings. Default: the Kapow demo store.
+ * @param {ToyRoutes} routes - Page URLs.
+ * @param {string} currentHref - Highlights the matching menu link.
+ * @param {string} theme - Initial theme (light|dark|auto). The header toggle overrides it per visitor. Default 'light'.
+ * @param {boolean} seedCart - Pre-fill an empty cart with two demo items (previews only). Default false.
+ * @param {boolean} liveActivity - Show rotating recent-purchase notices. Default false.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ * @param {boolean} minimal - Hide promo bar and menu (checkout focus mode). Default false.
+ * @param {string} lang - Document language. Default 'en'.
+ *
+ * Slots: default (page content), `head` (extra tags in <head>).
+ */
+import '../../../../styles/global.css';
+import PromoBar from '../../ecommerce/PromoBar.astro';
+import StoreHeader from '../../ecommerce/StoreHeader.astro';
+import CartDrawer from '../../ecommerce/CartDrawer.astro';
+import CartToast from '../../ecommerce/CartToast.astro';
+import LiveActivityToast from '../../ecommerce/LiveActivityToast.astro';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import { kapowStore, toyRoutes, toyShopHref, toyCharacterHref, type ToyStore, type ToyRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  store?: ToyStore;
+  routes?: ToyRoutes;
+  currentHref?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  seedCart?: boolean;
+  liveActivity?: boolean;
+  noindex?: boolean;
+  minimal?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description,
+  store = kapowStore,
+  routes = toyRoutes,
+  currentHref,
+  theme = 'light',
+  seedCart = false,
+  liveActivity = false,
+  noindex = false,
+  minimal = false,
+  lang = 'en',
+} = Astro.props;
+
+const fullTitle = title.includes(store.name) ? title : `${title} — ${store.name} Toys`;
+const heroes = store.characters.filter((c) => c.faction === 'hero');
+const links = [
+  {
+    label: 'Shop',
+    href: routes.shop,
+    children: store.categories.map((c) => ({ label: c.name, href: toyShopHref(routes, { category: c.id }), description: c.description })),
+  },
+  {
+    label: 'Characters',
+    href: routes.characters,
+    children: [
+      ...heroes.slice(0, 4).map((c) => ({ label: c.name, href: toyCharacterHref(routes, c.id), description: c.alias })),
+      { label: 'All characters', href: routes.characters, description: `${store.characters.length} heroes and villains` },
+    ],
+  },
+  {
+    label: 'Universes',
+    href: routes.shop,
+    children: store.universes.map((u) => ({ label: u.name, href: toyShopHref(routes, { universe: u.id }), description: u.description })),
+  },
+  { label: 'Collectors', href: toyShopHref(routes, { age: 'collectors' }) },
+];
+const seed = seedCart
+  ? ['rexa-raptor-pack', 'mini-heroes-s1']
+      .map((s) => store.products.find((p) => p.slug === s))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p))
+      .map((p, i) => ({ id: p.slug, name: p.name, price: p.price, qty: i === 0 ? 1 : 3, icon: p.icon, hue: p.hue }))
+  : [];
+const activity = liveActivity
+  ? store.recentBuyers
+      .map((b) => {
+        const p = store.products.find((x) => x.slug === b.product);
+        return p ? { name: b.name, city: b.city, ago: b.ago, product: p.name, href: `${routes.product}${p.slug}/`, icon: p.icon, hue: p.hue } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => Boolean(x))
+  : [];
+const footer = [
+  { title: 'Shop', links: store.categories.map((c) => ({ label: c.name, href: toyShopHref(routes, { category: c.id }) })) },
+  { title: 'Universes', links: store.universes.map((u) => ({ label: u.name, href: toyShopHref(routes, { universe: u.id }) })) },
+  ...store.footer.slice(1),
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-kapow" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <meta name="theme-color" content={theme === 'dark' ? '#15101f' : '#fff6e3'} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <slot name="head" />
+  </head>
+  <body class="kapow">
+    <a class="kapow__skip" href="#main">Skip to content</a>
+    {!minimal && <PromoBar messages={store.promoMessages} storageKey={`${store.cartKey}-promo`} />}
+    <StoreHeader
+      brand={store.name}
+      brandHref={routes.home}
+      links={minimal ? [] : links}
+      searchAction={routes.shop}
+      searchPlaceholder="Search figures, characters…"
+      accountHref=""
+      cartKey={store.cartKey}
+      currentHref={currentHref}
+      variant="solid"
+    />
+    <main id="main" class="kapow__main" tabindex="-1">
+      <slot />
+    </main>
+    <FooterMegaSection
+      brand={store.name}
+      tagline={store.tagline}
+      columns={minimal ? [] : footer}
+      status="All orders dispatched within 24h"
+      copyright={`© ${new Date().getFullYear()} ${store.name} Toys. Demo store built with Astro Components Kit. All characters are fictional.`}
+    />
+    <CartDrawer
+      cartKey={store.cartKey}
+      title="Your toy box"
+      checkoutHref={routes.checkout}
+      currency={store.currency}
+      locale={store.locale}
+      freeShippingThreshold={store.freeShippingThreshold}
+      demoItems={seed}
+    />
+    <CartToast cartKey={store.cartKey} />
+    {activity.length > 0 && <LiveActivityToast items={activity} storageKey={`${store.cartKey}-activity`} />}
+  </body>
+</html>
+
+<style is:global>
+  /* ---------- Kapow tokens ---------- */
+  .theme-kapow {
+    --font-display: 'Russo One', 'Arial Black', system-ui, sans-serif;
+    --font-sans: 'Chakra Petch', system-ui, sans-serif;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 18px;
+    --r-xl: 26px;
+    --toy-border-w: 2.5px;
+    --toy-yellow: #ffd23f;
+    --toy-blue: #2546d6;
+    --toy-purple: #6b2fd6;
+    --toy-art-ink: #17121f;
+  }
+  .theme-kapow[data-theme='light'] {
+    --c-bg: #fff6e3;
+    --c-bg-1: #ffffff;
+    --c-bg-2: #ffe9bf;
+    --c-surface: rgba(23, 18, 31, 0.03);
+    --c-border: rgba(23, 18, 31, 0.16);
+    --c-text-1: #17121f;
+    --c-text-2: #4a4357;
+    --c-text-3: #5f586b;
+    --c-primary: #c81e30;
+    --c-primary-light: #c81e30;
+    --c-primary-glow: rgba(200, 30, 48, 0.14);
+    --c-accent: #2546d6;
+    --c-on-primary: #ffffff;
+    --ink-rgb: 23 18 31;
+    --paper-rgb: 255 255 255;
+    --c-success: #157347;
+    --c-warning: #8a4b06;
+    --c-danger: #b4232f;
+    --pm-ink-s: 60%;
+    --pm-ink-l: 30%;
+    --pm-soft-s: 80%;
+    --pm-soft-l: 78%;
+    --pm-soft-a: 0.95;
+    --toy-edge: #17121f;
+    --toy-drop: #17121f;
+    --toy-card-bg: #ffffff;
+    color-scheme: light;
+  }
+  .theme-kapow[data-theme='dark'] {
+    --c-bg: #15101f;
+    --c-bg-1: #211a30;
+    --c-bg-2: #2b2240;
+    --c-surface: rgba(255, 246, 227, 0.03);
+    --c-border: rgba(255, 246, 227, 0.14);
+    --c-text-1: #fff6e3;
+    --c-text-2: #cfc5dd;
+    --c-text-3: #a79cb8;
+    --c-primary: #ff6b7a;
+    --c-primary-light: #ff6b7a;
+    --c-primary-glow: rgba(255, 107, 122, 0.16);
+    --c-accent: #8fa6ff;
+    --c-on-primary: #17121f;
+    --ink-rgb: 255 246 227;
+    --paper-rgb: 21 16 31;
+    --c-success: #5fd39a;
+    --c-warning: #f4c06a;
+    --c-danger: #ff8a95;
+    --pm-ink-s: 70%;
+    --pm-ink-l: 80%;
+    --pm-soft-s: 45%;
+    --pm-soft-l: 26%;
+    --pm-soft-a: 0.85;
+    --toy-edge: #05030a;
+    --toy-drop: #05030a;
+    --toy-card-bg: #261e38;
+    color-scheme: dark;
+  }
+
+  body.kapow {
+    overflow-x: clip;
+    background: var(--c-bg);
+    font-family: var(--font-sans);
+  }
+  .kapow__main { position: relative; z-index: 1; outline: none; }
+  .kapow__skip {
+    position: fixed;
+    top: -60px;
+    left: 12px;
+    z-index: 2000;
+    padding: 0.6rem 1rem;
+    border: 2.5px solid var(--toy-edge);
+    border-radius: 999px;
+    background: var(--toy-yellow);
+    color: #17121f;
+    font-weight: 800;
+    transition: top 0.2s ease;
+  }
+  .kapow__skip:focus { top: 12px; color: #17121f; }
+  .kapow-container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 var(--sp-6); }
+  @media (max-width: 640px) { .kapow-container { padding: 0 var(--sp-4); } }
+
+  /* Display type: Russo One has one weight — never synthesize bold. */
+  .theme-kapow h1, .theme-kapow h2 { font-family: var(--font-display); font-weight: 400; font-synthesis: none; letter-spacing: 0; }
+
+  /* ---------- Reused library components, in the Kapow look ---------- */
+  html.theme-kapow .store-header { border-bottom: 3px solid var(--toy-edge); background: var(--c-bg); }
+  html.theme-kapow .store-header__brand { font-family: var(--font-display); font-weight: 400; font-size: 1.45rem; letter-spacing: 0.02em; text-transform: uppercase; }
+  html.theme-kapow .promo-bar { background: var(--toy-yellow); color: #17121f; border-bottom: 3px solid var(--toy-edge); }
+
+  html.theme-kapow .filters--glass .filters__form,
+  html.theme-kapow .p-toolbar,
+  html.theme-kapow .o-summary--glass {
+    border: 3px solid var(--toy-edge);
+    background: var(--toy-card-bg);
+    box-shadow: 5px 5px 0 var(--toy-drop);
+  }
+  html.theme-kapow .p-toolbar { padding: var(--sp-4) var(--sp-5); border-radius: var(--r-lg); }
+  html.theme-kapow .filters__group legend { font-family: var(--font-display); font-weight: 400; letter-spacing: 0.06em; }
+  html.theme-kapow .filters__toggle { border: 2.5px solid var(--toy-edge); box-shadow: 3px 3px 0 var(--toy-drop); background: var(--toy-card-bg); }
+
+  html.theme-kapow .cat-tile { border: 3px solid var(--toy-edge); box-shadow: 5px 5px 0 var(--toy-drop); background: var(--toy-card-bg); }
+  html.theme-kapow .cat-tile:hover { transform: translate(-2px, -3px) rotate(-0.6deg); box-shadow: 8px 9px 0 var(--toy-drop); }
+  html.theme-kapow .cat-tile__name { font-family: var(--font-display); font-weight: 400; }
+
+  html.theme-kapow .buy-box__add,
+  html.theme-kapow .buy-box__buy,
+  html.theme-kapow .countdown__cta,
+  html.theme-kapow .cns__btn {
+    border: 2.5px solid var(--toy-edge);
+    box-shadow: 4px 4px 0 var(--toy-drop);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  html.theme-kapow .buy-box__add:hover,
+  html.theme-kapow .buy-box__buy:hover,
+  html.theme-kapow .countdown__cta:hover,
+  html.theme-kapow .cns__btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--toy-drop); }
+  html.theme-kapow .countdown { border: 3px solid var(--toy-edge); box-shadow: 8px 8px 0 var(--toy-drop); }
+  html.theme-kapow .p-gallery__stage,
+  html.theme-kapow .p-gallery .p-media { border-radius: var(--r-lg); }
+  html.theme-kapow .fms__brand { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; }
+  @media (prefers-reduced-motion: reduce) {
+    html.theme-kapow .cat-tile:hover { transform: none; }
+  }
+</style>

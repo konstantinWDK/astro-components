@@ -1,0 +1,68 @@
+---
+/**
+ * ClinicReportsPage — Practice reports: consultations in person vs video, no-show trend, revenue
+ * by clinician, patient satisfaction gauge, visits by specialty and a month-over-month table.
+ *
+ * Usage (src/pages/app/reports.astro):
+ *   import { ClinicReportsPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicReportsPage />
+ *
+ * @param {ClinicData} data - Workspace data.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import GroupedBarChart from '../../charts/GroupedBarChart.astro';
+import LineChart from '../../charts/LineChart.astro';
+import HorizontalBarChart from '../../charts/HorizontalBarChart.astro';
+import GaugeChart from '../../charts/GaugeChart.astro';
+import PieChart from '../../charts/PieChart.astro';
+import MetricDeltaTable from '../../charts/MetricDeltaTable.astro';
+import { clinicData, clinicRoutes, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+---
+
+<ClinicLayout title="Reports" current="reports" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Reports"
+    description="Activity, access and quality — updated every hour. Figures are aggregated and never show patient details."
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Reports' }]}
+    actions={[{ label: 'Schedule email', icon: 'calendar' }, { label: 'Download PDF', icon: 'download', primary: true }]}
+    periods={['30 days', 'Quarter', 'Year']}
+    activePeriod={0}
+  />
+
+  <GroupedBarChart prefix="" title="Consultations per week" subtitle="In person vs video — video grew 47% in two months" categories={data.volume.categories} series={data.volume.series} variant="solid" height={260} />
+
+  <div class="pulso-grid pulso-grid--2-1">
+    <LineChart title="No-show rate" subtitle="Since SMS reminders were switched on in July" categories={data.noShows.categories} series={data.noShows.series} curve="smooth" area dots suffix="%" variant="solid" height={240} />
+    <GaugeChart prefix="" title="Patient satisfaction" subtitle="Post-visit survey, 612 answers" value={data.satisfaction} max={5} label="Average rating" suffix="/5" variant="solid" />
+  </div>
+
+  <div class="pulso-grid pulso-grid--1-1">
+    <HorizontalBarChart title="Revenue by clinician" subtitle="Last 30 days, € thousands" items={data.revenueByDoctor} prefix="€" suffix="k" variant="solid" />
+    <PieChart prefix="" title="Visits by specialty" slices={data.bySpecialty} donut centerLabel="30 days" suffix="%" variant="solid" />
+  </div>
+
+  <MetricDeltaTable
+    title="Month over month"
+    currentLabel="October"
+    previousLabel="September"
+    rows={[
+      { label: 'Consultations', current: 1342, previous: 1268, trend: [1180, 1215, 1268, 1342] },
+      { label: 'Booked online (%)', current: 62, previous: 55, trend: [41, 48, 55, 62] },
+      { label: 'Avg. wait time (min)', current: 9, previous: 11, invert: true, trend: [16, 13, 11, 9] },
+      { label: 'No-show rate (%)', current: 4.6, previous: 5.2, invert: true, trend: [6.9, 6.1, 5.2, 4.6] },
+      { label: 'Notes signed same day (%)', current: 94, previous: 88, trend: [79, 84, 88, 94] },
+    ]}
+    variant="solid"
+  />
+</ClinicLayout>

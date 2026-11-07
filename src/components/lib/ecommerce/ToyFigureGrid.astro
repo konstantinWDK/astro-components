@@ -1,0 +1,129 @@
+---
+/**
+ * ToyFigureGrid — Responsive grid of ToyFigureCard tiles with a comic empty state.
+ * Drop-in alternative to ProductGrid: same `id` contract, so FilterSidebar, ProductToolbar and
+ * ToyCharacterRail (filter mode) filter and sort it instantly — including `data-f-*` facets.
+ *
+ * @param {Product[]} products - Products to render (fill `facets` to enable facet filters).
+ * @param {Record<string, ToyCardMeta>} meta - Product slug → toy labels (character, universe, scale, age…).
+ * @param {string} id - Grid id that filters point at. Default 'toy-grid'.
+ * @param {string} productBase - Product URL prefix; links become `${productBase}${slug}/`. Default '#'.
+ * @param {number} columns - Desktop columns (2–5). Default 4.
+ * @param {string} cardVariant - ToyFigureCard variant (comic|clean). Default 'comic'.
+ * @param {string} cardSize - ToyFigureCard size (sm|md|lg). Default 'md'.
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {boolean} openCart - Open the drawer after adding (false = toast). Default true.
+ * @param {string} headingLevel - Card title element (h2|h3|h4). Default 'h3'.
+ * @param {string} emptyTitle - Empty state heading. Default 'No figures here… yet!'.
+ * @param {string} emptyText - Empty state copy.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: cards keep their own headings; the empty state is a polite status message.
+ */
+import ToyFigureCard from './ToyFigureCard.astro';
+import type { Product, ToyCardMeta } from './types';
+
+interface Props {
+  products?: Product[];
+  meta?: Record<string, ToyCardMeta>;
+  id?: string;
+  productBase?: string;
+  columns?: number;
+  cardVariant?: 'comic' | 'clean';
+  cardSize?: 'sm' | 'md' | 'lg';
+  currency?: string;
+  locale?: string;
+  cartKey?: string;
+  openCart?: boolean;
+  headingLevel?: 'h2' | 'h3' | 'h4';
+  emptyTitle?: string;
+  emptyText?: string;
+  className?: string;
+}
+
+const {
+  products = [
+    { slug: 'captain-nova-6in', name: 'Captain Nova · Hero Pose', price: 24.99, category: 'figures', rating: 4.8, reviews: 412, badge: 'Bestseller', badgeVariant: 'warning', icon: 'figure', hue: 212 },
+    { slug: 'bolt-x-converting', name: 'Bolt-X Converting Mech', price: 39.99, category: 'figures', rating: 4.7, reviews: 301, icon: 'robot', hue: 194 },
+    { slug: 'rexa-raptor-pack', name: 'Rexa & Pip · Raptor Rider', price: 29.99, category: 'figures', rating: 4.9, reviews: 342, badge: 'New', badgeVariant: 'info', icon: 'dino', hue: 40 },
+    { slug: 'star-cruiser', name: 'Star Ranger Cruiser', price: 89.99, compareAt: 109.99, category: 'vehicles', rating: 4.8, reviews: 156, badge: '-18%', badgeVariant: 'danger', icon: 'rocket', hue: 215 },
+  ],
+  meta = {
+    'captain-nova-6in': { character: 'Captain Nova', universe: 'Star Rangers', scale: '6 in', age: '4+', articulation: 28 },
+    'bolt-x-converting': { character: 'Bolt-X', universe: 'Mech Legion', scale: '8 in', age: '8+', articulation: 22 },
+    'rexa-raptor-pack': { character: 'Rexa', universe: 'Dino Strike', scale: '6 in', age: '4+', articulation: 24 },
+    'star-cruiser': { character: 'Captain Nova', universe: 'Star Rangers', scale: '6 in', age: '6+' },
+  },
+  id = 'toy-grid',
+  productBase = '#',
+  columns = 4,
+  cardVariant = 'comic',
+  cardSize = 'md',
+  currency = 'USD',
+  locale = 'en-US',
+  cartKey = 'ack-cart',
+  openCart = true,
+  headingLevel = 'h3',
+  emptyTitle = 'No figures here… yet!',
+  emptyText = 'Try another character or clear a filter to see more of the toy box.',
+  className = '',
+} = Astro.props;
+
+const cols = Math.min(5, Math.max(2, columns));
+const hrefFor = (slug: string) => (productBase === '#' ? '#' : `${productBase}${slug}/`);
+---
+
+<div class:list={['toy-grid-wrap', className]}>
+  <div class="toy-grid" id={id} style={`--tg-cols: ${cols}`} data-product-list>
+    {products.map((p) => (
+      <ToyFigureCard
+        product={p}
+        meta={meta[p.slug] ?? {}}
+        href={hrefFor(p.slug)}
+        variant={cardVariant}
+        size={cardSize}
+        currency={currency}
+        locale={locale}
+        cartKey={cartKey}
+        openCart={openCart}
+        headingLevel={headingLevel}
+      />
+    ))}
+  </div>
+  <div class="toy-grid__empty" role="status" data-product-empty hidden>
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21l20-9 20 9v25l-20 11-20-11z"/><path d="M12 21l20 9 20-9M32 30v27"/><path d="M19 35c0-4 6-4 6 0 0 3-3 3-3 6M22 46v1"/></svg>
+    <p class="toy-grid__empty-title">{emptyTitle}</p>
+    <p>{emptyText}</p>
+  </div>
+</div>
+
+<style>
+  .toy-grid-wrap { container-type: inline-size; }
+  .toy-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--tg-cols), minmax(0, 1fr));
+    gap: var(--sp-6, 1.5rem) var(--sp-5, 1.25rem);
+    padding: 0 6px 8px 0; /* room for the hard card shadows */
+  }
+  .toy-grid > :global([hidden]) { display: none; }
+  .toy-grid__empty {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-12, 3rem) var(--sp-6, 1.5rem);
+    border: 3px dashed var(--toy-edge, rgb(var(--ink-rgb, 255 255 255) / 0.3));
+    border-radius: var(--r-lg, 20px);
+    text-align: center;
+    color: var(--c-text-2, #a3a3a3);
+  }
+  .toy-grid__empty[hidden] { display: none; }
+  .toy-grid__empty svg { color: var(--c-primary-light, #d4a017); transform: rotate(-8deg); }
+  .toy-grid__empty p { margin: 0; max-width: 34ch; }
+  .toy-grid__empty-title { font-family: var(--font-display, inherit); font-size: 1.3rem; color: var(--c-text-1, #fff); }
+
+  @container (max-width: 1100px) { .toy-grid { grid-template-columns: repeat(min(var(--tg-cols), 3), minmax(0, 1fr)); } }
+  @container (max-width: 760px) { .toy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4, 1rem) var(--sp-3, 0.75rem); } }
+  @container (max-width: 380px) { .toy-grid { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,173 @@
+---
+/**
+ * ClinicLandingPage — Marketing site for the clinic SaaS: MedHero, clinic logos, features, how it
+ * works, a live booking widget ("what your patients see"), outcome stats, pricing per clinician,
+ * testimonials, FAQ and footer.
+ *
+ * Usage (src/pages/index.astro):
+ *   import { ClinicLandingPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicLandingPage />
+ *
+ * @param {ClinicData} data - Demo data (doctors and specialties feed the booking widget).
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import ClinicSiteLayout from './ClinicSiteLayout.astro';
+import MedHero from '../../sections/MedHero.astro';
+import MedBookingWizard from '../../sections/MedBookingWizard.astro';
+import LogoWallGrid from '../../sections/LogoWallGrid.astro';
+import FeatureIconGrid from '../../sections/FeatureIconGrid.astro';
+import HowItWorksSteps from '../../sections/HowItWorksSteps.astro';
+import StatsCounterBand from '../../sections/StatsCounterBand.astro';
+import PricingToggleCards from '../../sections/PricingToggleCards.astro';
+import TestimonialCarousel from '../../sections/TestimonialCarousel.astro';
+import FaqTwoColumn from '../../sections/FaqTwoColumn.astro';
+import { clinicData, clinicRoutes, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light', noindex = false } = Astro.props;
+---
+
+<ClinicSiteLayout
+  title="Pulso — the calm operating system for medical practices"
+  description="Online booking, schedules, patient records, e-prescriptions and video visits in one secure workspace for clinics and private practices."
+  brandHref={routes.landing}
+  links={[{ label: 'Product', href: '#features' }, { label: 'Patient booking', href: '#booking' }, { label: 'Pricing', href: '#pricing' }, { label: 'FAQ', href: '#faq' }]}
+  login={{ label: 'Sign in', href: routes.signIn }}
+  cta={{ label: 'Open demo', href: routes.dashboard }}
+  tagline="The calm operating system for medical practices."
+  footer={[
+    { title: 'Product', links: [{ label: 'Scheduling', href: '#features' }, { label: 'Patient records', href: '#features' }, { label: 'Video visits', href: '#features' }, { label: 'Pricing', href: '#pricing' }] },
+    { title: 'For patients', links: [{ label: 'Book a visit', href: routes.book }, { label: 'Find a clinic', href: '#' }] },
+    { title: 'Trust', links: [{ label: 'Security', href: '#' }, { label: 'GDPR & DPA', href: '#' }, { label: 'Status', href: '#' }] },
+    { title: 'Company', links: [{ label: 'About', href: '#' }, { label: 'Careers', href: '#' }, { label: 'Contact', href: '#' }] },
+  ]}
+  theme={theme}
+  noindex={noindex}
+>
+  <MedHero primary={{ label: 'Start free for 30 days', href: routes.signIn }} secondary={{ label: 'Explore the demo', href: routes.dashboard }} />
+
+  <LogoWallGrid
+    title="Trusted by 1,800+ practices across Europe"
+    columns={6}
+    variant="plain"
+    logos={[{ name: 'Clínica Alameda' }, { name: 'Nordic Health' }, { name: 'Centro Médico Sol' }, { name: 'Kinderpraxis' }, { name: 'DermaCare' }, { name: 'Harbour GP' }]}
+  />
+
+  <div id="features">
+    <FeatureIconGrid
+      eyebrow="Everything a practice needs"
+      title="Less admin, more time with patients"
+      subtitle="Replace the paper diary, the phone queue and three logins with one accessible workspace."
+      columns={3}
+      features={[
+        { icon: 'layers', title: 'Smart schedule', text: 'Week and day views per clinician, overlap-free booking and a live waiting room.' },
+        { icon: 'users', title: 'Patient records', text: 'Allergies, problems, medications, vitals trends and every visit in one chart.' },
+        { icon: 'sparkles', title: 'Video visits', text: 'Encrypted calls in the browser — no app for patients, chat and notes alongside.' },
+        { icon: 'lock', title: 'e-Prescriptions', text: 'Allergy and duplicate-therapy checks before anything reaches the pharmacy.' },
+        { icon: 'globe', title: 'Online booking', text: 'A booking page your patients can use in two minutes, with reminders by SMS.' },
+        { icon: 'shield', title: 'Private by design', text: 'EU hosting, encryption at rest and in transit, roles and a full audit log.' },
+      ]}
+    />
+  </div>
+
+  <HowItWorksSteps
+    eyebrow="Live in an afternoon"
+    title="From sign-up to first booking"
+    steps={[
+      { title: 'Add your team & hours', text: 'Invite clinicians and set consultation hours, slot lengths and visit types.', time: '15 min' },
+      { title: 'Import your patients', text: 'Upload a CSV or connect your current system — we map allergies and medications.', time: '30 min' },
+      { title: 'Share your booking page', text: 'Put the link on your website and Google profile. Patients book themselves.', time: '5 min' },
+    ]}
+    cta={{ label: 'Start your free trial', href: routes.signIn }}
+  />
+
+  <section class="pulso-section" id="booking" aria-labelledby="booking-intro">
+    <div class="landing-split">
+      <div class="landing-split__copy">
+        <p class="landing-eyebrow">What your patients see</p>
+        <h2 id="booking-intro">Booking that takes two minutes, not two phone calls</h2>
+        <p>Patients choose the service, the clinician, in person or video, and a free slot — then get a confirmation with a calendar file. Try it: this is the real widget.</p>
+        <ul class="landing-list">
+          <li>Works on any phone, screen reader and keyboard</li>
+          <li>Only shows the hours each clinician really works</li>
+          <li>SMS and email reminders cut no-shows by 40%</li>
+        </ul>
+      </div>
+      <MedBookingWizard
+        id="landing-booking"
+        eyebrow=""
+        title="Book with Clínica Alameda"
+        subtitle=""
+        specialties={data.specialties.slice(0, 4)}
+        doctors={data.doctors}
+        currency={data.currency}
+        locale={data.locale}
+      />
+    </div>
+  </section>
+
+  <StatsCounterBand
+    title="What practices see after three months"
+    stats={[
+      { value: 6, suffix: ' h', label: 'admin saved per clinician / week' },
+      { value: 41, prefix: '−', suffix: '%', label: 'no-shows' },
+      { value: 62, suffix: '%', label: 'visits booked online' },
+      { value: 4.8, suffix: '/5', decimals: 1, label: 'patient satisfaction' },
+    ]}
+  />
+
+  <div id="pricing">
+    <PricingToggleCards
+      title="Simple pricing, per clinician"
+      subtitle="Every plan includes unlimited patients, online booking and support in your language."
+      currency="€"
+      plans={[
+        { name: 'Solo', monthly: 49, yearly: 39, description: '1 clinician', features: ['Schedule & online booking', 'Patient records', 'SMS reminders (200/mo)', 'Email support'], cta: 'Start free', href: routes.signIn },
+        { name: 'Practice', monthly: 89, yearly: 71, description: 'Per clinician, up to 15', features: ['Everything in Solo', 'Video visits', 'e-Prescriptions', 'Waiting room & reports'], cta: 'Start free trial', href: routes.signIn, featured: true },
+        { name: 'Clinic group', monthly: 149, yearly: 119, description: 'Per clinician, multi-site', features: ['Everything in Practice', 'Multiple locations', 'API & HL7/FHIR export', 'Dedicated success manager'], cta: 'Talk to sales', href: '#' },
+      ]}
+    />
+  </div>
+
+  <TestimonialCarousel
+    title="Clinicians on Pulso"
+    items={[
+      { quote: 'I finish my notes before the next patient sits down. The SOAP template and vitals flags are exactly how I think.', name: 'Dr. Laura Navarro', role: 'GP, Clínica Alameda', rating: 5 },
+      { quote: 'Our phone used to ring all morning. Now 6 in 10 bookings come in online and reception can focus on people in the room.', name: 'Rosa Jiménez', role: 'Practice manager', rating: 5 },
+      { quote: 'Video visits just work — parents join from the browser and I can see the inhaler technique myself.', name: 'Dr. Emi Sato', role: 'Pediatrician', rating: 5 },
+    ]}
+  />
+
+  <div id="faq">
+    <FaqTwoColumn
+      title="Questions, answered"
+      subtitle="Can’t find what you need? Our team replies in under 2 hours on working days."
+      support={{ label: 'Contact support', href: '#' }}
+      items={[
+        { q: 'Is patient data safe?', a: 'Data is encrypted at rest and in transit and hosted in the EU, with role-based access, two-factor sign-in and a full audit log. We sign a data processing agreement with every practice.' },
+        { q: 'Do patients need to install an app for video visits?', a: 'No. Video visits open in any modern browser on phone or computer from the link in their confirmation.' },
+        { q: 'Can I import my existing patients?', a: 'Yes. We import patients, allergies, problems and medications from CSV or from the most common practice systems at no cost.' },
+        { q: 'Does Pulso replace my clinical judgement?', a: 'Never. Alerts for allergies or out-of-range vitals are reminders; every decision and signature stays with the clinician.' },
+      ]}
+    />
+  </div>
+</ClinicSiteLayout>
+
+<style>
+  .landing-split { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(1.5rem, 4vw, 3.5rem); align-items: start; }
+  .landing-eyebrow { margin: 0 0 var(--sp-2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--app-accent); }
+  .landing-split__copy h2 { margin: 0; font-size: clamp(1.7rem, 3.6vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--c-text-1); }
+  .landing-split__copy p { margin: var(--sp-4) 0 0; font-size: 1.05rem; line-height: 1.65; }
+  .landing-list { display: grid; gap: var(--sp-2); margin: var(--sp-5) 0 0; padding: 0; list-style: none; }
+  .landing-list li { display: flex; align-items: center; gap: var(--sp-2); color: var(--c-text-1); }
+  .landing-list li::before { content: ''; flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: color-mix(in srgb, var(--app-accent) 15%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e7490' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 12px no-repeat; }
+  @media (max-width: 960px) { .landing-split { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,110 @@
+---
+/**
+ * CyberCrewGrid — Team as access badges: generated pixel-glyph avatars (no photos needed), handle,
+ * name, role, location, a clearance meter and an ID code, with a glitch shift on hover.
+ *
+ * @param {string} eyebrow - Index label. Default '[02] CREW'.
+ * @param {string} title - Heading. Default 'Operators of the syndicate'.
+ * @param {Array<{name: string, handle: string, role: string, clearance?: number, location?: string, href?: string}>} crew - People (clearance 1–5).
+ * @param {number} columns - Desktop columns (2–4). Default 3.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a list of articles with h3 names; the avatar is decorative; clearance is
+ * written as text ("Clearance 4 of 5"); the optional profile link has a descriptive label.
+ */
+interface Person { name: string; handle: string; role: string; clearance?: number; location?: string; href?: string }
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  crew?: Person[];
+  columns?: number;
+  className?: string;
+}
+
+const {
+  eyebrow = '[02] CREW',
+  title = 'Operators of the syndicate',
+  crew = [
+    { name: 'Mara Okonkwo', handle: 'm4ra', role: 'Founder · protocol', clearance: 5, location: 'Lagos' },
+    { name: 'Teo Vasquez', handle: 'gh0stwire', role: 'Scheduler & mesh', clearance: 5, location: 'Madrid' },
+    { name: 'Ren Takahashi', handle: 'r3n', role: 'Enclaves', clearance: 4, location: 'Tokyo' },
+  ],
+  columns = 3,
+  className = '',
+} = Astro.props;
+
+const cols = Math.min(4, Math.max(2, columns));
+const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+// 5×5 mirrored pixel glyph from the handle (identicon style).
+const glyph = (s: string) => {
+  const h = hash(s);
+  const cells: Array<[number, number]> = [];
+  for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) if ((h >> (y * 3 + x)) & 1) { cells.push([x, y]); if (x < 2) cells.push([4 - x, y]); }
+  return cells;
+};
+---
+
+<section class:list={['cycrew', className]} aria-labelledby="cycrew-title" style={`--cc-cols: ${cols}`}>
+  <header class="cycrew__head">
+    {eyebrow && <p class="cycrew__eyebrow">{eyebrow}</p>}
+    <h2 class="cycrew__title" id="cycrew-title">{title}</h2>
+  </header>
+  <ul class="cycrew__grid">
+    {crew.map((p) => {
+      const lvl = Math.min(5, Math.max(1, p.clearance ?? 1));
+      const id = `0x${hash(p.handle).toString(16).slice(0, 4).toUpperCase()}`;
+      return (
+        <li>
+          <article class="cycrew__card" aria-labelledby={`cc-${p.handle}`}>
+            <div class="cycrew__top">
+              <svg class="cycrew__avatar" viewBox="0 0 5 5" aria-hidden="true" shape-rendering="crispEdges">
+                {glyph(p.handle).map(([x, y]) => <rect x={x} y={y} width="1" height="1" />)}
+              </svg>
+              <div class="cycrew__meta">
+                <p class="cycrew__handle">@{p.handle}</p>
+                <p class="cycrew__id" aria-hidden="true">ID//{id}</p>
+              </div>
+            </div>
+            <h3 class="cycrew__name" id={`cc-${p.handle}`}>{p.name}</h3>
+            <p class="cycrew__role">{p.role}{p.location && <span> · {p.location}</span>}</p>
+            <div class="cycrew__clear">
+              <span class="cycrew__clear-label">Clearance {lvl} of 5</span>
+              <span class="cycrew__clear-bar" aria-hidden="true">{[1, 2, 3, 4, 5].map((n) => <i class:list={{ on: n <= lvl }} />)}</span>
+            </div>
+            {p.href && <a class="cycrew__link" href={p.href}>Profile<span class="sr-only"> of {p.name}</span> ↗</a>}
+          </article>
+        </li>
+      );
+    })}
+  </ul>
+</section>
+
+<style>
+  .cycrew { --cc-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); color: var(--c-text-1, #f2f2f2); container-type: inline-size; }
+  .cycrew__head { margin-bottom: var(--sp-6, 1.5rem); }
+  .cycrew__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cycrew__title { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.8rem, 5cqi, 3.2rem); font-weight: 900; line-height: 1; text-transform: uppercase; }
+  .cycrew__grid { display: grid; grid-template-columns: repeat(var(--cc-cols), minmax(0, 1fr)); gap: var(--sp-5, 1.25rem); margin: 0; padding: 0; list-style: none; }
+  .cycrew__card { position: relative; display: grid; gap: var(--sp-2, 0.5rem); height: 100%; padding: var(--sp-5, 1.25rem); border: 2px solid var(--cc-edge); background: var(--c-bg-1, #0c0c12); font-family: var(--font-mono, monospace); clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); transition: transform 0.15s steps(2), box-shadow 0.15s steps(2); }
+  .cycrew__card::after { content: ''; position: absolute; top: 0; right: 0; width: 31px; height: 2px; background: var(--cc-edge); transform: translate(5px, 9px) rotate(45deg); }
+  .cycrew__card:hover { transform: translate(-3px, 0); box-shadow: 6px 0 0 var(--cy-magenta, #ff2bd6), -3px 0 0 var(--cy-cyan, #00f0ff); }
+  .cycrew__top { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); margin-bottom: var(--sp-2, 0.5rem); }
+  .cycrew__avatar { width: 56px; height: 56px; padding: 6px; border: 2px solid var(--cc-edge); background: var(--c-bg, #050507); fill: var(--cy-acid, #d4ff00); }
+  :global([data-theme='light']) .cycrew__avatar { fill: var(--c-text-1, #0a0a0a); background: var(--cy-acid, #d4ff00); }
+  .cycrew__handle { margin: 0; font-weight: 800; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cycrew__id { margin: 0; font-size: 0.7rem; letter-spacing: 0.12em; color: var(--c-text-3, #8a8a99); }
+  .cycrew__name { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 1.15rem; font-weight: 800; text-transform: uppercase; }
+  .cycrew__role { margin: 0; font-size: 0.85rem; color: var(--c-text-2, #a6a6b4); }
+  .cycrew__clear { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2, 0.5rem); margin-top: var(--sp-2, 0.5rem); padding-top: var(--sp-3, 0.75rem); border-top: 1px dashed rgb(var(--ink-rgb, 242 242 242) / 0.25); }
+  .cycrew__clear-label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-2, #a6a6b4); }
+  .cycrew__clear-bar { display: flex; gap: 3px; }
+  .cycrew__clear-bar i { width: 14px; height: 10px; border: 1.5px solid var(--cc-edge); }
+  .cycrew__clear-bar i.on { background: var(--cy-magenta, #ff2bd6); border-color: var(--cy-magenta, #ff2bd6); }
+  .cycrew__link { justify-self: start; min-height: 44px; display: inline-flex; align-items: center; color: var(--c-text-1, #f2f2f2); font-weight: 700; }
+  .cycrew__link:focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @container (max-width: 900px) { .cycrew__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 520px) { .cycrew__grid { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .cycrew__card { transition: none; } .cycrew__card:hover { transform: none; } }
+</style>

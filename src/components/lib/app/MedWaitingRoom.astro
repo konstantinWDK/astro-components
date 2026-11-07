@@ -1,0 +1,228 @@
+---
+/**
+ * MedWaitingRoom — Live waiting-room queue for clinics: checked-in patients with priority, live
+ * wait timers (amber/red past the target), doctor and reason, and "Call in" / "Start visit" actions
+ * that move each patient through waiting → called → in consultation.
+ *
+ * @param {string} title - Card title. Default 'Waiting room'.
+ * @param {Array<{id: string, name: string, waited: number, appointment?: string, doctor?: string, reason?: string, priority?: 'routine'|'priority'|'urgent', status?: 'waiting'|'called'|'in-room', href?: string}>} patients - Queue (waited = minutes so far).
+ * @param {number} target - Target wait in minutes; amber at target, red at 2× target. Default 15.
+ * @param {boolean} live - Advance the timers every minute. Default true.
+ * @param {string} startLabel - Label of the link shown once a patient is called. Default 'Start visit'.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} id - Base id. Default 'waiting-room'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: an ordered list sorted by priority then wait; waits are text ("12 min"), status
+ * changes are announced in a polite live region, priority is written in text as well as colour.
+ * Emits `app:patient-called` with `{ id, name }`.
+ */
+import { initials, hueFrom } from './app-icons';
+
+interface Waiting {
+  id: string;
+  name: string;
+  waited: number;
+  appointment?: string;
+  doctor?: string;
+  reason?: string;
+  priority?: 'routine' | 'priority' | 'urgent';
+  status?: 'waiting' | 'called' | 'in-room';
+  href?: string;
+}
+
+interface Props {
+  title?: string;
+  patients?: Waiting[];
+  target?: number;
+  live?: boolean;
+  startLabel?: string;
+  variant?: 'card' | 'plain';
+  id?: string;
+  className?: string;
+}
+
+const {
+  title = 'Waiting room',
+  patients = [
+    { id: 'p1', name: 'David Cohen', waited: 12, appointment: '10:30', doctor: 'Dr. Okafor', reason: 'Hypertension review', priority: 'routine', status: 'waiting' },
+    { id: 'p2', name: 'Mei Chen', waited: 4, appointment: '11:00', doctor: 'Dr. Navarro', reason: 'Allergy action plan', priority: 'priority', status: 'waiting' },
+    { id: 'p3', name: 'Hans Müller', waited: 31, appointment: '11:00', doctor: 'Dr. Okafor', reason: 'Shortness of breath', priority: 'urgent', status: 'waiting' },
+  ],
+  target = 15,
+  live = true,
+  startLabel = 'Start visit',
+  variant = 'card',
+  id = 'waiting-room',
+  className = '',
+} = Astro.props;
+
+const rank = { urgent: 0, priority: 1, routine: 2 } as const;
+const queue = [...patients].sort((a, b) => rank[a.priority ?? 'routine'] - rank[b.priority ?? 'routine'] || b.waited - a.waited);
+const avg = patients.length ? Math.round(patients.reduce((s, p) => s + p.waited, 0) / patients.length) : 0;
+const level = (m: number) => (m >= target * 2 ? 'late' : m >= target ? 'warn' : 'ok');
+const priorityLabel = { urgent: 'Urgent', priority: 'Priority', routine: 'Routine' } as const;
+---
+
+<section
+  class:list={['wroom', `wroom--${variant}`, className]}
+  aria-labelledby={`${id}-title`}
+  data-wroom
+  data-target={target}
+  data-live={live ? '' : undefined}
+>
+  <header class="wroom__head">
+    <div>
+      <h2 class="wroom__title" id={`${id}-title`}>{title}</h2>
+      <p class="wroom__sub"><span data-wroom-waiting>{patients.filter((p) => (p.status ?? 'waiting') === 'waiting').length}</span> waiting · average {avg} min · target {target} min</p>
+    </div>
+    <span class="wroom__live" aria-hidden="true"><span></span>Live</span>
+  </header>
+
+  {queue.length === 0 ? (
+    <p class="wroom__empty">No one is waiting. Nice.</p>
+  ) : (
+    <ol class="wroom__list">
+      {queue.map((p) => (
+        <li class:list={['wroom__item', `is-${p.status ?? 'waiting'}`]} data-wroom-item data-id={p.id} data-name={p.name} data-waited={p.waited}>
+          <span class="wroom__avatar" style={`--av-h: ${hueFrom(p.name)}`} aria-hidden="true">{initials(p.name)}</span>
+          <div class="wroom__info">
+            <p class="wroom__name">
+              {p.name}
+              <span class={`wroom__prio wroom__prio--${p.priority ?? 'routine'}`}>{priorityLabel[p.priority ?? 'routine']}</span>
+            </p>
+            <p class="wroom__meta">
+              {p.appointment && <span>Appt {p.appointment}</span>}
+              {p.doctor && <span>{p.doctor}</span>}
+              {p.reason && <span>{p.reason}</span>}
+            </p>
+          </div>
+          <p class={`wroom__wait wroom__wait--${level(p.waited)}`} data-wroom-wait>
+            <strong data-wroom-min>{p.waited}</strong> min
+            <span class="sr-only"> waiting</span>
+          </p>
+          <div class="wroom__actions">
+            <button type="button" class="wroom__btn" data-wroom-call hidden={(p.status ?? 'waiting') !== 'waiting'} aria-label={`Call ${p.name} in`}>Call in</button>
+            <a class="wroom__btn wroom__btn--primary" href={p.href ?? '#'} data-wroom-start hidden={(p.status ?? 'waiting') === 'waiting'}>{startLabel}<span class="sr-only"> with {p.name}</span></a>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )}
+  <p class="sr-only" role="status" aria-live="polite" data-wroom-status></p>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wroom]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const target = Number(root.dataset.target) || 15;
+    const status = root.querySelector<HTMLElement>('[data-wroom-status]');
+    const waitingCount = root.querySelector<HTMLElement>('[data-wroom-waiting]');
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-wroom-item]'));
+
+    const recount = () => {
+      if (waitingCount) waitingCount.textContent = String(items.filter((i) => i.classList.contains('is-waiting')).length);
+    };
+
+    items.forEach((item) => {
+      const call = item.querySelector<HTMLButtonElement>('[data-wroom-call]');
+      const start = item.querySelector<HTMLAnchorElement>('[data-wroom-start]');
+      call?.addEventListener('click', () => {
+        item.classList.remove('is-waiting');
+        item.classList.add('is-called');
+        call.hidden = true;
+        if (start) { start.hidden = false; start.focus(); }
+        recount();
+        const name = item.dataset.name;
+        if (status) status.textContent = `${name} has been called in.`;
+        document.dispatchEvent(new CustomEvent('app:patient-called', { detail: { id: item.dataset.id, name } }));
+      });
+    });
+
+    // Timers are plain text updated once a minute (not motion), so they also run with reduced motion.
+    if (root.dataset.live === undefined) return;
+    window.setInterval(() => {
+      items.forEach((item) => {
+        if (!item.classList.contains('is-waiting')) return;
+        const m = Number(item.dataset.waited) + 1;
+        item.dataset.waited = String(m);
+        const min = item.querySelector('[data-wroom-min]');
+        const wait = item.querySelector<HTMLElement>('[data-wroom-wait]');
+        if (min) min.textContent = String(m);
+        if (wait) wait.className = `wroom__wait wroom__wait--${m >= target * 2 ? 'late' : m >= target ? 'warn' : 'ok'}`;
+      });
+    }, 60_000);
+  });
+</script>
+
+<style>
+  .wroom { --wr-accent: var(--app-accent, var(--c-primary-light, #0e7490)); min-width: 0; }
+  .wroom--card { padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+  .wroom__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-bottom: var(--sp-4, 1rem); }
+  .wroom__title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .wroom__sub { margin: 2px 0 0; font-size: 0.85rem; color: var(--c-text-2, #3d5a63); }
+  .wroom__live { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c-success, #15803d) 12%, transparent); color: var(--c-success, #15803d); font-size: 0.75rem; font-weight: 700; }
+  .wroom__live span { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: wr-pulse 2s ease-in-out infinite; }
+
+  .wroom__list { display: grid; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .wroom__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
+    border-radius: var(--r-md, 10px);
+    background: var(--c-bg, #f3f8f9);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .wroom__item.is-called, .wroom__item.is-in-room { border-color: var(--wr-accent); background: color-mix(in srgb, var(--wr-accent) 7%, var(--c-bg-1, #fff)); }
+  .wroom__avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: hsl(var(--av-h) 55% 88%); color: hsl(var(--av-h) 60% 24%); font-size: 0.8rem; font-weight: 700; }
+  .wroom__name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .wroom__meta { display: flex; flex-wrap: wrap; gap: 0 var(--sp-3, 0.75rem); margin: 2px 0 0; font-size: 0.8rem; color: var(--c-text-2, #3d5a63); }
+  .wroom__prio { padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+  .wroom__prio--routine { background: rgb(var(--ink-rgb, 15 23 42) / 0.06); color: var(--c-text-2, #3d5a63); }
+  .wroom__prio--priority { background: color-mix(in srgb, var(--c-warning, #a16207) 14%, transparent); color: var(--c-warning, #a16207); }
+  .wroom__prio--urgent { background: var(--c-danger, #b91c1c); color: #fff; }
+
+  .wroom__wait { margin: 0; font-size: 0.82rem; color: var(--c-text-2, #3d5a63); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .wroom__wait strong { font-size: 1.15rem; color: var(--c-text-1, #0b2a33); }
+  .wroom__wait--warn strong { color: var(--c-warning, #a16207); }
+  .wroom__wait--late strong { color: var(--c-danger, #b91c1c); }
+  .is-called .wroom__wait, .is-in-room .wroom__wait { opacity: 0.6; }
+
+  .wroom__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--wr-accent);
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--wr-accent);
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .wroom__btn:hover { background: color-mix(in srgb, var(--wr-accent) 10%, transparent); }
+  .wroom__btn--primary { background: var(--wr-accent); color: var(--c-on-primary, #fff); }
+  .wroom__btn--primary:hover { background: var(--wr-accent); filter: brightness(1.08); color: var(--c-on-primary, #fff); }
+  .wroom__btn[hidden] { display: none; }
+  .wroom__btn:focus-visible { outline: 3px solid var(--wr-accent); outline-offset: 2px; }
+  .wroom__empty { margin: 0; padding: var(--sp-6, 1.5rem); text-align: center; color: var(--c-text-2, #3d5a63); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @keyframes wr-pulse { 50% { opacity: 0.35; } }
+  @media (max-width: 560px) {
+    .wroom__item { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .wroom__actions { grid-column: 1 / -1; }
+    .wroom__btn { width: 100%; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wroom__live span { animation: none; }
+    .wroom__item { transition: none; }
+  }
+</style>

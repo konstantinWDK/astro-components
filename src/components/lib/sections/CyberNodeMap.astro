@@ -1,0 +1,225 @@
+---
+/**
+ * CyberNodeMap — Network map for infrastructure / cyberpunk sites: a dot-matrix world with nodes
+ * placed by latitude and longitude, animated links between them, pulsing status rings, a HUD
+ * scanner sweep and a side table of regions with drifting latency and GPU counts.
+ *
+ * @param {string} eyebrow - Index label. Default '[03] THE GRID'.
+ * @param {string} title - Heading. Default 'Live on six continents'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<{id: string, city: string, region?: string, lat: number, lon: number, gpus?: number, latency?: number, status?: 'online'|'degraded'|'offline'}>} nodes - Map points.
+ * @param {Array<[string, string]>} connections - Node id pairs to link.
+ * @param {boolean} live - Let latency numbers drift every few seconds. Default true.
+ * @param {string} variant - Panel style (framed|bare). Default 'framed'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the map is one labelled image with a text summary; the same data is a real
+ * table next to it (status written in text); animations stop with reduced motion and
+ * the drifting numbers are not announced.
+ */
+interface Node {
+  id: string;
+  city: string;
+  region?: string;
+  lat: number;
+  lon: number;
+  gpus?: number;
+  latency?: number;
+  status?: 'online' | 'degraded' | 'offline';
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  nodes?: Node[];
+  connections?: Array<[string, string]>;
+  live?: boolean;
+  variant?: 'framed' | 'bare';
+  className?: string;
+}
+
+const {
+  eyebrow = '[03] THE GRID',
+  title = 'Live on six continents',
+  subtitle,
+  nodes = [
+    { id: 'sfo', city: 'San Francisco', lat: 37.7, lon: -122.4, gpus: 3120, latency: 42, status: 'online' },
+    { id: 'nyc', city: 'New York', lat: 40.7, lon: -74, gpus: 4480, latency: 36, status: 'online' },
+    { id: 'ams', city: 'Amsterdam', lat: 52.4, lon: 4.9, gpus: 5260, latency: 22, status: 'online' },
+    { id: 'sin', city: 'Singapore', lat: 1.35, lon: 103.8, gpus: 3390, latency: 33, status: 'online' },
+    { id: 'tyo', city: 'Tokyo', lat: 35.7, lon: 139.7, gpus: 4970, latency: 27, status: 'degraded' },
+    { id: 'syd', city: 'Sydney', lat: -33.9, lon: 151.2, gpus: 1190, latency: 66, status: 'offline' },
+  ],
+  connections = [['sfo', 'nyc'], ['nyc', 'ams'], ['ams', 'sin'], ['sin', 'tyo'], ['tyo', 'sfo'], ['sin', 'syd']],
+  live = true,
+  variant = 'framed',
+  className = '',
+} = Astro.props;
+
+// Dot-matrix land mask: 48 columns (7.5° lon) × 20 rows (7.5° lat, 80°N → 70°S). Column ranges per row.
+const LAND: Array<Array<[number, number]>> = [
+  [[17, 21], [32, 42]],
+  [[8, 14], [16, 21], [28, 47]],
+  [[2, 16], [24, 27], [28, 47]],
+  [[6, 16], [23, 23], [24, 29], [29, 42]],
+  [[7, 16], [23, 29], [29, 42]],
+  [[7, 14], [22, 29], [30, 41], [42, 43]],
+  [[8, 13], [22, 28], [28, 31], [32, 39]],
+  [[9, 13], [22, 28], [28, 31], [33, 35], [37, 39]],
+  [[10, 12], [21, 29], [33, 35], [36, 38]],
+  [[12, 13], [22, 29], [37, 38]],
+  [[13, 17], [24, 29], [36, 42]],
+  [[13, 19], [25, 29], [37, 42]],
+  [[13, 19], [25, 29]],
+  [[14, 18], [25, 28], [30, 30], [40, 43]],
+  [[14, 17], [26, 28], [39, 43]],
+  [[14, 16], [39, 43]],
+  [[14, 15], [47, 47]],
+  [[14, 14]],
+  [],
+  [],
+];
+const W = 960;
+const H = 400;
+const cw = W / 48;
+const rh = H / 20;
+const dots: Array<[number, number]> = [];
+LAND.forEach((ranges, r) => ranges.forEach(([a, b]) => { for (let c = a; c <= b; c++) dots.push([c * cw + cw / 2, r * rh + rh / 2]); }));
+const project = (lat: number, lon: number): [number, number] => [((lon + 180) / 360) * W, ((80 - lat) / 150) * H];
+const byId = Object.fromEntries(nodes.map((n) => [n.id, { ...n, xy: project(n.lat, n.lon) }]));
+const arcs = connections
+  .map(([a, b]) => [byId[a], byId[b]] as const)
+  .filter(([a, b]) => a && b)
+  .map(([a, b]) => {
+    const [x1, y1] = a.xy;
+    const [x2, y2] = b.xy;
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2 - Math.min(90, Math.hypot(x2 - x1, y2 - y1) * 0.25);
+    return `M${x1.toFixed(1)} ${y1.toFixed(1)} Q${mx.toFixed(1)} ${my.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  });
+const online = nodes.filter((n) => (n.status ?? 'online') === 'online').length;
+const totalGpus = nodes.reduce((s, n) => s + (n.gpus ?? 0), 0);
+const statusLabel = { online: 'Online', degraded: 'Degraded', offline: 'Offline' } as const;
+---
+
+<section class:list={['cymap', `cymap--${variant}`, className]} aria-labelledby="cymap-title" data-cymap data-live={live ? '' : undefined}>
+  <header class="cymap__head">
+    <div>
+      {eyebrow && <p class="cymap__eyebrow">{eyebrow}</p>}
+      <h2 class="cymap__title" id="cymap-title">{title}</h2>
+      {subtitle && <p class="cymap__sub">{subtitle}</p>}
+    </div>
+    <p class="cymap__summary"><strong>{online}/{nodes.length}</strong> regions online · <strong>{totalGpus.toLocaleString('en-US')}</strong> GPUs</p>
+  </header>
+
+  <div class="cymap__body">
+    <div class="cymap__map">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Map of ${nodes.length} grid regions: ${nodes.map((n) => `${n.city} ${statusLabel[n.status ?? 'online'].toLowerCase()}`).join(', ')}.`}>
+        <g class="cymap__land">
+          {dots.map(([x, y]) => <rect x={x - 2.5} y={y - 2.5} width="5" height="5" />)}
+        </g>
+        <g class="cymap__arcs">
+          {arcs.map((d, i) => <path d={d} style={`animation-delay: ${-i * 0.7}s`} />)}
+        </g>
+        {Object.values(byId).map((n) => (
+          <g class={`cymap__node cymap__node--${n.status ?? 'online'}`} transform={`translate(${n.xy[0].toFixed(1)} ${n.xy[1].toFixed(1)})`}>
+            <circle class="cymap__ring" r="14" />
+            <rect x="-5" y="-5" width="10" height="10" />
+            <text x="10" y="-10">{n.id.toUpperCase()}</text>
+          </g>
+        ))}
+        <rect class="cymap__sweep" x="0" y="0" width="80" height={H} />
+      </svg>
+      <span class="cymap__corner cymap__corner--tl" aria-hidden="true"></span>
+      <span class="cymap__corner cymap__corner--tr" aria-hidden="true"></span>
+      <span class="cymap__corner cymap__corner--bl" aria-hidden="true"></span>
+      <span class="cymap__corner cymap__corner--br" aria-hidden="true"></span>
+    </div>
+
+    <div class="cymap__table-wrap" tabindex="0" role="region" aria-label="Regions">
+      <table class="cymap__table">
+        <caption class="sr-only">Grid regions with status, GPUs and latency</caption>
+        <thead><tr><th scope="col">Node</th><th scope="col">Status</th><th scope="col" class="num">GPUs</th><th scope="col" class="num">Ping</th></tr></thead>
+        <tbody>
+          {nodes.map((n) => (
+            <tr class={`is-${n.status ?? 'online'}`}>
+              <th scope="row"><span class="cymap__id">{n.id.toUpperCase()}</span>{n.city}</th>
+              <td><span class="cymap__pill">{statusLabel[n.status ?? 'online']}</span></td>
+              <td class="num">{(n.gpus ?? 0).toLocaleString('en-US')}</td>
+              <td class="num">{n.status === 'offline' ? '—' : <><span data-cymap-ping={n.latency}>{n.latency}</span>ms</>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cymap]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    if (root.dataset.live === undefined || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const pings = Array.from(root.querySelectorAll<HTMLElement>('[data-cymap-ping]'));
+    window.setInterval(() => {
+      pings.forEach((p) => { const b = Number(p.dataset.cymapPing); p.textContent = String(Math.max(1, b + Math.round((Math.random() - 0.5) * 8))); });
+    }, 2200);
+  });
+</script>
+
+<style>
+  .cymap { --cm-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); --cm-acid: var(--cy-acid, #d4ff00); --cm-mag: var(--cy-magenta, #ff2bd6); --cm-cyan: var(--cy-cyan, #00f0ff); container-type: inline-size; color: var(--c-text-1, #f2f2f2); }
+  .cymap__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sp-4, 1rem); margin-bottom: var(--sp-6, 1.5rem); }
+  .cymap__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cm-acid)); }
+  .cymap__title { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.8rem, 5cqi, 3.4rem); font-weight: 900; line-height: 1; text-transform: uppercase; }
+  .cymap__sub { margin: var(--sp-3, 0.75rem) 0 0; max-width: 46ch; font-family: var(--font-mono, monospace); line-height: 1.7; color: var(--c-text-2, #a6a6b4); }
+  .cymap__summary { margin: 0; font-family: var(--font-mono, monospace); font-size: 0.85rem; color: var(--c-text-2, #a6a6b4); }
+  .cymap__summary strong { color: var(--c-text-1, #f2f2f2); }
+
+  .cymap__body { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); border: 2px solid var(--cm-edge); }
+  .cymap--bare .cymap__body { border: 0; }
+  .cymap__map { position: relative; padding: var(--sp-4, 1rem); border-right: 2px solid var(--cm-edge); background: radial-gradient(80% 80% at 50% 50%, color-mix(in srgb, var(--cm-cyan) 8%, transparent), transparent 70%), var(--c-bg-1, #0c0c12); overflow: hidden; }
+  .cymap__map svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .cymap__land rect { fill: rgb(var(--ink-rgb, 242 242 242) / 0.22); }
+  .cymap__arcs path { fill: none; stroke: var(--cm-mag); stroke-width: 1.5; stroke-dasharray: 6 8; opacity: 0.85; animation: cm-flow 2s linear infinite; }
+  .cymap__node rect { fill: var(--cm-acid); stroke: #050507; stroke-width: 1.5; }
+  .cymap__node text { fill: var(--c-text-1, #f2f2f2); font-family: var(--font-mono, monospace); font-size: 13px; font-weight: 700; letter-spacing: 0.08em; paint-order: stroke; stroke: var(--c-bg-1, #0c0c12); stroke-width: 4px; }
+  .cymap__ring { fill: none; stroke: var(--cm-acid); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: cm-pulse 2.4s ease-out infinite; }
+  .cymap__node--degraded rect, .cymap__node--degraded .cymap__ring { fill: var(--c-warning, #ffcc00); stroke: var(--c-warning, #ffcc00); }
+  .cymap__node--degraded rect { stroke: #050507; }
+  .cymap__node--offline rect { fill: var(--c-danger, #ff3b5c); }
+  .cymap__node--offline .cymap__ring { display: none; }
+  .cymap__sweep { fill: color-mix(in srgb, var(--cm-cyan) 12%, transparent); animation: cm-sweep 6s linear infinite; }
+  .cymap__corner { position: absolute; width: 16px; height: 16px; border: 2px solid var(--cm-acid); }
+  .cymap__corner--tl { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+  .cymap__corner--tr { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
+  .cymap__corner--bl { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
+  .cymap__corner--br { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+
+  .cymap__table-wrap { overflow: auto; max-height: 460px; }
+  .cymap__table-wrap:focus-visible { outline: 3px solid var(--cm-mag); outline-offset: -3px; }
+  .cymap__table { width: 100%; border-collapse: collapse; font-family: var(--font-mono, monospace); font-size: 0.82rem; }
+  .cymap__table th, .cymap__table td { padding: 0.6rem var(--sp-3, 0.75rem); border-bottom: 1px solid rgb(var(--ink-rgb, 242 242 242) / 0.14); text-align: left; }
+  .cymap__table thead th { position: sticky; top: 0; background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .cymap__table tbody th { font-weight: 500; color: var(--c-text-1, #f2f2f2); }
+  .cymap__id { display: inline-block; min-width: 3.2em; margin-right: 6px; font-weight: 800; color: var(--cy-accent-text, var(--cm-acid)); }
+  .cymap__table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cymap__pill { display: inline-block; padding: 1px 6px; border: 1px solid currentColor; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-success, #39ff88); }
+  .is-degraded .cymap__pill { color: var(--c-warning, #ffcc00); }
+  .is-offline .cymap__pill { color: var(--c-danger, #ff3b5c); }
+  .is-offline { opacity: 0.75; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @keyframes cm-flow { to { stroke-dashoffset: -28; } }
+  @keyframes cm-pulse { from { transform: scale(0.4); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+  @keyframes cm-sweep { from { transform: translateX(-80px); } to { transform: translateX(960px); } }
+
+  @container (max-width: 860px) {
+    .cymap__body { grid-template-columns: 1fr; }
+    .cymap__map { border-right: 0; border-bottom: 2px solid var(--cm-edge); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cymap__arcs path, .cymap__ring, .cymap__sweep { animation: none; }
+    .cymap__sweep { display: none; }
+  }
+</style>

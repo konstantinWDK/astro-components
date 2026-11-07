@@ -1,0 +1,118 @@
+---
+/**
+ * CyberBento — Brutalist feature grid: numbered cells on hard grid lines, each a CyberFeatureCard
+ * with a big stat readout, some cells wide or tall, with an index header and an optional caption.
+ *
+ * @param {string} eyebrow - Index label. Default '[02] CAPABILITIES'.
+ * @param {string} title - Heading. Default 'Built for workloads that refuse to wait'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<{code: string, title: string, text: string, stat?: string, span?: 'wide'|'tall'}>} features - Cells.
+ * @param {number} columns - Desktop columns (2–4). Default 3.
+ * @param {string} variant - Cell style (card|flat). 'card' renders CyberFeatureCard. Default 'card'.
+ * @param {string} headingLevel - Section heading (h2|h3). Default 'h2'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a list of features; each title is a heading inside CyberFeatureCard; the stat is
+ * text; decorative codes and scan lines are hidden from assistive tech.
+ */
+import CyberFeatureCard from '../cards/CyberFeatureCard.astro';
+
+interface Feature { code: string; title: string; text: string; stat?: string; span?: 'wide' | 'tall' }
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  features?: Feature[];
+  columns?: number;
+  variant?: 'card' | 'flat';
+  headingLevel?: 'h2' | 'h3';
+  className?: string;
+}
+
+const {
+  eyebrow = '[02] CAPABILITIES',
+  title = 'Built for workloads that refuse to wait',
+  subtitle,
+  features = [
+    { code: '01', title: 'Spot clusters in 9 seconds', text: 'Request 8 or 800 GPUs. The scheduler stitches idle cards into one cluster.', stat: '9S', span: 'wide' },
+    { code: '02', title: 'Zero-log by design', text: 'Workloads run sealed. Operators never see your data.', stat: '0 LOGS' },
+    { code: '03', title: 'Per-second billing', text: 'Pay for compute you burn, not for the hour you rounded up to.', stat: '1S' },
+    { code: '04', title: 'Bring your container', text: 'Any OCI image, any framework.', stat: 'OCI' },
+  ],
+  columns = 3,
+  variant = 'card',
+  headingLevel = 'h2',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const cols = Math.min(4, Math.max(2, columns));
+---
+
+<section class:list={['cyb', `cyb--${variant}`, className]} aria-labelledby="cyb-title" style={`--cyb-cols: ${cols}`}>
+  <header class="cyb__head">
+    {eyebrow && <p class="cyb__eyebrow">{eyebrow}</p>}
+    <Heading class="cyb__title" id="cyb-title">{title}</Heading>
+    {subtitle && <p class="cyb__sub">{subtitle}</p>}
+  </header>
+  <ul class="cyb__grid">
+    {features.map((f) => (
+      <li class:list={['cyb__cell', f.span && `cyb__cell--${f.span}`]}>
+        <span class="cyb__code" aria-hidden="true">{f.code}</span>
+        {variant === 'card' ? (
+          <CyberFeatureCard title={f.title} subtitle={f.text}>
+            {f.stat && <p class="cyb__stat">{f.stat}</p>}
+          </CyberFeatureCard>
+        ) : (
+          <div class="cyb__flat">
+            <h3>{f.title}</h3>
+            <p>{f.text}</p>
+            {f.stat && <p class="cyb__stat">{f.stat}</p>}
+          </div>
+        )}
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .cyb { --cyb-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); container-type: inline-size; color: var(--c-text-1, #f2f2f2); }
+  .cyb__head { display: grid; gap: var(--sp-3, 0.75rem); max-width: 52rem; margin-bottom: var(--sp-8, 2rem); }
+  .cyb__eyebrow { margin: 0; font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyb__title { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.8rem, 5cqi, 3.4rem); font-weight: 900; line-height: 1; letter-spacing: -0.01em; text-transform: uppercase; }
+  .cyb__sub { margin: 0; font-family: var(--font-mono, monospace); line-height: 1.7; color: var(--c-text-2, #a6a6b4); }
+
+  .cyb__grid { display: grid; grid-template-columns: repeat(var(--cyb-cols), minmax(0, 1fr)); grid-auto-flow: dense; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--cyb-edge); border-left: 2px solid var(--cyb-edge); }
+  .cyb__cell { position: relative; display: flex; flex-direction: column; min-height: 220px; padding: var(--sp-5, 1.25rem); border-right: 2px solid var(--cyb-edge); border-bottom: 2px solid var(--cyb-edge); transition: background 0.2s ease; }
+  .cyb__cell--wide { grid-column: span 2; }
+  .cyb__cell--tall { grid-row: span 2; }
+  .cyb__cell:hover { background: color-mix(in srgb, var(--cy-acid, #d4ff00) 7%, transparent); }
+  .cyb__code { position: absolute; top: var(--sp-2, 0.5rem); right: var(--sp-3, 0.75rem); font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 2.6rem; font-weight: 900; line-height: 1; color: transparent; -webkit-text-stroke: 1px rgb(var(--ink-rgb, 242 242 242) / 0.35); }
+  .cyb__cell :global(.cyber-card) {
+    --c-primary: var(--cy-magenta, #ff2bd6);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--c-bg-1, #0c0c12);
+    color: var(--c-text-1, #f2f2f2);
+    font-family: var(--font-mono, monospace);
+  }
+  .cyb__cell :global(.cyber-card__title) { max-width: 85%; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 1.1rem; font-weight: 800; line-height: 1.2; text-transform: uppercase; }
+  .cyb__cell :global(.cyber-card__subtitle) { font-size: 0.88rem; line-height: 1.6; color: var(--c-text-2, #a6a6b4); }
+  .cyb__stat { margin: auto 0 0; padding-top: var(--sp-5, 1.25rem); font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(2rem, 5cqi, 3.2rem); font-weight: 900; line-height: 1; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyb__flat { display: flex; flex-direction: column; flex: 1; }
+  .cyb__flat h3 { margin: 0 0 var(--sp-2, 0.5rem); max-width: 85%; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 1.1rem; text-transform: uppercase; }
+  .cyb__flat p { margin: 0; font-family: var(--font-mono, monospace); font-size: 0.88rem; line-height: 1.6; color: var(--c-text-2, #a6a6b4); }
+
+  @container (max-width: 900px) { .cyb__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 560px) {
+    .cyb__grid { grid-template-columns: 1fr; }
+    .cyb__cell--wide { grid-column: auto; }
+    .cyb__cell--tall { grid-row: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cyb__cell { transition: none; }
+    .cyb__cell :global(.cyber-card__glitch-line) { animation: none; }
+  }
+</style>

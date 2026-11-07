@@ -141,7 +141,7 @@ export function createMcpServer(): McpServer {
   // 5. list_templates
   server.tool(
     'list_templates',
-    'List all multi-page production templates (e.g. E-Commerce Store, Editorial Shop, SaaS Hotel PMS, Marketing Agency, Developer Portfolio) with page lists and features.',
+    'List all multi-page production templates (e.g. E-Commerce Store, Editorial Shop, SaaS Hotel PMS, Marketing Agency, Developer Portfolio, Toy Store, Clinic SaaS, Cyberpunk) with page lists and features.',
     {},
     async () => {
       const templates = listTemplates();
@@ -159,11 +159,11 @@ export function createMcpServer(): McpServer {
   // 6. get_template
   server.tool(
     'get_template',
-    'Get the complete multi-page template specification, architecture, pages, code, and routing instructions (e.g. "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio").',
+    'Get the complete multi-page template specification, architecture, pages, code, and routing instructions (e.g. "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio", "toy-store", "saas-clinic", "cyberpunk").',
     {
       slug: z
         .string()
-        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby), "agency" (Volta marketing agency) or "portfolio" (Keycap developer portfolio)'),
+        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby), "agency" (Volta marketing agency), "portfolio" (Keycap developer portfolio), "toy-store" (Kapow action-figure store) "saas-clinic" (Pulso medical consultations SaaS) or "cyberpunk" (NULL/SECTOR futuristic-brutalist site)'),
     },
     async ({ slug }) => {
       const template = getTemplate(slug);
@@ -173,7 +173,7 @@ export function createMcpServer(): McpServer {
           content: [
             {
               type: 'text',
-              text: `Template "${slug}" not found. Valid slugs are: "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio". Use "list_templates" to inspect them.`,
+              text: `Template "${slug}" not found. Valid slugs are: "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio", "toy-store", "saas-clinic", "cyberpunk". Use "list_templates" to inspect them.`,
             },
           ],
         };

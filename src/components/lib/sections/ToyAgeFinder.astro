@@ -1,0 +1,201 @@
+---
+/**
+ * ToyAgeFinder — "Who is it for?" gift finder for toy stores: big age-group tiles (range, name,
+ * description, illustration, item count) that link to a pre-filtered catalogue, plus an optional
+ * row of budget links.
+ *
+ * @param {string} eyebrow - Small label. Default 'Gift finder'.
+ * @param {string} title - Heading. Default 'Who is it for?'.
+ * @param {string} subtitle - Supporting copy (optional).
+ * @param {Array<{id: string, name: string, range: string, description?: string, icon?: string, hue?: number, href: string, count?: number}>} groups - Age tiles.
+ * @param {Array<{label: string, href: string}>} budgets - Optional budget links ("Under $25"…).
+ * @param {string} budgetsLabel - Label before the budget links. Default 'Shop by budget'.
+ * @param {string} rangeLabel - Prefix of the age range. Default 'Ages'.
+ * @param {string} variant - Tile style (tiles|pills). Default 'tiles'.
+ * @param {string} size - Density (sm|md|lg). Default 'md'.
+ * @param {string} headingLevel - Heading element (h2|h3). Default 'h2'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each tile is a single link whose name includes the age range; art is decorative.
+ */
+import { productIcon } from '../ecommerce/product-icons';
+
+interface Group {
+  id: string;
+  name: string;
+  range: string;
+  description?: string;
+  icon?: string;
+  hue?: number;
+  href: string;
+  count?: number;
+}
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  groups?: Group[];
+  budgets?: Array<{ label: string; href: string }>;
+  budgetsLabel?: string;
+  rangeLabel?: string;
+  variant?: 'tiles' | 'pills';
+  size?: 'sm' | 'md' | 'lg';
+  headingLevel?: 'h2' | 'h3';
+  className?: string;
+}
+
+const {
+  eyebrow = 'Gift finder',
+  title = 'Who is it for?',
+  subtitle,
+  groups = [
+    { id: 'little', name: 'Little heroes', range: '3–5', description: 'Chunky, sturdy and easy to pose.', icon: 'monster', hue: 150, href: '#', count: 9 },
+    { id: 'kids', name: 'Kids', range: '6–8', description: 'Figures, vehicles and the first playsets.', icon: 'figure', hue: 8, href: '#', count: 14 },
+    { id: 'big-kids', name: 'Big kids', range: '9–12', description: 'Converting mechs and battle builds.', icon: 'robot', hue: 200, href: '#', count: 15 },
+    { id: 'collectors', name: 'Collectors', range: '14+', description: 'Limited editions made for the shelf.', icon: 'ninja', hue: 280, href: '#', count: 2 },
+  ],
+  budgets = [],
+  budgetsLabel = 'Shop by budget',
+  rangeLabel = 'Ages',
+  variant = 'tiles',
+  size = 'md',
+  headingLevel = 'h2',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const ItemHeading = headingLevel === 'h2' ? 'h3' : 'h4';
+---
+
+<section class:list={['taf', `taf--${variant}`, `taf--${size}`, className]} aria-labelledby="taf-title">
+  <div class="taf__head">
+    {eyebrow && <p class="taf__eyebrow">{eyebrow}</p>}
+    <Heading class="taf__title" id="taf-title">{title}</Heading>
+    {subtitle && <p class="taf__sub">{subtitle}</p>}
+  </div>
+
+  <ul class="taf__list">
+    {groups.map((g, i) => (
+      <li style={`--g-hue: ${g.hue ?? 10}; --g-tilt: ${i % 2 ? 1.2 : -1.2}deg`}>
+        <a class="taf__tile" href={g.href}>
+          <span class="taf__range"><span class="taf__range-label">{rangeLabel}</span> {g.range}</span>
+          <ItemHeading class="taf__name">{g.name}</ItemHeading>
+          {variant === 'tiles' && g.description && <span class="taf__desc">{g.description}</span>}
+          {g.count !== undefined && <span class="taf__count">{g.count} toys <span aria-hidden="true">→</span></span>}
+          {variant === 'tiles' && (
+            <span class="taf__art" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={productIcon(g.icon ?? 'figure')} /></svg>
+            </span>
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {budgets.length > 0 && (
+    <nav class="taf__budgets" aria-label={budgetsLabel}>
+      <span class="taf__budgets-label">{budgetsLabel}</span>
+      <ul>
+        {budgets.map((b) => <li><a href={b.href}>{b.label}</a></li>)}
+      </ul>
+    </nav>
+  )}
+</section>
+
+<style>
+  .taf {
+    --taf-edge: var(--toy-edge, var(--c-text-1, #17121f));
+    --taf-drop: var(--toy-drop, var(--taf-edge));
+    container-type: inline-size;
+  }
+  .taf__head { margin-bottom: var(--sp-6, 1.5rem); }
+  .taf__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light, #d4a017); }
+  .taf__title { margin: 0; font-family: var(--font-display, inherit); font-size: clamp(1.6rem, 3.6vw, 2.4rem); font-weight: 400; line-height: 1.05; color: var(--c-text-1, #fff); }
+  .taf__sub { margin: var(--sp-2, 0.5rem) 0 0; max-width: 50ch; color: var(--c-text-2, #a3a3a3); }
+
+  .taf__list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-5, 1.25rem); margin: 0; padding: 0 6px 8px 0; list-style: none; }
+  .taf--pills .taf__list { display: flex; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); }
+
+  .taf__tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    height: 100%;
+    min-height: 240px;
+    padding: var(--sp-5, 1.25rem);
+    overflow: hidden;
+    border: 3px solid var(--taf-edge);
+    border-radius: var(--r-lg, 20px);
+    background:
+      radial-gradient(rgb(0 0 0 / 0.12) 1.3px, transparent 1.8px) 0 0 / 10px 10px,
+      linear-gradient(160deg, hsl(var(--g-hue) 95% 70%), hsl(var(--g-hue) 85% 56%));
+    box-shadow: 5px 5px 0 var(--taf-drop);
+    color: #17121f;
+    text-decoration: none;
+    transform: rotate(var(--g-tilt));
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  }
+  .taf--sm .taf__tile { min-height: 180px; padding: var(--sp-4, 1rem); }
+  .taf--lg .taf__tile { min-height: 300px; }
+  .taf__tile:hover { transform: rotate(0deg) translateY(-4px); box-shadow: 8px 9px 0 var(--taf-drop); color: #17121f; }
+  .taf__tile:focus-visible { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 4px; }
+
+  .taf--pills .taf__tile {
+    flex-direction: row;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: 999px;
+    transform: none;
+  }
+  .taf--pills .taf__name { font-size: 1rem; }
+
+  .taf__range {
+    align-self: flex-start;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    background: #17121f;
+    color: #fff;
+    font-family: var(--font-display, inherit);
+    font-size: 1.05rem;
+  }
+  .taf__range-label { font-family: var(--font-sans, inherit); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+  .taf__name { position: relative; z-index: 1; margin: var(--sp-2, 0.5rem) 0 0; font-family: var(--font-display, inherit); font-size: 1.5rem; font-weight: 400; line-height: 1.05; color: #17121f; }
+  .taf--pills .taf__name { margin: 0; }
+  .taf__desc { position: relative; z-index: 1; max-width: 62%; font-size: 0.9rem; font-weight: 600; line-height: 1.45; }
+  .taf__count { position: relative; z-index: 1; margin-top: auto; font-size: 0.85rem; font-weight: 800; }
+  .taf--pills .taf__count { margin: 0 0 0 var(--sp-2, 0.5rem); }
+  .taf__art { position: absolute; right: -6%; bottom: -10%; width: 46%; opacity: 0.9; color: #17121f; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .taf__art svg { width: 100%; height: auto; }
+  .taf__tile:hover .taf__art { transform: rotate(-8deg) scale(1.06); }
+
+  .taf__budgets { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3, 0.75rem); margin-top: var(--sp-6, 1.5rem); }
+  .taf__budgets-label { font-weight: 800; color: var(--c-text-1, #fff); }
+  .taf__budgets ul { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem); margin: 0; padding: 0; list-style: none; }
+  .taf__budgets a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 2px solid var(--taf-edge);
+    border-radius: 999px;
+    color: var(--c-text-1, #fff);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .taf__budgets a:hover { background: var(--toy-yellow, #ffd23f); color: #17121f; }
+  .taf__budgets a:focus-visible { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+
+  @container (max-width: 900px) { .taf__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 420px) {
+    .taf__list { grid-template-columns: 1fr; }
+    .taf__tile { min-height: 170px; }
+    .taf__art { width: 42%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .taf__tile, .taf__art { transition: none; }
+    .taf__tile { transform: none; }
+  }
+</style>

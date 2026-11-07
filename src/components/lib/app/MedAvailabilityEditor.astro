@@ -1,0 +1,323 @@
+---
+/**
+ * MedAvailabilityEditor — Weekly consultation hours for a clinician: a switch per weekday, one or
+ * more time ranges per day (add / remove / copy to all), slot length, in-person or video per range,
+ * overlap validation and a live hours-per-week / bookable-slots summary.
+ *
+ * @param {string} title - Card title. Default 'Consultation hours'.
+ * @param {string} clinician - Whose hours these are (subtitle).
+ * @param {Array<{day: string, ranges: Array<{from: string, to: string, mode?: 'in-person'|'video'|'both'}>}>} week - Days in order; empty ranges = day off.
+ * @param {number} slot - Slot length in minutes. Default 20.
+ * @param {number[]} slotOptions - Choices for the slot length. Default [10, 15, 20, 30, 45, 60].
+ * @param {string} start - Earliest selectable time. Default '07:00'.
+ * @param {string} end - Latest selectable time. Default '21:00'.
+ * @param {string} id - Base id. Default 'availability'.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each day is a fieldset whose switch has the day name; time selects are labelled
+ * "Monday, range 1, from"; overlap errors are text linked with aria-describedby; the summary is a
+ * polite live region. Emits `app:availability-save` with the week on save.
+ */
+
+interface Range { from: string; to: string; mode?: 'in-person' | 'video' | 'both' }
+
+interface Props {
+  title?: string;
+  clinician?: string;
+  week?: Array<{ day: string; ranges: Range[] }>;
+  slot?: number;
+  slotOptions?: number[];
+  start?: string;
+  end?: string;
+  id?: string;
+  variant?: 'card' | 'plain';
+  className?: string;
+}
+
+const {
+  title = 'Consultation hours',
+  clinician = 'Dr. Laura Navarro · General practice',
+  week = [
+    { day: 'Monday', ranges: [{ from: '08:30', to: '13:30', mode: 'in-person' }, { from: '15:00', to: '18:00', mode: 'both' }] },
+    { day: 'Tuesday', ranges: [{ from: '08:30', to: '13:30', mode: 'in-person' }] },
+    { day: 'Wednesday', ranges: [{ from: '08:30', to: '13:30', mode: 'in-person' }, { from: '16:00', to: '19:00', mode: 'video' }] },
+    { day: 'Thursday', ranges: [{ from: '08:30', to: '13:30', mode: 'in-person' }] },
+    { day: 'Friday', ranges: [{ from: '09:00', to: '13:00', mode: 'both' }] },
+    { day: 'Saturday', ranges: [] },
+    { day: 'Sunday', ranges: [] },
+  ],
+  slot = 20,
+  slotOptions = [10, 15, 20, 30, 45, 60],
+  start = '07:00',
+  end = '21:00',
+  id = 'availability',
+  variant = 'card',
+  className = '',
+} = Astro.props;
+
+const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const times: string[] = [];
+for (let m = toMin(start); m <= toMin(end); m += 30) times.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+---
+
+<section class:list={['avail', `avail--${variant}`, className]} aria-labelledby={`${id}-title`} data-avail data-times={JSON.stringify(times)}>
+  <header class="avail__head">
+    <div>
+      <h2 class="avail__title" id={`${id}-title`}>{title}</h2>
+      {clinician && <p class="avail__sub">{clinician}</p>}
+    </div>
+    <label class="avail__slot">
+      <span>Slot length</span>
+      <select data-avail-slot>
+        {slotOptions.map((s) => <option value={s} selected={s === slot}>{s} min</option>)}
+      </select>
+    </label>
+  </header>
+
+  <form class="avail__form" novalidate data-avail-form>
+    {week.map((d, di) => (
+      <fieldset class:list={['avail__day', { 'is-off': d.ranges.length === 0 }]} data-avail-day={d.day}>
+        <legend class="sr-only">{d.day}</legend>
+        <label class="avail__switch">
+          <input type="checkbox" role="switch" checked={d.ranges.length > 0} data-avail-on aria-label={`${d.day} available`} />
+          <span class="avail__track" aria-hidden="true"></span>
+          <span class="avail__dayname">{d.day}</span>
+        </label>
+        <div class="avail__ranges" data-avail-ranges>
+          {d.ranges.map((r, ri) => (
+            <div class="avail__range" data-avail-range>
+              <label><span class="sr-only">{d.day}, range {ri + 1}, from</span>
+                <select data-from>{times.map((t) => <option selected={t === r.from}>{t}</option>)}</select>
+              </label>
+              <span class="avail__dash" aria-hidden="true">–</span>
+              <label><span class="sr-only">{d.day}, range {ri + 1}, to</span>
+                <select data-to>{times.map((t) => <option selected={t === r.to}>{t}</option>)}</select>
+              </label>
+              <label><span class="sr-only">{d.day}, range {ri + 1}, visit type</span>
+                <select data-mode>
+                  <option value="in-person" selected={r.mode === 'in-person'}>In person</option>
+                  <option value="video" selected={r.mode === 'video'}>Video</option>
+                  <option value="both" selected={(r.mode ?? 'both') === 'both'}>Both</option>
+                </select>
+              </label>
+              <button type="button" class="avail__icon" data-avail-remove aria-label={`Remove ${d.day} range ${ri + 1}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          ))}
+          <p class="avail__off">Unavailable</p>
+        </div>
+        <div class="avail__day-actions">
+          <button type="button" class="avail__link" data-avail-add>+ Add range<span class="sr-only"> to {d.day}</span></button>
+          {di === 0 && <button type="button" class="avail__link" data-avail-copy>Copy to weekdays</button>}
+        </div>
+        <p class="avail__error" id={`${id}-err-${di}`} data-avail-error hidden></p>
+      </fieldset>
+    ))}
+
+    <footer class="avail__foot">
+      <p class="avail__summary" aria-live="polite" data-avail-summary></p>
+      <button type="submit" class="avail__save">Save hours</button>
+    </footer>
+    <p class="avail__saved" role="status" data-avail-saved></p>
+  </form>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-avail]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const form = root.querySelector<HTMLFormElement>('[data-avail-form]')!;
+    const times: string[] = JSON.parse(root.dataset.times || '[]');
+    const summary = root.querySelector<HTMLElement>('[data-avail-summary]')!;
+    const saved = root.querySelector<HTMLElement>('[data-avail-saved]')!;
+    const slotSel = root.querySelector<HTMLSelectElement>('[data-avail-slot]')!;
+    const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const days = Array.from(root.querySelectorAll<HTMLFieldSetElement>('[data-avail-day]'));
+
+    const relabel = (day: HTMLFieldSetElement) => {
+      const name = day.dataset.availDay;
+      day.querySelectorAll<HTMLElement>('[data-avail-range]').forEach((r, i) => {
+        const labels = r.querySelectorAll('.sr-only');
+        ['from', 'to', 'visit type'].forEach((w, n) => { if (labels[n]) labels[n].textContent = `${name}, range ${i + 1}, ${w}`; });
+        r.querySelector('[data-avail-remove]')?.setAttribute('aria-label', `Remove ${name} range ${i + 1}`);
+      });
+    };
+
+    const validate = (day: HTMLFieldSetElement): boolean => {
+      const err = day.querySelector<HTMLElement>('[data-avail-error]')!;
+      const on = day.querySelector<HTMLInputElement>('[data-avail-on]')!.checked;
+      const ranges = Array.from(day.querySelectorAll<HTMLElement>('[data-avail-range]')).map((r) => [toMin(r.querySelector<HTMLSelectElement>('[data-from]')!.value), toMin(r.querySelector<HTMLSelectElement>('[data-to]')!.value)]);
+      let msg = '';
+      if (on) {
+        if (ranges.some(([a, b]) => b <= a)) msg = 'Each range must end after it starts.';
+        else {
+          const sorted = [...ranges].sort((x, y) => x[0] - y[0]);
+          if (sorted.some((r, i) => i > 0 && r[0] < sorted[i - 1][1])) msg = 'Two ranges overlap. Adjust the times.';
+        }
+      }
+      err.hidden = !msg;
+      err.textContent = msg;
+      day.querySelectorAll('select').forEach((s) => {
+        if (msg) { s.setAttribute('aria-invalid', 'true'); s.setAttribute('aria-describedby', err.id); }
+        else { s.removeAttribute('aria-invalid'); s.removeAttribute('aria-describedby'); }
+      });
+      return !msg;
+    };
+
+    const update = () => {
+      const slot = Number(slotSel.value);
+      let mins = 0;
+      let slots = 0;
+      let open = 0;
+      days.forEach((day) => {
+        const on = day.querySelector<HTMLInputElement>('[data-avail-on]')!.checked;
+        const count = day.querySelectorAll('[data-avail-range]').length;
+        day.classList.toggle('is-off', !on || count === 0);
+        validate(day);
+        if (!on) return;
+        if (count) open++;
+        day.querySelectorAll<HTMLElement>('[data-avail-range]').forEach((r) => {
+          const len = Math.max(0, toMin(r.querySelector<HTMLSelectElement>('[data-to]')!.value) - toMin(r.querySelector<HTMLSelectElement>('[data-from]')!.value));
+          mins += len;
+          slots += Math.floor(len / slot);
+        });
+      });
+      summary.textContent = `${open} days · ${(mins / 60).toFixed(1).replace('.0', '')} h per week · ${slots} bookable slots of ${slot} min`;
+    };
+
+    const makeRange = (from = '09:00', to = '13:00', mode = 'both') => {
+      const div = document.createElement('div');
+      div.className = 'avail__range';
+      div.setAttribute('data-avail-range', '');
+      const opts = (sel: string) => times.map((t) => `<option${t === sel ? ' selected' : ''}>${t}</option>`).join('');
+      div.innerHTML = `
+        <label><span class="sr-only"></span><select data-from>${opts(from)}</select></label>
+        <span class="avail__dash" aria-hidden="true">–</span>
+        <label><span class="sr-only"></span><select data-to>${opts(to)}</select></label>
+        <label><span class="sr-only"></span><select data-mode><option value="in-person"${mode === 'in-person' ? ' selected' : ''}>In person</option><option value="video"${mode === 'video' ? ' selected' : ''}>Video</option><option value="both"${mode === 'both' ? ' selected' : ''}>Both</option></select></label>
+        <button type="button" class="avail__icon" data-avail-remove><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;
+      return div;
+    };
+
+    form.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const day = t.closest<HTMLFieldSetElement>('[data-avail-day]');
+      if (!day) return;
+      const box = day.querySelector<HTMLElement>('[data-avail-ranges]')!;
+      if (t.closest('[data-avail-add]')) {
+        const last = Array.from(box.querySelectorAll<HTMLElement>('[data-avail-range]')).at(-1);
+        const lastTo = last?.querySelector<HTMLSelectElement>('[data-to]')!.value;
+        const from = lastTo ? times[Math.min(times.length - 2, times.indexOf(lastTo) + 2)] : '09:00';
+        const to = times[Math.min(times.length - 1, times.indexOf(from) + 6)];
+        const r = makeRange(from, to);
+        box.insertBefore(r, box.querySelector('.avail__off'));
+        day.querySelector<HTMLInputElement>('[data-avail-on]')!.checked = true;
+        relabel(day);
+        r.querySelector('select')?.focus();
+        update();
+      }
+      const rm = t.closest('[data-avail-remove]');
+      if (rm) {
+        rm.closest('[data-avail-range]')?.remove();
+        relabel(day);
+        if (!box.querySelector('[data-avail-range]')) day.querySelector<HTMLInputElement>('[data-avail-on]')!.checked = false;
+        day.querySelector<HTMLButtonElement>('[data-avail-add]')?.focus();
+        update();
+      }
+      if (t.closest('[data-avail-copy]')) {
+        const source = Array.from(day.querySelectorAll<HTMLElement>('[data-avail-range]')).map((r) => [r.querySelector<HTMLSelectElement>('[data-from]')!.value, r.querySelector<HTMLSelectElement>('[data-to]')!.value, r.querySelector<HTMLSelectElement>('[data-mode]')!.value]);
+        days.slice(1, 5).forEach((d) => {
+          const b = d.querySelector<HTMLElement>('[data-avail-ranges]')!;
+          b.querySelectorAll('[data-avail-range]').forEach((r) => r.remove());
+          source.forEach(([f, to, m]) => b.insertBefore(makeRange(f, to, m), b.querySelector('.avail__off')));
+          d.querySelector<HTMLInputElement>('[data-avail-on]')!.checked = source.length > 0;
+          relabel(d);
+        });
+        saved.textContent = `${day.dataset.availDay}'s hours copied to Tuesday–Friday.`;
+        update();
+      }
+    });
+    form.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.matches('[data-avail-on]') && t.checked) {
+        const day = t.closest<HTMLFieldSetElement>('[data-avail-day]')!;
+        const box = day.querySelector<HTMLElement>('[data-avail-ranges]')!;
+        if (!box.querySelector('[data-avail-range]')) { box.insertBefore(makeRange(), box.querySelector('.avail__off')); relabel(day); }
+      }
+      saved.textContent = '';
+      update();
+    });
+    slotSel.addEventListener('change', update);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ok = days.map(validate).every(Boolean);
+      if (!ok) {
+        saved.textContent = 'Fix the highlighted days before saving.';
+        days.find((d) => !d.querySelector<HTMLElement>('[data-avail-error]')!.hidden)?.querySelector('select')?.focus();
+        return;
+      }
+      const week = days.map((d) => ({
+        day: d.dataset.availDay,
+        ranges: d.querySelector<HTMLInputElement>('[data-avail-on]')!.checked
+          ? Array.from(d.querySelectorAll<HTMLElement>('[data-avail-range]')).map((r) => ({ from: r.querySelector<HTMLSelectElement>('[data-from]')!.value, to: r.querySelector<HTMLSelectElement>('[data-to]')!.value, mode: r.querySelector<HTMLSelectElement>('[data-mode]')!.value }))
+          : [],
+      }));
+      saved.textContent = 'Hours saved. New bookings use them right away.';
+      root.dispatchEvent(new CustomEvent('app:availability-save', { bubbles: true, detail: { week, slot: Number(slotSel.value) } }));
+    });
+    update();
+  });
+</script>
+
+<style>
+  .avail { --av-accent: var(--app-accent, var(--c-primary-light, #0e7490)); min-width: 0; }
+  .avail--card { padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+  .avail__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-bottom: var(--sp-4, 1rem); }
+  .avail__title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .avail__sub { margin: 2px 0 0; font-size: 0.85rem; color: var(--c-text-2, #3d5a63); }
+  .avail__slot { display: inline-flex; align-items: center; gap: var(--sp-2, 0.5rem); font-size: 0.85rem; font-weight: 600; color: var(--c-text-1, #0b2a33); }
+  .avail select { min-height: 40px; padding: 0 var(--sp-2, 0.5rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: var(--r-sm, 8px); background: var(--c-bg, #f3f8f9); color: var(--c-text-1, #0b2a33); font: inherit; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+  .avail select:focus-visible { outline: 3px solid color-mix(in srgb, var(--av-accent) 45%, transparent); border-color: var(--av-accent); }
+  .avail select[aria-invalid='true'] { border-color: var(--c-danger, #b91c1c); }
+
+  .avail__form { display: grid; }
+  .avail__day { display: grid; grid-template-columns: 170px minmax(0, 1fr) auto; align-items: start; gap: var(--sp-2, 0.5rem) var(--sp-4, 1rem); margin: 0; padding: var(--sp-3, 0.75rem) 0; border: 0; border-top: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); }
+  .avail__switch { position: relative; display: inline-flex; align-items: center; gap: var(--sp-3, 0.75rem); min-height: 40px; cursor: pointer; }
+  .avail__switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .avail__track { position: relative; flex-shrink: 0; width: 40px; height: 24px; border-radius: 999px; background: rgb(var(--ink-rgb, 15 23 42) / 0.18); transition: background 0.2s ease; }
+  .avail__track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); transition: transform 0.2s ease; }
+  .avail__switch input:checked + .avail__track { background: var(--av-accent); }
+  .avail__switch input:checked + .avail__track::after { transform: translateX(16px); }
+  .avail__switch input:focus-visible + .avail__track { outline: 3px solid var(--av-accent); outline-offset: 2px; }
+  .avail__dayname { font-weight: 700; color: var(--c-text-1, #0b2a33); }
+
+  .avail__ranges { display: grid; gap: var(--sp-2, 0.5rem); }
+  .avail__range { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem); }
+  .avail__dash { color: var(--c-text-3, #5b747c); }
+  .avail__off { display: none; margin: 0; min-height: 40px; align-items: center; font-size: 0.88rem; color: var(--c-text-3, #5b747c); }
+  .avail__day.is-off .avail__off { display: flex; }
+  .avail__day.is-off .avail__range { display: none; }
+  .avail__icon { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--r-sm, 8px); background: transparent; color: var(--c-text-2, #3d5a63); cursor: pointer; }
+  .avail__icon:hover { background: rgb(var(--ink-rgb, 15 23 42) / 0.06); color: var(--c-danger, #b91c1c); }
+  .avail__day-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .avail__link { min-height: 36px; padding: 0 var(--sp-2, 0.5rem); border: 0; border-radius: 6px; background: transparent; color: var(--av-accent); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .avail__link:hover { background: color-mix(in srgb, var(--av-accent) 10%, transparent); }
+  .avail :is(.avail__icon, .avail__link, .avail__save):focus-visible { outline: 3px solid var(--av-accent); outline-offset: 2px; }
+  .avail__error { grid-column: 2 / -1; margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--c-danger, #b91c1c); }
+  .avail__error[hidden] { display: none; }
+
+  .avail__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); padding-top: var(--sp-4, 1rem); border-top: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); }
+  .avail__summary { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--c-text-1, #0b2a33); }
+  .avail__save { min-height: 44px; padding: 0 var(--sp-5, 1.25rem); border: 0; border-radius: var(--r-sm, 8px); background: var(--av-accent); color: var(--c-on-primary, #fff); font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+  .avail__saved { margin: var(--sp-2, 0.5rem) 0 0; font-size: 0.85rem; color: var(--c-text-2, #3d5a63); }
+  .avail__saved:empty { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 720px) {
+    .avail__day { grid-template-columns: 1fr; }
+    .avail__day-actions { flex-direction: row; align-items: center; }
+    .avail__error { grid-column: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { .avail__track, .avail__track::after { transition: none; } }
+</style>

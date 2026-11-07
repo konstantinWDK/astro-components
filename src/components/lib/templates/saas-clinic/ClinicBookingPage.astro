@@ -1,0 +1,122 @@
+---
+/**
+ * ClinicBookingPage — The clinic's public page for patients: intro with opening hours and contact,
+ * MedDoctorDirectory (search, specialties, video filter) and MedBookingWizard. "Book" on a doctor
+ * card pre-selects that clinician (`?doctor=<id>#book`).
+ *
+ * Usage (src/pages/book.astro):
+ *   import { ClinicBookingPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicBookingPage />
+ *
+ * @param {ClinicData} data - Clinic data (doctors, specialties, workspace name).
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import ClinicSiteLayout from './ClinicSiteLayout.astro';
+import MedDoctorDirectory from '../../sections/MedDoctorDirectory.astro';
+import MedBookingWizard from '../../sections/MedBookingWizard.astro';
+import { appIcon } from '../../app/app-icons';
+import { clinicData, clinicRoutes, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light', noindex = false } = Astro.props;
+const clinic = data.workspace.name;
+---
+
+<ClinicSiteLayout
+  title={`Book an appointment — ${clinic}`}
+  description={`Book a visit or a video consultation with ${clinic} online in two minutes.`}
+  brand={clinic}
+  brandHref={routes.book}
+  links={[{ label: 'Our doctors', href: '#doctors' }, { label: 'Book', href: '#book' }, { label: 'Visit us', href: '#visit' }]}
+  cta={{ label: 'Book now', href: '#book' }}
+  tagline="Family medicine, pediatrics, cardiology, dermatology and psychology in central Madrid."
+  footer={[
+    { title: 'Patients', links: [{ label: 'Book online', href: '#book' }, { label: 'Video visits', href: '#book' }, { label: 'Prices', href: '#doctors' }] },
+    { title: 'Clinic', links: [{ label: 'Our doctors', href: '#doctors' }, { label: 'Opening hours', href: '#visit' }] },
+    { title: 'Legal', links: [{ label: 'Privacy notice', href: '#' }, { label: 'Patient rights', href: '#' }] },
+  ]}
+  theme={theme}
+  noindex={noindex}
+>
+  <section class="pulso-section book-intro" aria-labelledby="book-title">
+    <div>
+      <p class="book-eyebrow">{clinic} · Madrid</p>
+      <h1 id="book-title">See a doctor today — in person or by video</h1>
+      <p class="book-lead">Book online in two minutes. Same-day appointments for general practice and pediatrics, and video visits from your sofa.</p>
+      <div class="book-ctas">
+        <a class="book-btn book-btn--primary" href="#book">Book an appointment</a>
+        <a class="book-btn" href="tel:+34910000000">Call +34 910 000 000</a>
+      </div>
+    </div>
+    <ul class="book-facts" id="visit">
+      <li>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('clock')} /></svg>
+        <span><strong>Mon–Fri 08:00–20:00</strong>Saturday 09:00–13:00</span>
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('building')} /></svg>
+        <span><strong>Calle Alameda 12, Madrid</strong>Step-free access · Metro Atocha</span>
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon('heart')} /></svg>
+        <span><strong>Most insurers accepted</strong>Sanitas, Adeslas, DKV, Mapfre, Allianz</span>
+      </li>
+      <li class="book-urgent">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <span><strong>Emergency? Call 112</strong>Online booking is not for urgent care.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="pulso-section" id="doctors" aria-label="Our doctors">
+    <MedDoctorDirectory
+      title="Our doctors"
+      subtitle="Choose by specialty, language or video availability. Prices are for a standard visit without insurance."
+      specialties={data.specialties}
+      doctors={data.doctors}
+      bookHref={`${routes.book}#book`}
+      currency={data.currency}
+      locale={data.locale}
+    />
+  </section>
+
+  <section class="pulso-section book-last" id="book" aria-label="Book an appointment">
+    <MedBookingWizard
+      clinic={clinic}
+      specialties={data.specialties}
+      doctors={data.doctors}
+      currency={data.currency}
+      locale={data.locale}
+    />
+  </section>
+</ClinicSiteLayout>
+
+<style>
+  .book-intro { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3.5rem); align-items: center; }
+  .book-eyebrow { margin: 0 0 var(--sp-3); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--app-accent); }
+  .book-intro h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.08; color: var(--c-text-1); text-wrap: balance; }
+  .book-lead { margin: var(--sp-4) 0 0; max-width: 40rem; font-size: 1.12rem; line-height: 1.65; }
+  .book-ctas { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+  .book-btn { display: inline-flex; align-items: center; min-height: 50px; padding: 0 var(--sp-6); border: 1px solid var(--c-border); border-radius: 12px; background: var(--c-bg-1); color: var(--c-text-1); font-weight: 700; }
+  .book-btn--primary { border-color: var(--app-accent); background: var(--app-accent); color: var(--c-on-primary); }
+  .book-btn--primary:hover { color: var(--c-on-primary); filter: brightness(1.08); }
+  .book-btn:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 3px; }
+  .book-facts { display: grid; gap: var(--sp-3); margin: 0; padding: var(--sp-5); border: 1px solid var(--c-border); border-radius: var(--r-xl); background: var(--c-bg-1); list-style: none; }
+  .book-facts li { display: flex; align-items: flex-start; gap: var(--sp-3); font-size: 0.92rem; }
+  .book-facts svg { flex-shrink: 0; margin-top: 2px; color: var(--app-accent); }
+  .book-facts span { display: grid; gap: 2px; }
+  .book-facts strong { color: var(--c-text-1); }
+  .book-urgent { padding: var(--sp-3); border-radius: var(--r-md); background: color-mix(in srgb, var(--c-danger) 8%, transparent); }
+  .book-urgent svg { color: var(--c-danger) !important; }
+  .book-last { padding-bottom: clamp(3rem, 7vw, 5rem); }
+  #doctors, #book { scroll-margin-top: 80px; }
+  @media (max-width: 900px) { .book-intro { grid-template-columns: 1fr; } }
+</style>

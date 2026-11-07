@@ -22,6 +22,7 @@ export const ecommercePreview: Record<string, { props?: Record<string, any>; max
   'live-activity-toast': { props: { demo: true }, maxWidth: '380px' },
   'stock-indicator': { maxWidth: '420px' },
   'product-card-minimal': { maxWidth: '300px' },
+  'toy-figure-card': { maxWidth: '300px' },
   'cart-page-list': { props: { demoItems: demoCart, cartKey: 'docs-cart' } },
   'filter-bar': { props: { sticky: false } },
   'app-sidebar': { props: { fullHeight: false }, maxWidth: '280px' },
@@ -29,10 +30,16 @@ export const ecommercePreview: Record<string, { props?: Record<string, any>; max
   'plan-usage-card': { maxWidth: '520px' },
   'guest-profile-card': { maxWidth: '640px' },
   'arrivals-board': { maxWidth: '640px' },
+  'med-agenda-timeline': { maxWidth: '640px' },
+  'med-waiting-room': { maxWidth: '600px' },
+  'med-patient-summary': { maxWidth: '900px' },
+  'med-prescription-pad': { maxWidth: '640px' },
+  'med-availability-editor': { maxWidth: '900px' },
   'order-summary': { props: { sticky: false, cartKey: 'docs-cart' }, maxWidth: '420px' },
 };
 
 /** Props for sections that need tweaks when shown as a miniature (no sticky headers, etc.). */
 export const sectionPreviewProps: Record<string, Record<string, any>> = {
   'shop-header-editorial': { sticky: false },
+  'cyber-header': { sticky: false },
 };

@@ -90,4 +90,52 @@ export const app: ComponentDoc[] = [
     description: 'Split-screen sign-in / sign-up with SSO buttons, show-password toggle, validation and a brand panel.',
     tags: ['auth', 'login', 'sign-in', 'form'],
     usage: `<AuthCard mode="signin" brand="Lobby" successHref="/app/" />` }),
+
+  // Healthcare / clinic apps ("Pulso")
+  item({ slug: 'med-agenda-timeline', name: 'Med Agenda Timeline', file: 'MedAgendaTimeline.astro', featured: true,
+    description: "A clinician's day on a time rail: appointments with status, in-person or video, room and reason, a now marker, summary and quick filters.",
+    tags: ['healthcare', 'agenda', 'appointments', 'timeline', 'clinic'],
+    usage: `<MedAgendaTimeline now="10:40" appointments={[
+  { id: '1', start: '10:30', duration: 30, patient: { name: 'Elena Duarte', sub: '42 · F' }, type: 'in-person', reason: 'BP follow-up', status: 'in-progress', room: 'Room 1' },
+  { id: '2', start: '11:30', duration: 20, patient: { name: 'Lucas Silva' }, type: 'video', reason: 'Inhaler check', status: 'confirmed' },
+]} />` }),
+  item({ slug: 'med-waiting-room', name: 'Med Waiting Room', file: 'MedWaitingRoom.astro',
+    description: 'Live waiting-room queue: priority, wait timers that turn amber and red past the target, and call-in / start-visit actions.',
+    tags: ['healthcare', 'queue', 'waiting-room', 'live', 'clinic'],
+    usage: `<MedWaitingRoom target={15} patients={[{ id: 'p1', name: 'Hans Müller', waited: 31, appointment: '11:00', priority: 'urgent', reason: 'Shortness of breath' }]} />` }),
+  item({ slug: 'med-schedule-calendar', name: 'Med Schedule Calendar', file: 'MedScheduleCalendar.astro', featured: true,
+    description: 'Clinic week / day calendar: appointments coloured by clinician with overlap lanes, now line, doctor filters, video legend and a detail panel.',
+    tags: ['healthcare', 'calendar', 'schedule', 'week-view', 'clinic'],
+    usage: `<MedScheduleCalendar today={2} now="10:40"
+  days={['Mon 2', 'Tue 3', 'Wed 4', 'Thu 5', 'Fri 6']}
+  doctors={[{ id: 'navarro', name: 'Dr. Navarro', hue: 190 }]}
+  appointments={[{ id: '1', day: 2, start: '10:30', duration: 30, doctor: 'navarro', patient: 'Elena Duarte', type: 'in-person', status: 'in-progress' }]} />` }),
+  item({ slug: 'med-patient-summary', name: 'Med Patient Summary', file: 'MedPatientSummary.astro', featured: true,
+    description: 'Patient chart summary: identity, allergy alert, vitals with trend sparklines and range flags, problems, medications and recent visits.',
+    tags: ['healthcare', 'patient', 'ehr', 'vitals', 'profile'],
+    usage: `<MedPatientSummary
+  patient={{ name: 'Elena Duarte', age: 42, sex: 'F', mrn: 'MRN-001042' }}
+  allergies={[{ name: 'Penicillin', severity: 'severe' }]}
+  vitals={[{ label: 'Blood pressure', value: '136/86', unit: 'mmHg', trend: [148, 142, 136], status: 'high' }]}
+/>` }),
+  item({ slug: 'med-consultation-note', name: 'Med Consultation Note', file: 'MedConsultationNote.astro', featured: true,
+    description: 'SOAP consultation note with out-of-range vitals flags, an ICD-10 diagnosis combobox, templates, local autosave and sign & lock.',
+    tags: ['healthcare', 'soap', 'form', 'combobox', 'autosave'],
+    usage: `<MedConsultationNote patient="Elena Duarte" clinician="Dr. Laura Navarro"
+  diagnoses={[{ code: 'I10', label: 'Essential (primary) hypertension' }]} />` }),
+  item({ slug: 'med-prescription-pad', name: 'Med Prescription Pad', file: 'MedPrescriptionPad.astro',
+    description: 'e-Prescription builder: formulary search, dose, frequency and duration with auto quantity, allergy and duplicate-therapy alerts, print and send.',
+    tags: ['healthcare', 'prescription', 'pharmacy', 'safety', 'form'],
+    usage: `<MedPrescriptionPad patient="Elena Duarte" allergies={[{ name: 'Penicillin', class: 'penicillin' }]}
+  formulary={[{ id: 'amoxicillin-500', name: 'Amoxicillin', strength: '500 mg', form: 'capsule', class: 'penicillin' }]} />` }),
+  item({ slug: 'med-video-visit', name: 'Med Video Visit', file: 'MedVideoVisit.astro', featured: true,
+    description: 'Telemedicine call room UI: patient stage, self-view, live timer, connection quality, mic / camera / share / chat controls, chat panel and end-of-call summary.',
+    tags: ['healthcare', 'telemedicine', 'video', 'call', 'chat'],
+    usage: `<MedVideoVisit patient={{ name: 'Lucas Silva', sub: '6 y · with a parent' }} reason="Inhaler technique" noteHref="/app/consultation/">
+  <video slot="remote" autoplay playsinline></video>
+</MedVideoVisit>` }),
+  item({ slug: 'med-availability-editor', name: 'Med Availability Editor', file: 'MedAvailabilityEditor.astro',
+    description: 'Weekly consultation hours: per-day switches and time ranges, in-person / video per range, copy to weekdays, overlap checks and a slots summary.',
+    tags: ['healthcare', 'availability', 'settings', 'hours', 'form'],
+    usage: `<MedAvailabilityEditor slot={20} week={[{ day: 'Monday', ranges: [{ from: '09:00', to: '13:00', mode: 'both' }] }]} />` }),
 ];

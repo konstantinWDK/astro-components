@@ -1,0 +1,62 @@
+---
+/**
+ * CyberTerminalPage — Contact as a command line: CyberPageHero, CyberTerminalForm (one question at
+ * a time, /help commands, plain-form fallback) and direct channels with a CyberGlitchAlert notice.
+ *
+ * Usage (src/pages/terminal.astro):
+ *   import { CyberTerminalPage } from 'astro-component-kit/templates/cyberpunk';
+ *   <CyberTerminalPage action="https://your-backend/contact" />
+ *
+ * @param {CyberData} data - Site content.
+ * @param {CyberRoutes} routes - Page URLs.
+ * @param {string} action - Form endpoint. Empty = demo.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import CyberLayout from './CyberLayout.astro';
+import CyberPageHero from '../../sections/CyberPageHero.astro';
+import CyberTerminalForm from '../../sections/CyberTerminalForm.astro';
+import CyberGlitchAlert from '../../feedback/CyberGlitchAlert.astro';
+import { nullSector, cyberRoutes, type CyberData, type CyberRoutes } from './data';
+
+interface Props {
+  data?: CyberData;
+  routes?: CyberRoutes;
+  action?: string;
+  theme?: 'dark' | 'light' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = nullSector, routes = cyberRoutes, action = '', theme = 'dark', noindex = false } = Astro.props;
+---
+
+<CyberLayout title="Terminal" description="Open an encrypted channel to the NULL/SECTOR operators." data={data} routes={routes} current="terminal" theme={theme} noindex={noindex}>
+  <CyberPageHero index="05" path={[{ label: 'SYS', href: routes.home }, { label: 'TERMINAL' }]} title="OPEN A" outline="CHANNEL" intro="Answer four prompts and an operator replies within four hours. Prefer a normal form? There is a switch for that." tags={['E2E ENCRYPTED', 'REPLY < 4 H']} variant="plain" />
+
+  <div class="ns-wrap ns-wrap--last term">
+    <CyberTerminalForm topics={data.terminal.topics} action={action} />
+    <aside class="term__side" aria-labelledby="chan-title">
+      <CyberGlitchAlert message="NO SALES BOTS" accentColor="var(--cy-cyan, #00f0ff)" />
+      <h2 id="chan-title">Direct channels</h2>
+      <dl class="term__list">
+        {data.terminal.channels.map((c) => (
+          <div><dt>{c.label}</dt><dd>{c.value}</dd></div>
+        ))}
+      </dl>
+      <p class="term__note">Found a vulnerability? Encrypt with our PGP key. We pay bounties in credits or cash.</p>
+    </aside>
+  </div>
+</CyberLayout>
+
+<style>
+  .term { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+  .term__side { display: grid; gap: var(--sp-4); }
+  .term__side :global(*) { max-width: 100%; }
+  .term__side h2 { margin: var(--sp-2) 0 0; font-size: 1.4rem; color: var(--c-text-1); }
+  .term__list { display: grid; margin: 0; border-top: 2px solid var(--cy-edge); }
+  .term__list div { display: grid; gap: 2px; padding: var(--sp-3) 0; border-bottom: 2px solid var(--cy-edge); }
+  .term__list dt { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; color: var(--cy-accent-text); }
+  .term__list dd { margin: 0; color: var(--c-text-1); word-break: break-word; }
+  .term__note { margin: 0; font-size: 0.88rem; line-height: 1.7; }
+  @media (max-width: 960px) { .term { grid-template-columns: 1fr; } }
+</style>

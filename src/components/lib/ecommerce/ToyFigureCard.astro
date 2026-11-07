@@ -1,0 +1,350 @@
+---
+/**
+ * ToyFigureCard — Trading-card style product card for toys and collectibles: universe + scale strip,
+ * vivid halftone panel with the figure, badge, wishlist, character eyebrow, rating, age and
+ * articulation chips, edition / pre-order note, price and an add-to-cart (or pre-order) button.
+ * Exposes the same `data-*` attributes as StoreProductCard (plus `data-f-*` facets), so
+ * FilterSidebar, ProductToolbar and the character rail filter it the same way.
+ *
+ * @param {Product} product - Product data (see ecommerce/types.ts). A demo figure is used by default.
+ * @param {ToyCardMeta} meta - Toy labels: character, universe, scale, age, articulation, preorder, edition.
+ * @param {string} href - Product page URL. Default '#'.
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} ctaLabel - Add-to-cart label. Default 'Add to cart'.
+ * @param {string} preorderLabel - Button label when `meta.preorder` is set. Default 'Pre-order'.
+ * @param {string} addedLabel - Label shown briefly after adding. Default 'Added!'.
+ * @param {string} cartKey - Cart storage key. Default 'ack-cart'.
+ * @param {boolean} openCart - Open the CartDrawer after adding (false = CartToast). Default true.
+ * @param {string} variant - Style (comic|clean). Default 'comic'.
+ * @param {string} size - Density (sm|md|lg). Default 'md'.
+ * @param {string} headingLevel - Title element (h2|h3|h4). Default 'h3'.
+ * @param {string} className - Extra class.
+ *
+ * Theming: --toy-edge (outline), --toy-drop (hard shadow), --toy-card-bg, --toy-art-ink, --toy-yellow,
+ * --font-display. All fall back to the global tokens.
+ *
+ * Accessibility: the title is a stretched link (no nested interactive elements); wishlist uses
+ * aria-pressed; the art is decorative; sold-out disables the button and says so in text.
+ */
+import ProductMedia from './ProductMedia.astro';
+import ProductRating from './ProductRating.astro';
+import Badge from '../feedback/Badge.astro';
+import { formatMoney } from './cart-store';
+import { facetAttrs } from './catalog-filter';
+import type { Product, ToyCardMeta } from './types';
+
+interface Props {
+  product?: Product;
+  meta?: ToyCardMeta;
+  href?: string;
+  currency?: string;
+  locale?: string;
+  ctaLabel?: string;
+  preorderLabel?: string;
+  addedLabel?: string;
+  cartKey?: string;
+  openCart?: boolean;
+  variant?: 'comic' | 'clean';
+  size?: 'sm' | 'md' | 'lg';
+  headingLevel?: 'h2' | 'h3' | 'h4';
+  className?: string;
+}
+
+const {
+  product = {
+    slug: 'captain-nova-6in',
+    name: 'Captain Nova · Hero Pose',
+    price: 24.99,
+    category: 'figures',
+    rating: 4.8,
+    reviews: 412,
+    badge: 'Bestseller',
+    badgeVariant: 'warning',
+    icon: 'figure',
+    hue: 212,
+    inStock: true,
+  },
+  meta = { character: 'Captain Nova', universe: 'Star Rangers', scale: '6 in', age: '4+', articulation: 28 },
+  href = '#',
+  currency = 'USD',
+  locale = 'en-US',
+  ctaLabel = 'Add to cart',
+  preorderLabel = 'Pre-order',
+  addedLabel = 'Added!',
+  cartKey = 'ack-cart',
+  openCart = true,
+  variant = 'comic',
+  size = 'md',
+  headingLevel = 'h3',
+  className = '',
+} = Astro.props;
+
+const Heading = headingLevel;
+const money = { currency, locale };
+const inStock = product.inStock !== false;
+const label = !inStock ? 'Sold out' : meta.preorder ? preorderLabel : ctaLabel;
+const titleId = `tfc-${product.slug}`;
+const cartPayload = JSON.stringify({
+  id: product.slug,
+  name: product.name,
+  price: product.price,
+  icon: product.icon,
+  hue: product.hue,
+  image: product.image,
+  variant: meta.preorder ? `Pre-order · ${meta.preorder}` : undefined,
+});
+---
+
+<article
+  class:list={['toy-card', `toy-card--${variant}`, `toy-card--${size}`, 'is-hoverable', className]}
+  style={`--tc-hue: ${product.hue ?? 10}`}
+  aria-labelledby={titleId}
+  data-product
+  data-name={product.name.toLowerCase()}
+  data-category={product.category}
+  data-price={product.price}
+  data-rating={product.rating ?? 0}
+  data-colors={(product.colors ?? []).map((c) => c.name.toLowerCase()).join(',')}
+  data-stock={inStock ? 'in' : 'out'}
+  {...facetAttrs(product.facets)}
+>
+  {(meta.universe || meta.scale) && (
+    <p class="toy-card__strip">
+      <span>{meta.universe}</span>
+      {meta.scale && <span class="toy-card__scale"><span class="sr-only">Scale: </span>{meta.scale}</span>}
+    </p>
+  )}
+
+  <div class="toy-card__media">
+    <ProductMedia image={product.image} alt={product.name} icon={product.icon} hue={product.hue} />
+    <span class="toy-card__dots" aria-hidden="true"></span>
+    {product.badge && (
+      <div class="toy-card__badge"><Badge variant={product.badgeVariant ?? 'default'}>{product.badge}</Badge></div>
+    )}
+    <button class="toy-card__wish" type="button" aria-pressed="false" aria-label={`Save ${product.name} to wishlist`} data-toy-wish>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+    </button>
+  </div>
+
+  <div class="toy-card__body">
+    {meta.character && <p class="toy-card__char">{meta.character}</p>}
+    <Heading class="toy-card__title" id={titleId}>
+      <a class="toy-card__link" href={href}>{product.name}</a>
+    </Heading>
+    {product.rating !== undefined && <ProductRating value={product.rating} count={product.reviews} />}
+
+    {(meta.age || meta.articulation) && (
+      <ul class="toy-card__chips" aria-label="Specs">
+        {meta.age && <li><span class="sr-only">Age </span>{meta.age}</li>}
+        {meta.articulation && <li>{meta.articulation} pts<span class="sr-only"> of articulation</span></li>}
+      </ul>
+    )}
+    {meta.edition && <p class="toy-card__note">{meta.edition}</p>}
+    {meta.preorder && <p class="toy-card__note toy-card__note--pre">{meta.preorder}</p>}
+
+    <div class="toy-card__foot">
+      <p class="toy-card__price">
+        <span class="toy-card__now">{formatMoney(product.price, money)}</span>
+        {product.compareAt && <s class="toy-card__was"><span class="sr-only">Was </span>{formatMoney(product.compareAt, money)}</s>}
+      </p>
+      <button
+        class="toy-card__add"
+        type="button"
+        data-add-to-cart={cartPayload}
+        data-cart-key={cartKey}
+        data-open-cart={openCart ? undefined : 'false'}
+        data-added-label={addedLabel}
+        disabled={!inStock}
+        aria-label={inStock ? `${label}: ${product.name}` : `${product.name} is sold out`}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{meta.preorder ? <><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></> : <><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></>}</svg>
+        <span data-label>{label}</span>
+      </button>
+    </div>
+  </div>
+</article>
+
+<script>
+  import { bindAddToCart } from './cart-store';
+
+  function init() {
+    bindAddToCart(document);
+    document.querySelectorAll<HTMLButtonElement>('[data-toy-wish]:not([data-wish-bound])').forEach((btn) => {
+      btn.dataset.wishBound = '';
+      btn.addEventListener('click', () => {
+        btn.setAttribute('aria-pressed', String(btn.getAttribute('aria-pressed') !== 'true'));
+      });
+    });
+  }
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>
+
+<style>
+  .toy-card {
+    --tc-edge: var(--toy-edge, var(--c-text-1, #17121f));
+    --tc-drop: var(--toy-drop, var(--tc-edge));
+    --tc-line: var(--toy-border-w, 2.5px);
+    --tc-ink: var(--toy-art-ink, #17121f);
+    container-type: inline-size;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--r-lg, 20px);
+    background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a));
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+  }
+  .toy-card--comic {
+    border: var(--tc-line) solid var(--tc-edge);
+    box-shadow: 5px 5px 0 var(--tc-drop);
+  }
+  .toy-card--clean { border: 1px solid var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.08)); }
+  .toy-card--comic:hover { transform: translate(-2px, -3px) rotate(-0.6deg); box-shadow: 8px 9px 0 var(--tc-drop); }
+  .toy-card--clean:hover { transform: translateY(-3px); }
+  .toy-card:focus-within { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 3px; }
+
+  .toy-card__strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0.4rem var(--sp-3, 0.75rem);
+    border-bottom: var(--tc-line) solid var(--tc-edge);
+    border-radius: calc(var(--r-lg, 20px) - 3px) calc(var(--r-lg, 20px) - 3px) 0 0;
+    background: var(--toy-yellow, #ffd23f);
+    color: #17121f;
+    font-family: var(--font-display, inherit);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .toy-card--clean .toy-card__strip { border-bottom-width: 1px; border-bottom-color: var(--c-border, rgba(0, 0, 0, 0.1)); }
+  .toy-card__strip > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+  .toy-card__scale { flex-shrink: 0; padding: 1px 8px; border-radius: 999px; background: #17121f; color: #fff; }
+
+  .toy-card__media { position: relative; overflow: hidden; border-bottom: var(--tc-line) solid var(--tc-edge); }
+  .toy-card--clean .toy-card__media { border-bottom: 0; }
+  .toy-card__media :global(.p-media) {
+    background:
+      radial-gradient(circle at 50% 44%, hsl(var(--tc-hue) 95% 72%), hsl(var(--tc-hue) 82% 54%) 72%);
+  }
+  .toy-card__media :global(.p-media__art) { color: var(--tc-ink); filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.18)); stroke-width: 2.2; }
+  .toy-card__dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgb(0 0 0 / 0.16) 1.2px, transparent 1.6px);
+    background-size: 9px 9px;
+    mask-image: linear-gradient(200deg, #000 0%, transparent 55%);
+  }
+  .toy-card__badge { position: absolute; top: var(--sp-3, 0.75rem); left: var(--sp-3, 0.75rem); z-index: 3; transform: rotate(-4deg); }
+  /* Solid comic stickers so badges stay legible on the vivid panel (≥ 4.5:1). */
+  .toy-card__badge :global(.badge) { border: 2px solid #17121f; background: #fff; color: #17121f; box-shadow: 2px 2px 0 #17121f; font-weight: 800; }
+  .toy-card__badge :global(.badge--warning) { background: #ffd23f; color: #17121f; }
+  .toy-card__badge :global(.badge--danger) { background: #c81e30; color: #fff; }
+  .toy-card__badge :global(.badge--info) { background: #17121f; color: #fff; }
+  .toy-card__badge :global(.badge--success) { background: #157347; color: #fff; }
+  .toy-card__wish {
+    position: absolute;
+    top: var(--sp-2, 0.5rem);
+    right: var(--sp-2, 0.5rem);
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid #17121f;
+    border-radius: 50%;
+    background: #fff;
+    color: #17121f;
+    cursor: pointer;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .toy-card__wish:hover { transform: scale(1.08) rotate(-6deg); }
+  .toy-card__wish[aria-pressed='true'] { color: #d62839; }
+  .toy-card__wish[aria-pressed='true'] svg { fill: currentColor; }
+
+  .toy-card__body { display: flex; flex-direction: column; gap: var(--sp-2, 0.5rem); flex: 1; padding: var(--sp-4, 1rem); }
+  .toy-card--sm .toy-card__body { padding: var(--sp-3, 0.75rem); }
+  .toy-card--lg .toy-card__body { padding: var(--sp-5, 1.25rem); }
+  .toy-card__char {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-primary-light, #d4a017);
+  }
+  .toy-card__title { margin: 0; font-family: var(--font-display, inherit); font-size: 1.05rem; font-weight: 400; line-height: 1.2; }
+  .toy-card--lg .toy-card__title { font-size: 1.25rem; }
+  .toy-card__link { color: var(--c-text-1, #fff); text-decoration: none; }
+  .toy-card__link:focus-visible { outline: none; }
+  .toy-card__link::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
+
+  .toy-card__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .toy-card__chips li {
+    padding: 2px 9px;
+    border: 1.5px solid currentColor;
+    border-radius: 999px;
+    color: var(--c-text-2, #a3a3a3);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+  .toy-card__note { margin: 0; font-size: 0.78rem; font-weight: 700; color: var(--c-text-1, #fff); }
+  .toy-card__note--pre { display: inline-flex; align-items: center; gap: 6px; color: var(--c-primary-light, #d4a017); }
+  .toy-card__note--pre::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: toy-blink 1.6s ease-in-out infinite; }
+
+  .toy-card__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3, 0.75rem); margin-top: auto; padding-top: var(--sp-2, 0.5rem); }
+  .toy-card__price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--sp-2, 0.5rem); margin: 0; }
+  .toy-card__now { font-family: var(--font-display, inherit); font-size: 1.2rem; color: var(--c-text-1, #fff); }
+  .toy-card__was { font-size: 0.82rem; color: var(--c-text-2, #a3a3a3); }
+
+  .toy-card__add {
+    position: relative;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 2px solid var(--tc-edge);
+    border-radius: 999px;
+    background: var(--c-primary-light, #d4a017);
+    color: var(--c-on-primary, #050505);
+    box-shadow: 3px 3px 0 var(--tc-drop);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .toy-card--clean .toy-card__add { border-color: transparent; box-shadow: none; }
+  .toy-card__add:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--tc-drop); }
+  .toy-card__add:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--tc-drop); }
+  .toy-card__add:disabled { background: rgb(var(--ink-rgb, 255 255 255) / 0.08); color: var(--c-text-2, #a3a3a3); box-shadow: none; transform: none; cursor: not-allowed; }
+  .toy-card__add.is-added { background: var(--c-success, #34d399); color: #052e1c; }
+  .toy-card__add:focus-visible, .toy-card__wish:focus-visible { outline: 3px solid var(--c-primary-light, #d4a017); outline-offset: 2px; }
+  .toy-card--sm .toy-card__add { width: 44px; padding: 0; justify-content: center; }
+  .toy-card--sm .toy-card__add span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @container (max-width: 250px) {
+    .toy-card__body { padding: var(--sp-3, 0.75rem); }
+    .toy-card__foot { flex-direction: column; align-items: stretch; gap: var(--sp-2, 0.5rem); }
+    .toy-card__add { justify-content: center; }
+    .toy-card__title { font-size: 0.95rem; }
+  }
+
+  @keyframes toy-blink { 50% { opacity: 0.3; } }
+  @media (prefers-reduced-motion: reduce) {
+    .toy-card, .toy-card__add, .toy-card__wish { transition: none; }
+    .toy-card--comic:hover, .toy-card--clean:hover { transform: none; }
+    .toy-card__note--pre::before { animation: none; }
+  }
+</style>

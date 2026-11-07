@@ -1,0 +1,98 @@
+---
+/**
+ * ClinicLayout — Full HTML document for the clinic SaaS app ("Pulso"): AppSidebar + AppTopbar +
+ * content area, themed with the Pulso tokens (medical teal, Figtree, light + dark).
+ *
+ * @param {string} title - Page title (workspace and product are appended).
+ * @param {string} description - Meta description.
+ * @param {string} current - Active route key (dashboard|schedule|patients|consultation|telehealth|reports|settings).
+ * @param {ClinicData} data - Workspace data. Default: Clínica Alameda demo.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). The topbar toggle overrides it. Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default true (app pages are private).
+ * @param {string} lang - Document language. Default 'en'.
+ */
+import '../../../../styles/global.css';
+import './pulso-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { clinicData, clinicRoutes, type ClinicData, type ClinicRoutes } from './data';
+
+type Key = 'dashboard' | 'schedule' | 'patients' | 'consultation' | 'telehealth' | 'reports' | 'settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const { title, description, current = 'dashboard', data = clinicData, routes = clinicRoutes, theme = 'light', noindex = true, lang = 'en' } = Astro.props;
+
+const waiting = data.appointments.filter((a) => a.day === data.today && a.status === 'checked-in').length;
+const videoToday = data.appointments.filter((a) => a.day === data.today && a.type === 'video' && a.status === 'confirmed').length;
+const groups = [
+  { items: [
+    { label: 'Dashboard', href: routes.dashboard, icon: 'dashboard' },
+    { label: 'Schedule', href: routes.schedule, icon: 'calendar', badge: waiting || undefined },
+    { label: 'Patients', href: routes.patients, icon: 'users' },
+    { label: 'Consultation', href: routes.consultation, icon: 'stethoscope' },
+    { label: 'Video visits', href: routes.telehealth, icon: 'video', badge: videoToday || undefined },
+  ] },
+  { label: 'Insights', items: [{ label: 'Reports', href: routes.reports, icon: 'chart' }] },
+  { label: 'Practice', items: [
+    { label: 'Settings', href: routes.settings, icon: 'settings' },
+    { label: 'Booking page', href: routes.book, icon: 'building' },
+  ] },
+];
+const currentHref = routes[current];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-pulso" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} · ${data.workspace.name} — ${data.product}`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="pulso">
+    <a class="pulso__skip" href="#main">Skip to content</a>
+    <div class="pulso__shell">
+      <AppSidebar
+        workspace={data.workspace}
+        groups={groups}
+        currentHref={currentHref}
+        promo={{ title: 'Online booking', text: '62% of visits booked online this month', href: routes.book, cta: 'Open booking page', progress: 62 }}
+      />
+      <div class="pulso__main">
+        <AppTopbar
+          searchPlaceholder="Search patients, appointments, notes…"
+          notifications={data.notifications}
+          user={data.user}
+          userLinks={[{ label: 'Your profile', href: routes.settings }, { label: 'Consultation hours', href: `${routes.settings}#hours` }, { label: 'Team & billing', href: `${routes.settings}#team` }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main" class="pulso__content" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

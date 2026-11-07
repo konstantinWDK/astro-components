@@ -1,0 +1,146 @@
+---
+/**
+ * CyberStatusBoard — Uptime board for infrastructure products: an overall status banner, then
+ * one row per region with a day-by-day uptime strip (operational / degraded / outage), uptime %,
+ * latency and current state, plus a legend. Hover a day to read it.
+ *
+ * @param {string} eyebrow - Index label. Default '[01] UPTIME'.
+ * @param {string} title - Heading. Default 'Grid status'.
+ * @param {Array<{name: string, city?: string, uptime: number, latency?: number, days?: Array<'up'|'degraded'|'down'>}>} regions - Rows; `days` is generated from uptime when omitted.
+ * @param {number} days - Days shown per strip. Default 60.
+ * @param {string} overall - Banner text. Default: derived from the regions.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a table with real headers; each strip is one image with a text summary ("2 degraded
+ * days, 1 outage day") instead of 60 announced cells; day details are in hover titles; status is
+ * always written in text next to the colour.
+ */
+interface Region { name: string; city?: string; uptime: number; latency?: number; days?: Array<'up' | 'degraded' | 'down'> }
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  regions?: Region[];
+  days?: number;
+  overall?: string;
+  className?: string;
+}
+
+const {
+  eyebrow = '[01] UPTIME',
+  title = 'Grid status',
+  regions = [
+    { name: 'NA-EAST', city: 'New York', uptime: 99.98, latency: 36 },
+    { name: 'EU-WEST', city: 'Amsterdam', uptime: 100, latency: 22 },
+    { name: 'OCEANIA', city: 'Sydney', uptime: 98.72, latency: 66 },
+  ],
+  days = 60,
+  overall,
+  className = '',
+} = Astro.props;
+
+const hash = (s: string) => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+const strip = (r: Region): Array<'up' | 'degraded' | 'down'> => {
+  if (r.days) return r.days.slice(-days);
+  const bad = Math.round((100 - r.uptime) * 6);
+  const h = hash(r.name);
+  return Array.from({ length: days }, (_, i) => {
+    const k = (h >> (i % 24)) ^ (i * 2654435761);
+    if (bad >= 1 && i === days - 1 && r.uptime < 99) return 'down';
+    if (bad && ((k >>> 0) % 97) < bad * 2) return ((k >>> 0) % 3 === 0 ? 'down' : 'degraded');
+    return 'up';
+  });
+};
+const rows = regions.map((r) => ({ ...r, strip: strip(r) }));
+const worst = rows.some((r) => r.strip.at(-1) === 'down') ? 'down' : rows.some((r) => r.strip.at(-1) === 'degraded') ? 'degraded' : 'up';
+const banner = overall ?? { up: 'ALL SYSTEMS NOMINAL', degraded: 'PARTIAL DEGRADATION', down: 'REGIONAL OUTAGE · JOBS REROUTED' }[worst];
+const label = { up: 'Operational', degraded: 'Degraded', down: 'Outage' } as const;
+const dayLabel = (i: number) => (i === days - 1 ? 'Today' : `${days - 1 - i} days ago`);
+---
+
+<section class:list={['cystat', className]} aria-labelledby="cystat-title">
+  <header class="cystat__head">
+    {eyebrow && <p class="cystat__eyebrow">{eyebrow}</p>}
+    <h2 class="cystat__title" id="cystat-title">{title}</h2>
+  </header>
+
+  <p class={`cystat__banner cystat__banner--${worst}`}><span class="cystat__dot" aria-hidden="true"></span>{banner}</p>
+
+  <div class="cystat__scroll" tabindex="0" role="region" aria-label="Uptime by region">
+    <table class="cystat__table">
+      <caption class="sr-only">Uptime for the last {days} days by region</caption>
+      <thead>
+        <tr><th scope="col">Region</th><th scope="col">Last {days} days</th><th scope="col" class="num">Uptime</th><th scope="col" class="num">Ping</th><th scope="col">Now</th></tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => {
+          const deg = r.strip.filter((d) => d === 'degraded').length;
+          const down = r.strip.filter((d) => d === 'down').length;
+          const now = r.strip.at(-1) ?? 'up';
+          return (
+            <tr>
+              <th scope="row"><strong>{r.name}</strong>{r.city && <span>{r.city}</span>}</th>
+              <td>
+                <div class="cystat__strip" role="img" aria-label={`${r.name}, last ${days} days: ${deg ? `${deg} degraded day${deg > 1 ? 's' : ''}` : 'no degraded days'}, ${down ? `${down} outage day${down > 1 ? 's' : ''}` : 'no outages'}`}>
+                  {r.strip.map((d, i) => <span class={`is-${d}`} title={`${dayLabel(i)}: ${label[d]}`}></span>)}
+                </div>
+              </td>
+              <td class="num">{r.uptime.toFixed(2)}%</td>
+              <td class="num">{r.latency !== undefined ? `${r.latency}ms` : '—'}</td>
+              <td><span class={`cystat__now cystat__now--${now}`}>{label[now]}</span></td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  <ul class="cystat__legend" aria-label="Legend">
+    <li><i class="is-up" aria-hidden="true"></i>Operational</li>
+    <li><i class="is-degraded" aria-hidden="true"></i>Degraded</li>
+    <li><i class="is-down" aria-hidden="true"></i>Outage</li>
+  </ul>
+</section>
+
+<style>
+  .cystat { --cst-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); --cst-up: var(--c-success, #39ff88); --cst-deg: var(--c-warning, #ffcc00); --cst-down: var(--c-danger, #ff3b5c); color: var(--c-text-1, #f2f2f2); font-family: var(--font-mono, monospace); }
+  .cystat__head { margin-bottom: var(--sp-5, 1.25rem); }
+  .cystat__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cystat__title { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900; text-transform: uppercase; }
+  .cystat__banner { display: flex; align-items: center; gap: var(--sp-3, 0.75rem); margin: 0 0 var(--sp-5, 1.25rem); padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem); border: 2px solid var(--cst-edge); font-size: 0.95rem; font-weight: 800; letter-spacing: 0.12em; }
+  .cystat__banner--up { background: var(--cst-up); color: #050507; border-color: #050507; }
+  .cystat__banner--degraded { background: var(--cst-deg); color: #050507; border-color: #050507; }
+  .cystat__banner--down { background: repeating-linear-gradient(-45deg, var(--cst-down) 0 14px, color-mix(in srgb, var(--cst-down) 80%, #000) 14px 28px); color: #fff; }
+  .cystat__dot { width: 12px; height: 12px; background: currentColor; animation: cst-blink 1s steps(2) infinite; }
+
+  .cystat__scroll { overflow-x: auto; border: 2px solid var(--cst-edge); }
+  .cystat__scroll:focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cystat__table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.82rem; }
+  .cystat__table th, .cystat__table td { padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-bottom: 1px solid rgb(var(--ink-rgb, 242 242 242) / 0.14); text-align: left; vertical-align: middle; }
+  .cystat__table thead th { background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .cystat__table tbody th { display: grid; font-weight: 500; }
+  .cystat__table tbody th span { font-size: 0.72rem; color: var(--c-text-2, #a6a6b4); }
+  .cystat__table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cystat__strip { display: flex; gap: 2px; }
+  .cystat__strip span { flex: 1; min-width: 4px; height: 28px; background: var(--cst-up); opacity: 0.85; }
+  .cystat__strip span.is-degraded { background: var(--cst-deg); opacity: 1; }
+  .cystat__strip span.is-down { background: var(--cst-down); opacity: 1; }
+  .cystat__strip span:hover { opacity: 1; outline: 2px solid var(--c-text-1, #f2f2f2); }
+  .cystat__now { display: inline-block; padding: 2px 8px; border: 1.5px solid currentColor; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+  .cystat__now--up { color: var(--cst-up); }
+  .cystat__now--degraded { color: var(--cst-deg); }
+  .cystat__now--down { color: var(--cst-down); }
+  :global([data-theme='light']) .cystat__now--up { color: #0a7a3a; }
+  :global([data-theme='light']) .cystat__now--degraded { color: #8a5a00; }
+  :global([data-theme='light']) .cystat__now--down { color: #c0102e; }
+
+  .cystat__legend { display: flex; flex-wrap: wrap; gap: var(--sp-4, 1rem); margin: var(--sp-4, 1rem) 0 0; padding: 0; list-style: none; font-size: 0.78rem; color: var(--c-text-2, #a6a6b4); }
+  .cystat__legend li { display: flex; align-items: center; gap: 6px; }
+  .cystat__legend i { width: 12px; height: 12px; }
+  .cystat__legend .is-up { background: var(--cst-up); }
+  .cystat__legend .is-degraded { background: var(--cst-deg); }
+  .cystat__legend .is-down { background: var(--cst-down); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @keyframes cst-blink { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .cystat__dot { animation: none; } }
+</style>

@@ -1,0 +1,91 @@
+---
+/**
+ * CyberPageHero — Inner-page header for brutalist cyberpunk sites: path breadcrumb (SYS:// …),
+ * giant index number, uppercase title with an outlined second line, intro and a row of meta tags,
+ * framed by hard rules and a scanline band.
+ *
+ * @param {string} index - Big index label. Default '01'.
+ * @param {Array<{label: string, href?: string}>} path - Breadcrumb trail (last = current page).
+ * @param {string} title - First title line. Default 'THE'.
+ * @param {string} outline - Outlined second line (optional). Default 'PROTOCOL'.
+ * @param {string} intro - Intro paragraph.
+ * @param {string[]} tags - Meta tags (e.g. version, status).
+ * @param {string} variant - Background (plain|scan|acid). Default 'scan'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1 with both lines as text; the breadcrumb is a labelled nav with
+ * aria-current; the index number is decorative.
+ */
+interface Props {
+  index?: string;
+  path?: Array<{ label: string; href?: string }>;
+  title?: string;
+  outline?: string;
+  intro?: string;
+  tags?: string[];
+  variant?: 'plain' | 'scan' | 'acid';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  index = '01',
+  path = [{ label: 'SYS', href: '#' }, { label: 'PROTOCOL' }],
+  title = 'THE',
+  outline = 'PROTOCOL',
+  intro = 'Five layers between a gamer’s idle GPU and your training run. Each one is sealed, attested and replaceable.',
+  tags = ['v4.2 GHOSTWIRE', 'STATUS: NOMINAL', 'AUDITED 2026-10'],
+  variant = 'scan',
+  size = 'md',
+  className = '',
+} = Astro.props;
+---
+
+<section class:list={['cyph', `cyph--${variant}`, `cyph--${size}`, className]} aria-labelledby="cyph-title">
+  <div class="cyph__inner">
+    <nav class="cyph__path" aria-label="Breadcrumb">
+      <ol>
+        {path.map((p, i) => (
+          <li>{p.href && i < path.length - 1 ? <a href={p.href}>{p.label}</a> : <span aria-current="page">{p.label}</span>}</li>
+        ))}
+      </ol>
+    </nav>
+    <span class="cyph__index" aria-hidden="true">{index}</span>
+    <h1 class="cyph__title" id="cyph-title">
+      <span>{title}</span>
+      {outline && <span class="cyph__outline">{outline}</span>}
+    </h1>
+    <div class="cyph__foot">
+      {intro && <p class="cyph__intro">{intro}</p>}
+      {tags.length > 0 && <ul class="cyph__tags">{tags.map((t) => <li>{t}</li>)}</ul>}
+    </div>
+  </div>
+</section>
+
+<style>
+  .cyph { --cp-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); position: relative; overflow: hidden; border-bottom: 2px solid var(--cp-edge); color: var(--c-text-1, #f2f2f2); container-type: inline-size; }
+  .cyph--scan { background: repeating-linear-gradient(0deg, rgb(var(--ink-rgb, 242 242 242) / 0.04) 0 1px, transparent 1px 4px); }
+  .cyph--acid { background: var(--cy-acid, #d4ff00); color: #050507; --c-text-1: #050507; --c-text-2: #2a2a2a; --cy-accent-text: #050507; }
+  .cyph__inner { position: relative; max-width: 1440px; margin: 0 auto; padding: clamp(2.5rem, 7vw, 6rem) var(--sp-5, 1.25rem) clamp(2.5rem, 6vw, 4.5rem); }
+  .cyph--sm .cyph__inner { padding-block: clamp(2rem, 4vw, 3rem); }
+  .cyph--lg .cyph__inner { padding-block: clamp(4rem, 10vw, 8rem); }
+
+  .cyph__path ol { display: flex; flex-wrap: wrap; gap: 0; margin: 0 0 var(--sp-6, 1.5rem); padding: 0; list-style: none; font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; }
+  .cyph__path li + li::before { content: '//'; margin: 0 8px; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyph__path a { color: var(--c-text-2, #a6a6b4); text-decoration: none; }
+  .cyph__path a:hover { color: var(--c-text-1, #f2f2f2); text-decoration: underline; }
+  .cyph__path a:focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cyph__path [aria-current] { color: var(--c-text-1, #f2f2f2); }
+
+  .cyph__index { position: absolute; top: clamp(1rem, 4vw, 3rem); right: var(--sp-5, 1.25rem); font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(5rem, 22cqi, 16rem); font-weight: 900; line-height: 0.8; color: transparent; -webkit-text-stroke: 2px rgb(var(--ink-rgb, 242 242 242) / 0.16); pointer-events: none; }
+  .cyph__title { position: relative; display: grid; margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(2.6rem, 11cqi, 9rem); font-weight: 900; line-height: 0.88; letter-spacing: -0.02em; text-transform: uppercase; }
+  .cyph__outline { color: transparent; -webkit-text-stroke: 2px var(--c-text-1, #f2f2f2); }
+  .cyph__foot { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sp-5, 1.25rem); margin-top: var(--sp-8, 2rem); }
+  .cyph__intro { max-width: 46rem; margin: 0; font-family: var(--font-mono, monospace); font-size: 1.02rem; line-height: 1.7; color: var(--c-text-2, #a6a6b4); }
+  .cyph__tags { display: flex; flex-wrap: wrap; gap: 0; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono, monospace); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; }
+  .cyph__tags li { padding: 6px 10px; border: 2px solid var(--cp-edge); margin: 0 -2px -2px 0; }
+  .cyph__tags li:first-child { background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); }
+  .cyph--acid .cyph__tags li:first-child { background: #050507; color: var(--cy-acid, #d4ff00); }
+  @container (max-width: 480px) { .cyph__outline { -webkit-text-stroke-width: 1.5px; } }
+</style>

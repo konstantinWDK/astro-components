@@ -1,0 +1,134 @@
+---
+/**
+ * CyberSpecTable — Technical spec sheet in a brutalist grid: grouped key / value / unit rows,
+ * classified values shown as redaction bars that "decrypt" with a scramble effect, a decrypt-all
+ * switch and a HackerDecodeText heading.
+ *
+ * @param {string} eyebrow - Index label. Default '[02] SPEC SHEET'.
+ * @param {string} title - Heading (decodes on hover). Default 'SYSTEM SPECIFICATIONS'.
+ * @param {Array<{group: string, rows: Array<{key: string, value: string, unit?: string, redacted?: boolean}>}>} groups - Rows by group.
+ * @param {string} decryptLabel - Label of the decrypt-all button. Default 'Decrypt all'.
+ * @param {string} variant - Style (grid|lines). Default 'grid'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: each group is a real table with a caption; redacted cells hold the value in a
+ * button labelled "Decrypt <key>" (aria-expanded) so nothing is hidden from keyboard users;
+ * the scramble animation is skipped with reduced motion.
+ */
+import HackerDecodeText from '../typography/HackerDecodeText.astro';
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  groups?: Array<{ group: string; rows: Array<{ key: string; value: string; unit?: string; redacted?: boolean }> }>;
+  decryptLabel?: string;
+  variant?: 'grid' | 'lines';
+  className?: string;
+}
+
+const {
+  eyebrow = '[02] SPEC SHEET',
+  title = 'SYSTEM SPECIFICATIONS',
+  groups = [
+    { group: 'COMPUTE', rows: [{ key: 'GPU classes', value: 'H200 · H100 · L40S · RTX 4090' }, { key: 'Max cluster', value: '1,024 GPUs', unit: 'per job' }] },
+    { group: 'SECURITY', rows: [{ key: 'Isolation', value: 'Confidential VMs' }, { key: 'Key custody', value: 'Customer-held · HSM-backed', redacted: true }] },
+  ],
+  decryptLabel = 'Decrypt all',
+  variant = 'grid',
+  className = '',
+} = Astro.props;
+---
+
+<section class:list={['cyspec', `cyspec--${variant}`, className]} aria-labelledby="cyspec-title" data-cyspec>
+  <header class="cyspec__head">
+    <div>
+      {eyebrow && <p class="cyspec__eyebrow">{eyebrow}</p>}
+      <div id="cyspec-title"><HackerDecodeText text={title} tag="h2" className="cyspec__title" /></div>
+    </div>
+    <button type="button" class="cyspec__all" data-cyspec-all aria-pressed="false">{decryptLabel}</button>
+  </header>
+
+  <div class="cyspec__groups">
+    {groups.map((g, gi) => (
+      <table class="cyspec__table">
+        <caption><span aria-hidden="true">{String(gi + 1).padStart(2, '0')} /</span> {g.group}</caption>
+        <tbody>
+          {g.rows.map((r) => (
+            <tr>
+              <th scope="row">{r.key}</th>
+              <td>
+                {r.redacted ? (
+                  <button type="button" class="cyspec__redacted" aria-expanded="false" aria-label={`Decrypt ${r.key}`} data-cyspec-secret={r.value}>
+                    <span class="cyspec__bar" aria-hidden="true">████████████</span>
+                    <span class="cyspec__value" hidden>{r.value}</span>
+                  </button>
+                ) : (
+                  <span class="cyspec__value">{r.value}</span>
+                )}
+                {r.unit && <span class="cyspec__unit">{r.unit}</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ))}
+  </div>
+</section>
+
+<script>
+  const glyphs = '01#$%&*@?!<>/\\|=+';
+  document.querySelectorAll<HTMLElement>('[data-cyspec]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reveal = (btn: HTMLButtonElement) => {
+      if (btn.getAttribute('aria-expanded') === 'true') return;
+      btn.setAttribute('aria-expanded', 'true');
+      btn.classList.add('is-open');
+      const value = btn.querySelector<HTMLElement>('.cyspec__value')!;
+      const bar = btn.querySelector<HTMLElement>('.cyspec__bar')!;
+      bar.hidden = true;
+      value.hidden = false;
+      const text = btn.dataset.cyspecSecret || '';
+      if (reduce) return;
+      let i = 0;
+      const t = window.setInterval(() => {
+        value.textContent = text.split('').map((c, n) => (n < i || c === ' ' ? c : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
+        i += Math.max(1, Math.ceil(text.length / 18));
+        if (i > text.length) { window.clearInterval(t); value.textContent = text; }
+      }, 40);
+    };
+    const secrets = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cyspec-secret]'));
+    secrets.forEach((b) => b.addEventListener('click', () => reveal(b)));
+    root.querySelector<HTMLButtonElement>('[data-cyspec-all]')?.addEventListener('click', (e) => {
+      (e.currentTarget as HTMLButtonElement).setAttribute('aria-pressed', 'true');
+      secrets.forEach(reveal);
+    });
+  });
+</script>
+
+<style>
+  .cyspec { --cs-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); color: var(--c-text-1, #f2f2f2); container-type: inline-size; }
+  .cyspec__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sp-4, 1rem); margin-bottom: var(--sp-6, 1.5rem); }
+  .cyspec__eyebrow { margin: 0 0 var(--sp-2, 0.5rem); font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyspec__head :global(.cyspec__title) { margin: 0; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.6rem, 4.5cqi, 3rem); font-weight: 900; letter-spacing: 0.02em; color: var(--c-text-1, #f2f2f2); }
+  .cyspec__head :global(.cyspec__title:hover) { text-shadow: 0 0 14px color-mix(in srgb, var(--cy-acid, #d4ff00) 60%, transparent); }
+  .cyspec__all { min-height: 44px; padding: 0 var(--sp-5, 1.25rem); border: 2px solid var(--cs-edge); background: transparent; color: inherit; font-family: var(--font-mono, monospace); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+  .cyspec__all:hover, .cyspec__all[aria-pressed='true'] { background: var(--cy-acid, #d4ff00); color: #050507; border-color: var(--cy-acid, #d4ff00); }
+
+  .cyspec__groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); border-top: 2px solid var(--cs-edge); border-left: 2px solid var(--cs-edge); }
+  .cyspec__table { width: 100%; border-collapse: collapse; border-right: 2px solid var(--cs-edge); border-bottom: 2px solid var(--cs-edge); font-family: var(--font-mono, monospace); font-size: 0.86rem; }
+  .cyspec__table caption { padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); font-weight: 800; letter-spacing: 0.14em; text-align: left; caption-side: top; }
+  .cyspec__table th, .cyspec__table td { padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem); border-bottom: 1px dashed rgb(var(--ink-rgb, 242 242 242) / 0.22); text-align: left; vertical-align: top; }
+  .cyspec__table tr:last-child th, .cyspec__table tr:last-child td { border-bottom: 0; }
+  .cyspec__table th { width: 40%; font-weight: 500; color: var(--c-text-2, #a6a6b4); }
+  .cyspec__value { color: var(--c-text-1, #f2f2f2); font-weight: 700; }
+  .cyspec__unit { margin-left: 6px; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); font-size: 0.78rem; }
+  .cyspec__redacted { display: inline-flex; min-height: 32px; align-items: center; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .cyspec__bar { padding: 0 4px; background: var(--c-text-1, #f2f2f2); color: var(--c-text-1, #f2f2f2); letter-spacing: -1px; position: relative; }
+  .cyspec__bar::after { content: 'CLASSIFIED · DECRYPT'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-bg, #050507); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; }
+  .cyspec__redacted:hover .cyspec__bar { background: var(--cy-magenta, #ff2bd6); color: var(--cy-magenta, #ff2bd6); }
+  .cyspec__redacted.is-open { cursor: default; }
+  .cyspec :is(button):focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cyspec--lines .cyspec__groups { border: 0; }
+  .cyspec--lines .cyspec__table { border-right: 0; }
+</style>

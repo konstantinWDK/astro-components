@@ -679,6 +679,436 @@ const site: PortfolioSite = {
   routes={{ home: '/', projects: '/projects/', project: '/projects/', blog: '/blog/', post: '/blog/', contact: '/contact/' }}
 />`,
   },
+  {
+    slug: 'toy-store',
+    name: { en: 'Toy Store · Action figures', es: 'Juguetería · Figuras de acción', ru: 'Магазин игрушек · Фигурки' },
+    tagline: {
+      en: 'A comic-book toy store for action figures and collectibles, with shop-by-character filters, character pages and a gift finder by age.',
+      es: 'Una juguetería estilo cómic para figuras de acción y coleccionables, con filtros por personaje, páginas de personaje y buscador de regalos por edad.',
+      ru: 'Магазин игрушек в стиле комикса для фигурок и коллекционных вещей: фильтры по персонажам, страницы персонажей и подбор подарка по возрасту.',
+    },
+    description: {
+      en: 'Kapow is the third e-commerce template, built for toy shops selling action figures, vehicles, playsets and collector editions. Every product knows which characters it features, so shoppers can tap a hero or villain in the avatar rail — or combine character, universe, age group, scale, type and price in the sidebar — and the grid filters instantly with a shareable URL. Each character gets a roster card and a profile page with art, quote, bio and power levels plus all of their figures. Product pages add a figure file with scale, articulation, what is in the box and a safety warning. The look is a bold comic "toy box": thick ink outlines, hard shadows, halftone panels and Russo One type, in light and dark. It reuses the e-commerce kit — header, cart drawer, filters, toolbar, gallery, buy box, checkout and order summary — so the cart, promo codes and checkout work exactly like the other stores.',
+      es: 'Kapow es la tercera plantilla e-commerce, pensada para jugueterías que venden figuras de acción, vehículos, playsets y ediciones de coleccionista. Cada producto sabe qué personajes incluye, así que se puede pulsar un héroe o villano en el carril de avatares — o combinar personaje, universo, edad, escala, tipo y precio en el lateral — y la cuadrícula se filtra al instante con una URL que se puede compartir. Cada personaje tiene su cromo en el plantel y una página propia con ilustración, frase, biografía y niveles de poder, además de todas sus figuras. La ficha de producto añade una «ficha de figura» con escala, articulaciones, contenido de la caja y aviso de seguridad. El estilo es una «caja de juguetes» de cómic: contornos gruesos, sombras duras, tramas de puntos y tipografía Russo One, en claro y oscuro. Reutiliza el kit e-commerce — cabecera, carrito lateral, filtros, barra de orden, galería, bloque de compra, checkout y resumen — así que el carrito, los códigos promocionales y el checkout funcionan igual que en las otras tiendas.',
+      ru: 'Kapow — третий шаблон интернет-магазина, созданный для магазинов игрушек: фигурки, техника, игровые наборы и коллекционные издания. Каждый товар знает, каких персонажей он включает, поэтому можно нажать на героя или злодея в ленте аватаров — или сочетать персонажа, вселенную, возраст, масштаб, тип и цену в боковой панели — и сетка мгновенно фильтруется, а ссылкой можно поделиться. У каждого персонажа есть карточка в каталоге и страница с рисунком, цитатой, биографией и уровнями силы, а также всеми его фигурками. Страница товара дополнена «досье фигурки»: масштаб, артикуляция, комплектация и предупреждение о безопасности. Стиль — яркая «коробка с игрушками» в духе комиксов: толстые контуры, жёсткие тени, растровые панели и шрифт Russo One, в светлой и тёмной теме. Шаблон переиспользует e-commerce-кит — шапку, корзину, фильтры, сортировку, галерею, блок покупки, оформление и итог заказа, — так что корзина, промокоды и оформление работают как в других магазинах.',
+    },
+    highlights: {
+      en: ['6 pages: home, shop, characters, character profile, product and checkout', 'Filter by character from an avatar rail or the sidebar — multi-select, URL-synced', 'Facets: character, universe, age group, scale, type, price, rating, stock', 'Character pages with quote, bio and power-level meters', 'Gift finder by age and budget, figure spec sheet with safety warning', 'Pre-orders, limited editions and a collector club with stamp card', 'Comic "toy box" look, light and dark mode', '7 sections in Sections → Toy Store + 2 new e-commerce components'],
+      es: ['6 páginas: inicio, tienda, personajes, ficha de personaje, producto y checkout', 'Filtra por personaje desde un carril de avatares o el lateral — selección múltiple y sincronizada con la URL', 'Facetas: personaje, universo, edad, escala, tipo, precio, valoración y stock', 'Páginas de personaje con frase, biografía y medidores de poder', 'Buscador de regalos por edad y presupuesto, ficha de figura con aviso de seguridad', 'Preventas, ediciones limitadas y club de coleccionistas con tarjeta de sellos', 'Estilo «caja de juguetes» de cómic, modo claro y oscuro', '7 secciones en Secciones → Juguetería + 2 componentes e-commerce nuevos'],
+      ru: ['6 страниц: главная, каталог, персонажи, профиль персонажа, товар и оформление', 'Фильтр по персонажу из ленты аватаров или боковой панели — мультивыбор, синхронизация с URL', 'Фасеты: персонаж, вселенная, возраст, масштаб, тип, цена, рейтинг, наличие', 'Страницы персонажей с цитатой, биографией и шкалами силы', 'Подбор подарка по возрасту и бюджету, досье фигурки с предупреждением', 'Предзаказы, лимитированные серии и клуб коллекционеров с картой штампов', 'Комикс-стиль «коробки с игрушками», светлая и тёмная тема', '7 секций в разделе «Секции → Магазин игрушек» + 2 новых e-commerce компонента'],
+    },
+    tags: ['ecommerce', 'toys', 'action-figures', 'collectibles', 'characters', 'filters', 'kids'],
+    previewBase: '/preview/toy-store/',
+    importPath: 'astro-component-kit/templates/toy-store',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Comic hero, guarantees, shop by character, best sellers, universes, pre-order countdown, gift finder by age, new arrivals and collector club.', es: 'Hero de cómic, garantías, compra por personaje, más vendidos, universos, cuenta atrás de preventa, buscador de regalos por edad, novedades y club de coleccionistas.', ru: 'Комикс-hero, гарантии, покупки по персонажу, хиты, вселенные, отсчёт предзаказа, подбор подарка по возрасту, новинки и клуб коллекционеров.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { ToyHomePage } from 'astro-component-kit/templates/toy-store';
+---
+
+<ToyHomePage />`,
+      },
+      {
+        id: 'shop', path: 'shop/?character=captain-nova',
+        name: { en: 'Shop & filters', es: 'Tienda y filtros', ru: 'Каталог и фильтры' },
+        description: { en: 'Character avatar rail, sidebar facets (type, character, universe, age, scale, price, rating, stock), sort and live count — all in the URL.', es: 'Carril de avatares de personaje, facetas laterales (tipo, personaje, universo, edad, escala, precio, valoración, stock), orden y contador en vivo — todo en la URL.', ru: 'Лента аватаров, фасеты (тип, персонаж, вселенная, возраст, масштаб, цена, рейтинг, наличие), сортировка и живой счётчик — всё в URL.' },
+        file: 'src/pages/shop.astro',
+        code: `---
+import { ToyShopPage } from 'astro-component-kit/templates/toy-store';
+---
+
+<!-- Shareable filters: /shop/?character=vex,raikou&age=kids&scale=6in&max=25 -->
+<ToyShopPage />`,
+      },
+      {
+        id: 'characters', path: 'characters/',
+        name: { en: 'Characters', es: 'Personajes', ru: 'Персонажи' },
+        description: { en: 'Trading-card roster with hero / villain and universe filters, universe tiles and gift finder.', es: 'Plantel en cromos con filtros héroe / villano y por universo, tarjetas de universo y buscador de regalos.', ru: 'Каталог-карточки с фильтрами герой / злодей и по вселенной, плитки вселенных и подбор подарка.' },
+        file: 'src/pages/characters/index.astro',
+        code: `---
+import { ToyCharactersPage } from 'astro-component-kit/templates/toy-store';
+---
+
+<ToyCharactersPage />`,
+      },
+      {
+        id: 'character', path: 'characters/kira-blaze/',
+        name: { en: 'Character profile', es: 'Ficha de personaje', ru: 'Профиль персонажа' },
+        description: { en: 'Comic panel, quote, bio and power levels, every figure of the character, allies and rivals.', es: 'Viñeta de cómic, frase, biografía y niveles de poder, todas las figuras del personaje, aliados y rivales.', ru: 'Комикс-панель, цитата, биография и уровни силы, все фигурки персонажа, союзники и соперники.' },
+        file: 'src/pages/characters/[id].astro',
+        code: `---
+import { ToyCharacterPage, kapowStore } from 'astro-component-kit/templates/toy-store';
+
+export function getStaticPaths() {
+  return kapowStore.characters.map((c) => ({ params: { id: c.id } }));
+}
+---
+
+<ToyCharacterPage id={Astro.params.id} />`,
+      },
+      {
+        id: 'product', path: 'product/captain-nova-legends/',
+        name: { en: 'Product', es: 'Producto', ru: 'Товар' },
+        description: { en: 'Gallery, buy box with stock urgency, meet the character, figure file with articulation and what is in the box, reviews and related figures.', es: 'Galería, bloque de compra con urgencia de stock, conoce al personaje, ficha de figura con articulaciones y contenido de la caja, reseñas y figuras relacionadas.', ru: 'Галерея, блок покупки с остатком, знакомство с персонажем, досье фигурки с артикуляцией и комплектацией, отзывы и похожие фигурки.' },
+        file: 'src/pages/product/[slug].astro',
+        code: `---
+import { ToyProductPage, kapowStore } from 'astro-component-kit/templates/toy-store';
+
+export function getStaticPaths() {
+  return kapowStore.products.map((p) => ({ params: { slug: p.slug } }));
+}
+---
+
+<ToyProductPage slug={Astro.params.slug} />`,
+      },
+      {
+        id: 'checkout', path: 'checkout/',
+        name: { en: 'Checkout', es: 'Checkout', ru: 'Оформление' },
+        description: { en: 'Focus-mode checkout with steps, delivery, shipping, payment and a live order summary (try code KAPOW10).', es: 'Checkout en modo foco con pasos, entrega, envío, pago y resumen del pedido en vivo (prueba el código KAPOW10).', ru: 'Оформление в режиме фокуса: шаги, доставка, оплата и живой итог заказа (промокод KAPOW10).' },
+        file: 'src/pages/checkout.astro',
+        code: `---
+import { ToyCheckoutPage } from 'astro-component-kit/templates/toy-store';
+---
+
+<ToyCheckoutPage />`,
+      },
+    ],
+    newComponents: [
+      'toy-hero', 'toy-character-rail', 'toy-character-grid', 'toy-character-hero', 'toy-age-finder', 'toy-spec-sheet', 'toy-collector-club',
+      'toy-figure-card', 'toy-figure-grid',
+    ],
+    reusedComponents: [
+      'store-header', 'promo-bar', 'cart-drawer', 'cart-toast', 'live-activity-toast', 'filter-sidebar', 'product-toolbar',
+      'product-gallery', 'product-buy-box', 'stock-indicator', 'product-media', 'product-rating', 'category-tiles', 'trust-badges',
+      'countdown-banner', 'checkout-form', 'order-summary', 'cart-store', 'badge', 'step-breadcrumb-bar', 'footer-mega-section',
+    ],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same store + routes to every page
+import { ToyHomePage, kapowStore, type ToyStore } from 'astro-component-kit/templates/toy-store';
+
+const store: ToyStore = {
+  ...kapowStore,
+  name: 'Hero Hangar',
+  currency: 'EUR',
+  locale: 'es-ES',
+  cartKey: 'hero-hangar-cart',
+  characters: [
+    { id: 'nova', name: 'Nova', alias: 'Space ranger', universe: 'star-rangers', faction: 'hero', icon: 'figure', hue: 212,
+      bio: '…', powers: [{ label: 'Speed', value: 8 }] },
+  ],
+  products: [
+    { slug: 'nova-6in', name: 'Nova 6"', price: 24.99, category: 'figures',
+      characters: ['nova'],          // ← powers the character filter and character pages
+      scale: '6in', height: '15 cm', articulation: 28, ageMin: 4,
+      accessories: ['Blaster', 'Stand'], image: '/toys/nova.webp' },   // or icon: 'figure'
+  ],
+};
+---
+
+<ToyHomePage
+  store={store}
+  theme="auto"
+  routes={{ home: '/', shop: '/shop/', characters: '/characters/', character: '/characters/', product: '/product/', checkout: '/checkout/' }}
+/>`,
+  },
+  {
+    slug: 'saas-clinic',
+    name: { en: 'SaaS · Medical consultations', es: 'SaaS · Consultas médicas', ru: 'SaaS · Медицинские консультации' },
+    tagline: {
+      en: 'A complete SaaS for clinics and private practices: online booking, schedule, patient records, consultations, e-prescriptions and video visits.',
+      es: 'Un SaaS completo para clínicas y consultas privadas: reservas online, agenda, historias clínicas, consultas, recetas electrónicas y videoconsultas.',
+      ru: 'Полноценный SaaS для клиник и частных практик: онлайн-запись, расписание, медкарты, приёмы, электронные рецепты и видеоконсультации.',
+    },
+    description: {
+      en: 'Pulso is a practice-management SaaS built from the library. Patients find a doctor and book in four accessible steps on the clinic’s public page; clinicians start the day on a dashboard with their agenda and a live waiting room, plan the week on a colour-coded calendar, open records with allergy alerts and vitals trends, write SOAP notes with ICD-10 diagnoses that autosave and lock when signed, prescribe with allergy and duplicate-therapy checks, and see patients by video. The style follows healthcare accessibility guidance: medical teal, Figtree, AA contrast and calm motion, in light and dark. All people and records are fictional demo data.',
+      es: 'Pulso es un SaaS de gestión de consultas hecho con la librería. Los pacientes encuentran a su médico y reservan en cuatro pasos accesibles en la página pública de la clínica; los profesionales empiezan el día en un dashboard con su agenda y la sala de espera en vivo, planifican la semana en un calendario por colores, abren historias con alertas de alergias y tendencias de constantes, escriben notas SOAP con diagnósticos CIE-10 que se autoguardan y se bloquean al firmar, recetan con control de alergias y duplicidades y atienden por vídeo. El estilo sigue las pautas de accesibilidad sanitaria: turquesa médico, Figtree, contraste AA y movimiento sereno, en claro y oscuro. Todas las personas y registros son datos de demostración ficticios.',
+      ru: 'Pulso — SaaS для управления медицинской практикой, собранный из библиотеки. Пациенты находят врача и записываются в четыре доступных шага на публичной странице клиники; врачи начинают день с дашборда с расписанием и живым залом ожидания, планируют неделю в цветном календаре, открывают медкарты с предупреждениями об аллергиях и трендами показателей, пишут протоколы SOAP с диагнозами МКБ-10, которые автосохраняются и блокируются после подписи, выписывают рецепты с проверкой аллергий и дублирования и проводят видеоприёмы. Стиль следует рекомендациям по доступности в медицине: медицинский бирюзовый, Figtree, контраст AA и спокойная анимация, в светлой и тёмной теме. Все люди и записи — вымышленные демо-данные.',
+    },
+    highlights: {
+      en: ['11 pages: landing, patient booking, sign-in and an 8-screen practice app', 'Four-step online booking with .ics confirmation', 'Week / day calendar, agenda and live waiting room', 'SOAP notes: vitals flags, ICD-10 combobox, autosave, sign & lock', 'e-Prescriptions with allergy and duplicate-therapy alerts', 'Telemedicine room UI — bring your own video SDK', '8 new app components + 3 healthcare sections', 'Light and dark mode, WCAG AA'],
+      es: ['11 páginas: landing, reservas para pacientes, acceso y una app de 8 pantallas', 'Reserva online en cuatro pasos con confirmación .ics', 'Calendario semanal / diario, agenda y sala de espera en vivo', 'Notas SOAP: aviso de constantes, CIE-10, autoguardado y firma', 'Recetas electrónicas con alertas de alergia y duplicidad', 'Interfaz de videoconsulta: conecta tu SDK de vídeo', '8 componentes de app nuevos + 3 secciones de salud', 'Modo claro y oscuro, WCAG AA'],
+      ru: ['11 страниц: лендинг, запись пациентов, вход и приложение из 8 экранов', 'Онлайн-запись в четыре шага с подтверждением .ics', 'Календарь на неделю / день, расписание и живой зал ожидания', 'Протоколы SOAP: отметка показателей, МКБ-10, автосохранение, подпись', 'Электронные рецепты с проверкой аллергий и дублирования', 'Интерфейс видеоприёма — подключите свой видео-SDK', '8 новых компонентов приложения + 3 медицинские секции', 'Светлая и тёмная тема, WCAG AA'],
+    },
+    tags: ['saas', 'healthcare', 'medical', 'clinic', 'booking', 'telemedicine', 'dashboard'],
+    previewBase: '/preview/saas-clinic/',
+    importPath: 'astro-component-kit/templates/saas-clinic',
+    pages: [
+      {
+        id: 'landing', path: '',
+        name: { en: 'Landing', es: 'Landing', ru: 'Лендинг' },
+        description: { en: 'Healthcare hero with product mock-up, features, how it works, a live booking widget, outcomes, pricing per clinician, testimonials and FAQ.', es: 'Hero sanitario con maqueta del producto, funciones, cómo funciona, widget de reserva en vivo, resultados, precios por profesional, testimonios y FAQ.', ru: 'Медицинский hero с макетом продукта, функции, как это работает, живой виджет записи, результаты, цены за врача, отзывы и FAQ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { ClinicLandingPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicLandingPage />`,
+      },
+      {
+        id: 'book', path: 'book/',
+        name: { en: 'Patient booking page', es: 'Página de reservas para pacientes', ru: 'Страница записи для пациентов' },
+        description: { en: 'The clinic’s public page: opening hours, urgent-care notice, find-a-doctor directory and the four-step booking wizard with .ics confirmation.', es: 'La página pública de la clínica: horario, aviso de urgencias, directorio de médicos y asistente de reserva en cuatro pasos con confirmación .ics.', ru: 'Публичная страница клиники: часы работы, предупреждение о неотложке, каталог врачей и мастер записи в четыре шага с подтверждением .ics.' },
+        file: 'src/pages/book.astro',
+        code: `---
+import { ClinicBookingPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<!-- Book links use ?doctor=<id>#book -->
+<ClinicBookingPage />`,
+      },
+      {
+        id: 'signin', path: 'sign-in/',
+        name: { en: 'Sign in', es: 'Acceso', ru: 'Вход' },
+        description: { en: 'Split-screen sign-in with SSO, show-password and a brand panel.', es: 'Acceso a pantalla partida con SSO, mostrar contraseña y panel de marca.', ru: 'Вход на разделённом экране с SSO, показом пароля и панелью бренда.' },
+        file: 'src/pages/sign-in.astro',
+        code: `---
+import { ClinicSignInPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'Dashboard', es: 'Dashboard', ru: 'Дашборд' },
+        description: { en: 'KPIs, the clinician’s agenda with a now marker, live waiting room, activity, weekly volume, visits by specialty and busy hours.', es: 'KPIs, agenda del profesional con marcador de «ahora», sala de espera en vivo, actividad, volumen semanal, visitas por especialidad y horas punta.', ru: 'KPI, расписание врача с отметкой «сейчас», живой зал ожидания, активность, объём за неделю, визиты по специальностям и часы пик.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { ClinicDashboardPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicDashboardPage />`,
+      },
+      {
+        id: 'schedule', path: 'app/schedule/',
+        name: { en: 'Schedule', es: 'Agenda', ru: 'Расписание' },
+        description: { en: 'Week / day calendar coloured by clinician with filters and detail panel, plus today’s appointment table.', es: 'Calendario semanal / diario por profesional con filtros y panel de detalle, más la tabla de citas de hoy.', ru: 'Календарь на неделю / день с цветами врачей, фильтрами и панелью деталей, плюс таблица приёмов на сегодня.' },
+        file: 'src/pages/app/schedule.astro',
+        code: `---
+import { ClinicSchedulePage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicSchedulePage />`,
+      },
+      {
+        id: 'patients', path: 'app/patients/',
+        name: { en: 'Patients', es: 'Pacientes', ru: 'Пациенты' },
+        description: { en: 'Searchable patient directory with status filters next to a patient summary.', es: 'Directorio de pacientes con búsqueda y filtros de estado junto a un resumen del paciente.', ru: 'Каталог пациентов с поиском и фильтрами рядом со сводкой по пациенту.' },
+        file: 'src/pages/app/patients/index.astro',
+        code: `---
+import { ClinicPatientsPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicPatientsPage />`,
+      },
+      {
+        id: 'patient', path: 'app/patients/p-1042/',
+        name: { en: 'Patient record', es: 'Historia del paciente', ru: 'Медкарта пациента' },
+        description: { en: 'Allergy alert, vitals with trends, problems, medications, visits, upcoming appointments and a blood-pressure chart.', es: 'Alerta de alergias, constantes con tendencias, problemas, medicación, visitas, próximas citas y gráfico de tensión arterial.', ru: 'Предупреждение об аллергиях, показатели с трендами, проблемы, лекарства, визиты, ближайшие приёмы и график давления.' },
+        file: 'src/pages/app/patients/[id].astro',
+        code: `---
+import { ClinicPatientPage, clinicData } from 'astro-component-kit/templates/saas-clinic';
+
+export function getStaticPaths() {
+  return clinicData.patients.map((p) => ({ params: { id: p.id } }));
+}
+---
+
+<ClinicPatientPage id={Astro.params.id} />`,
+      },
+      {
+        id: 'consultation', path: 'app/consultation/',
+        name: { en: 'Consultation', es: 'Consulta', ru: 'Приём' },
+        description: { en: 'SOAP note with vitals flags, ICD-10 diagnoses, templates, autosave and sign & lock, beside an e-prescription with allergy checks.', es: 'Nota SOAP con aviso de constantes, diagnósticos CIE-10, plantillas, autoguardado y firma, junto a una receta electrónica con control de alergias.', ru: 'Протокол SOAP с отметкой показателей, диагнозами МКБ-10, шаблонами, автосохранением и подписью рядом с электронным рецептом с проверкой аллергий.' },
+        file: 'src/pages/app/consultation.astro',
+        code: `---
+import { ClinicConsultationPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicConsultationPage />`,
+      },
+      {
+        id: 'telehealth', path: 'app/telehealth/',
+        name: { en: 'Video visit', es: 'Videoconsulta', ru: 'Видеоприём' },
+        description: { en: 'Telemedicine room with timer, controls, chat and end-of-call summary, plus patient summary and today’s video visits.', es: 'Sala de videoconsulta con temporizador, controles, chat y resumen final, más resumen del paciente y videoconsultas del día.', ru: 'Комната видеоприёма с таймером, управлением, чатом и итогом звонка, плюс сводка пациента и видеоприёмы на сегодня.' },
+        file: 'src/pages/app/telehealth.astro',
+        code: `---
+import { ClinicTelehealthPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicTelehealthPage />`,
+      },
+      {
+        id: 'reports', path: 'app/reports/',
+        name: { en: 'Reports', es: 'Informes', ru: 'Отчёты' },
+        description: { en: 'In person vs video volume, no-show trend, satisfaction gauge, revenue by clinician, specialties and month-over-month table.', es: 'Volumen presencial vs vídeo, tendencia de ausencias, satisfacción, ingresos por profesional, especialidades y comparativa mensual.', ru: 'Объём очно vs видео, тренд неявок, удовлетворённость, выручка по врачам, специальности и сравнение по месяцам.' },
+        file: 'src/pages/app/reports.astro',
+        code: `---
+import { ClinicReportsPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicReportsPage />`,
+      },
+      {
+        id: 'settings', path: 'app/settings/',
+        name: { en: 'Settings', es: 'Ajustes', ru: 'Настройки' },
+        description: { en: 'Profile, weekly consultation hours editor, patient reminders, team roles and plan usage.', es: 'Perfil, editor de horario semanal de consulta, recordatorios a pacientes, roles del equipo y uso del plan.', ru: 'Профиль, редактор графика приёма, напоминания пациентам, роли команды и использование тарифа.' },
+        file: 'src/pages/app/settings.astro',
+        code: `---
+import { ClinicSettingsPage } from 'astro-component-kit/templates/saas-clinic';
+---
+
+<ClinicSettingsPage />`,
+      },
+    ],
+    newComponents: [
+      'med-hero', 'med-doctor-directory', 'med-booking-wizard',
+      'med-agenda-timeline', 'med-waiting-room', 'med-schedule-calendar', 'med-patient-summary', 'med-consultation-note', 'med-prescription-pad', 'med-video-visit', 'med-availability-editor',
+    ],
+    reusedComponents: [
+      'app-sidebar', 'app-topbar', 'page-header', 'data-table', 'auth-card', 'settings-section', 'switch-row', 'team-members', 'plan-usage-card',
+      'kpi-stat-tile', 'stacked-bar-chart', 'grouped-bar-chart', 'line-chart', 'pie-chart', 'heatmap-chart', 'horizontal-bar-chart', 'gauge-chart', 'metric-delta-table', 'sparkline-chart',
+      'status-timeline-feed', 'animated-input', 'modern-select', 'logo-wall-grid', 'feature-icon-grid', 'how-it-works-steps', 'stats-counter-band', 'pricing-toggle-cards', 'testimonial-carousel', 'faq-two-column', 'footer-mega-section',
+    ],
+    storeConfigExample: `---
+// src/pages/app/index.astro — pass the same data + routes to every page
+import { ClinicDashboardPage, clinicData, type ClinicData } from 'astro-component-kit/templates/saas-clinic';
+
+const data: ClinicData = {
+  ...clinicData,
+  product: 'MyClinic',
+  workspace: { name: 'Centro Médico Sol', plan: 'Practice plan', initials: 'CS' },
+  user: { name: 'Dr. Ana Ruiz', role: 'GP', email: 'ana@sol.clinic' },
+  // doctors, patients, appointments, diagnoses, formulary… from your API
+};
+---
+
+<ClinicDashboardPage
+  data={data}
+  theme="auto"
+  routes={{ landing: '/', signIn: '/sign-in/', book: '/book/', dashboard: '/app/', schedule: '/app/schedule/', patients: '/app/patients/', patient: '/app/patients/', consultation: '/app/consultation/', telehealth: '/app/telehealth/', reports: '/app/reports/', settings: '/app/settings/' }}
+/>`,
+  },
+  {
+    slug: 'cyberpunk',
+    name: { en: 'Cyberpunk · Futuristic brutalist', es: 'Cyberpunk · Brutalista futurista', ru: 'Киберпанк · Футуристичный брутализм' },
+    tagline: {
+      en: 'A futuristic-brutalist site for a tech product: glitch headlines, HUD telemetry, neon on hard rules, scanlines — in NIGHT and DAY.',
+      es: 'Una web brutalista futurista para un producto tecnológico: titulares con glitch, telemetría HUD, neón sobre reglas gruesas y scanlines, en NOCHE y DÍA.',
+      ru: 'Футуристичный бруталистский сайт для техпродукта: глитч-заголовки, HUD-телеметрия, неон на жёстких линиях и сканлайны — в режимах НОЧЬ и ДЕНЬ.',
+    },
+    description: {
+      en: 'NULL/SECTOR is a six-page site for a fictional decentralised GPU network, built to show how far the library goes beyond glass and gradients. Orbitron and JetBrains Mono, zero radius, 2px ink rules, acid yellow, magenta and cyan, and a CRT scanline overlay. The home page stacks a glitching hero with live telemetry over a perspective grid, a status ticker, a bento of CyberFeatureCards, a dot-matrix world map of nodes and an access-window banner. Inner pages bring a classified spec sheet that decrypts, usage-based pricing with a live calculator, a manifesto that lights up on scroll, crew access badges with generated pixel avatars, a 60-day uptime board and a contact form you drive like a command line. A DAY mode turns it into concrete-and-ink brutalism. Every animation stops with reduced motion.',
+      es: 'NULL/SECTOR es una web de seis páginas para una red descentralizada de GPUs ficticia, pensada para mostrar lo lejos que llega la librería más allá del cristal y los degradados. Orbitron y JetBrains Mono, radio cero, reglas de tinta de 2px, amarillo ácido, magenta y cian, y una capa de scanlines CRT. La home apila un hero con glitch y telemetría en vivo sobre una rejilla en perspectiva, un ticker de estado, un bento de CyberFeatureCards, un mapa del mundo en matriz de puntos con nodos y un banner de acceso. Las páginas interiores traen una ficha técnica clasificada que se descifra, precios por uso con calculadora en vivo, un manifiesto que se ilumina al hacer scroll, credenciales del equipo con avatares de píxeles generados, un panel de uptime de 60 días y un formulario de contacto que se usa como línea de comandos. El modo DÍA lo convierte en brutalismo de hormigón y tinta. Toda animación se detiene con movimiento reducido.',
+      ru: 'NULL/SECTOR — шестистраничный сайт вымышленной децентрализованной GPU-сети, показывающий, что библиотека умеет больше, чем стекло и градиенты. Orbitron и JetBrains Mono, нулевые радиусы, чернильные линии 2px, кислотный жёлтый, мадженту и циан, а также слой ЭЛТ-сканлайнов. На главной — hero с глитчем и живой телеметрией над перспективной сеткой, бегущая строка статусов, бенто из CyberFeatureCard, точечная карта мира с узлами и баннер доступа. Внутренние страницы: засекреченный техпаспорт с расшифровкой, тарифы с живым калькулятором, манифест с подсветкой при прокрутке, бейджи команды со сгенерированными пиксельными аватарами, панель аптайма за 60 дней и контактная форма в виде командной строки. Режим ДЕНЬ превращает всё в бетонно-чернильный брутализм. Все анимации отключаются при reduced motion.',
+    },
+    highlights: {
+      en: ['6 pages: home, protocol, pricing, manifesto, logs and terminal contact', 'Glitch hero with HUD telemetry over a perspective grid', 'Dot-matrix world map of nodes with live table', 'Classified spec sheet that decrypts', 'Pricing with a live usage calculator', 'Command-line contact form with a plain-form fallback', 'NIGHT and concrete DAY themes, scanlines, reduced-motion safe', '13 new sections in Sections → Cyberpunk & Brutalist'],
+      es: ['6 páginas: inicio, protocolo, precios, manifiesto, logs y contacto tipo terminal', 'Hero con glitch y telemetría HUD sobre rejilla en perspectiva', 'Mapa del mundo en matriz de puntos con tabla en vivo', 'Ficha técnica clasificada que se descifra', 'Precios con calculadora de uso en vivo', 'Formulario tipo línea de comandos con alternativa de formulario normal', 'Temas NOCHE y DÍA de hormigón, scanlines, respeta el movimiento reducido', '13 secciones nuevas en Secciones → Cyberpunk y brutalista'],
+      ru: ['6 страниц: главная, протокол, цены, манифест, логи и контакты-терминал', 'Глитч-hero с HUD-телеметрией над перспективной сеткой', 'Точечная карта мира с живой таблицей узлов', 'Засекреченный техпаспорт с расшифровкой', 'Тарифы с живым калькулятором', 'Контактная форма-терминал с обычной формой как запасным вариантом', 'Темы НОЧЬ и бетонный ДЕНЬ, сканлайны, учёт reduced motion', '13 новых секций в разделе «Секции → Киберпанк и брутализм»'],
+    },
+    tags: ['cyberpunk', 'brutalist', 'futuristic', 'neon', 'glitch', 'saas', 'landing'],
+    previewBase: '/preview/cyberpunk/',
+    importPath: 'astro-component-kit/templates/cyberpunk',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Glitch hero with live telemetry, status ticker, partners, bento of capabilities, dot-matrix node map, stats and an access-window banner.', es: 'Hero con glitch y telemetría en vivo, ticker de estado, partners, bento de capacidades, mapa de nodos en matriz de puntos, cifras y banner de acceso.', ru: 'Hero с глитчем и живой телеметрией, бегущая строка, партнёры, бенто возможностей, точечная карта узлов, цифры и баннер доступа.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { CyberHomePage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<CyberHomePage />`,
+      },
+      {
+        id: 'protocol', path: 'protocol/',
+        name: { en: 'Protocol', es: 'Protocolo', ru: 'Протокол' },
+        description: { en: 'Boot sequence of five layers, classified spec sheet that decrypts, guarantees and FAQ.', es: 'Secuencia de arranque en cinco capas, ficha técnica clasificada que se descifra, garantías y FAQ.', ru: 'Последовательность загрузки из пяти слоёв, засекреченный техпаспорт с расшифровкой, гарантии и FAQ.' },
+        file: 'src/pages/protocol.astro',
+        code: `---
+import { CyberProtocolPage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<CyberProtocolPage />`,
+      },
+      {
+        id: 'pricing', path: 'pricing/',
+        name: { en: 'Pricing', es: 'Precios', ru: 'Цены' },
+        description: { en: 'Acid page hero, three tiers with monthly / annual switch and a live usage calculator, spot-price ticker and billing FAQ.', es: 'Hero ácido, tres planes con mensual / anual y calculadora de uso en vivo, ticker de precios spot y FAQ de facturación.', ru: 'Кислотный hero, три тарифа с переключателем месяц / год и живым калькулятором, бегущая строка цен и FAQ по оплате.' },
+        file: 'src/pages/pricing.astro',
+        code: `---
+import { CyberPricingPage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<CyberPricingPage />`,
+      },
+      {
+        id: 'manifesto', path: 'manifesto/',
+        name: { en: 'Manifesto', es: 'Manifiesto', ru: 'Манифест' },
+        description: { en: 'Theses that light up on scroll, crew access badges and stats.', es: 'Tesis que se iluminan al hacer scroll, credenciales del equipo y cifras.', ru: 'Тезисы, подсвечивающиеся при прокрутке, бейджи команды и цифры.' },
+        file: 'src/pages/manifesto.astro',
+        code: `---
+import { CyberManifestoPage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<CyberManifestoPage />`,
+      },
+      {
+        id: 'logs', path: 'logs/',
+        name: { en: 'Logs & status', es: 'Logs y estado', ru: 'Логи и статус' },
+        description: { en: '60-day uptime board per region, incident feed and changelog.', es: 'Panel de uptime de 60 días por región, incidencias y changelog.', ru: 'Панель аптайма за 60 дней по регионам, инциденты и changelog.' },
+        file: 'src/pages/logs.astro',
+        code: `---
+import { CyberLogsPage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<CyberLogsPage />`,
+      },
+      {
+        id: 'terminal', path: 'terminal/',
+        name: { en: 'Terminal (contact)', es: 'Terminal (contacto)', ru: 'Терминал (контакты)' },
+        description: { en: 'Command-line contact form with /help commands and a plain-form switch, plus direct channels.', es: 'Formulario de contacto tipo línea de comandos con comandos /help y cambio a formulario normal, más canales directos.', ru: 'Контактная форма-терминал с командами /help и переключением на обычную форму, плюс прямые каналы.' },
+        file: 'src/pages/terminal.astro',
+        code: `---
+import { CyberTerminalPage } from 'astro-component-kit/templates/cyberpunk';
+---
+
+<!-- Pass action="https://your-backend/contact" to send the form -->
+<CyberTerminalPage />`,
+      },
+    ],
+    newComponents: [
+      'cyber-header', 'cyber-hero', 'cyber-ticker', 'cyber-bento', 'cyber-node-map', 'cyber-page-hero', 'cyber-spec-table',
+      'cyber-pricing', 'cyber-manifesto', 'cyber-crew-grid', 'cyber-status-board', 'cyber-terminal-form', 'cyber-footer',
+    ],
+    reusedComponents: [
+      'cyberpunk-button', 'neon-border-button', 'cyber-feature-card', 'cyber-glitch-alert', 'cyberpunk-checkbox', 'hacker-decode-text', 'neon-spinner',
+      'logo-wall-grid', 'stats-counter-band', 'faq-two-column', 'changelog-section', 'status-timeline-feed',
+    ],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same data + routes to every page
+import { CyberHomePage, nullSector, type CyberData } from 'astro-component-kit/templates/cyberpunk';
+
+const data: CyberData = {
+  ...nullSector,
+  brand: 'VOID/LABS',
+  status: 'ALL SYSTEMS GO',
+  hero: { ...nullSector.hero, lines: ['SHIP THE', 'FUTURE', 'TONIGHT'] },
+  // features, nodes, plans, theses, crew, regions, releases…
+};
+---
+
+<CyberHomePage
+  data={data}
+  theme="dark"
+  routes={{ home: '/', protocol: '/protocol/', pricing: '/pricing/', manifesto: '/manifesto/', logs: '/logs/', terminal: '/terminal/' }}
+/>`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

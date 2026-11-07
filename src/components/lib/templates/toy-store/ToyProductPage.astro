@@ -1,0 +1,233 @@
+---
+/**
+ * ToyProductPage — Toy product detail: breadcrumb, ProductGallery, ProductBuyBox (quantity, stock
+ * urgency, buy now), a "meet the character" strip, ToySpecSheet (scale, articulation, age, what's in
+ * the box, safety warning), review summary and "more from this character" in a ToyFigureGrid.
+ *
+ * Usage (src/pages/product/[slug].astro):
+ *   import { ToyProductPage, kapowStore } from 'astro-component-kit/templates/toy-store';
+ *   export const getStaticPaths = () => kapowStore.products.map((p) => ({ params: { slug: p.slug } }));
+ *   <ToyProductPage slug={Astro.params.slug} />
+ *
+ * @param {string} slug - Product slug. Default: first product.
+ * @param {ToyStore} store - Catalogue and settings. Default: Kapow demo store.
+ * @param {ToyRoutes} routes - Page URLs.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import ToyLayout from './ToyLayout.astro';
+import ToySpecSheet from '../../sections/ToySpecSheet.astro';
+import ProductGallery from '../../ecommerce/ProductGallery.astro';
+import ProductBuyBox from '../../ecommerce/ProductBuyBox.astro';
+import ProductRating from '../../ecommerce/ProductRating.astro';
+import ToyFigureGrid from '../../ecommerce/ToyFigureGrid.astro';
+import { productIcon } from '../../ecommerce/product-icons';
+import {
+  kapowStore, toyRoutes, toyProducts, toyCardMeta, toyCharacter, toyUniverse, toyCharacterHref, toyShopHref,
+  type ToyStore, type ToyRoutes,
+} from './data';
+
+interface Props {
+  slug?: string;
+  store?: ToyStore;
+  routes?: ToyRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { slug, store = kapowStore, routes = toyRoutes, seedCart = false, noindex = false, theme = 'light' } = Astro.props;
+
+const product = store.products.find((p) => p.slug === slug) ?? store.products[0];
+const category = store.categories.find((c) => c.id === product.category);
+const cast = product.characters.map((id) => toyCharacter(store, id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
+const main = cast[0];
+const universe = toyUniverse(store, main?.universe);
+const scale = store.scales.find((s) => s.id === product.scale);
+const related = toyProducts(store)
+  .filter((p) => p.slug !== product.slug)
+  .map((p) => ({ p, score: p.characters.filter((c) => product.characters.includes(c)).length * 2 + Number(toyCharacter(store, p.characters[0])?.universe === main?.universe) }))
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 4)
+  .map((x) => x.p);
+
+const money = new Intl.NumberFormat(store.locale, { style: 'currency', currency: store.currency, maximumFractionDigits: 0 }).format(store.freeShippingThreshold);
+const specs = [
+  { label: 'Scale', value: scale?.name ?? product.scale },
+  { label: 'Size', value: product.height },
+  { label: 'Recommended age', value: product.collectible ? `${product.ageMin}+ · collector item` : `${product.ageMin}+` },
+  ...(universe ? [{ label: 'Universe', value: universe.name }] : []),
+  ...(cast.length ? [{ label: cast.length > 1 ? 'Characters' : 'Character', value: cast.map((c) => c.name).join(', ') }] : []),
+  ...(product.edition ? [{ label: 'Edition', value: product.edition }] : []),
+  ...(product.preorder ? [{ label: 'Release', value: product.preorder }] : []),
+  ...(product.batteries ? [{ label: 'Batteries', value: product.batteries }] : []),
+  ...(product.materials ? [{ label: 'Materials', value: product.materials }] : []),
+];
+// Safety strip: shown unless the product is declared free of small parts.
+const warning = /no small parts/i.test(product.materials ?? '')
+  ? ''
+  : 'Choking hazard — small parts. Not for children under 3 years.';
+
+// Deterministic demo review distribution derived from the rating.
+const total = product.reviews ?? 0;
+const r = product.rating ?? 0;
+const weights = [Math.max(0, r - 3.6) * 3, 1.2, 0.5, 0.2, 0.12];
+const sum = weights.reduce((a, b) => a + b, 0) || 1;
+const bars = [5, 4, 3, 2, 1].map((stars, i) => ({ stars, count: Math.round((weights[i] / sum) * total) }));
+const reviews = [
+  { name: 'Parent of a 7-year-old', title: 'Survived the first week', body: 'Tough plastic, joints still tight after daily battles on the stairs. The accessories stay in the hands, which is a miracle.', rating: 5 },
+  { name: 'Marcus T. · collector', title: 'Great paint for the price', body: 'Clean paint lines and a good range of poses. Looks great on the shelf next to the rest of the line.', rating: 5 },
+  { name: 'Ana P.', title: 'Big hit at the party', body: 'Bought it as a birthday gift and it was the favourite present. Would love a few more swap hands.', rating: 4 },
+];
+---
+
+<ToyLayout theme={theme} title={product.name} description={product.description} store={store} routes={routes} currentHref={routes.shop} seedCart={seedCart} noindex={noindex}>
+  <div class="kapow-container pdp">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href={routes.home}>Home</a></li>
+        <li><a href={routes.shop}>Shop</a></li>
+        {category && <li><a href={toyShopHref(routes, { category: category.id })}>{category.name}</a></li>}
+        <li><span aria-current="page">{product.name}</span></li>
+      </ol>
+    </nav>
+
+    <div class="pdp__main">
+      <ProductGallery images={product.image ? [product.image] : []} alt={product.name} icon={product.icon} hue={product.hue} />
+      <div class="pdp__buy">
+        <ProductBuyBox
+          product={product}
+          categoryLabel={main ? `${main.name} · ${universe?.name ?? ''}` : category?.name}
+          checkoutHref={routes.checkout}
+          currency={store.currency}
+          locale={store.locale}
+          cartKey={store.cartKey}
+          details={[
+            { title: 'About this toy', body: product.description ?? '' },
+            { title: 'Shipping & returns', body: `Free standard shipping over ${money}, dispatched within 24 hours. Return unopened or opened toys within 30 days.` },
+            ...(product.preorder ? [{ title: 'How pre-orders work', body: `${product.preorder}. You are only charged when your order ships, and you can cancel any time before that.` }] : []),
+          ]}
+        />
+        {product.preorder && <p class="pdp__pre"><strong>Pre-order:</strong> {product.preorder}. Charged when it ships.</p>}
+
+        {cast.length > 0 && (
+          <div class="pdp__cast">
+            <p class="pdp__cast-title">{cast.length > 1 ? 'Characters in this set' : 'Meet the character'}</p>
+            <ul>
+              {cast.map((c) => (
+                <li>
+                  <a href={toyCharacterHref(routes, c.id)}>
+                    <span class="pdp__avatar" style={`--av-hue: ${c.hue}`} aria-hidden="true">
+                      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={productIcon(c.icon)} /></svg>
+                    </span>
+                    <span class="pdp__cast-text"><strong>{c.name}</strong><span>{c.alias}</span></span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <div class="pdp__block">
+      <ToySpecSheet specs={specs} articulation={product.articulation ?? 0} accessories={product.accessories} warning={warning} />
+    </div>
+
+    {total > 0 && (
+      <section class="reviews pdp__block" id="reviews" aria-labelledby="reviews-title">
+        <div class="reviews__summary">
+          <h2 id="reviews-title">What heroes say</h2>
+          <p class="reviews__score">{r.toFixed(1)}<span>/5</span></p>
+          <ProductRating value={r} count={total} size="lg" showValue={false} />
+          <ul class="reviews__bars" aria-label="Rating distribution">
+            {bars.map((b) => (
+              <li>
+                <span>{b.stars} ★</span>
+                <span class="reviews__bar" aria-hidden="true"><span style={`width: ${total ? (b.count / total) * 100 : 0}%`}></span></span>
+                <span class="reviews__count">{b.count}<span class="sr-only"> reviews with {b.stars} stars</span></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <ul class="reviews__list">
+          {reviews.map((rv) => (
+            <li class="review">
+              <ProductRating value={rv.rating} showValue={false} />
+              <h3>{rv.title}</h3>
+              <p>{rv.body}</p>
+              <p class="review__by">{rv.name} · <span>Verified buyer</span></p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <section class="pdp__block" aria-labelledby="related-title">
+      <div class="pdp__head">
+        <h2 id="related-title">{main ? `More from ${main.name} & friends` : 'You may also like'}</h2>
+        {main && <a class="pdp__link" href={toyShopHref(routes, { universe: main.universe })}>All {universe?.name} <span aria-hidden="true">→</span></a>}
+      </div>
+      <ToyFigureGrid id="related" products={related} meta={toyCardMeta(store)} productBase={routes.product} currency={store.currency} locale={store.locale} cartKey={store.cartKey} openCart={false} />
+    </section>
+  </div>
+</ToyLayout>
+
+<style>
+  .pdp { padding-block: var(--sp-6) clamp(3rem, 7vw, 5rem); }
+  .crumbs ol { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0 0 var(--sp-6); padding: 0; list-style: none; font-size: 0.85rem; }
+  .crumbs li { display: flex; align-items: center; gap: var(--sp-2); color: var(--c-text-2); }
+  .crumbs li + li::before { content: '/'; opacity: 0.5; }
+  .crumbs a { color: var(--c-text-2); }
+  .crumbs a:hover { color: var(--c-text-1); }
+  .crumbs [aria-current='page'] { color: var(--c-text-1); font-weight: 700; }
+
+  .pdp__main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: start; }
+  .pdp__main > :global(.p-gallery-cq) { position: sticky; top: 88px; }
+  .pdp__main :global(.p-gallery .p-media) { background: radial-gradient(circle at 50% 42%, hsl(var(--pm-hue) 95% 72%), hsl(var(--pm-hue) 82% 52%) 75%); }
+  .pdp__main :global(.p-gallery .p-media__art) { color: var(--toy-art-ink); filter: drop-shadow(5px 5px 0 rgb(0 0 0 / 0.18)); }
+  .pdp__buy { display: grid; gap: var(--sp-5); }
+  .pdp__pre { margin: 0; padding: var(--sp-3) var(--sp-4); border: 2.5px solid var(--toy-edge); border-radius: var(--r-md); background: var(--toy-yellow); color: #17121f; font-size: 0.9rem; }
+
+  .pdp__cast { padding: var(--sp-4); border: 3px solid var(--toy-edge); border-radius: var(--r-lg); background: var(--toy-card-bg); box-shadow: 5px 5px 0 var(--toy-drop); }
+  .pdp__cast-title { margin: 0 0 var(--sp-3); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light); }
+  .pdp__cast ul { display: grid; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+  .pdp__cast a { display: flex; align-items: center; gap: var(--sp-3); min-height: 56px; padding: var(--sp-1) var(--sp-2); margin: 0 calc(var(--sp-2) * -1); border-radius: var(--r-md); color: var(--c-text-1); text-decoration: none; }
+  .pdp__cast a:hover { background: rgb(var(--ink-rgb) / 0.05); }
+  .pdp__cast a:focus-visible { outline: 3px solid var(--c-primary-light); outline-offset: 2px; }
+  .pdp__avatar { display: grid; place-items: center; flex-shrink: 0; width: 52px; height: 52px; border: 2.5px solid var(--toy-edge); border-radius: 50%; background: hsl(var(--av-hue) 92% 64%); color: #17121f; }
+  .pdp__avatar svg { width: 64%; height: 64%; }
+  .pdp__cast-text { display: grid; }
+  .pdp__cast-text strong { font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; }
+  .pdp__cast-text span { font-size: 0.85rem; color: var(--c-text-2); }
+
+  .pdp__block { margin-top: clamp(3rem, 7vw, 5rem); }
+  .pdp__head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .pdp__head h2, .reviews h2 { margin: 0; font-size: clamp(1.5rem, 3.4vw, 2.2rem); line-height: 1.05; color: var(--c-text-1); }
+  .pdp__link { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; font-weight: 800; white-space: nowrap; }
+
+  .reviews { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3.5rem); }
+  .reviews h2 { margin-bottom: var(--sp-4); }
+  .reviews__score { margin: 0; font-family: var(--font-display); font-size: 3.4rem; line-height: 1; color: var(--c-text-1); }
+  .reviews__score span { font-size: 1.1rem; color: var(--c-text-2); }
+  .reviews__summary :global(.p-rating) { margin: var(--sp-3) 0 var(--sp-5); }
+  .reviews__bars { display: grid; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+  .reviews__bars li { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: var(--sp-3); font-size: 0.82rem; }
+  .reviews__bar { height: 12px; border: 2px solid var(--toy-edge); border-radius: 999px; background: rgb(var(--ink-rgb) / 0.06); overflow: hidden; }
+  .reviews__bar span { display: block; height: 100%; background: var(--toy-yellow); }
+  .reviews__count { text-align: right; color: var(--c-text-2); }
+  .reviews__list { display: grid; gap: var(--sp-4); margin: 0; padding: 0 6px 6px 0; list-style: none; }
+  .review { display: grid; gap: var(--sp-2); padding: var(--sp-5); border: 3px solid var(--toy-edge); border-radius: var(--r-lg); background: var(--toy-card-bg); box-shadow: 4px 4px 0 var(--toy-drop); }
+  .review h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; color: var(--c-text-1); }
+  .review p { margin: 0; line-height: 1.65; font-size: 0.95rem; }
+  .review__by { font-size: 0.82rem !important; color: var(--c-text-1); font-weight: 700; }
+  .review__by span { color: var(--c-success); font-weight: 600; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .pdp__main, .reviews { grid-template-columns: 1fr; }
+    .pdp__main > :global(.p-gallery-cq) { position: static; }
+  }
+  @media (max-width: 560px) { .pdp__head { flex-direction: column; align-items: flex-start; gap: var(--sp-2); } }
+</style>

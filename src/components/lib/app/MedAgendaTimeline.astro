@@ -1,0 +1,250 @@
+---
+/**
+ * MedAgendaTimeline — A clinician's day: appointments on a time rail with status, visit type
+ * (in person / video), room, reason and a "now" marker, plus a summary line and quick filters
+ * (all / in person / video / to do).
+ *
+ * @param {string} title - Card title. Default 'Today'.
+ * @param {string} subtitle - Line under the title (e.g. doctor or date).
+ * @param {Array<{id: string, start: string, duration: number, patient: {name: string, sub?: string}, type: 'in-person'|'video', reason?: string, status: 'confirmed'|'checked-in'|'in-progress'|'completed'|'no-show'|'cancelled', room?: string, href?: string}>} appointments - Sorted by start time.
+ * @param {string} now - Current time "HH:MM"; draws the now marker (empty hides it).
+ * @param {Record<string, string>} statusLabels - Status → label overrides.
+ * @param {boolean} filters - Show the filter chips. Default true.
+ * @param {string} variant - Style (card|plain). Default 'card'.
+ * @param {string} density - Row height (compact|comfortable). Default 'comfortable'.
+ * @param {string} id - Base id. Default 'agenda'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: an ordered list in time order; each row names time, patient, type and status in
+ * text (not colour alone); the now marker is a labelled list separator; filter chips are toggle
+ * buttons (aria-pressed) and the visible count is announced politely.
+ */
+import { appIcon, initials, hueFrom } from './app-icons';
+
+type Status = 'confirmed' | 'checked-in' | 'in-progress' | 'completed' | 'no-show' | 'cancelled';
+interface Appointment {
+  id: string;
+  start: string;
+  duration: number;
+  patient: { name: string; sub?: string };
+  type: 'in-person' | 'video';
+  reason?: string;
+  status: Status;
+  room?: string;
+  href?: string;
+}
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  appointments?: Appointment[];
+  now?: string;
+  statusLabels?: Partial<Record<Status, string>>;
+  filters?: boolean;
+  variant?: 'card' | 'plain';
+  density?: 'compact' | 'comfortable';
+  id?: string;
+  className?: string;
+}
+
+const {
+  title = 'Today',
+  subtitle = 'Dr. Laura Navarro · General practice',
+  appointments = [
+    { id: '1', start: '09:00', duration: 20, patient: { name: 'Marco Bellini', sub: '51 · M' }, type: 'in-person', reason: 'Cholesterol results', status: 'completed', room: 'Room 1' },
+    { id: '2', start: '09:20', duration: 20, patient: { name: 'Tom Becker', sub: '45 · M' }, type: 'in-person', reason: 'Back pain review', status: 'no-show', room: 'Room 1' },
+    { id: '3', start: '10:30', duration: 30, patient: { name: 'Elena Duarte', sub: '42 · F' }, type: 'in-person', reason: 'Blood pressure follow-up', status: 'in-progress', room: 'Room 1' },
+    { id: '4', start: '11:00', duration: 20, patient: { name: 'Mei Chen', sub: '9 · F' }, type: 'in-person', reason: 'Allergy action plan', status: 'checked-in', room: 'Room 1' },
+    { id: '5', start: '11:30', duration: 20, patient: { name: 'Lucas Silva', sub: '6 · M' }, type: 'video', reason: 'Inhaler technique', status: 'confirmed' },
+  ],
+  now = '10:40',
+  statusLabels = {},
+  filters = true,
+  variant = 'card',
+  density = 'comfortable',
+  id = 'agenda',
+  className = '',
+} = Astro.props;
+
+const labels: Record<Status, string> = {
+  confirmed: 'Confirmed',
+  'checked-in': 'Waiting',
+  'in-progress': 'In consultation',
+  completed: 'Completed',
+  'no-show': 'No-show',
+  cancelled: 'Cancelled',
+  ...statusLabels,
+};
+const end = (start: string, mins: number) => {
+  const [h, m] = start.split(':').map(Number);
+  const t = h * 60 + m + mins;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+};
+const done = appointments.filter((a) => a.status === 'completed').length;
+const open = appointments.filter((a) => ['confirmed', 'checked-in', 'in-progress'].includes(a.status)).length;
+const video = appointments.filter((a) => a.type === 'video').length;
+// Index of the first appointment that starts after "now" (where the marker goes).
+const nowIndex = now ? appointments.findIndex((a) => a.start > now) : -1;
+const markerAt = now ? (nowIndex === -1 ? appointments.length : nowIndex) : -1;
+---
+
+<section class:list={['agenda', `agenda--${variant}`, `agenda--${density}`, className]} aria-labelledby={`${id}-title`} data-agenda>
+  <header class="agenda__head">
+    <div>
+      <h2 class="agenda__title" id={`${id}-title`}>{title}</h2>
+      {subtitle && <p class="agenda__sub">{subtitle}</p>}
+    </div>
+    <p class="agenda__summary">
+      <span><strong>{appointments.length}</strong> booked</span>
+      <span><strong>{done}</strong> done</span>
+      <span><strong>{open}</strong> to see</span>
+      <span><strong>{video}</strong> video</span>
+    </p>
+  </header>
+
+  {filters && (
+    <div class="agenda__filters" role="group" aria-label="Show appointments">
+      {[['all', 'All'], ['in-person', 'In person'], ['video', 'Video'], ['open', 'To see']].map(([value, label], i) => (
+        <button type="button" class="agenda__chip" aria-pressed={i === 0 ? 'true' : 'false'} data-agenda-filter={value}>{label}</button>
+      ))}
+      <span class="agenda__count" aria-live="polite"><span data-agenda-count>{appointments.length}</span> shown</span>
+    </div>
+  )}
+
+  <ol class="agenda__list">
+    {appointments.map((a, i) => (
+      <>
+        {i === markerAt && (
+          <li class="agenda__now" role="separator" aria-label={`Now, ${now}`} data-agenda-now><span>{now}</span></li>
+        )}
+        <li class:list={['agenda__item', `is-${a.status}`]} data-type={a.type} data-open={['confirmed', 'checked-in', 'in-progress'].includes(a.status) ? '' : undefined}>
+          <div class="agenda__time">
+            <time>{a.start}</time>
+            <span class="agenda__end">{end(a.start, a.duration)}</span>
+          </div>
+          <div class="agenda__card">
+            <span class="agenda__avatar" style={`--av-h: ${hueFrom(a.patient.name)}`} aria-hidden="true">{initials(a.patient.name)}</span>
+            <div class="agenda__body">
+              <p class="agenda__patient">
+                {a.href ? <a href={a.href}>{a.patient.name}</a> : a.patient.name}
+                {a.patient.sub && <span class="agenda__meta">{a.patient.sub}</span>}
+              </p>
+              {a.reason && <p class="agenda__reason">{a.reason}</p>}
+              <p class="agenda__tags">
+                <span class="agenda__type">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon(a.type === 'video' ? 'video' : 'building')} /></svg>
+                  {a.type === 'video' ? 'Video' : (a.room ?? 'In person')}
+                </span>
+                <span class="agenda__dur">{a.duration} min</span>
+              </p>
+            </div>
+            <span class={`agenda__status agenda__status--${a.status}`}>{labels[a.status]}</span>
+          </div>
+        </li>
+      </>
+    ))}
+    {markerAt === appointments.length && appointments.length > 0 && (
+      <li class="agenda__now" role="separator" aria-label={`Now, ${now}`}><span>{now}</span></li>
+    )}
+  </ol>
+  <p class="agenda__empty" role="status" data-agenda-empty hidden>Nothing to show for this filter.</p>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-agenda]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-agenda-filter]'));
+    const items = Array.from(root.querySelectorAll<HTMLElement>('.agenda__item'));
+    const count = root.querySelector('[data-agenda-count]');
+    const empty = root.querySelector<HTMLElement>('[data-agenda-empty]');
+    chips.forEach((chip) => chip.addEventListener('click', () => {
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      const f = chip.dataset.agendaFilter;
+      let n = 0;
+      items.forEach((it) => {
+        const ok = f === 'all' || (f === 'open' ? it.dataset.open !== undefined : it.dataset.type === f);
+        it.hidden = !ok;
+        if (ok) n++;
+      });
+      if (count) count.textContent = String(n);
+      if (empty) empty.hidden = n > 0;
+    }));
+  });
+</script>
+
+<style>
+  .agenda { --ag-accent: var(--app-accent, var(--c-primary-light, #0e7490)); min-width: 0; }
+  .agenda--card { padding: var(--sp-5, 1.25rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: var(--r-lg, 14px); background: var(--c-bg-1, #fff); }
+  .agenda__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--sp-3, 0.75rem); }
+  .agenda__title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .agenda__sub { margin: 2px 0 0; font-size: 0.85rem; color: var(--c-text-2, #3d5a63); }
+  .agenda__summary { display: flex; flex-wrap: wrap; gap: var(--sp-1, 0.25rem) var(--sp-3, 0.75rem); margin: 0; font-size: 0.82rem; color: var(--c-text-2, #3d5a63); }
+  .agenda__summary strong { color: var(--c-text-1, #0b2a33); }
+
+  .agenda__filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2, 0.5rem); margin-top: var(--sp-4, 1rem); }
+  .agenda__chip { min-height: 36px; padding: 0 var(--sp-3, 0.75rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.12)); border-radius: 999px; background: transparent; color: var(--c-text-2, #3d5a63); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
+  .agenda__chip:hover { color: var(--c-text-1, #0b2a33); }
+  .agenda__chip[aria-pressed='true'] { border-color: var(--ag-accent); background: var(--ag-accent); color: var(--c-on-primary, #fff); }
+  .agenda__chip:focus-visible { outline: 3px solid var(--ag-accent); outline-offset: 2px; }
+  .agenda__count { margin-left: auto; font-size: 0.8rem; color: var(--c-text-2, #3d5a63); }
+
+  .agenda__list { display: grid; gap: var(--sp-2, 0.5rem); margin: var(--sp-4, 1rem) 0 0; padding: 0; list-style: none; }
+  .agenda__item { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: var(--sp-3, 0.75rem); }
+  .agenda__item[hidden] { display: none; }
+  .agenda__time { display: grid; align-content: start; padding-top: var(--sp-3, 0.75rem); font-variant-numeric: tabular-nums; }
+  .agenda__time time { font-size: 0.9rem; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .agenda__end { font-size: 0.75rem; color: var(--c-text-3, #5b747c); }
+
+  .agenda__card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem) var(--sp-3, 0.75rem) calc(var(--sp-4, 1rem) + 4px);
+    border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
+    border-radius: var(--r-md, 10px);
+    background: var(--c-bg, #f3f8f9);
+    overflow: hidden;
+  }
+  .agenda--compact .agenda__card { padding-block: var(--sp-2, 0.5rem); }
+  .agenda__card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--st, var(--ag-accent)); }
+  .is-checked-in { --st: var(--c-warning, #a16207); }
+  .is-in-progress { --st: var(--ag-accent); }
+  .is-in-progress .agenda__card { border-color: var(--ag-accent); box-shadow: 0 0 0 1px var(--ag-accent); background: var(--c-bg-1, #fff); }
+  .is-completed { --st: var(--c-success, #15803d); }
+  .is-completed .agenda__card { opacity: 0.8; }
+  .is-no-show { --st: var(--c-danger, #b91c1c); }
+  .is-cancelled { --st: var(--c-text-3, #5b747c); }
+  .is-cancelled .agenda__patient { text-decoration: line-through; }
+
+  .agenda__avatar { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; background: hsl(var(--av-h) 55% 88%); color: hsl(var(--av-h) 60% 24%); font-size: 0.78rem; font-weight: 700; }
+  .agenda__body { flex: 1; min-width: 0; }
+  .agenda__patient { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--sp-2, 0.5rem); margin: 0; font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .agenda__patient a { color: inherit; text-decoration: none; }
+  .agenda__patient a:hover { text-decoration: underline; }
+  .agenda__patient a:focus-visible { outline: 3px solid var(--ag-accent); outline-offset: 2px; border-radius: 4px; }
+  .agenda__meta { font-size: 0.78rem; font-weight: 500; color: var(--c-text-3, #5b747c); }
+  .agenda__reason { margin: 2px 0 0; font-size: 0.86rem; color: var(--c-text-2, #3d5a63); }
+  .agenda__tags { display: flex; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); margin: 6px 0 0; font-size: 0.76rem; color: var(--c-text-3, #5b747c); }
+  .agenda__type { display: inline-flex; align-items: center; gap: 4px; }
+  [data-type='video'] .agenda__type { color: var(--ag-accent); font-weight: 600; }
+
+  .agenda__status { flex-shrink: 0; padding: 3px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; background: color-mix(in srgb, var(--st, var(--ag-accent)) 14%, transparent); color: var(--st, var(--ag-accent)); }
+  .agenda__status--in-progress { background: var(--ag-accent); color: var(--c-on-primary, #fff); }
+
+  .agenda__now { display: flex; align-items: center; gap: var(--sp-2, 0.5rem); padding-left: 2px; color: var(--c-danger, #b91c1c); font-size: 0.72rem; font-weight: 800; }
+  .agenda__now::after { content: ''; flex: 1; height: 2px; border-radius: 2px; background: currentColor; }
+  .agenda__now span { padding: 1px 6px; border-radius: 6px; background: currentColor; }
+  .agenda__now span { color: #fff; background: var(--c-danger, #b91c1c); }
+  .agenda__empty { margin: var(--sp-4, 1rem) 0 0; padding: var(--sp-6, 1.5rem); border: 1px dashed var(--c-border, rgba(0, 0, 0, 0.15)); border-radius: var(--r-md, 10px); text-align: center; font-size: 0.88rem; }
+  .agenda__empty[hidden] { display: none; }
+
+  @media (max-width: 520px) {
+    .agenda__item { grid-template-columns: 1fr; gap: 2px; }
+    .agenda__time { grid-auto-flow: column; justify-content: start; gap: var(--sp-2, 0.5rem); padding-top: 0; }
+    .agenda__end::before { content: '– '; }
+    .agenda__card { flex-wrap: wrap; }
+    .agenda__count { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .agenda__chip { transition: none; } }
+</style>

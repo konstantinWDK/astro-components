@@ -1,0 +1,140 @@
+---
+/**
+ * CyberFooter — Brutalist cyberpunk footer: an "uplink" sign-up line, link columns on hard rules,
+ * a live block counter and a colossal outlined wordmark that bleeds off the edge.
+ *
+ * @param {string} brand - Wordmark. Default 'NULL/SECTOR'.
+ * @param {string} tagline - Short line under the sign-up.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {string} uplinkLabel - Sign-up field label. Default 'Uplink — monthly transmission'.
+ * @param {string} action - Sign-up form action. Empty = demo.
+ * @param {string} status - Status line. Default 'GRID NOMINAL · 99.982%'.
+ * @param {string} copyright - Bottom-left text.
+ * @param {number} block - Starting block number for the counter. Default 18204113.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: a contentinfo landmark with labelled nav columns; the sign-up has a visible
+ * label and an announced result; the counter is decorative (aria-hidden) and stops with reduced
+ * motion; the giant wordmark is aria-hidden (the brand is in the first column).
+ */
+interface Props {
+  brand?: string;
+  tagline?: string;
+  columns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  uplinkLabel?: string;
+  action?: string;
+  status?: string;
+  copyright?: string;
+  block?: number;
+  className?: string;
+}
+
+const {
+  brand = 'NULL/SECTOR',
+  tagline = 'Compute without a centre.',
+  columns = [
+    { title: 'GRID', links: [{ label: 'Protocol', href: '#' }, { label: 'Pricing', href: '#' }, { label: 'Status', href: '#' }] },
+    { title: 'SYNDICATE', links: [{ label: 'Manifesto', href: '#' }, { label: 'Changelog', href: '#' }, { label: 'Contact', href: '#' }] },
+  ],
+  uplinkLabel = 'Uplink — monthly transmission',
+  action = '',
+  status = 'GRID NOMINAL · 99.982%',
+  copyright = `© ${new Date().getFullYear()} NULL/SECTOR. Fictional demo.`,
+  block = 18204113,
+  className = '',
+} = Astro.props;
+---
+
+<footer class:list={['cyfoot', className]} data-cyfoot>
+  <div class="cyfoot__top">
+    <form class="cyfoot__uplink" action={action || undefined} method="post" novalidate data-cyfoot-form data-demo={action ? undefined : ''}>
+      <label for="cyfoot-email">{uplinkLabel}</label>
+      <div class="cyfoot__row">
+        <span class="cyfoot__ps" aria-hidden="true">&gt;</span>
+        <input id="cyfoot-email" name="email" type="email" autocomplete="email" placeholder="you@domain.tld" required />
+        <button type="submit">Connect</button>
+      </div>
+      <p class="cyfoot__msg" role="status" data-cyfoot-msg></p>
+      {tagline && <p class="cyfoot__tagline">{tagline}</p>}
+    </form>
+    {columns.map((c) => (
+      <nav class="cyfoot__col" aria-label={c.title}>
+        <p class="cyfoot__col-title">{c.title}</p>
+        <ul>{c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+      </nav>
+    ))}
+  </div>
+
+  <div class="cyfoot__bar">
+    <span>{copyright}</span>
+    <span class="cyfoot__status"><i aria-hidden="true"></i>{status}</span>
+    <span aria-hidden="true">BLOCK <b data-cyfoot-block>{block.toLocaleString('en-US')}</b></span>
+  </div>
+
+  <p class="cyfoot__word" aria-hidden="true">{brand}</p>
+</footer>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cyfoot]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const form = root.querySelector<HTMLFormElement>('[data-cyfoot-form]')!;
+    const msg = root.querySelector<HTMLElement>('[data-cyfoot-msg]')!;
+    form.addEventListener('submit', (e) => {
+      const input = form.querySelector<HTMLInputElement>('input')!;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(input.value.trim())) {
+        e.preventDefault();
+        input.setAttribute('aria-invalid', 'true');
+        msg.textContent = 'ERR: invalid address.';
+        input.focus();
+        return;
+      }
+      input.removeAttribute('aria-invalid');
+      if (form.dataset.demo !== undefined) { e.preventDefault(); msg.textContent = 'UPLINK ESTABLISHED. See you next block.'; form.reset(); }
+    });
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const b = root.querySelector<HTMLElement>('[data-cyfoot-block]');
+    let n = Number((b?.textContent || '0').replace(/,/g, ''));
+    window.setInterval(() => { n += 1; if (b) b.textContent = n.toLocaleString('en-US'); }, 2500);
+  });
+</script>
+
+<style>
+  .cyfoot { --cf-edge: var(--cy-edge, var(--c-text-1, #f2f2f2)); position: relative; overflow: hidden; border-top: 2px solid var(--cf-edge); background: var(--c-bg, #050507); color: var(--c-text-1, #f2f2f2); font-family: var(--font-mono, monospace); }
+  .cyfoot__top { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); max-width: 1440px; margin: 0 auto; border-bottom: 2px solid var(--cf-edge); }
+  .cyfoot__uplink, .cyfoot__col { padding: var(--sp-6, 1.5rem) var(--sp-5, 1.25rem); border-right: 2px solid var(--cf-edge); }
+  .cyfoot__col:last-child { border-right: 0; }
+  .cyfoot__uplink label { display: block; margin-bottom: var(--sp-3, 0.75rem); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyfoot__row { display: flex; align-items: stretch; border: 2px solid var(--cf-edge); }
+  .cyfoot__ps { display: grid; place-items: center; padding: 0 var(--sp-3, 0.75rem); font-weight: 800; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyfoot__row input { flex: 1; width: 100%; min-width: 0; min-height: 48px; padding: 0 var(--sp-2, 0.5rem); border: 0; background: transparent; color: inherit; font: inherit; font-size: 1rem; }
+  .cyfoot__row input::placeholder { color: var(--c-text-3, #8a8a99); }
+  .cyfoot__row input[aria-invalid='true'] { background: color-mix(in srgb, var(--c-danger, #ff3b5c) 14%, transparent); }
+  .cyfoot__row button { padding: 0 var(--sp-5, 1.25rem); border: 0; border-left: 2px solid var(--cf-edge); background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); font: inherit; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+  .cyfoot__row button:hover { background: var(--cy-acid, #d4ff00); color: #050507; }
+  .cyfoot__row:focus-within { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cyfoot__row :is(input, button):focus-visible { outline: none; }
+  .cyfoot__msg { min-height: 1.2em; margin: var(--sp-2, 0.5rem) 0 0; font-size: 0.8rem; font-weight: 700; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyfoot__tagline { margin: var(--sp-3, 0.75rem) 0 0; color: var(--c-text-2, #a6a6b4); font-size: 0.88rem; }
+  .cyfoot__col-title { margin: 0 0 var(--sp-3, 0.75rem); font-family: var(--font-display, 'Orbitron', sans-serif); font-size: 0.85rem; font-weight: 900; letter-spacing: 0.14em; }
+  .cyfoot__col ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .cyfoot__col a { display: inline-flex; align-items: center; min-height: 36px; color: var(--c-text-2, #a6a6b4); font-size: 0.88rem; text-decoration: none; }
+  .cyfoot__col a::before { content: '/'; margin-right: 6px; color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); }
+  .cyfoot__col a:hover { color: var(--c-text-1, #f2f2f2); text-decoration: underline; }
+  .cyfoot__col a:focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: 2px; }
+  .cyfoot__bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-3, 0.75rem); max-width: 1440px; margin: 0 auto; padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--c-text-2, #a6a6b4); }
+  .cyfoot__bar b { color: var(--c-text-1, #f2f2f2); font-variant-numeric: tabular-nums; }
+  .cyfoot__status { display: inline-flex; align-items: center; gap: 6px; color: var(--c-text-1, #f2f2f2); }
+  .cyfoot__status i { width: 8px; height: 8px; background: var(--c-success, #39ff88); }
+  .cyfoot__word { margin: 0; padding: 0 var(--sp-3, 0.75rem); font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(3rem, 14.5vw, 15rem); font-weight: 900; line-height: 0.8; letter-spacing: -0.03em; white-space: nowrap; color: transparent; -webkit-text-stroke: 2px var(--c-text-1, #f2f2f2); transform: translateY(14%); user-select: none; }
+  @media (max-width: 900px) {
+    .cyfoot__top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cyfoot__uplink { min-width: 0; }
+    .cyfoot__uplink { grid-column: 1 / -1; border-right: 0; border-bottom: 2px solid var(--cf-edge); }
+    .cyfoot__col:nth-child(3) { border-right: 0; }
+  }
+  @media (max-width: 520px) {
+    .cyfoot__top { grid-template-columns: minmax(0, 1fr); }
+    .cyfoot__col { border-right: 0; border-bottom: 2px solid var(--cf-edge); }
+    .cyfoot__col:last-child { border-bottom: 0; }
+  }
+</style>

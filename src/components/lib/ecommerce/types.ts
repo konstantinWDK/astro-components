@@ -36,6 +36,11 @@ export interface Product {
   inStock?: boolean;
   /** Units left; StockIndicator shows urgency at or below its threshold. */
   stock?: number;
+  /**
+   * Extra filterable attributes, e.g. `{ character: 'captain-nova', scale: '6in' }`.
+   * Cards expose them as `data-f-<key>` and FilterSidebar's `facets` filter on them.
+   */
+  facets?: Record<string, string | string[]>;
 }
 
 export interface StoreCategory {
@@ -67,4 +72,22 @@ export interface ShippingRate {
 export interface MoneyFormat {
   currency?: string;
   locale?: string;
+}
+
+/** Extra labels for ToyFigureCard (collectibles, toys, action figures). All optional. */
+export interface ToyCardMeta {
+  /** Character name shown as the eyebrow. */
+  character?: string;
+  /** Franchise / universe, shown in the card's top strip. */
+  universe?: string;
+  /** Scale label, e.g. '6 in' or '1:12'. */
+  scale?: string;
+  /** Age label, e.g. '6+'. */
+  age?: string;
+  /** Points of articulation. */
+  articulation?: number;
+  /** Pre-order note, e.g. 'Ships March 2027'. Turns the button into "Pre-order". */
+  preorder?: string;
+  /** Limited edition note. */
+  edition?: string;
 }

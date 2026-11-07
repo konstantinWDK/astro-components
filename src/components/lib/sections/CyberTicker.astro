@@ -1,0 +1,109 @@
+---
+/**
+ * CyberTicker — Brutalist status marquee: an endless band of uppercase readouts separated by
+ * glyphs, on an acid, ink or outlined background, tilted or straight, pausable.
+ *
+ * @param {string[]} items - Messages. Default: demo grid events.
+ * @param {string} label - Accessible name of the list. Default 'Live grid events'.
+ * @param {string} separator - Glyph between items. Default '◆'.
+ * @param {number} speed - Seconds for one loop. Default 40.
+ * @param {boolean} reverse - Scroll right instead of left. Default false.
+ * @param {string} variant - Colour (acid|ink|outline). Default 'acid'.
+ * @param {string} size - Type size (sm|md|lg). Default 'md'.
+ * @param {number} tilt - Rotation in degrees (0 = straight). Default 0.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: the items are a real list read once; the duplicated copy for the loop is
+ * aria-hidden; a pause button stops the motion (WCAG 2.2.2), and reduced motion shows a static band.
+ */
+interface Props {
+  items?: string[];
+  label?: string;
+  separator?: string;
+  speed?: number;
+  reverse?: boolean;
+  variant?: 'acid' | 'ink' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  tilt?: number;
+  className?: string;
+}
+
+const {
+  items = ['NODE TYO-04 ONLINE', 'H200 SPOT ▼ 0.42 CR/H', 'BLOCK 18,204,113 SEALED', 'LAT AMS→NYC 71MS', 'NEW REGION: LAGOS', 'JOBS IN FLIGHT 12,840'],
+  label = 'Live grid events',
+  separator = '◆',
+  speed = 40,
+  reverse = false,
+  variant = 'acid',
+  size = 'md',
+  tilt = 0,
+  className = '',
+} = Astro.props;
+---
+
+<div class:list={['cytk', `cytk--${variant}`, `cytk--${size}`, { 'cytk--reverse': reverse }, className]} style={`--cytk-speed: ${speed}s; --cytk-tilt: ${tilt}deg`} data-cytk>
+  <div class="cytk__track">
+    <ul class="cytk__list" aria-label={label}>
+      {items.map((t) => <li><span>{t}</span><span class="cytk__sep" aria-hidden="true">{separator}</span></li>)}
+    </ul>
+    <ul class="cytk__list" aria-hidden="true">
+      {items.map((t) => <li><span>{t}</span><span class="cytk__sep">{separator}</span></li>)}
+    </ul>
+  </div>
+  <button type="button" class="cytk__pause" aria-pressed="false" data-cytk-pause>
+    <span class="sr-only">Pause ticker</span>
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="1" width="3" height="10" fill="currentColor"/><rect x="7" y="1" width="3" height="10" fill="currentColor"/></svg>
+  </button>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cytk]:not([data-bound])').forEach((root) => {
+    root.dataset.bound = '';
+    const btn = root.querySelector<HTMLButtonElement>('[data-cytk-pause]')!;
+    btn.addEventListener('click', () => {
+      const paused = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(paused));
+      root.classList.toggle('is-paused', paused);
+    });
+  });
+</script>
+
+<style>
+  .cytk {
+    --cytk-edge: var(--cy-edge, var(--c-text-1, #f2f2f2));
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    border-block: 2px solid var(--cytk-edge);
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transform: rotate(var(--cytk-tilt));
+  }
+  .cytk--acid { background: var(--cy-acid, #d4ff00); color: #050507; border-color: #050507; }
+  .cytk--ink { background: var(--c-text-1, #f2f2f2); color: var(--c-bg, #050507); }
+  .cytk--outline { background: transparent; color: var(--c-text-1, #f2f2f2); }
+  .cytk__track { display: flex; flex: 1; min-width: 0; overflow: hidden; }
+  .cytk__list { display: flex; flex-shrink: 0; margin: 0; padding: 0; list-style: none; animation: cytk-move var(--cytk-speed) linear infinite; }
+  .cytk--reverse .cytk__list { animation-direction: reverse; }
+  .cytk:hover .cytk__list, .cytk.is-paused .cytk__list { animation-play-state: paused; }
+  .cytk__list li { display: flex; align-items: center; white-space: nowrap; }
+  .cytk__list li > span:first-child { padding: 0.7rem 1.1rem; }
+  .cytk--sm .cytk__list li > span:first-child { padding: 0.45rem 0.9rem; font-size: 0.75rem; }
+  .cytk--lg .cytk__list li > span:first-child { padding: 1rem 1.4rem; font-family: var(--font-display, 'Orbitron', sans-serif); font-size: clamp(1.2rem, 3vw, 2rem); font-weight: 900; }
+  .cytk__sep { font-size: 0.8em; opacity: 0.8; }
+  .cytk--outline .cytk__sep { color: var(--cy-accent-text, var(--cy-acid, #d4ff00)); opacity: 1; }
+  .cytk__pause { flex-shrink: 0; display: grid; place-items: center; width: 44px; border: 0; border-left: 2px solid currentColor; background: inherit; color: inherit; cursor: pointer; }
+  .cytk__pause[aria-pressed='true'] svg { opacity: 0.4; }
+  .cytk__pause:focus-visible { outline: 3px solid var(--cy-magenta, #ff2bd6); outline-offset: -3px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @keyframes cytk-move { to { transform: translateX(-100%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .cytk__list { animation: none; }
+    .cytk__list[aria-hidden='true'], .cytk__pause { display: none; }
+    .cytk__track { flex-wrap: wrap; }
+    .cytk__list { flex-wrap: wrap; }
+  }
+</style>

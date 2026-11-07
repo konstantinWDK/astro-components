@@ -1,0 +1,336 @@
+---
+/**
+ * ToyHero — Comic-book store hero for toys and action figures: burst eyebrow, oversized headline
+ * with a highlighted word, CTAs and stats on one side; on the other a halftone stage with the
+ * featured figure, a starburst price sticker, a rotating "power" tag and floating mini avatars.
+ *
+ * @param {string} eyebrow - Burst label above the title. Default 'Wave 3 just landed!'.
+ * @param {string} title - Headline before the highlight. Default 'Every hero needs a'.
+ * @param {string} highlight - Highlighted word(s). Default 'sidekick'.
+ * @param {string} subtitle - Supporting copy.
+ * @param {{label: string, href: string}} primary - Main CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA (optional).
+ * @param {Array<{value: string, label: string}>} stats - Proof points.
+ * @param {Product} product - Featured product (name, price, icon/image, hue).
+ * @param {string} productHref - Featured product link.
+ * @param {string} productLabel - Small label on the product tag. Default 'Featured figure'.
+ * @param {string} sticker - Text above the price on the starburst. Default 'Only'.
+ * @param {Array<{icon: string, hue: number, label: string}>} sidekicks - Floating mini avatars (decorative).
+ * @param {string} currency - ISO currency. Default 'USD'.
+ * @param {string} locale - Number format locale. Default 'en-US'.
+ * @param {string} variant - Backdrop (burst|halftone|plain). Default 'burst'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1; the stage art is decorative except the product link, which has a full
+ * text label; animations stop with prefers-reduced-motion.
+ */
+import ProductMedia from '../ecommerce/ProductMedia.astro';
+import { productIcon } from '../ecommerce/product-icons';
+import { formatMoney } from '../ecommerce/cart-store';
+import type { Product } from '../ecommerce/types';
+
+interface Cta { label: string; href: string }
+
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  highlight?: string;
+  subtitle?: string;
+  primary?: Cta;
+  secondary?: Cta;
+  stats?: Array<{ value: string; label: string }>;
+  product?: Product;
+  productHref?: string;
+  productLabel?: string;
+  sticker?: string;
+  sidekicks?: Array<{ icon: string; hue: number; label: string }>;
+  currency?: string;
+  locale?: string;
+  variant?: 'burst' | 'halftone' | 'plain';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  eyebrow = 'Wave 3 just landed!',
+  title = 'Every hero needs a',
+  highlight = 'sidekick',
+  subtitle = 'Action figures, mechs and playsets from five original universes. Poseable, collectable and built to survive the living-room floor.',
+  primary = { label: 'Shop all figures', href: '#' },
+  secondary = { label: 'Meet the characters', href: '#' },
+  stats = [
+    { value: '120+', label: 'figures & sets' },
+    { value: '4.8★', label: 'from 9k reviews' },
+    { value: '24h', label: 'dispatch' },
+  ],
+  product = { slug: 'captain-nova-6in', name: 'Captain Nova · Hero Pose', price: 24.99, category: 'figures', icon: 'figure', hue: 212 },
+  productHref = '#',
+  productLabel = 'Featured figure',
+  sticker = 'Only',
+  sidekicks = [
+    { icon: 'dino', hue: 40, label: 'Rexa' },
+    { icon: 'robot', hue: 194, label: 'Bolt-X' },
+    { icon: 'ninja', hue: 12, label: 'Kira Blaze' },
+  ],
+  currency = 'USD',
+  locale = 'en-US',
+  variant = 'burst',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const price = formatMoney(product.price, { currency, locale });
+// Starburst polygon (24 spikes) for the price sticker.
+const burst = Array.from({ length: 48 }, (_, i) => {
+  const r = i % 2 === 0 ? 50 : 40;
+  const a = (Math.PI * 2 * i) / 48 - Math.PI / 2;
+  return `${(50 + r * Math.cos(a)).toFixed(1)},${(50 + r * Math.sin(a)).toFixed(1)}`;
+}).join(' ');
+// Rays behind the stage.
+const rays = Array.from({ length: 16 }, (_, i) => {
+  const a1 = (Math.PI * 2 * i) / 16;
+  const a2 = a1 + Math.PI / 16;
+  return `M50,50 L${(50 + 80 * Math.cos(a1)).toFixed(1)},${(50 + 80 * Math.sin(a1)).toFixed(1)} L${(50 + 80 * Math.cos(a2)).toFixed(1)},${(50 + 80 * Math.sin(a2)).toFixed(1)}Z`;
+}).join(' ');
+---
+
+<section class:list={['toy-hero', `toy-hero--${variant}`, `toy-hero--${size}`, className]} aria-labelledby="toy-hero-title">
+  <div class="toy-hero__inner">
+    <div class="toy-hero__copy">
+      {eyebrow && <p class="toy-hero__eyebrow"><span>{eyebrow}</span></p>}
+      <h1 class="toy-hero__title" id="toy-hero-title">
+        {title} {highlight && <mark>{highlight}</mark>}
+      </h1>
+      {subtitle && <p class="toy-hero__sub">{subtitle}</p>}
+      <div class="toy-hero__ctas">
+        {primary && <a class="toy-hero__btn toy-hero__btn--primary" href={primary.href}>{primary.label}</a>}
+        {secondary && <a class="toy-hero__btn" href={secondary.href}>{secondary.label}</a>}
+      </div>
+      {stats.length > 0 && (
+        <dl class="toy-hero__stats">
+          {stats.map((s) => (
+            <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+          ))}
+        </dl>
+      )}
+    </div>
+
+    <div class="toy-hero__stage" style={`--th-hue: ${product.hue ?? 212}`}>
+      {variant === 'burst' && (
+        <svg class="toy-hero__rays" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d={rays} /></svg>
+      )}
+      <div class="toy-hero__panel">
+        <ProductMedia image={product.image} alt={product.name} icon={product.icon} hue={product.hue} ratio="4 / 5" size="lg" />
+        <span class="toy-hero__dots" aria-hidden="true"></span>
+      </div>
+
+      <a class="toy-hero__tag" href={productHref}>
+        <span class="toy-hero__tag-label">{productLabel}</span>
+        <span class="toy-hero__tag-name">{product.name}</span>
+        <span class="sr-only">, {price}</span>
+      </a>
+
+      <div class="toy-hero__sticker" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><polygon points={burst} /></svg>
+        <span><small>{sticker}</small>{price}</span>
+      </div>
+
+      <ul class="toy-hero__kicks" aria-hidden="true">
+        {sidekicks.slice(0, 3).map((k, i) => (
+          <li style={`--k-hue: ${k.hue}; --k-i: ${i}`} title={k.label}>
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={productIcon(k.icon)} /></svg>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .toy-hero {
+    --th-edge: var(--toy-edge, var(--c-text-1, #17121f));
+    --th-drop: var(--toy-drop, var(--th-edge));
+    position: relative;
+    overflow: hidden;
+    padding-block: clamp(2.5rem, 6vw, 5rem);
+    container-type: inline-size;
+  }
+  .toy-hero--sm { padding-block: clamp(2rem, 4vw, 3rem); }
+  .toy-hero--lg { padding-block: clamp(3.5rem, 8vw, 7rem); }
+  .toy-hero--halftone {
+    background-image: radial-gradient(rgb(var(--ink-rgb, 255 255 255) / 0.08) 1.5px, transparent 2px);
+    background-size: 14px 14px;
+  }
+  .toy-hero__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-inline: var(--sp-6, 1.5rem);
+  }
+
+  .toy-hero__eyebrow { margin: 0 0 var(--sp-5, 1.25rem); }
+  .toy-hero__eyebrow span {
+    display: inline-block;
+    padding: 0.45rem 1rem;
+    border: 2.5px solid var(--th-edge);
+    border-radius: 6px;
+    background: var(--toy-yellow, #ffd23f);
+    color: #17121f;
+    box-shadow: 3px 3px 0 var(--th-drop);
+    font-family: var(--font-display, inherit);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transform: rotate(-2.5deg);
+  }
+  .toy-hero__title {
+    margin: 0;
+    font-family: var(--font-display, inherit);
+    font-size: clamp(2.6rem, 7vw, 5.2rem);
+    font-weight: 400;
+    line-height: 0.98;
+    letter-spacing: -0.01em;
+    color: var(--c-text-1, #fff);
+    text-wrap: balance;
+  }
+  .toy-hero__title mark {
+    display: inline-block;
+    padding: 0 0.18em 0.05em;
+    border: 3px solid var(--th-edge);
+    border-radius: 10px;
+    background: var(--c-primary-light, #d62839);
+    color: var(--c-on-primary, #fff);
+    box-shadow: 5px 5px 0 var(--th-drop);
+    transform: rotate(-2deg);
+  }
+  .toy-hero__sub { margin: var(--sp-6, 1.5rem) 0 0; max-width: 34rem; font-size: 1.08rem; line-height: 1.65; color: var(--c-text-2, #a3a3a3); }
+
+  .toy-hero__ctas { display: flex; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); margin-top: var(--sp-8, 2rem); }
+  .toy-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 2.5px solid var(--th-edge);
+    border-radius: 999px;
+    background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a));
+    color: var(--c-text-1, #fff);
+    box-shadow: 4px 4px 0 var(--th-drop);
+    font-weight: 800;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .toy-hero__btn--primary { background: var(--c-primary-light, #d62839); color: var(--c-on-primary, #fff); }
+  .toy-hero__btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--th-drop); color: inherit; }
+  .toy-hero__btn--primary:hover { color: var(--c-on-primary, #fff); }
+  .toy-hero__btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--th-drop); }
+  .toy-hero__btn:focus-visible, .toy-hero__tag:focus-visible { outline: 3px solid var(--toy-yellow, #ffd23f); outline-offset: 4px; }
+
+  .toy-hero__stats { display: flex; flex-wrap: wrap; gap: var(--sp-6, 1.5rem) clamp(1.5rem, 4vw, 2.75rem); margin: var(--sp-10, 2.5rem) 0 0; }
+  .toy-hero__stats div { display: flex; flex-direction: column-reverse; }
+  .toy-hero__stats dt { font-size: 0.8rem; color: var(--c-text-2, #a3a3a3); }
+  .toy-hero__stats dd { margin: 0; font-family: var(--font-display, inherit); font-size: 1.7rem; color: var(--c-text-1, #fff); }
+
+  .toy-hero__stage { position: relative; display: grid; place-items: center; padding: var(--sp-8, 2rem) var(--sp-6, 1.5rem); isolation: isolate; }
+  .toy-hero__rays {
+    position: absolute;
+    inset: -10%;
+    z-index: -1;
+    width: 120%;
+    height: 120%;
+    fill: hsl(var(--th-hue) 90% 60% / 0.16);
+    animation: toy-spin 60s linear infinite;
+  }
+  .toy-hero__panel {
+    position: relative;
+    width: min(100%, 420px);
+    overflow: hidden;
+    border: 3px solid var(--th-edge);
+    border-radius: var(--r-xl, 28px);
+    box-shadow: 10px 10px 0 var(--th-drop);
+    transform: rotate(2deg);
+  }
+  .toy-hero__panel :global(.p-media) { background: radial-gradient(circle at 50% 40%, hsl(var(--th-hue) 95% 72%), hsl(var(--th-hue) 82% 50%) 75%); }
+  .toy-hero__panel :global(.p-media__art) { color: var(--toy-art-ink, #17121f); filter: drop-shadow(5px 5px 0 rgb(0 0 0 / 0.18)); stroke-width: 1.8; width: 58%; animation: toy-float 5s ease-in-out infinite; }
+  .toy-hero__dots {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgb(0 0 0 / 0.18) 1.5px, transparent 2px);
+    background-size: 11px 11px;
+    mask-image: linear-gradient(210deg, #000, transparent 60%);
+    pointer-events: none;
+  }
+
+  .toy-hero__tag {
+    position: absolute;
+    left: 0;
+    bottom: 12%;
+    display: grid;
+    gap: 2px;
+    max-width: 230px;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 2.5px solid var(--th-edge);
+    border-radius: 14px;
+    background: var(--toy-card-bg, var(--c-bg-1, #0a0a0a));
+    color: var(--c-text-1, #fff);
+    box-shadow: 5px 5px 0 var(--th-drop);
+    text-decoration: none;
+    transform: rotate(-3deg);
+    transition: transform 0.2s ease;
+  }
+  .toy-hero__tag:hover { transform: rotate(-1deg) translateY(-3px); color: var(--c-text-1, #fff); }
+  .toy-hero__tag-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-primary-light, #d62839); }
+  .toy-hero__tag-name { font-family: var(--font-display, inherit); font-size: 1.05rem; line-height: 1.15; }
+
+  .toy-hero__sticker { position: absolute; top: 4%; right: 2%; display: grid; place-items: center; width: clamp(96px, 22cqi, 132px); aspect-ratio: 1; transform: rotate(12deg); animation: toy-wobble 4s ease-in-out infinite; }
+  .toy-hero__sticker svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .toy-hero__sticker polygon { fill: var(--toy-yellow, #ffd23f); stroke: var(--th-edge); stroke-width: 2.5; stroke-linejoin: round; filter: drop-shadow(3px 3px 0 var(--th-drop)); }
+  .toy-hero__sticker span { position: relative; display: grid; text-align: center; font-family: var(--font-display, inherit); font-size: clamp(1rem, 3.4cqi, 1.35rem); line-height: 1; color: #17121f; }
+  .toy-hero__sticker small { font-size: 0.62em; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .toy-hero__kicks { position: absolute; right: 0; bottom: 6%; display: flex; gap: 0; margin: 0; padding: 0; list-style: none; }
+  .toy-hero__kicks li {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    margin-left: -12px;
+    border: 2.5px solid var(--th-edge);
+    border-radius: 50%;
+    background: hsl(var(--k-hue) 92% 64%);
+    color: #17121f;
+    box-shadow: 3px 3px 0 var(--th-drop);
+    animation: toy-bob 3.2s ease-in-out infinite;
+    animation-delay: calc(var(--k-i) * -0.6s);
+  }
+  .toy-hero__kicks svg { width: 64%; height: 64%; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @keyframes toy-spin { to { transform: rotate(360deg); } }
+  @keyframes toy-float { 50% { transform: translateY(-4%) rotate(-3deg); } }
+  @keyframes toy-wobble { 50% { transform: rotate(4deg) scale(1.05); } }
+  @keyframes toy-bob { 50% { transform: translateY(-6px); } }
+
+  @container (max-width: 860px) {
+    .toy-hero__inner { grid-template-columns: 1fr; }
+    .toy-hero__stage { order: -1; padding-inline: var(--sp-8, 2rem); }
+    .toy-hero__panel { width: min(78%, 360px); }
+  }
+  @container (max-width: 520px) {
+    .toy-hero__inner { padding-inline: var(--sp-4, 1rem); }
+    .toy-hero__stage { padding-inline: 0; }
+    .toy-hero__tag { max-width: 180px; bottom: 6%; }
+    .toy-hero__kicks li { width: 46px; height: 46px; }
+    .toy-hero__btn { flex: 1 1 auto; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toy-hero__rays, .toy-hero__sticker, .toy-hero__kicks li, .toy-hero__panel :global(.p-media__art) { animation: none; }
+    .toy-hero__btn, .toy-hero__tag { transition: none; }
+  }
+</style>

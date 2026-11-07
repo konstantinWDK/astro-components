@@ -1,0 +1,109 @@
+---
+/**
+ * ToyCharacterPage — One character: ToyCharacterHero (art, quote, bio, power levels), every
+ * product featuring the character in a ToyFigureGrid, then allies and rivals from the same
+ * universe and the rest of the roster in character rails.
+ *
+ * Usage (src/pages/characters/[id].astro):
+ *   import { ToyCharacterPage, kapowStore } from 'astro-component-kit/templates/toy-store';
+ *   export const getStaticPaths = () => kapowStore.characters.map((c) => ({ params: { id: c.id } }));
+ *   <ToyCharacterPage id={Astro.params.id} />
+ *
+ * @param {string} id - Character id. Default: first character.
+ * @param {ToyStore} store - Catalogue and settings. Default: Kapow demo store.
+ * @param {ToyRoutes} routes - Page URLs.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import ToyLayout from './ToyLayout.astro';
+import ToyCharacterHero from '../../sections/ToyCharacterHero.astro';
+import ToyCharacterRail from '../../sections/ToyCharacterRail.astro';
+import ToyFigureGrid from '../../ecommerce/ToyFigureGrid.astro';
+import { kapowStore, toyRoutes, toyCharacter, toyUniverse, productsForCharacter, toyCardMeta, toyCharacterItems, toyShopHref, type ToyStore, type ToyRoutes } from './data';
+
+interface Props {
+  id?: string;
+  store?: ToyStore;
+  routes?: ToyRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { id, store = kapowStore, routes = toyRoutes, seedCart = false, noindex = false, theme = 'light' } = Astro.props;
+
+const character = toyCharacter(store, id) ?? store.characters[0];
+const universe = toyUniverse(store, character.universe);
+const products = productsForCharacter(store, character.id);
+const sameUniverse = store.characters.filter((c) => c.universe === character.universe && c.id !== character.id).map((c) => c.id);
+const others = store.characters.filter((c) => c.universe !== character.universe).map((c) => c.id);
+const pronoun = character.faction === 'villain' ? 'villain' : 'hero';
+---
+
+<ToyLayout theme={theme} title={`${character.name} toys & figures`} description={`${character.name}, ${character.alias.toLowerCase()}. ${character.bio}`} store={store} routes={routes} currentHref={routes.characters} seedCart={seedCart} noindex={noindex}>
+  <div class="kapow-container">
+    <ToyCharacterHero
+      character={{ ...character, universe: universe?.name }}
+      breadcrumbs={[
+        { label: 'Home', href: routes.home },
+        { label: 'Characters', href: routes.characters },
+        { label: character.name },
+      ]}
+      count={products.length}
+      primary={{ label: `Shop ${character.name}`, href: '#figures' }}
+      secondary={universe ? { label: `All ${universe.name} toys`, href: toyShopHref(routes, { universe: universe.id }) } : undefined}
+    />
+
+    <section class="char-block" id="figures" aria-labelledby="figures-title" tabindex="-1">
+      <div class="char-head">
+        <div>
+          <p class="char-eyebrow">{products.length} {products.length === 1 ? 'product' : 'products'}</p>
+          <h2 id="figures-title">{character.name} figures & sets</h2>
+        </div>
+        <a class="char-link" href={toyShopHref(routes, { character: character.id })}>Filter in the shop <span aria-hidden="true">→</span></a>
+      </div>
+      <ToyFigureGrid
+        id="character-figures"
+        products={products}
+        meta={toyCardMeta(store)}
+        productBase={routes.product}
+        columns={4}
+        currency={store.currency}
+        locale={store.locale}
+        cartKey={store.cartKey}
+        openCart={false}
+        emptyTitle={`No ${character.name} figures yet`}
+        emptyText="This character's first figure is in the works. Join the Collector Club to hear first."
+      />
+    </section>
+
+    {sameUniverse.length > 0 && (
+      <div class="char-block">
+        <ToyCharacterRail
+          id="same-universe"
+          eyebrow={universe?.name}
+          title={character.faction === 'villain' ? 'Who stands in the way' : 'Allies & rivals'}
+          subtitle={`Every ${pronoun} needs a counterpart. Complete the ${universe?.name ?? ''} line-up.`}
+          characters={toyCharacterItems(store, routes, sameUniverse)}
+          size="lg"
+        />
+      </div>
+    )}
+
+    <div class="char-block char-block--last">
+      <ToyCharacterRail id="other-characters" eyebrow="More universes" title="Other characters" characters={toyCharacterItems(store, routes, others)} size="sm" link={{ label: 'All characters', href: routes.characters }} />
+    </div>
+  </div>
+</ToyLayout>
+
+<style>
+  .char-block { margin-top: clamp(2.5rem, 6vw, 4rem); outline: none; scroll-margin-top: 96px; }
+  .char-block--last { padding-bottom: clamp(3rem, 7vw, 5rem); }
+  .char-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .char-head h2 { margin: 0; font-size: clamp(1.6rem, 3.6vw, 2.4rem); line-height: 1.05; color: var(--c-text-1); }
+  .char-eyebrow { margin: 0 0 var(--sp-2); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light); }
+  .char-link { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; font-weight: 800; white-space: nowrap; }
+  .char-link:focus-visible { outline: 3px solid var(--c-primary-light); outline-offset: 3px; }
+  @media (max-width: 560px) { .char-head { flex-direction: column; align-items: flex-start; gap: var(--sp-2); } }
+</style>

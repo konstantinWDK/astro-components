@@ -1,0 +1,170 @@
+---
+/**
+ * ToyHomePage — Toy store home: comic hero, guarantees, shop by character, best sellers,
+ * shop by universe, pre-order countdown, gift finder by age and budget, new arrivals and
+ * the collector club.
+ *
+ * Usage (src/pages/index.astro):
+ *   import { ToyHomePage } from 'astro-component-kit/templates/toy-store';
+ *   <ToyHomePage />
+ *
+ * @param {ToyStore} store - Catalogue and settings. Default: Kapow demo store.
+ * @param {ToyRoutes} routes - Page URLs.
+ * @param {boolean} seedCart - Pre-fill the cart with demo items. Default false.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import ToyLayout from './ToyLayout.astro';
+import ToyHero from '../../sections/ToyHero.astro';
+import ToyCharacterRail from '../../sections/ToyCharacterRail.astro';
+import ToyAgeFinder from '../../sections/ToyAgeFinder.astro';
+import ToyCollectorClub from '../../sections/ToyCollectorClub.astro';
+import ToyFigureGrid from '../../ecommerce/ToyFigureGrid.astro';
+import TrustBadges from '../../ecommerce/TrustBadges.astro';
+import CategoryTiles from '../../ecommerce/CategoryTiles.astro';
+import CountdownBanner from '../../ecommerce/CountdownBanner.astro';
+import { formatMoney } from '../../ecommerce/cart-store';
+import {
+  kapowStore, toyRoutes, toyProductHref, toyShopHref, toyCharacterItems, pickToyProducts, toyCardMeta, toyProducts,
+  type ToyStore, type ToyRoutes,
+} from './data';
+
+interface Props {
+  store?: ToyStore;
+  routes?: ToyRoutes;
+  seedCart?: boolean;
+  noindex?: boolean;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { store = kapowStore, routes = toyRoutes, seedCart = false, noindex = false, theme = 'light' } = Astro.props;
+
+const meta = toyCardMeta(store);
+const best = pickToyProducts(store, store.bestSellers);
+const fresh = pickToyProducts(store, store.newArrivals);
+const heroProduct = store.products.find((p) => p.slug === 'captain-nova-6in') ?? best[0] ?? store.products[0];
+const drop = store.products.find((p) => p.slug === store.featuredDrop);
+const all = toyProducts(store);
+const money = (v: number) => new Intl.NumberFormat(store.locale, { style: 'currency', currency: store.currency, maximumFractionDigits: 0 }).format(v);
+const universes = store.universes.map((u) => ({
+  id: u.id,
+  name: u.name,
+  description: u.description,
+  icon: u.icon,
+  hue: u.hue,
+  href: toyShopHref(routes, { universe: u.id }),
+  count: all.filter((p) => (p.facets?.universe as string[]).includes(u.id)).length,
+}));
+const ages = store.ages.map((a) => ({
+  ...a,
+  href: toyShopHref(routes, { age: a.id }),
+  count: all.filter((p) => (p.facets?.age as string[]).includes(a.id)).length,
+}));
+const shared = { meta, productBase: routes.product, currency: store.currency, locale: store.locale, cartKey: store.cartKey, openCart: false };
+---
+
+<ToyLayout theme={theme} title={`${store.name} Toys — action figures, vehicles & playsets`} description={store.tagline} store={store} routes={routes} currentHref={routes.home} seedCart={seedCart} noindex={noindex} liveActivity>
+  <ToyHero
+    eyebrow="Wave 3 just landed!"
+    title="Every hero needs a"
+    highlight="sidekick"
+    subtitle={`${store.tagline} Free shipping over ${money(store.freeShippingThreshold)}.`}
+    primary={{ label: 'Shop all figures', href: routes.shop }}
+    secondary={{ label: 'Meet the characters', href: routes.characters }}
+    stats={[
+      { value: `${store.products.length}+`, label: 'figures & sets' },
+      { value: `${store.characters.length}`, label: 'characters' },
+      { value: '24h', label: 'dispatch' },
+    ]}
+    product={heroProduct}
+    productHref={toyProductHref(routes, heroProduct.slug)}
+    sidekicks={store.characters.filter((c) => c.faction === 'hero' && c.id !== heroProduct.characters[0]).slice(0, 3).map((c) => ({ icon: c.icon, hue: c.hue, label: c.name }))}
+    currency={store.currency}
+    locale={store.locale}
+  />
+
+  <div class="kapow-container home-block home-block--tight">
+    <TrustBadges
+      variant="divided"
+      size="sm"
+      items={[
+        { icon: 'truck', title: 'Free shipping', text: `On orders over ${money(store.freeShippingThreshold)}` },
+        { icon: 'gift', title: 'Free gift wrap', text: 'Add a note at checkout' },
+        { icon: 'return', title: '30-day returns', text: 'Even opened boxes' },
+        { icon: 'lock', title: 'Safety tested', text: 'EN 71 & ASTM F963' },
+      ]}
+    />
+  </div>
+
+  <div class="kapow-container home-block">
+    <ToyCharacterRail
+      title="Shop by character"
+      eyebrow="Pick your hero (or villain)"
+      characters={toyCharacterItems(store, routes)}
+      link={{ label: 'All characters', href: routes.characters }}
+    />
+  </div>
+
+  <section class="kapow-container home-block" aria-labelledby="best-title">
+    <div class="home-head">
+      <div>
+        <p class="home-eyebrow">Loved by 9,000+ young heroes</p>
+        <h2 id="best-title">Best sellers</h2>
+      </div>
+      <a class="home-link" href={`${routes.shop}?sort=rating`}>View all <span aria-hidden="true">→</span></a>
+    </div>
+    <ToyFigureGrid id="best-sellers" products={best} {...shared} />
+  </section>
+
+  <div class="kapow-container home-block">
+    <CategoryTiles title="Shop by universe" subtitle="Five original worlds, each with its own heroes, villains and vehicles." categories={universes} columns={5} countLabel="toys" />
+  </div>
+
+  {drop && (
+    <div class="kapow-container home-block">
+      <CountdownBanner
+        eyebrow={`Pre-order · ${drop.preorder ?? 'coming soon'}`}
+        title={`${drop.name}: lock in the launch price`}
+        text={`${drop.description ?? ''} Pre-order now for ${formatMoney(drop.price, { currency: store.currency, locale: store.locale })} — you are only charged when it ships.`}
+        cta={{ label: 'Pre-order now', href: toyProductHref(routes, drop.slug) }}
+        hours={72}
+        storageKey={`${store.cartKey}-drop`}
+      />
+    </div>
+  )}
+
+  <div class="kapow-container home-block">
+    <ToyAgeFinder
+      title="Who is it for?"
+      subtitle="Pick an age group and we will only show toys that fit — from chunky first figures to limited collector editions."
+      groups={ages}
+      budgets={[10, 25, 50].map((v) => ({ label: `Under ${money(v)}`, href: toyShopHref(routes, { max: String(v) }) }))}
+    />
+  </div>
+
+  <section class="kapow-container home-block" aria-labelledby="new-title">
+    <div class="home-head">
+      <div>
+        <p class="home-eyebrow">Fresh out of the box</p>
+        <h2 id="new-title">New & pre-order</h2>
+      </div>
+      <a class="home-link" href={routes.shop}>Shop all <span aria-hidden="true">→</span></a>
+    </div>
+    <ToyFigureGrid id="new-arrivals" products={fresh} {...shared} />
+  </section>
+
+  <div class="kapow-container home-block">
+    <ToyCollectorClub />
+  </div>
+</ToyLayout>
+
+<style>
+  .home-block { padding-block: clamp(2.5rem, 6vw, 4.5rem) 0; }
+  .home-block--tight { padding-top: 0; }
+  .home-block:last-child { padding-bottom: clamp(3rem, 7vw, 5rem); }
+  .home-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .home-head h2 { margin: 0; font-size: clamp(1.6rem, 3.6vw, 2.4rem); line-height: 1.05; color: var(--c-text-1); }
+  .home-eyebrow { margin: 0 0 var(--sp-2); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-primary-light); }
+  .home-link { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; font-weight: 800; white-space: nowrap; }
+  .home-link:focus-visible { outline: 3px solid var(--c-primary-light); outline-offset: 3px; }
+</style>

@@ -25,10 +25,12 @@ export { default as StockIndicator } from './StockIndicator.astro';
 export { default as ProductCardMinimal } from './ProductCardMinimal.astro';
 export { default as FilterBar } from './FilterBar.astro';
 export { default as CartPageList } from './CartPageList.astro';
+export { default as ToyFigureCard } from './ToyFigureCard.astro';
+export { default as ToyFigureGrid } from './ToyFigureGrid.astro';
 
 export { createCart, bindAddToCart, formatMoney, lineId, CART_EVENT, ADDED_EVENT, NOTIFY_EVENT } from './cart-store';
-export { applyCatalogFilter, syncCatalogUrl } from './catalog-filter';
+export { applyCatalogFilter, syncCatalogUrl, facetAttrs, matchesFacets } from './catalog-filter';
 export type { CatalogState } from './catalog-filter';
 export { productIcons, productIcon } from './product-icons';
 export type { ProductIcon } from './product-icons';
-export type { Product, ProductColor, StoreCategory, CartItem, ShippingRate, MoneyFormat } from './types';
+export type { Product, ProductColor, StoreCategory, CartItem, ShippingRate, MoneyFormat, ToyCardMeta } from './types';

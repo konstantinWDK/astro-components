@@ -1,0 +1,118 @@
+---
+/**
+ * ClinicSettingsPage — Practice settings: profile, consultation hours (MedAvailabilityEditor),
+ * patient reminders, team roles and invites, and plan usage / billing.
+ *
+ * Usage (src/pages/app/settings.astro):
+ *   import { ClinicSettingsPage } from 'astro-component-kit/templates/saas-clinic';
+ *   <ClinicSettingsPage />
+ *
+ * @param {ClinicData} data - Workspace data.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import SettingsSection from '../../app/SettingsSection.astro';
+import SwitchRow from '../../app/SwitchRow.astro';
+import TeamMembers from '../../app/TeamMembers.astro';
+import PlanUsageCard from '../../app/PlanUsageCard.astro';
+import MedAvailabilityEditor from '../../app/MedAvailabilityEditor.astro';
+import AnimatedInput from '../../forms/AnimatedInput.astro';
+import ModernSelect from '../../forms/ModernSelect.astro';
+import { clinicData, clinicRoutes, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+---
+
+<ClinicLayout title="Settings" current="settings" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Settings"
+    description="Your profile, consultation hours, reminders, team and billing."
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Settings' }]}
+    actions={[]}
+    periods={[]}
+    tabs={[
+      { label: 'Profile', href: '#profile' },
+      { label: 'Hours', href: '#hours' },
+      { label: 'Reminders', href: '#reminders' },
+      { label: 'Team', href: '#team', count: data.team.length },
+      { label: 'Billing', href: '#billing' },
+    ]}
+    currentTab="#profile"
+  />
+
+  <div class="settings">
+    <div id="profile">
+      <SettingsSection id="set-profile" title="Your profile" description="Shown to patients on the booking page and in visit summaries.">
+        <div class="settings__row">
+          <AnimatedInput label="Full name" id="set-name" name="name" required autocomplete="name" />
+          <AnimatedInput label="Email" id="set-email" name="email" type="email" required autocomplete="email" />
+        </div>
+        <div class="settings__row">
+          <ModernSelect label="Specialty" id="set-spec" name="specialty" options={data.specialties.map((s) => ({ label: s.name, value: s.id }))} />
+          <AnimatedInput label="Licence number" id="set-licence" name="licence" />
+        </div>
+      </SettingsSection>
+    </div>
+
+    <div id="hours" class="settings__block">
+      <div class="settings__intro">
+        <h2>Consultation hours</h2>
+        <p>Patients can only book inside these hours. Video-only ranges are offered as video visits.</p>
+      </div>
+      <MedAvailabilityEditor clinician={`${data.user.name} · ${data.user.role}`} />
+    </div>
+
+    <div id="reminders">
+      <SettingsSection id="set-reminders" title="Patient reminders" description="Automatic messages that cut no-shows. Patients can opt out at any time.">
+        <SwitchRow name="r-sms" label="SMS reminder 24 h before" description="Includes the address or the video link." checked />
+        <SwitchRow name="r-email" label="Email confirmation with calendar file" description="Sent right after booking." checked />
+        <SwitchRow name="r-recall" label="Recall for annual check-ups" description="Invites patients who have not visited in 12 months." checked={false} />
+        <SwitchRow name="r-survey" label="Satisfaction survey after the visit" description="One question, sent 2 hours after the visit." checked />
+      </SettingsSection>
+    </div>
+
+    <div id="team" class="settings__block">
+      <div class="settings__intro">
+        <h2>Team</h2>
+        <p>Clinicians see full records; reception sees schedules and contact details only.</p>
+      </div>
+      <TeamMembers members={data.team} roles={['Owner', 'Doctor', 'Nurse', 'Reception', 'Billing']} seats={10} />
+    </div>
+
+    <div id="billing" class="settings__block">
+      <div class="settings__intro">
+        <h2>Plan & billing</h2>
+        <p>Billed per clinician. Add or remove seats any time.</p>
+      </div>
+      <PlanUsageCard
+        variant="accent"
+        plan="Practice"
+        price="€89 / clinician / month"
+        renews="Renews on Dec 1, 2026"
+        usage={[{ label: 'Clinician seats', used: 5, limit: 10 }, { label: 'SMS reminders', used: 1720, limit: 2000 }, { label: 'Video minutes', used: 2840, limit: 5000, unit: 'min' }]}
+        upgrade={{ label: 'Upgrade to Clinic group', href: `${routes.landing}#pricing` }}
+      />
+    </div>
+  </div>
+</ClinicLayout>
+
+<style>
+  .settings { display: grid; max-width: 1080px; }
+  .settings > div { scroll-margin-top: 84px; }
+  .settings__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+  .settings__block { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 2fr); gap: var(--sp-6); padding-block: var(--sp-6); border-bottom: 1px solid var(--c-border); }
+  .settings__intro h2 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1); }
+  .settings__intro p { margin: 4px 0 0; font-size: 0.88rem; line-height: 1.55; }
+  @media (max-width: 900px) {
+    .settings__block { grid-template-columns: 1fr; }
+    .settings__row { grid-template-columns: 1fr; }
+  }
+</style>

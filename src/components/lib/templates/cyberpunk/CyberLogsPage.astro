@@ -1,0 +1,54 @@
+---
+/**
+ * CyberLogsPage — Status and changelog: CyberPageHero, CyberStatusBoard (60-day uptime per
+ * region), incident feed (StatusTimelineFeed) and release notes (ChangelogSection).
+ *
+ * Usage (src/pages/logs.astro):
+ *   import { CyberLogsPage } from 'astro-component-kit/templates/cyberpunk';
+ *   <CyberLogsPage />
+ *
+ * @param {CyberData} data - Site content.
+ * @param {CyberRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import CyberLayout from './CyberLayout.astro';
+import CyberPageHero from '../../sections/CyberPageHero.astro';
+import CyberStatusBoard from '../../sections/CyberStatusBoard.astro';
+import StatusTimelineFeed from '../../data/StatusTimelineFeed.astro';
+import ChangelogSection from '../../sections/ChangelogSection.astro';
+import { nullSector, cyberRoutes, type CyberData, type CyberRoutes } from './data';
+
+interface Props {
+  data?: CyberData;
+  routes?: CyberRoutes;
+  theme?: 'dark' | 'light' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = nullSector, routes = cyberRoutes, theme = 'dark', noindex = false } = Astro.props;
+---
+
+<CyberLayout title="Logs" description="Live grid status, 60-day uptime per region, incidents and release notes." data={data} routes={routes} current="logs" theme={theme} noindex={noindex}>
+  <CyberPageHero index="04" path={[{ label: 'SYS', href: routes.home }, { label: 'LOGS' }]} title="SYSTEM" outline="LOGS" intro="Everything the grid did, broke and fixed — in public. Uptime is measured per region from three independent probes." tags={['UPDATED EVERY 60 S', 'RSS', 'WEBHOOKS']} variant="plain" />
+
+  <div class="ns-wrap">
+    <CyberStatusBoard regions={data.regions} />
+  </div>
+
+  <section class="ns-wrap incidents" aria-labelledby="inc-title">
+    <p class="incidents__eyebrow">[02] INCIDENTS</p>
+    <h2 id="inc-title">Open & recent incidents</h2>
+    <div class="incidents__feed"><StatusTimelineFeed events={data.incidents} /></div>
+  </section>
+
+  <div class="ns-wrap ns-wrap--last">
+    <ChangelogSection title="Changelog" subtitle="Every release of the protocol, newest first." releases={data.releases} subscribe={{ label: 'Subscribe via RSS', href: '#' }} />
+  </div>
+</CyberLayout>
+
+<style>
+  .incidents__eyebrow { margin: 0 0 var(--sp-2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; color: var(--cy-accent-text); }
+  .incidents h2 { margin: 0 0 var(--sp-5); font-size: clamp(1.6rem, 3.4vw, 2.6rem); color: var(--c-text-1); }
+  .incidents__feed { padding: var(--sp-5); border: 2px solid var(--cy-edge); background: var(--c-bg-1); }
+</style>

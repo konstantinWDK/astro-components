@@ -1,0 +1,119 @@
+---
+/**
+ * ClinicPatientPage — One patient's record: MedPatientSummary (identity, allergies, vitals with
+ * trends, problems, medications, visits), upcoming appointments, a blood-pressure trend chart and
+ * shortcuts to consult, prescribe or start a video visit.
+ *
+ * Usage (src/pages/app/patients/[id].astro):
+ *   import { ClinicPatientPage, clinicData } from 'astro-component-kit/templates/saas-clinic';
+ *   export const getStaticPaths = () => clinicData.patients.map((p) => ({ params: { id: p.id } }));
+ *   <ClinicPatientPage id={Astro.params.id} />
+ *
+ * @param {string} id - Patient id. Default: first patient.
+ * @param {ClinicData} data - Workspace data.
+ * @param {ClinicRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (light|dark|auto). Default 'light'.
+ */
+import ClinicLayout from './ClinicLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import MedPatientSummary from '../../app/MedPatientSummary.astro';
+import LineChart from '../../charts/LineChart.astro';
+import { appIcon } from '../../app/app-icons';
+import { clinicData, clinicRoutes, clinicPatient, clinicDoctor, patientVitals, patientVisits, type ClinicData, type ClinicRoutes } from './data';
+
+interface Props {
+  id?: string;
+  data?: ClinicData;
+  routes?: ClinicRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
+const { id, data = clinicData, routes = clinicRoutes, theme = 'light' } = Astro.props;
+const p = clinicPatient(data, id) ?? data.patients[0];
+const vitals = patientVitals(p);
+const bp = vitals[0].trend;
+const upcoming = data.appointments.filter((a) => a.patient === p.id && a.day >= data.today && ['confirmed', 'checked-in', 'in-progress'].includes(a.status));
+const doc = clinicDoctor(data, p.doctor);
+---
+
+<ClinicLayout title={p.name} description={`Patient record — ${p.mrn}`} current="patients" data={data} routes={routes} theme={theme}>
+  <PageHeader
+    title="Patient record"
+    breadcrumb={[{ label: data.workspace.name, href: routes.dashboard }, { label: 'Patients', href: routes.patients }, { label: p.name }]}
+    actions={[]}
+    periods={[]}
+    tabs={[{ label: 'Summary', href: '#summary' }, { label: 'Trends', href: '#trends' }, { label: 'Appointments', href: '#upcoming', count: upcoming.length }]}
+    currentTab="#summary"
+  />
+
+  <div class="pulso-grid pulso-grid--3-2 record">
+    <div id="summary">
+      <MedPatientSummary
+        headingLevel="h2"
+        patient={p}
+        allergies={p.allergies}
+        vitals={vitals}
+        conditions={p.conditions}
+        medications={p.medications}
+        visits={patientVisits(data, p)}
+        actions={[{ label: 'Message', icon: 'mail', href: `mailto:${p.email}` }, { label: 'Start consultation', icon: 'stethoscope', primary: true, href: routes.consultation }]}
+      />
+    </div>
+    <div class="record__side">
+      <section class="pulso-card" id="upcoming" aria-labelledby="up-title">
+        <h2 class="pulso-card__title" id="up-title">Upcoming</h2>
+        {upcoming.length === 0 ? <p class="record__none">No upcoming appointments.</p> : (
+          <ul class="record__list">
+            {upcoming.map((a) => (
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><Fragment set:html={appIcon(a.type === 'video' ? 'video' : 'calendar')} /></svg>
+                <span><strong>{data.days[a.day]} · {a.start}</strong>{a.reason} · {clinicDoctor(data, a.doctor)?.name}{a.type === 'video' ? ' · Video' : ''}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section class="pulso-card" aria-labelledby="care-title">
+        <h2 class="pulso-card__title" id="care-title">Care team</h2>
+        <p class="record__care"><strong>{doc?.name}</strong> · lead clinician<br />Insurance: {p.insurance}</p>
+        <div class="record__actions">
+          <a class="record__btn" href={routes.consultation}>Write prescription</a>
+          <a class="record__btn" href={routes.telehealth}>Start video visit</a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="trends">
+    <LineChart
+      title="Blood pressure trend"
+      subtitle="Systolic, last 6 readings (mmHg) — target below 135"
+      categories={['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']}
+      series={[{ name: 'Systolic', data: bp }, { name: 'Target', data: bp.map(() => 135) }]}
+      curve="smooth"
+      dots
+      suffix=" mmHg"
+      variant="solid"
+      height={240}
+    />
+  </div>
+</ClinicLayout>
+
+<style>
+  .record { align-items: start; }
+  .record > div { scroll-margin-top: 84px; }
+  #trends { scroll-margin-top: 84px; }
+  .record__side { display: grid; gap: var(--sp-5); min-width: 0; }
+  .record__none { margin: 0; font-size: 0.9rem; }
+  .record__list { display: grid; gap: var(--sp-3); margin: 0; padding: 0; list-style: none; }
+  .record__list li { display: flex; gap: var(--sp-3); font-size: 0.88rem; }
+  .record__list svg { flex-shrink: 0; margin-top: 2px; color: var(--app-accent); }
+  .record__list span { display: grid; gap: 2px; }
+  .record__list strong { color: var(--c-text-1); }
+  .record__care { margin: 0; font-size: 0.9rem; line-height: 1.6; }
+  .record__care strong { color: var(--c-text-1); }
+  .record__actions { display: grid; gap: var(--sp-2); margin-top: var(--sp-4); }
+  .record__btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border: 1px solid var(--app-accent); border-radius: var(--r-sm); color: var(--app-accent); font-weight: 700; font-size: 0.9rem; }
+  .record__btn:hover { background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent); }
+  .record__btn:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 2px; }
+</style>

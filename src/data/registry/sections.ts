@@ -89,6 +89,24 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>`,
   },
   {
+    id: 'toys',
+    name: 'Toy Store',
+    description: 'Comic "toy box" sections for toy and collectibles stores: hero, shop-by-character rail and filters, character roster and profile, gift finder by age, figure spec sheet and collector club.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><path d="M8.5 9h7l-1 6h-5z"/><path d="M8.5 9 5 13M15.5 9 19 5M10 15l-1 6M14 15l1 6"/></svg>`,
+  },
+  {
+    id: 'cyberpunk',
+    name: 'Cyberpunk & Brutalist',
+    description: 'Futuristic-brutalist sections with neon, glitch and HUD effects: header, hero with live telemetry, ticker, bento, node map, spec sheet, pricing calculator, manifesto, crew badges, status board, terminal contact form and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>`,
+  },
+  {
+    id: 'healthcare',
+    name: 'Healthcare',
+    description: 'Sections for clinics and medical SaaS: healthcare landing hero, find-a-doctor directory with filters and a four-step online appointment booking wizard.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

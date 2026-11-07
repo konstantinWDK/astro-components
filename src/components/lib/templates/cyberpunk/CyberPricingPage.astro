@@ -1,0 +1,47 @@
+---
+/**
+ * CyberPricingPage — Rates: CyberPageHero (acid variant), CyberPricing with the usage
+ * calculator, a price ticker and billing FAQ.
+ *
+ * Usage (src/pages/pricing.astro):
+ *   import { CyberPricingPage } from 'astro-component-kit/templates/cyberpunk';
+ *   <CyberPricingPage />
+ *
+ * @param {CyberData} data - Site content.
+ * @param {CyberRoutes} routes - Page URLs.
+ * @param {string} theme - Initial theme (dark|light|auto). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default false.
+ */
+import CyberLayout from './CyberLayout.astro';
+import CyberPageHero from '../../sections/CyberPageHero.astro';
+import CyberPricing from '../../sections/CyberPricing.astro';
+import CyberTicker from '../../sections/CyberTicker.astro';
+import FaqTwoColumn from '../../sections/FaqTwoColumn.astro';
+import { nullSector, cyberRoutes, type CyberData, type CyberRoutes } from './data';
+
+interface Props {
+  data?: CyberData;
+  routes?: CyberRoutes;
+  theme?: 'dark' | 'light' | 'auto';
+  noindex?: boolean;
+}
+
+const { data = nullSector, routes = cyberRoutes, theme = 'dark', noindex = false } = Astro.props;
+const plans = data.plans.map((p) => ({ ...p, href: p.id === 'syndicate' ? routes.terminal : '#' }));
+---
+
+<CyberLayout title="Pricing" description="Per-second GPU billing from 0.36 credits per GPU-hour. No egress fees." data={data} routes={routes} current="pricing" theme={theme} noindex={noindex}>
+  <CyberPageHero index="02" variant="acid" path={[{ label: 'SYS', href: routes.home }, { label: 'RATES' }]} title="PAY PER" outline="SECOND" intro="No hourly rounding, no egress fees, no reserved-instance poker. Move the slider to see what your month really costs." tags={['BILLED PER SECOND', 'EGRESS 0.00 CR', 'CANCEL ANYTIME']} />
+
+  <div class="ns-wrap">
+    <CyberPricing plans={plans} />
+  </div>
+
+  <div class="ns-wrap">
+    <CyberTicker items={['H200 0.96 CR/H', 'H100 0.71 CR/H', 'L40S 0.44 CR/H', 'RTX 4090 0.29 CR/H', 'RTX 3090 0.18 CR/H', 'EGRESS 0.00']} variant="ink" label="Spot prices" />
+  </div>
+
+  <div class="ns-wrap ns-wrap--last">
+    <FaqTwoColumn title="Billing intel" subtitle="How credits, rates and invoices work." items={data.faqPricing} support={{ label: 'Talk to ops', href: routes.terminal }} />
+  </div>
+</CyberLayout>

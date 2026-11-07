@@ -1,0 +1,188 @@
+---
+/**
+ * MedHero — Landing hero for healthcare software: badge, headline with a highlighted phrase,
+ * subtitle, two CTAs and trust points beside a product mock-up made of real HTML — today's agenda,
+ * a video-visit tile and a floating "new online booking" notice.
+ *
+ * @param {string} badge - Pill above the title. Default 'New · Video visits built in'.
+ * @param {string} title - Headline before the highlight. Default 'Run your practice,'.
+ * @param {string} highlight - Highlighted phrase. Default 'not your paperwork'.
+ * @param {string} subtitle - Supporting copy.
+ * @param {{label: string, href: string}} primary - Main CTA.
+ * @param {{label: string, href: string}} secondary - Secondary CTA (optional).
+ * @param {string[]} trust - Short trust points with check marks.
+ * @param {Array<{time: string, name: string, reason: string, status: string, video?: boolean}>} agenda - Rows in the mock-up.
+ * @param {{name: string, sub: string, time: string}} call - Video tile in the mock-up.
+ * @param {{title: string, text: string}} notice - Floating notification.
+ * @param {string} variant - Background (soft|plain|grid). Default 'soft'.
+ * @param {string} size - Vertical rhythm (sm|md|lg). Default 'md'.
+ * @param {string} className - Extra class.
+ *
+ * Accessibility: one h1; the mock-up is a single labelled image (role="img") so screen readers get
+ * one summary instead of fake UI; no autoplaying motion beyond a gentle float that stops with
+ * prefers-reduced-motion.
+ */
+interface Props {
+  badge?: string;
+  title?: string;
+  highlight?: string;
+  subtitle?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  trust?: string[];
+  agenda?: Array<{ time: string; name: string; reason: string; status: string; video?: boolean }>;
+  call?: { name: string; sub: string; time: string };
+  notice?: { title: string; text: string };
+  variant?: 'soft' | 'plain' | 'grid';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const {
+  badge = 'New · Video visits built in',
+  title = 'Run your practice,',
+  highlight = 'not your paperwork',
+  subtitle = 'Online booking, schedules, patient records, prescriptions and video consultations in one calm, secure workspace — designed with clinicians, not for them.',
+  primary = { label: 'Start free for 30 days', href: '#' },
+  secondary = { label: 'Explore the demo', href: '#' },
+  trust = ['GDPR-ready, EU hosting', 'Encrypted video visits', 'Set up in one afternoon'],
+  agenda = [
+    { time: '09:00', name: 'James Whitfield', reason: 'AF follow-up', status: 'Done' },
+    { time: '10:30', name: 'Elena Duarte', reason: 'Blood pressure', status: 'In room' },
+    { time: '11:00', name: 'Mei Chen', reason: 'Allergy plan', status: 'Waiting' },
+    { time: '11:30', name: 'Lucas Silva', reason: 'Inhaler check', status: 'Video', video: true },
+  ],
+  call = { name: 'Lucas Silva', sub: 'with mum, Ana', time: '04:12' },
+  notice = { title: 'New online booking', text: 'Aiko Tanaka · Dermatology · Thu 09:00' },
+  variant = 'soft',
+  size = 'md',
+  className = '',
+} = Astro.props;
+
+const ini = (n: string) => n.split(/\s+/).slice(0, 2).map((p) => p[0]).join('');
+const mockLabel = `Product preview: today's agenda with ${agenda.length} appointments, a video visit with ${call.name} in progress and a notification: ${notice.title}, ${notice.text}.`;
+---
+
+<section class:list={['mhero', `mhero--${variant}`, `mhero--${size}`, className]} aria-labelledby="mhero-title">
+  <div class="mhero__inner">
+    <div class="mhero__copy">
+      {badge && <p class="mhero__badge"><span aria-hidden="true"></span>{badge}</p>}
+      <h1 class="mhero__title" id="mhero-title">{title} <em>{highlight}</em></h1>
+      {subtitle && <p class="mhero__sub">{subtitle}</p>}
+      <div class="mhero__ctas">
+        {primary && <a class="mhero__btn mhero__btn--primary" href={primary.href}>{primary.label}</a>}
+        {secondary && <a class="mhero__btn" href={secondary.href}>{secondary.label}</a>}
+      </div>
+      {trust.length > 0 && (
+        <ul class="mhero__trust">
+          {trust.map((t) => <li>{t}</li>)}
+        </ul>
+      )}
+    </div>
+
+    <div class="mhero__mock" role="img" aria-label={mockLabel}>
+      <div class="mhero__panel" aria-hidden="true">
+        <div class="mhero__panel-head">
+          <span>Today</span>
+          <span class="mhero__pill">{agenda.length} visits</span>
+        </div>
+        <ul class="mhero__rows">
+          {agenda.map((a) => (
+            <li class:list={{ 'is-video': a.video, 'is-now': a.status === 'In room' }}>
+              <span class="mhero__time">{a.time}</span>
+              <span class="mhero__av">{ini(a.name)}</span>
+              <span class="mhero__who"><strong>{a.name}</strong><small>{a.reason}</small></span>
+              <span class="mhero__st">{a.status}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="mhero__call" aria-hidden="true">
+        <div class="mhero__call-video"><span>{ini(call.name)}</span></div>
+        <div class="mhero__call-bar">
+          <span><strong>{call.name}</strong> {call.sub}</span>
+          <span class="mhero__rec">● {call.time}</span>
+        </div>
+      </div>
+
+      <div class="mhero__notice" aria-hidden="true">
+        <span class="mhero__notice-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        </span>
+        <span><strong>{notice.title}</strong><small>{notice.text}</small></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .mhero { --mh-accent: var(--app-accent, var(--c-primary-light, #0e7490)); position: relative; overflow: hidden; padding-block: clamp(3rem, 7vw, 6rem); container-type: inline-size; }
+  .mhero--sm { padding-block: clamp(2rem, 5vw, 3.5rem); }
+  .mhero--lg { padding-block: clamp(4rem, 9vw, 8rem); }
+  .mhero--soft { background: radial-gradient(70% 60% at 85% 20%, color-mix(in srgb, var(--mh-accent) 14%, transparent), transparent 70%), radial-gradient(50% 50% at 0% 100%, color-mix(in srgb, var(--c-success, #15803d) 9%, transparent), transparent 70%); }
+  .mhero--grid { background-image: linear-gradient(rgb(var(--ink-rgb, 15 23 42) / 0.05) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--ink-rgb, 15 23 42) / 0.05) 1px, transparent 1px); background-size: 40px 40px; }
+  .mhero__inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: clamp(2rem, 5vw, 4rem); max-width: 1200px; margin: 0 auto; padding-inline: var(--sp-5, 1.25rem); }
+
+  .mhero__badge { display: inline-flex; align-items: center; gap: var(--sp-2, 0.5rem); margin: 0 0 var(--sp-5, 1.25rem); padding: 6px 14px; border: 1px solid color-mix(in srgb, var(--mh-accent) 35%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--mh-accent) 8%, var(--c-bg-1, #fff)); color: var(--c-text-1, #0b2a33); font-size: 0.85rem; font-weight: 600; }
+  .mhero__badge span { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success, #15803d); }
+  .mhero__title { margin: 0; font-size: clamp(2.3rem, 5.6vw, 4rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; color: var(--c-text-1, #0b2a33); text-wrap: balance; }
+  .mhero__title em { font-style: normal; color: var(--mh-accent); }
+  .mhero__sub { margin: var(--sp-5, 1.25rem) 0 0; max-width: 36rem; font-size: 1.12rem; line-height: 1.65; color: var(--c-text-2, #3d5a63); }
+  .mhero__ctas { display: flex; flex-wrap: wrap; gap: var(--sp-3, 0.75rem); margin-top: var(--sp-8, 2rem); }
+  .mhero__btn { display: inline-flex; align-items: center; min-height: 52px; padding: 0 var(--sp-6, 1.5rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.18)); border-radius: 12px; background: var(--c-bg-1, #fff); color: var(--c-text-1, #0b2a33); font-size: 1rem; font-weight: 700; text-decoration: none; transition: transform 0.2s ease, filter 0.2s ease; }
+  .mhero__btn:hover { transform: translateY(-1px); color: var(--c-text-1, #0b2a33); }
+  .mhero__btn--primary { border-color: var(--mh-accent); background: var(--mh-accent); color: var(--c-on-primary, #fff); }
+  .mhero__btn--primary:hover { color: var(--c-on-primary, #fff); filter: brightness(1.08); }
+  .mhero__btn:focus-visible { outline: 3px solid var(--mh-accent); outline-offset: 3px; }
+  .mhero__trust { display: flex; flex-wrap: wrap; gap: var(--sp-2, 0.5rem) var(--sp-5, 1.25rem); margin: var(--sp-6, 1.5rem) 0 0; padding: 0; list-style: none; font-size: 0.9rem; color: var(--c-text-2, #3d5a63); }
+  .mhero__trust li { display: inline-flex; align-items: center; gap: 6px; }
+  .mhero__trust li::before { content: ''; width: 18px; height: 18px; border-radius: 50%; background: color-mix(in srgb, var(--c-success, #15803d) 15%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315803d' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 11px no-repeat; }
+
+  .mhero__mock { position: relative; min-height: 420px; }
+  .mhero__panel { position: relative; z-index: 1; width: 86%; padding: var(--sp-4, 1rem); border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: 18px; background: var(--c-bg-1, #fff); box-shadow: 0 30px 60px -30px rgb(11 42 51 / 0.35); }
+  .mhero__panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-3, 0.75rem); font-weight: 700; color: var(--c-text-1, #0b2a33); }
+  .mhero__pill { padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--mh-accent) 12%, transparent); color: var(--mh-accent); font-size: 0.75rem; }
+  .mhero__rows { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .mhero__rows li { display: grid; grid-template-columns: 44px 32px minmax(0, 1fr) auto; align-items: center; gap: var(--sp-2, 0.5rem); padding: 8px 10px; border-radius: 10px; background: var(--c-bg, #f3f8f9); font-size: 0.82rem; }
+  .mhero__rows li.is-now { box-shadow: inset 3px 0 0 var(--mh-accent); background: color-mix(in srgb, var(--mh-accent) 8%, var(--c-bg-1, #fff)); }
+  .mhero__time { font-weight: 700; color: var(--c-text-1, #0b2a33); font-variant-numeric: tabular-nums; }
+  .mhero__av { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--mh-accent) 16%, var(--c-bg-1, #fff)); color: var(--mh-accent); font-size: 0.72rem; font-weight: 800; }
+  .mhero__who { display: grid; min-width: 0; }
+  .mhero__who strong { overflow: hidden; color: var(--c-text-1, #0b2a33); white-space: nowrap; text-overflow: ellipsis; }
+  .mhero__who small { color: var(--c-text-2, #3d5a63); }
+  .mhero__st { padding: 2px 8px; border-radius: 999px; background: rgb(var(--ink-rgb, 15 23 42) / 0.06); color: var(--c-text-2, #3d5a63); font-size: 0.7rem; font-weight: 700; }
+  .is-now .mhero__st { background: var(--mh-accent); color: var(--c-on-primary, #fff); }
+  .is-video .mhero__st { background: color-mix(in srgb, var(--mh-accent) 14%, transparent); color: var(--mh-accent); }
+
+  .mhero__call { position: absolute; z-index: 2; right: 0; bottom: 6%; width: 46%; overflow: hidden; border-radius: 16px; background: #0b1a1f; box-shadow: 0 24px 50px -20px rgb(0 0 0 / 0.45); animation: mh-float 6s ease-in-out infinite; }
+  .mhero__call-video { display: grid; place-items: center; aspect-ratio: 4 / 3; background: radial-gradient(circle at 50% 35%, #2e5560, #0b1a1f 70%); }
+  .mhero__call-video span { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #cde9ee; color: #0b2a33; font-weight: 800; box-shadow: 0 0 0 6px rgb(74 222 128 / 0.3); }
+  .mhero__call-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2, 0.5rem); padding: 8px 12px; font-size: 0.74rem; color: #cfe1e5; }
+  .mhero__call-bar strong { color: #fff; }
+  .mhero__rec { color: #fca5a5; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .mhero__notice { position: absolute; z-index: 3; right: 6%; top: 2%; display: flex; align-items: center; gap: var(--sp-3, 0.75rem); max-width: 280px; padding: 10px 14px; border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1)); border-radius: 14px; background: var(--c-bg-1, #fff); box-shadow: 0 16px 36px -18px rgb(11 42 51 / 0.4); font-size: 0.8rem; animation: mh-float 7s ease-in-out infinite reverse; }
+  .mhero__notice-icon { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; background: color-mix(in srgb, var(--c-success, #15803d) 14%, transparent); color: var(--c-success, #15803d); }
+  .mhero__notice span:last-child { display: grid; }
+  .mhero__notice strong { color: var(--c-text-1, #0b2a33); }
+  .mhero__notice small { color: var(--c-text-2, #3d5a63); }
+
+  @keyframes mh-float { 50% { transform: translateY(-8px); } }
+
+  @container (max-width: 900px) {
+    .mhero__inner { grid-template-columns: 1fr; }
+    .mhero__mock { min-height: 380px; }
+  }
+  @container (max-width: 520px) {
+    .mhero__inner { padding-inline: var(--sp-4, 1rem); }
+    .mhero__panel { width: 100%; }
+    .mhero__call { width: 58%; bottom: -4%; }
+    .mhero__notice { right: 0; top: -6%; max-width: 230px; }
+    .mhero__btn { flex: 1 1 auto; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mhero__call, .mhero__notice { animation: none; }
+    .mhero__btn { transition: none; }
+  }
+</style>
