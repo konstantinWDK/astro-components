@@ -1442,7 +1442,7 @@ import { MovingOrdersPage } from 'astro-component-kit/templates/moving';
 <MovingOrdersPage />`,
       },
       {
-        id: 'move-detail', path: 'app/moves/[id]/',
+        id: 'move-detail', path: 'app/moves/ord-01/',
         name: { en: 'Move Manifest & Waybill', es: 'Albarán y Hoja de Ruta', ru: 'Путевой лист и опись' },
         description: { en: 'Detailed move manifest sheet with customer contacts, floor elevator access, itemized furniture checklist, and driver dialer.', es: 'Albarán de mudanza con datos de cliente, acceso por escaleras, inventario desglosado y botón de llamada al chófer.', ru: 'Детальный путевой лист с контактами клиента, условиями этажей, описью вещей и связью с водителем.' },
         file: 'src/pages/app/moves/[id].astro',
@@ -1531,7 +1531,7 @@ const data = {
       ],
     },
     tags: ['food-delivery', 'restaurant', 'kitchen-os', 'kds', 'ghost-kitchen', 'cms', 'courier-tracking'],
-    previewBase: '/preview/food-delivery',
+    previewBase: '/preview/food-delivery/',
     importPath: 'astro-component-kit/templates/food-delivery',
     pages: [
       {
@@ -1716,7 +1716,7 @@ const data = {
       ],
     },
     tags: ['construction', 'real-estate', 'developments', 'site-os', 'contractor', 'passivhaus', 'breeam', 'architecture'],
-    previewBase: '/preview/construction',
+    previewBase: '/preview/construction/',
     importPath: 'astro-component-kit/templates/construction',
     pages: [
       {

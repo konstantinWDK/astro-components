@@ -25,6 +25,11 @@ const { slug, lang = 'en' } = Astro.props;
 const t = useTranslations(lang);
 const tpl = getTemplateBySlug(slug)!;
 
+const resolvePageUrl = (base: string, path: string) => {
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  return `${cleanBase}${path.replace(/^\//, '')}`;
+};
+
 const resolve = (slugs: string[]) =>
   slugs
     .map((s) => getComponentBySlug(s))
@@ -98,9 +103,9 @@ const seoTitle = `${tpl.name[lang]} — ${t('templates.title')}`;
       <div class="td-pages">
         {tpl.pages.map((p) => (
           <article class="td-page">
-            <TemplateFrame src={`${tpl.previewBase}${p.path}`} title={p.name[lang]} height={1100} />
+            <TemplateFrame src={resolvePageUrl(tpl.previewBase, p.path)} title={p.name[lang]} height={1100} />
             <div class="td-page__body">
-              <h3><a class="td-page__link" href={`${tpl.previewBase}${p.path}`} target="_blank" rel="noopener">{p.name[lang]}</a></h3>
+              <h3><a class="td-page__link" href={resolvePageUrl(tpl.previewBase, p.path)} target="_blank" rel="noopener">{p.name[lang]}</a></h3>
               <p>{p.description[lang]}</p>
               <code>{p.file}</code>
             </div>
