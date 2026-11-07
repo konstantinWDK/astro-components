@@ -1,0 +1,407 @@
+---
+/**
+ * ConstructionProjectDetailPage — Flagship promotion case study & technical dossier ("Residencial Caelum Chamberí").
+ * Integrates site progress timeline, interactive building unit selector, architectural floor plan viewer,
+ * and commercial reservation trigger.
+ *
+ * @param {ConstructionRoutes} routes - Template route paths.
+ */
+import ConstructionSiteLayout from './ConstructionSiteLayout.astro';
+import ConstructionSiteProgress from '../../app/ConstructionSiteProgress.astro';
+import ConstructionUnitSelector from '../../app/ConstructionUnitSelector.astro';
+import ConstructionFloorPlanViewer from '../../sections/ConstructionFloorPlanViewer.astro';
+import { constructionRoutes, constructionProjects, constructionUnits, type ConstructionRoutes } from './data';
+
+interface Props {
+  routes?: ConstructionRoutes;
+}
+
+const { routes = constructionRoutes } = Astro.props;
+const project = constructionProjects[0]; // Caelum Chamberí
+---
+
+<ConstructionSiteLayout
+  title={`${project.title} — Promoción Residencial Prémium en Madrid`}
+  description={project.description}
+  routes={routes}
+>
+  <!-- Detail Hero Header -->
+  <section class="detail-hero">
+    <div class="detail-container">
+      <div class="breadcrumb">
+        <a href={routes.home}>Inicio</a>
+        <span>/</span>
+        <a href={routes.projects}>Proyectos</a>
+        <span>/</span>
+        <span class="active">{project.title}</span>
+      </div>
+
+      <div class="hero-header-content">
+        <div class="title-col">
+          <div class="badge-row">
+            <span class="status-badge live">
+              <span class="dot"></span>
+              En Ejecución · 68% Certificado
+            </span>
+            <span class="type-badge">Residencial & Terciario</span>
+            <span class="passiv-badge">Certificado Passivhaus</span>
+          </div>
+
+          <h1 class="project-title">{project.title}</h1>
+          <p class="project-subtitle">{project.subtitle}</p>
+
+          <div class="project-meta-pills">
+            <div class="meta-pill">
+              <span class="lbl">Ubicación</span>
+              <strong class="val">{project.location}, {project.city}</strong>
+            </div>
+            <div class="meta-pill">
+              <span class="lbl">Superficie Total</span>
+              <strong class="val">{project.surfaceM2.toLocaleString('es-ES')} m²</strong>
+            </div>
+            <div class="meta-pill">
+              <span class="lbl">Presupuesto Obra</span>
+              <strong class="val">{(project.budgetEur / 1000000).toFixed(1)} M€</strong>
+            </div>
+            <div class="meta-pill">
+              <span class="lbl">Arquitectura</span>
+              <strong class="val">{project.architect}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-card">
+          <div class="action-card-inner">
+            <span class="card-eyebrow">Comercialización Oficial</span>
+            <div class="units-counter">
+              <span class="num">{project.unitsAvailable}</span>
+              <span class="txt">de {project.unitsTotal} unidades aún disponibles</span>
+            </div>
+            <p class="card-desc">Entrega prevista: <strong>{project.completionDate}</strong>. Visite la oficina de ventas o reserve cita técnica.</p>
+            <a href="#unit-selector" class="btn-select-unit">Consultar Planos & Precios</a>
+            <a href={routes.contact} class="btn-contact-agent">Contactar con Gestor</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: Real-Time Site Progress Tracker -->
+  <section class="detail-section" id="site-progress">
+    <div class="detail-container">
+      <div class="section-heading">
+        <span class="sec-eyebrow">Control de Ejecución Técnica</span>
+        <h2 class="sec-title">Estado y Progreso de la Obra</h2>
+        <p class="sec-desc">Seguimiento en tiempo real de fases estructurales, certificaciones de obra y bitácora fotográfica de avances.</p>
+      </div>
+
+      <ConstructionSiteProgress
+        project={project}
+        dailyLogHref={routes.dailyLog}
+      />
+    </div>
+  </section>
+
+  <!-- Section 2: Interactive Building Units & Commercial Locals Selector -->
+  <section class="detail-section alt-bg" id="unit-selector">
+    <div class="detail-container">
+      <div class="section-heading">
+        <span class="sec-eyebrow">Disponibilidad de Viviendas & Locales Comerciales</span>
+        <h2 class="sec-title">Selector Interactivo de Inmuebles</h2>
+        <p class="sec-desc">Explore viviendas en planta, áticos con terraza privada y locales comerciales en planta calle con especificaciones completas.</p>
+      </div>
+
+      <ConstructionUnitSelector
+        units={constructionUnits}
+        projectName={project.title}
+        inquiryHref={routes.contact}
+      />
+    </div>
+  </section>
+
+  <!-- Section 3: Vector Floor Plan Viewer -->
+  <section class="detail-section" id="floorplan-view">
+    <div class="detail-container">
+      <div class="section-heading">
+        <span class="sec-eyebrow">Planos Arquitectónicos Acotados</span>
+        <h2 class="sec-title">Distribución Espacial Tipología Ático</h2>
+        <p class="sec-desc">Plano a escala con superficies útiles por estancia, orientación solar y detalles constructivos.</p>
+      </div>
+
+      <ConstructionFloorPlanViewer
+        unitName="Ático Dúplex Caelum · Tipología A (4 Dormitorios)"
+        surfaceUsable={184}
+        surfaceBuilt={228}
+        terraceM2={85}
+        pdfHref={routes.contact}
+      />
+    </div>
+  </section>
+</ConstructionSiteLayout>
+
+<style>
+  .detail-hero {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(9, 13, 22, 1) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2.5rem 1.5rem 3.5rem;
+  }
+
+  .detail-container {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+  }
+
+  .breadcrumb a {
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: #f59e0b;
+  }
+
+  .breadcrumb .active {
+    color: #f8fafc;
+    font-weight: 600;
+  }
+
+  .hero-header-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 992px) {
+    .hero-header-content {
+      grid-template-columns: 1.6fr 1fr;
+      align-items: center;
+    }
+  }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .status-badge.live {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #f59e0b;
+  }
+
+  .status-badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+  }
+
+  .type-badge {
+    padding: 0.3rem 0.7rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.75rem;
+  }
+
+  .passiv-badge {
+    padding: 0.3rem 0.7rem;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34d399;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .project-title {
+    font-size: clamp(2rem, 3.5vw, 2.75rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: #f8fafc;
+    margin: 0 0 0.75rem;
+  }
+
+  .project-subtitle {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: #94a3b8;
+    margin: 0 0 1.75rem;
+  }
+
+  .project-meta-pills {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .meta-pill {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .meta-pill .lbl {
+    font-size: 0.72rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .meta-pill .val {
+    font-size: 0.95rem;
+    color: #f1f5f9;
+  }
+
+  .action-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 14px;
+    padding: 1.75rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  .units-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin: 0.5rem 0 0.75rem;
+  }
+
+  .units-counter .num {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #f8fafc;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .units-counter .txt {
+    font-size: 0.88rem;
+    color: #94a3b8;
+  }
+
+  .card-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+    margin: 0 0 1.25rem;
+  }
+
+  .card-desc strong {
+    color: #f59e0b;
+  }
+
+  .btn-select-unit {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    margin-bottom: 0.6rem;
+    box-sizing: border-box;
+    transition: all 0.2s;
+  }
+
+  .btn-select-unit:hover {
+    background: #d97706;
+  }
+
+  .btn-contact-agent {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 0.7rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: all 0.2s;
+  }
+
+  .btn-contact-agent:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .detail-section {
+    padding: 4.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .detail-section.alt-bg {
+    background: rgba(15, 23, 42, 0.35);
+  }
+
+  .section-heading {
+    text-align: center;
+    max-width: 780px;
+    margin: 0 auto 3rem;
+  }
+
+  .sec-eyebrow {
+    display: inline-block;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f59e0b;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .sec-title {
+    font-size: clamp(1.75rem, 3vw, 2.3rem);
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 0.75rem;
+  }
+
+  .sec-desc {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0;
+  }
+</style>

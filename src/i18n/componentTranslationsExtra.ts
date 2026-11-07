@@ -860,4 +860,45 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Asistente de checkout para reparto de comida: dirección y notas de entrega sin contacto, selector de propina para el repartidor, método de pago y desglose total.",
     ru: "Мастер оформления заказа еды: адрес и инструкция бесконтактной доставки, чаевые курьеру, выбор способа оплаты и итоговый чек.",
   },
+  // ── Construction, Developments & Site OS ────────────────────
+  'construction-site-progress': {
+    es: "Control visual de ejecución de obra y certificaciones: porcentaje completado, seguimiento de hitos de cimentación y estructura, sello del jefe de obra y bitácora fotográfica.",
+    ru: "Визуальный контроль хода строительства: процент готовности, контроль этапов фундаментов и каркаса, подпись начальника участка и фотоотчёт.",
+  },
+  'construction-unit-selector': {
+    es: "Selector interactivo de viviendas y locales en planta: disponibilidad en tiempo real, planos acotados, metros cuadrados útiles y construidos, terrazas, orientación y reserva con fianza.",
+    ru: "Интерактивный выбор квартир и коммерческих помещений: доступность в реальном времени, площади, террасы, стороны света и онлайн-бронирование.",
+  },
+  'construction-daily-log': {
+    es: "Libro digital de bitácora y órdenes de obra: meteorología, operarios en tajo por subcontrata, albaranes de laboratorio de hormigón y acero, control de seguridad e incidencias.",
+    ru: "Электронный журнал работ и распоряжений: погода, количество рабочих по субподрядчикам, паспорта партий бетона и арматуры, техника безопасности и подпись технадзора.",
+  },
+  'construction-budget-estimator': {
+    es: "Calculadora técnica de costes de construcción: estimación del Presupuesto de Ejecución Material (PEM), contrata (PEC), honorarios de dirección facultativa, licencias y duración estimada.",
+    ru: "Инженерный калькулятор сметы строительства: расчёт стоимости материалов, подрядных работ, проектирования, разрешений и сроков строительства по площади объекта.",
+  },
+  'construction-hero': {
+    es: "Hero corporativo para empresas constructoras y promotoras: ticker de obras activas, cifras de metros cuadrados ejecutados, certificaciones ISO y acceso a la calculadora de presupuestos.",
+    ru: "Корпоративный главный экран для строительных и девелоперских компаний: бегущая строка активных строек, объём построенных площадей, сертификаты ISO и кнопка расчёта сметы.",
+  },
+  'construction-projects-grid': {
+    es: "Catálogo filtrable de obras ejecutadas y promociones: residencial de lujo, sedes terciarias, naves industriales y rehabilitación de edificios con ficha técnica y estado de avance.",
+    ru: "Каталог строительных объектов с фильтрами: жилые комплексы бизнес-класса, офисные здания, логистические склады и реставрация с характеристиками и статусом.",
+  },
+  'construction-stage-timeline': {
+    es: "Metodología constructiva llave en mano en 5 etapas: desde el estudio de viabilidad y licencias municipales hasta cimentación, estructura, acabados de alta gama y entrega de llaves.",
+    ru: "Методология строительства под ключ в 5 этапов: от градостроительного анализа и экспертизы проекта до возведения каркаса, премиальной отделки и ввода в эксплуатацию.",
+  },
+  'construction-floorplan-viewer': {
+    es: "Visor vectorial de planos de planta arquitectónicos: distribución espacial acotada, desglose de superficies por estancia, orientación solar y descarga de planos técnicos en PDF.",
+    ru: "Векторный просмотр поэтажных планов: точные размеры комнат, экспликация помещений, инсоляция и скачивание архитектурного паспорта в PDF.",
+  },
+  'construction-sustainability-banner': {
+    es: "Banner de sostenibilidad y edificación Passivhaus: edificios de consumo casi nulo (nZEB), calificación energética A, climatización por aerotermia/geotermia y sellos BREEAM/LEED.",
+    ru: "Баннер стандартов энергоэффективности и Passivhaus: здания нулевого энергопотребления (nZEB), класс A, геотермальные системы и международные сертификаты BREEAM/LEED.",
+  },
+  'construction-inquiry-form': {
+    es: "Formulario de consulta de viabilidad técnica y licitaciones: ubicación de la parcela, tipología de edificación, superficie estimada, presupuesto orientativo y contacto con ingeniería.",
+    ru: "Форма запроса технико-экономического обоснования и тендеров: расположение участка, тип объекта, площадь, планируемый бюджет и прямая связь с главным инженером.",
+  },
 };

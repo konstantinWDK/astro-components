@@ -22,3 +22,4 @@ export { default as FoodSettingsPage } from './FoodSettingsPage.astro';
 
 // Data & types
 export * from './data';
+

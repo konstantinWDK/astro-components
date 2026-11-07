@@ -193,6 +193,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Restauración y Delivery', description: 'Secciones para plataformas de comida a domicilio, dark kitchens y restaurantes: hero con buscador de dirección, rail de categorías, carta con alérgenos, banner de ofertas flash, partner B2B y checkout completo.' },
     ru: { name: 'Доставка еды и рестораны', description: 'Секции для сервисов доставки еды, dark kitchen и ресторанов: главный экран с вводом адреса, лента категорий, меню блюд с аллергенами, промо-баннеры, подключение партнеров и оформление заказа.' },
   },
+  construction: {
+    en: { name: 'Construction & Real Estate', description: 'Sections for general contractors, real estate developments and builders: high-precision hero, projects catalog, 5-stage turnkey timeline, vector floor plan viewer, Passivhaus ESG banner, and project feasibility inquiry form.' },
+    es: { name: 'Construcción e Inmobiliaria', description: 'Secciones para empresas constructoras y promociones inmobiliarias: hero con obras activas, catálogo de promociones, metodología en 5 fases, planos arquitectónicos, banner de sostenibilidad y formulario de licitación.' },
+    ru: { name: 'Строительство и девелопмент', description: 'Секции для генеральных подрядчиков и девелоперов: главный экран с активными стройками, каталог проектов, этапы работ, поэтажные планы, стандарты ESG и форма запроса сметы.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

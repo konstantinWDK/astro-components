@@ -491,3 +491,4 @@ export const foodDeliveryData = {
   riders: foodRiders,
   routes: foodDeliveryRoutes,
 };
+

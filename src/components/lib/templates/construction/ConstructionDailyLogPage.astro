@@ -1,0 +1,186 @@
+---
+/**
+ * ConstructionDailyLogPage — Digital site journal & daily inspection logbook for Strukto Site OS.
+ * Records weather conditions, active subcontractors on site, certified deliveries with delivery tickets,
+ * safety inspection status and technical supervisor's signature.
+ *
+ * @param {ConstructionRoutes} routes - Template route paths.
+ */
+import ConstructionLayout from './ConstructionLayout.astro';
+import ConstructionDailyLog from '../../app/ConstructionDailyLog.astro';
+import { constructionRoutes, siteDailyLogs, type ConstructionRoutes } from './data';
+
+interface Props {
+  routes?: ConstructionRoutes;
+}
+
+const { routes = constructionRoutes } = Astro.props;
+---
+
+<ConstructionLayout
+  title="Cuaderno de Bitácora & Libro de Órdenes"
+  current="dailyLog"
+  routes={routes}
+>
+  <div class="log-page-header">
+    <div>
+      <span class="eyebrow">Control Diario de Ejecución</span>
+      <h1 class="page-title">Libro Digital de Órdenes & Bitácora de Obra</h1>
+      <p class="page-sub">Registro normativo de condiciones meteorológicas, operarios en tajo por subcontrata, albaranes de hormigón y acero e incidencias de seguridad.</p>
+    </div>
+
+    <div class="header-tools">
+      <button class="btn-new-log" type="button" onclick="alert('Formulario de nueva anotación diario de obra abierto.')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span>Firmar Parte Diario de Hoy</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Historical Log Selector Strip -->
+  <div class="log-selector-strip">
+    <span class="strip-label">Partes de Obra Recientes:</span>
+    <div class="logs-pills">
+      {siteDailyLogs.map((item, idx) => (
+        <div class={`log-pill ${idx === 0 ? 'active' : ''}`}>
+          <span class="pill-date">{item.date}</span>
+          <span class="pill-site">{item.siteName}</span>
+          <span class="pill-crew">{item.crewTotal} operarios</span>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Main Log Component -->
+  <div class="logs-stack">
+    {siteDailyLogs.map((singleLog) => (
+      <div class="single-log-box">
+        <ConstructionDailyLog log={singleLog} />
+      </div>
+    ))}
+  </div>
+</ConstructionLayout>
+
+<style>
+  .log-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0.25rem 0 0.35rem;
+  }
+
+  .page-sub {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    margin: 0;
+    max-width: 760px;
+  }
+
+  .btn-new-log {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-size: 0.84rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-new-log:hover {
+    background: #d97706;
+  }
+
+  .log-selector-strip {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .strip-label {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  .logs-pills {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .log-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .log-pill.active {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #f8fafc;
+  }
+
+  .pill-date {
+    font-weight: 700;
+    color: #f59e0b;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .pill-site {
+    color: #cbd5e1;
+  }
+
+  .pill-crew {
+    color: #64748b;
+  }
+
+  .logs-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .single-log-box {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+</style>

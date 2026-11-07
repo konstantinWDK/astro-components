@@ -1,0 +1,174 @@
+---
+/**
+ * ConstructionSitesPage — Active building sites & projects technical control list for Site OS.
+ * Features progress metrics, structural stages, certified production and full site progress timeline.
+ *
+ * @param {ConstructionRoutes} routes - Template route paths.
+ */
+import ConstructionLayout from './ConstructionLayout.astro';
+import ConstructionSiteProgress from '../../app/ConstructionSiteProgress.astro';
+import { constructionRoutes, constructionProjects, type ConstructionRoutes } from './data';
+
+interface Props {
+  routes?: ConstructionRoutes;
+}
+
+const { routes = constructionRoutes } = Astro.props;
+---
+
+<ConstructionLayout
+  title="Obras en Ejecución & Control Técnico"
+  current="sites"
+  routes={routes}
+>
+  <div class="sites-header">
+    <div>
+      <span class="eyebrow">Dirección Facultativa &amp; Jefatura</span>
+      <h1 class="page-title">Supervisión Técnica de Obras Activas</h1>
+      <p class="page-sub">Auditoría continua de plazos, control de certificaciones mensuales y comprobación de replanteos e hitos estructurales.</p>
+    </div>
+
+    <div class="actions">
+      <a href={routes.dailyLog} class="btn-log">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <span>Libro de Órdenes</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Detailed Sites Progress List -->
+  <div class="sites-stack">
+    {constructionProjects.map((project) => (
+      <div class="site-card-wrapper">
+        <div class="site-card-header">
+          <div class="site-id-badge">
+            <span class="badge-num">{project.id.toUpperCase()}</span>
+            <span class="badge-type">{project.typology}</span>
+          </div>
+          <div class="site-quick-links">
+            <a href={routes.projectDetail} class="link-detail">Ver Ficha Pública →</a>
+          </div>
+        </div>
+
+        <ConstructionSiteProgress
+          project={project}
+          showMilestones={true}
+          showFinancials={true}
+        />
+      </div>
+    ))}
+  </div>
+</ConstructionLayout>
+
+<style>
+  .sites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0.25rem 0 0.35rem;
+  }
+
+  .page-sub {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    margin: 0;
+    max-width: 720px;
+  }
+
+  .btn-log {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .btn-log:hover {
+    background: #d97706;
+  }
+
+  .sites-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .site-card-wrapper {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.5rem;
+  }
+
+  .site-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .site-id-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .badge-num {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge-type {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+  }
+
+  .link-detail {
+    font-size: 0.8rem;
+    color: #f59e0b;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .link-detail:hover {
+    text-decoration: underline;
+  }
+</style>

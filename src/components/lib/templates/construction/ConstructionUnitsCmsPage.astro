@@ -1,0 +1,256 @@
+---
+/**
+ * ConstructionUnitsCmsPage — Real Estate & Promotions inventory CMS for Strukto Site OS.
+ * Manages housing units, penthouses and commercial premises availability, reservation contracts,
+ * prices per m², and integration with the interactive unit selector.
+ *
+ * @param {ConstructionRoutes} routes - Template route paths.
+ */
+import ConstructionLayout from './ConstructionLayout.astro';
+import ConstructionUnitSelector from '../../app/ConstructionUnitSelector.astro';
+import { constructionRoutes, constructionUnits, type ConstructionRoutes } from './data';
+
+interface Props {
+  routes?: ConstructionRoutes;
+}
+
+const { routes = constructionRoutes } = Astro.props;
+
+const totalUnits = constructionUnits.length;
+const availableUnits = constructionUnits.filter((u) => u.status === 'available').length;
+const reservedUnits = constructionUnits.filter((u) => u.status === 'reserved').length;
+const soldUnits = constructionUnits.filter((u) => u.status === 'sold').length;
+const totalVolumeEur = constructionUnits.reduce((acc, u) => acc + u.priceEur, 0);
+---
+
+<ConstructionLayout
+  title="Gestión de Viviendas & Locales Comerciales (CMS)"
+  current="unitsCms"
+  routes={routes}
+>
+  <div class="cms-header">
+    <div>
+      <span class="eyebrow">Promociones Inmobiliarias &amp; Ventas</span>
+      <h1 class="page-title">Inventario de Inmuebles & Locales Comerciales</h1>
+      <p class="page-sub">Gestión centralizada de stock, tipologías residenciales y terciarias, reservas activas y control de precios por metro cuadrado.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-export" type="button" onclick="alert('Exportando listado de viviendas en CSV/Excel...')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Exportar Dossier CSV</span>
+      </button>
+      <button class="btn-add" type="button" onclick="alert('Modal de alta de nueva unidad/local comercial abierto.')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span>Añadir Unidad</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI inventory summary -->
+  <div class="inventory-summary-cards">
+    <div class="summary-card">
+      <span class="card-label">Unidades Registradas</span>
+      <span class="card-value">{totalUnits}</span>
+      <span class="card-hint">En Residencial Caelum Chamberí</span>
+    </div>
+
+    <div class="summary-card">
+      <span class="card-label">Disponibles a la Venta</span>
+      <span class="card-value text-available">{availableUnits}</span>
+      <span class="card-hint">Listas para formalizar arras</span>
+    </div>
+
+    <div class="summary-card">
+      <span class="card-label">Reservadas con Fianza</span>
+      <span class="card-value text-reserved">{reservedUnits}</span>
+      <span class="card-hint">Contrato de reserva firmado</span>
+    </div>
+
+    <div class="summary-card">
+      <span class="card-label">Escrituradas / Vendidas</span>
+      <span class="card-value text-sold">{soldUnits}</span>
+      <span class="card-hint">100% formalizadas ante notario</span>
+    </div>
+
+    <div class="summary-card accent">
+      <span class="card-label">Volumen Total Catálogo</span>
+      <span class="card-value">{(totalVolumeEur / 1000000).toFixed(2)} M€</span>
+      <span class="card-hint">Precio medio: 4.850 €/m²</span>
+    </div>
+  </div>
+
+  <!-- Interactive Unit Selector View -->
+  <div class="cms-selector-container">
+    <div class="cms-selector-header">
+      <h2 class="sub-heading">Visualizador de Plantas & Selección Comercial</h2>
+      <p class="sub-desc">Filtro en tiempo real por tipología, precio, habitaciones y superficie útil de cada inmueble.</p>
+    </div>
+
+    <ConstructionUnitSelector
+      units={constructionUnits}
+      projectName="Residencial Caelum Chamberí"
+      inquiryHref={routes.contact}
+    />
+  </div>
+</ConstructionLayout>
+
+<style>
+  .cms-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0.25rem 0 0.35rem;
+  }
+
+  .page-sub {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    margin: 0;
+    max-width: 760px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.95rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-export:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-size: 0.84rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-add:hover {
+    background: #d97706;
+  }
+
+  .inventory-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .summary-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .summary-card.accent {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%);
+  }
+
+  .card-label {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #f8fafc;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .card-value.text-available {
+    color: #34d399;
+  }
+
+  .card-value.text-reserved {
+    color: #f59e0b;
+  }
+
+  .card-value.text-sold {
+    color: #64748b;
+  }
+
+  .card-hint {
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
+  .cms-selector-container {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.75rem;
+  }
+
+  .cms-selector-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .sub-heading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0 0 0.3rem;
+  }
+
+  .sub-desc {
+    font-size: 0.84rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+</style>

@@ -1,0 +1,335 @@
+---
+/**
+ * ConstructionSignInPage — Site management & developer authentication portal for Strukto Site OS.
+ * Features 1-click test credentials for Site Supervisor, Technical Architect, Health & Safety Officer, and Commercial Promoter.
+ */
+import './construction-theme.css';
+import { constructionRoutes, type ConstructionRoutes } from './data';
+
+interface Props {
+  routes?: ConstructionRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = constructionRoutes, theme = 'dark', noindex = true } = Astro.props;
+
+const demoRoles = [
+  { role: 'Ing. Carlos Mendoza', title: 'Jefe de Obra Principal (Control Global)', target: routes.dashboard, icon: '👷‍♂️' },
+  { role: 'Arq. Técnica Laura Vidal', title: 'Dirección de Ejecución (Obras Activas)', target: routes.sites, icon: '📐' },
+  { role: 'David Romero', title: 'Coordinador de Seguridad & Cuaderno de Bitácora', target: routes.dailyLog, icon: '📋' },
+  { role: 'Elena Santamaría', title: 'Promoción & Ventas (CMS Unidades y Precios)', target: routes.unitsCms, icon: '🏢' },
+];
+---
+
+<!doctype html>
+<html lang="es" class="theme-construction" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acceso Jefatura de Obra — Strukto Site OS</title>
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body class="sign-in-body">
+    <div class="sign-in-shell">
+      <div class="brand-badge">
+        <div class="logo-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path d="M2 22h20M13 2L3 22h18L15 6M9 12h6M10 16h4"/>
+          </svg>
+        </div>
+        <h1 class="brand-title">Strukto Site OS</h1>
+        <p class="brand-subtitle">Plataforma Técnica de Gestión de Obra & Promociones</p>
+      </div>
+
+      <div class="sign-in-card">
+        <h2 class="card-title">Acceso a Jefatura de Obra</h2>
+        <p class="card-sub">Seleccione un perfil de prueba para acceder de forma instantánea al panel de control.</p>
+
+        <!-- 1-Click Role Switcher -->
+        <div class="roles-list">
+          <span class="roles-label">Acceso Directo (Demo 1-Click):</span>
+          {demoRoles.map((r) => (
+            <a href={r.target} class="role-btn">
+              <span class="role-emoji">{r.icon}</span>
+              <div class="role-copy">
+                <span class="role-name">{r.role}</span>
+                <span class="role-desc">{r.title}</span>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          ))}
+        </div>
+
+        <div class="divider">
+          <span>O ACCESO CON CREDENCIALES TÉCNICAS</span>
+        </div>
+
+        <form class="auth-form" onsubmit="event.preventDefault(); window.location.href='/preview/construction/app';">
+          <div class="field">
+            <label for="tech-email">Correo Profesional Colegiado</label>
+            <input type="email" id="tech-email" value="cmendoza@strukto.es" required />
+          </div>
+          <div class="field">
+            <label for="tech-pwd">Contraseña o Clave Digital</label>
+            <input type="password" id="tech-pwd" value="••••••••••••" required />
+          </div>
+
+          <button type="submit" class="btn-submit">
+            <span>Iniciar Sesión Técnica</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </form>
+
+        <div class="footer-links">
+          <a href={routes.home}>← Volver al Portal Público Strukto</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .sign-in-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(circle at 50% 20%, #1e293b 0%, #090d16 80%);
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+  }
+
+  .sign-in-shell {
+    max-width: 480px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .brand-badge {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .logo-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
+    margin-bottom: 0.85rem;
+  }
+
+  .brand-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.35rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.84rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .sign-in-card {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    box-sizing: border-box;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(16px);
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem;
+  }
+
+  .card-sub {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0 0 1.5rem;
+    line-height: 1.45;
+  }
+
+  .roles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .roles-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  .role-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .role-btn:hover {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    transform: translateX(3px);
+  }
+
+  .role-emoji {
+    font-size: 1.35rem;
+  }
+
+  .role-copy {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .role-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .role-desc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+  }
+
+  .arrow {
+    color: #64748b;
+    transition: transform 0.2s, color 0.2s;
+  }
+
+  .role-btn:hover .arrow {
+    color: #f59e0b;
+    transform: translateX(2px);
+  }
+
+  .divider {
+    position: relative;
+    text-align: center;
+    margin: 1.5rem 0 1.25rem;
+  }
+
+  .divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .divider span {
+    position: relative;
+    background: #0f172a;
+    padding: 0 0.75rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: #64748b;
+  }
+
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  .field input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    color: #f8fafc;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field input:focus {
+    border-color: #f59e0b;
+  }
+
+  .btn-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+
+  .btn-submit:hover {
+    background: #d97706;
+  }
+
+  .footer-links {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .footer-links a {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
+  .footer-links a:hover {
+    color: #f59e0b;
+  }
+</style>

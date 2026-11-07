@@ -14,3 +14,4 @@ export const previewFoodDeliveryRoutes: FoodDeliveryRoutes = {
   riders: '/preview/food-delivery/app/riders',
   settings: '/preview/food-delivery/app/settings',
 };
+

@@ -1,0 +1,368 @@
+---
+/**
+ * ConstructionSiteLayout — Public corporate & developments storefront layout for construction & real estate ("Strukto").
+ * Sticky architectural header with project navigation, budget calculator link, phone contact, and mega footer.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {ConstructionRoutes} routes - Template route URLs.
+ */
+import '../../../../styles/global.css';
+import './construction-theme.css';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import { constructionRoutes, constructionData, type ConstructionRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  routes?: ConstructionRoutes;
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Strukto Constructora & Desarrollos · Edificación residencial de alta eficiencia, obra civil, locales comerciales y rehabilitación Passivhaus.',
+  theme = 'dark',
+  routes = constructionRoutes,
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const navLinks = [
+  { label: 'Proyectos & Obra', href: routes.projects },
+  { label: 'Promoción Caelum', href: routes.projectDetail },
+  { label: 'Calculadora Obra', href: routes.estimator },
+  { label: 'Contacto & Licitación', href: routes.contact },
+  { label: 'Portal Obra OS', href: routes.dashboard },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-construction" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="strukto-body">
+    <!-- Top Announcement Strip -->
+    <aside class="strukto-top-strip">
+      <div class="strip-container">
+        <div class="strip-left">
+          <span class="live-dot"></span>
+          <span><strong>6 Obras Activas</strong> · Certificación BREEAM® & Passivhaus Tradesperson · ISO 9001 / 14001</span>
+        </div>
+        <div class="strip-right">
+          <span class="strip-hq">Sede Central: C/ Velázquez 110, Madrid</span>
+          <a href={`tel:${constructionData.company.phone.replace(/\s+/g, '')}`} class="strip-phone">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            {constructionData.company.phone}
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Architectural Header -->
+    <header class="strukto-header">
+      <div class="header-container">
+        <!-- Brand Logo -->
+        <a href={routes.home} class="strukto-logo" aria-label="Strukto Constructora Home">
+          <div class="logo-mark">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M2 22h20M13 2L3 22h18L15 6M9 12h6M10 16h4"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-name">STRUKTO</span>
+            <span class="logo-sub">Construcción & Desarrollos</span>
+          </div>
+        </a>
+
+        <!-- Badge Certification -->
+        <div class="header-cert-badge">
+          <span class="cert-dot"></span>
+          <span>Passivhaus & BREEAM Certified Builder</span>
+        </div>
+
+        <!-- Links -->
+        <nav class="header-nav" aria-label="Navegación principal">
+          {navLinks.map((link) => (
+            <a href={link.href} class="nav-link">{link.label}</a>
+          ))}
+        </nav>
+
+        <!-- Right actions -->
+        <div class="header-actions">
+          <a href={routes.signIn} class="btn-signin">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Acceso Jefatura</span>
+          </a>
+          <a href={routes.estimator} class="btn-cta">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="4" y="2" width="16" height="20" rx="2"/>
+              <line x1="8" y1="6" x2="16" y2="6"/>
+              <line x1="16" y1="14" x2="16" y2="18"/>
+              <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>
+            </svg>
+            <span>Calcular Presupuesto</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="strukto-main">
+      <slot />
+    </main>
+
+    <FooterMegaSection />
+  </body>
+</html>
+
+<style>
+  .strukto-body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--c-bg, #090d16);
+    color: var(--c-text, #f8fafc);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .strukto-top-strip {
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.78rem;
+    color: #94a3b8;
+    padding: 0.45rem 1.5rem;
+  }
+
+  .strip-container {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .strip-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    display: inline-block;
+  }
+
+  .strip-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .strip-hq {
+    color: #64748b;
+  }
+
+  .strip-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #f59e0b;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .strip-phone:hover {
+    text-decoration: underline;
+  }
+
+  .strukto-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(9, 13, 22, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.85rem 1.5rem;
+  }
+
+  .header-container {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .strukto-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .logo-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+  }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #f8fafc;
+  }
+
+  .logo-sub {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+  }
+
+  .header-cert-badge {
+    display: none;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  @media (min-width: 1100px) {
+    .header-cert-badge {
+      display: inline-flex;
+    }
+  }
+
+  .cert-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+  }
+
+  .header-nav {
+    display: none;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 860px) {
+    .header-nav {
+      display: flex;
+    }
+  }
+
+  .nav-link {
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: color 0.18s;
+  }
+
+  .nav-link:hover {
+    color: #f59e0b;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .btn-signin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-signin:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+    transition: all 0.2s;
+  }
+
+  .btn-cta:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
+  }
+
+  .strukto-main {
+    flex: 1;
+  }
+</style>

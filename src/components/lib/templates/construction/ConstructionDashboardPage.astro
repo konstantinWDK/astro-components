@@ -1,0 +1,622 @@
+---
+/**
+ * ConstructionDashboardPage — Main executive dashboard for Strukto Site OS.
+ * Summarizes global construction execution (% certified, budget deviations, active workers),
+ * status across all sites, daily logs activity, and active subcontractor trades.
+ *
+ * @param {ConstructionRoutes} routes - Template route paths.
+ */
+import ConstructionLayout from './ConstructionLayout.astro';
+import { constructionRoutes, constructionProjects, constructionSubcontractors, siteDailyLogs, type ConstructionRoutes } from './data';
+
+interface Props {
+  routes?: ConstructionRoutes;
+}
+
+const { routes = constructionRoutes } = Astro.props;
+
+const totalBudget = constructionProjects.reduce((acc, p) => acc + p.budgetEur, 0);
+const totalCertified = constructionProjects.reduce((acc, p) => acc + p.certifiedBudgetEur, 0);
+const globalProgressPct = Math.round((totalCertified / totalBudget) * 100);
+const activeSites = constructionProjects.filter((p) => p.status === 'in_progress');
+const totalWorkersToday = siteDailyLogs.reduce((acc, l) => acc + l.crewTotal, 0);
+---
+
+<ConstructionLayout
+  title="Cuadro de Mando de Obras"
+  current="dashboard"
+  routes={routes}
+>
+  <div class="dash-header">
+    <div class="dash-title-block">
+      <div class="eyebrow-row">
+        <span class="live-pulse"></span>
+        <span class="eyebrow">Dirección Técnica &amp; Control de Producción</span>
+      </div>
+      <h1 class="dash-heading">Resumen Operativo de Obras en Curso</h1>
+      <p class="dash-sub">Monitorización técnica, certificaciones mensuales, rendimiento de subcontratas y seguridad y salud laboral.</p>
+    </div>
+
+    <div class="dash-actions">
+      <a href={routes.dailyLog} class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span>Nueva Entrada de Bitácora</span>
+      </a>
+      <a href={routes.sites} class="btn-secondary">Ver Todas las Obras ({activeSites.length})</a>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card accent">
+      <div class="kpi-header">
+        <span class="kpi-title">Producción Certificada Acumulada</span>
+        <span class="kpi-badge good">{globalProgressPct}% Certificado</span>
+      </div>
+      <div class="kpi-main">
+        <span class="kpi-value">{(totalCertified / 1000000).toFixed(2)} M€</span>
+        <span class="kpi-sub">de {(totalBudget / 1000000).toFixed(2)} M€ PEM contratado</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style={`width: ${globalProgressPct}%`}></div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">Superficie Total en Obra</span>
+        <span class="kpi-icon">📐</span>
+      </div>
+      <div class="kpi-main">
+        <span class="kpi-value">56.200 m²</span>
+        <span class="kpi-sub">Distribuida en 6 promociones activas</span>
+      </div>
+      <span class="trend-badge positive">+18.000 m² cimentados este trimestre</span>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">Personal y Subcontratas en Obra</span>
+        <span class="kpi-icon">👷</span>
+      </div>
+      <div class="kpi-main">
+        <span class="kpi-value">{totalWorkersToday} Operarios</span>
+        <span class="kpi-sub">12 subcontratas homologadas en tajo</span>
+      </div>
+      <span class="trend-badge positive">100% EPIs y TC2 revisados</span>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-title">Seguridad &amp; Prevención</span>
+        <span class="kpi-icon">🛡️</span>
+      </div>
+      <div class="kpi-main">
+        <span class="kpi-value">184 Días</span>
+        <span class="kpi-sub">Cero accidentes con baja médica</span>
+      </div>
+      <span class="trend-badge good">Auditoría ISO 45001 aprobada</span>
+    </div>
+  </div>
+
+  <!-- 2-Column Split: Active Sites & Subcontractors -->
+  <div class="dash-columns">
+    <!-- Left: Ongoing Sites Progress -->
+    <div class="dash-card">
+      <div class="card-top">
+        <div>
+          <h2 class="card-heading">Obras Activas en Ejecución</h2>
+          <p class="card-desc">Certificación mensual emitida vs presupuesto contractual.</p>
+        </div>
+        <a href={routes.sites} class="card-link">Ver detalle →</a>
+      </div>
+
+      <div class="sites-list">
+        {constructionProjects.map((p) => (
+          <div class="site-row">
+            <div class="site-main-info">
+              <div class="site-title-row">
+                <span class="site-name">{p.title}</span>
+                <span class={`status-tag ${p.status}`}>{p.status === 'in_progress' ? 'En Tajo' : p.status === 'completed' ? 'Entregada' : 'Proyecto'}</span>
+              </div>
+              <span class="site-loc">{p.location}, {p.city} · {p.surfaceM2.toLocaleString('es-ES')} m²</span>
+            </div>
+
+            <div class="site-cert-col">
+              <div class="cert-vals">
+                <span class="cert-pct">{p.certifiedPercent}%</span>
+                <span class="cert-eur">{(p.certifiedBudgetEur / 1000000).toFixed(1)} M€ / {(p.budgetEur / 1000000).toFixed(1)} M€</span>
+              </div>
+              <div class="cert-track">
+                <div class="cert-fill" style={`width: ${p.certifiedPercent}%`}></div>
+              </div>
+            </div>
+
+            <div class="site-actions">
+              <a href={routes.projectDetail} class="btn-site-view">Ficha</a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Right: Subcontractors & Daily Logs Widget -->
+    <div class="dash-card">
+      <div class="card-top">
+        <div>
+          <h2 class="card-heading">Subcontratas Homologadas Activas</h2>
+          <p class="card-desc">Control de coordinación de actividades empresariales (CAE).</p>
+        </div>
+        <a href={routes.dailyLog} class="card-link">Ver bitácora →</a>
+      </div>
+
+      <div class="subs-list">
+        {constructionSubcontractors.map((sub) => (
+          <div class="sub-item">
+            <div class="sub-avatar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+            </div>
+            <div class="sub-info">
+              <span class="sub-name">{sub.name}</span>
+              <span class="sub-trade">{sub.trade} · En: <strong>{sub.currentSite}</strong></span>
+            </div>
+            <div class="sub-workers">
+              <span class="worker-count">{sub.activeWorkers}</span>
+              <span class="worker-lbl">operarios</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="card-banner">
+        <span class="banner-icon">📋</span>
+        <div class="banner-text">
+          <strong>Último apunte en Bitácora:</strong>
+          <span>Hormigonado de muros exteriores HA-30 en Enclave Moraleja. Probetas enviadas a laboratorio.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</ConstructionLayout>
+
+<style>
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .live-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  .eyebrow {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  .dash-heading {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0 0 0.35rem;
+  }
+
+  .dash-sub {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .dash-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    background: #f59e0b;
+    color: #0f172a;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .btn-primary:hover {
+    background: #d97706;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-size: 0.84rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpi-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .kpi-card.accent {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%);
+  }
+
+  .kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .kpi-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .kpi-badge {
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+  }
+
+  .kpi-icon {
+    font-size: 1.1rem;
+  }
+
+  .kpi-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .kpi-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #f8fafc;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .kpi-sub {
+    font-size: 0.76rem;
+    color: #64748b;
+  }
+
+  .progress-bar-bg {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #10b981);
+    border-radius: 9999px;
+  }
+
+  .trend-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .trend-badge.positive {
+    color: #38bdf8;
+  }
+
+  .trend-badge.good {
+    color: #34d399;
+  }
+
+  .dash-columns {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .dash-columns {
+      grid-template-columns: 1.4fr 1fr;
+    }
+  }
+
+  .dash-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-heading {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0 0 0.25rem;
+  }
+
+  .card-desc {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .card-link {
+    font-size: 0.78rem;
+    color: #f59e0b;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .card-link:hover {
+    text-decoration: underline;
+  }
+
+  .sites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .site-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+  }
+
+  .site-main-info {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .site-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .site-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .status-tag {
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .status-tag.in_progress {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .status-tag.completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+  }
+
+  .site-loc {
+    font-size: 0.74rem;
+    color: #64748b;
+  }
+
+  .site-cert-col {
+    width: 160px;
+  }
+
+  .cert-vals {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .cert-pct {
+    font-weight: 700;
+    color: #f59e0b;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .cert-eur {
+    color: #94a3b8;
+  }
+
+  .cert-track {
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .cert-fill {
+    height: 100%;
+    background: #f59e0b;
+    border-radius: 9999px;
+  }
+
+  .btn-site-view {
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    font-size: 0.74rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .btn-site-view:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .subs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .sub-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .sub-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sub-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sub-name {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sub-trade {
+    display: block;
+    font-size: 0.72rem;
+    color: #94a3b8;
+  }
+
+  .sub-trade strong {
+    color: #cbd5e1;
+  }
+
+  .sub-workers {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .worker-count {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #f8fafc;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .worker-lbl {
+    font-size: 0.65rem;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  .card-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    font-size: 0.76rem;
+    color: #e2e8f0;
+  }
+
+  .banner-icon {
+    font-size: 1.25rem;
+  }
+
+  .banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .banner-text strong {
+    color: #f59e0b;
+  }
+</style>

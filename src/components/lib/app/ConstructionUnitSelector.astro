@@ -1,0 +1,530 @@
+---
+/**
+ * ConstructionUnitSelector — Interactive building floorplan and inventory unit selector for real estate promotions and developers.
+ * Filters by typology (apartments, penthouses, commercial locals) with surface m², bedrooms, terrace, orientation and pricing.
+ *
+ * @param {ConstructionUnit[]} units - List of promotion units.
+ * @param {string} title - Widget heading.
+ * @param {string} reserveHref - URL for reservation form.
+ * @param {string} className - Optional CSS class.
+ */
+import type { ConstructionUnit } from '../templates/construction/data';
+import { constructionUnits } from '../templates/construction/data';
+
+interface Props {
+  units?: ConstructionUnit[];
+  title?: string;
+  projectName?: string;
+  reserveHref?: string;
+  inquiryHref?: string;
+  className?: string;
+}
+
+const {
+  units = constructionUnits,
+  title,
+  projectName,
+  reserveHref = '/preview/construction/contact',
+  inquiryHref,
+  className = '',
+} = Astro.props;
+
+const effectiveTitle = title ?? (projectName ? `Unidades en ${projectName}` : 'Unidades Disponibles & Planos de Planta');
+const effectiveReserveHref = inquiryHref ?? reserveHref;
+
+const availableCount = units.filter(u => u.status === 'available').length;
+const defaultSelectedUnit = units[0];
+---
+
+<div class={`construction-unit-selector ${className}`} id="unit-selector">
+  <div class="selector-head">
+    <div class="head-text">
+      <span class="eyebrow">Catálogo de Inmuebles</span>
+      <h3 class="selector-title">{effectiveTitle}</h3>
+      <p class="selector-sub">Selecciona una tipología para ver distribución, planos técnicos y calidades.</p>
+    </div>
+    <div class="available-badge">
+      <span class="pulse-dot"></span>
+      <span><strong>{availableCount}</strong> de {units.length} unidades disponibles</span>
+    </div>
+  </div>
+
+  <!-- Typology Filter Buttons -->
+  <div class="filter-strip" role="tablist">
+    <button type="button" class="filter-btn is-active" data-filter="all">Todas ({units.length})</button>
+    <button type="button" class="filter-btn" data-filter="apartment">Pisos &amp; Viviendas</button>
+    <button type="button" class="filter-btn" data-filter="penthouse">Áticos con Terraza</button>
+    <button type="button" class="filter-btn" data-filter="commercial_local">Locales Comerciales</button>
+  </div>
+
+  <div class="selector-grid">
+    <!-- Left: Units Table / List -->
+    <div class="units-list-card">
+      <div class="table-wrap">
+        <table class="units-table">
+          <thead>
+            <tr>
+              <th>Unidad</th>
+              <th>Planta</th>
+              <th>Sup. Útil</th>
+              <th>Dorm / Baños</th>
+              <th>Terraza</th>
+              <th>Precio</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {units.map((u, i) => (
+              <tr
+                class={`unit-row ${i === 0 ? 'is-selected' : ''}`}
+                data-unit-id={u.id}
+                data-typology={u.typology}
+                tabindex="0"
+              >
+                <td>
+                  <strong class="unit-code">{u.unitNumber}</strong>
+                </td>
+                <td>{u.floor}</td>
+                <td>{u.surfaceUsableM2} m²</td>
+                <td>{u.bedrooms > 0 ? `${u.bedrooms}D / ${u.bathrooms}B` : `${u.bathrooms} Aseos`}</td>
+                <td>{u.terraceM2 > 0 ? `${u.terraceM2} m²` : '—'}</td>
+                <td>
+                  <strong class="unit-price">{u.priceEur.toLocaleString()} €</strong>
+                </td>
+                <td>
+                  <span class={`status-pill pill-${u.status}`}>
+                    {u.status === 'available' ? 'Disponible' :
+                     u.status === 'reserved' ? 'Reservado' : 'Vendido'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Selected Unit Blueprint Card -->
+    <aside class="unit-detail-card" id="unit-detail-pane">
+      <div class="detail-header">
+        <span class="detail-unit-badge" id="dt-typology">Vivienda 3 Dormitorios</span>
+        <h4 class="detail-name" id="dt-name">{defaultSelectedUnit.unitNumber}</h4>
+        <span class="detail-floor" id="dt-floor">{defaultSelectedUnit.floor} · Orientación {defaultSelectedUnit.orientation}</span>
+      </div>
+
+      <!-- Architectural Blueprint Graphic Mock -->
+      <div class="blueprint-graphic">
+        <div class="blueprint-frame">
+          <svg viewBox="0 0 400 240" fill="none" class="blueprint-svg">
+            <rect x="20" y="20" width="360" height="200" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 4" fill="rgba(14, 165, 233, 0.04)"/>
+            <rect x="40" y="40" width="160" height="100" stroke="#38bdf8" stroke-width="2"/>
+            <text x="50" y="65" fill="#94a3b8" font-size="11" font-family="monospace">SALÓN-COMEDOR · 32 m²</text>
+            <rect x="220" y="40" width="140" height="75" stroke="#38bdf8" stroke-width="2"/>
+            <text x="230" y="65" fill="#94a3b8" font-size="11" font-family="monospace">SUITE PPAL · 18 m²</text>
+            <rect x="220" y="125" width="140" height="80" stroke="#38bdf8" stroke-width="2"/>
+            <text x="230" y="150" fill="#94a3b8" font-size="11" font-family="monospace">TERRAZA · 16 m²</text>
+            <rect x="40" y="150" width="90" height="65" stroke="#38bdf8" stroke-width="2"/>
+            <text x="50" y="175" fill="#94a3b8" font-size="10" font-family="monospace">COCINA</text>
+            <rect x="140" y="150" width="60" height="65" stroke="#38bdf8" stroke-width="2"/>
+            <text x="146" y="175" fill="#94a3b8" font-size="10" font-family="monospace">BAÑO</text>
+          </svg>
+        </div>
+        <span class="blueprint-tag">Plano Acotado · Escala 1:50</span>
+      </div>
+
+      <!-- Specs grid -->
+      <div class="detail-specs">
+        <div class="spec-row">
+          <span class="spec-lbl">Superficie Útil:</span>
+          <strong id="dt-usable">{defaultSelectedUnit.surfaceUsableM2} m²</strong>
+        </div>
+        <div class="spec-row">
+          <span class="spec-lbl">Superficie Construida c.e.c.:</span>
+          <strong id="dt-built">{defaultSelectedUnit.surfaceBuiltM2} m²</strong>
+        </div>
+        <div class="spec-row">
+          <span class="spec-lbl">Plazas de Garaje:</span>
+          <strong id="dt-garage">{defaultSelectedUnit.garageSpaces} en sótano</strong>
+        </div>
+      </div>
+
+      <!-- Key features -->
+      <div class="detail-features">
+        <span class="features-label">Equipamiento Incluido:</span>
+        <ul class="features-list" id="dt-features">
+          {defaultSelectedUnit.features.map(f => (
+            <li>
+              <span class="bullet">✓</span>
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="detail-footer">
+        <div class="detail-price-box">
+          <span class="price-lbl">Precio de Venta</span>
+          <strong class="detail-price" id="dt-price">{defaultSelectedUnit.priceEur.toLocaleString()} €</strong>
+          <span class="tax-note">+ 10% IVA</span>
+        </div>
+
+        <a href={effectiveReserveHref} class="btn-reserve">
+          <span>Solicitar Dossier &amp; Visita</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<style>
+  .construction-unit-selector {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    color: #f8fafc;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .selector-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f59e0b;
+  }
+
+  .selector-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0.2rem 0;
+  }
+
+  .selector-sub {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .available-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.95rem;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    color: #34d399;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  .filter-strip {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 0.45rem 0.95rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .filter-btn.is-active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #0f172a;
+    font-weight: 800;
+  }
+
+  /* Grid */
+  .selector-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.85fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 960px) {
+    .selector-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .units-list-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .units-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    text-align: left;
+  }
+
+  .units-table th {
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .units-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .unit-row {
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .unit-row:hover {
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  .unit-row.is-selected {
+    background: rgba(245, 158, 11, 0.15);
+    border-left: 3px solid #f59e0b;
+  }
+
+  .unit-code {
+    color: #ffffff;
+  }
+
+  .unit-price {
+    color: #f59e0b;
+    font-size: 0.88rem;
+  }
+
+  .status-pill {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+
+  .pill-available {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+  }
+
+  .pill-reserved {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
+
+  .pill-sold {
+    background: rgba(255, 255, 255, 0.06);
+    color: #64748b;
+  }
+
+  /* Detail Card */
+  .unit-detail-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .detail-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .detail-unit-badge {
+    align-self: flex-start;
+    padding: 0.2rem 0.55rem;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .detail-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .detail-floor {
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .blueprint-graphic {
+    background: #020617;
+    border: 1px dashed rgba(56, 189, 248, 0.4);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .blueprint-svg {
+    width: 100%;
+    height: auto;
+    max-height: 160px;
+  }
+
+  .blueprint-tag {
+    font-size: 0.68rem;
+    color: #38bdf8;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-specs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.85rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    font-size: 0.82rem;
+  }
+
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .spec-lbl {
+    color: #94a3b8;
+  }
+
+  .detail-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .features-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-transform: uppercase;
+  }
+
+  .features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .features-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .bullet {
+    color: #10b981;
+    font-weight: 800;
+  }
+
+  .detail-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 1rem;
+  }
+
+  .detail-price-box {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .price-lbl {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  .detail-price {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #f59e0b;
+  }
+
+  .tax-note {
+    font-size: 0.65rem;
+    color: #64748b;
+  }
+
+  .btn-reserve {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1.25rem;
+    background: #f59e0b;
+    color: #0f172a;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .btn-reserve:hover {
+    background: #d97706;
+  }
+</style>

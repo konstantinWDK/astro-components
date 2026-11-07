@@ -1,0 +1,462 @@
+---
+/**
+ * ConstructionProjectsGrid — Filterable portfolio of buildings, residential developments, commercial hubs and logistics parks.
+ * Displays project status (in progress vs completed), surface m², energy certificate, and direct link to project blueprint.
+ *
+ * @param {ConstructionProject[]} projects - Projects list.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section subheading.
+ * @param {string} detailBase - Base path for project detail pages.
+ * @param {string} className - Optional CSS class.
+ */
+import type { ConstructionProject } from '../templates/construction/data';
+import { constructionProjects } from '../templates/construction/data';
+
+interface Props {
+  projects?: ConstructionProject[];
+  title?: string;
+  subtitle?: string;
+  detailBase?: string;
+  className?: string;
+}
+
+const {
+  projects = constructionProjects,
+  title = 'Proyectos Destacados & Edificación',
+  subtitle = 'Promociones residenciales de obra nueva, sedes corporativas y locales comerciales de alta rentabilidad.',
+  detailBase = '/preview/construction/projects',
+  className = '',
+} = Astro.props;
+---
+
+<section class={`construction-projects-grid ${className}`} id="projects-catalog">
+  <div class="projects-container">
+    <div class="projects-header">
+      <div class="header-left">
+        <span class="eyebrow">Portfolio de Obra Ejecutada &amp; En Curso</span>
+        <h2 class="section-title">{title}</h2>
+        <p class="section-sub">{subtitle}</p>
+      </div>
+
+      <div class="header-stats">
+        <span class="stat-pill">Mostrando <strong>{projects.length}</strong> proyectos singulares</span>
+      </div>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="filter-pills" role="tablist">
+      <button type="button" class="f-pill is-active">Todas las Obras ({projects.length})</button>
+      <button type="button" class="f-pill">Residencial</button>
+      <button type="button" class="f-pill">Comercial &amp; Oficinas</button>
+      <button type="button" class="f-pill">Naves &amp; Logística</button>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="cards-grid">
+      {projects.map((p) => {
+        const isCompleted = p.status === 'completed';
+        const detailHref = `${detailBase}/${p.slug}`;
+
+        return (
+          <article class="project-card">
+            <div class="project-card__visual">
+              <div class="visual-placeholder">
+                <span class="building-emoji">
+                  {p.typology === 'residential' ? '🏢' :
+                   p.typology === 'commercial' ? '🏬' : '🏭'}
+                </span>
+              </div>
+
+              <!-- Top floating badges -->
+              <div class="floating-badges">
+                <span class={`status-tag ${p.status}`}>
+                  {isCompleted ? '✓ Entregado' : `🔨 ${p.certifiedPercent}% En Obra`}
+                </span>
+                <span class="energy-tag">Clase {p.energyRating}</span>
+              </div>
+
+              <div class="bottom-loc">
+                <span>📍 {p.location}, {p.city}</span>
+              </div>
+            </div>
+
+            <div class="project-card__body">
+              <div class="card-meta-line">
+                <span class="typology-badge">{p.typology.toUpperCase()}</span>
+                <span class="surface-val">{p.surfaceM2.toLocaleString()} m²</span>
+              </div>
+
+              <h3 class="card-title">
+                <a href={detailHref}>{p.title}</a>
+              </h3>
+              <p class="card-desc">{p.subtitle}</p>
+
+              <!-- Progress bar (for active builds) -->
+              {!isCompleted && (
+                <div class="execution-bar-block">
+                  <div class="bar-labels">
+                    <span>Avance de Ejecución</span>
+                    <strong>{p.certifiedPercent}%</strong>
+                  </div>
+                  <div class="bar-track">
+                    <div class="bar-fill" style={`width: ${p.certifiedPercent}%`}></div>
+                  </div>
+                </div>
+              )}
+
+              <!-- Tags -->
+              <div class="tags-row">
+                {p.tags.slice(0, 3).map((t) => (
+                  <span class="tag-chip">{t}</span>
+                ))}
+              </div>
+
+              <div class="project-card__footer">
+                <div class="units-stock">
+                  {p.unitsAvailable > 0 ? (
+                    <span class="units-available">
+                      <span class="green-dot"></span>
+                      <span>{p.unitsAvailable} unidades disponibles</span>
+                    </span>
+                  ) : (
+                    <span class="units-sold">100% Vendido / Ocupado</span>
+                  )}
+                </div>
+
+                <a href={detailHref} class="btn-card-link">
+                  <span>Ver Proyecto</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .construction-projects-grid {
+    padding: 4.5rem 1.5rem 5.5rem;
+    background: var(--c-bg, #0b0f19);
+    color: var(--c-text, #f8fafc);
+  }
+
+  .projects-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .projects-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f59e0b;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .section-sub {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .stat-pill {
+    padding: 0.45rem 0.95rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    color: #cbd5e1;
+  }
+
+  .filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .f-pill {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .f-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .f-pill.is-active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #0f172a;
+    font-weight: 800;
+  }
+
+  /* Cards Grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 2rem;
+  }
+
+  @media (max-width: 600px) {
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .project-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .project-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .project-card__visual {
+    position: relative;
+    height: 200px;
+    background: radial-gradient(circle at center, rgba(245, 158, 11, 0.12) 0%, rgba(15, 23, 42, 0.95) 75%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .building-emoji {
+    font-size: 4.5rem;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+  }
+
+  .floating-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .status-tag {
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .status-tag.in_progress {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: #fbbf24;
+  }
+
+  .status-tag.completed {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #34d399;
+  }
+
+  .energy-tag {
+    padding: 0.2rem 0.55rem;
+    background: rgba(22, 163, 74, 0.2);
+    border: 1px solid rgba(22, 163, 74, 0.4);
+    color: #4ade80;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .bottom-loc {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    backdrop-filter: blur(8px);
+  }
+
+  .project-card__body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.85rem;
+  }
+
+  .card-meta-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .typology-badge {
+    color: #f59e0b;
+    letter-spacing: 0.05em;
+  }
+
+  .surface-val {
+    color: #94a3b8;
+  }
+
+  .card-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .card-title a {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .card-title a:hover {
+    color: #f59e0b;
+  }
+
+  .card-desc {
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .execution-bar-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #cbd5e1;
+  }
+
+  .bar-labels strong {
+    color: #f59e0b;
+  }
+
+  .bar-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+    border-radius: 9999px;
+  }
+
+  .tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag-chip {
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+  }
+
+  .project-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .units-available {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+    color: #34d399;
+    font-weight: 700;
+  }
+
+  .green-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+  }
+
+  .units-sold {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+
+  .btn-card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f59e0b;
+    text-decoration: none;
+  }
+
+  .btn-card-link:hover {
+    color: #ffffff;
+  }
+</style>

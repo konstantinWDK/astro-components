@@ -1,0 +1,230 @@
+---
+/**
+ * ConstructionLayout — Backoffice & Site OS app shell for construction managers and developers ("Strukto").
+ * Integrates AppSidebar, AppTopbar, safety incident tracker, and site-wide certified progress summary.
+ *
+ * @param {string} title - Page title.
+ * @param {string} current - Active route key (dashboard | sites | dailyLog | unitsCms | settings).
+ * @param {ConstructionRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import '../../../../styles/global.css';
+import './construction-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { constructionRoutes, type ConstructionRoutes } from './data';
+
+type Key = 'dashboard' | 'sites' | 'dailyLog' | 'unitsCms' | 'settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: ConstructionRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Strukto Site OS · Panel de Control de Obras, Cuaderno de Bitácora Digital y CMS de Promociones Inmobiliarias',
+  current = 'dashboard',
+  routes = constructionRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const notifications = [
+  { title: 'Ensayo de Hormigón Favorable', text: 'Laboratorio acredita resistencia HA-30 en Caelum Planta 5', time: '12 min atrás', tone: 'success' as const, unread: true },
+  { title: 'Recepción de Material', text: 'Entregadas 14 t de perfiles de aluminio Schüco en obra', time: '45 min atrás', tone: 'info' as const, unread: true },
+  { title: 'Inspección de Seguridad', text: 'Revisión periódica de líneas de vida superada con éxito', time: '2h atrás', tone: 'warning' as const },
+];
+
+const sidebarGroups = [
+  {
+    label: 'Dirección de Obra & Operaciones',
+    items: [
+      { label: 'Cuadro de Mando Obra', href: routes.dashboard, icon: 'dashboard' },
+      { label: 'Obras en Ejecución', href: routes.sites, icon: 'briefcase', badge: '6 activas' },
+      { label: 'Cuaderno de Bitácora', href: routes.dailyLog, icon: 'clipboard' },
+    ],
+  },
+  {
+    label: 'Desarrollo & Promociones',
+    items: [
+      { label: 'Inventario de Unidades', href: routes.unitsCms, icon: 'layers' },
+      { label: 'Normativa & Calidad', href: routes.settings, icon: 'settings' },
+    ],
+  },
+  {
+    label: 'Enlaces Rápidos',
+    items: [
+      { label: 'Web Pública Constructora', href: routes.home, icon: 'globe' },
+      { label: 'Ficha Promoción Caelum', href: routes.projectDetail, icon: 'eye' },
+    ],
+  },
+];
+
+const currentRouteUrl = routes[current] ?? routes.dashboard;
+---
+
+<!doctype html>
+<html lang={lang} class="theme-construction" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — Strukto Site OS</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="strukto-app-body">
+    <div class="app-shell">
+      <!-- Sidebar -->
+      <AppSidebar
+        currentHref={currentRouteUrl}
+        workspace={{
+          name: 'Strukto Constructora',
+          plan: 'Site OS Enterprise',
+          initials: 'ST',
+        }}
+        groups={sidebarGroups}
+      />
+
+      <!-- Main workspace -->
+      <div class="app-content-column">
+        <!-- Topbar -->
+        <AppTopbar
+          searchPlaceholder="Buscar obras, planos, subcontratas o albaranes..."
+          notifications={notifications}
+          user={{
+            name: 'Carlos Mendoza',
+            role: 'Jefe de Obra Principal',
+            email: 'cmendoza@strukto.es',
+          }}
+          userLinks={[
+            { label: 'Mi Perfil Técnico', href: routes.settings },
+            { label: 'Ver Portal Público', href: routes.home },
+          ]}
+          signOutHref={routes.signIn}
+        />
+
+        <!-- Safety strip banner -->
+        <div class="safety-strip">
+          <div class="safety-left">
+            <span class="shield-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </span>
+            <span class="safety-stat"><strong>184 días consecutivos</strong> sin accidentes con baja en obra activa</span>
+          </div>
+          <div class="safety-right">
+            <span class="cert-pill">Passivhaus Tradesperson #PH-8921</span>
+            <span class="cert-pill">Plan de Seguridad y Salud Vigente</span>
+          </div>
+        </div>
+
+        <!-- Page body -->
+        <main id="main-content" class="app-main-view">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .strukto-app-body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--c-bg, #090d16);
+    color: var(--c-text, #f8fafc);
+    min-height: 100vh;
+  }
+
+  .app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .app-content-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #090d16;
+  }
+
+  .safety-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 1.75rem;
+    background: rgba(245, 158, 11, 0.08);
+    border-bottom: 1px solid rgba(245, 158, 11, 0.18);
+    font-size: 0.76rem;
+    color: #e2e8f0;
+    flex-wrap: wrap;
+  }
+
+  .safety-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .shield-icon {
+    display: inline-flex;
+    color: #f59e0b;
+  }
+
+  .safety-stat strong {
+    color: #f59e0b;
+  }
+
+  .safety-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .cert-pill {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .app-main-view {
+    flex: 1;
+    padding: 1.75rem 2rem 3rem;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .app-main-view {
+      padding: 1.25rem 1rem 2.5rem;
+    }
+  }
+</style>

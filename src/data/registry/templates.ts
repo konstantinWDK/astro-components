@@ -1675,6 +1675,191 @@ const data = {
 
 <FoodHomePage />`,
   },
+  {
+    slug: 'construction',
+    name: {
+      en: 'Strukto · Construction, Developments & Site OS',
+      es: 'Strukto · Constructora, Promociones & Site OS',
+      ru: 'Strukto · Строительство, Девелопмент & Site OS',
+    },
+    tagline: {
+      en: 'High-precision building, residential developments, commercial premises, turnkey workflow, and full site management backoffice.',
+      es: 'Construcción de alta precisión, promociones residenciales, locales comerciales, metodología llave en mano y panel de control de jefatura de obra.',
+      ru: 'Высокоточное строительство, жилые комплексы, коммерческая недвижимость, сдача под ключ и панель управления стройплощадками.',
+    },
+    description: {
+      en: 'Complete turnkey template for construction contractors, real estate developers and engineering firms. 11 total pages: 5 public storefront pages (architectural hero with active sites ticker, filterable projects grid, flagship project blueprint dossier with interactive floorplan selector, cost calculator, and feasibility inquiry form) + 1 auth portal + 5 backoffice / Site OS views (portfolio KPI dashboard with certified budget execution, active building sites tracker, digital site journal / cuaderno de bitácora, promotions units CMS, and ISO/CAE safety settings).',
+      es: 'Plantilla integral para empresas constructoras, promotoras inmobiliarias y estudios de arquitectura técnica. 11 páginas totales: 5 páginas públicas corporativas (hero con ticker de obras activas, catálogo filtrable de edificios y locales, dossier de promoción con selector interactivo de viviendas y planos acotados, calculadora técnica de presupuesto y formulario de licitación) + 1 portal de acceso + 5 vistas de backoffice / Site OS (cuadro de mando de certificaciones y producción, control técnico de obras, libro digital de bitácora y órdenes, CMS de viviendas y locales, y configuración técnica ISO/PRL).',
+      ru: 'Готовый шаблон для строительных компаний, девелоперов и проектных бюро. 11 страниц: 5 публичных страниц (архитектурный hero с активными стройками, каталог проектов, карточка жилого комплекса с планами этажей, калькулятор сметы и форма заявки) + 1 страница входа + 5 разделов Site OS (дашборд сертификации и бюджета, контроль строек, электронный журнал работ, CMS квартир и помещений, стандарты ISO и безопасность).',
+    },
+    highlights: {
+      en: [
+        'Real-time site execution tracker with certified budget vs planned',
+        'Interactive building unit & floorplan selector with m² and pricing',
+        'Digital site journal (cuaderno de bitácora) with trade logs & weather',
+        'Technical construction budget calculator conforming to CTE standards',
+        'Executive Site OS backoffice with ISO 9001/14001 compliance rules',
+      ],
+      es: [
+        'Control de ejecución de obra y certificaciones mensuales en tiempo real',
+        'Selector interactivo de viviendas y planos acotados con reserva de fianza',
+        'Libro digital de bitácora y órdenes con albaranes de laboratorio y operarios',
+        'Calculadora de presupuestos técnicos con desglose de PEM, PEC y licencias',
+        'Backoffice Site OS con normativa ISO, REA y coordinación de subcontratas',
+      ],
+      ru: [
+        'Контроль хода строительства и сертификации бюджета в реальном времени',
+        'Интерактивный выбор квартир и поэтажные планы с ценами за м²',
+        'Электронный журнал производства работ с фиксацией погоды и актов',
+        'Инженерный калькулятор сметы по нормативам CTE с расчётом сроков',
+        'Панель Site OS с сертификацией ISO, REA и контролем подрядчиков',
+      ],
+    },
+    tags: ['construction', 'real-estate', 'developments', 'site-os', 'contractor', 'passivhaus', 'breeam', 'architecture'],
+    previewBase: '/preview/construction',
+    importPath: 'astro-component-kit/templates/construction',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Corporate Home', es: 'Portada Constructora', ru: 'Главная страница' },
+        description: { en: 'Architectural hero with active sites ticker, featured developments grid, 5-stage turnkey timeline, and feasibility study form.', es: 'Hero arquitectónico con ticker de obras activas, catálogo de promociones, metodología en 5 fases y formulario de viabilidad.', ru: 'Главная с активными объектами, галереей проектов, этапами работ и формой консультации.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { ConstructionHomePage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionHomePage />`,
+      },
+      {
+        id: 'projects', path: 'projects/',
+        name: { en: 'Projects & Developments', es: 'Proyectos & Promociones', ru: 'Каталог проектов' },
+        description: { en: 'Filterable portfolio of buildings, residential promotions, commercial hubs, and logistics parks.', es: 'Catálogo filtrable de edificios residenciales, locales comerciales y plataformas logísticas.', ru: 'Каталог жилых домов, коммерческих помещений и логистических парков.' },
+        file: 'src/pages/projects/index.astro',
+        code: `---
+import { ConstructionProjectsPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionProjectsPage />`,
+      },
+      {
+        id: 'project-detail', path: 'projects/caelum-chamberi/',
+        name: { en: 'Project Blueprint & Units', es: 'Dossier de Promoción & Planos', ru: 'Паспорт проекта и квартиры' },
+        description: { en: 'Flagship development dossier: real-time site progress %, interactive apartment & commercial unit selector, and vector floor plans.', es: 'Dossier técnico: progreso de obra en tiempo real, selector interactivo de viviendas y planos acotados.', ru: 'Карточка жилого комплекса: процент готовности, интерактивный выбор квартир и поэтажные планы.' },
+        file: 'src/pages/projects/[slug].astro',
+        code: `---
+import { ConstructionProjectDetailPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionProjectDetailPage />`,
+      },
+      {
+        id: 'estimator', path: 'estimator/',
+        name: { en: 'Budget & Cost Calculator', es: 'Calculadora de Presupuesto', ru: 'Калькулятор сметы' },
+        description: { en: 'Interactive construction estimator: PEM, PEC, architect fees, licenses, and duration by surface m².', es: 'Simulador técnico: cálculo de PEM, PEC, honorarios facultativos, licencias y meses de obra según m².', ru: 'Калькулятор стоимости строительства: материалы, подрядчики, разрешения и сроки.' },
+        file: 'src/pages/estimator.astro',
+        code: `---
+import { ConstructionEstimatorPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionEstimatorPage />`,
+      },
+      {
+        id: 'contact', path: 'contact/',
+        name: { en: 'Contact & Tenders', es: 'Contacto & Licitaciones', ru: 'Контакты и тендеры' },
+        description: { en: 'Contractor headquarters address, direct telephone lines, tender submission info, and feasibility inquiry.', es: 'Sede central, líneas telefónicas de atención técnica, licitaciones de proyectos y formulario comercial.', ru: 'Центральный офис, телефоны инженерного отдела и подача документации для тендеров.' },
+        file: 'src/pages/contact.astro',
+        code: `---
+import { ConstructionContactPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionContactPage />`,
+      },
+      {
+        id: 'sign-in', path: 'sign-in/',
+        name: { en: 'Staff & Site Sign In', es: 'Acceso a Jefatura de Obra', ru: 'Вход для специалистов' },
+        description: { en: 'Technical authentication portal with 1-click test roles for Site Supervisor, Execution Architect, and Safety Officer.', es: 'Acceso técnico con perfiles demo de 1 clic para Jefe de Obra, Dirección Facultativa y Seguridad.', ru: 'Вход в Site OS с готовыми ролями: начальник участка, технадзор и специалист по безопасности.' },
+        file: 'src/pages/sign-in.astro',
+        code: `---
+import { ConstructionSignInPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'Site OS Dashboard', es: 'Cuadro de Mando Obra OS', ru: 'Главная Site OS' },
+        description: { en: 'Executive site dashboard: total certified budget vs planned, active workers on site, zero-accident days counter, and trade breakdown.', es: 'Cuadro de mando: producción certificada acumulada, operarios en tajo, días sin accidentes y subcontratas.', ru: 'Панель руководителя: объём сертификации, план/факт расходов, рабочие на объектах и охрана труда.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { ConstructionDashboardPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionDashboardPage />`,
+      },
+      {
+        id: 'sites', path: 'app/sites/',
+        name: { en: 'Active Building Sites', es: 'Obras en Ejecución', ru: 'Активные стройплощадки' },
+        description: { en: 'Full technical monitoring of ongoing sites: milestones progress, structural stages, and certified financials.', es: 'Seguimiento técnico de obras activas: hitos de cimentación y estructura, porcentajes y certificaciones.', ru: 'Контроль объектов: этапы строительства, фундаменты, каркасы и финансовые акты.' },
+        file: 'src/pages/app/sites.astro',
+        code: `---
+import { ConstructionSitesPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionSitesPage />`,
+      },
+      {
+        id: 'daily-log', path: 'app/daily-log/',
+        name: { en: 'Digital Site Logbook', es: 'Cuaderno de Bitácora Digital', ru: 'Электронный журнал работ' },
+        description: { en: 'Regulatory site diary: weather conditions, workers per trade, concrete delivery tickets, and safety sign-off.', es: 'Libro de órdenes diario: meteorología, operarios por subcontrata, albaranes de laboratorio y firma técnica.', ru: 'Журнал производства работ: погода, персонал по подрядчикам, акты приёмки бетона и подпись прораба.' },
+        file: 'src/pages/app/daily-log.astro',
+        code: `---
+import { ConstructionDailyLogPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionDailyLogPage />`,
+      },
+      {
+        id: 'units-cms', path: 'app/units/',
+        name: { en: 'Promotions Units CMS', es: 'CMS de Viviendas y Locales', ru: 'CMS квартир и помещений' },
+        description: { en: 'Real estate inventory manager: apartment availability status, reserved units with deposits, price per m², and floorplan filters.', es: 'Control de inventario inmobiliario: pisos disponibles, reservados con arras, vendidos y precios por m².', ru: 'Управление недвижимостью: статус квартир, бронирования с задатком, стоимость за м².' },
+        file: 'src/pages/app/units.astro',
+        code: `---
+import { ConstructionUnitsCmsPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionUnitsCmsPage />`,
+      },
+      {
+        id: 'settings', path: 'app/settings/',
+        name: { en: 'Contractor & ISO Settings', es: 'Ajustes Técnicos & ISO', ru: 'Параметры и стандарты ISO' },
+        description: { en: 'Corporate details, REA construction registry, TRC insurance policy, ISO 9001/14001 certificates, and subcontractor rules.', es: 'Datos fiscales, número de registro REA, seguro todo riesgo, sellos ISO y requisitos de prevención laboral.', ru: 'Реквизиты компании, лицензии СРО, страхование рисков, сертификаты ISO и правила для субподрядчиков.' },
+        file: 'src/pages/app/settings.astro',
+        code: `---
+import { ConstructionSettingsPage } from 'astro-component-kit/templates/construction';
+---
+
+<ConstructionSettingsPage />`,
+      },
+    ],
+    newComponents: [
+      'construction-site-progress', 'construction-unit-selector', 'construction-daily-log', 'construction-budget-estimator',
+      'construction-hero', 'construction-projects-grid', 'construction-stage-timeline', 'construction-floorplan-viewer', 'construction-sustainability-banner', 'construction-inquiry-form',
+    ],
+    reusedComponents: [
+      'app-sidebar', 'app-topbar', 'page-header', 'settings-section', 'badge',
+    ],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same data + routes across all construction pages
+import { ConstructionHomePage, constructionData, type ConstructionRoutes } from 'astro-component-kit/templates/construction';
+
+const data = {
+  ...constructionData,
+  company: { ...constructionData.company, name: 'Strukto Constructora S.L.' },
+};
+---
+
+<ConstructionHomePage />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

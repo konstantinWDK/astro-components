@@ -1,0 +1,549 @@
+---
+/**
+ * ConstructionSiteProgress — Visual building site execution timeline, milestone tracker and certified budget dashboard.
+ * Used on construction monitoring portals, investor reports, and client site tracking.
+ *
+ * @param {ConstructionProject} project - The construction project entity.
+ * @param {boolean} showMilestones - Whether to display the milestone progress list.
+ * @param {boolean} showFinancials - Whether to display certified budget execution vs planned.
+ * @param {string} className - Optional CSS class.
+ */
+import type { ConstructionProject } from '../templates/construction/data';
+import { constructionProjects } from '../templates/construction/data';
+
+interface Props {
+  project?: ConstructionProject;
+  showMilestones?: boolean;
+  showFinancials?: boolean;
+  dailyLogHref?: string;
+  className?: string;
+}
+
+const {
+  project = constructionProjects[0],
+  showMilestones = true,
+  showFinancials = true,
+  dailyLogHref = '/preview/construction/app/daily-log',
+  className = '',
+} = Astro.props;
+---
+
+<div class={`construction-site-progress ${className}`}>
+  <!-- Main Header Block -->
+  <div class="progress-header">
+    <div class="header-left">
+      <div class="tag-row">
+        <span class={`status-badge status--${project.status}`}>
+          {project.status === 'in_progress' ? '🔨 EN CONSTRUCCIÓN' :
+           project.status === 'completed' ? '✓ OBRA ENTREGADA' : '📋 SOBRE PLANO'}
+        </span>
+        <span class="energy-badge">Calificación Energética {project.energyRating}</span>
+        <span class="location-badge">📍 {project.location}, {project.city}</span>
+      </div>
+      <h3 class="project-title">{project.title}</h3>
+      <p class="project-sub">{project.subtitle}</p>
+    </div>
+
+    <!-- Execution Percentage Ring / Gauge -->
+    <div class="progress-ring-box">
+      <div class="ring-circle">
+        <span class="ring-val">{project.certifiedPercent}%</span>
+        <span class="ring-lbl">Ejecutado</span>
+      </div>
+      <div class="ring-dates">
+        <div class="date-item">
+          <span class="lbl">Inicio Obra:</span>
+          <strong>{project.startDate}</strong>
+        </div>
+        <div class="date-item">
+          <span class="lbl">Fin Previsto:</span>
+          <strong>{project.completionDate}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overall Progress Bar -->
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" style={`width: ${project.certifiedPercent}%`}></div>
+    </div>
+    <div class="progress-bar-legend">
+      <span>0% Cimentación</span>
+      <span>50% Estructura &amp; Cubierta</span>
+      <span>100% LPO &amp; Entrega</span>
+    </div>
+  </div>
+
+  <!-- Financials & Certified Budget (if enabled) -->
+  {showFinancials && (
+    <div class="financials-grid">
+      <div class="fin-card">
+        <span class="fin-lbl">Presupuesto de Contrata</span>
+        <strong class="fin-val">{(project.budgetEur / 1000000).toFixed(2)} M€</strong>
+        <span class="fin-sub">Certificación oficial al origen</span>
+      </div>
+      <div class="fin-card">
+        <span class="fin-lbl">Importe Ejecutado y Certificado</span>
+        <strong class="fin-val highlight">{(project.certifiedBudgetEur / 1000000).toFixed(2)} M€</strong>
+        <span class="fin-sub">7 certificaciones aprobadas por D.F.</span>
+      </div>
+      <div class="fin-card">
+        <span class="fin-lbl">Superficie Total Construida</span>
+        <strong class="fin-val">{project.surfaceM2.toLocaleString()} m²</strong>
+        <span class="fin-sub">{project.unitsTotal} unidades ({project.unitsAvailable} disponibles)</span>
+      </div>
+      <div class="fin-card">
+        <span class="fin-lbl">Arquitectura &amp; Dirección Facultativa</span>
+        <strong class="fin-val text-sm">{project.architect}</strong>
+        <span class="fin-sub">Supervisión técnica continua</span>
+      </div>
+    </div>
+  )}
+
+  <!-- Milestones Stepper (if enabled) -->
+  {showMilestones && project.milestones && (
+    <div class="milestones-section">
+      <h4 class="section-title">Hitos de Obra y Fases Constructivas</h4>
+      <div class="milestones-track">
+        {project.milestones.map((m, idx) => {
+          const isDone = m.status === 'done';
+          const isInProgress = m.status === 'in_progress';
+          return (
+            <div class={`milestone-item ${isDone ? 'is-done' : ''} ${isInProgress ? 'is-active' : ''}`}>
+              <div class="milestone-indicator">
+                <span class="milestone-dot">
+                  {isDone ? '✓' : idx + 1}
+                </span>
+                <span class="milestone-line"></span>
+              </div>
+              <div class="milestone-content">
+                <div class="milestone-head">
+                  <span class="milestone-name">{m.title}</span>
+                  <span class="milestone-date">{m.plannedDate}</span>
+                </div>
+                <div class="milestone-bar">
+                  <div class="milestone-bar-fill" style={`width: ${m.progressPct}%`}></div>
+                </div>
+                <div class="milestone-meta">
+                  <span class="milestone-pct">{m.progressPct}% completado</span>
+                  <span class={`milestone-status status-${m.status}`}>
+                    {isDone ? 'Finalizado' : isInProgress ? 'En Ejecución' : 'Pendiente'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  )}
+
+  <!-- Construction Technical Specs -->
+  <div class="specs-pill-strip">
+    <div class="spec-chip">
+      <span class="spec-icon">🏗️</span>
+      <span>Hormigón: <strong>{project.specs.concreteVolumeM3} m³</strong></span>
+    </div>
+    <div class="spec-chip">
+      <span class="spec-icon">⚙️</span>
+      <span>Acero corrugado: <strong>{project.specs.steelTonnes} Toneladas</strong></span>
+    </div>
+    <div class="spec-chip">
+      <span class="spec-icon">🏗️</span>
+      <span>Grúas torre: <strong>{project.specs.craneCount} activas</strong></span>
+    </div>
+    <div class="spec-chip">
+      <span class="spec-icon">☀️</span>
+      <span>Fotovoltaica: <strong>{project.specs.solarKWp} kWp</strong></span>
+    </div>
+    <a href={dailyLogHref} class="spec-chip spec-link">
+      <span class="spec-icon">📋</span>
+      <span>Libro de Órdenes &amp; Bitácora →</span>
+    </a>
+  </div>
+</div>
+
+<style>
+  .construction-site-progress {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    color: #f8fafc;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .tag-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  .status-badge.status--in_progress {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+  }
+
+  .status-badge.status--completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+
+  .status-badge.status--off_plan {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+  }
+
+  .energy-badge {
+    padding: 0.25rem 0.65rem;
+    background: rgba(22, 163, 74, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(22, 163, 74, 0.4);
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .location-badge {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .project-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .project-sub {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  /* Ring / Gauge */
+  .progress-ring-box {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.85rem 1.25rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+  }
+
+  .ring-circle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+    border: 3px solid #f59e0b;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  }
+
+  .ring-val {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #f59e0b;
+    line-height: 1;
+  }
+
+  .ring-lbl {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+
+  .ring-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .date-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .date-item .lbl {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  .date-item strong {
+    color: #cbd5e1;
+  }
+
+  /* Bar */
+  .progress-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .progress-bar-track {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+    border-radius: 9999px;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-bar-legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
+  /* Financials */
+  .financials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .fin-card {
+    padding: 1.15rem;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .fin-lbl {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .fin-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .fin-val.highlight {
+    color: #f59e0b;
+  }
+
+  .fin-val.text-sm {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .fin-sub {
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
+  /* Milestones */
+  .milestones-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .milestones-track {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .milestone-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .milestone-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 28px;
+  }
+
+  .milestone-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .milestone-item.is-done .milestone-dot {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .milestone-item.is-active .milestone-dot {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+    color: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+  }
+
+  .milestone-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .milestone-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.86rem;
+  }
+
+  .milestone-name {
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .milestone-date {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .milestone-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .milestone-bar-fill {
+    height: 100%;
+    background: #f59e0b;
+    border-radius: 9999px;
+  }
+
+  .milestone-item.is-done .milestone-bar-fill {
+    background: #10b981;
+  }
+
+  .milestone-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+  }
+
+  .milestone-pct {
+    color: #94a3b8;
+  }
+
+  .milestone-status.status-done { color: #10b981; font-weight: 700; }
+  .milestone-status.status-in_progress { color: #f59e0b; font-weight: 700; }
+  .milestone-status.status-pending { color: #64748b; }
+
+  /* Specs */
+  .specs-pill-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .spec-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: #cbd5e1;
+  }
+
+  .spec-chip strong {
+    color: #ffffff;
+  }
+
+  .spec-chip.spec-link {
+    text-decoration: none;
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .spec-chip.spec-link:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.5);
+  }
+</style>

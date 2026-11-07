@@ -904,4 +904,42 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['food', 'checkout', 'wizard', 'cart', 'tip', 'payment'], featured: true,
     usage: `<FoodCheckoutWizard orderSuccessHref="/preview/food-delivery/track" />`,
   }),
+
+  // === CONSTRUCTION & REAL ESTATE DEVELOPMENTS ("Strukto") ===
+  section({
+    slug: 'construction-hero', name: 'Construction Hero', file: 'ConstructionHero.astro', sectionCategory: 'construction',
+    description: 'High-precision landing hero for contractors and developers: architectural stats (+148.000 m², 35 years), active sites ticker, and budget estimator CTA.',
+    tags: ['construction', 'hero', 'contractor', 'real-estate', 'developments', 'buildings'], featured: true,
+    usage: `<ConstructionHero projectsHref="/preview/construction/projects" estimatorHref="/preview/construction/estimator" />`,
+  }),
+  section({
+    slug: 'construction-projects-grid', name: 'Construction Projects Grid', file: 'ConstructionProjectsGrid.astro', sectionCategory: 'construction',
+    description: 'Filterable portfolio of buildings, residential promotions and commercial developments with surface m², progress bars and technical blueprints.',
+    tags: ['construction', 'projects', 'grid', 'portfolio', 'developments', 'real-estate'], featured: true,
+    usage: `<ConstructionProjectsGrid detailBase="/preview/construction/projects" />`,
+  }),
+  section({
+    slug: 'construction-stage-timeline', name: 'Construction Stage Timeline', file: 'ConstructionStageTimeline.astro', sectionCategory: 'construction',
+    description: '5-stage turnkey construction workflow and engineering methodology: from licensing and structure to finishes and occupancy handover.',
+    tags: ['construction', 'timeline', 'stages', 'methodology', 'turnkey', 'engineering'], featured: true,
+    usage: `<ConstructionStageTimeline ctaHref="/preview/construction/estimator" />`,
+  }),
+  section({
+    slug: 'construction-floorplan-viewer', name: 'Construction Floor Plan Viewer', file: 'ConstructionFloorPlanViewer.astro', sectionCategory: 'construction',
+    description: 'Architectural floor plan and spatial layout viewer: vector blueprint preview, room dimension breakdown, scale notes and dossier download action.',
+    tags: ['construction', 'floorplan', 'blueprint', 'apartments', 'architectural', 'dossier'], featured: true,
+    usage: `<ConstructionFloorPlanViewer unitName="Ático Dúplex Caelum · Tipología A" surfaceUsable={184} surfaceBuilt={228} terraceM2={85} />`,
+  }),
+  section({
+    slug: 'construction-sustainability-banner', name: 'Construction Sustainability Banner', file: 'ConstructionSustainabilityBanner.astro', sectionCategory: 'construction',
+    description: 'ESG, Passivhaus and green building credentials: zero-emission buildings, energy rating A, BREEAM/LEED certifications, and renewable thermal systems.',
+    tags: ['construction', 'sustainability', 'passivhaus', 'breeam', 'esg', 'energy-efficiency'], featured: true,
+    usage: `<ConstructionSustainabilityBanner />`,
+  }),
+  section({
+    slug: 'construction-inquiry-form', name: 'Construction Inquiry Form', file: 'ConstructionInquiryForm.astro', sectionCategory: 'construction',
+    description: 'Feasibility study and project consultation form for land owners, promoters and investors: plot location, typology, estimated budget and surface area.',
+    tags: ['construction', 'form', 'contact', 'inquiry', 'feasibility', 'promoters'], featured: true,
+    usage: `<ConstructionInquiryForm phone="+34 912 400 900" email="contacto@strukto-constructora.es" />`,
+  }),
 ];

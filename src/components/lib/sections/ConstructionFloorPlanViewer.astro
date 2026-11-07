@@ -1,0 +1,378 @@
+---
+/**
+ * ConstructionFloorPlanViewer — Architectural floor plan and spatial layout viewer for building promotions.
+ * Features vector blueprint preview, room dimension breakdown, scale notes, and download dossier action.
+ *
+ * @param {string} unitName - Unit identifier (e.g. Ático Dúplex 4D).
+ * @param {number} surfaceUsable - Usable surface in m².
+ * @param {number} surfaceBuilt - Built surface in m².
+ * @param {number} terraceM2 - Terrace surface in m².
+ * @param {string} pdfHref - URL to download technical PDF plan.
+ * @param {string} className - Optional CSS class.
+ */
+interface Props {
+  unitName?: string;
+  surfaceUsable?: number;
+  surfaceBuilt?: number;
+  terraceM2?: number;
+  pdfHref?: string;
+  className?: string;
+}
+
+const {
+  unitName = 'Ático Dúplex Caelum · Tipología A',
+  surfaceUsable = 184,
+  surfaceBuilt = 228,
+  terraceM2 = 85,
+  pdfHref = '/preview/construction/contact',
+  className = '',
+} = Astro.props;
+
+const rooms = [
+  { name: 'Salón-Comedor Diáfano', m2: '44.5 m²', orient: 'Sur' },
+  { name: 'Dormitorio Master Suite + Vestidor', m2: '24.2 m²', orient: 'Sur' },
+  { name: 'Dormitorio 2 (Doble)', m2: '14.8 m²', orient: 'Este' },
+  { name: 'Dormitorio 3 & 4', m2: '26.0 m²', orient: 'Este' },
+  { name: 'Cocina de Diseño en Isla', m2: '16.5 m²', orient: 'Norte' },
+  { name: 'Terraza Solárium con Jacuzzi', m2: '85.0 m²', orient: 'Sur-Oeste' },
+];
+---
+
+<section class={`construction-floorplan-viewer ${className}`}>
+  <div class="viewer-container">
+    <div class="viewer-head">
+      <div class="head-left">
+        <span class="eyebrow">Distribución de Espacios</span>
+        <h2 class="title">{unitName}</h2>
+        <p class="subtitle">Plano de planta acotado con optimización solar pasiva y estanqueidad térmica.</p>
+      </div>
+
+      <div class="head-stats">
+        <div class="stat-bubble">
+          <span class="bubble-val">{surfaceUsable} m²</span>
+          <span class="bubble-lbl">Sup. Útil</span>
+        </div>
+        <div class="stat-bubble">
+          <span class="bubble-val">{surfaceBuilt} m²</span>
+          <span class="bubble-lbl">Construida</span>
+        </div>
+        <div class="stat-bubble highlight">
+          <span class="bubble-val">{terraceM2} m²</span>
+          <span class="bubble-lbl">Terraza</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer-grid">
+      <!-- Vector Blueprint Visualizer -->
+      <div class="blueprint-canvas-box">
+        <div class="canvas-toolbar">
+          <span class="scale-text">ESCALA 1:50 · ACOTACIÓN EN METROS</span>
+          <div class="tool-actions">
+            <span class="tool-btn">🔍 Zoom 100%</span>
+            <span class="tool-btn">📐 Cuadrícula CTE</span>
+          </div>
+        </div>
+
+        <div class="blueprint-draw-area">
+          <svg viewBox="0 0 540 320" fill="none" class="main-plan-svg">
+            <!-- Exterior Boundary Walls -->
+            <rect x="25" y="25" width="490" height="270" stroke="#f59e0b" stroke-width="3" fill="rgba(245, 158, 11, 0.02)"/>
+            
+            <!-- Salón -->
+            <rect x="45" y="45" width="240" height="150" stroke="#38bdf8" stroke-width="2"/>
+            <text x="60" y="80" fill="#ffffff" font-size="13" font-weight="bold">SALÓN-COMEDOR</text>
+            <text x="60" y="100" fill="#94a3b8" font-size="11" font-family="monospace">44.5 m² · H = 2.85 m</text>
+            
+            <!-- Master Suite -->
+            <rect x="305" y="45" width="190" height="120" stroke="#38bdf8" stroke-width="2"/>
+            <text x="320" y="80" fill="#ffffff" font-size="12" font-weight="bold">MASTER SUITE</text>
+            <text x="320" y="100" fill="#94a3b8" font-size="11" font-family="monospace">24.2 m² · Baño en suite</text>
+
+            <!-- Cocina -->
+            <rect x="45" y="210" width="130" height="85" stroke="#38bdf8" stroke-width="2"/>
+            <text x="55" y="240" fill="#ffffff" font-size="11" font-weight="bold">COCINA ISLA</text>
+            <text x="55" y="260" fill="#94a3b8" font-size="10" font-family="monospace">16.5 m²</text>
+
+            <!-- Baño 1 -->
+            <rect x="185" y="210" width="100" height="85" stroke="#38bdf8" stroke-width="2"/>
+            <text x="195" y="240" fill="#ffffff" font-size="11" font-weight="bold">BAÑO PPAL</text>
+            <text x="195" y="260" fill="#94a3b8" font-size="10" font-family="monospace">6.8 m²</text>
+
+            <!-- Terraza Solarium -->
+            <rect x="305" y="180" width="190" height="115" stroke="#10b981" stroke-width="2" stroke-dasharray="8 4" fill="rgba(16, 185, 129, 0.05)"/>
+            <text x="320" y="215" fill="#34d399" font-size="12" font-weight="bold">TERRAZA SOLARIUM</text>
+            <text x="320" y="235" fill="#94a3b8" font-size="11" font-family="monospace">85.0 m² · Piscina / Jacuzzi</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Room Breakdown Sidebar -->
+      <div class="rooms-sidebar">
+        <h4 class="rooms-title">Cuadro de Superficies Útiles</h4>
+        <div class="rooms-list">
+          {rooms.map((r) => (
+            <div class="room-row">
+              <div class="r-info">
+                <strong class="r-name">{r.name}</strong>
+                <span class="r-orient">Orientación {r.orient}</span>
+              </div>
+              <strong class="r-m2">{r.m2}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div class="download-box">
+          <a href={pdfHref} class="btn-download-pdf">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Descargar Plano CAD / PDF de Calidades</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .construction-floorplan-viewer {
+    padding: 4.5rem 1.5rem 5rem;
+    background: #0b0f19;
+    color: #f8fafc;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .viewer-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .viewer-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2rem;
+    flex-wrap: wrap;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .head-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f59e0b;
+  }
+
+  .title {
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .head-stats {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .stat-bubble {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+  }
+
+  .stat-bubble.highlight {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.12);
+  }
+
+  .bubble-val {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #ffffff;
+  }
+
+  .stat-bubble.highlight .bubble-val {
+    color: #34d399;
+  }
+
+  .bubble-lbl {
+    font-size: 0.7rem;
+    color: #94a3b8;
+  }
+
+  /* Grid */
+  .viewer-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 0.85fr;
+    gap: 2rem;
+  }
+
+  @media (max-width: 960px) {
+    .viewer-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .blueprint-canvas-box {
+    background: #020617;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .canvas-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.75rem;
+  }
+
+  .scale-text {
+    font-family: monospace;
+    color: #38bdf8;
+    font-weight: 700;
+  }
+
+  .tool-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .tool-btn {
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    color: #cbd5e1;
+    font-size: 0.72rem;
+    cursor: default;
+  }
+
+  .blueprint-draw-area {
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: radial-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .main-plan-svg {
+    width: 100%;
+    height: auto;
+    max-height: 380px;
+  }
+
+  /* Sidebar */
+  .rooms-sidebar {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .rooms-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .rooms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .room-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0.85rem;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .r-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .r-name {
+    font-size: 0.86rem;
+    color: #ffffff;
+  }
+
+  .r-orient {
+    font-size: 0.72rem;
+    color: #94a3b8;
+  }
+
+  .r-m2 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #f59e0b;
+  }
+
+  .download-box {
+    margin-top: auto;
+    padding-top: 1rem;
+  }
+
+  .btn-download-pdf {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .btn-download-pdf:hover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: #f59e0b;
+    color: #f59e0b;
+  }
+</style>

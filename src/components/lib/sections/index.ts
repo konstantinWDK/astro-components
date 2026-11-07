@@ -157,3 +157,12 @@ export { default as FoodLivePromoBanner } from './FoodLivePromoBanner.astro';
 export { default as FoodRestaurantPartnerCta } from './FoodRestaurantPartnerCta.astro';
 export { default as FoodCheckoutWizard } from './FoodCheckoutWizard.astro';
 
+// Construction & Real Estate Developments ("Strukto")
+export { default as ConstructionHero } from './ConstructionHero.astro';
+export { default as ConstructionProjectsGrid } from './ConstructionProjectsGrid.astro';
+export { default as ConstructionStageTimeline } from './ConstructionStageTimeline.astro';
+export { default as ConstructionFloorPlanViewer } from './ConstructionFloorPlanViewer.astro';
+export { default as ConstructionSustainabilityBanner } from './ConstructionSustainabilityBanner.astro';
+export { default as ConstructionInquiryForm } from './ConstructionInquiryForm.astro';
+
+

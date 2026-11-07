@@ -192,4 +192,22 @@ export const app: ComponentDoc[] = [
     description: 'Interactive dish configuration drawer: required single-choice options, optional multi-select toppings, live price recalculation, and kitchen prep notes.',
     tags: ['food', 'customizer', 'modifiers', 'burger', 'pricing', 'cart', 'interactive'],
     usage: `<FoodDishCustomizer dish={sampleDish} checkoutHref="/preview/food-delivery/menu#checkout" />` }),
+
+  // Construction, Developments & Site OS apps ("Strukto")
+  item({ slug: 'construction-site-progress', name: 'Construction Site Progress', file: 'ConstructionSiteProgress.astro', featured: true,
+    description: 'Site progress timeline, stage tracker and certified budget dashboard: % completion, milestone tracker, technical supervisor stamp and site photos.',
+    tags: ['construction', 'progress', 'site', 'timeline', 'budget', 'certifications', 'dashboard'],
+    usage: `<ConstructionSiteProgress project={constructionProjects[0]} showMilestones={true} showFinancials={true} />` }),
+  item({ slug: 'construction-unit-selector', name: 'Construction Unit Selector', file: 'ConstructionUnitSelector.astro', featured: true,
+    description: 'Interactive building floorplan & unit selector: browse available apartments, penthouses and commercial spaces with m², bedrooms, orientation and reservation trigger.',
+    tags: ['construction', 'real-estate', 'units', 'apartments', 'floorplan', 'selector', 'pricing'],
+    usage: `<ConstructionUnitSelector units={constructionUnits} projectName="Residencial Caelum" />` }),
+  item({ slug: 'construction-daily-log', name: 'Construction Daily Log', file: 'ConstructionDailyLog.astro', featured: true,
+    description: 'Daily site work log (cuaderno de bitácora): meteorological conditions, active trade workers per subcontractor, material deliveries with tickets, and safety notes.',
+    tags: ['construction', 'log', 'diary', 'safety', 'trades', 'inspections', 'subcontractors'],
+    usage: `<ConstructionDailyLog log={siteDailyLogs[0]} />` }),
+  item({ slug: 'construction-budget-estimator', name: 'Construction Budget Estimator', file: 'ConstructionBudgetEstimator.astro', featured: true,
+    description: 'Technical construction cost estimator: calculate PEM, PEC, architect fees, licenses and timeline duration based on m² and building typology.',
+    tags: ['construction', 'calculator', 'budget', 'pem', 'pec', 'estimator', 'pricing'],
+    usage: `<ConstructionBudgetEstimator defaultM2={350} contactHref="/preview/construction/contact" />` }),
 ];
