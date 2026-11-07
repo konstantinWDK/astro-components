@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-07
+
 ### Added — Futuristic-brutalist cyberpunk template ("NULL/SECTOR")
 - **New template `templates/cyberpunk`**: six pages for a fictional decentralised GPU network — home, protocol, pricing, manifesto, logs (status + changelog) and terminal (contact). Orbitron + JetBrains Mono, zero radius, 2px ink rules, acid / magenta / cyan, CRT scanlines; NIGHT by default with a concrete DAY theme. Live preview at `/preview/cyberpunk/`.
 - **New section category "Cyberpunk & Brutalist"** with 13 sections: `CyberHeader`, `CyberHero`, `CyberTicker`, `CyberBento`, `CyberNodeMap`, `CyberPageHero`, `CyberSpecTable`, `CyberPricing`, `CyberManifesto`, `CyberCrewGrid`, `CyberStatusBoard`, `CyberTerminalForm`, `CyberFooter`.
@@ -18,9 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New section category "Healthcare"** with `MedHero`, `MedDoctorDirectory` and `MedBookingWizard` (four-step booking with an .ics calendar file; pre-select with `?doctor=` / `?specialty=`).
 - 7 new app icons: `stethoscope`, `pulse`, `pill`, `video`, `clipboard`, `clock`, `heart`.
 
-### Fixed
-- `HeatmapChart` mixed every cell with a hard-coded near-black, so light themes showed dark cells; the ramp now starts from `--chart-surface`. The strong value text colour can be themed with `--hm-strong-text`.
-
 ### Added — Toy store template ("Kapow")
 - **New template `templates/toy-store`**: a six-page store for action figures and collectibles — home, shop, characters, character profile (`/characters/[id]`), product (`/product/[slug]`) and checkout. Comic "toy box" design (Russo One, ink outlines, hard shadows, halftone panels), light by default with a dark mode; live preview at `/preview/toy-store/`. All characters and universes are original.
 - **New section category "Toy Store"** with 7 sections: `ToyHero`, `ToyCharacterRail` (links or filter mode), `ToyCharacterGrid`, `ToyCharacterHero`, `ToyAgeFinder`, `ToySpecSheet`, `ToyCollectorClub`.
@@ -30,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 9 new product illustrations: `figure`, `robot`, `dino`, `monster`, `ninja`, `rocket`, `mech`, `castle`, `mystery`.
 
 ### Fixed
+- `HeatmapChart` mixed every cell with a hard-coded near-black, so light themes showed dark cells; the ramp now starts from `--chart-surface`. The strong value text colour can be themed with `--hm-strong-text`.
 - `FilterSidebar` was always collapsed behind its "Filters" button on desktop, because its container query measured the (narrow) sidebar itself; it now collapses by viewport width (≤ 900px).
 
 ## [0.6.0] - 2026-11-07
