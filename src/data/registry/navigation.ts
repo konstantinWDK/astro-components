@@ -10,23 +10,32 @@ export const navigation: ComponentDoc[] = [
     tags: ['navbar', 'navigation', 'glass', 'sticky'],
     featured: true,
     code: `---
-interface Props { brand?: string; brandHref?: string; }
-const { brand = 'Astro Components', brandHref = '/' } = Astro.props;
+interface Props { brand?: string; brandHref?: string; className?: string; }
+const { brand = 'Astro Components', brandHref = '/', className = '' } = Astro.props;
 ---
-<header class="glass-nav">
+<header class:list={['glass-nav', className]}>
   <div class="glass-nav__inner">
-    <a href={brandHref} class="glass-nav__brand">{brand}</a>
-    <nav class="glass-nav__links"><slot name="links" /></nav>
-    <div class="glass-nav__actions"><slot name="actions" /></div>
+    <a href={brandHref} class="glass-nav__brand">
+      <slot name="brand">{brand}</slot>
+    </a>
+    <nav class="glass-nav__links" aria-label="Main Navigation">
+      <slot name="links" />
+    </nav>
+    <div class="glass-nav__actions">
+      <slot name="actions" />
+    </div>
   </div>
 </header>
 <style>
-  .glass-nav { position: sticky; top: 0; z-index: 100; background: rgba(10, 10, 20, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
-  .glass-nav__inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; height: 64px; display: flex; align-items: center; gap: 2rem; }
-  .glass-nav__brand { font-size: 1.1rem; font-weight: 800; color: #f1f5f9; text-decoration: none; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .glass-nav__links { display: flex; align-items: center; gap: 0.25rem; flex: 1; }
-  .glass-nav__links :global(a) { padding: 0.4rem 0.8rem; font-size: 0.875rem; font-weight: 500; color: #94a3b8; text-decoration: none; border-radius: 8px; transition: 0.2s; }
-  .glass-nav__links :global(a:hover) { color: #e2e8f0; background: rgba(255, 255, 255, 0.06); }
+  .glass-nav { position: sticky; top: 0; z-index: 100; width: 100%; background: rgba(10, 10, 20, 0.75); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  .glass-nav__inner { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+  .glass-nav__brand { font-size: 1.15rem; font-weight: 800; color: #f1f5f9; text-decoration: none; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .glass-nav__links { display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: center; }
+  .glass-nav__links :global(> div) { display: flex; align-items: center; gap: 0.5rem; }
+  .glass-nav__links :global(a) { padding: 0.4rem 0.85rem; font-size: 0.875rem; font-weight: 500; color: #94a3b8; text-decoration: none; border-radius: 8px; transition: 0.2s; }
+  .glass-nav__links :global(a:hover) { color: #f8fafc; background: rgba(255, 255, 255, 0.06); }
+  .glass-nav__actions { display: flex; align-items: center; gap: 0.75rem; }
+  .glass-nav__actions :global(> div) { display: flex; align-items: center; gap: 0.75rem; }
 </style>
 `,
     usage: `---
