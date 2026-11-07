@@ -1,0 +1,100 @@
+---
+/**
+ * FoodTrackingPage — Live customer order tracker page.
+ * Features real-time preparation status, rider GPS milestones, courier contact, and detailed receipt.
+ */
+import FoodSiteLayout from './FoodSiteLayout.astro';
+import FoodOrderTracker from '../../app/FoodOrderTracker.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  routes?: FoodDeliveryRoutes;
+}
+
+const { routes = foodDeliveryRoutes } = Astro.props;
+const sampleOrder = foodDeliveryData.orders[0]; // out_for_delivery order
+---
+
+<FoodSiteLayout
+  title={`Tracking Order #${sampleOrder.reference} — BiteFlow`}
+  routes={routes}
+>
+  <div class="tracking-page-wrap">
+    <div class="tracking-container">
+      <div class="tracking-top-bar">
+        <a href={routes.menu} class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          <span>Back to Menu</span>
+        </a>
+        <div class="support-pill">
+          <span>Need help? Call kitchen:</span>
+          <a href={`tel:${foodDeliveryData.restaurant.phone}`}>{foodDeliveryData.restaurant.phone}</a>
+        </div>
+      </div>
+
+      <FoodOrderTracker
+        order={sampleOrder}
+        supportPhone={foodDeliveryData.restaurant.phone}
+      />
+    </div>
+  </div>
+</FoodSiteLayout>
+
+<style>
+  .tracking-page-wrap {
+    padding: 3rem 1.5rem 5rem;
+    background: radial-gradient(circle at 50% 20%, rgba(234, 88, 12, 0.08) 0%, transparent 60%),
+                var(--c-bg, #0b0f19);
+    min-height: 80vh;
+  }
+
+  .tracking-container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .tracking-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .back-link:hover {
+    color: #ffffff;
+  }
+
+  .support-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+
+  .support-pill a {
+    color: #ea580c;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .support-pill a:hover {
+    text-decoration: underline;
+  }
+</style>

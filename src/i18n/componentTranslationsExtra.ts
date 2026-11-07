@@ -819,4 +819,45 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Formulario accesible de solicitud de empleo para transportistas y mozos: tipo de carnet de conducir (B, C1, C), datos de furgoneta propia y experiencia.",
     ru: "Доступная форма онлайн-заявки на работу водителем или грузчиком: категория прав (B, C1, C), параметры своего авто и опыт работы.",
   },
+  // ── Food Delivery & Kitchen OS ──────────────────────────────
+  'food-kitchen-display': {
+    es: "Pantalla KDS táctil para cocina: cronómetros de tiempo transcurrido, alertas de urgencia y retraso, badges de alérgenos y avance de comandas por estación.",
+    ru: "Сенсорный экран KDS для поваров кухни: таймеры готовности, сигналы задержки, бейджи аллергенов и переключение статусов по станциям.",
+  },
+  'food-menu-cms-editor': {
+    es: "CMS y gestor de carta para restaurantes: editor de precios en directo, control de calorías y botón de apagado de platos agotados (86'd) en todos los canales.",
+    ru: "CMS и управление меню ресторана: изменение цен в реальном времени, подсчёт калорий и стоп-лист для закончившихся блюд (86'd) во всех витринах.",
+  },
+  'food-order-tracker': {
+    es: "Seguimiento de pedidos en tiempo real: fases de cocinado y reparto, tarjeta del repartidor con vehículo y teléfono, notas de entrega y ticket desglosado.",
+    ru: "Отслеживание доставки в реальном времени: этапы приготовления и пути курьера, карточка курьера с телефоном и транспортом, чек и адрес.",
+  },
+  'food-dish-customizer': {
+    es: "Personalizador interactivo de platos: opciones obligatorias, ingredientes adicionales de pago, recálculo de precio en tiempo real y notas para cocina.",
+    ru: "Интерактивный конфигуратор блюд: обязательные опции, платные топпинги, пересчёт цены в реальном времени и комментарии для кухни.",
+  },
+  'food-delivery-hero': {
+    es: "Hero para delivery de comida: buscador rápido de dirección, tiempo de entrega garantizado en 25 minutos, accesos a categorías y recomendación del chef.",
+    ru: "Главный экран сервиса доставки еды: ввод адреса доставки, гарантия 25 минут, быстрый выбор категорий и блюдо дня от шефа.",
+  },
+  'food-category-rail': {
+    es: "Carrusel adhesivo de categorías para menús: iconos por tipo de cocina, contadores de platos disponibles y navegación suave mediante chips.",
+    ru: "Горизонтальная лента категорий для ресторанов: иконки кухонь, счётчики блюд и удобные переключатели.",
+  },
+  'food-menu-grid': {
+    es: "Cuadrícula responsiva de platos: etiquetas dietéticas (Halal, Vegano, Sin Gluten, Picante), calorías, estado de agotado (86'd) y personalización rápida.",
+    ru: "Сетка блюд меню: диетические метки (Халяль, Веган, Без глютена, Острое), калории, стоп-лист и кнопка добавления/настройки.",
+  },
+  'food-live-promo-banner': {
+    es: "Banner promocional de alta conversión: ofertas flash por tiempo limitado, caja para copiar el código descuento y llamada directa al pedido.",
+    ru: "Промо-баннер с высоким откликом: горячие скидки со счетчиком времени, блок с промокодом и кнопка быстрого заказа.",
+  },
+  'food-restaurant-partner-cta': {
+    es: "Sección de captación B2B para restaurantes y dark kitchens: ventajas del software Kitchen OS, vista previa de la pantalla KDS y registro online.",
+    ru: "Блок подключения ресторанов и Dark Kitchen: преимущества Kitchen OS, превью экрана KDS и форма заявки на сотрудничество.",
+  },
+  'food-checkout-wizard': {
+    es: "Asistente de checkout para reparto de comida: dirección y notas de entrega sin contacto, selector de propina para el repartidor, método de pago y desglose total.",
+    ru: "Мастер оформления заказа еды: адрес и инструкция бесконтактной доставки, чаевые курьеру, выбор способа оплаты и итоговый чек.",
+  },
 };

@@ -33,6 +33,11 @@ export { default as MoveInventoryCalculator } from './MoveInventoryCalculator.as
 export { default as FleetDispatchTimeline } from './FleetDispatchTimeline.astro';
 export { default as HiringPipelineBoard } from './HiringPipelineBoard.astro';
 export { default as MoveManifestCard } from './MoveManifestCard.astro';
+// Food delivery & kitchen OS apps
+export { default as FoodKitchenDisplay } from './FoodKitchenDisplay.astro';
+export { default as FoodMenuCmsEditor } from './FoodMenuCmsEditor.astro';
+export { default as FoodOrderTracker } from './FoodOrderTracker.astro';
+export { default as FoodDishCustomizer } from './FoodDishCustomizer.astro';
 
 export { appIcons, appIcon, initials, hueFrom } from './app-icons';
 export type { AppIcon } from './app-icons';

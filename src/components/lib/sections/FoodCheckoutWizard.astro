@@ -1,0 +1,667 @@
+---
+/**
+ * FoodCheckoutWizard — Multistep ordering and checkout wizard for food delivery applications.
+ * Handles address verification, delivery drop-off instructions, courier tips,
+ * payment method selection, and complete price breakdown.
+ *
+ * @param {Array} items - List of cart items.
+ * @param {number} subtotal - Subtotal amount in euros.
+ * @param {number} deliveryFee - Delivery fee in euros.
+ * @param {string} orderSuccessHref - URL to redirect after placing order.
+ * @param {string} className - Optional CSS class.
+ */
+import { foodOrders } from '../templates/food-delivery/data';
+
+interface CartItem {
+  name: string;
+  qty: number;
+  unitPrice: number;
+  modifiers?: string[];
+}
+
+interface Props {
+  items?: CartItem[];
+  subtotal?: number;
+  deliveryFee?: number;
+  orderSuccessHref?: string;
+  className?: string;
+}
+
+const defaultOrder = foodOrders[0];
+
+const {
+  items = defaultOrder.items.map(it => ({
+    name: it.name,
+    qty: it.qty,
+    unitPrice: it.unitPrice,
+    modifiers: it.selectedModifiers,
+  })),
+  subtotal = defaultOrder.subtotal,
+  deliveryFee = defaultOrder.deliveryFee,
+  orderSuccessHref = '/preview/food-delivery/track',
+  className = '',
+} = Astro.props;
+---
+
+<div class={`food-checkout-wizard ${className}`}>
+  <div class="checkout-grid">
+    <!-- Left Column: Checkout Details Form -->
+    <div class="checkout-form-col">
+      <!-- Step 1: Delivery Details -->
+      <section class="checkout-card">
+        <div class="card-header">
+          <div class="step-num">1</div>
+          <div class="card-titles">
+            <h3 class="card-title">Delivery Address &amp; Instructions</h3>
+            <p class="card-sub">Where should the rider deliver your meal?</p>
+          </div>
+        </div>
+
+        <div class="form-body">
+          <div class="form-row-full">
+            <label class="form-label">Delivery Street Address</label>
+            <input
+              type="text"
+              class="form-input"
+              value="Calle Mayor 45"
+              placeholder="e.g. Gran Vía 12"
+              required
+            />
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Floor / Door / Suite</label>
+              <input
+                type="text"
+                class="form-input"
+                value="Floor 3, Door B"
+                placeholder="e.g. 4B"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Phone</label>
+              <input
+                type="tel"
+                class="form-input"
+                value="+34 612 345 678"
+                placeholder="For courier updates"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row-full">
+            <label class="form-label">Courier Note (Optional)</label>
+            <input
+              type="text"
+              class="form-input"
+              value="Leave at front door and ring buzzer twice"
+              placeholder="e.g. Buzzer doesn't work, please call upon arrival"
+            />
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="contactless-opt" checked />
+            <label for="contactless-opt" class="checkbox-label">
+              <strong>Contactless Delivery:</strong> Rider will place your thermal bag at the door and step back 2 meters.
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Payment Method -->
+      <section class="checkout-card">
+        <div class="card-header">
+          <div class="step-num">2</div>
+          <div class="card-titles">
+            <h3 class="card-title">Payment Method</h3>
+            <p class="card-sub">All transactions are encrypted and secure.</p>
+          </div>
+        </div>
+
+        <div class="form-body">
+          <div class="payment-methods-grid">
+            <label class="payment-method is-selected">
+              <input type="radio" name="payment" value="card" checked />
+              <div class="method-visual">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/>
+                  <line x1="2" y1="10" x2="22" y2="10"/>
+                </svg>
+                <span class="method-title">Credit / Debit Card</span>
+              </div>
+              <span class="method-sub">Visa ending in 4242</span>
+            </label>
+
+            <label class="payment-method">
+              <input type="radio" name="payment" value="apple_pay" />
+              <div class="method-visual">
+                <span class="apple-icon"></span>
+                <span class="method-title">Apple Pay</span>
+              </div>
+              <span class="method-sub">One-click touch ID</span>
+            </label>
+
+            <label class="payment-method">
+              <input type="radio" name="payment" value="cash" />
+              <div class="method-visual">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="20" height="12" rx="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <path d="M6 12h.01M18 12h.01"/>
+                </svg>
+                <span class="method-title">Cash on Delivery</span>
+              </div>
+              <span class="method-sub">Exact change preferred</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3: Courier Tip -->
+      <section class="checkout-card">
+        <div class="card-header">
+          <div class="step-num">3</div>
+          <div class="card-titles">
+            <h3 class="card-title">Support Your Delivery Rider</h3>
+            <p class="card-sub">100% of tips go directly to the courier delivering your meal.</p>
+          </div>
+        </div>
+
+        <div class="tip-selector-row">
+          <button type="button" class="tip-pill">0.00 €</button>
+          <button type="button" class="tip-pill is-active">1.50 €</button>
+          <button type="button" class="tip-pill">2.50 €</button>
+          <button type="button" class="tip-pill">4.00 €</button>
+          <button type="button" class="tip-pill">Custom</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Order Summary Sidebar -->
+    <aside class="checkout-summary-col">
+      <div class="summary-card">
+        <div class="summary-header">
+          <h3 class="summary-title">Order Summary</h3>
+          <span class="eta-pill">⚡ 25 min ETA</span>
+        </div>
+
+        <div class="summary-items">
+          {items.map((item) => (
+            <div class="summary-item">
+              <div class="item-qty-badge">{item.qty}x</div>
+              <div class="item-info">
+                <span class="item-name">{item.name}</span>
+                {item.modifiers && item.modifiers.length > 0 && (
+                  <span class="item-mods">{item.modifiers.join(', ')}</span>
+                )}
+              </div>
+              <span class="item-price">{(item.unitPrice * item.qty).toFixed(2)} €</span>
+            </div>
+          ))}
+        </div>
+
+        <!-- Promo Code Input -->
+        <div class="promo-box">
+          <input
+            type="text"
+            class="promo-input"
+            placeholder="Discount code or gift card"
+            value="BITEFLOW"
+          />
+          <button type="button" class="promo-apply-btn">Applied</button>
+        </div>
+
+        <!-- Cost Breakdown -->
+        <div class="cost-breakdown">
+          <div class="cost-line">
+            <span>Subtotal</span>
+            <span>{subtotal.toFixed(2)} €</span>
+          </div>
+          <div class="cost-line">
+            <span>Delivery Fee</span>
+            <span class="free-pill">FREE (was {deliveryFee.toFixed(2)} €)</span>
+          </div>
+          <div class="cost-line">
+            <span>Courier Tip</span>
+            <span>1.50 €</span>
+          </div>
+          <div class="cost-line">
+            <span>Taxes &amp; Service</span>
+            <span>Included (10% IVA)</span>
+          </div>
+          <div class="cost-line total-line">
+            <span>Total Payable</span>
+            <span class="total-price">{(subtotal + 1.50).toFixed(2)} €</span>
+          </div>
+        </div>
+
+        <!-- Place Order Action -->
+        <div class="place-order-box">
+          <a href={orderSuccessHref} class="place-order-btn">
+            <span>Place Order · {(subtotal + 1.50).toFixed(2)} €</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <p class="order-guarantee">
+            🔒 Protected by BiteFlow Fresh &amp; Hot Food Guarantee
+          </p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<style>
+  .food-checkout-wizard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 0;
+  }
+
+  .checkout-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  @media (max-width: 960px) {
+    .checkout-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .checkout-form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .checkout-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.75rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ea580c;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .card-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .card-sub {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-row-full, .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.7rem 0.9rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .form-input:focus {
+    border-color: #ea580c;
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2);
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .checkbox-row input {
+    margin-top: 0.2rem;
+    accent-color: #ea580c;
+  }
+
+  .checkbox-label {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+
+  .checkbox-label strong {
+    color: #f1f5f9;
+  }
+
+  /* Payment methods */
+  .payment-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .payment-method {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.15s ease;
+  }
+
+  .payment-method input {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    accent-color: #ea580c;
+  }
+
+  .payment-method.is-selected {
+    border-color: #ea580c;
+    background: rgba(234, 88, 12, 0.08);
+  }
+
+  .method-visual {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ffffff;
+  }
+
+  .apple-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .method-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .method-sub {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  /* Tip selector */
+  .tip-selector-row {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .tip-pill {
+    padding: 0.55rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .tip-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .tip-pill.is-active {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: #ffffff;
+  }
+
+  /* Summary Card */
+  .summary-card {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: sticky;
+    top: 90px;
+  }
+
+  .summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .summary-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .eta-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.15);
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+  }
+
+  .summary-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .item-qty-badge {
+    padding: 0.15rem 0.45rem;
+    background: rgba(234, 88, 12, 0.2);
+    color: #fb923c;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .item-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .item-mods {
+    font-size: 0.72rem;
+    color: #94a3b8;
+  }
+
+  .item-price {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .promo-box {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.35rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+  }
+
+  .promo-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 0.82rem;
+    padding-left: 0.5rem;
+    outline: none;
+  }
+
+  .promo-apply-btn {
+    padding: 0.4rem 0.8rem;
+    background: rgba(22, 163, 74, 0.2);
+    border: 1px solid rgba(22, 163, 74, 0.4);
+    color: #4ade80;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: default;
+  }
+
+  .cost-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .cost-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .free-pill {
+    color: #4ade80;
+    font-weight: 700;
+    font-size: 0.78rem;
+  }
+
+  .total-line {
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .total-price {
+    font-size: 1.35rem;
+    color: #ea580c;
+  }
+
+  .place-order-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .place-order-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.95rem;
+    background: linear-gradient(135deg, #ea580c, #c2410c);
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 4px 18px rgba(234, 88, 12, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .place-order-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(234, 88, 12, 0.55);
+  }
+
+  .order-guarantee {
+    text-align: center;
+    font-size: 0.72rem;
+    color: #64748b;
+    margin: 0;
+  }
+</style>

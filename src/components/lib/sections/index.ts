@@ -149,3 +149,11 @@ export { default as MovingCareersBanner } from './MovingCareersBanner.astro';
 export { default as MovingPricingTiers } from './MovingPricingTiers.astro';
 export { default as MovingApplicationForm } from './MovingApplicationForm.astro';
 
+// Food Delivery & Kitchen OS ("BiteFlow") — food ordering & ghost kitchen platform
+export { default as FoodDeliveryHero } from './FoodDeliveryHero.astro';
+export { default as FoodCategoryRail } from './FoodCategoryRail.astro';
+export { default as FoodMenuGrid } from './FoodMenuGrid.astro';
+export { default as FoodLivePromoBanner } from './FoodLivePromoBanner.astro';
+export { default as FoodRestaurantPartnerCta } from './FoodRestaurantPartnerCta.astro';
+export { default as FoodCheckoutWizard } from './FoodCheckoutWizard.astro';
+

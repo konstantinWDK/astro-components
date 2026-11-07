@@ -1,0 +1,364 @@
+---
+/**
+ * FoodOrdersPage — Full delivery & takeaway order book and receipt manager for BiteFlow OS.
+ * Filters orders by status (New, Prepping, Ready, Out for Delivery, Delivered) with full customer details.
+ */
+import FoodLayout from './FoodLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  routes?: FoodDeliveryRoutes;
+}
+
+const { routes = foodDeliveryRoutes } = Astro.props;
+const orders = foodDeliveryData.orders;
+---
+
+<FoodLayout
+  title="Customer Orders & Receipts"
+  current="orders"
+  routes={routes}
+>
+  <PageHeader
+    title="Customer Orders & Fulfillment"
+    description="Track real-time order lifecycle from receipt to customer doorstep handoff."
+  >
+    <div slot="actions" class="header-actions">
+      <button type="button" class="btn-export">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Export CSV</span>
+      </button>
+      <button type="button" class="btn-new-phone-order">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Manual Phone Order</span>
+      </button>
+    </div>
+  </PageHeader>
+
+  <!-- Status filter pills -->
+  <div class="orders-filter-bar">
+    <div class="filter-pills">
+      <button type="button" class="filter-pill is-active">All Orders ({orders.length})</button>
+      <button type="button" class="filter-pill">New (1)</button>
+      <button type="button" class="filter-pill">In Kitchen (1)</button>
+      <button type="button" class="filter-pill">On Road (1)</button>
+      <button type="button" class="filter-pill">Delivered (1)</button>
+    </div>
+  </div>
+
+  <div class="orders-table-card">
+    <div class="table-wrap">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order Ref</th>
+            <th>Customer &amp; Address</th>
+            <th>Items</th>
+            <th>Placed</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Total</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((o) => (
+            <tr>
+              <td>
+                <span class="ref-badge">{o.reference}</span>
+              </td>
+              <td>
+                <div class="cust-info">
+                  <span class="cust-name">{o.customerName}</span>
+                  <span class="cust-addr">{o.deliveryAddress} ({o.floorDoor})</span>
+                  <span class="cust-phone">{o.customerPhone}</span>
+                </div>
+              </td>
+              <td>
+                <div class="items-summary">
+                  {o.items.map((it) => (
+                    <div class="item-line">
+                      <span class="item-qty">{it.qty}x</span>
+                      <span class="item-name">{it.name}</span>
+                    </div>
+                  ))}
+                  {o.notes && (
+                    <span class="order-notes">Note: {o.notes}</span>
+                  )}
+                </div>
+              </td>
+              <td>
+                <span class="order-time">{o.orderTime}</span>
+              </td>
+              <td>
+                <span class={`status-badge ${o.status}`}>
+                  {o.status.replace(/_/g, ' ').toUpperCase()}
+                </span>
+                {o.courier && (
+                  <span class="courier-hint">🛵 {o.courier.name}</span>
+                )}
+              </td>
+              <td>
+                <span class="pay-method">{o.paymentMethod.replace(/_/g, ' ').toUpperCase()}</span>
+              </td>
+              <td>
+                <span class="order-total">{o.total.toFixed(2)} €</span>
+              </td>
+              <td class="text-right">
+                <a href={routes.tracking} class="btn-inspect" title="Live Tracker">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <span>Track</span>
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</FoodLayout>
+
+<style>
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-new-phone-order {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem;
+    background: #ea580c;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .orders-filter-bar {
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-pill {
+    padding: 0.45rem 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .filter-pill.is-active {
+    background: #ea580c;
+    color: #ffffff;
+    border-color: #ea580c;
+  }
+
+  .orders-table-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+  }
+
+  .orders-table th {
+    background: rgba(15, 23, 42, 0.7);
+    padding: 0.85rem 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .orders-table td {
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: top;
+  }
+
+  .ref-badge {
+    font-family: monospace;
+    font-weight: 800;
+    color: #ea580c;
+    font-size: 0.88rem;
+  }
+
+  .cust-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .cust-name {
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .cust-addr {
+    font-size: 0.78rem;
+    color: #94a3b8;
+  }
+
+  .cust-phone {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .items-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .item-line {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .item-qty {
+    font-weight: 700;
+    color: #ea580c;
+  }
+
+  .item-name {
+    color: #cbd5e1;
+  }
+
+  .order-notes {
+    font-size: 0.72rem;
+    color: #fb923c;
+    font-style: italic;
+  }
+
+  .order-time {
+    color: #94a3b8;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .status-badge.new {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+  }
+
+  .status-badge.kitchen_prep {
+    background: rgba(234, 88, 12, 0.15);
+    color: #fb923c;
+  }
+
+  .status-badge.ready_for_pickup {
+    background: rgba(22, 163, 74, 0.15);
+    color: #4ade80;
+  }
+
+  .status-badge.out_for_delivery {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+  }
+
+  .status-badge.delivered {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+  }
+
+  .courier-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+  }
+
+  .pay-method {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+
+  .order-total {
+    font-weight: 800;
+    color: #ffffff;
+    font-size: 0.95rem;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .btn-inspect {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .btn-inspect:hover {
+    background: rgba(234, 88, 12, 0.2);
+    border-color: rgba(234, 88, 12, 0.4);
+    color: #ffffff;
+  }
+</style>

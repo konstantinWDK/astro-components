@@ -1,0 +1,309 @@
+---
+/**
+ * FoodSignInPage — Kitchen crew & restaurant manager authentication page for BiteFlow OS.
+ * Features 1-click test credentials for Head Chef, KDS Line Cook, and Fleet Dispatcher.
+ */
+import './food-theme.css';
+import { foodDeliveryRoutes, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  routes?: FoodDeliveryRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = foodDeliveryRoutes, theme = 'dark', noindex = true } = Astro.props;
+
+const demoRoles = [
+  { role: 'Chef Marco Rossi', title: 'Head Chef & Kitchen Manager', target: routes.dashboard, icon: '👨‍🍳' },
+  { role: 'Line Station #01', title: 'KDS Line Cook (Burger Station)', target: routes.kds, icon: '🔥' },
+  { role: 'Dispatch Desk', title: 'Fleet & Rider Dispatcher', target: routes.riders, icon: '🛵' },
+  { role: 'Catalog Ops', title: 'Menu CMS & 86’d Stock Manager', target: routes.menuCms, icon: '📋' },
+];
+---
+
+<!doctype html>
+<html lang="en" class="theme-food" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kitchen Staff Sign In — BiteFlow Kitchen OS</title>
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body class="sign-in-body">
+    <div class="sign-in-shell">
+      <div class="brand-badge">
+        <div class="logo-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+          </svg>
+        </div>
+        <h1 class="brand-title">BiteFlow Kitchen OS</h1>
+        <p class="brand-subtitle">Commercial Kitchen &amp; Food Delivery Operations</p>
+      </div>
+
+      <div class="sign-in-card">
+        <h2 class="card-title">Sign in to Kitchen Tablet</h2>
+        <p class="card-sub">Choose a 1-click test role below or enter your 4-digit PIN.</p>
+
+        <!-- 1-Click Role Switcher -->
+        <div class="roles-list">
+          <span class="roles-label">Instant Demo Access:</span>
+          {demoRoles.map((r) => (
+            <a href={r.target} class="role-btn">
+              <span class="role-emoji">{r.icon}</span>
+              <div class="role-copy">
+                <span class="role-name">{r.role}</span>
+                <span class="role-desc">{r.title}</span>
+              </div>
+              <svg class="role-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </a>
+          ))}
+        </div>
+
+        <div class="divider">
+          <span>or sign in with PIN</span>
+        </div>
+
+        <form class="pin-form" action={routes.dashboard}>
+          <div class="pin-field">
+            <label>Kitchen Staff ID / PIN</label>
+            <input type="password" placeholder="••••" maxlength="4" value="8821" />
+          </div>
+          <button type="submit" class="submit-pin-btn">
+            Unlock Kitchen Terminal
+          </button>
+        </form>
+
+        <div class="card-footer">
+          <a href={routes.home} class="back-link">← Back to Customer Storefront</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .sign-in-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: radial-gradient(circle at 50% 20%, rgba(234, 88, 12, 0.12) 0%, transparent 60%),
+                #0b0f19;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  .sign-in-shell {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+  }
+
+  .brand-badge {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .logo-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #ea580c;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4);
+  }
+
+  .brand-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-subtitle {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .sign-in-card {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.35rem;
+  }
+
+  .card-sub {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0 0 1.5rem;
+  }
+
+  .roles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .roles-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #ea580c;
+  }
+
+  .role-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .role-btn:hover {
+    background: rgba(234, 88, 12, 0.12);
+    border-color: rgba(234, 88, 12, 0.4);
+    transform: translateX(2px);
+  }
+
+  .role-emoji {
+    font-size: 1.4rem;
+  }
+
+  .role-copy {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .role-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .role-desc {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .role-arrow {
+    color: #64748b;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .divider span {
+    padding: 0 0.75rem;
+  }
+
+  .pin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .pin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .pin-field label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  .pin-field input {
+    padding: 0.75rem;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 1.2rem;
+    text-align: center;
+    letter-spacing: 0.4em;
+    outline: none;
+  }
+
+  .submit-pin-btn {
+    padding: 0.85rem;
+    background: #ea580c;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+
+  .submit-pin-btn:hover {
+    background: #c2410c;
+  }
+
+  .card-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .back-link {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+</style>

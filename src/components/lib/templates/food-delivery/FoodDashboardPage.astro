@@ -1,0 +1,514 @@
+---
+/**
+ * FoodDashboardPage — Operations overview dashboard for BiteFlow Kitchen OS.
+ * Summarizes live ticket flow, daily revenue, active riders, preparation bottlenecks, and recent orders.
+ */
+import FoodLayout from './FoodLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  routes?: FoodDeliveryRoutes;
+}
+
+const { routes = foodDeliveryRoutes } = Astro.props;
+
+const tickets = foodDeliveryData.tickets;
+const activeTicketsCount = tickets.filter(t => t.status !== 'ready').length;
+const urgentTicketsCount = tickets.filter(t => t.urgent).length;
+const completedOrders = foodDeliveryData.orders.length;
+const totalRevenue = foodDeliveryData.orders.reduce((acc, o) => acc + o.total, 0);
+---
+
+<FoodLayout
+  title="Kitchen Operations Overview"
+  current="dashboard"
+  routes={routes}
+>
+  <PageHeader
+    title="Kitchen Operations Dashboard"
+    description="Live service monitoring, station bottlenecks, and dispatch metrics for today's service."
+  >
+    <div slot="actions" class="header-actions">
+      <a href={routes.kds} class="btn-kds-launch">
+        <span class="live-dot"></span>
+        <span>Open KDS Station View</span>
+      </a>
+      <a href={routes.menuCms} class="btn-stock-quick">
+        <span>Quick 86'd Stock</span>
+      </a>
+    </div>
+  </PageHeader>
+
+  <!-- Metric KPI Cards -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-top">
+        <span class="metric-label">Active Kitchen Tickets</span>
+        <span class="metric-icon">🔥</span>
+      </div>
+      <div class="metric-val">{activeTicketsCount}</div>
+      <div class="metric-footnote warning">
+        <span>⚠️ {urgentTicketsCount} tickets nearing SLA threshold</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-top">
+        <span class="metric-label">Avg Prep Time (Today)</span>
+        <span class="metric-icon">⏱️</span>
+      </div>
+      <div class="metric-val">11.4 min</div>
+      <div class="metric-footnote success">
+        <span>↓ 2.1 min faster than target (14 min)</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-top">
+        <span class="metric-label">Orders Completed</span>
+        <span class="metric-icon">📦</span>
+      </div>
+      <div class="metric-val">{completedOrders + 138}</div>
+      <div class="metric-footnote">
+        <span>88% Delivery · 12% Takeaway</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-top">
+        <span class="metric-label">Today's Revenue</span>
+        <span class="metric-icon">💶</span>
+      </div>
+      <div class="metric-val">{totalRevenue.toFixed(2)} €</div>
+      <div class="metric-footnote success">
+        <span>+18.4% vs previous Thursday</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-main-grid">
+    <!-- Active Tickets Stream Preview -->
+    <div class="station-stream-card">
+      <div class="card-head">
+        <div class="head-left">
+          <h3 class="card-title">Live Cooking Line</h3>
+          <span class="card-sub">Next tickets in queue</span>
+        </div>
+        <a href={routes.kds} class="view-all-link">Full KDS Screen →</a>
+      </div>
+
+      <div class="tickets-mini-list">
+        {tickets.map((t) => (
+          <div class={`mini-ticket ${t.urgent ? 'is-urgent' : ''}`}>
+            <div class="mini-ticket-head">
+              <span class="ref">{t.orderRef}</span>
+              <span class={`timer ${t.urgent ? 'urgent' : ''}`}>{t.elapsedMin} / {t.targetMin} min</span>
+            </div>
+            <div class="mini-ticket-body">
+              {t.items.map(it => (
+                <div class="mini-item">
+                  <span class="qty">{it.qty}x</span>
+                  <span class="name">{it.name}</span>
+                  {it.allergies && it.allergies.length > 0 && (
+                    <span class="mini-allergy">⚠️ {it.allergies.join(', ')}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div class="mini-ticket-foot">
+              <span class="channel-tag">{t.channel.toUpperCase()}</span>
+              <span class={`status-tag ${t.status}`}>{t.status.toUpperCase()}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Kitchen Station Status -->
+    <div class="stations-status-card">
+      <div class="card-head">
+        <div class="head-left">
+          <h3 class="card-title">Station Loads</h3>
+          <span class="card-sub">Thermal &amp; prep capacity</span>
+        </div>
+      </div>
+
+      <div class="stations-list">
+        <div class="station-row">
+          <div class="station-meta">
+            <span class="station-name">🔥 Smash Flat Top #01</span>
+            <span class="station-load load-high">85% Load</span>
+          </div>
+          <div class="load-track">
+            <div class="load-bar load-high" style="width: 85%"></div>
+          </div>
+        </div>
+
+        <div class="station-row">
+          <div class="station-meta">
+            <span class="station-name">🍕 Wood-Fired Oven (450°C)</span>
+            <span class="station-load load-med">52% Load</span>
+          </div>
+          <div class="load-track">
+            <div class="load-bar load-med" style="width: 52%"></div>
+          </div>
+        </div>
+
+        <div class="station-row">
+          <div class="station-meta">
+            <span class="station-name">🥗 Cold Prep &amp; Bowls</span>
+            <span class="station-load load-low">28% Load</span>
+          </div>
+          <div class="load-track">
+            <div class="load-bar load-low" style="width: 28%"></div>
+          </div>
+        </div>
+
+        <div class="station-row">
+          <div class="station-meta">
+            <span class="station-name">📦 Packing &amp; Bagging Station</span>
+            <span class="station-load load-high">90% Load</span>
+          </div>
+          <div class="load-track">
+            <div class="load-bar load-high" style="width: 90%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="station-quick-actions">
+        <a href={routes.riders} class="station-action-btn">
+          <span>🛵 4 Couriers En Route</span>
+        </a>
+        <a href={routes.orders} class="station-action-btn">
+          <span>📜 View All Receipts</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</FoodLayout>
+
+<style>
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn-kds-launch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.15rem;
+    background: #ea580c;
+    color: #ffffff;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 6px #ffffff;
+  }
+
+  .btn-stock-quick {
+    padding: 0.6rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* Metrics */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .metric-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .metric-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+
+  .metric-icon {
+    font-size: 1.15rem;
+  }
+
+  .metric-val {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .metric-footnote {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .metric-footnote.warning {
+    color: #f87171;
+  }
+
+  .metric-footnote.success {
+    color: #4ade80;
+  }
+
+  /* Main Grid */
+  .dashboard-main-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 0.85fr;
+    gap: 1.75rem;
+  }
+
+  @media (max-width: 960px) {
+    .dashboard-main-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .station-stream-card, .stations-status-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .head-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .card-sub {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .view-all-link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ea580c;
+    text-decoration: none;
+  }
+
+  .view-all-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Tickets list */
+  .tickets-mini-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .mini-ticket {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .mini-ticket.is-urgent {
+    border-left: 3px solid #ef4444;
+  }
+
+  .mini-ticket-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ref {
+    font-family: monospace;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: #ea580c;
+  }
+
+  .timer {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+  }
+
+  .timer.urgent {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  .mini-ticket-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .mini-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .qty {
+    font-weight: 800;
+    color: #ea580c;
+  }
+
+  .name {
+    color: #ffffff;
+  }
+
+  .mini-allergy {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+  }
+
+  .mini-ticket-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .channel-tag {
+    color: #64748b;
+  }
+
+  .status-tag.new { color: #38bdf8; }
+  .status-tag.prepping { color: #fb923c; }
+  .status-tag.ready { color: #4ade80; }
+
+  /* Stations list */
+  .stations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+
+  .station-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .station-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+  }
+
+  .station-name {
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  .station-load {
+    font-weight: 700;
+    font-size: 0.78rem;
+  }
+
+  .load-high { color: #f87171; }
+  .load-med { color: #fbbf24; }
+  .load-low { color: #4ade80; }
+
+  .load-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .load-bar {
+    height: 100%;
+    border-radius: 9999px;
+  }
+
+  .load-bar.load-high { background: #ef4444; }
+  .load-bar.load-med { background: #f59e0b; }
+  .load-bar.load-low { background: #22c55e; }
+
+  .station-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .station-action-btn {
+    padding: 0.65rem;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-decoration: none;
+  }
+
+  .station-action-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+</style>

@@ -1494,6 +1494,187 @@ const data = {
 
 <MovingHomePage />`,
   },
+  {
+    slug: 'food-delivery',
+    name: { en: 'Food Delivery & Kitchen OS', es: 'Delivery de Comida y Kitchen OS', ru: 'Доставка еды и Kitchen OS' },
+    tagline: {
+      en: 'Complete online ordering storefront, real-time GPS tracking, tactile KDS display, and menu stock backoffice.',
+      es: 'Tienda de delivery completa, tracking GPS en tiempo real, pantalla KDS de cocina y CMS de stock para restaurantes.',
+      ru: 'Готовая платформа доставки еды, трекинг курьера в реальном времени, экран кухни KDS и CMS меню.',
+    },
+    description: {
+      en: 'BiteFlow is a full-stack restaurant delivery & ghost kitchen operating system built on Astro. It features a high-converting customer ordering portal with live dish modifier selection, checkout wizard with tip and contactless drop-off options, live step-by-step courier delivery tracker, touch-screen Kitchen Display System (KDS) with cook timers and allergy alerts, and an instant 86’d out-of-stock menu CMS.',
+      es: 'BiteFlow es un sistema operativo completo de reparto de comida y dark kitchens construido con Astro. Ofrece portal de pedidos para clientes con personalización de platos e ingredientes en tiempo real, asistente de checkout con propinas y entrega sin contacto, seguimiento de repartidores en tiempo real, pantalla táctil de cocina (KDS) con cronómetros de preparación y alertas de alergias, y CMS de menú con apagado instantáneo de platos agotados (86’d).',
+      ru: 'BiteFlow — готовая платформа доставки еды и кухня-фабрика (Dark Kitchen) на Astro. Включает клиентский портал с модификаторами блюд, чекаут с чаевыми курьеру, отслеживание доставки в реальном времени, кухонный экран KDS с таймерами и стоп-листом 86’d.',
+    },
+    highlights: {
+      en: [
+        'Touch-friendly Kitchen Display System (KDS) with station timers',
+        'Menu CMS with instant 86’d out-of-stock emergency switches',
+        'Live delivery tracker with courier contact and GPS milestones',
+        'Interactive dish customizer with required & optional modifiers',
+        'Full backoffice with fleet dispatch, order book and kitchen settings',
+      ],
+      es: [
+        'Sistema KDS táctil para cocina con cronómetros por estación',
+        'CMS de menú con botón de apagado de platos agotados (86’d)',
+        'Tracker de pedidos en vivo con llamada al repartidor y mapa GPS',
+        'Personalizador interactivo de platos con cálculo de precio al instante',
+        'Backoffice completo con despacho de flota, albaranes y ajustes',
+      ],
+      ru: [
+        'Кухонный экран KDS с таймерами готовности и контролем аллергенов',
+        'CMS меню с мгновенной блокировкой закончившихся блюд (86’d)',
+        'Живой трекинг доставки со связью с курьером',
+        'Интерактивный конструктор блюд с пересчетом цены',
+        'Панель управления с диспетчеризацией флота и чеками',
+      ],
+    },
+    tags: ['food-delivery', 'restaurant', 'kitchen-os', 'kds', 'ghost-kitchen', 'cms', 'courier-tracking'],
+    previewBase: '/preview/food-delivery',
+    importPath: 'astro-component-kit/templates/food-delivery',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Food Ordering Storefront', es: 'Home de Pedidos Online', ru: 'Витрина доставки еды' },
+        description: { en: 'Above-the-fold delivery address finder, category pills, flash promo countdown, and chef recommendations.', es: 'Buscador de dirección de entrega, filtros por categorías, banner de promo flash y recomendados del chef.', ru: 'Главная с поиском адреса доставки, категориями, промо-акциями и хитами кухни.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { FoodHomePage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodHomePage />`,
+      },
+      {
+        id: 'menu', path: 'menu/',
+        name: { en: 'Digital Menu & Customizer', es: 'Carta Digital y Personalizador', ru: 'Меню и конструктор блюд' },
+        description: { en: 'Full restaurant catalog with category rail, live dish customizer with required/optional modifiers, and checkout wizard.', es: 'Carta completa con rail de categorías, personalizador de ingredientes con recálculo de precio y checkout.', ru: 'Полный каталог блюд с фильтрами, конструктором модификаторов и оформлением заказа.' },
+        file: 'src/pages/menu.astro',
+        code: `---
+import { FoodMenuPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodMenuPage />`,
+      },
+      {
+        id: 'track', path: 'track/',
+        name: { en: 'Live Delivery Tracker', es: 'Seguimiento de Pedido en Vivo', ru: 'Отслеживание заказа онлайн' },
+        description: { en: 'Real-time order progress tracker with cooking countdown, courier contact card, vehicle badge, and itemized receipt.', es: 'Seguimiento de pedido en tiempo real con cuenta atrás de cocina, tarjeta del repartidor y recibo.', ru: 'Трекер статуса заказа с обратным отсчетом кухни, контактом курьера и чеком.' },
+        file: 'src/pages/track.astro',
+        code: `---
+import { FoodTrackingPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodTrackingPage />`,
+      },
+      {
+        id: 'partner', path: 'partner/',
+        name: { en: 'Partner With Us (B2B)', es: 'Hazte Partner / Restaurantes', ru: 'Партнерство для ресторанов' },
+        description: { en: 'B2B restaurant onboarding portal highlighting Kitchen OS hardware, commission plans, and instant registration form.', es: 'Portal para restaurantes y dark kitchens con planes de comisión, tablet Kitchen OS y formulario de alta.', ru: 'Портал для ресторанов и Dark Kitchen с тарифами комиссии и формой подключения.' },
+        file: 'src/pages/partner.astro',
+        code: `---
+import { FoodPartnerPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodPartnerPage />`,
+      },
+      {
+        id: 'sign-in', path: 'sign-in/',
+        name: { en: 'Kitchen Crew Sign In', es: 'Acceso Personal de Cocina', ru: 'Вход для сотрудников кухни' },
+        description: { en: 'Terminal sign-in screen with 1-click test roles for Head Chef, KDS Line Cook, and Fleet Dispatcher.', es: 'Pantalla de acceso al terminal con roles de 1 clic para Jefe de Cocina, Cocinero KDS y Despachador.', ru: 'Экран входа в терминал с быстрым доступом для шеф-повара, повара KDS и диспетчера.' },
+        file: 'src/pages/sign-in.astro',
+        code: `---
+import { FoodSignInPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'Kitchen Operations Dashboard', es: 'Panel de Operaciones de Cocina', ru: 'Панель управления кухней' },
+        description: { en: 'High-level kitchen overview: live prep queues, urgent ticket alarms, station thermal loads, and daily revenue.', es: 'Visión general de cocina: cola de comandas en vivo, alarmas de retraso, carga de estaciones e ingresos.', ru: 'Обзор кухни: очередь заказов, контроль задержек, нагрузка цехов и выручка за смену.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { FoodDashboardPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodDashboardPage />`,
+      },
+      {
+        id: 'kds', path: 'app/kds/',
+        name: { en: 'Kitchen Display System (KDS)', es: 'Pantalla de Cocina KDS', ru: 'Кухонный экран KDS' },
+        description: { en: 'Commercial touchscreen display with elapsed prep timers, color-coded urgency, allergen badges, and bump stage actions.', es: 'Pantalla táctil para línea de cocinado con cronómetros por comanda, avisos de alergias y avance de fase.', ru: 'Сенсорный кухонный экран с таймерами готовности, контролем аллергенов и сменой статусов.' },
+        file: 'src/pages/app/kds.astro',
+        code: `---
+import { FoodKdsPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodKdsPage />`,
+      },
+      {
+        id: 'menu-cms', path: 'app/menu/',
+        name: { en: 'Menu CMS & 86’d Stock', es: 'CMS de Menú y Stock (86’d)', ru: 'CMS меню и стоп-лист' },
+        description: { en: 'Restaurant catalog manager with live price editing, calories and 1-click out-of-stock switches across all channels.', es: 'Gestor de carta con edición de precios, alérgenos y botón de apagado de platos agotados (86’d).', ru: 'Управление меню: изменение цен, калорийности и кнопка стоп-листа для закончившихся блюд.' },
+        file: 'src/pages/app/menu.astro',
+        code: `---
+import { FoodMenuCmsPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodMenuCmsPage />`,
+      },
+      {
+        id: 'orders', path: 'app/orders/',
+        name: { en: 'Orders & Receipts', es: 'Comandas y Recibos', ru: 'Заказы и чеки' },
+        description: { en: 'Order book with customer addresses, courier assignments, itemized breakdowns, and status filters.', es: 'Libro de pedidos con direcciones, repartidor asignado, desglose de platos y filtros por estado.', ru: 'Журнал заказов с адресами, назначенными курьерами, составом блюд и статусами.' },
+        file: 'src/pages/app/orders.astro',
+        code: `---
+import { FoodOrdersPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodOrdersPage />`,
+      },
+      {
+        id: 'riders', path: 'app/riders/',
+        name: { en: 'Fleet Dispatch & Couriers', es: 'Flota de Reparto y Riders', ru: 'Диспетчеризация курьеров' },
+        description: { en: 'Live courier roster: track e-bikes and scooters, active delivery destinations, daily drop counts, and driver ratings.', es: 'Control de flota: e-bikes y scooters activas, destino de reparto actual, entregas del día y valoración.', ru: 'Управление курьерами: электровелосипеды и скутеры, активные заказы и рейтинг водителей.' },
+        file: 'src/pages/app/riders.astro',
+        code: `---
+import { FoodRidersPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodRidersPage />`,
+      },
+      {
+        id: 'settings', path: 'app/settings/',
+        name: { en: 'Kitchen & Delivery Settings', es: 'Ajustes de Cocina y Reparto', ru: 'Настройки кухни и доставки' },
+        description: { en: 'Delivery radius, minimum order threshold, ESC/POS thermal printer integration, and acoustic KDS alarms.', es: 'Radio de reparto, pedido mínimo, conexión con impresora térmica ESC/POS y avisos acústicos de comanda.', ru: 'Радиус доставки, минимальный чек, интеграция чековых принтеров ESC/POS и звуковые сигналы KDS.' },
+        file: 'src/pages/app/settings.astro',
+        code: `---
+import { FoodSettingsPage } from 'astro-component-kit/templates/food-delivery';
+---
+
+<FoodSettingsPage />`,
+      },
+    ],
+    newComponents: [
+      'food-kitchen-display', 'food-menu-cms-editor', 'food-order-tracker', 'food-dish-customizer',
+      'food-delivery-hero', 'food-category-rail', 'food-menu-grid', 'food-live-promo-banner', 'food-restaurant-partner-cta', 'food-checkout-wizard',
+    ],
+    reusedComponents: [
+      'app-sidebar', 'app-topbar', 'page-header', 'settings-section', 'switch-row', 'badge',
+    ],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same data + routes across all food delivery pages
+import { FoodHomePage, foodDeliveryData, type FoodDeliveryRoutes } from 'astro-component-kit/templates/food-delivery';
+
+const data = {
+  ...foodDeliveryData,
+  restaurant: { ...foodDeliveryData.restaurant, name: 'Smashed & Co Kitchen' },
+};
+---
+
+<FoodHomePage />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

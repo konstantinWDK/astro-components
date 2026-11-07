@@ -1,0 +1,405 @@
+---
+/**
+ * FoodDishCustomizer — Interactive food order dish modifier and customizer widget.
+ * Supports mandatory option groups, optional extras with live price calculation,
+ * kitchen notes, quantity increment/decrement, and instant Add to Basket action.
+ *
+ * @param {FoodDish} dish - Dish object to customize.
+ * @param {string} className - Optional CSS class.
+ */
+import type { FoodDish } from '../templates/food-delivery/data';
+import { foodDishes } from '../templates/food-delivery/data';
+
+interface Props {
+  dish?: FoodDish;
+  checkoutHref?: string;
+  className?: string;
+}
+
+const {
+  dish = foodDishes[0],
+  checkoutHref = '#checkout',
+  className = '',
+} = Astro.props;
+---
+
+<div class={`dish-customizer ${className}`} id="dish-customizer" data-base-price={dish.price}>
+  <div class="customizer-card">
+    <div class="dish-header">
+      <div class="dish-title-block">
+        <h3 class="custom-dish-name">{dish.name}</h3>
+        <p class="custom-dish-desc">{dish.description}</p>
+        <div class="dish-meta-tags">
+          <span class="calorie-badge">{dish.calories} kcal</span>
+          <span class="prep-badge">⏱️ {dish.prepTimeMin} min prep</span>
+          {dish.dietary.map((d) => (
+            <span class={`diet-badge diet-badge--${d}`}>{d.replace('_', ' ')}</span>
+          ))}
+        </div>
+      </div>
+      <div class="base-price-display">
+        <span class="base-currency">€</span>
+        <strong class="base-val">{dish.price.toFixed(2)}</strong>
+      </div>
+    </div>
+
+    <!-- Modifier Groups -->
+    {dish.modifiers && dish.modifiers.map((group) => (
+      <div class="modifier-group" data-group-id={group.id} data-required={group.required ? 'true' : 'false'}>
+        <div class="group-header">
+          <strong class="group-title">{group.title}</strong>
+          <span class={`group-badge ${group.required ? 'badge-required' : 'badge-optional'}`}>
+            {group.required ? 'Required (Choose 1)' : 'Optional'}
+          </span>
+        </div>
+
+        <div class="options-list">
+          {group.options.map((opt, i) => (
+            <label class="modifier-option">
+              <input
+                type={group.required ? 'radio' : 'checkbox'}
+                name={group.id}
+                value={opt.id}
+                data-delta={opt.priceDelta}
+                checked={group.required && i === 0}
+                class="mod-input"
+              />
+              <span class="opt-name">{opt.name}</span>
+              {opt.priceDelta > 0 && (
+                <span class="opt-price">+€{opt.priceDelta.toFixed(2)}</span>
+              )}
+            </label>
+          ))}
+        </div>
+      </div>
+    ))}
+
+    <!-- Special Kitchen Instructions -->
+    <div class="kitchen-instructions-box">
+      <label for="kitchen-notes" class="instructions-label">Special instructions for the kitchen</label>
+      <input
+        type="text"
+        id="kitchen-notes"
+        placeholder="e.g. No onion, dressing on the side, well done…"
+        class="instructions-input"
+      />
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="customizer-footer">
+      <div class="qty-counter">
+        <button type="button" class="btn-qty btn-minus" aria-label="Decrease quantity">-</button>
+        <span class="qty-display" id="custom-qty">1</span>
+        <button type="button" class="btn-qty btn-plus" aria-label="Increase quantity">+</button>
+      </div>
+
+      <a href={checkoutHref} class="btn-add-basket" id="btn-add-to-basket">
+        <span>Add to Basket</span>
+        <span class="basket-total" id="custom-total-price">€{dish.price.toFixed(2)}</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initDishCustomizer() {
+    const root = document.getElementById('dish-customizer');
+    if (!root) return;
+
+    const basePrice = Number(root.getAttribute('data-base-price')) || 0;
+    const inputs = root.querySelectorAll('.mod-input');
+    const minusBtn = root.querySelector('.btn-minus');
+    const plusBtn = root.querySelector('.btn-plus');
+    const qtyEl = root.querySelector('#custom-qty');
+    const totalEl = root.querySelector('#custom-total-price');
+
+    let qty = 1;
+
+    function recalculateTotal() {
+      let extraDelta = 0;
+      inputs.forEach((inp) => {
+        const inputEl = inp as HTMLInputElement;
+        if (inputEl.checked) {
+          extraDelta += Number(inputEl.getAttribute('data-delta') || 0);
+        }
+      });
+
+      const total = (basePrice + extraDelta) * qty;
+      if (totalEl) totalEl.textContent = `€${total.toFixed(2)}`;
+    }
+
+    inputs.forEach((inp) => inp.addEventListener('change', recalculateTotal));
+
+    plusBtn?.addEventListener('click', () => {
+      qty += 1;
+      if (qtyEl) qtyEl.textContent = String(qty);
+      recalculateTotal();
+    });
+
+    minusBtn?.addEventListener('click', () => {
+      if (qty > 1) {
+        qty -= 1;
+        if (qtyEl) qtyEl.textContent = String(qty);
+        recalculateTotal();
+      }
+    });
+
+    recalculateTotal();
+  }
+
+  initDishCustomizer();
+  document.addEventListener('astro:page-load', initDishCustomizer);
+</script>
+
+<style>
+  .dish-customizer {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--food-card-shadow);
+  }
+
+  .customizer-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .dish-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .custom-dish-name {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+    color: var(--c-text);
+  }
+
+  .custom-dish-desc {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0 0 0.65rem;
+    line-height: 1.45;
+  }
+
+  .dish-meta-tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .calorie-badge,
+  .prep-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    color: var(--c-text-muted);
+  }
+
+  .base-price-display {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .base-currency {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--c-primary);
+  }
+
+  .base-val {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--c-primary);
+  }
+
+  /* Modifiers */
+  .modifier-group {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .group-title {
+    font-size: 0.9rem;
+    color: var(--c-text);
+  }
+
+  .group-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+  }
+
+  .badge-required {
+    background: rgba(234, 88, 12, 0.12);
+    color: var(--c-primary);
+  }
+
+  .badge-optional {
+    background: var(--c-surface);
+    color: var(--c-text-muted);
+    border: 1px solid var(--c-border);
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modifier-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .modifier-option:hover {
+    border-color: var(--c-border-hover);
+  }
+
+  .modifier-option input {
+    accent-color: var(--c-primary);
+    margin-right: 0.5rem;
+  }
+
+  .opt-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-text);
+    flex: 1;
+  }
+
+  .opt-price {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--c-primary);
+  }
+
+  /* Instructions */
+  .kitchen-instructions-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .instructions-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .instructions-input {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    color: var(--c-text);
+    font-size: 0.85rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .instructions-input:focus {
+    border-color: var(--c-primary);
+  }
+
+  /* Footer */
+  .customizer-footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .qty-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.25rem 0.4rem;
+  }
+
+  .btn-qty {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .qty-display {
+    min-width: 20px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--c-text);
+  }
+
+  .btn-add-basket {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    background: var(--c-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-add-basket:hover {
+    background: var(--food-flame-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+  }
+
+  .basket-total {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+</style>

@@ -1,0 +1,495 @@
+---
+/**
+ * FoodKitchenDisplay — Kitchen Display System (KDS / Comanda Digital) for restaurant lines and dark kitchens.
+ * Displays real-time prep tickets with elapsed timers, modifier items, allergy warnings,
+ * urgent rush flags, and one-click ticket progression (New → In Kitchen → Ready for Rider).
+ *
+ * @param {KitchenTicket[]} tickets - List of active kitchen orders.
+ * @param {string} className - Optional CSS class.
+ */
+import type { KitchenTicket } from '../templates/food-delivery/data';
+import { kitchenTickets } from '../templates/food-delivery/data';
+
+interface Props {
+  tickets?: KitchenTicket[];
+  stationName?: string;
+  className?: string;
+}
+
+const {
+  tickets = kitchenTickets,
+  stationName = 'Main Line · Hot Stations',
+  className = '',
+} = Astro.props;
+---
+
+<div class={`kds-board ${className}`} id="kds-board">
+  <!-- Header Bar -->
+  <div class="kds-topbar">
+    <div class="kds-headline">
+      <div class="kds-live-indicator">
+        <span class="live-flame-dot"></span>
+        <span>{stationName}</span>
+      </div>
+      <span class="kds-avg-time">Avg Prep Time: <strong>11.4 min</strong> (Target &lt;15 min)</span>
+    </div>
+
+    <div class="kds-filters" role="tablist">
+      <button type="button" class="kds-tab active" data-filter="all">All Orders ({tickets.length})</button>
+      <button type="button" class="kds-tab" data-filter="new">New ({tickets.filter(t => t.status === 'new').length})</button>
+      <button type="button" class="kds-tab" data-filter="prepping">Prepping ({tickets.filter(t => t.status === 'prepping').length})</button>
+      <button type="button" class="kds-tab" data-filter="ready">Ready for Pickup ({tickets.filter(t => t.status === 'ready').length})</button>
+    </div>
+  </div>
+
+  <!-- Tickets Grid -->
+  <div class="kds-tickets-grid" id="kds-tickets-grid">
+    {tickets.map((t) => {
+      const isOverdue = t.elapsedMin > t.targetMin;
+
+      return (
+        <div
+          class={`kds-ticket kds-ticket--${t.status} ${t.urgent ? 'kds-ticket--urgent' : ''} ${isOverdue ? 'kds-ticket--overdue' : ''}`}
+          data-ticket-id={t.id}
+          data-status={t.status}
+        >
+          <!-- Ticket Header -->
+          <div class="ticket-header">
+            <div>
+              <span class="ticket-ref">{t.orderRef}</span>
+              <span class="ticket-channel">{t.channel.toUpperCase()}</span>
+            </div>
+            <div class="ticket-timer-wrap">
+              <span class={`ticket-timer ${isOverdue ? 'timer-danger' : ''}`}>
+                ⏱️ {t.elapsedMin}m / {t.targetMin}m
+              </span>
+            </div>
+          </div>
+
+          <!-- Items list -->
+          <div class="ticket-body">
+            <ul class="ticket-items-list">
+              {t.items.map((it) => (
+                <li class="ticket-item">
+                  <div class="item-main">
+                    <span class="item-qty">{it.qty}×</span>
+                    <strong class="item-name">{it.name}</strong>
+                  </div>
+
+                  {it.modifiers && it.modifiers.length > 0 && (
+                    <div class="item-mods">
+                      {it.modifiers.map((mod) => (
+                        <span class="mod-pill">+ {mod}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {it.allergies && it.allergies.length > 0 && (
+                    <div class="item-allergy-alert">
+                      <span class="allergy-icon">⚠️ ALLERGY:</span>
+                      <strong>{it.allergies.join(', ')}</strong>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Ticket Footer / Action Buttons -->
+          <div class="ticket-footer">
+            <span class="placed-time">Placed: {t.placedTime}</span>
+
+            {t.status === 'new' && (
+              <button type="button" class="btn-ticket-action btn-start-prep">
+                <span>Start Cooking</span>
+              </button>
+            )}
+
+            {t.status === 'prepping' && (
+              <button type="button" class="btn-ticket-action btn-mark-ready">
+                <span>✓ Bump to Ready</span>
+              </button>
+            )}
+
+            {t.status === 'ready' && (
+              <button type="button" class="btn-ticket-action btn-hand-courier">
+                <span>Hand to Courier</span>
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+<script>
+  function initKitchenDisplay() {
+    const root = document.getElementById('kds-board');
+    if (!root) return;
+
+    const tabs = root.querySelectorAll('.kds-tab');
+    const tickets = root.querySelectorAll('.kds-ticket');
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const filter = tab.getAttribute('data-filter');
+        tickets.forEach((tick) => {
+          const status = tick.getAttribute('data-status');
+          if (filter === 'all' || status === filter) {
+            (tick as HTMLElement).style.display = 'flex';
+          } else {
+            (tick as HTMLElement).style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Advance ticket status simulation
+    tickets.forEach((tick) => {
+      const startBtn = tick.querySelector('.btn-start-prep');
+      const readyBtn = tick.querySelector('.btn-mark-ready');
+      const handBtn = tick.querySelector('.btn-hand-courier');
+
+      startBtn?.addEventListener('click', () => {
+        tick.className = 'kds-ticket kds-ticket--prepping';
+        tick.setAttribute('data-status', 'prepping');
+        const footer = tick.querySelector('.ticket-footer');
+        if (footer) {
+          footer.innerHTML = `
+            <span class="placed-time">Cooking now</span>
+            <button type="button" class="btn-ticket-action btn-mark-ready">
+              <span>✓ Bump to Ready</span>
+            </button>
+          `;
+        }
+      });
+
+      readyBtn?.addEventListener('click', () => {
+        tick.className = 'kds-ticket kds-ticket--ready';
+        tick.setAttribute('data-status', 'ready');
+        const footer = tick.querySelector('.ticket-footer');
+        if (footer) {
+          footer.innerHTML = `
+            <span class="placed-time">Ready on counter</span>
+            <button type="button" class="btn-ticket-action btn-hand-courier">
+              <span>Hand to Courier</span>
+            </button>
+          `;
+        }
+      });
+
+      handBtn?.addEventListener('click', () => {
+        (tick as HTMLElement).style.opacity = '0.5';
+        setTimeout(() => {
+          (tick as HTMLElement).style.display = 'none';
+        }, 400);
+      });
+    });
+  }
+
+  initKitchenDisplay();
+  document.addEventListener('astro:page-load', initKitchenDisplay);
+</script>
+
+<style>
+  .kds-board {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--food-card-shadow);
+  }
+
+  .kds-topbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .kds-topbar {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .kds-headline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .kds-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--c-text);
+  }
+
+  .live-flame-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ea580c;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.25);
+    animation: kdsPulse 1.8s infinite;
+  }
+
+  @keyframes kdsPulse {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+  }
+
+  .kds-avg-time {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+  }
+
+  .kds-avg-time strong {
+    color: #16a34a;
+  }
+
+  .kds-filters {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .kds-tab {
+    padding: 0.35rem 0.75rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-full);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .kds-tab:hover {
+    color: var(--c-text);
+    border-color: var(--c-border-hover);
+  }
+
+  .kds-tab.active {
+    background: var(--c-primary);
+    color: #ffffff;
+    border-color: var(--c-primary);
+  }
+
+  /* Tickets Grid */
+  .kds-tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .kds-ticket {
+    background: var(--c-surface);
+    border: 2px solid var(--c-border);
+    border-radius: var(--r-lg);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--food-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .kds-ticket--new {
+    border-color: #2563eb;
+  }
+
+  .kds-ticket--prepping {
+    border-color: #ea580c;
+  }
+
+  .kds-ticket--ready {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.03);
+  }
+
+  .kds-ticket--urgent {
+    animation: ticketFlash 1.5s infinite alternate;
+  }
+
+  @keyframes ticketFlash {
+    from { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2); }
+    to { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.4); }
+  }
+
+  .ticket-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+
+  .ticket-ref {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin-right: 0.5rem;
+  }
+
+  .ticket-channel {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    color: var(--c-text-muted);
+  }
+
+  .ticket-timer {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--c-text-muted);
+  }
+
+  .timer-danger {
+    color: #dc2626;
+    font-weight: 800;
+  }
+
+  .ticket-body {
+    padding: 1rem;
+    flex: 1;
+  }
+
+  .ticket-items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .ticket-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px dashed var(--c-border);
+  }
+
+  .ticket-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .item-main {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+  }
+
+  .item-qty {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--c-primary);
+  }
+
+  .item-name {
+    font-size: 0.92rem;
+    color: var(--c-text);
+    font-weight: 700;
+  }
+
+  .item-mods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-left: 1.5rem;
+  }
+
+  .mod-pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    background: var(--c-bg);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+  }
+
+  .item-allergy-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 1.5rem;
+    font-size: 0.75rem;
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+  }
+
+  .ticket-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--c-bg);
+    border-top: 1px solid var(--c-border);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+  }
+
+  .placed-time {
+    font-size: 0.72rem;
+    color: var(--c-text-subtle);
+  }
+
+  .btn-ticket-action {
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--r-md);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .btn-start-prep {
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  .btn-start-prep:hover {
+    background: #1d4ed8;
+  }
+
+  .btn-mark-ready {
+    background: #ea580c;
+    color: #ffffff;
+  }
+
+  .btn-mark-ready:hover {
+    background: #c2410c;
+  }
+
+  .btn-hand-courier {
+    background: #10b981;
+    color: #ffffff;
+  }
+
+  .btn-hand-courier:hover {
+    background: #059669;
+  }
+</style>

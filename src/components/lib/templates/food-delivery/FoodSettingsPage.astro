@@ -1,0 +1,197 @@
+---
+/**
+ * FoodSettingsPage — Kitchen OS & restaurant operating preferences.
+ * Configures ticket prep buffers, delivery radiuses, thermal printer integration and audio alarms.
+ */
+import FoodLayout from './FoodLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import SettingsSection from '../../app/SettingsSection.astro';
+import SwitchRow from '../../app/SwitchRow.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  routes?: FoodDeliveryRoutes;
+}
+
+const { routes = foodDeliveryRoutes } = Astro.props;
+const rest = foodDeliveryData.restaurant;
+---
+
+<FoodLayout
+  title="Kitchen Settings & Operations"
+  current="settings"
+  routes={routes}
+>
+  <PageHeader
+    title="Kitchen &amp; Delivery Settings"
+    description="Configure kitchen service parameters, delivery zones, order throttling, and tablet alerts."
+  >
+    <div slot="actions">
+      <button type="button" class="btn-save-settings">Save Changes</button>
+    </div>
+  </PageHeader>
+
+  <div class="settings-stack">
+    <!-- Section 1: Kitchen Profile -->
+    <SettingsSection
+      title="Restaurant & Kitchen Profile"
+      description="Public storefront branding and contact details for customers and dispatch."
+    >
+      <div class="settings-fields-grid">
+        <div class="field-item">
+          <label>Restaurant Display Name</label>
+          <input type="text" value={rest.name} />
+        </div>
+        <div class="field-item">
+          <label>Kitchen Street Address</label>
+          <input type="text" value={rest.address} />
+        </div>
+        <div class="field-item">
+          <label>Emergency Kitchen Phone</label>
+          <input type="tel" value={rest.phone} />
+        </div>
+        <div class="field-item">
+          <label>Kitchen Tagline</label>
+          <input type="text" value={rest.tagline} />
+        </div>
+      </div>
+    </SettingsSection>
+
+    <!-- Section 2: Order Prep & KDS Throttling -->
+    <SettingsSection
+      title="Cooking Times & KDS Station Alarms"
+      description="Manage ticket timers, urgency thresholds, and kitchen rush-hour throttling."
+    >
+      <div class="switches-list">
+        <SwitchRow
+          label="Loud Kitchen Buzzer on New Ticket"
+          description="Plays an acoustic chime on the KDS tablet whenever a new order is received."
+          checked={true}
+        />
+        <SwitchRow
+          label="Auto-Accept Incoming Orders"
+          description="Bypasses manual kitchen acceptance and places orders straight onto the cooking line."
+          checked={true}
+        />
+        <SwitchRow
+          label="Urgent Ticket Warning (> 12 min)"
+          description="Highlights tickets with a flashing red border when elapsed prep time exceeds target."
+          checked={true}
+        />
+        <SwitchRow
+          label="Rush Hour 15-Minute Buffer"
+          description="Automatically adds 15 minutes to customer delivery ETAs during peak hours (20:30–22:30)."
+          checked={false}
+        />
+      </div>
+    </SettingsSection>
+
+    <!-- Section 3: Delivery Zones & Pricing -->
+    <SettingsSection
+      title="Delivery Radius & Order Thresholds"
+      description="Set operational delivery radius and fee calculation."
+    >
+      <div class="settings-fields-grid">
+        <div class="field-item">
+          <label>Maximum Delivery Radius (km)</label>
+          <input type="number" step="0.5" value={rest.deliveryRadiusKm} />
+        </div>
+        <div class="field-item">
+          <label>Base Delivery Fee (€)</label>
+          <input type="number" step="0.10" value={rest.deliveryFeeEur} />
+        </div>
+        <div class="field-item">
+          <label>Minimum Order Value (€)</label>
+          <input type="number" step="1.00" value={rest.minOrderEur} />
+        </div>
+        <div class="field-item">
+          <label>Free Delivery Threshold (€)</label>
+          <input type="number" step="1.00" value={rest.freeDeliveryThresholdEur} />
+        </div>
+      </div>
+    </SettingsSection>
+
+    <!-- Section 4: Hardware & ESC/POS Printing -->
+    <SettingsSection
+      title="Hardware & Printer Integrations"
+      description="Connect Bluetooth & LAN thermal receipt printers for the bagging station."
+    >
+      <div class="switches-list">
+        <SwitchRow
+          label="Auto-Print Thermal Receipt on Order Ready"
+          description="Generates an ESC/POS paper receipt to staple onto the thermal delivery bag."
+          checked={true}
+        />
+        <SwitchRow
+          label="Print Kitchen Station Slips"
+          description="Prints duplicate slips for the fryer and salad stations."
+          checked={false}
+        />
+      </div>
+    </SettingsSection>
+  </div>
+</FoodLayout>
+
+<style>
+  .btn-save-settings {
+    padding: 0.65rem 1.4rem;
+    background: #ea580c;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+  }
+
+  .btn-save-settings:hover {
+    background: #c2410c;
+  }
+
+  .settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .settings-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    padding: 0.5rem 0;
+  }
+
+  .field-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .field-item label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+
+  .field-item input {
+    padding: 0.7rem 0.85rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.88rem;
+    outline: none;
+  }
+
+  .field-item input:focus {
+    border-color: #ea580c;
+  }
+
+  .switches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+  }
+</style>

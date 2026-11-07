@@ -1,0 +1,209 @@
+---
+/**
+ * FoodLayout — Backoffice & Kitchen OS app shell for food delivery restaurants & dark kitchens ("BiteFlow").
+ * Integrates AppSidebar, AppTopbar, live kitchen ticket counts, and quick 86'd out-of-stock emergency toggle.
+ *
+ * @param {string} title - Page title.
+ * @param {string} current - Active route key (dashboard | kds | menuCms | orders | riders | settings).
+ * @param {FoodDeliveryRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto').
+ */
+import '../../../../styles/global.css';
+import './food-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+type Key = 'dashboard' | 'kds' | 'menuCms' | 'orders' | 'riders' | 'settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: FoodDeliveryRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'BiteFlow Kitchen OS · Restaurant Backoffice, KDS Display & Fleet Dispatch',
+  current = 'dashboard',
+  routes = foodDeliveryRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'en',
+} = Astro.props;
+
+const activePreppingTickets = foodDeliveryData.tickets.filter((t) => t.status !== 'ready').length;
+const activeRidersCount = foodDeliveryData.riders.filter((r) => r.status === 'delivering').length;
+
+const notifications = [
+  { title: 'Urgent Kitchen Ticket', text: 'Order #BF-8921 past target time (> 12 min)', time: '2 min ago', unread: true, tone: 'warning' as const },
+  { title: 'New Delivery Order', text: 'Calle Mayor 45 · 2x Smash Burgers (28.90 €)', time: '6 min ago', unread: true, tone: 'info' as const },
+  { title: 'Rider Assigned', text: 'Leo (E-Bike) heading to kitchen for #BF-8920', time: '14 min ago', tone: 'success' as const },
+];
+
+const sidebarGroups = [
+  {
+    label: 'Kitchen & Service',
+    items: [
+      { label: 'Operations Overview', href: routes.dashboard, icon: 'dashboard' },
+      { label: 'Live KDS Display', href: routes.kds, icon: 'clipboard', badge: activePreppingTickets || undefined },
+      { label: 'Menu & Stock (86’d)', href: routes.menuCms, icon: 'layers' },
+    ],
+  },
+  {
+    label: 'Fulfillment & Fleet',
+    items: [
+      { label: 'Orders & Receipts', href: routes.orders, icon: 'inbox' },
+      { label: 'Riders & Dispatch', href: routes.riders, icon: 'users', badge: activeRidersCount || undefined },
+      { label: 'Kitchen Settings', href: routes.settings, icon: 'settings' },
+    ],
+  },
+];
+
+const currentRouteUrl = routes[current] ?? routes.dashboard;
+---
+
+<!doctype html>
+<html lang={lang} class="theme-food" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — BiteFlow Kitchen OS</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="food-app-body">
+    <!-- Skip link -->
+    <a href="#app-content" class="skip-link">Skip to kitchen workspace</a>
+
+    <div class="food-app-shell">
+      <AppSidebar
+        currentHref={currentRouteUrl}
+        workspace={{
+          name: 'BiteFlow Kitchen',
+          plan: 'Kitchen OS Pro',
+          initials: 'BF',
+        }}
+        groups={sidebarGroups}
+      />
+
+      <div class="food-app-main">
+        <AppTopbar
+          searchPlaceholder="Search order ref, customer, phone, or table..."
+          notifications={notifications}
+          user={{
+            name: 'Marco Rossi',
+            role: 'Head Chef · Station 1',
+            email: 'chef@biteflow.kitchen',
+          }}
+          userLinks={[
+            { label: 'KDS Station View', href: routes.kds },
+            { label: 'Menu & Stock CMS', href: routes.menuCms },
+            { label: 'Fleet Dispatch', href: routes.riders },
+            { label: 'Kitchen Settings', href: routes.settings },
+          ]}
+          signOutHref={routes.signIn}
+        >
+          <div slot="actions" class="topbar-kds-indicator">
+            <span class="kds-live-dot"></span>
+            <span>{activePreppingTickets} Active Cooking Tickets</span>
+          </div>
+        </AppTopbar>
+
+        <main id="app-content" class="food-app-content">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .food-app-body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--c-bg, #0b0f19);
+    color: var(--c-text, #f8fafc);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .food-app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .food-app-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .food-app-content {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1440px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .food-app-content {
+      padding: 1.25rem 1rem;
+    }
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 10px;
+    background: #ea580c;
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    z-index: 100;
+    font-weight: 700;
+    border-radius: 6px;
+    transition: top 0.2s ease;
+  }
+
+  .skip-link:focus {
+    top: 10px;
+  }
+
+  .topbar-kds-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fb923c;
+    background: rgba(234, 88, 12, 0.15);
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(234, 88, 12, 0.35);
+  }
+
+  .kds-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ea580c;
+    box-shadow: 0 0 6px #ea580c;
+  }
+</style>

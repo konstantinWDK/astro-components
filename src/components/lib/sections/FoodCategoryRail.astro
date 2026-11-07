@@ -1,0 +1,150 @@
+---
+/**
+ * FoodCategoryRail — Horizontal category navigation rail for restaurant menus and delivery catalogs.
+ * Displays category icons, item counts, and quick filter pill selection.
+ *
+ * @param {Array} categories - Array of category items with id, label, and icon.
+ * @param {string} activeCategory - The currently selected category id.
+ * @param {string} baseUrl - Base URL for category filtering links.
+ * @param {string} className - Optional CSS class.
+ */
+import { foodCategories } from '../templates/food-delivery/data';
+
+interface CategoryItem {
+  id: string;
+  label: string;
+  icon?: string;
+  count?: number;
+}
+
+interface Props {
+  categories?: CategoryItem[];
+  activeCategory?: string;
+  baseUrl?: string;
+  className?: string;
+}
+
+const {
+  categories = foodCategories.map((c, i) => ({
+    ...c,
+    count: i === 0 ? 12 : i === 1 ? 4 : i === 2 ? 3 : 2,
+  })),
+  activeCategory = 'all',
+  baseUrl = '/preview/food-delivery/menu',
+  className = '',
+} = Astro.props;
+---
+
+<nav class={`food-category-rail ${className}`} aria-label="Menu categories">
+  <div class="rail-container">
+    <div class="rail-track" role="tablist">
+      {categories.map((cat) => {
+        const isActive = cat.id === activeCategory;
+        const href = cat.id === 'all' ? baseUrl : `${baseUrl}?cat=${cat.id}`;
+        return (
+          <a
+            href={href}
+            role="tab"
+            aria-selected={isActive ? 'true' : 'false'}
+            class={`category-chip ${isActive ? 'is-active' : ''}`}
+          >
+            <span class="chip-icon">
+              {cat.id === 'burgers' ? '🍔' :
+               cat.id === 'pizza' ? '🍕' :
+               cat.id === 'bowls' ? '🥗' :
+               cat.id === 'sides' ? '🍟' :
+               cat.id === 'drinks' ? '🥤' :
+               cat.id === 'desserts' ? '🍰' : '🍽️'}
+            </span>
+            <span class="chip-label">{cat.label}</span>
+            {cat.count !== undefined && (
+              <span class="chip-count">{cat.count}</span>
+            )}
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</nav>
+
+<style>
+  .food-category-rail {
+    padding: 1rem 1.5rem;
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 60px;
+    z-index: 20;
+  }
+
+  .rail-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .rail-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rail-track {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.25rem 0;
+  }
+
+  .category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .category-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  .category-chip.is-active {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+  }
+
+  .chip-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .chip-label {
+    letter-spacing: -0.01em;
+  }
+
+  .chip-count {
+    padding: 0.1rem 0.45rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .category-chip.is-active .chip-count {
+    background: rgba(0, 0, 0, 0.25);
+    color: #ffffff;
+  }
+</style>

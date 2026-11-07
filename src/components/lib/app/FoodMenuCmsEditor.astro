@@ -1,0 +1,495 @@
+---
+/**
+ * FoodMenuCmsEditor — Interactive Menu & Catalog CMS Manager for restaurant operators.
+ * Allows quick updates to menu pricing, 1-click "86'd / Out of Stock" toggling during rush hours,
+ * dietary badge management (Vegan, Halal, Gluten-Free), and allergen warnings.
+ *
+ * @param {FoodDish[]} dishes - Catalog of dishes.
+ * @param {string} className - Optional CSS class.
+ */
+import type { FoodDish } from '../templates/food-delivery/data';
+import { foodDishes, foodCategories } from '../templates/food-delivery/data';
+
+interface Props {
+  dishes?: FoodDish[];
+  className?: string;
+}
+
+const {
+  dishes = foodDishes,
+  className = '',
+} = Astro.props;
+---
+
+<div class={`menu-cms-editor ${className}`} id="menu-cms-editor">
+  <!-- Top Bar -->
+  <div class="cms-topbar">
+    <div class="cms-title-group">
+      <h3 class="cms-title">Restaurant Menu CMS Manager</h3>
+      <p class="cms-subtitle">Update live prices, toggle dish availability (86’d / Out of Stock), and manage allergens.</p>
+    </div>
+
+    <div class="cms-actions">
+      <div class="cms-search-box">
+        <input
+          type="text"
+          id="cms-search-input"
+          placeholder="Filter dish by name, allergen, or tag…"
+          class="search-input"
+        />
+      </div>
+      <button type="button" class="btn-add-dish" id="btn-open-add-modal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span>Add New Dish</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Category Filter Bar -->
+  <div class="category-tabs" role="tablist">
+    {foodCategories.map((c, i) => (
+      <button
+        type="button"
+        class={`cat-tab ${i === 0 ? 'active' : ''}`}
+        data-cat={c.id}
+      >
+        {c.label}
+      </button>
+    ))}
+  </div>
+
+  <!-- Dishes Management Table -->
+  <div class="dishes-table-wrap">
+    <table class="dishes-table">
+      <thead>
+        <tr>
+          <th>Dish / Item</th>
+          <th>Category</th>
+          <th>Live Price</th>
+          <th>Dietary & Allergens</th>
+          <th>Prep Time</th>
+          <th>Stock Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="cms-dishes-body">
+        {dishes.map((dish) => (
+          <tr class="dish-row" data-cat={dish.category} data-name={dish.name.toLowerCase()}>
+            <td>
+              <div class="dish-identity">
+                <strong class="dish-name">{dish.name}</strong>
+                <p class="dish-desc">{dish.description}</p>
+              </div>
+            </td>
+            <td>
+              <span class="cat-pill">{dish.category.toUpperCase()}</span>
+            </td>
+            <td>
+              <div class="price-input-wrap">
+                <span class="currency">€</span>
+                <input
+                  type="number"
+                  step="0.10"
+                  class="dish-price-input"
+                  value={dish.price.toFixed(2)}
+                />
+              </div>
+            </td>
+            <td>
+              <div class="tags-cluster">
+                {dish.dietary.map((d) => (
+                  <span class={`diet-badge diet-badge--${d}`}>{d.replace('_', ' ')}</span>
+                ))}
+                {dish.allergens.length > 0 && (
+                  <span class="allergen-pill">Contains: {dish.allergens.join(', ')}</span>
+                )}
+              </div>
+            </td>
+            <td>
+              <span class="prep-val">~{dish.prepTimeMin} min</span>
+            </td>
+            <td>
+              <div class="stock-switch-wrap">
+                <label class="stock-toggle">
+                  <input
+                    type="checkbox"
+                    checked={dish.stockStatus !== 'sold_out'}
+                    class="stock-checkbox"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class={`stock-label ${dish.stockStatus === 'sold_out' ? 'label-out' : 'label-in'}`}>
+                  {dish.stockStatus === 'sold_out' ? '86’d (Sold Out)' : 'In Stock'}
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="btn-mini-action" title="Edit modifiers">Modifiers</button>
+                <button type="button" class="btn-mini-action text-danger" title="Remove">✕</button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function initMenuCms() {
+    const root = document.getElementById('menu-cms-editor');
+    if (!root) return;
+
+    const catTabs = root.querySelectorAll('.cat-tab');
+    const searchInput = root.querySelector('#cms-search-input') as HTMLInputElement | null;
+    const rows = root.querySelectorAll('.dish-row');
+
+    function filterDishes() {
+      const activeTab = root?.querySelector('.cat-tab.active')?.getAttribute('data-cat') || 'all';
+      const query = searchInput?.value.toLowerCase().trim() || '';
+
+      rows.forEach((r) => {
+        const cat = r.getAttribute('data-cat');
+        const name = r.getAttribute('data-name') || '';
+
+        const matchesCat = activeTab === 'all' || cat === activeTab;
+        const matchesQuery = query === '' || name.includes(query);
+
+        if (matchesCat && matchesQuery) {
+          (r as HTMLElement).style.display = '';
+        } else {
+          (r as HTMLElement).style.display = 'none';
+        }
+      });
+    }
+
+    catTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        catTabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        filterDishes();
+      });
+    });
+
+    searchInput?.addEventListener('input', filterDishes);
+
+    // Stock toggle labels update
+    rows.forEach((r) => {
+      const chk = r.querySelector('.stock-checkbox') as HTMLInputElement | null;
+      const label = r.querySelector('.stock-label');
+      chk?.addEventListener('change', () => {
+        if (chk.checked) {
+          if (label) {
+            label.textContent = 'In Stock';
+            label.className = 'stock-label label-in';
+          }
+        } else {
+          if (label) {
+            label.textContent = '86’d (Sold Out)';
+            label.className = 'stock-label label-out';
+          }
+        }
+      });
+    });
+  }
+
+  initMenuCms();
+  document.addEventListener('astro:page-load', initMenuCms);
+</script>
+
+<style>
+  .menu-cms-editor {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--food-card-shadow);
+  }
+
+  .cms-topbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .cms-topbar {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .cms-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .cms-subtitle {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.15rem 0 0;
+  }
+
+  .cms-actions {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-input {
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    color: var(--c-text);
+    font-size: 0.82rem;
+    outline: none;
+    min-width: 240px;
+  }
+
+  .search-input:focus {
+    border-color: var(--c-primary);
+  }
+
+  .btn-add-dish {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    background: var(--c-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-add-dish:hover {
+    background: var(--c-primary-hover);
+  }
+
+  /* Category tabs */
+  .category-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .cat-tab {
+    padding: 0.35rem 0.8rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-full);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cat-tab:hover {
+    color: var(--c-text);
+    border-color: var(--c-border-hover);
+  }
+
+  .cat-tab.active {
+    background: var(--c-primary);
+    color: #ffffff;
+    border-color: var(--c-primary);
+  }
+
+  /* Table */
+  .dishes-table-wrap {
+    overflow-x: auto;
+  }
+
+  .dishes-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 860px;
+  }
+
+  .dishes-table th {
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .dishes-table td {
+    padding: 0.85rem;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: middle;
+  }
+
+  .dish-identity {
+    max-width: 280px;
+  }
+
+  .dish-name {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .dish-desc {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    margin: 0.15rem 0 0;
+    line-height: 1.35;
+  }
+
+  .cat-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: var(--c-bg);
+    color: var(--c-text-muted);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--c-border);
+  }
+
+  /* Price Input */
+  .price-input-wrap {
+    display: inline-flex;
+    align-items: center;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.25rem 0.5rem;
+  }
+
+  .currency {
+    font-weight: 700;
+    color: var(--c-text-muted);
+    margin-right: 0.2rem;
+  }
+
+  .dish-price-input {
+    width: 60px;
+    border: none;
+    background: transparent;
+    color: var(--c-text);
+    font-weight: 700;
+    font-size: 0.88rem;
+    outline: none;
+  }
+
+  /* Tags */
+  .tags-cluster {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .allergen-pill {
+    font-size: 0.68rem;
+    color: #dc2626;
+  }
+
+  .prep-val {
+    font-weight: 600;
+    color: var(--c-text-muted);
+  }
+
+  /* Stock Toggle */
+  .stock-switch-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .stock-toggle {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+  }
+
+  .stock-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1;
+    transition: 0.2s;
+    border-radius: 999px;
+  }
+
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.2s;
+    border-radius: 50%;
+  }
+
+  input:checked + .toggle-slider {
+    background-color: #10b981;
+  }
+
+  input:checked + .toggle-slider:before {
+    transform: translateX(16px);
+  }
+
+  .stock-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .label-in { color: #10b981; }
+  .label-out { color: #dc2626; }
+
+  /* Actions */
+  .row-actions {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .btn-mini-action {
+    padding: 0.25rem 0.5rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--c-text);
+    cursor: pointer;
+  }
+
+  .btn-mini-action:hover {
+    border-color: var(--c-border-hover);
+  }
+
+  .text-danger {
+    color: #dc2626;
+  }
+</style>

@@ -1,0 +1,361 @@
+---
+/**
+ * FoodSiteLayout — Public customer storefront layout for food delivery & restaurant platform ("BiteFlow").
+ * Sticky header with brand logo, delivery address badge, live cart drawer trigger, phone link, and mega footer.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {FoodDeliveryRoutes} routes - Template route URLs.
+ */
+import '../../../../styles/global.css';
+import './food-theme.css';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  theme?: 'light' | 'dark' | 'auto';
+  routes?: FoodDeliveryRoutes;
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'BiteFlow Artisan Kitchen · Craft smash burgers, wood-fired pizzas, healthy bowls delivered hot in under 25 mins.',
+  theme = 'dark',
+  routes = foodDeliveryRoutes,
+  noindex = false,
+  lang = 'en',
+} = Astro.props;
+
+const navLinks = [
+  { label: 'Menu Catalog', href: routes.menu },
+  { label: 'Track Order', href: routes.tracking },
+  { label: 'Partner With Us', href: routes.partner },
+  { label: 'Kitchen OS Demo', href: routes.dashboard },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-food" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="food-body">
+    <!-- Top Announcement Strip -->
+    <aside class="food-top-strip">
+      <div class="strip-container">
+        <div class="strip-left">
+          <span class="live-dot"></span>
+          <span>Open Kitchen: 12:00 – 23:30 · Average delivery 22 mins</span>
+        </div>
+        <div class="strip-right">
+          <span class="promo-text">Use coupon <strong>BITEFLOW</strong> for free delivery</span>
+          <a href={`tel:${foodDeliveryData.restaurant.phone}`} class="strip-phone">
+            📞 {foodDeliveryData.restaurant.phone}
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Navigation Header -->
+    <header class="food-header">
+      <div class="header-container">
+        <!-- Brand Logo -->
+        <a href={routes.home} class="food-logo" aria-label="BiteFlow Home">
+          <div class="logo-mark">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-name">BiteFlow</span>
+            <span class="logo-sub">Artisan Kitchen OS</span>
+          </div>
+        </a>
+
+        <!-- Location selector pill -->
+        <div class="header-address-pill">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span class="addr-label">Delivering to:</span>
+          <strong class="addr-val">Madrid Centro (Chamberí)</strong>
+        </div>
+
+        <!-- Links -->
+        <nav class="header-nav" aria-label="Primary navigation">
+          {navLinks.map((link) => (
+            <a href={link.href} class="nav-link">{link.label}</a>
+          ))}
+        </nav>
+
+        <!-- Right action: Cart & Sign In -->
+        <div class="header-actions">
+          <a href={routes.signIn} class="btn-signin">Staff Sign In</a>
+          <a href={routes.menu} class="btn-cart">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            <span class="cart-label">Cart</span>
+            <span class="cart-badge">2</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="food-main">
+      <slot />
+    </main>
+
+    <FooterMegaSection />
+  </body>
+</html>
+
+<style>
+  .food-body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--c-bg, #0b0f19);
+    color: var(--c-text, #f8fafc);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .food-top-strip {
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.78rem;
+    padding: 0.45rem 1.5rem;
+  }
+
+  .strip-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .strip-left {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #94a3b8;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+    box-shadow: 0 0 8px #16a34a;
+  }
+
+  .strip-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .promo-text {
+    color: #cbd5e1;
+  }
+
+  .promo-text strong {
+    color: #fb923c;
+  }
+
+  .strip-phone {
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  .strip-phone:hover {
+    color: #ffffff;
+  }
+
+  /* Main Header */
+  .food-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(11, 15, 25, 0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.75rem 1.5rem;
+  }
+
+  .header-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .food-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ea580c, #c2410c);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+  }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .logo-sub {
+    font-size: 0.72rem;
+    color: #ea580c;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .header-address-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    color: #94a3b8;
+  }
+
+  .header-address-pill svg {
+    color: #ea580c;
+  }
+
+  .addr-val {
+    color: #ffffff;
+  }
+
+  @media (max-width: 860px) {
+    .header-address-pill {
+      display: none;
+    }
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 720px) {
+    .header-nav {
+      display: none;
+    }
+  }
+
+  .nav-link {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .nav-link:hover {
+    color: #ffffff;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .btn-signin {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-signin:hover {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-cart {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.95rem;
+    background: #ea580c;
+    color: #ffffff;
+    border-radius: 9999px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+  }
+
+  .btn-cart:hover {
+    background: #c2410c;
+  }
+
+  .cart-badge {
+    padding: 0.1rem 0.45rem;
+    background: #ffffff;
+    color: #ea580c;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .food-main {
+    min-height: calc(100vh - 120px);
+  }
+</style>

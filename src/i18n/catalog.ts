@@ -188,6 +188,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Mudanzas y Logística', description: 'Secciones para mudanzas y portes con furgonetas: hero con cotizador de ruta, guía de volumen en m³, flota de furgonetas, tarifas transparentes, banner de empleo y formulario de contratación.' },
     ru: { name: 'Переезды и логистика', description: 'Секции для переездов и грузоперевозок: главный экран с расчётом маршрута, гид по объёму жилья, каталог фургонов, прозрачные тарифы, баннер вакансий и форма найма водителей.' },
   },
+  food: {
+    en: { name: 'Food & Delivery', description: 'Sections for food delivery platforms, ghost kitchens, and restaurants: fast-order hero with address finder, category navigation rail, dish menu grid with allergens, flash promo ribbons, B2B kitchen partner CTA, and multi-step checkout wizard.' },
+    es: { name: 'Restauración y Delivery', description: 'Secciones para plataformas de comida a domicilio, dark kitchens y restaurantes: hero con buscador de dirección, rail de categorías, carta con alérgenos, banner de ofertas flash, partner B2B y checkout completo.' },
+    ru: { name: 'Доставка еды и рестораны', description: 'Секции для сервисов доставки еды, dark kitchen и ресторанов: главный экран с вводом адреса, лента категорий, меню блюд с аллергенами, промо-баннеры, подключение партнеров и оформление заказа.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

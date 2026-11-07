@@ -866,4 +866,42 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['moving', 'form', 'careers', 'hiring', 'application'], featured: true,
     usage: `<MovingApplicationForm />`,
   }),
+
+  // === FOOD DELIVERY & KITCHEN OS ("BiteFlow") ===
+  section({
+    slug: 'food-delivery-hero', name: 'Food Delivery Hero', file: 'FoodDeliveryHero.astro', sectionCategory: 'food',
+    description: 'Above-the-fold food delivery hero with instant address finder, guaranteed 25 min prep countdown, dietary shortcuts, and floating chef recommendation card.',
+    tags: ['food', 'hero', 'delivery', 'address', 'restaurant', 'fast-food'], featured: true,
+    usage: `<FoodDeliveryHero menuHref="/preview/food-delivery/menu" trackHref="/preview/food-delivery/track" />`,
+  }),
+  section({
+    slug: 'food-category-rail', name: 'Food Category Rail', file: 'FoodCategoryRail.astro', sectionCategory: 'food',
+    description: 'Horizontal sticky category carousel for restaurant menus: item count badges, category emojis, and smooth filter pill navigation.',
+    tags: ['food', 'navigation', 'rail', 'categories', 'menu'], featured: true,
+    usage: `<FoodCategoryRail activeCategory="all" baseUrl="/preview/food-delivery/menu" />`,
+  }),
+  section({
+    slug: 'food-menu-grid', name: 'Food Menu Grid', file: 'FoodMenuGrid.astro', sectionCategory: 'food',
+    description: 'Responsive restaurant dish catalog: dietary tags (Halal, Vegan, Gluten-Free, Spicy), calorie counts, 86’d sold-out state, and direct add/customize actions.',
+    tags: ['food', 'menu', 'grid', 'catalog', 'dishes', 'allergens'], featured: true,
+    usage: `<FoodMenuGrid activeCategory="all" />`,
+  }),
+  section({
+    slug: 'food-live-promo-banner', name: 'Food Live Promo Banner', file: 'FoodLivePromoBanner.astro', sectionCategory: 'food',
+    description: 'High-converting promotional countdown ribbon: flash deals, discount coupon code copy box, and direct ordering CTA.',
+    tags: ['food', 'promo', 'banner', 'coupon', 'deals', 'cta'], featured: true,
+    usage: `<FoodLivePromoBanner couponCode="NIGHTBITE20" ctaHref="/preview/food-delivery/menu" />`,
+  }),
+  section({
+    slug: 'food-restaurant-partner-cta', name: 'Food Restaurant Partner CTA', file: 'FoodRestaurantPartnerCta.astro', sectionCategory: 'food',
+    description: 'B2B restaurant and ghost kitchen onboarding section highlighting Kitchen OS benefits, live KDS station preview frame, and registration button.',
+    tags: ['food', 'b2b', 'partner', 'cta', 'kds', 'ghost-kitchen'], featured: true,
+    usage: `<FoodRestaurantPartnerCta partnerHref="/preview/food-delivery/partner" demoHref="/preview/food-delivery/app" />`,
+  }),
+  section({
+    slug: 'food-checkout-wizard', name: 'Food Checkout Wizard', file: 'FoodCheckoutWizard.astro', sectionCategory: 'food',
+    description: 'Multistep delivery checkout wizard: street address, contactless drop-off instructions, rider tip picker, payment method selector, and live itemized breakdown.',
+    tags: ['food', 'checkout', 'wizard', 'cart', 'tip', 'payment'], featured: true,
+    usage: `<FoodCheckoutWizard orderSuccessHref="/preview/food-delivery/track" />`,
+  }),
 ];

@@ -174,4 +174,22 @@ export const app: ComponentDoc[] = [
     description: 'Detailed removal job manifest card with origin & destination addresses, floor elevator access, distance, itemized furniture list, and progress tracker.',
     tags: ['logistics', 'manifest', 'order', 'moving', 'card', 'bill-of-lading'],
     usage: `<MoveManifestCard order={moveOrder} />` }),
+
+  // Food delivery & Kitchen OS apps ("BiteFlow")
+  item({ slug: 'food-kitchen-display', name: 'Food Kitchen Display (KDS)', file: 'FoodKitchenDisplay.astro', featured: true,
+    description: 'Commercial kitchen display system (KDS) for line cooks: live prep countdown timers, color-coded urgency thresholds, allergen highlights, and stage bump actions.',
+    tags: ['food', 'restaurant', 'kds', 'kitchen', 'display', 'timers', 'orders'],
+    usage: `<FoodKitchenDisplay tickets={kitchenTickets} stationName="Station #01 · Smash Grill" />` }),
+  item({ slug: 'food-menu-cms-editor', name: 'Food Menu CMS Editor', file: 'FoodMenuCmsEditor.astro', featured: true,
+    description: 'Restaurant digital menu CMS and stock controller: live price editor, calorie counter, and 1-click 86’d out-of-stock emergency switches across all storefronts.',
+    tags: ['food', 'restaurant', 'cms', 'menu', 'stock', 'pricing', 'allergens'],
+    usage: `<FoodMenuCmsEditor dishes={dishesList} />` }),
+  item({ slug: 'food-order-tracker', name: 'Food Order Tracker', file: 'FoodOrderTracker.astro', featured: true,
+    description: 'Real-time customer delivery tracker: step-by-step cooking progress, rider contact and vehicle details, address instructions, and itemized receipt breakdown.',
+    tags: ['food', 'tracker', 'delivery', 'receipt', 'courier', 'gps', 'status'],
+    usage: `<FoodOrderTracker order={activeOrder} />` }),
+  item({ slug: 'food-dish-customizer', name: 'Food Dish Customizer', file: 'FoodDishCustomizer.astro', featured: true,
+    description: 'Interactive dish configuration drawer: required single-choice options, optional multi-select toppings, live price recalculation, and kitchen prep notes.',
+    tags: ['food', 'customizer', 'modifiers', 'burger', 'pricing', 'cart', 'interactive'],
+    usage: `<FoodDishCustomizer dish={sampleDish} checkoutHref="/preview/food-delivery/menu#checkout" />` }),
 ];

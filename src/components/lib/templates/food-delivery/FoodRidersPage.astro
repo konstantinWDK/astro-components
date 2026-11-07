@@ -1,0 +1,397 @@
+---
+/**
+ * FoodRidersPage — Courier fleet dispatch & live delivery tracking manager for BiteFlow OS.
+ * Manages active e-bike and scooter drivers, pickup statuses, active order references and performance ratings.
+ */
+import FoodLayout from './FoodLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+
+interface Props {
+  routes?: FoodDeliveryRoutes;
+}
+
+const { routes = foodDeliveryRoutes } = Astro.props;
+const riders = foodDeliveryData.riders;
+const activeDelivering = riders.filter(r => r.status === 'delivering').length;
+const totalCompletedToday = riders.reduce((acc, r) => acc + r.completedToday, 0);
+---
+
+<FoodLayout
+  title="Riders & Fleet Dispatch"
+  current="riders"
+  routes={routes}
+>
+  <PageHeader
+    title="Fleet Dispatch & Courier Tracking"
+    description="Live status of e-bike and scooter delivery drivers, active drop-offs, and driver ratings."
+  >
+    <div slot="actions" class="header-actions">
+      <button type="button" class="btn-broadcast">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <span>Broadcast Fleet Alert</span>
+      </button>
+      <button type="button" class="btn-add-rider">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Assign Courier</span>
+      </button>
+    </div>
+  </PageHeader>
+
+  <!-- Fleet KPIs -->
+  <div class="fleet-kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-label">Active on Road</span>
+      <span class="kpi-val">{activeDelivering}</span>
+      <span class="kpi-sub">Out of {riders.length} registered riders</span>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Deliveries Completed (Today)</span>
+      <span class="kpi-val">{totalCompletedToday}</span>
+      <span class="kpi-sub">Average 21.8 mins from kitchen out</span>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Eco Fleet Footprint</span>
+      <span class="kpi-val">100%</span>
+      <span class="kpi-sub">Zero-emission e-bikes &amp; electric scooters</span>
+    </div>
+
+    <div class="kpi-card">
+      <span class="kpi-label">Fleet Average Rating</span>
+      <span class="kpi-val">4.89 ⭐</span>
+      <span class="kpi-sub">Based on 1,480 customer ratings</span>
+    </div>
+  </div>
+
+  <!-- Riders Table -->
+  <div class="riders-card">
+    <div class="card-head">
+      <h3 class="card-title">Courier Roster &amp; Live Assignment</h3>
+      <span class="live-dot-wrap">
+        <span class="live-dot"></span>
+        <span>GPS Tracking Live</span>
+      </span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="riders-table">
+        <thead>
+          <tr>
+            <th>Courier</th>
+            <th>Vehicle</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Active Order</th>
+            <th>Completed Today</th>
+            <th>Rating</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {riders.map((r) => (
+            <tr>
+              <td>
+                <div class="rider-col">
+                  <div class="rider-avatar">
+                    {r.name.charAt(0)}
+                  </div>
+                  <span class="rider-name">{r.name}</span>
+                </div>
+              </td>
+              <td>
+                <span class="vehicle-pill">
+                  {r.vehicle === 'ebike' ? '⚡ E-Bike' : '🛵 Electric Scooter'}
+                </span>
+              </td>
+              <td>
+                <a href={`tel:${r.phone}`} class="phone-link">{r.phone}</a>
+              </td>
+              <td>
+                <span class={`status-badge ${r.status}`}>
+                  {r.status === 'delivering' ? 'En Route to Door' :
+                   r.status === 'waiting_pickup' ? 'At Kitchen Pickup' :
+                   r.status === 'idle' ? 'Available' : 'Offline'}
+                </span>
+              </td>
+              <td>
+                {r.activeOrderRef ? (
+                  <a href={routes.tracking} class="order-ref-link">#{r.activeOrderRef}</a>
+                ) : (
+                  <span class="no-order">—</span>
+                )}
+              </td>
+              <td>
+                <span class="completed-val">{r.completedToday} drops</span>
+              </td>
+              <td>
+                <span class="rating-val">⭐ {r.rating.toFixed(2)}</span>
+              </td>
+              <td class="text-right">
+                <button type="button" class="btn-dispatch-call">Call Rider</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</FoodLayout>
+
+<style>
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn-broadcast {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-add-rider {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1rem;
+    background: #ea580c;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .fleet-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpi-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .kpi-label {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  .kpi-val {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .kpi-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .riders-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: rgba(15, 23, 42, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .live-dot-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: #4ade80;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .riders-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+  }
+
+  .riders-table th {
+    padding: 0.85rem 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .riders-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .rider-col {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .rider-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(234, 88, 12, 0.2);
+    color: #fb923c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.82rem;
+  }
+
+  .rider-name {
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .vehicle-pill {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+  }
+
+  .phone-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-family: monospace;
+  }
+
+  .phone-link:hover {
+    color: #ffffff;
+  }
+
+  .status-badge {
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .status-badge.delivering {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+  }
+
+  .status-badge.waiting_pickup {
+    background: rgba(234, 88, 12, 0.15);
+    color: #fb923c;
+  }
+
+  .status-badge.idle {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  .status-badge.offline {
+    background: rgba(255, 255, 255, 0.06);
+    color: #64748b;
+  }
+
+  .order-ref-link {
+    font-family: monospace;
+    font-weight: 700;
+    color: #ea580c;
+    text-decoration: none;
+  }
+
+  .order-ref-link:hover {
+    text-decoration: underline;
+  }
+
+  .no-order {
+    color: #64748b;
+  }
+
+  .completed-val {
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .rating-val {
+    font-weight: 700;
+    color: #fbbf24;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .btn-dispatch-call {
+    padding: 0.35rem 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-dispatch-call:hover {
+    background: rgba(234, 88, 12, 0.2);
+    border-color: rgba(234, 88, 12, 0.4);
+    color: #ffffff;
+  }
+</style>
