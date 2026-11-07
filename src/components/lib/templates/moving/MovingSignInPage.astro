@@ -1,0 +1,340 @@
+---
+/**
+ * MovingSignInPage — Staff & Dispatcher sign-in portal for Muvr operations.
+ * Includes 1-click demo logins for Head of Fleet Operations, Recruitment Lead, and Lead Driver.
+ *
+ * @param {MovingRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme. Default 'light'.
+ */
+import './moving-theme.css';
+import { movingRoutes, type MovingRoutes } from './data';
+
+interface Props {
+  routes?: MovingRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = movingRoutes, theme = 'light', noindex = true } = Astro.props;
+
+const demoRoles = [
+  {
+    role: 'Head of Fleet Operations',
+    name: 'Marcos Benítez',
+    email: 'dispatch@muvr.es',
+    badge: 'Dispatch Matrix & Active Routes',
+    target: routes.dashboard,
+  },
+  {
+    role: 'Driver Recruitment Lead',
+    name: 'Lucía Pardo',
+    email: 'recruitment@muvr.es',
+    badge: 'Applicant Pipeline & Onboarding',
+    target: routes.hiring,
+  },
+  {
+    role: 'Lead Van Captain',
+    name: 'Raúl Morales',
+    email: 'raul.driver@muvr.es',
+    badge: 'Move Manifest & Inventory',
+    target: routes.moves,
+  },
+];
+---
+
+<!doctype html>
+<html lang="en" class="theme-moving" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff & Fleet Dispatcher Login · Muvr Logistics</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style is:global>
+      body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--c-bg);
+        color: var(--c-text);
+        display: flex;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-logo-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/>
+          </svg>
+        </div>
+        <h1 class="brand-title">MUVR<span>.</span></h1>
+        <span class="auth-sub">Fleet Operations & Dispatch System</span>
+      </div>
+
+      <!-- Demo Logins -->
+      <div class="demo-box">
+        <span class="demo-title">1-Click Demo Profiles</span>
+        <div class="demo-list">
+          {demoRoles.map((dr) => (
+            <a href={dr.target} class="demo-role-btn">
+              <div class="role-avatar">{dr.name[0]}</div>
+              <div class="role-info">
+                <strong>{dr.name}</strong>
+                <span>{dr.role}</span>
+                <small>{dr.badge}</small>
+              </div>
+              <span class="role-arrow">→</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div class="auth-divider">
+        <span>or sign in with password</span>
+      </div>
+
+      <form class="auth-form" action={routes.dashboard} method="GET">
+        <div class="form-group">
+          <label for="auth-email">Company Email</label>
+          <input type="email" id="auth-email" class="form-input" value="dispatch@muvr.es" required />
+        </div>
+
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" class="form-input" value="••••••••••••" required />
+        </div>
+
+        <button type="submit" class="auth-btn">
+          <span>Enter Operations Dashboard</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <a href={routes.home}>← Return to Public Website</a>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 2.25rem 2rem;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1);
+  }
+
+  .auth-brand {
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .auth-logo-box {
+    width: 46px;
+    height: 46px;
+    background: var(--c-primary);
+    color: #ffffff;
+    border-radius: var(--r-lg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .brand-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .brand-title span {
+    color: var(--c-accent);
+  }
+
+  .auth-sub {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+  }
+
+  /* Demo */
+  .demo-box {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .demo-title {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.65rem;
+  }
+
+  .demo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .demo-role-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .demo-role-btn:hover {
+    border-color: var(--c-primary);
+    background: rgba(37, 99, 235, 0.04);
+  }
+
+  .role-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .role-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .role-info strong {
+    font-size: 0.85rem;
+    color: var(--c-text);
+  }
+
+  .role-info span {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .role-info small {
+    font-size: 0.68rem;
+    color: var(--c-accent);
+    font-weight: 600;
+  }
+
+  .role-arrow {
+    color: var(--c-text-subtle);
+    font-size: 1rem;
+  }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.25rem 0;
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .auth-divider span {
+    padding: 0 0.5rem;
+  }
+
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .form-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  .form-input {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    color: var(--c-text);
+    font-size: 0.88rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    border-color: var(--c-primary);
+  }
+
+  .auth-btn {
+    padding: 0.85rem;
+    background: var(--c-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.25rem;
+  }
+
+  .auth-btn:hover {
+    background: var(--c-primary-hover);
+  }
+
+  .auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .auth-footer a {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    text-decoration: none;
+  }
+
+  .auth-footer a:hover {
+    color: var(--c-primary);
+  }
+</style>
+

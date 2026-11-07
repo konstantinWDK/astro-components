@@ -1,0 +1,426 @@
+---
+/**
+ * MovingSiteLayout — Public marketing website shell for Muvr · Moving, Logistics & Fleet Operations.
+ *
+ * @param {string} title - Page title.
+ * @param {string} description - Meta description.
+ * @param {MovingRoutes} routes - Template route map.
+ * @param {string} current - Current route identifier ('home' | 'quote' | 'fleet' | 'careers' | 'signIn').
+ * @param {string} theme - Initial theme. Default 'light'.
+ */
+import './moving-theme.css';
+import { movingRoutes, movingData, type MovingRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  routes?: MovingRoutes;
+  current?: 'home' | 'quote' | 'fleet' | 'careers' | 'signIn';
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'Express furniture removals, professional van fleet, and transparent pricing in Madrid.',
+  routes = movingRoutes,
+  current = 'home',
+  theme = 'light',
+  noindex = false,
+} = Astro.props;
+
+const navLinks = [
+  { label: 'Home', href: routes.home, id: 'home' },
+  { label: 'Volume & Quote', href: routes.quote, id: 'quote' },
+  { label: 'Van Fleet', href: routes.fleet, id: 'fleet' },
+  { label: 'Careers (We’re Hiring)', href: routes.careers, id: 'careers', badge: 'Hiring' },
+];
+---
+
+<!doctype html>
+<html lang="en" class="theme-moving" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} · ${movingData.brand.name}`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style is:global>
+      :root {
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--c-bg);
+        color: var(--c-text);
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Hotline Announcement Bar -->
+    <div class="top-announcement-strip">
+      <div class="strip-inner">
+        <span class="strip-text">
+          🚚 Need express furniture moving today? Open vans available right now in Madrid.
+        </span>
+        <div class="strip-contacts">
+          <a href={`tel:${movingData.brand.phone}`} class="strip-link">Call: {movingData.brand.phone}</a>
+          <span class="strip-divider">·</span>
+          <a href={routes.signIn} class="strip-link strip-link--staff">Staff / Dispatch Login →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href={routes.home} class="site-logo">
+          <span class="logo-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/>
+            </svg>
+          </span>
+          <span class="logo-text">MUVR<span class="logo-dot">.</span></span>
+        </a>
+
+        <nav class="nav-menu" aria-label="Main Navigation">
+          {navLinks.map((link) => (
+            <a
+              href={link.href}
+              class={`nav-link ${current === link.id ? 'nav-link--active' : ''}`}
+            >
+              <span>{link.label}</span>
+              {link.badge && <span class="nav-badge">{link.badge}</span>}
+            </a>
+          ))}
+        </nav>
+
+        <div class="header-actions">
+          <a href={routes.quote} class="btn-primary-quote">
+            <span>Calculate Move</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+      <div class="footer-container">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <span class="footer-logo">MUVR<span class="logo-dot">.</span></span>
+            <p class="footer-desc">
+              Reliable furniture removals, professional van fleet, and fair driver careers. Operating throughout Madrid and national corridors.
+            </p>
+            <div class="footer-contact-info">
+              <span>📍 {movingData.brand.address}</span>
+              <span>📞 {movingData.brand.phone} · ✉️ {movingData.brand.email}</span>
+            </div>
+          </div>
+
+          <div class="footer-links-grid">
+            <div class="links-col">
+              <h4>Removals</h4>
+              <a href={routes.home}>Home Relocations</a>
+              <a href={routes.quote}>Furniture m³ Calculator</a>
+              <a href={routes.fleet}>Our Commercial Vans</a>
+              <a href={`${routes.home}#pricing`}>Transparent Pricing</a>
+            </div>
+
+            <div class="links-col">
+              <h4>Careers</h4>
+              <a href={routes.careers}>Drive with Own Van</a>
+              <a href={routes.careers}>Company Fleet Drivers</a>
+              <a href={routes.careers}>Furniture Movers</a>
+              <a href={`${routes.careers}#apply`}>Apply Online</a>
+            </div>
+
+            <div class="links-col">
+              <h4>Operations</h4>
+              <a href={routes.signIn}>Staff Dispatch Portal</a>
+              <a href={routes.dashboard}>Fleet Dashboard</a>
+              <a href={routes.dispatch}>Live Route Timeline</a>
+              <a href={routes.hiring}>Hiring Kanban</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <span>© {new Date().getFullYear()} Muvr Logistics SL. All rights reserved. Registered Transport Carrier.</span>
+          <div class="footer-legal">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Carriage</a>
+            <a href="#">Cargo Insurance Terms</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .top-announcement-strip {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.78rem;
+    padding: 0.45rem 1.5rem;
+  }
+
+  .strip-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .strip-contacts {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .strip-link {
+    color: #f8fafc;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .strip-link:hover {
+    color: var(--c-accent);
+  }
+
+  .strip-link--staff {
+    color: var(--c-primary);
+  }
+
+  .strip-divider {
+    color: #475569;
+  }
+
+  /* Header */
+  .site-header {
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.9rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .site-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--c-text);
+  }
+
+  .logo-box {
+    width: 36px;
+    height: 36px;
+    background: var(--c-primary);
+    color: #ffffff;
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-text {
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--c-text);
+  }
+
+  .logo-dot {
+    color: var(--c-accent);
+  }
+
+  .nav-menu {
+    display: none;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .nav-menu {
+      display: flex;
+    }
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--c-primary);
+  }
+
+  .nav-link--active {
+    color: var(--c-primary);
+  }
+
+  .nav-badge {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: rgba(234, 88, 12, 0.12);
+    color: var(--c-accent);
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+  }
+
+  .btn-primary-quote {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1.1rem;
+    background: var(--c-accent);
+    color: #ffffff;
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary-quote:hover {
+    background: var(--muvr-orange-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+  }
+
+  /* Footer */
+  .site-footer {
+    background: #0f172a;
+    color: #94a3b8;
+    padding: 4rem 1.5rem 2rem;
+    border-top: 1px solid #1e293b;
+  }
+
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid #1e293b;
+  }
+
+  @media (min-width: 768px) {
+    .footer-top {
+      grid-template-columns: 1.2fr 2fr;
+    }
+  }
+
+  .footer-logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #ffffff;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
+    max-width: 380px;
+  }
+
+  .footer-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: #cbd5e1;
+  }
+
+  .footer-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .links-col h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .links-col a {
+    display: block;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    text-decoration: none;
+    margin-bottom: 0.55rem;
+    transition: color 0.15s ease;
+  }
+
+  .links-col a:hover {
+    color: #ffffff;
+  }
+
+  .footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 2rem;
+    font-size: 0.78rem;
+  }
+
+  .footer-legal {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .footer-legal a {
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  .footer-legal a:hover {
+    color: #ffffff;
+  }
+</style>
+

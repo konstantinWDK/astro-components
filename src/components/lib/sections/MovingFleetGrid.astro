@@ -1,0 +1,335 @@
+---
+/**
+ * MovingFleetGrid — Van and commercial removal vehicle showcase section.
+ * Displays vehicle specifications: cargo volume (m³), payload capacity (kg),
+ * cargo area dimensions, hydraulic tail-lift availability, and ideal move scopes.
+ *
+ * @param {MovingVehicle[]} vehicles - Fleet vehicles list.
+ * @param {string} bookBase - Base URL for booking. Default '/preview/moving/quote'.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Section subtitle.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { MovingVehicle } from '../templates/moving/data';
+import { movingVehicles } from '../templates/moving/data';
+
+interface Props {
+  vehicles?: MovingVehicle[];
+  bookBase?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  vehicles = movingVehicles,
+  bookBase = '/preview/moving/quote',
+  title = 'Our Modern Van & Truck Fleet',
+  subtitle = 'Regularly maintained Euro 6 vehicles equipped with protective blankets, heavy-duty ratchet straps, and hydraulic tail-lifts for heavy appliances.',
+  className = '',
+} = Astro.props;
+---
+
+<section id="fleet" class={`fleet-section ${className}`}>
+  <div class="fleet-container">
+    <div class="section-head">
+      <span class="section-badge">Commercial Fleet</span>
+      <h2 class="section-title">{title}</h2>
+      <p class="section-desc">{subtitle}</p>
+    </div>
+
+    <div class="fleet-grid">
+      {vehicles.map((v) => (
+        <div class="fleet-card">
+          <!-- Card Top Graphic & Badge -->
+          <div class="fleet-card-media">
+            <div class="vehicle-icon-circle">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/>
+              </svg>
+            </div>
+            <span class="fleet-code-badge">{v.code}</span>
+          </div>
+
+          <div class="card-content">
+            <h3 class="fleet-name">{v.name}</h3>
+            <span class="fleet-model">{v.model}</span>
+
+            <!-- Key metrics row -->
+            <div class="metrics-grid">
+              <div class="metric-box">
+                <span class="metric-label">Volume</span>
+                <strong class="metric-val text-primary">{v.volumeM3} m³</strong>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Max Payload</span>
+                <strong class="metric-val">{v.payloadKg} kg</strong>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Tail Lift</span>
+                <strong class={`metric-val ${v.hasTailLift ? 'text-accent' : ''}`}>
+                  {v.hasTailLift ? 'Hydraulic' : 'Ramp'}
+                </strong>
+              </div>
+            </div>
+
+            <!-- Dimensions -->
+            <div class="dimensions-box">
+              <span class="dim-title">Cargo Bed Dimensions:</span>
+              <span class="dim-values">
+                {v.dimensions.lengthM}m (L) × {v.dimensions.widthM}m (W) × {v.dimensions.heightM}m (H)
+              </span>
+            </div>
+
+            <!-- Included Gear -->
+            <ul class="gear-list">
+              <li>Padded moving blankets & ratchet ties</li>
+              <li>Furniture hand trolley / 4-wheel dolly</li>
+              {v.hasTailLift && <li>Hydraulic lift (500kg safe capacity)</li>}
+              <li>Low-emission Euro 6 · City center access</li>
+            </ul>
+
+            <div class="card-action">
+              <a href={`${bookBase}?vehicle=${v.id}`} class="fleet-book-btn">
+                <span>Book This {v.name.split(' ')[0]}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .fleet-section {
+    padding: 4rem 1.5rem;
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .fleet-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 3rem;
+  }
+
+  .section-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-primary);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full);
+    margin-bottom: 0.65rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+    color: var(--c-text);
+    letter-spacing: -0.02em;
+  }
+
+  .section-desc {
+    font-size: 1rem;
+    color: var(--c-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Grid */
+  .fleet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .fleet-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--muvr-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .fleet-card:hover {
+    border-color: var(--c-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--muvr-card-shadow-hover);
+  }
+
+  .fleet-card-media {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(234, 88, 12, 0.08) 100%);
+    padding: 2rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .vehicle-icon-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--r-lg);
+    background: var(--c-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-primary);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  .fleet-code-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: var(--c-surface);
+    color: var(--c-text);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full);
+    border: 1px solid var(--c-border);
+    letter-spacing: 0.05em;
+  }
+
+  .card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .fleet-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0;
+  }
+
+  .fleet-model {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    margin: 0.15rem 0 1rem;
+  }
+
+  /* Metrics */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    background: var(--c-bg);
+    padding: 0.65rem;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+    margin-bottom: 1rem;
+  }
+
+  .metric-box {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metric-label {
+    font-size: 0.68rem;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+  }
+
+  .metric-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--c-text);
+  }
+
+  .text-primary { color: var(--c-primary); }
+  .text-accent { color: var(--c-accent); }
+
+  .dimensions-box {
+    font-size: 0.75rem;
+    background: rgba(37, 99, 235, 0.04);
+    border: 1px dashed var(--c-primary);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--r-md);
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .dim-title {
+    font-weight: 700;
+    color: var(--c-primary);
+  }
+
+  .dim-values {
+    color: var(--c-text);
+    font-weight: 600;
+  }
+
+  .gear-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    flex: 1;
+  }
+
+  .gear-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .gear-list li::before {
+    content: '✓';
+    color: #10b981;
+    font-weight: 800;
+  }
+
+  .card-action {
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .fleet-book-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--c-surface);
+    color: var(--c-primary);
+    border: 1px solid var(--c-primary);
+    border-radius: var(--r-md);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .fleet-book-btn:hover {
+    background: var(--c-primary);
+    color: #ffffff;
+  }
+</style>
+

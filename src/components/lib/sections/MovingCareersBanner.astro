@@ -1,0 +1,379 @@
+---
+/**
+ * MovingCareersBanner — High-conversion recruitment and hiring portal banner for logistics & removals.
+ * Promotes job openings for van drivers (with own van or company fleet) and heavy furniture movers,
+ * showcasing hourly pay rates, flexible weekly scheduling, fuel benefits, and instant application CTAs.
+ *
+ * @param {JobOpening[]} jobs - Open vacancies list.
+ * @param {string} applyHref - URL for the driver/mover application form.
+ * @param {string} title - Section title.
+ * @param {string} subtitle - Section subtitle.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { JobOpening } from '../templates/moving/data';
+import { jobOpenings } from '../templates/moving/data';
+
+interface Props {
+  jobs?: JobOpening[];
+  applyHref?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  jobs = jobOpenings,
+  applyHref = '/preview/moving/careers#apply',
+  title = 'Join the Muvr Crew · We Are Hiring Drivers & Movers',
+  subtitle = 'Whether you own a commercial van or want to drive our company fleet, we offer market-leading pay rates, weekly payouts, and continuous local and intercity routes.',
+  className = '',
+} = Astro.props;
+
+const perks = [
+  { title: 'Weekly Direct Payouts', desc: 'No 60-day waits. Earnings deposited every Monday morning.' },
+  { title: 'Own Van or Company Fleet', desc: 'Drive your own L2/L3 van for premium rates, or drive our modern vehicles.' },
+  { title: 'Fuel & Tool Allowances', desc: 'Corporate fuel cards, toll reimbursement, and uniform gear provided.' },
+  { title: 'Flexible Route Shifts', desc: 'Choose between full-time, part-time, or weekend peak demand shifts.' },
+];
+---
+
+<section id="careers" class={`careers-section ${className}`}>
+  <div class="careers-container">
+    <div class="careers-hero-card">
+      <div class="careers-head">
+        <span class="careers-badge">Driver & Mover Recruitment</span>
+        <h2 class="careers-title">{title}</h2>
+        <p class="careers-desc">{subtitle}</p>
+      </div>
+
+      <!-- Key Perks Grid -->
+      <div class="perks-grid">
+        {perks.map((p) => (
+          <div class="perk-card">
+            <span class="perk-check">✓</span>
+            <div>
+              <strong class="perk-title">{p.title}</strong>
+              <p class="perk-desc">{p.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Active Openings Grid -->
+    <div class="openings-header">
+      <h3 class="openings-title">Current Open Positions in Madrid & Metropolitan Area</h3>
+      <span class="openings-count">{jobs.reduce((acc, j) => acc + j.openings, 0)} open slots</span>
+    </div>
+
+    <div class="jobs-grid">
+      {jobs.map((job) => (
+        <div class="job-card">
+          <div class="job-top">
+            <div>
+              <span class="contract-badge">{job.contractType.replace('_', ' ')}</span>
+              <h4 class="job-title">{job.title}</h4>
+              <span class="job-location">📍 {job.location}</span>
+            </div>
+            <div class="job-pay">
+              <strong class="pay-rate">{job.payRate}</strong>
+              <small class="pay-bonus">{job.bonus}</small>
+            </div>
+          </div>
+
+          <div class="job-requirements">
+            <span class="req-title">Key Requirements:</span>
+            <ul>
+              {job.requirements.slice(0, 3).map((req) => (
+                <li>{req}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div class="job-card-footer">
+            <span class="slots-tag">{job.openings} positions available</span>
+            <a href={`${applyHref}?role=${job.id}`} class="btn-apply">
+              <span>Apply in 2 min</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .careers-section {
+    padding: 4.5rem 1.5rem;
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .careers-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .careers-hero-card {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(234, 88, 12, 0.08) 100%);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 2.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .careers-head {
+    max-width: 780px;
+    margin-bottom: 2rem;
+  }
+
+  .careers-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-accent);
+    background: rgba(234, 88, 12, 0.1);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full);
+    margin-bottom: 0.65rem;
+  }
+
+  .careers-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+    font-weight: 900;
+    margin: 0 0 0.65rem;
+    color: var(--c-text);
+    letter-spacing: -0.02em;
+  }
+
+  .careers-desc {
+    font-size: 1.05rem;
+    color: var(--c-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Perks */
+  .perks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .perk-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .perk-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #10b981;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  .perk-title {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .perk-desc {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    margin: 0.2rem 0 0;
+    line-height: 1.35;
+  }
+
+  /* Openings */
+  .openings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .openings-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0;
+  }
+
+  .openings-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--c-primary);
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--r-full);
+  }
+
+  .jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .job-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--muvr-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .job-card:hover {
+    border-color: var(--c-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--muvr-card-shadow-hover);
+  }
+
+  .job-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .contract-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.35rem;
+  }
+
+  .job-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0 0 0.25rem;
+    line-height: 1.3;
+  }
+
+  .job-location {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+  }
+
+  .job-pay {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .pay-rate {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--c-accent);
+  }
+
+  .pay-bonus {
+    display: block;
+    font-size: 0.7rem;
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .job-requirements {
+    flex: 1;
+    margin-bottom: 1.25rem;
+  }
+
+  .req-title {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-text);
+    margin-bottom: 0.35rem;
+  }
+
+  .job-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+  }
+
+  .job-requirements li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+
+  .job-requirements li::before {
+    content: '•';
+    color: var(--c-primary);
+  }
+
+  .job-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .slots-tag {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    font-weight: 500;
+  }
+
+  .btn-apply {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 0.95rem;
+    background: var(--c-primary);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: var(--r-md);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .btn-apply:hover {
+    background: var(--c-primary-hover);
+    transform: translateY(-1px);
+  }
+</style>
+

@@ -1,0 +1,335 @@
+---
+/**
+ * MovingOrdersPage — Directory of all customer removals and furniture transport orders.
+ * Shows status filters, assigned vans, floor elevator conditions, and links to detailed manifest sheets.
+ *
+ * @param {MovingRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme. Default 'light'.
+ */
+import MovingLayout from './MovingLayout.astro';
+import { movingRoutes, movingData, type MovingRoutes } from './data';
+
+interface Props {
+  routes?: MovingRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = movingRoutes, theme = 'light', noindex = true } = Astro.props;
+---
+
+<MovingLayout
+  title="Move Orders & Removals Directory"
+  routes={routes}
+  current="moves"
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="orders-page">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">Move Orders & Customer Relocations</h1>
+        <p class="page-sub">Track active pickups, furniture manifests, floor stair fees, and billing status.</p>
+      </div>
+
+      <div class="filters-row">
+        <button type="button" class="filter-pill active">All Moves ({movingData.orders.length})</button>
+        <button type="button" class="filter-pill">In Transit (1)</button>
+        <button type="button" class="filter-pill">Scheduled (2)</button>
+        <button type="button" class="filter-pill">Completed (1)</button>
+      </div>
+    </div>
+
+    <!-- Orders Cards Grid -->
+    <div class="orders-grid">
+      {movingData.orders.map((ord) => (
+        <div class="order-summary-card">
+          <div class="order-card-header">
+            <div>
+              <span class="order-ref">{ord.reference}</span>
+              <h3 class="order-customer">{ord.customerName}</h3>
+              <span class="order-time">{ord.moveDate} · {ord.timeSlot}</span>
+            </div>
+            <div class="status-wrap">
+              <span class={`muvr-badge muvr-badge--${ord.status}`}>{ord.status.replace('_', ' ')}</span>
+              <strong class="order-price">€{ord.priceTotal}</strong>
+            </div>
+          </div>
+
+          <!-- Route Block -->
+          <div class="order-route">
+            <div class="route-point">
+              <span class="point-badge point-badge--origin">Origin</span>
+              <strong class="point-addr">{ord.originAddress}</strong>
+              <small>Floor {ord.originFloor} · {ord.originElevator ? 'Elevator' : 'Stairs only'}</small>
+            </div>
+            <div class="route-point">
+              <span class="point-badge point-badge--dest">Dest</span>
+              <strong class="point-addr">{ord.destinationAddress}</strong>
+              <small>Floor {ord.destinationFloor} · {ord.destinationElevator ? 'Elevator' : 'Stairs only'}</small>
+            </div>
+          </div>
+
+          <!-- Meta Row -->
+          <div class="order-meta-row">
+            <div class="meta-item">
+              <span class="label">Van</span>
+              <strong>{ord.vehicleId.toUpperCase()}</strong>
+            </div>
+            <div class="meta-item">
+              <span class="label">Driver</span>
+              <strong>{ord.assignedDriver}</strong>
+            </div>
+            <div class="meta-item">
+              <span class="label">Volume</span>
+              <strong class="text-primary">{ord.volumeM3} m³</strong>
+            </div>
+            <div class="meta-item">
+              <span class="label">Items</span>
+              <strong>{ord.items.length} pcs</strong>
+            </div>
+          </div>
+
+          <div class="order-footer">
+            <span class={`payment-tag ${ord.paid ? 'paid' : 'pending'}`}>
+              {ord.paid ? '✓ Paid Online' : '⚠️ Payment on Delivery'}
+            </span>
+            <a href={`${routes.moves}/${ord.id}`} class="btn-manifest">
+              <span>View Manifest & Sheet →</span>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</MovingLayout>
+
+<style>
+  .orders-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .page-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .page-head {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .page-sub {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.2rem 0 0;
+  }
+
+  .filters-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-pill {
+    padding: 0.35rem 0.75rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .filter-pill:hover {
+    color: var(--c-text);
+    border-color: var(--c-border-hover);
+  }
+
+  .filter-pill.active {
+    background: var(--c-primary);
+    color: #ffffff;
+    border-color: var(--c-primary);
+  }
+
+  /* Cards Grid */
+  .orders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .order-summary-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    box-shadow: var(--muvr-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .order-summary-card:hover {
+    border-color: var(--c-border-hover);
+    box-shadow: var(--muvr-card-shadow-hover);
+  }
+
+  .order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .order-ref {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--c-primary);
+    letter-spacing: 0.05em;
+  }
+
+  .order-customer {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0.1rem 0;
+  }
+
+  .order-time {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .status-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+  }
+
+  .order-price {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--c-text);
+  }
+
+  /* Route */
+  .order-route {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .route-point {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .point-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    width: fit-content;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .point-badge--origin {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+  }
+
+  .point-badge--dest {
+    background: rgba(234, 88, 12, 0.12);
+    color: #ea580c;
+  }
+
+  .point-addr {
+    font-size: 0.82rem;
+    color: var(--c-text);
+  }
+
+  .route-point small {
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+  }
+
+  /* Meta */
+  .order-meta-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    background: var(--c-surface);
+    padding: 0.5rem;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .meta-item .label {
+    font-size: 0.65rem;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+  }
+
+  .text-primary { color: var(--c-primary); }
+
+  .order-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .payment-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .payment-tag.paid { color: #10b981; }
+  .payment-tag.pending { color: #d97706; }
+
+  .btn-manifest {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-decoration: none;
+  }
+
+  .btn-manifest:hover {
+    text-decoration: underline;
+  }
+</style>
+

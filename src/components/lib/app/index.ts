@@ -28,6 +28,11 @@ export { default as DentalOdontogram } from './DentalOdontogram.astro';
 export { default as DentalChairTimeline } from './DentalChairTimeline.astro';
 export { default as DentalTreatmentPlanBuilder } from './DentalTreatmentPlanBuilder.astro';
 export { default as DentalRecallManager } from './DentalRecallManager.astro';
+// Moving & logistics apps
+export { default as MoveInventoryCalculator } from './MoveInventoryCalculator.astro';
+export { default as FleetDispatchTimeline } from './FleetDispatchTimeline.astro';
+export { default as HiringPipelineBoard } from './HiringPipelineBoard.astro';
+export { default as MoveManifestCard } from './MoveManifestCard.astro';
 
 export { appIcons, appIcon, initials, hueFrom } from './app-icons';
 export type { AppIcon } from './app-icons';

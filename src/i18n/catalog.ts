@@ -183,6 +183,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Odontología y Dental', description: 'Secciones para clínicas dentales: hero con teléfono de urgencias, catálogo de tarifas, transformaciones antes/después, asistente de reserva en 4 pasos, especialistas y urgencias 24/7.' },
     ru: { name: 'Стоматология', description: 'Секции для стоматологических клиник: главный экран с горячей линией острой боли, прайс-лист, фото до/после, мастер записи в 4 шага, каталог врачей и экстренная помощь.' },
   },
+  moving: {
+    en: { name: 'Moving & Logistics', description: 'Sections for removals and van logistics: instant route quote hero, housing volume guide, commercial van fleet, transparent pricing tiers, careers recruitment banner, and driver job application form.' },
+    es: { name: 'Mudanzas y Logística', description: 'Secciones para mudanzas y portes con furgonetas: hero con cotizador de ruta, guía de volumen en m³, flota de furgonetas, tarifas transparentes, banner de empleo y formulario de contratación.' },
+    ru: { name: 'Переезды и логистика', description: 'Секции для переездов и грузоперевозок: главный экран с расчётом маршрута, гид по объёму жилья, каталог фургонов, прозрачные тарифы, баннер вакансий и форма найма водителей.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

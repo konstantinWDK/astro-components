@@ -778,4 +778,45 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Banner de urgencias odontológicas 24/7 para dolor agudo, traumatismos y flemones con botón de llamada inmediata y huecos reservados el mismo día.",
     ru: "Баннер экстренной стоматологической помощи 24/7 при острой боли и травмах с кнопкой прямого звонка и слотами «день в день».",
   },
+  // ── Moving & Logistics ────────────────────────────────────────
+  'move-inventory-calculator': {
+    es: "Calculadora interactiva de volumen (m³) y presupuesto de mudanza: desglose pieza a pieza de muebles con recomendación de furgoneta y precio en tiempo real.",
+    ru: "Интерактивный калькулятор объёма мебели (м³) и стоимости переезда: попредметный выбор с расчётом кубометров, подбором фургона и точной ценой.",
+  },
+  'fleet-dispatch-timeline': {
+    es: "Panel de control y matriz de despacho de furgonetas: porcentaje de carga volumétrica, asignación de conductor, estado en ruta y horarios.",
+    ru: "Диспетчерский пульт и матрица расписания фургонов: шкала загрузки по объёму, назначенные водители, статус на линии и таймлайн.",
+  },
+  'hiring-pipeline-board': {
+    es: "Tablero Kanban de selección de personal para transportistas y mozos: seguimiento de candidatos por fases (solicitud, entrevista, prueba y contratado) con datos de vehículo propio.",
+    ru: "Канбан-доска найма водителей и грузчиков: воронка кандидатов по этапам (заявка, интервью, тестовый рейс, оформлен) с данными о собственном авто.",
+  },
+  'move-manifest-card': {
+    es: "Albarán detallado de mudanza y porte: direcciones de origen y destino, condición de ascensor/escaleras, inventario de muebles y seguimiento de estado.",
+    ru: "Подробный путевой лист переезда: адреса погрузки/выгрузки, условия подъёма по этажам, опись мебели и прогресс выполнения.",
+  },
+  'moving-hero': {
+    es: "Hero para empresas de mudanzas y portes: formulario de cálculo rápido de ruta, distintivo de furgoneta en el día y sellos de seguro de mercancías.",
+    ru: "Главный экран для сервиса переездов и перевозок: быстрый расчёт по маршруту, выезд день-в-день и гарантия страховки груза.",
+  },
+  'moving-volume-estimator': {
+    es: "Guía visual de cubicaje por tipo de vivienda (estudio, piso de 1-2 habitaciones, piso de 3 habitaciones, casa) con furgoneta y mozos recomendados.",
+    ru: "Наглядный гид по объёму жилья (студия, 1-2 комнатная, 3 комнатная, дом) с рекомендацией фургона и количества грузчиков.",
+  },
+  'moving-fleet-grid': {
+    es: "Catálogo de furgonetas y camiones de mudanza: dimensiones interiores de la caja, carga útil en kg, plataforma elevadora y adecuación de mudanza.",
+    ru: "Каталог автопарка для переездов: внутренние габариты кузова, грузоподъёмность, гидролифт и подходящий тип переезда.",
+  },
+  'moving-careers-banner': {
+    es: "Banner de captación de empleo para conductores con furgoneta propia, chóferes de flota y mozos: tarifas por hora, cobros semanales y solicitud online.",
+    ru: "Баннер найма водителей со своим авто, в штат и грузчиков: почасовые ставки, еженедельные выплаты и быстрая онлайн-заявка.",
+  },
+  'moving-pricing-tiers': {
+    es: "Planes de precios transparentes: Furgoneta + Conductor, Mudanza Completa con 2 Mozos y Servicio Llave en Mano con embalaje completo.",
+    ru: "Тарифные планы: Фургон с водителем, Полный переезд с 2 грузчиками и Переезд под ключ с упаковкой всех вещей.",
+  },
+  'moving-application-form': {
+    es: "Formulario accesible de solicitud de empleo para transportistas y mozos: tipo de carnet de conducir (B, C1, C), datos de furgoneta propia y experiencia.",
+    ru: "Доступная форма онлайн-заявки на работу водителем или грузчиком: категория прав (B, C1, C), параметры своего авто и опыт работы.",
+  },
 };

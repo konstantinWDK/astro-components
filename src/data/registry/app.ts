@@ -156,4 +156,22 @@ export const app: ComponentDoc[] = [
     description: 'Preventative dental hygiene recall manager: tracks 6-month prophy and perio due dates with 1-click automated WhatsApp and SMS patient reminders.',
     tags: ['dental', 'recall', 'hygiene', 'prevention', 'reminders', 'sms'],
     usage: `<DentalRecallManager recalls={recallsList} />` }),
+
+  // Moving & Logistics apps ("Muvr")
+  item({ slug: 'move-inventory-calculator', name: 'Move Inventory Calculator', file: 'MoveInventoryCalculator.astro', featured: true,
+    description: 'Interactive furniture volume (m³) and moving estimate calculator: item-by-item selector with live cubic meter tally, recommended van fleet, and instant quote.',
+    tags: ['logistics', 'moving', 'calculator', 'furniture', 'volume', 'pricing'],
+    usage: `<MoveInventoryCalculator items={furnitureCatalog} baseRatePerM3={28} />` }),
+  item({ slug: 'fleet-dispatch-timeline', name: 'Fleet Dispatch Timeline', file: 'FleetDispatchTimeline.astro', featured: true,
+    description: 'Commercial van fleet dispatch board: displays vehicle payload utilization %, driver assignments, live status, and time slot schedules.',
+    tags: ['logistics', 'fleet', 'dispatch', 'timeline', 'vans', 'schedule'],
+    usage: `<FleetDispatchTimeline vehicles={vehicles} orders={orders} />` }),
+  item({ slug: 'hiring-pipeline-board', name: 'Hiring Pipeline Board', file: 'HiringPipelineBoard.astro', featured: true,
+    description: 'Kanban-style recruitment pipeline for van drivers and movers: tracks applicants across interview, trial shift, and hired stages with vehicle details.',
+    tags: ['logistics', 'hiring', 'recruitment', 'kanban', 'drivers', 'careers'],
+    usage: `<HiringPipelineBoard candidates={candidates} />` }),
+  item({ slug: 'move-manifest-card', name: 'Move Manifest Card', file: 'MoveManifestCard.astro',
+    description: 'Detailed removal job manifest card with origin & destination addresses, floor elevator access, distance, itemized furniture list, and progress tracker.',
+    tags: ['logistics', 'manifest', 'order', 'moving', 'card', 'bill-of-lading'],
+    usage: `<MoveManifestCard order={moveOrder} />` }),
 ];

@@ -1303,6 +1303,197 @@ const data: DentalClinicData = {
 
 <DentalHomePage />`,
   },
+  {
+    slug: 'moving',
+    name: {
+      en: 'Muvr · Logistics, Removals & Van Fleet',
+      es: 'Muvr · Portes, Mudanzas de Muebles y Flota de Furgonetas',
+      ru: 'Muvr · Переезды, грузоперевозки и автопарк фургонов',
+    },
+    tagline: {
+      en: 'Express furniture removals, commercial van dispatch, and driver hiring portal.',
+      es: 'Portes y mudanzas de muebles, gestión de flota de furgonetas y contratación de transportistas.',
+      ru: 'Грузоперевозки мебели, диспетчеризация автопарка и найм водителей и грузчиков.',
+    },
+    description: {
+      en: 'Full-stack removals and logistics template: marketing landing with instant furniture m³ calculator, fleet specifications, and driver recruitment portal, backed by a SaaS operations dashboard with van dispatch timeline, move order manifests, and candidate hiring pipeline.',
+      es: 'Plantilla integral de mudanzas y logística: web pública con calculadora de volumen de muebles en m³, catálogo de furgonetas y portal de empleo para transportistas y mozos, respaldado por un panel SaaS de operaciones con matriz de despacho, órdenes de mudanza y pipeline de contratación.',
+      ru: 'Комплексный шаблон для сервиса переездов и логистики: публичный сайт с калькулятором объёма мебели (м³), каталогом автопарка и порталом найма водителей, плюс SaaS-панель управления с таймлайном диспетчеризации, путевыми листами и воронкой кандидатов.',
+    },
+    highlights: {
+      en: [
+        '11 production pages: 5 public customer/recruitment pages + 6 backoffice dispatch and operations pages.',
+        'Interactive Volume & Van Estimator: live cubic meters (m³) tally, payload weight, elevator access factors, and instant transparent quote.',
+        'Commercial Van Fleet Showcase: compact vans, high-roof Sprinters, and Luton box trucks with hydraulic tail-lifts (dimensions & payload specs).',
+        'Driver & Mover Recruitment Portal ("We are Hiring"): vacancies for own-van drivers, company fleet drivers, and movers with 2-minute application form.',
+        'Fleet Dispatch Timeline Matrix: multi-van schedule with time slots, real-time payload capacity bars, and driver allocation.',
+        'Move Orders & Bill of Lading Manifests: origin/destination addresses, floor & elevator access, itemized furniture list, and progress tracker.',
+        'Recruitment Pipeline Kanban Board: tracks applicants across Applied, Interview, Trial Shift, and Hired stages with vehicle details.',
+      ],
+      es: [
+        '11 páginas completas: 5 públicas de clientes y empleo + 6 páginas de backoffice de despacho y operaciones.',
+        'Calculadora interactiva de volumen en m³: suma de muebles pieza a pieza, estimación de peso, factores de ascensor/escaleras y presupuesto en vivo.',
+        'Escaparate de flota de furgonetas: modelos compactos L1H1, L3H2 gran volumen y carrozados con plataforma elevadora hidráulica de 500kg.',
+        'Portal de empleo para conductores y mozos («Trabaja con nosotros»): vacantes para autónomos con furgoneta propia y personal en plantilla con formulario ágil.',
+        'Matriz de despacho y cronograma de flota: cuadrícula horaria por vehículo con medidores de carga volumétrica y asignación de conductores.',
+        'Gestión de órdenes y albaranes de mudanza: direcciones de origen/destino, acceso por ascensor o escaleras, inventario desglosado y seguimiento en vivo.',
+        'Tablero Kanban de contratación: flujo de selección de transportistas (solicitud, entrevista, ruta de prueba, contratado).',
+      ],
+      ru: [
+        '11 готовых страниц: 5 публичных (клиенты и вакансии) + 6 страниц бэкофиса диспетчеризации и операций.',
+        'Интерактивный калькулятор объёма (м³): выбор мебели, расчёт веса, учёт этажей и лифта, мгновенный расчёт стоимости.',
+        'Каталог автопарка: компактные L1H1, цельнометаллические Sprinter L3H2 и мебельные фургоны с гидробортом на 500 кг.',
+        'Портал найма водителей и грузчиков («Работа у нас»): вакансии для водителей со своим авто и в штат с быстрой анкетой.',
+        'Матрица диспетчеризации автопарка: почасовое расписание рейсов, шкала загрузки по объёму и назначение бригад.',
+        'Путевые листы и карточки переездов: адреса с этажами, опись перевозимой мебели и статус рейса.',
+        'Канбан-доска найма персонала: отбор кандидатов по этапам (заявка, интервью, тестовый рейс, оформление).',
+      ],
+    },
+    tags: ['logistics', 'moving', 'fleet', 'van', 'dispatch', 'careers', 'hiring', 'calculator', 'saas', 'transport'],
+    previewBase: '/preview/moving/',
+    importPath: 'astro-component-kit/templates/moving',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Public Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Landing page with route estimate calculator, housing volume guide, fleet grid, pricing packages, and hiring banner.', es: 'Página de inicio con estimador de rutas, guía de volumen por tipo de vivienda, flota de furgonetas, tarifas y banner de empleo.', ru: 'Главная страница с быстрым расчётом маршрута, гидом по объёму квартир, автопарком, тарифами и блоком вакансий.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { MovingHomePage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingHomePage />`,
+      },
+      {
+        id: 'quote', path: 'quote/',
+        name: { en: 'Volume & Quote Calculator', es: 'Calculadora de Volumen y Presupuesto', ru: 'Калькулятор объёма и сметы' },
+        description: { en: 'Interactive furniture inventory builder room-by-room with cubic meter tally, recommended van, and guaranteed quote.', es: 'Calculadora interactiva de inventario pieza a pieza con cubicaje m³, recomendación de furgoneta y presupuesto cerrado.', ru: 'Интерактивный калькулятор мебели по комнатам с подсчётом кубометров, подбором фургона и точной ценой.' },
+        file: 'src/pages/quote.astro',
+        code: `---
+import { MovingQuotePage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingQuotePage />`,
+      },
+      {
+        id: 'fleet', path: 'fleet/',
+        name: { en: 'Commercial Van Fleet', es: 'Flota de Furgonetas y Camiones', ru: 'Автопарк фургонов' },
+        description: { en: 'Detailed vehicle catalog: cargo dimensions, payload weight, tail-lift platforms, and Euro 6 city credentials.', es: 'Catálogo de vehículos con dimensiones de caja de carga, carga útil, plataformas elevadoras y distintivo ambiental.', ru: 'Подробный каталог автопарка: габариты кузова, грузоподъёмность, гидролифты и экостандарты Euro 6.' },
+        file: 'src/pages/fleet.astro',
+        code: `---
+import { MovingFleetPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingFleetPage />`,
+      },
+      {
+        id: 'careers', path: 'careers/',
+        name: { en: 'Careers & Driver Hiring', es: 'Empleo y Contratación', ru: 'Вакансии и найм водителей' },
+        description: { en: 'Job openings for drivers with own vehicle, company fleet drivers, and heavy movers, with 2-minute application form.', es: 'Ofertas de empleo para transportistas con furgoneta propia, conductores de flota y mozos, con formulario de postulación.', ru: 'Вакансии для водителей со своим авто, штатных водителей и грузчиков с быстрой онлайн-анкетой.' },
+        file: 'src/pages/careers.astro',
+        code: `---
+import { MovingCareersPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingCareersPage />`,
+      },
+      {
+        id: 'sign-in', path: 'sign-in/',
+        name: { en: 'Staff & Dispatch Login', es: 'Acceso de Personal y Despacho', ru: 'Вход для персонала и диспетчера' },
+        description: { en: 'Staff login with 1-click demo profiles for Fleet Dispatcher, Recruitment Lead, and Lead Van Captain.', es: 'Portal de acceso para empleados con 1 clic para Jefe de Operaciones, Responsable de Selección y Conductor Líder.', ru: 'Вход для сотрудников с демо-профилями в один клик: начальник автопарка, HR-менеджер и старший водитель.' },
+        file: 'src/pages/sign-in.astro',
+        code: `---
+import { MovingSignInPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'Operations Dashboard', es: 'Panel de Operaciones', ru: 'Панель управления' },
+        description: { en: 'Central operations command: active vans on road, today’s booked revenue, active moves table, and applicant metrics.', es: 'Panel principal: furgonetas en ruta, ingresos del día, tabla de mudanzas activas y candidatos pendientes.', ru: 'Главный пульт управления: фургоны на линии, выручка за день, активные перевозки и статус найма.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { MovingDashboardPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingDashboardPage />`,
+      },
+      {
+        id: 'dispatch', path: 'app/dispatch/',
+        name: { en: 'Fleet Dispatch Matrix', es: 'Matriz de Despacho de Flota', ru: 'Матрица диспетчеризации' },
+        description: { en: 'Van dispatch schedule matrix with time slots, live volumetric payload utilization, and driver assignment.', es: 'Matriz horaria de despacho por vehículo con utilización volumétrica de carga y asignación de choferes.', ru: 'Почасовая матрица рейсов по автомобилям с контролем заполнения объёма кузова и назначения водителей.' },
+        file: 'src/pages/app/dispatch.astro',
+        code: `---
+import { MovingDispatchPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingDispatchPage />`,
+      },
+      {
+        id: 'moves', path: 'app/moves/',
+        name: { en: 'Move Orders Directory', es: 'Directorio de Mudanzas', ru: 'Журнал заказов' },
+        description: { en: 'Master directory of customer removal jobs with route details, assigned team, floor accessibility, and payment tags.', es: 'Directorio de mudanzas con detalles de ruta, equipo asignado, dificultad de pisos/ascensor y cobro.', ru: 'Каталог заказов на переезд с деталями маршрута, назначенной бригадой, условиями подъёма и оплатой.' },
+        file: 'src/pages/app/moves/index.astro',
+        code: `---
+import { MovingOrdersPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingOrdersPage />`,
+      },
+      {
+        id: 'move-detail', path: 'app/moves/[id]/',
+        name: { en: 'Move Manifest & Waybill', es: 'Albarán y Hoja de Ruta', ru: 'Путевой лист и опись' },
+        description: { en: 'Detailed move manifest sheet with customer contacts, floor elevator access, itemized furniture checklist, and driver dialer.', es: 'Albarán de mudanza con datos de cliente, acceso por escaleras, inventario desglosado y botón de llamada al chófer.', ru: 'Детальный путевой лист с контактами клиента, условиями этажей, описью вещей и связью с водителем.' },
+        file: 'src/pages/app/moves/[id].astro',
+        code: `---
+import { MovingOrderDetailPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingOrderDetailPage orderId={Astro.params.id} />`,
+      },
+      {
+        id: 'hiring', path: 'app/hiring/',
+        name: { en: 'Hiring Pipeline (Kanban)', es: 'Pipeline de Contratación', ru: 'Воронка найма персонала' },
+        description: { en: 'Recruitment Kanban board: screen van driver and mover candidates across interview, trial route, and hired stages.', es: 'Tablero Kanban de selección: evalúa transportistas con furgoneta y mozos en fases de entrevista, ruta de prueba y alta.', ru: 'Канбан-доска найма: отбор кандидатов с собственными фургонами и грузчиков по стадиям до выхода на смену.' },
+        file: 'src/pages/app/hiring.astro',
+        code: `---
+import { MovingHiringPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingHiringPage />`,
+      },
+      {
+        id: 'settings', path: 'app/settings/',
+        name: { en: 'Fleet & Rate Settings', es: 'Ajustes de Flota y Tarifas', ru: 'Настройки тарифов и автопарка' },
+        description: { en: 'Base rate per m³ formula, stair carrying fees, commercial cargo insurance policy numbers, and vehicle registry.', es: 'Fórmula de tarifa por m³, suplementos por escaleras, póliza de seguro de mercancías y registro de vehículos.', ru: 'Базовый тариф за м³, надбавки за этажи без лифта, полис страхования грузов и реестр транспорта.' },
+        file: 'src/pages/app/settings.astro',
+        code: `---
+import { MovingSettingsPage } from 'astro-component-kit/templates/moving';
+---
+
+<MovingSettingsPage />`,
+      },
+    ],
+    newComponents: [
+      'move-inventory-calculator', 'fleet-dispatch-timeline', 'hiring-pipeline-board', 'move-manifest-card',
+      'moving-hero', 'moving-volume-estimator', 'moving-fleet-grid', 'moving-careers-banner', 'moving-pricing-tiers', 'moving-application-form',
+    ],
+    reusedComponents: [
+      'app-sidebar', 'app-topbar', 'page-header', 'data-table', 'settings-section', 'switch-row', 'badge',
+    ],
+    storeConfigExample: `---
+// src/pages/index.astro — pass the same data + routes across all moving pages
+import { MovingHomePage, movingData, type MovingRoutes } from 'astro-component-kit/templates/moving';
+
+const data = {
+  ...movingData,
+  brand: { ...movingData.brand, name: 'Muvr Express Madrid' },
+};
+---
+
+<MovingHomePage />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

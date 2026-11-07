@@ -1,0 +1,169 @@
+---
+/**
+ * MovingLayout — Backoffice SaaS management layout for Muvr fleet dispatchers & operations managers.
+ * Integrates AppSidebar navigation, AppTopbar with search & notifications, and live fleet occupancy indicator.
+ *
+ * @param {string} title - Page title.
+ * @param {string} description - Meta description.
+ * @param {MovingRoutes} routes - Template route paths.
+ * @param {string} current - Active route identifier ('dashboard' | 'dispatch' | 'moves' | 'hiring' | 'settings').
+ * @param {string} theme - Theme ('light' | 'dark' | 'auto'). Default 'light'.
+ */
+import './moving-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { movingRoutes, movingData, type MovingRoutes } from './data';
+
+interface Props {
+  title: string;
+  description?: string;
+  routes?: MovingRoutes;
+  current?: 'dashboard' | 'dispatch' | 'moves' | 'hiring' | 'settings';
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'Muvr Dispatch & Logistics Backoffice Management Platform.',
+  routes = movingRoutes,
+  current = 'dashboard',
+  theme = 'light',
+  noindex = true,
+} = Astro.props;
+
+const activeVans = movingData.vehicles.filter((v) => v.status === 'en_route').length;
+const totalVans = movingData.vehicles.length;
+const openApplicants = movingData.candidates.filter((c) => c.status === 'applied' || c.status === 'interview').length;
+
+const sidebarGroups = [
+  {
+    label: 'Operations & Dispatch',
+    items: [
+      { label: 'Overview', href: routes.dashboard, icon: 'dashboard' },
+      { label: 'Dispatch Timeline', href: routes.dispatch, icon: 'calendar', badge: activeVans || undefined },
+      { label: 'Move Orders', href: routes.moves, icon: 'clipboard', badge: movingData.orders.length },
+      { label: 'Hiring Pipeline', href: routes.hiring, icon: 'users', badge: openApplicants || undefined },
+    ],
+  },
+  {
+    label: 'Public & Config',
+    items: [
+      { label: 'Fleet Settings', href: routes.settings, icon: 'settings' },
+      { label: 'Public Home Site', href: routes.home, icon: 'building' },
+      { label: 'Client Quote Tool', href: routes.quote, icon: 'chart' },
+      { label: 'Careers Portal', href: routes.careers, icon: 'sparkle' },
+    ],
+  },
+];
+
+const notifications = [
+  { title: 'New Driver Applicant', text: 'Andrés Gil applied with own Ford Transit L3H2', time: '14 min ago', unread: true, tone: 'warning' as const },
+  { title: 'Delivery Completed', text: 'Order MVR-8294 signed by customer', time: '40 min ago', unread: true, tone: 'success' as const },
+  { title: 'Van 02 Arrived at Destination', text: 'Raúl Morales started unloading at Pozuelo', time: '1 h ago', tone: 'info' as const },
+];
+
+const currentHref = routes[current] || routes.dashboard;
+---
+
+<!doctype html>
+<html lang="en" class="theme-moving" data-theme={theme === 'auto' ? 'light' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} · ${movingData.brand.name} (Operations App)`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style is:global>
+      body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--c-bg);
+        color: var(--c-text);
+      }
+      .muvr-app-container {
+        display: flex;
+        min-height: 100vh;
+      }
+      .muvr-main-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .muvr-content-wrap {
+        padding: 1.5rem;
+        flex: 1;
+      }
+      .fleet-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--c-primary);
+        background: rgba(37, 99, 235, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.2);
+        padding: 0.3rem 0.65rem;
+        border-radius: var(--r-full);
+      }
+      .fleet-pulse-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="muvr-app-container">
+      <AppSidebar
+        workspace={{
+          name: movingData.brand.name,
+          plan: `${activeVans}/${totalVans} Vans on Road`,
+          initials: 'MV',
+        }}
+        groups={sidebarGroups}
+        currentHref={currentHref}
+        promo={{
+          title: 'Hiring Van Drivers',
+          text: `${openApplicants} driver candidates pending review.`,
+          href: routes.hiring,
+          cta: 'Review Pipeline',
+          progress: 65,
+        }}
+      />
+
+      <div class="muvr-main-pane">
+        <AppTopbar
+          searchPlaceholder="Search order #, address, van plate, or driver name…"
+          notifications={notifications}
+          user={{
+            name: 'Marcos Benítez',
+            role: 'Head of Fleet Operations',
+            email: 'dispatch@muvr.es',
+          }}
+          userLinks={[
+            { label: 'Dispatch Schedule', href: routes.dispatch },
+            { label: 'Applicant Pipeline', href: routes.hiring },
+            { label: 'Settings', href: routes.settings },
+          ]}
+          signOutHref={routes.signIn}
+        >
+          <div slot="actions" class="fleet-status-pill">
+            <span class="fleet-pulse-dot"></span>
+            <span>{activeVans} of {totalVans} Vans en Route</span>
+          </div>
+        </AppTopbar>
+
+        <main class="muvr-content-wrap">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+

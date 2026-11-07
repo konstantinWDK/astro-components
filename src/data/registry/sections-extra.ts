@@ -828,4 +828,42 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['dental', 'emergency', 'triage', 'banner', 'cta'],
     usage: `<DentalEmergencyBanner phone="+34 600 911 200" whatsapp="+34600911200" />`,
   }),
+
+  // === MOVING & LOGISTICS ("Muvr") ===
+  section({
+    slug: 'moving-hero', name: 'Moving Hero', file: 'MovingHero.astro', sectionCategory: 'moving',
+    description: 'Above-the-fold moving & logistics hero with quick route quote form (origin, destination, house size), trust badges, and same-day express van dispatch notice.',
+    tags: ['moving', 'hero', 'logistics', 'quote', 'fleet'], featured: true,
+    usage: `<MovingHero quoteHref="/preview/moving/quote" careersHref="/preview/moving/careers" />`,
+  }),
+  section({
+    slug: 'moving-volume-estimator', name: 'Moving Volume Estimator', file: 'MovingVolumeEstimator.astro', sectionCategory: 'moving',
+    description: 'Visual cubic meters (m³) guide comparing studio, 1-2 bed flat, 3-bed apartment, and villa sizes with van and mover crew recommendations.',
+    tags: ['moving', 'volume', 'estimator', 'housing', 'pricing'], featured: true,
+    usage: `<MovingVolumeEstimator quoteHref="/preview/moving/quote" />`,
+  }),
+  section({
+    slug: 'moving-fleet-grid', name: 'Moving Fleet Grid', file: 'MovingFleetGrid.astro', sectionCategory: 'moving',
+    description: 'Commercial van fleet showcase: compact vans, high-roof Sprinters, and Luton box trucks with hydraulic tail-lifts, cargo dimensions and payload specs.',
+    tags: ['moving', 'fleet', 'vans', 'trucks', 'logistics'], featured: true,
+    usage: `<MovingFleetGrid bookBase="/preview/moving/quote" />`,
+  }),
+  section({
+    slug: 'moving-careers-banner', name: 'Moving Careers Banner', file: 'MovingCareersBanner.astro', sectionCategory: 'moving',
+    description: 'High-conversion recruitment banner for van drivers (with own van or company fleet) and heavy movers: hourly pay rates, route bonuses and weekly payouts.',
+    tags: ['moving', 'careers', 'hiring', 'recruitment', 'drivers', 'banner'], featured: true,
+    usage: `<MovingCareersBanner applyHref="/preview/moving/careers#apply" />`,
+  }),
+  section({
+    slug: 'moving-pricing-tiers', name: 'Moving Pricing Tiers', file: 'MovingPricingTiers.astro', sectionCategory: 'moving',
+    description: 'Transparent moving rates comparison: "Van + Driver", "Full Move (2 Movers)", and "VIP Turnkey & Packing" with hourly minimums and included services.',
+    tags: ['moving', 'pricing', 'tiers', 'rates', 'plans'], featured: true,
+    usage: `<MovingPricingTiers bookBase="/preview/moving/quote" />`,
+  }),
+  section({
+    slug: 'moving-application-form', name: 'Moving Application Form', file: 'MovingApplicationForm.astro', sectionCategory: 'moving',
+    description: 'Interactive job application form for drivers and movers: license category (B, C1, C), vehicle ownership details, experience, and background verification consent.',
+    tags: ['moving', 'form', 'careers', 'hiring', 'application'], featured: true,
+    usage: `<MovingApplicationForm />`,
+  }),
 ];

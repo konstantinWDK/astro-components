@@ -1,0 +1,340 @@
+---
+/**
+ * MovingVolumeEstimator — Visual housing size and cubic meter (m³) guideline section.
+ * Helps customers understand the volume of their furniture based on standard home archetypes
+ * (studio, 1-2 bed flat, 3-bed apartment, 4-bed house) with vehicle and mover recommendations.
+ *
+ * @param {string} title - Section title.
+ * @param {string} subtitle - Section subtitle.
+ * @param {string} quoteHref - URL to detailed inventory calculator.
+ * @param {string} className - Optional CSS class.
+ */
+interface Props {
+  title?: string;
+  subtitle?: string;
+  quoteHref?: string;
+  className?: string;
+}
+
+const {
+  title = 'How Much Volume Is Your Move?',
+  subtitle = 'Find your home type below for an instant overview of required cubic meters, recommended van, and crew size.',
+  quoteHref = '/preview/moving/quote',
+  className = '',
+} = Astro.props;
+
+const tiers = [
+  {
+    id: 'studio',
+    label: 'Studio / Single Room',
+    volume: '5 - 8 m³',
+    boxes: '10 - 15 boxes',
+    furniture: '1 bed, 1 desk, 1 armchair, TV & clothes rack',
+    van: 'Compact Van L1H1',
+    crew: 'Driver + 1 Mover',
+    timeEst: '2 - 3 hours',
+    priceFrom: '€110',
+  },
+  {
+    id: 'flat-2',
+    label: '1 - 2 Bedroom Flat',
+    popular: true,
+    volume: '12 - 16 m³',
+    boxes: '25 - 35 boxes',
+    furniture: '3-seater sofa, double bed, dining set, fridge, washing mach.',
+    van: 'High Roof Van L3H2',
+    crew: '2 Professional Movers',
+    timeEst: '3 - 5 hours',
+    priceFrom: '€240',
+  },
+  {
+    id: 'flat-3',
+    label: '3 Bedroom Apartment',
+    volume: '18 - 25 m³',
+    boxes: '40 - 60 boxes',
+    furniture: 'Full living room, 2-3 bedrooms, 3-door wardrobe, appliances',
+    van: 'Luton Box + Tail-Lift (20 m³)',
+    crew: '2 - 3 Professional Movers',
+    timeEst: '5 - 7 hours',
+    priceFrom: '€390',
+  },
+  {
+    id: 'house',
+    label: '4+ Bed House / Villa',
+    volume: '28 - 40 m³',
+    boxes: '70+ boxes',
+    furniture: 'Complete multi-floor house, patio furniture, garage items',
+    van: 'Heavy 7.5T Box Truck',
+    crew: '3 - 4 Professional Movers',
+    timeEst: 'Full Day (8h)',
+    priceFrom: '€620',
+  },
+];
+---
+
+<section class={`volume-estimator-section ${className}`}>
+  <div class="estimator-container">
+    <div class="section-head">
+      <span class="section-badge">Volume Reference Guide</span>
+      <h2 class="section-title">{title}</h2>
+      <p class="section-desc">{subtitle}</p>
+    </div>
+
+    <div class="estimator-grid">
+      {tiers.map((t) => (
+        <div class={`estimator-card ${t.popular ? 'estimator-card--popular' : ''}`}>
+          {t.popular && <span class="pop-pill">Most Common Move</span>}
+
+          <div class="card-top">
+            <h3 class="tier-label">{t.label}</h3>
+            <div class="tier-volume">
+              <strong class="vol-num">{t.volume}</strong>
+              <span class="vol-tag">Estimated Volume</span>
+            </div>
+          </div>
+
+          <div class="tier-specs">
+            <div class="spec-row">
+              <span class="spec-name">Recommended Fleet:</span>
+              <strong class="spec-val text-primary">{t.van}</strong>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Crew on Site:</span>
+              <strong class="spec-val">{t.crew}</strong>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Est. Duration:</span>
+              <strong class="spec-val">{t.timeEst}</strong>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">Moving Boxes:</span>
+              <strong class="spec-val">{t.boxes}</strong>
+            </div>
+          </div>
+
+          <p class="tier-furniture-sample">
+            <strong>Sample items:</strong> {t.furniture}
+          </p>
+
+          <div class="card-footer">
+            <div class="price-box">
+              <span class="price-prefix">From</span>
+              <strong class="price-amount">{t.priceFrom}</strong>
+            </div>
+            <a href={`${quoteHref}?tier=${t.id}`} class="card-cta">
+              <span>Itemize Inventory</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .volume-estimator-section {
+    padding: 4rem 1.5rem;
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .estimator-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 3rem;
+  }
+
+  .section-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-primary);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full);
+    margin-bottom: 0.65rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+    color: var(--c-text);
+    letter-spacing: -0.02em;
+  }
+
+  .section-desc {
+    font-size: 1rem;
+    color: var(--c-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Grid */
+  .estimator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .estimator-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: var(--muvr-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .estimator-card:hover {
+    border-color: var(--c-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--muvr-card-shadow-hover);
+  }
+
+  .estimator-card--popular {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 2px var(--c-primary), var(--muvr-card-shadow);
+  }
+
+  .pop-pill {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--c-primary);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.75rem;
+    border-radius: var(--r-full);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .card-top {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .tier-label {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0 0 0.5rem;
+  }
+
+  .tier-volume {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .vol-num {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--c-accent);
+  }
+
+  .vol-tag {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  /* Specs */
+  .tier-specs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: var(--c-bg);
+    padding: 0.75rem;
+    border-radius: var(--r-md);
+  }
+
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+  }
+
+  .spec-name {
+    color: var(--c-text-muted);
+  }
+
+  .spec-val {
+    color: var(--c-text);
+  }
+
+  .text-primary {
+    color: var(--c-primary);
+  }
+
+  .tier-furniture-sample {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    line-height: 1.4;
+    margin: 0 0 1.5rem;
+    flex: 1;
+  }
+
+  .tier-furniture-sample strong {
+    color: var(--c-text);
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .price-box {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .price-prefix {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .price-amount {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--c-text);
+  }
+
+  .card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .card-cta:hover {
+    color: var(--muvr-blue-hover);
+    transform: translateX(2px);
+  }
+</style>
+

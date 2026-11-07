@@ -113,6 +113,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C9 2 7 3.5 6 6c-1 3-1 6-.5 9 .5 3 2 7 3.5 7s2-3 3-5c1 2 1.5 5 3 5s3-4 3.5-7c.5-3 .5-6-.5-9-1-2.5-3-4-6-4z"/></svg>`,
   },
   {
+    id: 'moving',
+    name: 'Moving & Logistics',
+    description: 'Sections for removals, furniture moving, and transport services: route quote hero, housing volume guide, commercial van fleet, transparent pricing tiers, careers banner, and driver application form.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

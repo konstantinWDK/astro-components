@@ -140,3 +140,12 @@ export { default as CyberCrewGrid } from './CyberCrewGrid.astro';
 export { default as CyberStatusBoard } from './CyberStatusBoard.astro';
 export { default as CyberTerminalForm } from './CyberTerminalForm.astro';
 export { default as CyberFooter } from './CyberFooter.astro';
+
+// Moving & Removals ("Muvr") — furniture moving, logistics & van fleet
+export { default as MovingHero } from './MovingHero.astro';
+export { default as MovingVolumeEstimator } from './MovingVolumeEstimator.astro';
+export { default as MovingFleetGrid } from './MovingFleetGrid.astro';
+export { default as MovingCareersBanner } from './MovingCareersBanner.astro';
+export { default as MovingPricingTiers } from './MovingPricingTiers.astro';
+export { default as MovingApplicationForm } from './MovingApplicationForm.astro';
+

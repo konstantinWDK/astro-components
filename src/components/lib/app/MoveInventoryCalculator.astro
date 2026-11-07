@@ -1,0 +1,700 @@
+---
+/**
+ * MoveInventoryCalculator — Interactive furniture volume (m³) and relocation estimate calculator.
+ * Users can adjust quantities of sofas, beds, wardrobes, appliances and boxes to get a live
+ * cubic meter tally, recommended van category, required mover team, and real-time price estimate.
+ *
+ * @param {FurnitureItem[]} items - Catalog of furniture items.
+ * @param {number} baseRatePerM3 - Base rate per cubic meter in Euros. Default 28.
+ * @param {string} className - Optional container class.
+ */
+import type { FurnitureItem } from '../templates/moving/data';
+import { furnitureCatalog } from '../templates/moving/data';
+
+interface Props {
+  items?: FurnitureItem[];
+  baseRatePerM3?: number;
+  className?: string;
+}
+
+const {
+  items = furnitureCatalog,
+  baseRatePerM3 = 28,
+  className = '',
+} = Astro.props;
+
+const categories = [
+  { id: 'all', label: 'All Items' },
+  { id: 'living', label: 'Living Room' },
+  { id: 'bedroom', label: 'Bedroom' },
+  { id: 'dining', label: 'Dining & Desk' },
+  { id: 'appliances', label: 'Appliances' },
+  { id: 'boxes', label: 'Boxes & Storage' },
+];
+---
+
+<div class={`move-calc-widget ${className}`} id="move-calc-widget" data-rate-m3={baseRatePerM3}>
+  <div class="calc-topbar">
+    <div class="calc-headline">
+      <div class="calc-icon-badge">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="calc-title">Volume & Van Estimator (m³)</h3>
+        <p class="calc-subtitle">Select your furniture to compute required cubic meters and recommended van fleet.</p>
+      </div>
+    </div>
+
+    <!-- Category filter buttons -->
+    <div class="calc-cat-filter" role="tablist">
+      {categories.map((c, i) => (
+        <button
+          type="button"
+          class={`calc-cat-btn ${i === 0 ? 'active' : ''}`}
+          data-category={c.id}
+          role="tab"
+          aria-selected={i === 0 ? 'true' : 'false'}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div class="calc-layout-grid">
+    <!-- Left: Furniture Items Selector -->
+    <div class="items-list-container">
+      <div class="items-list" id="calc-items-list">
+        {items.map((item) => (
+          <div class="calc-item-row" data-item-id={item.id} data-cat={item.category} data-m3={item.volumeM3} data-weight={item.weightEstKg}>
+            <div class="item-info">
+              <span class="item-name">{item.name}</span>
+              <span class="item-meta">
+                <span class="meta-tag">{item.volumeM3} m³</span>
+                <span class="meta-tag meta-tag--weight">~{item.weightEstKg} kg</span>
+                {item.disassembleable && <span class="meta-tag meta-tag--tool">Disassembly</span>}
+              </span>
+            </div>
+
+            <div class="item-counter">
+              <button type="button" class="counter-btn btn-minus" aria-label={`Decrease ${item.name}`}>-</button>
+              <span class="counter-value" data-count="0">0</span>
+              <button type="button" class="counter-btn btn-plus" aria-label={`Increase ${item.name}`}>+</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Right: Real-time Live Summary & Van Recommendation -->
+    <div class="calc-summary-panel">
+      <div class="summary-card">
+        <h4 class="summary-title">Removal Live Estimate</h4>
+
+        <div class="meter-block">
+          <div class="meter-labels">
+            <span class="meter-label">Total Volume</span>
+            <strong class="meter-number" id="calc-total-volume">0.0 <small>m³</small></strong>
+          </div>
+          <div class="meter-bar-track">
+            <div class="meter-bar-fill" id="calc-volume-bar" style="width: 0%;"></div>
+          </div>
+          <div class="meter-caption">
+            <span>Payload est.: <strong id="calc-total-weight">0 kg</strong></span>
+            <span>Total items: <strong id="calc-total-items">0 pcs</strong></span>
+          </div>
+        </div>
+
+        <!-- Recommended Vehicle Card -->
+        <div class="rec-vehicle-card" id="calc-vehicle-card">
+          <div class="vehicle-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/>
+            </svg>
+          </div>
+          <div class="rec-vehicle-text">
+            <span class="rec-badge">Recommended Van</span>
+            <strong class="rec-vehicle-name" id="calc-rec-name">Van Express L1H1 (6 m³)</strong>
+            <span class="rec-vehicle-desc" id="calc-rec-desc">Single room move or partial furniture transport.</span>
+          </div>
+        </div>
+
+        <!-- Floor & Elevator Factors -->
+        <div class="options-box">
+          <label class="calc-checkbox-label">
+            <input type="checkbox" id="calc-check-stairs" />
+            <span>Floors without elevator (+stairs handling)</span>
+          </label>
+          <label class="calc-checkbox-label">
+            <input type="checkbox" id="calc-check-assembly" checked />
+            <span>Furniture disassembly & reassembly service</span>
+          </label>
+        </div>
+
+        <!-- Price Estimate Block -->
+        <div class="price-estimate-box">
+          <div class="price-split">
+            <span>Estimated Price</span>
+            <div class="price-tag">
+              <strong class="price-val" id="calc-price-val">€120</strong>
+              <small class="price-iva">VAT incl.</small>
+            </div>
+          </div>
+          <p class="price-disclaimer">*Final price includes driver, fuel for 20 km & cargo transit insurance.</p>
+        </div>
+
+        <button type="button" class="calc-book-cta" id="calc-cta-btn">
+          <span>Book This Van & Inventory</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initMoveCalculator() {
+    const root = document.getElementById('move-calc-widget');
+    if (!root) return;
+
+    const baseRateM3 = Number(root.getAttribute('data-rate-m3')) || 28;
+    const catButtons = root.querySelectorAll('.calc-cat-btn');
+    const rows = root.querySelectorAll('.calc-item-row');
+    const volumeEl = root.querySelector('#calc-total-volume');
+    const weightEl = root.querySelector('#calc-total-weight');
+    const itemsCountEl = root.querySelector('#calc-total-items');
+    const volumeBar = root.querySelector('#calc-volume-bar');
+    const vehicleNameEl = root.querySelector('#calc-rec-name');
+    const vehicleDescEl = root.querySelector('#calc-rec-desc');
+    const priceValEl = root.querySelector('#calc-price-val');
+    const stairsCheck = root.querySelector('#calc-check-stairs') as HTMLInputElement | null;
+    const assemblyCheck = root.querySelector('#calc-check-assembly') as HTMLInputElement | null;
+
+    // Filter categories
+    catButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        catButtons.forEach((b) => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+
+        const cat = btn.getAttribute('data-category');
+        rows.forEach((r) => {
+          const itemCat = r.getAttribute('data-cat');
+          if (cat === 'all' || itemCat === cat) {
+            (r as HTMLElement).style.display = 'flex';
+          } else {
+            (r as HTMLElement).style.display = 'none';
+          }
+        });
+      });
+    });
+
+    function recalculate() {
+      let totalM3 = 0;
+      let totalWeight = 0;
+      let totalItems = 0;
+
+      rows.forEach((r) => {
+        const countEl = r.querySelector('.counter-value');
+        const count = Number(countEl?.getAttribute('data-count') || 0);
+        if (count > 0) {
+          const m3 = Number(r.getAttribute('data-m3') || 0);
+          const weight = Number(r.getAttribute('data-weight') || 0);
+          totalM3 += m3 * count;
+          totalWeight += weight * count;
+          totalItems += count;
+        }
+      });
+
+      // Update counters
+      if (volumeEl) volumeEl.innerHTML = `${totalM3.toFixed(1)} <small>m³</small>`;
+      if (weightEl) weightEl.textContent = `${Math.round(totalWeight)} kg`;
+      if (itemsCountEl) itemsCountEl.textContent = `${totalItems} pcs`;
+
+      // Vehicle capacity: 20m³ bar scale
+      const barPercent = Math.min(100, Math.round((totalM3 / 20) * 100));
+      if (volumeBar) (volumeBar as HTMLElement).style.width = `${barPercent}%`;
+
+      // Recommend vehicle
+      let vehicleName = 'Van Express L1H1 (6 m³)';
+      let vehicleDesc = 'Single room move, small furniture or marketplace pick-up.';
+      let minCost = 95;
+
+      if (totalM3 > 20) {
+        vehicleName = 'Heavy City Truck 7.5T (36 m³)';
+        vehicleDesc = 'Full multi-bedroom house or large office relocation with tail-lift.';
+        minCost = 480;
+      } else if (totalM3 > 12) {
+        vehicleName = 'Luton Box Van with Tail-Lift (20 m³)';
+        vehicleDesc = 'Complete 2-3 bedroom flat removal with heavy appliances and wardrobes.';
+        minCost = 320;
+      } else if (totalM3 > 5) {
+        vehicleName = 'High Roof Van L3H2 (13.5 m³)';
+        vehicleDesc = '1-bedroom apartment or student move with large sofa and bed.';
+        minCost = 190;
+      }
+
+      if (vehicleNameEl) vehicleNameEl.textContent = vehicleName;
+      if (vehicleDescEl) vehicleDescEl.textContent = vehicleDesc;
+
+      // Price calculation
+      let estimatedPrice = Math.max(minCost, Math.round(totalM3 * baseRateM3 + 70));
+      if (stairsCheck?.checked) estimatedPrice += 45;
+      if (assemblyCheck?.checked && totalM3 > 0) estimatedPrice += 35;
+
+      if (priceValEl) priceValEl.textContent = `€${estimatedPrice}`;
+    }
+
+    // Plus/minus buttons
+    rows.forEach((r) => {
+      const minusBtn = r.querySelector('.btn-minus');
+      const plusBtn = r.querySelector('.btn-plus');
+      const countEl = r.querySelector('.counter-value');
+
+      plusBtn?.addEventListener('click', () => {
+        let current = Number(countEl?.getAttribute('data-count') || 0);
+        current += 1;
+        countEl?.setAttribute('data-count', String(current));
+        if (countEl) countEl.textContent = String(current);
+        r.classList.add('calc-item-row--active');
+        recalculate();
+      });
+
+      minusBtn?.addEventListener('click', () => {
+        let current = Number(countEl?.getAttribute('data-count') || 0);
+        if (current > 0) {
+          current -= 1;
+          countEl?.setAttribute('data-count', String(current));
+          if (countEl) countEl.textContent = String(current);
+          if (current === 0) r.classList.remove('calc-item-row--active');
+          recalculate();
+        }
+      });
+    });
+
+    stairsCheck?.addEventListener('change', recalculate);
+    assemblyCheck?.addEventListener('change', recalculate);
+
+    // Initial seed: 1 sofa and 1 double bed for immediate visual feedback
+    const defaultSofa = root.querySelector('[data-item-id="f-sofa-3"]');
+    if (defaultSofa) {
+      const countEl = defaultSofa.querySelector('.counter-value');
+      countEl?.setAttribute('data-count', '1');
+      if (countEl) countEl.textContent = '1';
+      defaultSofa.classList.add('calc-item-row--active');
+    }
+    const defaultBed = root.querySelector('[data-item-id="f-bed-double"]');
+    if (defaultBed) {
+      const countEl = defaultBed.querySelector('.counter-value');
+      countEl?.setAttribute('data-count', '1');
+      if (countEl) countEl.textContent = '1';
+      defaultBed.classList.add('calc-item-row--active');
+    }
+    recalculate();
+  }
+
+  initMoveCalculator();
+  document.addEventListener('astro:page-load', initMoveCalculator);
+</script>
+
+<style>
+  .move-calc-widget {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .calc-topbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .calc-topbar {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .calc-headline {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .calc-icon-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--c-primary);
+    flex-shrink: 0;
+  }
+
+  .calc-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .calc-subtitle {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.15rem 0 0;
+  }
+
+  .calc-cat-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .calc-cat-btn {
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--r-full);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .calc-cat-btn:hover {
+    color: var(--c-text);
+    border-color: var(--c-border-hover);
+  }
+
+  .calc-cat-btn.active {
+    background: var(--c-primary);
+    color: #ffffff;
+    border-color: var(--c-primary);
+  }
+
+  /* Grid Layout */
+  .calc-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .calc-layout-grid {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+  }
+
+  /* Items List */
+  .items-list-container {
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+
+  .items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .calc-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    transition: all 0.2s ease;
+  }
+
+  .calc-item-row--active {
+    border-color: var(--c-primary);
+    background: rgba(37, 99, 235, 0.04);
+  }
+
+  .item-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--c-text);
+  }
+
+  .item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+  }
+
+  .meta-tag {
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: var(--c-bg);
+    color: var(--c-text-muted);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid var(--c-border);
+  }
+
+  .meta-tag--weight {
+    color: #6366f1;
+  }
+
+  .meta-tag--tool {
+    color: #ea580c;
+  }
+
+  /* Counter */
+  .item-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .counter-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .counter-btn:hover {
+    background: var(--c-primary);
+    color: #ffffff;
+    border-color: var(--c-primary);
+  }
+
+  .counter-value {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--c-text);
+  }
+
+  /* Summary Card */
+  .summary-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .summary-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .meter-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .meter-labels {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .meter-label {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    font-weight: 500;
+  }
+
+  .meter-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--c-primary);
+  }
+
+  .meter-number small {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .meter-bar-track {
+    height: 8px;
+    background: var(--c-bg);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .meter-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb 0%, #ea580c 100%);
+    border-radius: 999px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .meter-caption {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+  }
+
+  /* Recommended Vehicle */
+  .rec-vehicle-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem;
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px dashed var(--c-primary);
+    border-radius: var(--r-md);
+  }
+
+  .vehicle-icon-wrap {
+    color: var(--c-primary);
+  }
+
+  .rec-badge {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-primary);
+  }
+
+  .rec-vehicle-name {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .rec-vehicle-desc {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    margin-top: 0.15rem;
+  }
+
+  /* Options */
+  .options-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .calc-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--c-text);
+    cursor: pointer;
+  }
+
+  .calc-checkbox-label input {
+    accent-color: var(--c-primary);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  /* Price Box */
+  .price-estimate-box {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.9rem;
+  }
+
+  .price-split {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .price-split span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  .price-val {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--c-accent);
+  }
+
+  .price-iva {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    margin-left: 0.25rem;
+  }
+
+  .price-disclaimer {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    margin: 0.35rem 0 0;
+    line-height: 1.3;
+  }
+
+  /* Book CTA */
+  .calc-book-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.85rem;
+    background: var(--c-accent);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .calc-book-cta:hover {
+    background: var(--muvr-orange-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+  }
+</style>
+

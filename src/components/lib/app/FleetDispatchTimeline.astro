@@ -1,0 +1,513 @@
+---
+/**
+ * FleetDispatchTimeline — Interactive van fleet operations and dispatch board.
+ * Shows commercial vehicles (compact vans, Luton box trucks, tail-lift carriers) with
+ * real-time availability status, payload capacity meter, assigned driver, and scheduled move orders.
+ *
+ * @param {MovingVehicle[]} vehicles - List of fleet vehicles.
+ * @param {MoveOrder[]} orders - Active move orders for the dispatch schedule.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { MovingVehicle, MoveOrder } from '../templates/moving/data';
+import { movingVehicles, movingOrders } from '../templates/moving/data';
+
+interface Props {
+  vehicles?: MovingVehicle[];
+  orders?: MoveOrder[];
+  className?: string;
+}
+
+const {
+  vehicles = movingVehicles,
+  orders = movingOrders,
+  className = '',
+} = Astro.props;
+
+const timeSlots = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'];
+
+function getVehicleStatusBadge(status: MovingVehicle['status']) {
+  switch (status) {
+    case 'active': return { label: 'Available / Yard', class: 'muvr-badge--active' };
+    case 'en_route': return { label: 'En Route', class: 'muvr-badge--en_route' };
+    case 'reserved': return { label: 'Reserved', class: 'muvr-badge--scheduled' };
+    case 'maintenance': return { label: 'Workshop (ITV)', class: 'muvr-badge--maintenance' };
+    default: return { label: 'Available', class: 'muvr-badge--active' };
+  }
+}
+---
+
+<div class={`fleet-dispatch ${className}`} id="fleet-dispatch">
+  <!-- Top Fleet KPI Header -->
+  <div class="dispatch-header">
+    <div class="dispatch-title-group">
+      <h3 class="dispatch-title">Van Fleet & Route Dispatch Board</h3>
+      <p class="dispatch-subtitle">Live status, volumetric payload utilization, and today's furniture transit runs.</p>
+    </div>
+
+    <div class="dispatch-stats">
+      <div class="stat-pill">
+        <span class="dot dot-active"></span>
+        <span><strong>{vehicles.filter(v => v.status === 'en_route').length}</strong> Vans on Road</span>
+      </div>
+      <div class="stat-pill">
+        <span class="dot dot-ready"></span>
+        <span><strong>{vehicles.filter(v => v.status === 'active').length}</strong> Ready in Yard</span>
+      </div>
+      <div class="stat-pill">
+        <span class="dot dot-box"></span>
+        <span><strong>{orders.length}</strong> Moves Today</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicles Overview Cards -->
+  <div class="vehicles-grid">
+    {vehicles.map((v) => {
+      const badge = getVehicleStatusBadge(v.status);
+      const assignedOrder = orders.find((o) => o.vehicleId === v.id);
+      const loadPercent = assignedOrder ? Math.min(100, Math.round((assignedOrder.volumeM3 / v.volumeM3) * 100)) : 0;
+
+      return (
+        <div class={`vehicle-card vehicle-card--${v.status}`} data-vehicle-id={v.id}>
+          <div class="vehicle-card-header">
+            <div>
+              <span class="vehicle-code">{v.code} · {v.plate}</span>
+              <h4 class="vehicle-name">{v.name}</h4>
+              <span class="vehicle-model">{v.model}</span>
+            </div>
+            <span class={`muvr-badge ${badge.class}`}>{badge.label}</span>
+          </div>
+
+          <!-- Specs row -->
+          <div class="vehicle-specs-row">
+            <div class="spec-col">
+              <span class="spec-label">Volume</span>
+              <strong class="spec-val">{v.volumeM3} m³</strong>
+            </div>
+            <div class="spec-col">
+              <span class="spec-label">Payload</span>
+              <strong class="spec-val">{v.payloadKg} kg</strong>
+            </div>
+            <div class="spec-col">
+              <span class="spec-label">Tail Lift</span>
+              <strong class={`spec-val ${v.hasTailLift ? 'text-emerald' : 'text-muted'}`}>
+                {v.hasTailLift ? 'Hydraulic' : 'Ramp'}
+              </strong>
+            </div>
+          </div>
+
+          <!-- Payload capacity meter -->
+          <div class="payload-meter-wrap">
+            <div class="meter-head">
+              <span>Volumetric Load</span>
+              <strong>{loadPercent}% ({assignedOrder ? `${assignedOrder.volumeM3} m³` : 'Empty'})</strong>
+            </div>
+            <div class="meter-bar">
+              <div class="meter-fill" style={`width: ${loadPercent}%;`}></div>
+            </div>
+          </div>
+
+          <!-- Driver & Active Job -->
+          <div class="vehicle-footer">
+            <div class="driver-info">
+              <span class="driver-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                </svg>
+              </span>
+              <span>{v.currentDriver || 'No driver assigned'}</span>
+            </div>
+            {assignedOrder && (
+              <span class="active-order-tag">{assignedOrder.reference}</span>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+
+  <!-- Timeline Matrix -->
+  <div class="timeline-container">
+    <div class="timeline-head-row">
+      <div class="th-vehicle-col">Vehicle / Van</div>
+      <div class="th-slots-grid">
+        {timeSlots.map((slot) => (
+          <div class="th-slot">{slot}</div>
+        ))}
+      </div>
+    </div>
+
+    <div class="timeline-body">
+      {vehicles.map((v) => {
+        const vehicleOrders = orders.filter((o) => o.vehicleId === v.id);
+
+        return (
+          <div class="timeline-row">
+            <div class="row-vehicle-col">
+              <strong>{v.code}</strong>
+              <small>{v.name.split(' ')[0]}</small>
+            </div>
+
+            <div class="row-slots-track">
+              {vehicleOrders.map((ord) => (
+                <div
+                  class={`order-block order-block--${ord.status}`}
+                  title={`${ord.reference}: ${ord.customerName} (${ord.originAddress} → ${ord.destinationAddress})`}
+                >
+                  <span class="block-ref">{ord.reference}</span>
+                  <span class="block-name">{ord.customerName}</span>
+                  <span class="block-vol">{ord.volumeM3} m³</span>
+                </div>
+              ))}
+              {vehicleOrders.length === 0 && (
+                <div class="slot-empty-notice">No moves dispatched for this vehicle today.</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</div>
+
+<style>
+  .fleet-dispatch {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .dispatch-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .dispatch-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .dispatch-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .dispatch-subtitle {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.2rem 0 0;
+  }
+
+  .dispatch-stats {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-full);
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .dot-active { background: #2563eb; }
+  .dot-ready { background: #10b981; }
+  .dot-box { background: #ea580c; }
+
+  /* Vehicles Grid */
+  .vehicles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .vehicle-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: all 0.2s ease;
+  }
+
+  .vehicle-card:hover {
+    box-shadow: var(--muvr-card-shadow-hover);
+    border-color: var(--c-border-hover);
+  }
+
+  .vehicle-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .vehicle-code {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-text-subtle);
+    text-transform: uppercase;
+  }
+
+  .vehicle-name {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0.1rem 0;
+    color: var(--c-text);
+  }
+
+  .vehicle-model {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .vehicle-specs-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    background: var(--c-bg);
+    padding: 0.5rem 0.65rem;
+    border-radius: var(--r-md);
+    border: 1px solid var(--c-border);
+  }
+
+  .spec-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .spec-label {
+    font-size: 0.68rem;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+  }
+
+  .spec-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .text-emerald { color: #10b981; }
+  .text-muted { color: var(--c-text-subtle); }
+
+  /* Meter */
+  .payload-meter-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .meter-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .meter-bar {
+    height: 6px;
+    background: var(--c-bg);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #ea580c);
+    border-radius: 999px;
+  }
+
+  .vehicle-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .driver-info {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--c-text);
+    font-weight: 500;
+  }
+
+  .driver-icon {
+    color: var(--c-text-muted);
+    display: flex;
+    align-items: center;
+  }
+
+  .active-order-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--c-primary);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+  }
+
+  /* Timeline Matrix */
+  .timeline-container {
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    overflow-x: auto;
+    background: var(--c-surface);
+  }
+
+  .timeline-head-row {
+    display: flex;
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+    min-width: 680px;
+  }
+
+  .th-vehicle-col {
+    width: 140px;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    border-right: 1px solid var(--c-border);
+    flex-shrink: 0;
+  }
+
+  .th-slots-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .th-slot {
+    padding: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-align: center;
+    border-right: 1px solid var(--c-border);
+  }
+
+  .th-slot:last-child {
+    border-right: none;
+  }
+
+  .timeline-body {
+    min-width: 680px;
+  }
+
+  .timeline-row {
+    display: flex;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .timeline-row:last-child {
+    border-bottom: none;
+  }
+
+  .row-vehicle-col {
+    width: 140px;
+    padding: 0.85rem 1rem;
+    border-right: 1px solid var(--c-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .row-vehicle-col strong {
+    font-size: 0.85rem;
+    color: var(--c-text);
+  }
+
+  .row-vehicle-col small {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .row-slots-track {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
+    background: var(--c-surface);
+  }
+
+  .order-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid var(--c-primary);
+    border-radius: var(--r-md);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .order-block:hover {
+    background: rgba(37, 99, 235, 0.16);
+    transform: translateY(-1px);
+  }
+
+  .order-block--in_transit {
+    border-color: #ea580c;
+    background: rgba(234, 88, 12, 0.08);
+  }
+
+  .block-ref {
+    font-weight: 700;
+    color: var(--c-primary);
+  }
+
+  .order-block--in_transit .block-ref {
+    color: #ea580c;
+  }
+
+  .block-name {
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  .block-vol {
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+  }
+
+  .slot-empty-notice {
+    font-size: 0.75rem;
+    color: var(--c-text-subtle);
+    font-style: italic;
+  }
+</style>
+

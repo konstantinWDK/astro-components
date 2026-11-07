@@ -1,0 +1,358 @@
+---
+/**
+ * MovingDashboardPage — Operations and dispatch overview dashboard for Muvr.
+ * Highlights live vehicle telemetry, active moves in transit, daily moving revenue, and pending driver applications.
+ *
+ * @param {MovingRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme. Default 'light'.
+ */
+import MovingLayout from './MovingLayout.astro';
+import { movingRoutes, movingData, type MovingRoutes } from './data';
+
+interface Props {
+  routes?: MovingRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = movingRoutes, theme = 'light', noindex = true } = Astro.props;
+
+const activeVans = movingData.vehicles.filter((v) => v.status === 'en_route').length;
+const totalRevenue = movingData.orders.reduce((acc, o) => acc + o.priceTotal, 0);
+const pendingCandidates = movingData.candidates.filter((c) => c.status === 'applied' || c.status === 'interview').length;
+---
+
+<MovingLayout
+  title="Fleet Operations Dashboard"
+  routes={routes}
+  current="dashboard"
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="dashboard-page">
+    <!-- Page Header -->
+    <div class="page-top">
+      <div>
+        <h1 class="page-title">Operations & Fleet Overview</h1>
+        <p class="page-sub">Live route status, driver payload dispatch, and mover recruitment in Madrid.</p>
+      </div>
+
+      <div class="page-actions">
+        <a href={routes.dispatch} class="btn-dispatch">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/>
+          </svg>
+          <span>Open Dispatch Matrix</span>
+        </a>
+        <a href={routes.hiring} class="btn-secondary">
+          <span>Review Candidates ({pendingCandidates})</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Vans on the Road</span>
+        <strong class="kpi-value text-primary">{activeVans} / {movingData.vehicles.length}</strong>
+        <span class="kpi-trend text-emerald">● 2 currently unloading</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Moves Booked Today</span>
+        <strong class="kpi-value">{movingData.orders.length} Relocations</strong>
+        <span class="kpi-trend">47.7 m³ total volume</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Today’s Booked Revenue</span>
+        <strong class="kpi-value text-accent">€{totalRevenue}</strong>
+        <span class="kpi-trend text-emerald">100% on-time transit</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Recruitment Pipeline</span>
+        <strong class="kpi-value">{pendingCandidates} Drivers Pending</strong>
+        <span class="kpi-trend">2 with own L3H2 van</span>
+      </div>
+    </div>
+
+    <!-- Active Moves in Transit -->
+    <div class="section-card">
+      <div class="card-head">
+        <div>
+          <h3 class="card-title">Active Moves in Transit</h3>
+          <span class="card-sub">Real-time status updates from driver app</span>
+        </div>
+        <a href={routes.moves} class="view-all-link">View All Orders →</a>
+      </div>
+
+      <div class="orders-table-wrap">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Order Ref</th>
+              <th>Customer</th>
+              <th>Route (Origin → Destination)</th>
+              <th>Assigned Van & Driver</th>
+              <th>Volume</th>
+              <th>Status</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {movingData.orders.map((ord) => (
+              <tr>
+                <td>
+                  <a href={`${routes.moves}/${ord.id}`} class="ref-link">
+                    {ord.reference}
+                  </a>
+                </td>
+                <td>
+                  <strong>{ord.customerName}</strong>
+                  <span class="table-sub">{ord.customerPhone}</span>
+                </td>
+                <td>
+                  <div class="route-cell">
+                    <span>{ord.originAddress}</span>
+                    <span class="arrow">↓</span>
+                    <span>{ord.destinationAddress}</span>
+                  </div>
+                </td>
+                <td>
+                  <strong>{ord.assignedDriver}</strong>
+                  <span class="table-sub">{ord.vehicleId.toUpperCase()}</span>
+                </td>
+                <td>
+                  <strong>{ord.volumeM3} m³</strong>
+                </td>
+                <td>
+                  <span class={`muvr-badge muvr-badge--${ord.status}`}>{ord.status.replace('_', ' ')}</span>
+                </td>
+                <td>
+                  <strong class="price-cell">€{ord.priceTotal}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</MovingLayout>
+
+<style>
+  .dashboard-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .page-top {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .page-top {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .page-sub {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.2rem 0 0;
+  }
+
+  .page-actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-dispatch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    background: var(--c-primary);
+    color: #ffffff;
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .btn-dispatch:hover {
+    background: var(--c-primary-hover);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 0.95rem;
+    background: var(--c-surface);
+    color: var(--c-text);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--c-border-hover);
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .kpi-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .kpi-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--c-text);
+    margin: 0.25rem 0;
+  }
+
+  .text-primary { color: var(--c-primary); }
+  .text-accent { color: var(--c-accent); }
+  .text-emerald { color: #10b981; }
+
+  .kpi-trend {
+    font-size: 0.75rem;
+    color: var(--c-text-subtle);
+  }
+
+  /* Section Card & Table */
+  .section-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .card-sub {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+  }
+
+  .view-all-link {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-decoration: none;
+  }
+
+  .orders-table-wrap {
+    overflow-x: auto;
+  }
+
+  .orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 780px;
+  }
+
+  .orders-table th {
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .orders-table td {
+    padding: 0.85rem;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: middle;
+  }
+
+  .ref-link {
+    font-weight: 800;
+    color: var(--c-primary);
+    text-decoration: none;
+  }
+
+  .ref-link:hover {
+    text-decoration: underline;
+  }
+
+  .table-sub {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+  }
+
+  .route-cell {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    color: var(--c-text);
+  }
+
+  .route-cell .arrow {
+    color: var(--c-text-muted);
+    line-height: 1;
+  }
+
+  .price-cell {
+    color: var(--c-text);
+  }
+</style>
+

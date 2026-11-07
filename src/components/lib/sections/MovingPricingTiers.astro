@@ -1,0 +1,313 @@
+---
+/**
+ * MovingPricingTiers — Transparent hourly and fixed-rate pricing tiers for moving and van transport.
+ * Compares "Van + Driver", "Full Move with 2 Movers", and "VIP Turnkey & Packing" packages.
+ *
+ * @param {Array<any>} tiers - Pricing packages list.
+ * @param {string} bookBase - Base URL for booking. Default '/preview/moving/quote'.
+ * @param {string} title - Section title.
+ * @param {string} subtitle - Section subtitle.
+ * @param {string} className - Optional container CSS class.
+ */
+import { movingPricingTiers } from '../templates/moving/data';
+
+interface Props {
+  tiers?: typeof movingPricingTiers;
+  bookBase?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  tiers = movingPricingTiers,
+  bookBase = '/preview/moving/quote',
+  title = 'Honest, All-Inclusive Moving Rates',
+  subtitle = 'No hidden travel fees or weekend surcharges. Every rate includes professional cargo blankets, strapping equipment, and transit insurance.',
+  className = '',
+} = Astro.props;
+---
+
+<section id="pricing" class={`pricing-section ${className}`}>
+  <div class="pricing-container">
+    <div class="section-head">
+      <span class="section-badge">Transparent Pricing</span>
+      <h2 class="section-title">{title}</h2>
+      <p class="section-desc">{subtitle}</p>
+    </div>
+
+    <div class="tiers-grid">
+      {tiers.map((t) => (
+        <div class={`tier-card ${t.popular ? 'tier-card--popular' : ''}`}>
+          {t.popular && <span class="pop-badge">Most Popular</span>}
+
+          <div class="tier-top">
+            <span class="tier-tag">{t.tag}</span>
+            <h3 class="tier-title">{t.name}</h3>
+            <div class="tier-price-row">
+              <strong class="tier-price">{t.unit}</strong>
+              <span class="tier-vat">VAT included</span>
+            </div>
+            <span class="tier-min">Minimum {t.minHours} hours · {t.includedMovers} staff</span>
+          </div>
+
+          <p class="tier-ideal">
+            <strong>Best for:</strong> {t.bestFor}
+          </p>
+
+          <div class="tier-features">
+            <span class="feat-title">Included in this plan:</span>
+            <ul>
+              {t.features.map((f) => (
+                <li>{f}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div class="tier-cta-box">
+            <a
+              href={`${bookBase}?tier=${t.id}`}
+              class={`tier-btn ${t.popular ? 'tier-btn--primary' : 'tier-btn--secondary'}`}
+            >
+              <span>Book {t.name}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .pricing-section {
+    padding: 4.5rem 1.5rem;
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .pricing-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-head {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .section-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-primary);
+    background: rgba(37, 99, 235, 0.1);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full);
+    margin-bottom: 0.65rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+    color: var(--c-text);
+    letter-spacing: -0.02em;
+  }
+
+  .section-desc {
+    font-size: 1rem;
+    color: var(--c-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Grid */
+  .tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.75rem;
+    align-items: stretch;
+  }
+
+  .tier-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: var(--muvr-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .tier-card:hover {
+    border-color: var(--c-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--muvr-card-shadow-hover);
+  }
+
+  .tier-card--popular {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 2px var(--c-accent), var(--muvr-card-shadow-hover);
+  }
+
+  .pop-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--c-accent);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.2rem 0.85rem;
+    border-radius: var(--r-full);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tier-top {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .tier-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .tier-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0.25rem 0 0.5rem;
+  }
+
+  .tier-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .tier-price {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--c-text);
+  }
+
+  .tier-vat {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .tier-min {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--c-text-subtle);
+    margin-top: 0.25rem;
+  }
+
+  .tier-ideal {
+    font-size: 0.82rem;
+    color: var(--c-text-muted);
+    margin: 0 0 1.25rem;
+    line-height: 1.4;
+  }
+
+  .tier-ideal strong {
+    color: var(--c-text);
+  }
+
+  .tier-features {
+    flex: 1;
+    margin-bottom: 1.75rem;
+  }
+
+  .feat-title {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-text);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.65rem;
+  }
+
+  .tier-features ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--c-text-muted);
+  }
+
+  .tier-features li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .tier-features li::before {
+    content: '✓';
+    color: #10b981;
+    font-weight: 800;
+  }
+
+  .tier-cta-box {
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .tier-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.85rem;
+    border-radius: var(--r-md);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .tier-btn--primary {
+    background: var(--c-accent);
+    color: #ffffff;
+    border: none;
+  }
+
+  .tier-btn--primary:hover {
+    background: var(--muvr-orange-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+  }
+
+  .tier-btn--secondary {
+    background: var(--c-surface);
+    color: var(--c-primary);
+    border: 1px solid var(--c-primary);
+  }
+
+  .tier-btn--secondary:hover {
+    background: var(--c-primary);
+    color: #ffffff;
+  }
+</style>
+

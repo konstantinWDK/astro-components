@@ -1,0 +1,406 @@
+---
+/**
+ * HiringPipelineBoard — Applicant tracking and recruitment pipeline for logistics, van drivers, and movers.
+ * Features a Kanban-style workflow across hiring stages (Applied, Interview, Trial Day, Hired),
+ * highlighting driving license category, vehicle ownership (own van vs fleet), experience, and ratings.
+ *
+ * @param {JobCandidate[]} candidates - List of applicants.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { JobCandidate } from '../templates/moving/data';
+import { jobCandidates } from '../templates/moving/data';
+
+interface Props {
+  candidates?: JobCandidate[];
+  className?: string;
+}
+
+const {
+  candidates = jobCandidates,
+  className = '',
+} = Astro.props;
+
+const stages: { id: JobCandidate['status']; title: string; color: string }[] = [
+  { id: 'applied', title: 'New Applications', color: '#64748b' },
+  { id: 'interview', title: 'Interview Scheduled', color: '#d97706' },
+  { id: 'trial', title: 'Trial Shift / Route', color: '#2563eb' },
+  { id: 'hired', title: 'Hired & Active', color: '#10b981' },
+];
+---
+
+<div class={`hiring-board ${className}`} id="hiring-board">
+  <!-- Header Bar -->
+  <div class="hiring-header">
+    <div>
+      <h3 class="hiring-title">Driver & Mover Hiring Pipeline</h3>
+      <p class="hiring-subtitle">Screen candidates, verify driving licenses, own van capacity and schedule trial routes.</p>
+    </div>
+
+    <div class="hiring-actions">
+      <span class="openings-badge">
+        <strong>15</strong> Active Openings
+      </span>
+      <button type="button" class="btn-new-candidate" id="btn-add-candidate">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        <span>Add Candidate</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Columns Grid -->
+  <div class="pipeline-grid">
+    {stages.map((stage) => {
+      const stageCandidates = candidates.filter((c) => c.status === stage.id);
+
+      return (
+        <div class="pipeline-column" data-stage={stage.id}>
+          <div class="col-header">
+            <div class="col-title-wrap">
+              <span class="stage-dot" style={`background: ${stage.color};`}></span>
+              <h4 class="col-title">{stage.title}</h4>
+            </div>
+            <span class="col-count">{stageCandidates.length}</span>
+          </div>
+
+          <div class="col-cards-list">
+            {stageCandidates.map((cand) => (
+              <div class="candidate-card" data-candidate-id={cand.id}>
+                <div class="card-top">
+                  <div class="candidate-identity">
+                    <strong class="cand-name">{cand.name}</strong>
+                    <span class="cand-role">{cand.role}</span>
+                  </div>
+                  <span class="cand-rating">★ {cand.rating}</span>
+                </div>
+
+                <!-- Tags row -->
+                <div class="cand-tags">
+                  <span class="cand-tag cand-tag--license">License {cand.license}</span>
+                  {cand.hasOwnVan ? (
+                    <span class="cand-tag cand-tag--van">Own Van</span>
+                  ) : (
+                    <span class="cand-tag cand-tag--fleet">Company Fleet</span>
+                  )}
+                  <span class="cand-tag">{cand.experienceYears}y exp</span>
+                </div>
+
+                {cand.vanModel && (
+                  <div class="cand-van-info">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M10 17h4M5 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM2 5h13v10H2zm13 3h4l3 4v3h-7z"/>
+                    </svg>
+                    <span>{cand.vanModel}</span>
+                  </div>
+                )}
+
+                <p class="cand-notes">{cand.notes}</p>
+
+                <div class="card-footer">
+                  <span class="applied-date">{cand.appliedDate}</span>
+                  <div class="contact-links">
+                    <a href={`tel:${cand.phone}`} class="contact-link" title={`Call ${cand.name}`}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>
+                      </svg>
+                    </a>
+                    <a href={`mailto:${cand.email}`} class="contact-link" title={`Email ${cand.name}`}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {stageCandidates.length === 0 && (
+              <div class="empty-stage-box">No candidates in this stage</div>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  .hiring-board {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .hiring-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  @media (min-width: 768px) {
+    .hiring-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .hiring-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .hiring-subtitle {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.2rem 0 0;
+  }
+
+  .hiring-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .openings-badge {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--r-full);
+  }
+
+  .openings-badge strong {
+    color: var(--c-primary);
+  }
+
+  .btn-new-candidate {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    background: var(--c-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-new-candidate:hover {
+    background: var(--c-primary-hover);
+  }
+
+  /* Kanban Grid */
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .pipeline-column {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .col-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .stage-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .col-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .col-count {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--r-full);
+    color: var(--c-text-muted);
+  }
+
+  .col-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 200px;
+  }
+
+  .candidate-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-shadow: var(--muvr-card-shadow);
+    transition: all 0.2s ease;
+  }
+
+  .candidate-card:hover {
+    border-color: var(--c-border-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--muvr-card-shadow-hover);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .candidate-identity {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cand-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text);
+  }
+
+  .cand-role {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .cand-rating {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f59e0b;
+  }
+
+  .cand-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .cand-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-muted);
+  }
+
+  .cand-tag--license {
+    color: var(--c-primary);
+    border-color: rgba(37, 99, 235, 0.2);
+  }
+
+  .cand-tag--van {
+    color: #ea580c;
+    background: rgba(234, 88, 12, 0.08);
+    border-color: rgba(234, 88, 12, 0.2);
+  }
+
+  .cand-tag--fleet {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.08);
+    border-color: rgba(5, 150, 105, 0.2);
+  }
+
+  .cand-van-info {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: var(--c-text);
+    background: var(--c-bg);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .cand-notes {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--c-text-subtle);
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .contact-links {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .contact-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--r-sm);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-muted);
+    transition: all 0.15s ease;
+  }
+
+  .contact-link:hover {
+    color: var(--c-primary);
+    border-color: var(--c-primary);
+  }
+
+  .empty-stage-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    border: 1px dashed var(--c-border);
+    border-radius: var(--r-md);
+    font-size: 0.75rem;
+    color: var(--c-text-subtle);
+    font-style: italic;
+  }
+</style>
+

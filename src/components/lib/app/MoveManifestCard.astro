@@ -1,0 +1,454 @@
+---
+/**
+ * MoveManifestCard — Detailed furniture removal job manifest and dispatch sheet.
+ * Displays pickup/destination addresses with floor & elevator status, distance km,
+ * assigned van vehicle, crew members, itemized furniture inventory, and step-by-step progress tracking.
+ *
+ * @param {MoveOrder} order - Move order record.
+ * @param {string} className - Optional container CSS class.
+ */
+import type { MoveOrder } from '../templates/moving/data';
+import { movingOrders } from '../templates/moving/data';
+
+interface Props {
+  order?: MoveOrder;
+  className?: string;
+}
+
+const {
+  order = movingOrders[0],
+  className = '',
+} = Astro.props;
+
+const steps = [
+  { id: 'scheduled', label: 'Booked' },
+  { id: 'loading', label: 'Loading' },
+  { id: 'in_transit', label: 'In Transit' },
+  { id: 'unloading', label: 'Unloading' },
+  { id: 'completed', label: 'Delivered' },
+];
+
+const currentStepIndex = steps.findIndex((s) => s.id === order.status);
+const stepsWithState = steps.map((st, i) => ({
+  ...st,
+  stepNum: i + 1,
+  isDone: i <= currentStepIndex,
+  isCurrent: i === currentStepIndex,
+}));
+---
+
+<div class={`move-manifest-card ${className}`}>
+  <!-- Manifest Header -->
+  <div class="manifest-header">
+    <div class="header-left">
+      <span class="manifest-ref">{order.reference}</span>
+      <h3 class="customer-name">{order.customerName}</h3>
+      <span class="date-slot">{order.moveDate} · {order.timeSlot}</span>
+    </div>
+
+    <div class="header-right">
+      <span class={`muvr-badge muvr-badge--${order.status}`}>{order.status.replace('_', ' ')}</span>
+      <div class="price-pill">
+        <span>€{order.priceTotal}</span>
+        <small>{order.paid ? 'Paid' : 'Pending'}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Steps Bar -->
+  <div class="manifest-progress">
+    {stepsWithState.map((st) => (
+      <div class={`progress-node ${st.isDone ? 'done' : ''} ${st.isCurrent ? 'current' : ''}`}>
+        <div class="node-circle">
+          {st.isDone ? '✓' : st.stepNum}
+        </div>
+        <span class="node-label">{st.label}</span>
+      </div>
+    ))}
+  </div>
+
+  <!-- Route Info: Origin -> Destination -->
+  <div class="route-box">
+    <div class="route-stop">
+      <div class="stop-dot stop-dot--origin"></div>
+      <div class="stop-details">
+        <span class="stop-type">Origin (Pickup)</span>
+        <strong class="stop-address">{order.originAddress}</strong>
+        <span class="stop-access">
+          Floor {order.originFloor} · {order.originElevator ? 'Elevator Available' : 'No Elevator (Stairs)'}
+        </span>
+      </div>
+    </div>
+
+    <div class="route-connector">
+      <span class="route-km">{order.distanceKm} km</span>
+    </div>
+
+    <div class="route-stop">
+      <div class="stop-dot stop-dot--dest"></div>
+      <div class="stop-details">
+        <span class="stop-type">Destination (Delivery)</span>
+        <strong class="stop-address">{order.destinationAddress}</strong>
+        <span class="stop-access">
+          Floor {order.destinationFloor} · {order.destinationElevator ? 'Elevator Available' : 'No Elevator (Stairs)'}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dispatch & Crew Meta -->
+  <div class="manifest-meta-grid">
+    <div class="meta-card">
+      <span class="meta-label">Assigned Van</span>
+      <strong class="meta-value text-primary">{order.vehicleId.toUpperCase()}</strong>
+      <span class="meta-sub">Vol: {order.volumeM3} m³</span>
+    </div>
+
+    <div class="meta-card">
+      <span class="meta-label">Lead Driver</span>
+      <strong class="meta-value">{order.assignedDriver}</strong>
+      <span class="meta-sub">In charge of vehicle</span>
+    </div>
+
+    <div class="meta-card">
+      <span class="meta-label">Mover Crew</span>
+      <strong class="meta-value">{order.assignedMovers.join(', ')}</strong>
+      <span class="meta-sub">{order.assignedMovers.length} movers on site</span>
+    </div>
+  </div>
+
+  <!-- Itemized Furniture Inventory -->
+  <div class="inventory-section">
+    <h4 class="inventory-title">Itemized Move Inventory ({order.items.length} items · {order.volumeM3} m³)</h4>
+    <div class="inventory-grid">
+      {order.items.map((it) => (
+        <div class="inv-item-pill">
+          <span class="inv-qty">{it.qty}x</span>
+          <span class="inv-name">{it.name}</span>
+          <span class="inv-vol">{it.volumeTotalM3} m³</span>
+          {it.requiresDisassembly && <span class="inv-tool-badge" title="Assembly service">Tools</span>}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {order.notes && (
+    <div class="manifest-notes">
+      <strong>Special Instructions:</strong> {order.notes}
+    </div>
+  )}
+</div>
+
+<style>
+  .move-manifest-card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    box-shadow: var(--muvr-card-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .manifest-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .manifest-ref {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--c-primary);
+    letter-spacing: 0.05em;
+  }
+
+  .customer-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0.15rem 0;
+    color: var(--c-text);
+  }
+
+  .date-slot {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .price-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+
+  .price-pill span {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--c-text);
+  }
+
+  .price-pill small {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+  }
+
+  /* Progress tracker */
+  .manifest-progress {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    padding: 0.5rem 0;
+  }
+
+  .manifest-progress::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    height: 3px;
+    background: var(--c-border);
+    z-index: 1;
+  }
+
+  .progress-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .node-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--c-surface);
+    border: 2px solid var(--c-border);
+    color: var(--c-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress-node.done .node-circle {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: #ffffff;
+  }
+
+  .progress-node.current .node-circle {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.2);
+  }
+
+  .node-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    margin-top: 0.35rem;
+  }
+
+  .progress-node.done .node-label {
+    color: var(--c-text);
+  }
+
+  /* Route Box */
+  .route-box {
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  @media (min-width: 640px) {
+    .route-box {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .route-stop {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    flex: 1;
+  }
+
+  .stop-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .stop-dot--origin { background: #2563eb; }
+  .stop-dot--dest { background: #ea580c; }
+
+  .stop-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stop-type {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+  }
+
+  .stop-address {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--c-text);
+    margin: 0.1rem 0;
+  }
+
+  .stop-access {
+    font-size: 0.75rem;
+    color: var(--c-text-muted);
+  }
+
+  .route-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .route-km {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--r-full);
+  }
+
+  /* Meta Cards Grid */
+  .manifest-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .meta-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .meta-label {
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .meta-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text);
+    margin: 0.15rem 0;
+  }
+
+  .text-primary { color: var(--c-primary); }
+
+  .meta-sub {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  /* Inventory Section */
+  .inventory-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .inventory-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--c-text);
+    margin: 0;
+  }
+
+  .inventory-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .inv-item-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.65rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    font-size: 0.8rem;
+  }
+
+  .inv-qty {
+    font-weight: 800;
+    color: var(--c-primary);
+  }
+
+  .inv-name {
+    color: var(--c-text);
+    font-weight: 500;
+  }
+
+  .inv-vol {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .inv-tool-badge {
+    font-size: 0.68rem;
+    color: #ea580c;
+    background: rgba(234, 88, 12, 0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
+  .manifest-notes {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: var(--r-md);
+    padding: 0.65rem 0.85rem;
+  }
+</style>
+

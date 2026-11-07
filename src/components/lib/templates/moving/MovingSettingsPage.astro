@@ -1,0 +1,263 @@
+---
+/**
+ * MovingSettingsPage — Fleet configuration, rates per m³, territory zones, and insurance policy settings.
+ *
+ * @param {MovingRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme. Default 'light'.
+ */
+import MovingLayout from './MovingLayout.astro';
+import { movingRoutes, movingData, type MovingRoutes } from './data';
+
+interface Props {
+  routes?: MovingRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = movingRoutes, theme = 'light', noindex = true } = Astro.props;
+---
+
+<MovingLayout
+  title="Fleet & Operations Settings"
+  routes={routes}
+  current="settings"
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="settings-page">
+    <div class="page-head">
+      <h1 class="page-title">Operations & Fleet Settings</h1>
+      <p class="page-desc">Manage rate cards, fuel allowance factors, cargo transit liability policies, and service zones.</p>
+    </div>
+
+    <div class="settings-sections-list">
+      <!-- Rates & Calculations -->
+      <div class="settings-block">
+        <div class="block-intro">
+          <h3>Pricing & Estimator Formula</h3>
+          <p>Controls the base algorithm powering the online furniture inventory calculator.</p>
+        </div>
+        <div class="block-fields">
+          <div class="field-row-2">
+            <div class="field-item">
+              <label>Base Rate per Cubic Meter (€/m³)</label>
+              <input type="number" class="field-input" value="28" />
+            </div>
+            <div class="field-item">
+              <label>Minimum Dispatch Booking (€)</label>
+              <input type="number" class="field-input" value="95" />
+            </div>
+          </div>
+          <div class="field-row-2">
+            <div class="field-item">
+              <label>Stair Surcharge (No Elevator, per floor)</label>
+              <input type="number" class="field-input" value="15" />
+            </div>
+            <div class="field-item">
+              <label>Free Included Fuel Radius (km)</label>
+              <input type="number" class="field-input" value="20" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cargo Transit Insurance -->
+      <div class="settings-block">
+        <div class="block-intro">
+          <h3>Transport Carrier Insurance</h3>
+          <p>Official policy details shown on waybills and customer booking confirmations.</p>
+        </div>
+        <div class="block-fields">
+          <div class="field-row-2">
+            <div class="field-item">
+              <label>Insurance Provider</label>
+              <input type="text" class="field-input" value="Mapfre Seguros de Transporte Terrestre" />
+            </div>
+            <div class="field-item">
+              <label>Policy Number</label>
+              <input type="text" class="field-input" value="POL-CARGO-8841-ES" />
+            </div>
+          </div>
+          <div class="field-item">
+            <label>Maximum Indemnity per Shipment</label>
+            <input type="text" class="field-input" value="€100,000 (All-Risk Household Goods)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Fleet Registry -->
+      <div class="settings-block">
+        <div class="block-intro">
+          <h3>Commercial Fleet Vehicles</h3>
+          <p>{movingData.vehicles.length} registered vehicles under active carrier license.</p>
+        </div>
+        <div class="block-fields">
+          <div class="fleet-mini-list">
+            {movingData.vehicles.map((v) => (
+              <div class="mini-vehicle-row">
+                <div>
+                  <strong>{v.name}</strong>
+                  <span class="sub">{v.plate} · {v.volumeM3} m³ · {v.model}</span>
+                </div>
+                <span class="status-tag">{v.status}</span>
+              </div>
+            ))}
+          </div>
+          <button type="button" class="btn-add-vehicle">+ Register New Van</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</MovingLayout>
+
+<style>
+  .settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-head {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--c-text);
+  }
+
+  .page-desc {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin: 0.2rem 0 0;
+  }
+
+  .settings-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .settings-block {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: var(--muvr-card-shadow);
+  }
+
+  .block-intro h3 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--c-text);
+    margin: 0 0 0.25rem;
+  }
+
+  .block-intro p {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    margin: 0;
+  }
+
+  .block-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-border);
+  }
+
+  .field-row-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .field-row-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .field-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .field-item label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+
+  .field-input {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    color: var(--c-text);
+    font-size: 0.88rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .field-input:focus {
+    border-color: var(--c-primary);
+  }
+
+  .fleet-mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mini-vehicle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+  }
+
+  .mini-vehicle-row strong {
+    font-size: 0.85rem;
+    color: var(--c-text);
+  }
+
+  .mini-vehicle-row .sub {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+  }
+
+  .status-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--c-primary);
+  }
+
+  .btn-add-vehicle {
+    align-self: flex-start;
+    padding: 0.5rem 0.85rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+    cursor: pointer;
+  }
+</style>
+

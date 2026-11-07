@@ -1,0 +1,116 @@
+---
+/**
+ * MovingOrderDetailPage — Individual move manifest and bill of lading sheet.
+ * Embeds MoveManifestCard, live tracking notes, crew checklist, and dispatcher controls.
+ *
+ * @param {string} orderId - Order identifier.
+ * @param {MovingRoutes} routes - Template route paths.
+ * @param {string} theme - Initial theme. Default 'light'.
+ */
+import MovingLayout from './MovingLayout.astro';
+import MoveManifestCard from '../../app/MoveManifestCard.astro';
+import { movingRoutes, movingData, type MovingRoutes } from './data';
+
+interface Props {
+  orderId?: string;
+  routes?: MovingRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { orderId = 'ord-01', routes = movingRoutes, theme = 'light', noindex = true } = Astro.props;
+
+const order = movingData.orders.find((o) => o.id === orderId) || movingData.orders[0];
+---
+
+<MovingLayout
+  title={`Move Manifest · ${order.reference}`}
+  routes={routes}
+  current="moves"
+  theme={theme}
+  noindex={noindex}
+>
+  <div class="order-detail-page">
+    <div class="page-nav-bar">
+      <a href={routes.moves} class="back-link">← Back to All Move Orders</a>
+      <div class="quick-actions">
+        <button type="button" class="btn-action">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>
+          </svg>
+          <span>Call Driver ({order.assignedDriver.split(' ')[0]})</span>
+        </button>
+        <button type="button" class="btn-action btn-action--primary">
+          <span>Update Status</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Manifest Card -->
+    <MoveManifestCard order={order} />
+  </div>
+</MovingLayout>
+
+<style>
+  .order-detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .back-link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-action:hover {
+    border-color: var(--c-border-hover);
+  }
+
+  .btn-action--primary {
+    background: var(--c-primary);
+    color: #ffffff;
+    border-color: var(--c-primary);
+  }
+
+  .btn-action--primary:hover {
+    background: var(--c-primary-hover);
+  }
+</style>
+
