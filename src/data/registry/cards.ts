@@ -2274,12 +2274,13 @@ const {
 /**
  * NotificationCard — Toast notification card for alerts, build statuses, and system messages with SVG status icons.
  * 
- * @param {string} title - The notification headline.
+ * @param {string} title - The notification headline. Default is 'Deployment Succeeded'.
  * @param {string} message - The notification detail text.
  * @param {'info'|'warning'|'success'|'error'} type - Notification severity style variant. Default is 'success'.
  * @param {string} time - Relative time indicator (e.g. 'Just now'). Default is 'Just now'.
- * @param {string} actionText - Optional action link text. Default is 'View Logs'.
+ * @param {string} actionText - Optional action link text. Default is undefined.
  * @param {string} actionHref - Destination URL for action. Default is '#'.
+ * @param {boolean} dismissible - Whether to render a close/dismiss action button. Default is false.
  */
 interface Props {
   title?: string;
@@ -2288,6 +2289,7 @@ interface Props {
   time?: string;
   actionText?: string;
   actionHref?: string;
+  dismissible?: boolean;
 }
 
 const {
@@ -2295,8 +2297,9 @@ const {
   message = 'Production build v2.4.0 completed in 34s and deployed across 32 edge locations.',
   type = 'success',
   time = 'Just now',
-  actionText = 'View Logs',
+  actionText,
   actionHref = '#',
+  dismissible = false,
 } = Astro.props;
 
 const config = {
@@ -2373,12 +2376,14 @@ const current = config[type] || config.info;
     )}
   </div>
 
-  <button class="notify-card__close" type="button" aria-label="Dismiss notification">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-  </button>
+  {dismissible && (
+    <button class="notify-card__close" type="button" aria-label="Dismiss notification">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  )}
 </div>
 
 <style>
