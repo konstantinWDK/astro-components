@@ -1,53 +1,180 @@
 ---
 /**
- * GlowPortfolioCard — Card with a hovering background glow that follows the card edges.
+ * GlowPortfolioCard — Showcase card with an animated rotating border glow, tag chips, and external link action.
  * 
  * @param {string} title - Project title heading.
- * @param {string} subtitle - Project metadata (e.g. "Web design / 2024").
- * @param {string} glowColor - Optional. Hex color for the animated border glow. Default is '#6366f1'.
+ * @param {string} subtitle - Project description or client summary.
+ * @param {string} category - Category badge (e.g. 'Creative Engineering').
+ * @param {string[]} tags - Tech stack pills.
+ * @param {string} glowColor - Accent glow color. Default is 'var(--c-primary, #6366f1)'.
+ * @param {string} href - Link URL for project details. Default is '#'.
  */
 interface Props {
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
+  category?: string;
+  tags?: string[];
   glowColor?: string;
+  href?: string;
 }
 
-const { title, subtitle, glowColor = 'var(--c-primary, #6366f1)' } = Astro.props;
+const {
+  title = 'Spatial Interface Engine',
+  subtitle = 'Next-generation 3D spatial canvas with real-time WebGL rendering, physics simulation, and reactive gestures.',
+  category = 'Creative Engineering',
+  tags = ['Three.js', 'WebGPU', 'TypeScript'],
+  glowColor = 'var(--c-primary, #6366f1)',
+  href = '#',
+} = Astro.props;
 ---
 
 <div class="glow-wrap" style={`--glow-color: ${glowColor};`}>
   <div class="glow-content">
-    <h3 class="glow-content__title">{title}</h3>
-    <p class="glow-content__subtitle">{subtitle}</p>
-    <slot />
+    <div class="glow-content__header">
+      <span class="glow-content__cat">{category}</span>
+      <a href={href} class="glow-content__link-btn" aria-label={`View ${title} project`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="7" y1="17" x2="17" y2="7"></line>
+          <polyline points="7 7 17 7 17 17"></polyline>
+        </svg>
+      </a>
+    </div>
+
+    <div class="glow-content__body">
+      <h3 class="glow-content__title">{title}</h3>
+      <p class="glow-content__subtitle">{subtitle}</p>
+      <slot />
+    </div>
+
+    <div class="glow-content__footer">
+      <div class="glow-content__tags">
+        {tags.map((tag) => (
+          <span class="glow-tag">{tag}</span>
+        ))}
+      </div>
+    </div>
   </div>
 </div>
 
 <style>
-  .glow-wrap { 
-    position: relative; 
-    padding: 2px; 
-    border-radius: var(--r-xl, 20px); 
-    background: var(--c-border, rgba(255,255,255,0.1)); 
-    overflow: hidden; 
+  .glow-wrap {
+    position: relative;
+    padding: 1.5px;
+    border-radius: var(--r-xl, 22px);
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    max-width: 380px;
+    box-sizing: border-box;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   }
-  .glow-wrap::before { 
-    content: ''; 
-    position: absolute; 
-    inset: -50%; 
-    background: conic-gradient(from 0deg, transparent, var(--glow-color), transparent); 
-    animation: rotate-glow 4s linear infinite; 
+
+  .glow-wrap:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 30px -8px var(--glow-color);
   }
-  .glow-content { 
-    position: relative; 
-    background: var(--c-bg, #080b14); 
-    padding: var(--sp-8, 2rem); 
-    border-radius: calc(var(--r-xl, 20px) - 2px); 
-    z-index: 1; 
-    text-align: center; 
+
+  .glow-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -60%;
+    background: conic-gradient(from 0deg, transparent 0deg, var(--glow-color) 60deg, transparent 120deg, var(--glow-color) 240deg, transparent 300deg);
+    animation: rotate-glow 6s linear infinite;
   }
-  .glow-content__title { margin: 0; color: var(--c-text-1, #fff); font-size: 1.25rem; }
-  .glow-content__subtitle { color: var(--c-text-2, #94a3b8); font-size: 0.9rem; margin-top: 0.5rem; }
-  
-  @keyframes rotate-glow { 100% { transform: rotate(360deg); } }
+
+  .glow-content {
+    position: relative;
+    background: #090d16;
+    padding: var(--sp-6, 1.5rem);
+    border-radius: calc(var(--r-xl, 22px) - 1.5px);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .glow-content__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .glow-content__cat {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-primary-light, #818cf8);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .glow-content__link-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--c-text-1, #fff);
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .glow-content__link-btn:hover {
+    background: var(--glow-color);
+    border-color: var(--glow-color);
+    color: #fff;
+    transform: rotate(45deg);
+  }
+
+  .glow-content__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .glow-content__title {
+    margin: 0;
+    color: var(--c-text-1, #f8fafc);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .glow-content__subtitle {
+    margin: 0;
+    color: var(--c-text-2, #94a3b8);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .glow-content__footer {
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .glow-content__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .glow-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--c-text-2, #94a3b8);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  @keyframes rotate-glow {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 </style>

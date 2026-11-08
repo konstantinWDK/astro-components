@@ -1,42 +1,145 @@
 ---
 /**
- * MinimalLinkCard — Elegant arrow-link card for site navigation sections.
+ * MinimalLinkCard — Elegant glass link navigation card with icon, subtitle, and animated directional arrow.
  * 
  * @param {string} title - The text label of the link.
- * @param {string} href - The destination URL.
+ * @param {string} subtitle - Descriptive subtitle or section info.
+ * @param {string} href - Destination URL. Default is '#'.
+ * @param {string} badge - Optional badge pill (e.g. 'New', 'Docs').
  */
 interface Props {
-  title: string;
-  href: string;
+  title?: string;
+  subtitle?: string;
+  href?: string;
+  badge?: string;
 }
 
-const { title, href } = Astro.props;
+const {
+  title = 'Design System & Tokens',
+  subtitle = 'Explore color primitives, typography scale, and glassmorphic elevations.',
+  href = '#',
+  badge = 'Guide',
+} = Astro.props;
 ---
 
 <a href={href} class="link-card">
-  <span class="link-card__title">{title}</span>
-  <svg class="link-card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M5 12h14M12 5l7 7-7 7"/>
-  </svg>
+  <div class="link-card__icon-wrap" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+  </div>
+
+  <div class="link-card__body">
+    <div class="link-card__head">
+      <span class="link-card__title">{title}</span>
+      {badge && <span class="link-card__badge">{badge}</span>}
+    </div>
+    {subtitle && <p class="link-card__subtitle">{subtitle}</p>}
+  </div>
+
+  <div class="link-card__arrow" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+      <polyline points="12 5 19 12 12 19"></polyline>
+    </svg>
+  </div>
 </a>
 
 <style>
-  .link-card { 
-    display: flex; justify-content: space-between; align-items: center; 
-    padding: var(--sp-6, 1.5rem); 
-    background: var(--c-bg-elev, rgba(255,255,255,0.03)); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    border-radius: var(--r-md, 12px); 
-    text-decoration: none; 
-    color: var(--c-text-1, #fff); 
-    font-weight: 600; 
-    transition: 0.2s; 
+  .link-card {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-5, 1.25rem);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: var(--r-md, 14px);
+    text-decoration: none;
+    color: var(--c-text-1, #fff);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 420px;
+    box-sizing: border-box;
   }
-  .link-card:hover { 
-    background: rgba(255,255,255,0.06); 
-    border-color: var(--c-primary, #6366f1); 
-    color: var(--c-primary-light, #818cf8); 
+
+  .link-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(99, 102, 241, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.5), 0 0 16px -4px rgba(99, 102, 241, 0.2);
   }
-  .link-card__icon { transition: transform 0.2s; }
-  .link-card:hover .link-card__icon { transform: translateX(5px); }
+
+  .link-card__icon-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: var(--c-primary-light, #818cf8);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .link-card:hover .link-card__icon-wrap {
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+    transform: scale(1.05);
+  }
+
+  .link-card__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .link-card__head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .link-card__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--c-text-1, #f8fafc);
+  }
+
+  .link-card__badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--c-primary-light, #818cf8);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    text-transform: uppercase;
+  }
+
+  .link-card__subtitle {
+    margin: 3px 0 0;
+    font-size: 0.8rem;
+    color: var(--c-text-2, #94a3b8);
+    line-height: 1.4;
+  }
+
+  .link-card__arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    color: var(--c-text-2, #94a3b8);
+    flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .link-card:hover .link-card__arrow {
+    transform: translateX(4px);
+    color: var(--c-primary-light, #818cf8);
+  }
 </style>

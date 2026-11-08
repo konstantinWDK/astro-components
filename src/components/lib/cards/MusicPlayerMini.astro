@@ -1,61 +1,288 @@
 ---
 /**
- * MusicPlayerMini — Compact player widget with controls and progress bar.
+ * MusicPlayerMini — Compact glassmorphic audio player card with track metadata, vector controls, and animated equalizer.
  * 
  * @param {string} title - The song track title.
  * @param {string} artist - The artist or band name.
  * @param {string} coverUrl - Optional string matching the album cover image URL.
- * @param {number} progress - The song progress representation (0 to 100). Default is 40.
+ * @param {string} currentTime - Current track playback position. Default is '1:28'.
+ * @param {string} duration - Total track duration. Default is '3:45'.
+ * @param {number} progress - Playback progress representation (0 to 100). Default is 42.
  */
 interface Props {
-  title: string;
-  artist: string;
+  title?: string;
+  artist?: string;
   coverUrl?: string;
+  currentTime?: string;
+  duration?: string;
   progress?: number;
 }
 
-const { title, artist, coverUrl, progress = 40 } = Astro.props;
+const {
+  title = 'Midnight Synth Echoes',
+  artist = 'Solaris & Stellar',
+  coverUrl,
+  currentTime = '1:28',
+  duration = '3:45',
+  progress = 42,
+} = Astro.props;
 ---
 
-<div class="music-mini">
-  <div class="music-mini__art" style={coverUrl ? `background-image: url('${coverUrl}'); background-size: cover;` : ''}></div>
-  <div class="music-mini__track">
-    <h4 class="music-mini__title">{title}</h4>
-    <p class="music-mini__artist">{artist}</p>
-    <div class="music-mini__progress" role="progressbar" aria-valuenow={progress} aria-valuemin="0" aria-valuemax="100">
-      <div class="music-mini__bar" style={`width: ${progress}%;`}></div>
+<div class="music-mini" role="region" aria-label={`Audio Player: ${title} by ${artist}`}>
+  <div class="music-mini__top">
+    <div class="music-mini__art-wrap">
+      {coverUrl ? (
+        <img class="music-mini__art-img" src={coverUrl} alt={`${title} cover`} loading="lazy" />
+      ) : (
+        <div class="music-mini__art-fallback" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+        </div>
+      )}
+    </div>
+
+    <div class="music-mini__track">
+      <div class="music-mini__title-row">
+        <h4 class="music-mini__title">{title}</h4>
+        <div class="music-mini__eq" aria-hidden="true">
+          <span class="eq-bar eq-bar--1"></span>
+          <span class="eq-bar eq-bar--2"></span>
+          <span class="eq-bar eq-bar--3"></span>
+        </div>
+      </div>
+      <p class="music-mini__artist">{artist}</p>
     </div>
   </div>
-  <button class="music-mini__play" type="button" aria-label="Play track">▶</button>
+
+  <div class="music-mini__progress-wrap">
+    <div class="music-mini__progress" role="progressbar" aria-valuenow={progress} aria-valuemin="0" aria-valuemax="100" aria-label="Playback progress">
+      <div class="music-mini__bar" style={`width: ${progress}%;`}>
+        <span class="music-mini__knob" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="music-mini__time">
+      <span>{currentTime}</span>
+      <span>{duration}</span>
+    </div>
+  </div>
+
+  <div class="music-mini__controls">
+    <button class="music-mini__ctrl-btn" type="button" aria-label="Previous track">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="19 20 9 12 19 4 19 20"></polygon>
+        <line x1="5" y1="19" x2="5" y2="5"></line>
+      </svg>
+    </button>
+
+    <button class="music-mini__play-btn" type="button" aria-label="Play or pause track">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+    </button>
+
+    <button class="music-mini__ctrl-btn" type="button" aria-label="Next track">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="5 4 15 12 5 20 5 4"></polygon>
+        <line x1="19" y1="5" x2="19" y2="19"></line>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <style>
-  .music-mini { 
-    display: flex; align-items: center; gap: var(--sp-4, 1rem); 
-    background: var(--c-bg-elev, #111); 
-    padding: var(--sp-3, 0.75rem); 
-    border-radius: var(--r-md, 14px); border: 1px solid var(--c-border, #333); 
-    width: 100%; max-width: 320px; 
+  .music-mini {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    padding: var(--sp-4, 1.1rem);
+    border-radius: var(--r-xl, 18px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 320px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: transform 0.25s ease, border-color 0.25s ease;
   }
-  .music-mini__art { 
-    width: 50px; height: 50px; 
-    background-color: var(--c-primary-light, #818cf8); 
-    border-radius: var(--r-sm, 8px); flex-shrink: 0; 
+
+  .music-mini:hover {
+    border-color: rgba(99, 102, 241, 0.35);
+    transform: translateY(-2px);
   }
-  .music-mini__track { flex: 1; }
-  .music-mini__title { font-size: 0.85rem; color: var(--c-text-1, #fff); margin: 0; }
-  .music-mini__artist { font-size: 0.7rem; color: var(--c-text-2, #64748b); margin: 0; }
-  .music-mini__progress { 
-    height: 3px; background: rgba(255,255,255,0.1); 
-    border-radius: 2px; margin-top: 8px; position: relative; overflow: hidden;
+
+  .music-mini__top {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
   }
-  .music-mini__bar { 
-    position: absolute; left: 0; top: 0; height: 100%; 
-    background: var(--c-primary, #6366f1); border-radius: 2px; 
+
+  .music-mini__art-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--r-md, 10px);
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
-  .music-mini__play { 
-    font-size: 1.2rem; cursor: pointer; color: var(--c-text-1, #fff); 
-    background: none; border: none; padding: 0.25rem; display: grid; place-items: center;
+
+  .music-mini__art-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
-  .music-mini__play:hover { color: var(--c-primary-light, #818cf8); }
+
+  .music-mini__art-fallback {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--c-primary, #6366f1), var(--c-primary-light, #818cf8));
+    display: grid;
+    place-items: center;
+    color: #fff;
+  }
+
+  .music-mini__track {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .music-mini__title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .music-mini__title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .music-mini__eq {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+  }
+
+  .eq-bar {
+    width: 2.5px;
+    background: var(--c-primary-light, #818cf8);
+    border-radius: 1px;
+    animation: eq-bounce 1s ease-in-out infinite alternate;
+  }
+
+  .eq-bar--1 { height: 60%; animation-delay: 0.1s; }
+  .eq-bar--2 { height: 100%; animation-delay: 0.3s; }
+  .eq-bar--3 { height: 40%; animation-delay: 0.5s; }
+
+  @keyframes eq-bounce {
+    0% { height: 20%; }
+    100% { height: 100%; }
+  }
+
+  .music-mini__artist {
+    font-size: 0.78rem;
+    color: var(--c-text-2, #94a3b8);
+    margin: 2px 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .music-mini__progress-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .music-mini__progress {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .music-mini__bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-primary, #6366f1), var(--c-primary-light, #818cf8));
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .music-mini__knob {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+    transform: translateX(4px);
+  }
+
+  .music-mini__time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--c-text-3, #64748b);
+    font-family: ui-monospace, monospace;
+  }
+
+  .music-mini__controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.25rem;
+    padding-top: 0.2rem;
+  }
+
+  .music-mini__ctrl-btn {
+    background: none;
+    border: none;
+    color: var(--c-text-2, #94a3b8);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0.35rem;
+    border-radius: 6px;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .music-mini__ctrl-btn:hover {
+    color: var(--c-text-1, #fff);
+    transform: scale(1.1);
+  }
+
+  .music-mini__play-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--c-primary, #6366f1);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .music-mini__play-btn:hover {
+    background: var(--c-primary-light, #818cf8);
+    transform: scale(1.08);
+  }
 </style>

@@ -1,51 +1,233 @@
 ---
 /**
- * BlogHorizontalCard — Landscape card layout for blog feeds or news items.
+ * BlogHorizontalCard — Landscape card layout for blog feeds, tutorials, or changelog news items.
  * 
- * @param {string} title - The blog post title.
- * @param {string} description - Brief summary or excerpt.
- * @param {string} tag - Featured label or category (e.g. "Tutorial").
+ * @param {string} title - The blog post title (default provided).
+ * @param {string} description - Brief summary or excerpt (default provided).
+ * @param {string} tag - Category tag (default: 'Tutorial').
+ * @param {string} date - Publication date string (default: 'May 2026').
+ * @param {string} readTime - Reading time estimate (default: '4 min read').
  * @param {string} thumbUrl - Optional thumbnail image URL.
+ * @param {string} href - Destination link URL (default: '#').
+ * @param {string} className - Optional additional CSS class.
  */
 interface Props {
-  title: string;
-  description: string;
-  tag: string;
+  title?: string;
+  description?: string;
+  tag?: string;
+  date?: string;
+  readTime?: string;
   thumbUrl?: string;
+  href?: string;
+  className?: string;
 }
 
-const { title, description, tag, thumbUrl } = Astro.props;
+const { 
+  title = 'Architecting High-Performance UI in Astro 5', 
+  description = 'How to combine zero runtime dependencies with glassmorphic design tokens and responsive accessibility.', 
+  tag = 'Engineering', 
+  date = 'May 2026',
+  readTime = '4 min read',
+  thumbUrl = '',
+  href = '#',
+  className = '',
+} = Astro.props;
 ---
 
-<article class="blog-h-card">
-  <div class="blog-h-card__thumb" style={thumbUrl ? `background-image: url('${thumbUrl}'); background-size: cover;` : ''}></div>
+<article class:list={['blog-h-card', className]}>
+  <a href={href} class="blog-h-card__thumb-link" aria-label={title}>
+    {thumbUrl ? (
+      <img src={thumbUrl} alt={title} class="blog-h-card__thumb-img" />
+    ) : (
+      <div class="blog-h-card__thumb-fallback" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      </div>
+    )}
+  </a>
+
   <div class="blog-h-card__content">
-    <span class="blog-h-card__tag">{tag}</span>
-    <h4 class="blog-h-card__title">{title}</h4>
+    <div class="blog-h-card__header">
+      <span class="blog-h-card__tag">{tag}</span>
+      <div class="blog-h-card__meta">
+        <span>{date}</span>
+        <span class="blog-h-card__dot">•</span>
+        <span>{readTime}</span>
+      </div>
+    </div>
+
+    <h4 class="blog-h-card__title">
+      <a href={href}>{title}</a>
+    </h4>
+
     <p class="blog-h-card__desc">{description}</p>
+
+    <div class="blog-h-card__footer">
+      <a href={href} class="blog-h-card__read-more">
+        <span>Read Article</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </a>
+    </div>
   </div>
 </article>
 
 <style>
   .blog-h-card { 
-    display: flex; gap: var(--sp-6, 1.5rem); 
-    background: var(--c-bg-elev, rgba(255,255,255,0.02)); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    border-radius: var(--r-lg, 16px); 
-    overflow: hidden; 
+    display: flex;
+    width: 100%;
+    max-width: 620px;
+    background: rgba(18, 22, 34, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-xl, 20px);
+    overflow: hidden;
+    box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
-  .blog-h-card__thumb { 
-    width: 150px; 
-    background-color: var(--c-bg, #1e293b); 
-    flex-shrink: 0; 
+
+  .blog-h-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 24px 48px -12px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
-  .blog-h-card__content { padding: var(--sp-5, 1.2rem); }
-  .blog-h-card__title { color: var(--c-text-1, #fff); margin: 0.5rem 0; font-size: 1.1rem; }
-  .blog-h-card__desc { font-size: 0.85rem; color: var(--c-text-2, #94a3b8); margin: 0; }
-  .blog-h-card__tag { font-size: 0.7rem; color: var(--c-primary, #818cf8); font-weight: 700; text-transform: uppercase; }
-  
+
+  .blog-h-card__thumb-link {
+    width: 190px;
+    background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .blog-h-card__thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .blog-h-card:hover .blog-h-card__thumb-img {
+    transform: scale(1.05);
+  }
+
+  .blog-h-card__thumb-fallback {
+    color: rgba(129, 140, 248, 0.65);
+  }
+
+  .blog-h-card__content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .blog-h-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .blog-h-card__tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--c-primary-light, #818cf8);
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+
+  .blog-h-card__meta {
+    font-size: 0.78rem;
+    color: var(--c-text-3, #94a3b8);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .blog-h-card__dot {
+    opacity: 0.5;
+  }
+
+  .blog-h-card__title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .blog-h-card__title a {
+    color: var(--c-text-1, #f8fafc);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .blog-h-card__title a:hover {
+    color: var(--c-primary-light, #818cf8);
+  }
+
+  .blog-h-card__desc {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--c-text-2, #94a3b8);
+    margin: 0 0 1rem 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .blog-h-card__footer {
+    display: flex;
+    align-items: center;
+  }
+
+  .blog-h-card__read-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-primary-light, #818cf8);
+    text-decoration: none;
+    transition: gap 0.2s ease, color 0.15s ease;
+  }
+
+  .blog-h-card__read-more:hover {
+    gap: 0.55rem;
+    color: #c7d2fe;
+  }
+
   @media (max-width: 600px) {
-    .blog-h-card { flex-direction: column; }
-    .blog-h-card__thumb { width: 100%; height: 180px; }
+    .blog-h-card {
+      flex-direction: column;
+    }
+    .blog-h-card__thumb-link {
+      width: 100%;
+      height: 160px;
+      border-right: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
   }
 </style>

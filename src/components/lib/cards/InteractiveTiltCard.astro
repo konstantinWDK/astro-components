@@ -1,65 +1,201 @@
 ---
 /**
- * InteractiveTiltCard — Card that tilts in 3D space based on mouse position.
+ * InteractiveTiltCard — Smooth 3D tilt card reacting to cursor trajectory with specular glare and perspective depth.
  * 
  * @param {string} title - The card's heading text.
  * @param {string} description - The descriptive paragraph attached to the card.
+ * @param {string} badge - Eyebrow pill label. Default is '3D Interactive'.
+ * @param {string} ctaText - Action button label. Default is 'Explore Effect'.
  */
 interface Props {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
+  badge?: string;
+  ctaText?: string;
 }
 
-const { title, description } = Astro.props;
+const {
+  title = 'Interactive 3D Tilt',
+  description = 'Physical card response following cursor movement with dynamic perspective distortion, specular highlights, and multi-layer depth.',
+  badge = 'Hardware Accelerated',
+  ctaText = 'Interact Now',
+} = Astro.props;
 ---
 
 <div class="tilt-card-wrap">
   <div class="tilt-card-inner">
-    <h3 class="tilt-card__title">{title}</h3>
-    <p class="tilt-card__desc">{description}</p>
+    <div class="tilt-card__glare" aria-hidden="true"></div>
+
+    <div class="tilt-card__badge-wrap">
+      <span class="tilt-card__badge">{badge}</span>
+      <div class="tilt-card__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      </div>
+    </div>
+
+    <div class="tilt-card__content">
+      <h3 class="tilt-card__title">{title}</h3>
+      <p class="tilt-card__desc">{description}</p>
+      <slot />
+    </div>
+
+    <div class="tilt-card__footer">
+      <button class="tilt-card__btn" type="button">
+        <span>{ctaText}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
   </div>
 </div>
 
 <style>
-  .tilt-card-wrap { 
-    perspective: 1000px; 
-    width: 100%; 
-    max-width: 300px; 
+  .tilt-card-wrap {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 360px;
+    box-sizing: border-box;
   }
-  .tilt-card-inner { 
-    background: var(--c-bg-elev, #1e293b); 
-    padding: var(--sp-12, 3rem); 
-    border-radius: var(--r-xl, 24px); 
-    color: var(--c-text-1, #fff); 
-    text-align: center; 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    transform-style: preserve-3d; 
-    transition: transform 0.1s; 
+
+  .tilt-card-inner {
+    position: relative;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-xl, 22px);
+    padding: var(--sp-6, 1.75rem);
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out, border-color 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
   }
-  .tilt-card__title { 
-    transform: translateZ(50px); 
-    font-size: 1.5rem; 
-    color: var(--c-primary, #818cf8); 
+
+  .tilt-card-inner:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 24px 50px -15px rgba(0, 0, 0, 0.7), 0 0 30px -10px rgba(99, 102, 241, 0.25);
+  }
+
+  .tilt-card__glare {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: inherit;
+  }
+
+  .tilt-card-inner:hover .tilt-card__glare {
+    opacity: 1;
+  }
+
+  .tilt-card__badge-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transform: translateZ(25px);
+  }
+
+  .tilt-card__badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--c-primary-light, #818cf8);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .tilt-card__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    place-items: center;
+    color: var(--c-primary-light, #818cf8);
+  }
+
+  .tilt-card__content {
+    transform: translateZ(40px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tilt-card__title {
     margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+    letter-spacing: -0.01em;
   }
-  .tilt-card__desc { 
-    transform: translateZ(30px); 
-    color: var(--c-text-2, #94a3b8); 
-    font-size: 0.9rem; 
-    margin-top: 1rem; 
+
+  .tilt-card__desc {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .tilt-card__footer {
+    transform: translateZ(30px);
+    padding-top: 0.5rem;
+  }
+
+  .tilt-card__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: var(--c-text-1, #fff);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tilt-card__btn:hover {
+    background: var(--c-primary, #6366f1);
+    border-color: var(--c-primary, #6366f1);
   }
 </style>
 
 <script>
-  document.querySelectorAll('.tilt-card-inner').forEach(card => {
-    card.addEventListener('mousemove', e => {
+  document.querySelectorAll('.tilt-card-wrap').forEach((wrap) => {
+    const card = wrap.querySelector('.tilt-card-inner') as HTMLElement;
+    if (!card) return;
+
+    wrap.addEventListener('mousemove', (e) => {
       const rect = card.getBoundingClientRect();
-      const x = ((e as MouseEvent).clientX - rect.left - rect.width/2) / 10;
-      const y = ((e as MouseEvent).clientY - rect.top - rect.height/2) / -10;
-      (card as HTMLElement).style.transform = `rotateY(${x}deg) rotateX(${y}deg)`;
+      const x = (e as MouseEvent).clientX - rect.left;
+      const y = (e as MouseEvent).clientY - rect.top;
+      
+      const rotX = ((y - rect.height / 2) / (rect.height / 2)) * -10;
+      const rotY = ((x - rect.width / 2) / (rect.width / 2)) * 10;
+
+      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      card.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
+      card.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
     });
-    card.addEventListener('mouseleave', () => {
-      (card as HTMLElement).style.transform = 'rotateY(0deg) rotateX(0deg)';
+
+    wrap.addEventListener('mouseleave', () => {
+      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
     });
   });
 </script>

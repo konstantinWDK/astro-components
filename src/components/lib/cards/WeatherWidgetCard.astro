@@ -1,43 +1,310 @@
 ---
 /**
- * WeatherWidgetCard — Glassmorphism card showing weather conditions.
+ * WeatherWidgetCard — Glassmorphic weather status card with forecast metrics and SVG weather iconography.
  * 
- * @param {string} temp - The formatted temperature (e.g. "24°").
- * @param {string} city - The location name.
- * @param {string} condition - Short weather condition string (e.g. "Partly Cloudy").
- * @param {string} icon - Emoji or symbol representing the weather.
+ * @param {string} temp - Temperature string (default: '24°C').
+ * @param {string} city - Location name (default: 'San Francisco, CA').
+ * @param {string} condition - Weather condition summary (default: 'Partly Cloudy').
+ * @param {string} high - Day's high temperature (default: '26°').
+ * @param {string} low - Day's low temperature (default: '17°').
+ * @param {string} humidity - Humidity percentage (default: '62%').
+ * @param {string} wind - Wind speed figure (default: '14 km/h').
+ * @param {string} icon - Weather type ('sunny' | 'cloudy' | 'rainy' | 'snowy' | 'storm', default: 'cloudy').
+ * @param {string} className - Optional additional CSS class.
  */
 interface Props {
-  temp: string;
-  city: string;
-  condition: string;
-  icon: string;
+  temp?: string;
+  city?: string;
+  condition?: string;
+  high?: string;
+  low?: string;
+  humidity?: string;
+  wind?: string;
+  icon?: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'storm';
+  className?: string;
 }
 
-const { temp, city, condition, icon } = Astro.props;
+const {
+  temp = '24°C',
+  city = 'San Francisco, CA',
+  condition = 'Partly Cloudy',
+  high = '26°',
+  low = '17°',
+  humidity = '62%',
+  wind = '14 km/h',
+  icon = 'cloudy',
+  className = '',
+} = Astro.props;
 ---
 
-<div class="weather-card">
-  <div class="weather-card__temp">{temp}</div>
-  <div class="weather-card__city">
-    <h4 class="weather-card__name">{city}</h4>
-    <p class="weather-card__cond">{condition}</p>
+<div class:list={['weather-card', `weather-card--${icon}`, className]}>
+  <div class="weather-card__glow" aria-hidden="true"></div>
+
+  <!-- Top bar: Location & Status -->
+  <div class="weather-card__header">
+    <div class="weather-card__location">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="weather-card__pin-icon">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+      <h4 class="weather-card__city">{city}</h4>
+    </div>
+    <span class="weather-card__condition-badge">{condition}</span>
   </div>
-  <div class="weather-card__icon" aria-hidden="true">{icon}</div>
+
+  <!-- Main section: Big Temperature and Visual SVG -->
+  <div class="weather-card__main">
+    <div class="weather-card__temp-wrap">
+      <span class="weather-card__temp">{temp}</span>
+      <div class="weather-card__range">
+        <span>H: {high}</span>
+        <span class="weather-card__range-dot">•</span>
+        <span>L: {low}</span>
+      </div>
+    </div>
+
+    <div class="weather-card__art" aria-hidden="true">
+      {icon === 'sunny' && (
+        <svg class="weather-icon weather-icon--sun" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="14" fill="url(#sun-gradient)" />
+          <g stroke="#facc15" stroke-width="3" stroke-linecap="round">
+            <line x1="32" y1="6" x2="32" y2="12" />
+            <line x1="32" y1="52" x2="32" y2="58" />
+            <line x1="6" y1="32" x2="12" y2="32" />
+            <line x1="52" y1="32" x2="58" y2="32" />
+            <line x1="13.6" y1="13.6" x2="17.8" y2="17.8" />
+            <line x1="46.2" y1="46.2" x2="50.4" y2="50.4" />
+            <line x1="13.6" y1="50.4" x2="17.8" y2="46.2" />
+            <line x1="46.2" y1="17.8" x2="50.4" y2="13.6" />
+          </g>
+          <defs>
+            <linearGradient id="sun-gradient" x1="18" y1="18" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#fde047" />
+              <stop offset="1" stop-color="#f59e0b" />
+            </linearGradient>
+          </defs>
+        </svg>
+      )}
+
+      {icon === 'cloudy' && (
+        <svg class="weather-icon weather-icon--cloud" viewBox="0 0 64 64" fill="none">
+          <circle cx="42" cy="22" r="10" fill="#facc15" opacity="0.9" />
+          <path d="M46 44H20a10 10 0 0 1-1.7-19.8A14 14 0 0 1 45.4 22 11 11 0 0 1 46 44z" fill="url(#cloud-gradient)" />
+          <defs>
+            <linearGradient id="cloud-gradient" x1="10" y1="16" x2="48" y2="44" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#93c5fd" />
+              <stop offset="1" stop-color="#3b82f6" />
+            </linearGradient>
+          </defs>
+        </svg>
+      )}
+
+      {icon === 'rainy' && (
+        <svg class="weather-icon weather-icon--rain" viewBox="0 0 64 64" fill="none">
+          <path d="M46 36H20a10 10 0 0 1-1.7-19.8A14 14 0 0 1 45.4 14 11 11 0 0 1 46 36z" fill="url(#rain-cloud-grad)" />
+          <g stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round">
+            <line x1="22" y1="42" x2="19" y2="52" />
+            <line x1="33" y1="42" x2="30" y2="52" />
+            <line x1="44" y1="42" x2="41" y2="52" />
+          </g>
+          <defs>
+            <linearGradient id="rain-cloud-grad" x1="10" y1="8" x2="48" y2="36" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#64748b" />
+              <stop offset="1" stop-color="#334155" />
+            </linearGradient>
+          </defs>
+        </svg>
+      )}
+
+      {(icon === 'snowy' || icon === 'storm') && (
+        <svg class="weather-icon weather-icon--storm" viewBox="0 0 64 64" fill="none">
+          <path d="M46 34H20a10 10 0 0 1-1.7-19.8A14 14 0 0 1 45.4 12 11 11 0 0 1 46 34z" fill="#475569" />
+          <path d="M30 36l-4 10h6l-3 10 10-13h-6l4-7z" fill="#facc15" />
+        </svg>
+      )}
+    </div>
+  </div>
+
+  <!-- Bottom metrics: Humidity & Wind -->
+  <div class="weather-card__footer">
+    <div class="weather-card__metric">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+      </svg>
+      <span>Humidity <strong>{humidity}</strong></span>
+    </div>
+    <div class="weather-card__metric">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+      </svg>
+      <span>Wind <strong>{wind}</strong></span>
+    </div>
+  </div>
 </div>
 
 <style>
-  .weather-card { 
-    display: flex; align-items: center; gap: var(--sp-6, 1.5rem); 
-    padding: var(--sp-6, 1.5rem); 
-    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(192,132,252,0.2)); 
-    backdrop-filter: blur(20px); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.15)); 
-    border-radius: var(--r-xl, 24px); 
-    color: var(--c-text-1, #fff); 
+  .weather-card {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    padding: 1.5rem;
+    border-radius: var(--r-xl, 24px);
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    color: var(--c-text-1, #f8fafc);
+    overflow: hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
-  .weather-card__temp { font-size: 2.2rem; font-weight: 800; }
-  .weather-card__name { margin: 0; font-size: 1rem; }
-  .weather-card__cond { margin: 0; font-size: 0.8rem; opacity: 0.7; }
-  .weather-card__icon { font-size: 2.5rem; margin-left: auto; }
+
+  .weather-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 24px 48px -12px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .weather-card__glow {
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .weather-card--sunny .weather-card__glow {
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.22) 0%, transparent 70%);
+  }
+
+  .weather-card--rainy .weather-card__glow {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%);
+  }
+
+  .weather-card__header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .weather-card__location {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--c-text-2, #cbd5e1);
+  }
+
+  .weather-card__pin-icon {
+    color: var(--c-primary-light, #818cf8);
+    flex-shrink: 0;
+  }
+
+  .weather-card__city {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .weather-card__condition-badge {
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .weather-card__main {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .weather-card__temp-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .weather-card__temp {
+    font-size: 3.25rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: #ffffff;
+    background: linear-gradient(180deg, #ffffff 40%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .weather-card__range {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #94a3b8;
+  }
+
+  .weather-card__range-dot {
+    opacity: 0.5;
+  }
+
+  .weather-card__art {
+    width: 68px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .weather-icon {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
+  }
+
+  .weather-card__footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .weather-card__metric {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .weather-card__metric svg {
+    color: #60a5fa;
+    flex-shrink: 0;
+  }
+
+  .weather-card__metric strong {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
 </style>

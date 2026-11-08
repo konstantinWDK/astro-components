@@ -1,60 +1,268 @@
 ---
 /**
- * GlassEventCard — Vibrant card for events with date badge and glass effect.
+ * GlassEventCard — Vibrant glass card for events with calendar date badge, metadata, and join action.
  * 
  * @param {string|number} day - The event date numeric segment.
  * @param {string} month - The event month string indicator.
  * @param {string} title - The name of the event.
- * @param {string} details - Additional string metadata (e.g location and time).
+ * @param {string} details - Location or venue details.
+ * @param {string} time - Time of the event.
+ * @param {string} category - Category pill tag (e.g. 'Conference', 'Workshop').
+ * @param {number} attendeesCount - Optional attendee RSVP count.
  */
 interface Props {
-  day: string | number;
-  month: string;
-  title: string;
-  details: string;
+  day?: string | number;
+  month?: string;
+  title?: string;
+  details?: string;
+  time?: string;
+  category?: string;
+  attendeesCount?: number;
 }
 
-const { day, month, title, details } = Astro.props;
+const {
+  day = '24',
+  month = 'OCT',
+  title = 'Global Astro & Web Architecture Summit',
+  details = 'San Francisco, CA • Moscone Center',
+  time = '10:00 AM - 4:30 PM PST',
+  category = 'Keynote',
+  attendeesCount = 380,
+} = Astro.props;
 ---
 
-<div class="event-card">
-  <div class="event-card__badge">
-    <span class="event-card__day">{day}</span>
-    {month}
+<div class="glass-event-card">
+  <div class="glass-event-card__date-col">
+    <div class="glass-event-card__badge">
+      <span class="glass-event-card__month">{month}</span>
+      <span class="glass-event-card__day">{day}</span>
+    </div>
+    {category && <span class="glass-event-card__cat-pill">{category}</span>}
   </div>
-  <div class="event-card__info">
-    <h3 class="event-card__title">{title}</h3>
-    <p class="event-card__details">{details}</p>
+
+  <div class="glass-event-card__content">
+    <h3 class="glass-event-card__title">{title}</h3>
+    
+    <div class="glass-event-card__meta-row">
+      <div class="glass-event-card__meta-item">
+        <svg class="glass-event-card__meta-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>{time}</span>
+      </div>
+
+      <div class="glass-event-card__meta-item">
+        <svg class="glass-event-card__meta-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        <span>{details}</span>
+      </div>
+    </div>
+
+    <div class="glass-event-card__footer">
+      <div class="glass-event-card__attendees">
+        <div class="glass-event-card__avatar-stack" aria-hidden="true">
+          <span class="avatar avatar--1">ER</span>
+          <span class="avatar avatar--2">KL</span>
+          <span class="avatar avatar--3">+</span>
+        </div>
+        <span class="glass-event-card__attendees-text"><strong>{attendeesCount}+</strong> attending</span>
+      </div>
+
+      <button class="glass-event-card__action" type="button" aria-label={`RSVP to ${title}`}>
+        <span>RSVP</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
   </div>
-  <button class="event-card__join" type="button" aria-label="Join event">+</button>
 </div>
 
 <style>
-  .event-card { 
-    display: flex; align-items: center; gap: var(--sp-4, 1rem); 
-    padding: var(--sp-5, 1.25rem); 
-    background: var(--c-bg-elev, rgba(255,255,255,0.04)); 
-    backdrop-filter: blur(10px); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    border-radius: var(--r-xl, 20px); 
+  .glass-event-card {
+    display: flex;
+    gap: var(--sp-5, 1.25rem);
+    padding: var(--sp-6, 1.5rem);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-xl, 20px);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    max-width: 480px;
+    box-sizing: border-box;
   }
-  .event-card__badge { 
-    background: var(--c-primary, #6366f1); color: #fff; 
-    width: 50px; height: 60px; 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    font-size: 0.7rem; font-weight: 800; border-radius: var(--r-md, 12px); 
+
+  .glass-event-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12), transparent 40%);
+    pointer-events: none;
+  }
+
+  .glass-event-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), 0 0 24px -6px rgba(99, 102, 241, 0.2);
+  }
+
+  .glass-event-card__date-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .glass-event-card__badge {
+    background: linear-gradient(135deg, var(--c-primary, #6366f1), var(--c-primary-light, #818cf8));
+    color: #fff;
+    width: 60px;
+    height: 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-md, 12px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  }
+
+  .glass-event-card__month {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    opacity: 0.9;
   }
-  .event-card__day { font-size: 1.2rem; line-height: 1; margin-bottom: 2px; }
-  .event-card__info { flex: 1; }
-  .event-card__title { font-size: 1rem; color: var(--c-text-1, #fff); margin: 0; }
-  .event-card__details { font-size: 0.8rem; color: var(--c-text-2, #94a3b8); margin: 2px 0 0; }
-  .event-card__join { 
-    margin-left: auto; width: 40px; height: 40px; 
-    border-radius: var(--r-full, 50%); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.2)); 
-    background: none; color: var(--c-text-1, #fff); 
-    font-size: 1.2rem; cursor: pointer; transition: 0.2s; 
+
+  .glass-event-card__day {
+    font-size: 1.55rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-top: 2px;
   }
-  .event-card__join:hover { background: var(--c-text-1, #fff); color: var(--c-bg, #000); }
+
+  .glass-event-card__cat-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--c-text-2, #94a3b8);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .glass-event-card__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .glass-event-card__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .glass-event-card__meta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .glass-event-card__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8rem;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .glass-event-card__meta-icon {
+    color: var(--c-primary-light, #818cf8);
+    flex-shrink: 0;
+  }
+
+  .glass-event-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-event-card__attendees {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .glass-event-card__avatar-stack {
+    display: flex;
+  }
+
+  .avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #080b14;
+    display: grid;
+    place-items: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #fff;
+    margin-left: -6px;
+  }
+
+  .avatar:first-child {
+    margin-left: 0;
+  }
+
+  .avatar--1 { background: #6366f1; }
+  .avatar--2 { background: #06b6d4; }
+  .avatar--3 { background: #3b82f6; }
+
+  .glass-event-card__attendees-text {
+    font-size: 0.75rem;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .glass-event-card__attendees-text strong {
+    color: var(--c-text-1, #f8fafc);
+  }
+
+  .glass-event-card__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: var(--c-text-1, #fff);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .glass-event-card__action:hover {
+    background: var(--c-primary, #6366f1);
+    border-color: var(--c-primary, #6366f1);
+    transform: translateX(2px);
+  }
 </style>

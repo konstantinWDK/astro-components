@@ -1,56 +1,229 @@
 ---
 /**
- * CyberFeatureCard — A feature card with sharp angles and neon stroke animations.
+ * CyberFeatureCard — Futuristic cyberpunk/sci-fi feature card with neon HUD accents, scanning line, and telemetry readout.
  * 
  * @param {string} title - The main headline of the feature card.
- * @param {string} subtitle - Optional description context.
+ * @param {string} subtitle - Detailed contextual description.
+ * @param {string} tag - Top tech telemetry badge (e.g. 'SYS.CYBER // 01').
+ * @param {string} status - System operational status. Default is 'ACTIVE'.
+ * @param {string} accentColor - Neon accent color. Default is 'var(--c-primary, #6366f1)'.
  */
 interface Props {
-  title: string;
+  title?: string;
   subtitle?: string;
+  tag?: string;
+  status?: string;
+  accentColor?: string;
 }
 
-const { title, subtitle } = Astro.props;
+const {
+  title = 'Quantum Protocol Engine',
+  subtitle = 'Zero-knowledge cryptographic handshake executing directly on distributed edge nodes with quantum resistance.',
+  tag = 'SYS.CYBER // 01',
+  status = 'ONLINE',
+  accentColor = 'var(--c-primary, #6366f1)',
+} = Astro.props;
 ---
 
-<div class="cyber-card">
-  <div class="cyber-card__glitch-line"></div>
-  <h3 class="cyber-card__title">{title}</h3>
-  {subtitle && <p class="cyber-card__subtitle">{subtitle}</p>}
-  <slot />
+<div class="cyber-card" style={`--cyber-accent: ${accentColor};`}>
+  <div class="cyber-card__scanline" aria-hidden="true"></div>
+  <div class="cyber-card__glow-spot" aria-hidden="true"></div>
+
+  <div class="cyber-card__header">
+    <div class="cyber-card__tag-wrap">
+      <span class="cyber-card__status-dot" aria-hidden="true"></span>
+      <span class="cyber-card__tag">{tag}</span>
+    </div>
+    <span class="cyber-card__status-badge">{status}</span>
+  </div>
+
+  <div class="cyber-card__icon-wrap" aria-hidden="true">
+    <svg class="cyber-card__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+      <polyline points="2 17 12 22 22 17"></polyline>
+      <polyline points="2 12 12 17 22 12"></polyline>
+    </svg>
+  </div>
+
+  <div class="cyber-card__body">
+    <h3 class="cyber-card__title">{title}</h3>
+    <p class="cyber-card__subtitle">{subtitle}</p>
+    <slot />
+  </div>
+
+  <div class="cyber-card__footer">
+    <div class="cyber-card__metric">
+      <span class="cyber-card__metric-label">LATENCY</span>
+      <span class="cyber-card__metric-val">1.2ms</span>
+    </div>
+    <div class="cyber-card__metric">
+      <span class="cyber-card__metric-label">INTEGRITY</span>
+      <span class="cyber-card__metric-val">99.98%</span>
+    </div>
+    <div class="cyber-card__corner" aria-hidden="true"></div>
+  </div>
 </div>
 
 <style>
-  .cyber-card { 
-    background: var(--c-bg-elev, #000); 
-    color: var(--c-text-1, #00e0ff); 
-    border: 1px solid var(--c-primary, #ff003c); 
-    padding: var(--sp-6, 1.5rem); 
-    clip-path: polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%); 
-    position: relative; 
+  .cyber-card {
+    position: relative;
+    background: rgba(10, 15, 30, 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 3px solid var(--cyber-accent);
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 16px);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+    max-width: 380px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
   }
-  .cyber-card__glitch-line { 
-    position: absolute; 
-    height: 1px; 
-    width: 100%; 
-    background: var(--c-primary, #ff003c); 
-    top: 10%; left: 0; 
-    opacity: 0.5; 
-    animation: glitch-anim 4s infinite; 
+
+  .cyber-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6), 0 0 20px -4px var(--cyber-accent);
   }
+
+  .cyber-card__scanline {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.25) 51%);
+    background-size: 100% 4px;
+    opacity: 0.4;
+    z-index: 1;
+  }
+
+  .cyber-card__glow-spot {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, var(--cyber-accent) 0%, transparent 70%);
+    opacity: 0.15;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .cyber-card:hover .cyber-card__glow-spot {
+    opacity: 0.3;
+  }
+
+  .cyber-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .cyber-card__tag-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .cyber-card__status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: cyber-pulse 2s infinite;
+  }
+
+  .cyber-card__tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .cyber-card__status-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--cyber-accent);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .cyber-card__icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    place-items: center;
+    color: var(--cyber-accent);
+    position: relative;
+    z-index: 2;
+  }
+
+  .cyber-card__body {
+    position: relative;
+    z-index: 2;
+  }
+
   .cyber-card__title {
     margin: 0 0 0.5rem;
-    font-size: 1.25rem;
-    color: var(--c-text-1);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+    letter-spacing: -0.01em;
   }
+
   .cyber-card__subtitle {
     margin: 0;
-    font-size: 0.9rem;
-    color: var(--c-text-2, #ccc);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--c-text-2, #94a3b8);
   }
-  
-  @keyframes glitch-anim { 
-    0%, 100% { top: 10%; } 
-    50% { top: 90%; } 
+
+  .cyber-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 2;
+    margin-top: 0.25rem;
+  }
+
+  .cyber-card__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cyber-card__metric-label {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.65rem;
+    color: var(--c-text-3, #64748b);
+    letter-spacing: 0.05em;
+  }
+
+  .cyber-card__metric-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+  }
+
+  @keyframes cyber-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
 </style>

@@ -1,56 +1,322 @@
 ---
 /**
- * ProfileCard — Image-centric profile card with social links and blur effect.
+ * ProfileCard — Creator & developer profile card with banner, verified badge, stats readout, and social vector icons.
  * 
- * @param {string} name - The person's full name.
- * @param {string} role - Their job title or role.
- * @param {string} avatarUrl - Optional URL string pointing to their avatar image.
+ * @param {string} name - Full name of the user. Default is 'Sofia Chen'.
+ * @param {string} role - Job title or role. Default is 'Lead Design Systems Architect'.
+ * @param {string} handle - Social handle (e.g. '@sofiadev'). Default is '@sofiadev'.
+ * @param {string} bio - Brief biography or specialization summary.
+ * @param {string} avatarUrl - Optional image URL for user avatar.
+ * @param {string} status - Availability status indicator. Default is 'Available for hire'.
+ * @param {Array<{ label: string, value: string }>} stats - Quantitative profile metrics.
  */
 interface Props {
-  name: string;
-  role: string;
+  name?: string;
+  role?: string;
+  handle?: string;
+  bio?: string;
   avatarUrl?: string;
+  status?: string;
+  stats?: Array<{ label: string; value: string }>;
 }
 
-const { name, role, avatarUrl } = Astro.props;
+const {
+  name = 'Sofia Chen',
+  role = 'Lead Design Systems Architect',
+  handle = '@sofiadev',
+  bio = 'Crafting resilient component libraries, high-performance WebGL graphics, and scalable UI architectures.',
+  avatarUrl,
+  status = 'Available for hire',
+  stats = [
+    { label: 'Projects', value: '42' },
+    { label: 'Followers', value: '8.4k' },
+    { label: 'Rating', value: '4.98' },
+  ],
+} = Astro.props;
+
+const initials = name
+  .split(' ')
+  .map((n) => n[0])
+  .join('')
+  .slice(0, 2)
+  .toUpperCase();
 ---
 
-<div class="profile-card">
-  <div class="profile-card__banner"></div>
-  <div class="profile-card__avatar" style={avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}></div>
-  <h3 class="profile-card__name">{name}</h3>
-  <p class="profile-card__role">{role}</p>
+<div class="profile-card" role="region" aria-label={`Profile card for ${name}`}>
+  <div class="profile-card__banner" aria-hidden="true">
+    <div class="profile-card__banner-glow"></div>
+  </div>
+
+  <div class="profile-card__avatar-wrap">
+    {avatarUrl ? (
+      <img class="profile-card__avatar" src={avatarUrl} alt={`${name}'s avatar`} loading="lazy" />
+    ) : (
+      <div class="profile-card__avatar-fallback" aria-hidden="true">{initials}</div>
+    )}
+    <span class="profile-card__status-dot" title={status} aria-hidden="true"></span>
+  </div>
+
+  <div class="profile-card__info">
+    <div class="profile-card__name-row">
+      <h3 class="profile-card__name">{name}</h3>
+      <svg class="profile-card__verified" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-label="Verified creator">
+        <path d="M12 2l2.4 2.8 3.7-.4 1.1 3.5 3.3 1.7-1 3.6 1.7 3.3-2.6 2.6.2 3.7-3.6 1-1.7 3.3-3.3-1.7-3.3 1.7-1.7-3.3-3.6-1 .2-3.7-2.6-2.6 1.7-3.3-1-3.6 3.3-1.7 1.1-3.5 3.7.4L12 2z"></path>
+        <polyline points="9 12 11 14 15 10"></polyline>
+      </svg>
+    </div>
+
+    <p class="profile-card__role">{role}</p>
+    <span class="profile-card__handle">{handle}</span>
+    <p class="profile-card__bio">{bio}</p>
+  </div>
+
+  <div class="profile-card__stats">
+    {stats.map((s) => (
+      <div class="stat-col">
+        <span class="stat-col__value">{s.value}</span>
+        <span class="stat-col__label">{s.label}</span>
+      </div>
+    ))}
+  </div>
+
+  <div class="profile-card__actions">
+    <button class="profile-card__btn-primary" type="button">Follow</button>
+    <button class="profile-card__btn-secondary" type="button">Message</button>
+  </div>
+
   <div class="profile-card__socials">
     <slot name="socials">
-      <!-- Fallback generic icons if no socials slot passed -->
-      <span aria-hidden="true">🐦</span>
-      <span aria-hidden="true">💼</span>
-      <span aria-hidden="true">🌐</span>
+      <a href="#" class="social-link" aria-label="GitHub profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+        </svg>
+      </a>
+      <a href="#" class="social-link" aria-label="X / Twitter profile">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 4l11.733 16h4.267l-11.733 -16z"></path>
+          <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"></path>
+        </svg>
+      </a>
+      <a href="#" class="social-link" aria-label="Personal website">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </a>
     </slot>
   </div>
 </div>
 
 <style>
-  .profile-card { 
-    background: rgba(255,255,255,0.03); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    border-radius: var(--r-xl, 20px); 
-    text-align: center; 
-    overflow: hidden; 
-    padding-bottom: var(--sp-6, 1.5rem); 
+  .profile-card {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-xl, 22px);
+    text-align: center;
+    overflow: hidden;
+    padding-bottom: var(--sp-6, 1.5rem);
+    max-width: 340px;
+    box-sizing: border-box;
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5);
+    transition: transform 0.25s ease, border-color 0.25s ease;
   }
-  .profile-card__banner { 
-    height: 80px; 
-    background: linear-gradient(135deg, var(--c-primary, #6366f1), var(--c-primary-light, #c084fc)); 
+
+  .profile-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.35);
   }
-  .profile-card__avatar { 
-    width: 80px; height: 80px; 
-    background-color: var(--c-bg-elev, #334155); 
-    border: 4px solid var(--c-bg, #080b14); 
-    border-radius: var(--r-full, 50%); 
-    margin: -40px auto 1rem; 
+
+  .profile-card__banner {
+    height: 90px;
+    background: linear-gradient(135deg, var(--c-primary, #6366f1), var(--c-primary-light, #818cf8));
+    position: relative;
+    overflow: hidden;
   }
-  .profile-card__name { color: var(--c-text-1, #fff); margin: 0; }
-  .profile-card__role { font-size: 0.85rem; color: var(--c-text-2, #94a3b8); margin: 4px 0 0; }
-  .profile-card__socials { display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; cursor: pointer; }
+
+  .profile-card__banner-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.25), transparent 60%);
+  }
+
+  .profile-card__avatar-wrap {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    margin: -42px auto 0.75rem;
+  }
+
+  .profile-card__avatar,
+  .profile-card__avatar-fallback {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid #0b0f19;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    object-fit: cover;
+    box-sizing: border-box;
+  }
+
+  .profile-card__avatar-fallback {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .profile-card__status-dot {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    border: 3px solid #0b0f19;
+    border-radius: 50%;
+  }
+
+  .profile-card__info {
+    padding: 0 var(--sp-5, 1.25rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .profile-card__name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .profile-card__name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+  }
+
+  .profile-card__verified {
+    color: var(--c-primary-light, #818cf8);
+    flex-shrink: 0;
+  }
+
+  .profile-card__role {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--c-primary-light, #818cf8);
+    font-weight: 600;
+  }
+
+  .profile-card__handle {
+    font-size: 0.75rem;
+    color: var(--c-text-3, #64748b);
+    font-family: ui-monospace, monospace;
+  }
+
+  .profile-card__bio {
+    margin: 0.5rem 0 0;
+    font-size: 0.82rem;
+    color: var(--c-text-2, #94a3b8);
+    line-height: 1.45;
+  }
+
+  .profile-card__stats {
+    display: flex;
+    justify-content: space-around;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    margin-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .stat-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-col__value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--c-text-1, #f8fafc);
+  }
+
+  .stat-col__label {
+    font-size: 0.7rem;
+    color: var(--c-text-3, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .profile-card__actions {
+    display: flex;
+    gap: 0.6rem;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem) 0;
+  }
+
+  .profile-card__btn-primary {
+    flex: 1;
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 0.55rem;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .profile-card__btn-primary:hover {
+    background: var(--c-primary-light, #818cf8);
+  }
+
+  .profile-card__btn-secondary {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--c-text-1, #fff);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0.55rem;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .profile-card__btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .profile-card__socials {
+    display: flex;
+    justify-content: center;
+    gap: 0.85rem;
+    margin-top: 1rem;
+  }
+
+  .social-link {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    place-items: center;
+    color: var(--c-text-2, #94a3b8);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .social-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
 </style>

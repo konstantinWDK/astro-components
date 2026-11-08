@@ -1,46 +1,203 @@
 ---
 /**
- * KanbanItemCard — Small card optimized for list-based project management.
+ * KanbanItemCard — Polished agile kanban ticket with priority pill, assignee avatar, attachment count, and comment indicators.
  * 
- * @param {string} title - The description of the ticket/task.
- * @param {string} priority - Priority level label (e.g. "Prio").
- * @param {string} tag - Contextual label tag (e.g. "SEO", "Bug").
+ * @param {string} title - The description or summary of the task ticket.
+ * @param {'low'|'medium'|'high'|'urgent'} priority - Priority level flag. Default is 'high'.
+ * @param {string} tag - Contextual sprint or component tag (e.g. 'Core Graphics').
+ * @param {string} assignee - Initials for assignee badge (e.g. 'AK'). Default is 'AK'.
+ * @param {string} dueDate - Due date label string. Default is 'Tomorrow'.
+ * @param {number} commentsCount - Number of discussion comments. Default is 3.
+ * @param {number} attachmentsCount - Number of files attached. Default is 2.
  */
 interface Props {
-  title: string;
-  priority?: string;
+  title?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   tag?: string;
+  assignee?: string;
+  dueDate?: string;
+  commentsCount?: number;
+  attachmentsCount?: number;
 }
 
-const { title, priority, tag } = Astro.props;
+const {
+  title = 'Implement WebGL Shader Transition Pipeline',
+  priority = 'high',
+  tag = 'Core Graphics',
+  assignee = 'AK',
+  dueDate = 'Tomorrow',
+  commentsCount = 3,
+  attachmentsCount = 2,
+} = Astro.props;
+
+const priorityMap = {
+  low: { label: 'Low', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
+  medium: { label: 'Medium', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+  high: { label: 'High', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
+  urgent: { label: 'Urgent', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' },
+};
+
+const currentPriority = priorityMap[priority] || priorityMap.high;
 ---
 
-<div class="k-item">
-  <p class="k-item__title">{title}</p>
-  <div class="k-item__badges">
-    {priority && <span class="k-item__badge k-item__badge--prio">{priority}</span>}
-    {tag && <span class="k-item__badge k-item__badge--opt">{tag}</span>}
+<div class="k-item" tabindex="0" role="article" aria-label={`Task: ${title}`}>
+  <div class="k-item__head">
+    <span class="k-item__tag">{tag}</span>
+    <span
+      class="k-item__priority"
+      style={`color: ${currentPriority.color}; background: ${currentPriority.bg}; border-color: ${currentPriority.color}33;`}
+    >
+      <span class="k-item__priority-dot" style={`background: ${currentPriority.color};`}></span>
+      {currentPriority.label}
+    </span>
+  </div>
+
+  <h4 class="k-item__title">{title}</h4>
+
+  <div class="k-item__footer">
+    <div class="k-item__meta">
+      <div class="k-item__meta-item" title="Due Date">
+        <svg class="k-item__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>{dueDate}</span>
+      </div>
+
+      {commentsCount > 0 && (
+        <div class="k-item__meta-item" title={`${commentsCount} comments`}>
+          <svg class="k-item__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>{commentsCount}</span>
+        </div>
+      )}
+
+      {attachmentsCount > 0 && (
+        <div class="k-item__meta-item" title={`${attachmentsCount} attachments`}>
+          <svg class="k-item__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+          </svg>
+          <span>{attachmentsCount}</span>
+        </div>
+      )}
+    </div>
+
+    <div class="k-item__assignee" title={`Assigned to ${assignee}`}>
+      {assignee}
+    </div>
   </div>
 </div>
 
 <style>
-  .k-item { 
-    background: var(--c-bg-elev, #111); 
-    border: 1px solid var(--c-border, #333); 
-    padding: var(--sp-4, 1rem); 
-    border-radius: var(--r-md, 8px); 
-    cursor: pointer; 
-    transition: 0.2s; 
+  .k-item {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-md, 12px);
+    padding: var(--sp-4, 1rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    cursor: grab;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    max-width: 300px;
+    box-sizing: border-box;
+    outline: none;
   }
-  .k-item:hover { 
-    border-color: var(--c-primary, #6366f1); 
-    transform: scale(1.02); 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+  .k-item:hover,
+  .k-item:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.5), 0 0 12px -4px rgba(99, 102, 241, 0.2);
   }
-  .k-item__title { margin: 0 0 0.75rem; font-size: 0.85rem; color: var(--c-text-1, #fff); font-weight: 500; line-height: 1.4; }
-  .k-item__badges { display: flex; gap: 4px; flex-wrap: wrap; }
-  .k-item__badge { font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-  
-  .k-item__badge--prio { background: rgba(245,158,11,0.1); color: #fbbf24; }
-  .k-item__badge--opt { background: rgba(52,211,153,0.1); color: #34d399; }
+
+  .k-item:focus-visible {
+    box-shadow: 0 0 0 2px var(--c-primary, #6366f1);
+  }
+
+  .k-item__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .k-item__tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--c-text-2, #94a3b8);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  .k-item__priority {
+    font-size: 0.66rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .k-item__priority-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .k-item__title {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--c-text-1, #f8fafc);
+    line-height: 1.45;
+  }
+
+  .k-item__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 0.1rem;
+  }
+
+  .k-item__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .k-item__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.72rem;
+    color: var(--c-text-3, #64748b);
+  }
+
+  .k-item__icon {
+    opacity: 0.75;
+  }
+
+  .k-item__assignee {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--c-primary, #6366f1), var(--c-primary-light, #818cf8));
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
 </style>

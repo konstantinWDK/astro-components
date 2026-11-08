@@ -1,77 +1,220 @@
 ---
 /**
- * EcommerceProductCard — Commercial card with price, rating and action buttons.
+ * EcommerceProductCard — Commercial product card with pricing, rating badges, image fallback, and quick cart actions.
  * 
- * @param {string} title - The product name.
- * @param {string} price - The parsed price string (e.g. "$299").
- * @param {string} imageUrl - The URL mapping to the product's thumbnail.
- * @param {string} tag - Optional. The highlight bubble tag (e.g. "New").
- * @param {string} rating - Optional. Formatted rating string.
- * @param {string} ctaText - Optional. Label for the call to action button. Default is "Add".
+ * @param {string} title - Product name (default: 'Ergonomic Precision Keyboard').
+ * @param {string} price - Current price (default: '$189').
+ * @param {string} originalPrice - Optional discount comparison price (default: '$229').
+ * @param {string} imageUrl - Product photo URL.
+ * @param {string} tag - Badge label (default: 'Bestseller').
+ * @param {string} rating - Formatted rating (default: '4.9 (128)').
+ * @param {string} ctaText - Action button label (default: 'Add to Cart').
+ * @param {string} className - Optional additional CSS class.
  */
 interface Props {
-  title: string;
-  price: string;
+  title?: string;
+  price?: string;
+  originalPrice?: string;
   imageUrl?: string;
   tag?: string;
   rating?: string;
   ctaText?: string;
+  className?: string;
 }
 
 const { 
-  title, 
-  price, 
-  imageUrl,
-  tag,
-  rating,
-  ctaText = 'Add'
+  title = 'Ergonomic Precision Keyboard', 
+  price = '$189', 
+  originalPrice = '$229',
+  imageUrl = '',
+  tag = 'Bestseller',
+  rating = '4.9 (128)',
+  ctaText = 'Add to Cart',
+  className = '',
 } = Astro.props;
 ---
 
-<div class="prod-card">
-  <div class="prod-card__image" style={imageUrl ? `background-image: url('${imageUrl}'); background-size: cover;` : ''}></div>
+<div class:list={['prod-card', className]}>
+  <div class="prod-card__image-wrap">
+    {imageUrl ? (
+      <img src={imageUrl} alt={title} class="prod-card__img" />
+    ) : (
+      <div class="prod-card__img-fallback" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+      </div>
+    )}
+    {tag && <span class="prod-card__tag">{tag}</span>}
+  </div>
+
   <div class="prod-card__info">
-    <div class="prod-card__meta">
-      {tag ? <span>{tag}</span> : <span></span>}
-      {rating ? <span>{rating}</span> : null}
-    </div>
+    {rating && (
+      <div class="prod-card__rating">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#facc15" aria-hidden="true">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        <span>{rating}</span>
+      </div>
+    )}
+
     <h4 class="prod-card__title">{title}</h4>
+
     <div class="prod-card__bot">
-      <span class="prod-card__price">{price}</span>
-      <button class="prod-card__cta" type="button">{ctaText}</button>
+      <div class="prod-card__prices">
+        <span class="prod-card__price">{price}</span>
+        {originalPrice && <span class="prod-card__orig-price">{originalPrice}</span>}
+      </div>
+      <button class="prod-card__cta" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 0 1-8 0" />
+        </svg>
+        <span>{ctaText}</span>
+      </button>
     </div>
   </div>
 </div>
 
 <style>
-  .prod-card { 
-    background: var(--c-bg-elev, #0f172a); 
-    border-radius: var(--r-lg, 16px); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    overflow: hidden; 
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease; 
+  .prod-card {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    background: rgba(18, 22, 34, 0.7);
+    border-radius: var(--r-xl, 20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
-  .prod-card:hover { 
-    border-color: var(--c-primary, #6366f1); 
-    transform: translateY(-3px); 
+
+  .prod-card:hover {
+    border-color: rgba(99, 102, 241, 0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 24px 48px -12px rgba(99, 102, 241, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
-  .prod-card__image { 
-    height: 180px; 
-    background-color: var(--c-bg, #1e293b); 
+
+  .prod-card__image-wrap {
+    position: relative;
+    height: 190px;
+    background: radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
   }
-  .prod-card__info { padding: var(--sp-5, 1.25rem); }
-  .prod-card__meta { 
-    display: flex; justify-content: space-between; 
-    font-size: 0.75rem; color: var(--c-primary-light, #818cf8); 
-    font-weight: 700; margin-bottom: 0.5rem; 
+
+  .prod-card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
   }
-  .prod-card__title { color: var(--c-text-1, #fff); margin: 0; font-size: 1.1rem; }
-  .prod-card__bot { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; }
-  .prod-card__price { font-weight: 800; color: var(--c-text-1, #fff); font-size: 1.25rem; }
-  .prod-card__cta { 
-    background: var(--c-primary, #6366f1); border: none; color: #fff; 
-    padding: 0.5rem 1.2rem; border-radius: var(--r-md, 8px); 
-    font-weight: 600; cursor: pointer; transition: 0.2s;
+
+  .prod-card:hover .prod-card__img {
+    transform: scale(1.04);
   }
-  .prod-card__cta:hover { filter: brightness(1.1); }
+
+  .prod-card__img-fallback {
+    color: rgba(99, 102, 241, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .prod-card__tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #a5b4fc;
+    backdrop-filter: blur(8px);
+  }
+
+  .prod-card__info {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prod-card__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #facc15;
+  }
+
+  .prod-card__title {
+    color: var(--c-text-1, #f8fafc);
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .prod-card__bot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .prod-card__prices {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  .prod-card__price {
+    font-weight: 800;
+    color: #ffffff;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  .prod-card__orig-price {
+    font-size: 0.85rem;
+    color: var(--c-text-3, #64748b);
+    text-decoration: line-through;
+  }
+
+  .prod-card__cta {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 0.5rem 0.95rem;
+    border-radius: var(--r-md, 10px);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: filter 0.2s ease, transform 0.15s ease;
+  }
+
+  .prod-card__cta:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+  }
 </style>

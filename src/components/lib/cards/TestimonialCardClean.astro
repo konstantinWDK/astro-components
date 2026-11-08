@@ -1,51 +1,260 @@
 ---
 /**
- * TestimonialCardClean — Minimalist card for user quotes and reviews.
+ * TestimonialCardClean — Minimalist, high-contrast testimonial review card with star ratings and verified badge.
  * 
- * @param {string} quote - The body of the testimonial review.
- * @param {string} name - The reviewer's full name.
- * @param {string} role - The reviewer's job title or company role.
- * @param {string} avatarUrl - Optional string tracking the avatar headshot URL.
+ * @param {string} quote - The testimonial body text (default provided).
+ * @param {string} name - Reviewer's full name (default: 'Elena Rostova').
+ * @param {string} role - Reviewer's role or title (default: 'Staff Frontend Architect').
+ * @param {string} company - Company or organization (default: 'Vercel Ecosystem').
+ * @param {string} avatarUrl - Optional avatar photo URL.
+ * @param {number} rating - Star rating from 1 to 5 (default: 5).
+ * @param {boolean} verified - Whether to show the verified reviewer badge (default: true).
+ * @param {string} className - Optional additional CSS class.
  */
 interface Props {
-  quote: string;
-  name: string;
-  role: string;
+  quote?: string;
+  name?: string;
+  role?: string;
+  company?: string;
   avatarUrl?: string;
+  rating?: number;
+  verified?: boolean;
+  className?: string;
 }
 
-const { quote, name, role, avatarUrl } = Astro.props;
+const {
+  quote = 'Astro Components Kit transformed our engineering workflow. We shipped our landing page and design system in days instead of weeks, with flawless dark mode and zero runtime weight.',
+  name = 'Elena Rostova',
+  role = 'Staff Frontend Architect',
+  company = 'NextWave Labs',
+  avatarUrl = '',
+  rating = 5,
+  verified = true,
+  className = '',
+} = Astro.props;
+
+// Compute initials for avatar fallback
+const initials = name
+  .split(' ')
+  .map((part) => part.charAt(0))
+  .slice(0, 2)
+  .join('')
+  .toUpperCase() || 'U';
 ---
 
-<div class="testi-card">
-  <blockquote class="testi-card__quote">"{quote}"</blockquote>
-  <div class="testi-card__author">
-    <div class="testi-card__pic" style={avatarUrl ? `background-image: url('${avatarUrl}'); background-size: cover;` : ''}></div>
-    <div class="testi-card__info">
-      <h5 class="testi-card__name">{name}</h5>
-      <span class="testi-card__role">{role}</span>
-    </div>
+<figure class:list={['clean-testimonial', className]}>
+  <div class="clean-testimonial__watermark" aria-hidden="true">
+    <svg width="60" height="48" viewBox="0 0 60 48" fill="currentColor">
+      <path d="M16.5 0C7.4 0 0 7.4 0 16.5c0 7.6 5.2 13.9 12.2 15.8C10.7 38.4 6 43.8 0 46.5L3.6 48c12.4-5.2 20.4-16.7 20.4-28.5C24 8.7 20.6 0 16.5 0zm33 0C40.4 0 33 7.4 33 16.5c0 7.6 5.2 13.9 12.2 15.8C43.7 38.4 39 43.8 33 46.5L36.6 48c12.4-5.2 20.4-16.7 20.4-28.5C57 8.7 53.6 0 49.5 0z" />
+    </svg>
   </div>
-</div>
+
+  <!-- Star Rating -->
+  <div class="clean-testimonial__stars" aria-label={`Rating: ${rating} out of 5 stars`}>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <svg
+        class:list={['star-icon', { 'star-icon--active': i < rating }]}
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    ))}
+  </div>
+
+  <!-- Quote Body -->
+  <blockquote class="clean-testimonial__quote">
+    <p>"{quote}"</p>
+  </blockquote>
+
+  <!-- Author Info -->
+  <figcaption class="clean-testimonial__author">
+    <div class="clean-testimonial__avatar-wrap">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt={name} class="clean-testimonial__avatar-img" />
+      ) : (
+        <div class="clean-testimonial__avatar-fallback" aria-hidden="true">
+          {initials}
+        </div>
+      )}
+    </div>
+
+    <div class="clean-testimonial__meta">
+      <div class="clean-testimonial__name-row">
+        <span class="clean-testimonial__name">{name}</span>
+        {verified && (
+          <span class="clean-testimonial__verified" title="Verified Customer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-label="Verified">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+            <span class="clean-testimonial__verified-label">Verified</span>
+          </span>
+        )}
+      </div>
+      <div class="clean-testimonial__role-row">
+        <span class="clean-testimonial__role">{role}</span>
+        {company && <span class="clean-testimonial__sep">•</span>}
+        {company && <span class="clean-testimonial__company">{company}</span>}
+      </div>
+    </div>
+  </figcaption>
+</figure>
 
 <style>
-  .testi-card { 
-    background: var(--c-bg-elev, rgba(255,255,255,0.03)); 
-    padding: var(--sp-8, 2rem); 
-    border-radius: var(--r-xl, 20px); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
+  .clean-testimonial {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    margin: 0;
+    padding: 1.75rem 2rem;
+    border-radius: var(--r-xl, 24px);
+    background: rgba(18, 22, 34, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
-  .testi-card__quote { 
-    font-size: 1rem; color: var(--c-text-1, #e2e8f0); 
-    font-style: italic; line-height: 1.6; 
-    margin: 0 0 2rem 0; 
+
+  .clean-testimonial:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
-  .testi-card__author { display: flex; align-items: center; gap: var(--sp-4, 1rem); }
-  .testi-card__pic { 
-    width: 40px; height: 40px; 
-    background: var(--c-bg, #334155); 
-    border-radius: var(--r-full, 50%); 
+
+  .clean-testimonial__watermark {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    color: rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+    z-index: 0;
   }
-  .testi-card__name { margin: 0; color: var(--c-text-1, #fff); font-size: 0.95rem; }
-  .testi-card__role { font-size: 0.75rem; color: var(--c-text-2, #64748b); }
+
+  .clean-testimonial__stars {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 1.15rem;
+  }
+
+  .star-icon {
+    color: rgba(255, 255, 255, 0.15);
+    transition: color 0.15s ease;
+  }
+
+  .star-icon--active {
+    color: #facc15;
+    filter: drop-shadow(0 1px 3px rgba(250, 204, 21, 0.3));
+  }
+
+  .clean-testimonial__quote {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 1.5rem 0;
+    padding: 0;
+  }
+
+  .clean-testimonial__quote p {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: var(--c-text-1, #f1f5f9);
+    font-weight: 400;
+  }
+
+  .clean-testimonial__author {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .clean-testimonial__avatar-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .clean-testimonial__avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .clean-testimonial__avatar-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .clean-testimonial__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .clean-testimonial__name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+
+  .clean-testimonial__name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-text-1, #f8fafc);
+  }
+
+  .clean-testimonial__verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    color: #38bdf8;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .clean-testimonial__verified-label {
+    opacity: 0.9;
+  }
+
+  .clean-testimonial__role-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--c-text-3, #94a3b8);
+    flex-wrap: wrap;
+  }
+
+  .clean-testimonial__sep {
+    opacity: 0.4;
+  }
+
+  .clean-testimonial__company {
+    color: var(--c-text-2, #cbd5e1);
+  }
 </style>

@@ -1,55 +1,197 @@
 ---
 /**
- * PricingCard — Optimized card for showing product plans and features.
+ * PricingCard — Optimized card for showcasing subscription tiers with SVG checkmarks, highlight badge, and action CTA.
  * 
- * @param {string} plan - The plan name (e.g. "Pro").
- * @param {string} price - The integer/decimal price value.
- * @param {boolean} featured - Applies a highlighted styling variant if true.
+ * @param {string} plan - The plan name (e.g. 'Pro'). Default is 'Pro'.
+ * @param {string} price - Numerical price value. Default is '29'.
+ * @param {string} period - Payment cadence (e.g. '/month'). Default is '/month'.
+ * @param {string} description - Brief summary of who this plan is for.
+ * @param {boolean} featured - Applies highlighted border and gradient if true. Default is false.
+ * @param {string[]} features - Bullet points of plan perks.
+ * @param {string} ctaText - Button label. Default is 'Choose Plan'.
  */
-interface Props { plan: string; price: string; featured?: boolean; }
-const { plan, price, featured = false } = Astro.props;
+interface Props {
+  plan?: string;
+  price?: string;
+  period?: string;
+  description?: string;
+  featured?: boolean;
+  features?: string[];
+  ctaText?: string;
+}
+
+const {
+  plan = 'Pro Developer',
+  price = '29',
+  period = '/month',
+  description = 'For creators and fast-growing teams shipping production Astro apps.',
+  featured = false,
+  features = [
+    'Complete component kit access',
+    'Full TypeScript & CSS source',
+    'Commercial license included',
+    'Community Discord support',
+  ],
+  ctaText = 'Choose Plan',
+} = Astro.props;
 ---
-<div class:list={["price-card", { "featured": featured }]}>
-  <span class="price-card__plan">{plan}</span>
-  <div class="price-card__price"><span>$</span>{price}</div>
+
+<div class:list={['price-card', { 'price-card--featured': featured }]}>
+  {featured && <span class="price-card__badge">Most Popular</span>}
+
+  <div class="price-card__header">
+    <span class="price-card__plan">{plan}</span>
+    <div class="price-card__price">
+      <span class="currency">$</span>
+      <span class="val">{price}</span>
+      <span class="period">{period}</span>
+    </div>
+    {description && <p class="price-card__desc">{description}</p>}
+  </div>
+
   <ul class="price-card__features">
-    <slot />
+    <slot>
+      {features.map((feat) => (
+        <li class="price-card__feat-item">
+          <svg class="feat-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>{feat}</span>
+        </li>
+      ))}
+    </slot>
   </ul>
-  <button class="price-card__btn" type="button">Choose Plan</button>
+
+  <button class="price-card__btn" type="button">{ctaText}</button>
 </div>
 
 <style>
-  .price-card { 
-    background: var(--c-bg-elev, rgba(255,255,255,0.03)); 
-    border: 1px solid var(--c-border, rgba(255,255,255,0.1)); 
-    border-radius: var(--r-xl, 24px); 
-    padding: var(--sp-10, 2.5rem); 
-    display: flex; flex-direction: column; gap: var(--sp-6, 1.5rem); 
+  .price-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-xl, 22px);
+    padding: var(--sp-8, 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 340px;
+    box-sizing: border-box;
+    position: relative;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
-  .featured { 
-    border-color: var(--c-primary, #6366f1); 
-    background: rgba(99,102,241,0.05); 
-    transform: scale(1.05); 
+
+  .price-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5);
   }
-  .price-card__plan { font-size: 1.1rem; font-weight: 600; color: var(--c-text-1, #fff); }
-  .price-card__price { font-size: 2.5rem; font-weight: 800; color: var(--c-text-1, #fff); }
-  .price-card__price span { font-size: 1.2rem; opacity: 0.7; margin-right: 2px; }
-  
-  .price-card__features { 
-    list-style: none; padding: 0; margin: 0;
-    font-size: 0.9rem; color: var(--c-text-2, #94a3b8); 
-    display: flex; flex-direction: column; gap: 0.5rem;
+
+  .price-card--featured {
+    border-color: var(--c-primary, #6366f1);
+    background: rgba(99, 102, 241, 0.06);
+    box-shadow: 0 0 30px -10px rgba(99, 102, 241, 0.3);
   }
-  
-  /* Global sub-selector rule to style slotted list items cleanly */
-  .price-card__features :global(li) { position: relative; padding-left: 1.5rem; }
-  .price-card__features :global(li::before) { 
-    content: "✓"; position: absolute; left: 0; color: var(--c-primary, #6366f1); 
+
+  .price-card__badge {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
   }
-  
-  .price-card__btn { 
-    background: var(--c-primary, #6366f1); color: #fff; 
-    border: none; padding: 0.8rem; border-radius: var(--r-md, 12px); 
-    font-weight: 700; cursor: pointer; transition: 0.2s;
+
+  .price-card__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .price-card__plan {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-primary-light, #818cf8);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .price-card__price {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+
+  .currency {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--c-text-1, #f8fafc);
+    opacity: 0.85;
+  }
+
+  .val {
+    font-size: 2.75rem;
+    font-weight: 900;
+    color: var(--c-text-1, #f8fafc);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .period {
+    font-size: 0.85rem;
+    color: var(--c-text-3, #64748b);
+    margin-left: 4px;
+  }
+
+  .price-card__desc {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    color: var(--c-text-2, #94a3b8);
+    line-height: 1.45;
+  }
+
+  .price-card__features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .price-card__feat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--c-text-2, #cbd5e1);
+  }
+
+  .feat-check {
+    color: var(--c-primary-light, #818cf8);
+    flex-shrink: 0;
+  }
+
+  .price-card__btn {
+    background: var(--c-primary, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 0.75rem;
+    border-radius: var(--r-md, 12px);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .price-card__btn:hover {
+    background: var(--c-primary-light, #818cf8);
+    transform: translateY(-1px);
   }
 </style>
