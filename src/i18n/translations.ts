@@ -120,6 +120,7 @@ export const ui = {
 
     // Footer
     'footer.builtWith': 'Built with ❤️ for the Astro community',
+    'footer.developedBy': 'Developed by',
     'footer.license': 'MIT License · Free and open-source',
     'footer.tagline': 'Accessible, dark-mode-first components, sections, and full templates for Astro.',
     'footer.navTitle': 'Navigation',
@@ -244,6 +245,7 @@ export const ui = {
 
     // Footer
     'footer.builtWith': 'Creado con ❤️ para la comunidad de Astro',
+    'footer.developedBy': 'Desarrollado por',
     'footer.license': 'Licencia MIT · Libre y de código abierto',
     'footer.tagline': 'Componentes, secciones y plantillas completas para Astro, accesibles y dark-mode nativo.',
     'footer.navTitle': 'Navegación',
@@ -368,6 +370,7 @@ export const ui = {
 
     // Footer
     'footer.builtWith': 'Создано с ❤️ для сообщества Astro',
+    'footer.developedBy': 'Разработано',
     'footer.license': 'Лицензия MIT · Свободный и открытый исходный код',
     'footer.tagline': 'Доступные dark-mode компоненты, секции и готовые шаблоны для Astro.',
     'footer.navTitle': 'Навигация',
