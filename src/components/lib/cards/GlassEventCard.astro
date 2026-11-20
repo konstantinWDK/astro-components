@@ -10,7 +10,9 @@
  * @param {string} category - Category pill tag (e.g. 'Conference', 'Workshop').
  * @param {number} attendeesCount - Optional attendee RSVP count.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   day?: string | number;
   month?: string;
   title?: string;
@@ -20,6 +22,12 @@ interface Props {
   attendeesCount?: number;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   day = '24',
   month = 'OCT',
@@ -28,10 +36,12 @@ const {
   time = '10:00 AM - 4:30 PM PST',
   category = 'Keynote',
   attendeesCount = 380,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="glass-event-card">
+<div {...rest} class:list={['glass-event-card', classAttr]}>
   <div class="glass-event-card__date-col">
     <div class="glass-event-card__badge">
       <span class="glass-event-card__month">{month}</span>

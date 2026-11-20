@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installMcpForClient } from './installer.js';
+import { addComponents, listComponents } from './add.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,15 @@ const args = process.argv.slice(2);
 const first = args[0]?.toLowerCase();
 
 async function main() {
+  // 0. Copy components into the user's project (shadcn-style)
+  if (first === 'add') {
+    process.exit(addComponents(rootDir, args.slice(1)) ? 0 : 1);
+  }
+  if (first === 'list' || first === 'ls') {
+    listComponents(rootDir, args[1]);
+    process.exit(0);
+  }
+
   // 1. Fast-path: 1-click install command runs natively in pure Node.js
   if (first === 'install' || (first === 'mcp' && args[1]?.toLowerCase() === 'install')) {
     const client = first === 'install' ? args[1] : args[2];
@@ -43,6 +53,12 @@ async function main() {
 🚀 Astro Components Kit (astro-component-kit)
 
 Usage:
+  npx astro-component-kit add <component...> [--dir src/components/ack] [--force] [--dry-run]
+    → Copy components (and the local files they import) into your project
+
+  npx astro-component-kit list [category]
+    → List every available component
+
   npx astro-component-kit mcp install <cursor|claude|codex|lovable|mcp>
     → Automatically configure your AI editor/agent to connect to the MCP server
 

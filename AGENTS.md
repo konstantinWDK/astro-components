@@ -47,7 +47,7 @@ python3 ~/.qwen/skills/ui-ux-pro-max/scripts/search.py "<keyword>" --stack astro
 - **Package manager**: npm
 - **Language**: TypeScript strict mode, `.astro` components
 - **Zero runtime dependencies** — pure Astro + Vanilla CSS
-- **Design tokens**: CSS custom properties in `src/styles/global.css`
+- **Design tokens**: CSS custom properties in `src/styles/tokens.css` (`global.css` = fonts + tokens + base)
 
 ## Directory Structure
 
@@ -118,11 +118,20 @@ const { variant = 'primary', size = 'md', disabled = false, className = '' } = A
 ---
 ```
 
+**Public API (new components and migrated categories):**
+
+- Accept `class` (not `className`) and merge it with `class:list` on the root element.
+- Type native attributes with `HTMLAttributes<'tag'>` from `astro/types` and spread `...rest`
+  on the root element, or on the native control (`<input>`, `<select>`, `<textarea>`) for form fields.
+- Rendering `<a>` when `href` is set: a disabled link drops `href` and sets `aria-disabled="true"`
+  (anchors ignore `disabled`); style `[aria-disabled='true']` like `:disabled`.
+- Decorative elements (glows, shimmers, filters, spinners) get `aria-hidden="true"`.
+
 ### 3. CSS conventions:
 
 - **BEM naming**: `.block`, `.block__element`, `.block--modifier`
 - **CSS custom props** for theming: `--btn-bg`, `--btn-text`, `--btn-glow`
-- **Design tokens** from `global.css`: `var(--sp-*)`, `var(--r-*)`, `var(--c-*)`, `var(--font-*)`
+- **Design tokens** from `tokens.css`: `var(--sp-*)`, `var(--r-*)`, `var(--c-*)`, `var(--font-*)`
 - **Transitions**: `0.2-0.3s` with ease or cubic-bezier
 - **No hardcoded colors** — always use `var(--c-*)` tokens
 - **Scoped styles** — all CSS inside `<style>` block (Astro scopes automatically)
@@ -150,7 +159,7 @@ After creating a component, add it to the appropriate registry file in `src/data
   category: 'category-id',
   tags: ['tag1', 'tag2', 'tag3'],
   featured: true,
-  code: `/* Full component source code as string */`,
+  code: source('category/ComponentName.astro'), // loaded from the real file — never paste code strings
   usage: `---
 import { ComponentName } from 'astro-component-kit';
 ---
@@ -232,7 +241,7 @@ Each component gets a doc page via `/docs/[slug].astro` or `/sections/[slug].ast
 
 1. **Plan**: Define props, variants, accessibility requirements
 2. **Create**: Write the `.astro` file in the correct `src/components/lib/[category]/` folder
-3. **Register**: Add to `src/data/registry/[category].ts` with complete code string
+3. **Register**: Add to `src/data/registry/[category].ts` using `source('<category>/<File>.astro')`, then run `npm run registry:check`
 4. **Export**: Add to category `index.ts` and main `index.ts`
 5. **Verify**: `npm run build` passes, component renders on `/docs/[slug]`
 6. **Document**: Ensure registry entry has meaningful description and usage example

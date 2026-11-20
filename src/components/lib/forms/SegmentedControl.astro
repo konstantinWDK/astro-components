@@ -6,16 +6,24 @@
  * @param {Array<{label: string, value: string, checked?: boolean}>} options - Selectable segments.
  * @param {string} idPrefix - Prefix for auto-generating input IDs.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   name: string;
   options: Array<{ label: string; value: string; checked?: boolean }>;
   idPrefix?: string;
 }
 
-const { name, options = [], idPrefix = "seg" } = Astro.props;
+/** Own props plus any native <div> attribute (aria-*, data-*, autocomplete…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { name, options = [], idPrefix = "seg", class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="segmented">
+<div {...rest} class:list={['segmented', classAttr]}>
   {options.map((opt, i) => (
     <div class="segmented-item">
       <input 

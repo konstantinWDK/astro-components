@@ -7,22 +7,32 @@
  * @param {string} href - Destination URL. Default is '#'.
  * @param {string} badge - Optional badge pill (e.g. 'New', 'Docs').
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   subtitle?: string;
   href?: string;
   badge?: string;
 }
 
+/** Own props plus any native <a> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'a'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Design System & Tokens',
   subtitle = 'Explore color primitives, typography scale, and glassmorphic elevations.',
   href = '#',
   badge = 'Guide',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<a href={href} class="link-card">
+<a {...rest} href={href} class:list={['link-card', classAttr]}>
   <div class="link-card__icon-wrap" aria-hidden="true">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

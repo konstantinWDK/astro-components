@@ -12,7 +12,9 @@
  * @param {string} icon - Weather type ('sunny' | 'cloudy' | 'rainy' | 'snowy' | 'storm', default: 'cloudy').
  * @param {string} className - Optional additional CSS class.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   temp?: string;
   city?: string;
   condition?: string;
@@ -24,6 +26,12 @@ interface Props {
   className?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   temp = '24°C',
   city = 'San Francisco, CA',
@@ -34,10 +42,12 @@ const {
   wind = '14 km/h',
   icon = 'cloudy',
   className = '',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['weather-card', `weather-card--${icon}`, className]}>
+<div {...rest} class:list={['weather-card', `weather-card--${icon}`, className, classAttr]}>
   <div class="weather-card__glow" aria-hidden="true"></div>
 
   <!-- Top bar: Location & Status -->

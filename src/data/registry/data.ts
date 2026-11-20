@@ -1,5 +1,6 @@
 // src/data/registry/data.ts
 import type { ComponentDoc } from './types';
+import { source } from './sources';
 
 export const data: ComponentDoc[] = [
   {
@@ -9,30 +10,7 @@ export const data: ComponentDoc[] = [
     category: 'data',
     tags: ['table', 'data', 'glass'],
     featured: true,
-    code: `---
----
-<div class="table-wrap">
-  <table>
-    <thead><tr><th>User</th><th>Status</th><th>Role</th><th>Activity</th></tr></thead>
-    <tbody>
-      <tr><td>Alex Smith</td><td><span class="st st-active">Active</span></td><td>Admin</td><td>2m ago</td></tr>
-      <tr><td>Maria Garcia</td><td><span class="st st-away">Away</span></td><td>Editor</td><td>1h ago</td></tr>
-      <tr><td>James Wilson</td><td><span class="st st-offline">Offline</span></td><td>Viewer</td><td>2d ago</td></tr>
-    </tbody>
-  </table>
-</div>
-<style>
-  .table-wrap { width: 100%; overflow-x: auto; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; backdrop-filter: blur(10px); }
-  table { width: 100%; border-collapse: collapse; text-align: left; }
-  th { padding: 1rem 1.5rem; background: rgba(255,255,255,0.03); color: #818cf8; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  td { padding: 1rem 1.5rem; color: #e2e8f0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
-  tr:hover td { background: rgba(255,255,255,0.02); }
-  .st { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
-  .st-active { background: rgba(16,185,129,0.1); color: #34d399; }
-  .st-away { background: rgba(245,158,11,0.1); color: #fbbf24; }
-  .st-offline { background: rgba(100,116,139,0.1); color: #94a3b8; }
-</style>
-`,
+    code: source('data/GlassTable.astro'),
     usage: `<GlassTable>Content</GlassTable>`,
   },
   {
@@ -41,28 +19,7 @@ export const data: ComponentDoc[] = [
     description: 'Chronological list of events with a continuous vertical line and dot indicators.',
     category: 'data',
     tags: ['timeline', 'events', 'data'],
-    code: `---
----
-<div class="timeline-v">
-  <div class="t-item">
-    <div class="t-date">Oct 2024</div>
-    <div class="t-content"><h4>V2 Release</h4><p>Launched the modular registry architecture.</p></div>
-  </div>
-  <div class="t-item">
-    <div class="t-date">Aug 2024</div>
-    <div class="t-content"><h4>Beta Phase</h4><p>Community testing and initial component set.</p></div>
-  </div>
-</div>
-<style>
-  .timeline-v { position: relative; padding-left: 2rem; }
-  .timeline-v::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: rgba(99,102,241,0.2); }
-  .t-item { position: relative; margin-bottom: 2.5rem; }
-  .t-item::after { content: ""; position: absolute; left: -2.35rem; top: 5px; width: 12px; height: 12px; background: #6366f1; border: 3px solid #080b14; border-radius: 50%; }
-  .t-date { font-size: 0.75rem; font-weight: 700; color: #6366f1; margin-bottom: 0.25rem; }
-  h4 { color: #fff; margin: 0; }
-  p { font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem; }
-</style>
-`,
+    code: source('data/VerticalTimeline.astro'),
     usage: `<VerticalTimeline>Content</VerticalTimeline>`,
   },
   {
@@ -71,23 +28,7 @@ export const data: ComponentDoc[] = [
     description: 'High-density grid of key performance indicators for dashboards.',
     category: 'data',
     tags: ['stats', 'dashboard', 'data'],
-    code: `---
----
-<div class="s-grid">
-  <div class="s-card"><span>Users</span><h3>12.4k</h3><small class="up">+12%</small></div>
-  <div class="s-card"><span>Revenue</span><h3>$48k</h3><small class="up">+5%</small></div>
-  <div class="s-card"><span>Bounce</span><h3>24%</h3><small class="down">-2%</small></div>
-</div>
-<style>
-  .s-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
-  .s-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.25rem; border-radius: 12px; }
-  span { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
-  h3 { font-size: 1.5rem; color: #fff; margin: 0.25rem 0; }
-  small { font-size: 0.7rem; font-weight: 700; }
-  .up { color: #10b981; }
-  .down { color: #ef4444; }
-</style>
-`,
+    code: source('data/StatsGridDashboard.astro'),
     usage: `<StatsGridDashboard>Content</StatsGridDashboard>`,
   },
   {
@@ -96,28 +37,7 @@ export const data: ComponentDoc[] = [
     description: 'Expandable content sections with a subtle glass effect and smooth transitions.',
     category: 'data',
     tags: ['accordion', 'data', 'glass'],
-    code: `---
----
-<div class="acc-wrap">
-  <details open>
-    <summary>How do I install the components?</summary>
-    <div class="content">Simply copy the Astro and CSS code into your project.</div>
-  </details>
-  <details>
-    <summary>Is this open source?</summary>
-    <div class="content">Yes, Astro Components is free under the MIT license.</div>
-  </details>
-</div>
-<style>
-  .acc-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
-  details { background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; }
-  summary { padding: 1rem 1.5rem; cursor: pointer; color: #fff; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-  summary:hover { background: rgba(255,255,255,0.02); }
-  summary::after { content: "+"; font-size: 1.25rem; transition: transform 0.3s; }
-  details[open] summary::after { transform: rotate(45deg); }
-  .content { padding: 0 1.5rem 1rem; color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
-</style>
-`,
+    code: source('data/AccordionGroupGlass.astro'),
     usage: `<AccordionGroupGlass>Content</AccordionGroupGlass>`,
   },
   {
@@ -126,22 +46,7 @@ export const data: ComponentDoc[] = [
     description: 'A set of user avatars clustered together, perfect for ',
     category: 'data',
     tags: ['avatar', 'data', 'group'],
-    code: `---
----
-<div class="av-group">
-  <div class="av" style="background:#6366f1">AJ</div>
-  <div class="av" style="background:#8b5cf6">MK</div>
-  <div class="av" style="background:#ec4899">SL</div>
-  <div class="av more">+4</div>
-</div>
-<style>
-  .av-group { display: flex; align-items: center; }
-  .av { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #080b14; margin-left: -10px; display: grid; place-items: center; font-size: 0.65rem; font-weight: 800; color: #fff; position: relative; transition: 0.2s; cursor: pointer; }
-  .av:first-child { margin-left: 0; }
-  .av:hover { transform: translateY(-4px); z-index: 10; }
-  .more { background: #1e293b; color: #94a3b8; border-style: dashed; }
-</style>
-`,
+    code: source('data/AvatarGroupStack.astro'),
     usage: `<AvatarGroupStack>Content</AvatarGroupStack>`,
   },
   {
@@ -150,29 +55,7 @@ export const data: ComponentDoc[] = [
     description: 'A nested folder and file list hierarchy for representing directories.',
     category: 'data',
     tags: ['tree', 'data', 'files'],
-    code: `---
----
-<div class="tree">
-  <div class="folder active">📁 src</div>
-  <div class="indent">
-    <div class="folder">📁 components</div>
-    <div class="indent">
-      <div class="file">📄 Button.astro</div>
-      <div class="file">📄 Card.astro</div>
-    </div>
-    <div class="file">📄 styles.css</div>
-  </div>
-  <div class="file">📄 astro.config.mjs</div>
-</div>
-<style>
-  .tree { font-family: monospace; font-size: 0.85rem; color: #94a3b8; line-height: 1.8; }
-  .indent { padding-left: 1.25rem; border-left: 1px solid rgba(255,255,255,0.1); }
-  .folder { color: #fff; font-weight: 700; cursor: pointer; }
-  .folder.active { color: #818cf8; }
-  .file { cursor: pointer; padding-left: 4px; }
-  .file:hover { color: #fff; }
-</style>
-`,
+    code: source('data/FileTreeView.astro'),
     usage: `<FileTreeView>Content</FileTreeView>`,
   },
   {
@@ -181,25 +64,7 @@ export const data: ComponentDoc[] = [
     description: 'Compact calendar grid for event scheduling and date selection.',
     category: 'data',
     tags: ['calendar', 'data', 'grid'],
-    code: `---
----
-<div class="cal-card">
-  <div class="cal-head"><h4>October 2024</h4></div>
-  <div class="cal-grid">
-    <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
-    {[...Array(31)].map((_, i) => <div class:list={[{ "today": i+1 === 24 }]}>{i+1}</div>)}
-  </div>
-</div>
-<style>
-  .cal-card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 1.25rem; width: fit-content; }
-  .cal-head { text-align: center; margin-bottom: 1rem; color: #fff; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 35px); text-align: center; font-size: 0.75rem; color: #64748b; }
-  .cal-grid span { font-weight: 800; padding: 5px 0; color: #818cf8; }
-  .cal-grid div { padding: 8px 0; cursor: pointer; transition: 0.2s; }
-  .cal-grid div:hover { color: #fff; background: rgba(255,255,255,0.05); border-radius: 5px; }
-  .today { background: #6366f1; color: #fff !important; border-radius: 5px; box-shadow: 0 0 10px rgba(99,102,241,0.4); }
-</style>
-`,
+    code: source('data/CalendarGridView.astro'),
     usage: `<CalendarGridView>Content</CalendarGridView>`,
   },
   {
@@ -208,21 +73,7 @@ export const data: ComponentDoc[] = [
     description: 'Clean list for technical specifications or user details.',
     category: 'data',
     tags: ['data', 'list', 'details'],
-    code: `---
----
-<dl class="desc-list">
-  <div class="row"><dt>Module Name</dt><dd>AuthEngine</dd></div>
-  <div class="row"><dt>Version</dt><dd>1.4.2</dd></div>
-  <div class="row"><dt>Status</dt><dd>Deployment Ready</dd></div>
-</dl>
-<style>
-  .desc-list { display: flex; flex-direction: column; width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.1); }
-  .row { display: grid; grid-template-columns: 140px 1fr; padding: 0.75rem 1.25rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.85rem; }
-  .row:last-child { border-bottom: none; }
-  dt { color: #64748b; font-weight: 600; }
-  dd { color: #fff; margin: 0; }
-</style>
-`,
+    code: source('data/DescriptionListHoriz.astro'),
     usage: `<DescriptionListHoriz>Content</DescriptionListHoriz>`,
   },
   {
@@ -231,21 +82,7 @@ export const data: ComponentDoc[] = [
     description: 'Visual group of tags or keywords for categorization.',
     category: 'data',
     tags: ['tags', 'cloud', 'data'],
-    code: `---
----
-<div class="t-cloud">
-  <span class="t-pill">React</span>
-  <span class="t-pill t-active">Astro</span>
-  <span class="t-pill">Next.js</span>
-  <span class="t-pill">Vue</span>
-  <span class="t-pill">Svelte</span>
-</div>
-<style>
-  .t-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .t-pill { padding: 4px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; color: #94a3b8; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
-  .t-pill:hover, .t-active { background: #6366f1; color: #fff; border-color: transparent; box-shadow: 0 4px 10px rgba(99,102,241,0.3); }
-</style>
-`,
+    code: source('data/TagCloudData.astro'),
     usage: `<TagCloudData>Content</TagCloudData>`,
   },
   {
@@ -254,22 +91,7 @@ export const data: ComponentDoc[] = [
     description: 'Visual path for multi-step data processes or wizards.',
     category: 'data',
     tags: ['steps', 'data', 'vertical'],
-    code: `---
----
-<div class="v-steps">
-  <div class="v-step done"><span>Check</span>Account Created</div>
-  <div class="v-step current"><span>2</span>Verify Email</div>
-  <div class="v-step"><span>3</span>Setup Profile</div>
-</div>
-<style>
-  .v-steps { display: flex; flex-direction: column; gap: 1rem; }
-  .v-step { display: flex; align-items: center; gap: 1rem; color: #64748b; font-size: 0.9rem; font-weight: 600; }
-  .v-step span { width: 24px; height: 24px; background: #1e293b; display: grid; place-items: center; border-radius: 50%; font-size: 0.7rem; border: 1px solid #334155; }
-  .current { color: #fff; }
-  .current span { background: #6366f1; border-color: #6366f1; box-shadow: 0 0 10px rgba(99,102,241,0.4); }
-  .done span { background: #10b981; border-color: #10b981; color: #fff; }
-</style>
-`,
+    code: source('data/StepperDataVertical.astro'),
     usage: `<StepperDataVertical>Content</StepperDataVertical>`,
   },
   {
@@ -278,20 +100,7 @@ export const data: ComponentDoc[] = [
     description: 'Bar graph breakdown of user ratings/reviews.',
     category: 'data',
     tags: ['rating', 'data', 'graph'],
-    code: `---
----
-<div class="rating-box">
-  <div class="r-row"><span>5★</span><div class="bar-bg"><div class="bar-val" style="width: 80%"></div></div></div>
-  <div class="r-row"><span>4★</span><div class="bar-bg"><div class="bar-val" style="width: 15%"></div></div></div>
-  <div class="r-row"><span>3★</span><div class="bar-bg"><div class="bar-val" style="width: 5%"></div></div></div>
-</div>
-<style>
-  .rating-box { display: flex; flex-direction: column; gap: 8px; width: 220px; }
-  .r-row { display: flex; align-items: center; gap: 10px; color: #94a3b8; font-size: 0.75rem; font-weight: 700; }
-  .bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; border: 1px solid rgba(255, 255, 255, 0.03); }
-  .bar-val { height: 100%; background: #fbbf24; border-radius: inherit; box-shadow: 0 0 8px rgba(251, 191, 36, 0.4); }
-</style>
-`,
+    code: source('data/RatingBreakdownBar.astro'),
     usage: `<RatingBreakdownBar>Content</RatingBreakdownBar>`,
   },
   {
@@ -300,25 +109,7 @@ export const data: ComponentDoc[] = [
     description: 'Side-scrolling event tracker with distinct timestamps.',
     category: 'data',
     tags: ['timeline', 'horizontal', 'data'],
-    code: `---
----
-<div class="h-timeline">
-  <div class="h-line"></div>
-  <div class="h-item"><span>2022</span><strong>Founded</strong></div>
-  <div class="h-item"><span>2023</span><strong>Global</strong></div>
-  <div class="h-item curr"><span>2024</span><strong>V2.0</strong></div>
-</div>
-<style>
-  .h-timeline { display: flex; justify-content: space-between; position: relative; padding: 2rem 0; width: 100%; max-width: 600px; margin: 0 auto; }
-  .h-line { position: absolute; top: 3.2rem; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.1); }
-  .h-item { text-align: center; position: relative; z-index: 1; min-width: 80px; }
-  .h-item span { display: block; font-size: 0.7rem; color: #64748b; margin-bottom: 2rem; font-weight: 700; }
-  .h-item::after { content: ""; position: absolute; left: 50%; top: 1.1rem; width: 16px; height: 16px; background: #1e293b; border: 3px solid #334155; border-radius: 50%; transform: translateX(-50%); transition: 0.3s; }
-  strong { display: block; color: #fff; font-size: 0.85rem; }
-  .curr strong { color: #6366f1; }
-  .curr::after { background: #6366f1; border-color: #080b14; box-shadow: 0 0 15px rgba(99, 102, 241, 0.6); }
-</style>
-`,
+    code: source('data/TimelineHorizSteps.astro'),
     usage: `<TimelineHorizSteps>Content</TimelineHorizSteps>`,
   },
   {
@@ -327,29 +118,7 @@ export const data: ComponentDoc[] = [
     description: 'Grid layout for comparing plan features side-by-side.',
     category: 'data',
     tags: ['table', 'pricing', 'compare'],
-    code: `---
----
-<div class="c-wrap">
-  <table>
-    <thead>
-      <tr><th>Features</th><th>Free</th><th>Pro</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Feature A</td><td>✅</td><td>✅</td></tr>
-      <tr><td>Feature B</td><td>❌</td><td>✅</td></tr>
-      <tr><td>Storage</td><td>10GB</td><td>100GB</td></tr>
-    </tbody>
-  </table>
-</div>
-<style>
-  .c-wrap { background: #0f172a; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden; }
-  table { width: 100%; font-size: 0.85rem; color: #e2e8f0; border-collapse: collapse; }
-  th { padding: 1rem; background: rgba(255, 255, 255, 0.05); color: #fff; text-align: center; font-weight: 800; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-  th:first-child { text-align: left; }
-  td { padding: 1rem; border: 1px solid rgba(255, 255, 255, 0.05); text-align: center; }
-  td:first-child { text-align: left; background: rgba(255,255,255,0.02); width: 40%; font-weight: 600; }
-</style>
-`,
+    code: source('data/PriceCompareTable.astro'),
     usage: `<PriceCompareTable>Content</PriceCompareTable>`,
   },
   {
@@ -358,22 +127,7 @@ export const data: ComponentDoc[] = [
     description: 'Compact row for listing users with avatar and online status.',
     category: 'data',
     tags: ['user', 'list', 'data'],
-    code: `---
----
-<div class="u-item">
-  <div class="u-pic">JS</div>
-  <div class="u-info"><h5>John Doe</h5><p>Software Engineer</p></div>
-  <div class="u-stat">Online</div>
-</div>
-<style>
-  .u-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); transition: 0.2s; }
-  .u-item:hover { border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.05); }
-  .u-pic { width: 42px; height: 42px; background: linear-gradient(135deg, #6366f1, #c084fc); border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 0.8rem; }
-  .u-info h5 { margin: 0; color: #fff; font-size: 1rem; }
-  .u-info p { margin: 2px 0 0; font-size: 0.75rem; color: #64748b; }
-  .u-stat { margin-left: auto; font-size: 0.65rem; color: #34d399; font-weight: 800; text-transform: uppercase; background: rgba(52, 211, 153, 0.1); padding: 2px 8px; border-radius: 4px; }
-</style>
-`,
+    code: source('data/UserDirectoryItem.astro'),
     usage: `<UserDirectoryItem>Content</UserDirectoryItem>`,
   },
   {
@@ -382,23 +136,7 @@ export const data: ComponentDoc[] = [
     description: 'Group of interactive chips for data filtering.',
     category: 'data',
     tags: ['chips', 'filter', 'data'],
-    code: `---
----
-<div class="chips-row">
-  <span class="chip-active">All Assets</span>
-  <span>Images</span>
-  <span>Videos</span>
-  <span>Docs</span>
-  <span>Music</span>
-</div>
-<style>
-  .chips-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
-  .chips-row::-webkit-scrollbar { display: none; }
-  .chips-row span { padding: 6px 16px; background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.05); color: #94a3b8; font-size: 0.8rem; border-radius: 100px; cursor: pointer; white-space: nowrap; transition: 0.2s; font-weight: 600; }
-  .chips-row span:hover { color: #fff; border-color: rgba(255, 255, 255, 0.2); }
-  .chip-active { background: #6366f1 !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
-</style>
-`,
+    code: source('data/DataChipsGroup.astro'),
     usage: `<DataChipsGroup>Content</DataChipsGroup>`,
   },
   {
@@ -407,23 +145,7 @@ export const data: ComponentDoc[] = [
     description: 'Data card showing target metric and a miniature trend graph.',
     category: 'data',
     tags: ['graph', 'stat', 'data'],
-    code: `---
----
-<div class="spark-card">
-  <div class="top"><span>Sessions</span><h3>2,415</h3></div>
-  <div class="graph">
-    <svg viewBox="0 0 100 30">
-      <path d="M0 25 L10 20 L20 22 L30 15 L40 18 L50 25 L60 10 L70 12 L80 5 L90 8 L100 2" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </div>
-</div>
-<style>
-  .spark-card { padding: 1.5rem; background: #111; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; min-width: 160px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-  h3 { margin: 4px 0; color: #fff; font-size: 1.5rem; font-weight: 800; }
-  span { font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-  .graph { margin-top: 15px; height: 30px; opacity: 0.8; }
-</style>
-`,
+    code: source('data/SparklineStatCard.astro'),
     usage: `<SparklineStatCard>Content</SparklineStatCard>`,
   },
   {
@@ -432,24 +154,7 @@ export const data: ComponentDoc[] = [
     description: 'Set of progress bars labels for small dashboards.',
     category: 'data',
     tags: ['progress', 'data', 'stat'],
-    code: `---
----
-<div class="p-list">
-  <div class="p-row"><span>Storage</span><strong>42%</strong></div>
-  <div class="p-bar"><div class="fill" style="width: 42%"></div></div>
-  <div style="margin-top: 1rem"></div>
-  <div class="p-row"><span>Bandwidth</span><strong>68%</strong></div>
-  <div class="p-bar"><div class="fill" style="width: 68%; background: #c084fc"></div></div>
-</div>
-<style>
-  .p-list { width: 100%; max-width: 300px; }
-  .p-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px; }
-  span { color: #64748b; font-weight: 600; }
-  strong { color: #fff; }
-  .p-bar { height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 100px; overflow: hidden; }
-  .fill { height: 100%; background: #6366f1; border-radius: inherit; }
-</style>
-`,
+    code: source('data/ProgressListSmall.astro'),
     usage: `<ProgressListSmall>Content</ProgressListSmall>`,
   },
   {
@@ -458,25 +163,7 @@ export const data: ComponentDoc[] = [
     description: 'List item that toggles visible child data on click.',
     category: 'data',
     tags: ['tree', 'interactive', 'data'],
-    code: `---
----
-<div class="exp-row">
-  <div class="main"><span>▶</span> Users Database</div>
-  <div class="child">
-    <p>Columns: id, name, email, avatar, status</p>
-    <p>Rows: 1,402 entries</p>
-  </div>
-</div>
-<style>
-  .exp-row { border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding: 12px; }
-  .main { color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-  .main span { font-size: 0.6rem; color: #64748b; transition: 0.3s; }
-  .child { margin-top: 12px; padding-left: 24px; color: #64748b; font-size: 0.8rem; display: none; line-height: 1.5; }
-  .exp-row:hover .main { color: #818cf8; }
-  .exp-row:hover .main span { transform: rotate(90deg); color: #818cf8; }
-  .exp-row:hover .child { display: block; }
-</style>
-`,
+    code: source('data/TreeItemInteractive.astro'),
     usage: `<TreeItemInteractive>Content</TreeItemInteractive>`,
   },
   {
@@ -485,19 +172,7 @@ export const data: ComponentDoc[] = [
     description: 'Dense grouping of status metadata for entities.',
     category: 'data',
     tags: ['metadata', 'pills', 'data'],
-    code: `---
----
-<div class="meta-row">
-  <div class="m-pill">OS:<span>MacOS</span></div>
-  <div class="m-pill">Ver:<span>14.5</span></div>
-  <div class="m-pill">Arch:<span>ARM64</span></div>
-</div>
-<style>
-  .meta-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .m-pill { background: rgba(0,0,0,0.2); color: #64748b; font-size: 0.7rem; padding: 4px 12px; border-radius: 8px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.05); }
-  span { color: #e2e8f0; margin-left: 6px; }
-</style>
-`,
+    code: source('data/KeyValuePillGroup.astro'),
     usage: `<KeyValuePillGroup>Content</KeyValuePillGroup>`,
   },
   {
@@ -506,19 +181,7 @@ export const data: ComponentDoc[] = [
     description: 'Simplified bar-based timeline for project schedules.',
     category: 'data',
     tags: ['gantt', 'project', 'data'],
-    code: `---
----
-<div class="gantt">
-  <div class="g-row"><div class="g-bar" style="width: 40%; margin-left: 10%; background: #6366f1"></div></div>
-  <div class="g-row"><div class="g-bar" style="width: 30%; margin-left: 55%; background: #c084fc"></div></div>
-  <div class="g-row"><div class="g-bar" style="width: 20%; margin-left: 20%; background: #10b981"></div></div>
-</div>
-<style>
-  .gantt { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
-  .g-row { height: 20px; position: relative; width: 100%; background: rgba(255,255,255,0.02); border-radius: 4px; }
-  .g-bar { height: 100%; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-</style>
-`,
+    code: source('data/GanttChartMinimal.astro'),
     usage: `<GanttChartMinimal>Content</GanttChartMinimal>`,
   },
   {
@@ -528,114 +191,7 @@ export const data: ComponentDoc[] = [
     category: 'data',
     tags: ["data","metric","comparison","kpi","analytics"],
     featured: true,
-    code: `---
-/**
- * MetricComparisonRow — Horizontal gauge comparing actual performance vs target benchmark with percentage badge.
- * 
- * @param {string} title - Benchmark description (e.g. 'Monthly Revenue Target').
- * @param {number} current - Current numeric value figure.
- * @param {number} target - Goal target value.
- * @param {string} unit - Unit prefix or suffix (e.g. '$', 'ms', 'users'). Default is '$'.
- * @param {string} color - Progress bar accent color. Default is '#d4a017'.
- */
-interface Props {
-  title: string;
-  current: number;
-  target: number;
-  unit?: string;
-  color?: string;
-}
-
-const {
-  title,
-  current,
-  target,
-  unit = '$',
-  color = '#d4a017',
-} = Astro.props;
-
-const percent = Math.min(100, Math.round((current / target) * 100));
----
-
-<div class="metric-row" style={\`--metric-accent: \${color};\`}>
-  <div class="metric-row__header">
-    <div class="metric-row__title-wrap">
-      <h5 class="metric-row__title">{title}</h5>
-      <span class="metric-row__ratio">{unit}{current.toLocaleString()} of {unit}{target.toLocaleString()}</span>
-    </div>
-    <span class="metric-row__badge">{percent}%</span>
-  </div>
-
-  <div class="metric-row__track" role="progressbar" aria-valuenow={current} aria-valuemax={target} aria-valuemin="0">
-    <div class="metric-row__fill" style={\`width: \${percent}%;\`}></div>
-  </div>
-</div>
-
-<style>
-  .metric-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-    max-width: 440px;
-    padding: var(--sp-4, 1rem);
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--r-md, 14px);
-    font-family: var(--font-sans, system-ui, sans-serif);
-  }
-
-  .metric-row__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-  }
-
-  .metric-row__title-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .metric-row__title {
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: var(--c-text-1, #ffffff);
-    margin: 0;
-  }
-
-  .metric-row__ratio {
-    font-size: 0.75rem;
-    color: var(--c-text-3, #737373);
-  }
-
-  .metric-row__badge {
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: var(--metric-accent);
-    background: rgba(184, 134, 11, 0.12);
-    border: 1px solid rgba(184, 134, 11, 0.3);
-    padding: 2px 8px;
-    border-radius: var(--r-full, 9999px);
-  }
-
-  .metric-row__track {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: var(--r-full, 9999px);
-    overflow: hidden;
-  }
-
-  .metric-row__fill {
-    height: 100%;
-    background: linear-gradient(90deg, #b8860b, var(--metric-accent));
-    border-radius: inherit;
-    box-shadow: 0 0 10px rgba(212, 160, 23, 0.4);
-    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-</style>
-`,
+    code: source('data/MetricComparisonRow.astro'),
     usage: `<MetricComparisonRow label="Conversion Rate" currentValue="4.82%" previousValue="3.15%" change="+53.0%" />`,
   },
   {
@@ -645,164 +201,7 @@ const percent = Math.min(100, Math.round((current / target) * 100));
     category: 'data',
     tags: ["data","heatmap","activity","github","matrix"],
     featured: true,
-    code: `---
-/**
- * ActivityHeatmapGrid — GitHub-style activity contribution matrix with intensity color levels and month labels.
- * 
- * @param {string} title - Section header label. Default is 'Commit Activity'.
- * @param {number} totalCount - Total activity events recorded. Default is 1428.
- */
-interface Props {
-  title?: string;
-  totalCount?: number;
-}
-
-const {
-  title = 'Contribution Activity',
-  totalCount = 1428,
-} = Astro.props;
-
-// Mock 16 weeks of 7 days
-const weeks = Array.from({ length: 16 }, (_, w) =>
-  Array.from({ length: 7 }, (_, d) => {
-    // Generate pseudo-random intensity 0 to 4
-    const seed = (w * 7 + d * 13 + 5) % 17;
-    if (seed < 4) return 0;
-    if (seed < 8) return 1;
-    if (seed < 12) return 2;
-    if (seed < 15) return 3;
-    return 4;
-  })
-);
-
-const months = ['Jul', 'Aug', 'Sep', 'Oct'];
----
-
-<div class="heatmap-card">
-  <div class="heatmap-card__head">
-    <div class="heatmap-card__title-wrap">
-      <h5 class="heatmap-card__title">{title}</h5>
-      <span class="heatmap-card__total">{totalCount.toLocaleString()} events in the last 4 months</span>
-    </div>
-
-    <div class="heatmap-card__legend" aria-hidden="true">
-      <span class="legend-text">Less</span>
-      <span class="cell cell--0"></span>
-      <span class="cell cell--1"></span>
-      <span class="cell cell--2"></span>
-      <span class="cell cell--3"></span>
-      <span class="cell cell--4"></span>
-      <span class="legend-text">More</span>
-    </div>
-  </div>
-
-  <div class="heatmap-card__matrix">
-    <div class="heatmap-card__months">
-      {months.map((m) => (
-        <span class="month-label">{m}</span>
-      ))}
-    </div>
-
-    <div class="heatmap-card__grid">
-      {weeks.map((week) => (
-        <div class="heatmap-col">
-          {week.map((level) => (
-            <span class:list={['cell', \`cell--\${level}\`]}></span>
-          ))}
-        </div>
-      ))}
-    </div>
-  </div>
-</div>
-
-<style>
-  .heatmap-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: var(--sp-6, 1.5rem);
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--r-xl, 20px);
-    width: 100%;
-    max-width: 480px;
-    font-family: var(--font-sans, system-ui, sans-serif);
-  }
-
-  .heatmap-card__head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .heatmap-card__title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--c-text-1, #ffffff);
-    margin: 0 0 2px 0;
-  }
-
-  .heatmap-card__total {
-    font-size: 0.75rem;
-    color: var(--c-text-3, #737373);
-  }
-
-  .heatmap-card__legend {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.7rem;
-    color: var(--c-text-3, #737373);
-  }
-
-  .heatmap-card__matrix {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .heatmap-card__months {
-    display: flex;
-    justify-content: space-between;
-    padding: 0 4px;
-    font-size: 0.68rem;
-    color: var(--c-text-3, #737373);
-    font-weight: 600;
-  }
-
-  .heatmap-card__grid {
-    display: flex;
-    gap: 4px;
-  }
-
-  .heatmap-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .cell {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    transition: transform 0.15s ease;
-  }
-
-  .heatmap-card__grid .cell:hover {
-    transform: scale(1.3);
-  }
-
-  .cell--0 { background: rgba(255, 255, 255, 0.05); }
-  .cell--1 { background: rgba(184, 134, 11, 0.25); }
-  .cell--2 { background: rgba(184, 134, 11, 0.55); }
-  .cell--3 { background: rgba(212, 160, 23, 0.85); }
-  .cell--4 { background: #fef3c7; box-shadow: 0 0 6px rgba(254, 243, 199, 0.6); }
-</style>
-`,
+    code: source('data/ActivityHeatmapGrid.astro'),
     usage: `<ActivityHeatmapGrid title="Contribution Activity" weeks={16} />`,
   },
   {
@@ -812,175 +211,7 @@ const months = ['Jul', 'Aug', 'Sep', 'Oct'];
     category: 'data',
     tags: ["data","timeline","status","audit","feed"],
     featured: false,
-    code: `---
-/**
- * StatusTimelineFeed — Chronological event audit feed with status icons, timestamps, and detail lines.
- * 
- * @param {Array<{title: string, desc: string, time: string, status: 'done' | 'active' | 'pending'}>} events - Timeline events.
- */
-interface Props {
-  events?: Array<{
-    title: string;
-    desc: string;
-    time: string;
-    status: 'done' | 'active' | 'pending';
-  }>;
-}
-
-const {
-  events = [
-    {
-      title: 'Production Deployment #104',
-      desc: 'Container vtzmu4t7 synchronized with latest Git commit.',
-      time: 'Just now',
-      status: 'done',
-    },
-    {
-      title: 'Automated Playwright Audits',
-      desc: 'All 214 pages verified with 0 visual regressions.',
-      time: '12 mins ago',
-      status: 'done',
-    },
-    {
-      title: 'Edge Cache Invalidation',
-      desc: 'Purging stale Cloudflare and Traefik edge routes.',
-      time: 'In progress',
-      status: 'active',
-    },
-    {
-      title: 'Global CDN Replication',
-      desc: 'Waiting for European and US west points of presence.',
-      time: 'Queued',
-      status: 'pending',
-    },
-  ],
-} = Astro.props;
----
-
-<div class="status-feed">
-  <div class="status-feed__line" aria-hidden="true"></div>
-  {events.map((evt) => (
-    <div class:list={['status-feed__item', \`status-feed__item--\${evt.status}\`]}>
-      <div class="status-feed__bullet">
-        {evt.status === 'done' && '✓'}
-        {evt.status === 'active' && '●'}
-        {evt.status === 'pending' && '○'}
-      </div>
-      <div class="status-feed__content">
-        <div class="status-feed__header">
-          <h5 class="status-feed__title">{evt.title}</h5>
-          <span class="status-feed__time">{evt.time}</span>
-        </div>
-        <p class="status-feed__desc">{evt.desc}</p>
-      </div>
-    </div>
-  ))}
-</div>
-
-<style>
-  .status-feed {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    max-width: 440px;
-    font-family: var(--font-sans, system-ui, sans-serif);
-    padding: 4px 0;
-  }
-
-  .status-feed__line {
-    position: absolute;
-    top: 14px;
-    bottom: 14px;
-    left: 12px;
-    width: 2px;
-    background: rgba(255, 255, 255, 0.08);
-    pointer-events: none;
-  }
-
-  .status-feed__item {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .status-feed__bullet {
-    position: relative;
-    z-index: 2;
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #0a0a0e;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    font-size: 0.75rem;
-    font-weight: 900;
-    flex-shrink: 0;
-    color: var(--c-text-3, #737373);
-  }
-
-  .status-feed__item--done .status-feed__bullet {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: #10b981;
-    color: #10b981;
-  }
-
-  .status-feed__item--active .status-feed__bullet {
-    background: rgba(212, 160, 23, 0.2);
-    border-color: var(--c-primary-light, #d4a017);
-    color: var(--c-primary-light, #d4a017);
-    box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
-    animation: status-pulse 2s infinite ease-in-out;
-  }
-
-  .status-feed__content {
-    flex: 1;
-    padding: 0.65rem 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--r-md, 12px);
-    transition: border-color 0.2s ease;
-  }
-
-  .status-feed__content:hover {
-    border-color: rgba(184, 134, 11, 0.3);
-  }
-
-  .status-feed__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2px;
-  }
-
-  .status-feed__title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--c-text-1, #ffffff);
-    margin: 0;
-  }
-
-  .status-feed__time {
-    font-size: 0.7rem;
-    color: var(--c-text-3, #737373);
-  }
-
-  .status-feed__desc {
-    font-size: 0.78rem;
-    color: var(--c-text-2, #a3a3a3);
-    margin: 0;
-    line-height: 1.45;
-  }
-
-  @keyframes status-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-  }
-</style>
-`,
+    code: source('data/StatusTimelineFeed.astro'),
     usage: `<StatusTimelineFeed events={[{ title: 'Deployment Success', timestamp: '10m ago', status: 'success', description: 'Production bundle compiled with 0 errors.' }]} />`,
   },
 ];

@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -21,17 +28,27 @@ const {
   type = 'button', 
   variant = 'primary', 
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`double-border-btn double-border-btn--${variant} double-border-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`double-border-btn double-border-btn--${variant} double-border-btn--${size}`,
+    classAttr,
+  ]}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="double-border-btn__content"><slot /></span>
 </Tag>
@@ -80,29 +97,30 @@ const Tag = href ? 'a' : 'button';
     opacity: 0.5;
   }
 
-  .double-border-btn:hover:not(:disabled) {
+  .double-border-btn:hover:not(:disabled, [aria-disabled='true']) {
     color: var(--hover-color);
     border-color: var(--hover-color);
     transform: translate(calc(var(--offset) * -0.5), calc(var(--offset) * -0.5));
   }
 
-  .double-border-btn:hover:not(:disabled)::before {
+  .double-border-btn:hover:not(:disabled, [aria-disabled='true'])::before {
     top: calc(var(--offset) * 1.5);
     left: calc(var(--offset) * 1.5);
     border-color: var(--hover-color);
     opacity: 1;
   }
 
-  .double-border-btn:active:not(:disabled) {
+  .double-border-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translate(0, 0);
   }
 
-  .double-border-btn:active:not(:disabled)::before {
+  .double-border-btn:active:not(:disabled, [aria-disabled='true'])::before {
     top: 0;
     left: 0;
   }
 
-  .double-border-btn:disabled {
+  .double-border-btn:disabled,
+  .double-border-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);

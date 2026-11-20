@@ -9,7 +9,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   primaryColor?: string;
@@ -24,18 +31,28 @@ const {
   primaryColor = '#6366f1',
   secondaryColor = '#c084fc',
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`ghost-grad-btn ghost-grad-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`ghost-grad-btn ghost-grad-btn--${size}`,
+    classAttr,
+  ]}
   style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="ghost-grad-btn__text"><slot /></span>
 </Tag>
@@ -70,7 +87,7 @@ const Tag = href ? 'a' : 'button';
     transition: opacity 0.3s ease;
   }
 
-  .ghost-grad-btn:hover:not(:disabled)::before {
+  .ghost-grad-btn:hover:not(:disabled, [aria-disabled='true'])::before {
     opacity: 0.8;
   }
 
@@ -86,21 +103,22 @@ const Tag = href ? 'a' : 'button';
     transition: background 0.3s ease, color 0.3s ease;
   }
 
-  .ghost-grad-btn:hover:not(:disabled) .ghost-grad-btn__text {
+  .ghost-grad-btn:hover:not(:disabled, [aria-disabled='true']) .ghost-grad-btn__text {
     background: transparent;
     color: #fff;
   }
 
-  .ghost-grad-btn:hover:not(:disabled) {
+  .ghost-grad-btn:hover:not(:disabled, [aria-disabled='true']) {
     box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--primary-color), transparent 50%);
     transform: translateY(-1px);
   }
 
-  .ghost-grad-btn:active:not(:disabled) {
+  .ghost-grad-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.98);
   }
 
-  .ghost-grad-btn:disabled {
+  .ghost-grad-btn:disabled,
+  .ghost-grad-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);

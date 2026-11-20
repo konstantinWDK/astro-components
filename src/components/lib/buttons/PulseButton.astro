@@ -9,7 +9,14 @@
  * @param {string} color - Optional. Brand tone base for pulsating aura.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -24,18 +31,28 @@ const {
   variant = 'primary', 
   size = 'md',
   color = '#8b5cf6',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`pulse-btn pulse-btn--${variant} pulse-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`pulse-btn pulse-btn--${variant} pulse-btn--${size}`,
+    classAttr,
+  ]}
   style={`--pulse-color: ${color}`}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <slot />
 </Tag>
@@ -79,16 +96,17 @@ const Tag = href ? 'a' : 'button';
     100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse-color), transparent 100%); }
   }
 
-  .pulse-btn:hover:not(:disabled) {
+  .pulse-btn:hover:not(:disabled, [aria-disabled='true']) {
     transform: scale(1.05);
     filter: brightness(110%);
   }
 
-  .pulse-btn:active:not(:disabled) {
+  .pulse-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.98);
   }
 
-  .pulse-btn:disabled {
+  .pulse-btn:disabled,
+  .pulse-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     animation: none;

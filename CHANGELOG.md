@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-20
+
+### ⚠ Breaking
+- **`OverlayModal`, `SideDrawerRight` and `BottomSheetMobile` are now real dialogs** built on the native `<dialog>` (`showModal()`): they need an `id`, stay closed until opened and are opened with `data-dialog-open="<id>"` on any element (close with `data-dialog-close`, Escape or the backdrop). Previously they were always-visible static mockups. Pass `open` to show one on page load. New props: `title`, `description` (modal and sheet), `variant` (`glass` | `solid` | `minimal`), `size` (`sm` | `md` | `lg`), `closeOnBackdrop`, `closeLabel`, `side` (drawer: `right` | `left`); new `footer` slot.
+
+### Added
+- **Copy components into your project**: `npx astro-component-kit add <component...> [--dir] [--force] [--dry-run]` copies a component plus the local files it imports and flags peer dependencies; `npx astro-component-kit list [category]` lists them.
+- **Split stylesheets**: `astro-component-kit/tokens.css` (CSS variables only, no side effects), `base.css` (reset and page styles, layer-friendly) and `fonts.css` (Google Fonts). `global.css` still bundles all three.
+- **Native attributes and `class` on buttons, forms and cards** (and the cookie drawer, feedback widget and image-compare slider): props extend `HTMLAttributes` and `...rest` is forwarded to the root element or, for form fields, to the native `<input>` / `<select>` / `<textarea>`. `className` keeps working.
+- Buttons accept `target` and `rel` when rendering a link.
+- `npm run registry:check` and a CI workflow (registry check, typecheck, build, pack) on every pull request.
+
+### Fixed
+- Docs and MCP code blocks for 188 components (buttons, cards, forms, navigation, overlays, feedback, data, typography, charts) were out of date copies; the registry now reads the shipped `.astro` files, so they always match.
+- Disabled buttons rendered as links stayed clickable; they now drop `href` and set `aria-disabled`, styled like `:disabled`. `LoadingButton` sets `aria-busy` while loading.
+- `NeonBorderButton`, `RippleButton` and `SlideRevealButton` had no `type`, so inside a form they submitted it; they now default to `type="button"`.
+- Decorative layers (shimmers, glows, spinners, SVG filters, sliders) are hidden from screen readers with `aria-hidden`.
+- The `FloatingFeedbackWidget` textarea had no visible keyboard focus.
+- MCP server: reported the version and design tokens of the *current directory's* package when launched with `npx` from another project; it now resolves its own files. The token guide listed variables that don't exist and wrong radii.
+
 ## [0.6.1] - 2026-11-07
 
 ### Added — Futuristic-brutalist cyberpunk template ("NULL/SECTOR")

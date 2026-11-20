@@ -9,6 +9,9 @@ import AnimatedInput from '../lib/forms/AnimatedInput.astro';
 import Badge from '../lib/feedback/Badge.astro';
 import GlassNavbar from '../lib/navigation/GlassNavbar.astro';
 import NeumorphicSwitch from '../lib/forms/NeumorphicSwitch.astro';
+import OverlayModal from '../lib/overlays/OverlayModal.astro';
+import SideDrawerRight from '../lib/overlays/SideDrawerRight.astro';
+import BottomSheetMobile from '../lib/overlays/BottomSheetMobile.astro';
 import { getComponentBySlug } from '../../data/registry/index';
 import { ecommercePreview } from './ecommerce-previews';
 
@@ -417,53 +420,59 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
   )}
 
   {slug === 'overlay-modal' && (
-    <div class="preview-demo preview-demo--col">
-      <div class="overlay-preview">
-        <div class="overlay-preview-bg"></div>
-        <div class="overlay-preview-modal">
-          <div class="overlay-preview-close">×</div>
-          <h4 class="overlay-preview-title">Confirm Action</h4>
-          <p class="overlay-preview-text">Are you sure you want to proceed with this sensitive operation?</p>
-          <div class="overlay-preview-actions">
-            <button class="overlay-btn overlay-btn--cancel">Cancel</button>
-            <button class="overlay-btn overlay-btn--confirm">Continue</button>
-          </div>
-        </div>
-      </div>
+    <div class="preview-demo">
+      <GlassButton data-dialog-open="demo-modal">Delete project</GlassButton>
+      <GlassButton variant="secondary" data-dialog-open="demo-modal-lg">Open large modal</GlassButton>
+      <OverlayModal id="demo-modal" size="sm" title="Delete project?" description="This permanently removes the workspace and its 24 files.">
+        <Fragment slot="footer">
+          <GlassButton variant="ghost" size="sm" data-dialog-close="cancel">Cancel</GlassButton>
+          <GlassButton size="sm" data-dialog-close="confirm">Delete</GlassButton>
+        </Fragment>
+      </OverlayModal>
+      <OverlayModal id="demo-modal-lg" size="lg" variant="solid" title="Release notes">
+        <p>Modals are native &lt;dialog&gt; elements: focus stays inside, Escape or the backdrop closes them, and focus returns to the button that opened them.</p>
+        <Fragment slot="footer">
+          <GlassButton size="sm" data-dialog-close>Got it</GlassButton>
+        </Fragment>
+      </OverlayModal>
     </div>
   )}
 
   {slug === 'side-drawer-right' && (
-    <div class="preview-demo preview-demo--col">
-      <div class="drawer-preview">
-        <div class="drawer-preview-bg"></div>
-        <div class="drawer-preview-panel">
-          <div class="drawer-preview-header">
-            <h4 class="drawer-preview-title">Filters</h4>
-            <span class="drawer-preview-close">×</span>
-          </div>
-          <div class="drawer-preview-body">
-            <div class="drawer-preview-item">Category</div>
-            <div class="drawer-preview-item">Price Range</div>
-            <div class="drawer-preview-item">Rating</div>
-          </div>
+    <div class="preview-demo">
+      <GlassButton data-dialog-open="demo-drawer">Open filters</GlassButton>
+      <GlassButton variant="secondary" data-dialog-open="demo-drawer-left">Open menu (left)</GlassButton>
+      <SideDrawerRight id="demo-drawer" title="Filters">
+        <div class="drawer-demo-list">
+          <AnimatedInput id="demo-drawer-search" label="Search products" />
+          <NeumorphicSwitch id="demo-drawer-stock" label="In stock only" />
+          <NeumorphicSwitch id="demo-drawer-sale" label="On sale" />
         </div>
-      </div>
+        <Fragment slot="footer">
+          <GlassButton variant="ghost" size="sm" data-dialog-close>Reset</GlassButton>
+          <GlassButton size="sm" data-dialog-close>Show results</GlassButton>
+        </Fragment>
+      </SideDrawerRight>
+      <SideDrawerRight id="demo-drawer-left" side="left" size="sm" variant="glass" title="Menu">
+        <nav aria-label="Demo menu" class="drawer-demo-list">
+          <a href="#">Dashboard</a>
+          <a href="#">Projects</a>
+          <a href="#">Settings</a>
+        </nav>
+      </SideDrawerRight>
     </div>
   )}
 
   {slug === 'bottom-sheet-mobile' && (
-    <div class="preview-demo preview-demo--col">
-      <div class="sheet-preview">
-        <div class="sheet-preview-bg"></div>
-        <div class="sheet-preview-content">
-          <div class="sheet-handle"></div>
-          <h4 class="sheet-preview-title">Select Option</h4>
-          <div class="sheet-item">Archive</div>
-          <div class="sheet-item">Delete</div>
-          <div class="sheet-item">Share</div>
-        </div>
-      </div>
+    <div class="preview-demo">
+      <GlassButton data-dialog-open="demo-sheet">Share file</GlassButton>
+      <BottomSheetMobile id="demo-sheet" title="Share “Q3 report.pdf”" description="Choose how you want to send it.">
+        <Fragment slot="footer">
+          <GlassButton data-dialog-close="link">Copy link</GlassButton>
+          <GlassButton variant="secondary" data-dialog-close="email">Send by email</GlassButton>
+          <GlassButton variant="ghost" data-dialog-close>Cancel</GlassButton>
+        </Fragment>
+      </BottomSheetMobile>
     </div>
   )}
 
@@ -810,6 +819,9 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
 </div>
 
 <style>
+  .drawer-demo-list { display: grid; gap: var(--sp-4, 1rem); }
+  .drawer-demo-list a { display: block; padding: var(--sp-3, 0.75rem) 0; color: var(--c-text-1); }
+
   .preview-renderer {
     width: 100%;
     min-height: 120px;
@@ -1063,81 +1075,6 @@ const fallbackLabel = componentMeta?.name ?? pascalSlug;
   .toast-preview-content { display: flex; flex-direction: column; gap: 0.15rem; }
   .toast-preview-title { font-weight: 700; font-size: 0.85rem; color: var(--c-text-1); }
   .toast-preview-body { font-size: 0.8rem; color: var(--c-text-2); }
-
-  /* Overlay previews */
-  .overlay-preview {
-    position: relative; width: 100%; min-height: 200px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 0.75rem; overflow: hidden;
-  }
-  .overlay-preview-bg {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-  }
-  .overlay-preview-modal {
-    position: relative; z-index: 1;
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 1.5rem; padding: 1.5rem; width: 90%; max-width: 320px;
-  }
-  .overlay-preview-close {
-    position: absolute; top: 0.75rem; right: 0.75rem;
-    color: #94a3b8; font-size: 1.25rem; cursor: pointer;
-  }
-  .overlay-preview-title {
-    margin: 0 0 0.75rem; color: #fff; font-size: 1rem; font-weight: 700;
-  }
-  .overlay-preview-text {
-    color: #94a3b8; font-size: 0.8rem; line-height: 1.5; margin: 0 0 1.25rem;
-  }
-  .overlay-preview-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-  .overlay-btn {
-    padding: 0.5rem 1rem; border-radius: 0.5rem; border: none;
-    font-weight: 700; font-size: 0.8rem; cursor: pointer;
-  }
-  .overlay-btn--cancel { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-  .overlay-btn--confirm { background: #6366f1; color: #fff; }
-
-  /* Drawer preview */
-  .drawer-preview {
-    position: relative; width: 100%; height: 280px; border-radius: 0.75rem; overflow: hidden;
-  }
-  .drawer-preview-bg {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-  }
-  .drawer-preview-panel {
-    position: absolute; top: 0; right: 0; bottom: 0; width: 65%;
-    background: #080b14; border-left: 1px solid rgba(255,255,255,0.1);
-    padding: 1.25rem; display: flex; flex-direction: column;
-  }
-  .drawer-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-  .drawer-preview-title { color: #fff; font-size: 0.95rem; font-weight: 700; margin: 0; }
-  .drawer-preview-close { color: #94a3b8; font-size: 1.25rem; cursor: pointer; }
-  .drawer-preview-body { display: flex; flex-direction: column; gap: 0.5rem; }
-  .drawer-preview-item {
-    padding: 0.75rem; border-radius: 0.5rem;
-    background: rgba(255,255,255,0.03); color: #e2e8f0; font-size: 0.8rem;
-  }
-
-  /* Sheet preview */
-  .sheet-preview {
-    position: relative; width: 100%; height: 280px; border-radius: 0.75rem; overflow: hidden;
-  }
-  .sheet-preview-bg {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-  }
-  .sheet-preview-content {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: #0f172a; border-radius: 1rem 1rem 0 0; padding: 1.25rem;
-  }
-  .sheet-handle { width: 2.5rem; height: 0.25rem; background: #334155; border-radius: 0.125rem; margin: 0 auto 1rem; }
-  .sheet-preview-title { color: #fff; text-align: center; margin: 0 0 1rem; font-size: 0.95rem; font-weight: 700; }
-  .sheet-item {
-    padding: 0.875rem; color: #e2e8f0; font-size: 0.85rem;
-    border-bottom: 1px solid #1e293b; text-align: center;
-  }
-  .sheet-item:last-child { border-bottom: none; }
 
   /* Popover preview */
   .popover-preview {

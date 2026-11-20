@@ -9,7 +9,9 @@
  * @param {string} duration - Total track duration. Default is '3:45'.
  * @param {number} progress - Playback progress representation (0 to 100). Default is 42.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   artist?: string;
   coverUrl?: string;
@@ -18,6 +20,12 @@ interface Props {
   progress?: number;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Midnight Synth Echoes',
   artist = 'Solaris & Stellar',
@@ -25,10 +33,12 @@ const {
   currentTime = '1:28',
   duration = '3:45',
   progress = 42,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="music-mini" role="region" aria-label={`Audio Player: ${title} by ${artist}`}>
+<div {...rest} class:list={['music-mini', classAttr]} role="region" aria-label={`Audio Player: ${title} by ${artist}`}>
   <div class="music-mini__top">
     <div class="music-mini__art-wrap">
       {coverUrl ? (

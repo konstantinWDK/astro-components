@@ -8,7 +8,9 @@
  * @param {string} status - System operational status. Default is 'ACTIVE'.
  * @param {string} accentColor - Neon accent color. Default is 'var(--c-primary, #6366f1)'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   subtitle?: string;
   tag?: string;
@@ -16,16 +18,24 @@ interface Props {
   accentColor?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Quantum Protocol Engine',
   subtitle = 'Zero-knowledge cryptographic handshake executing directly on distributed edge nodes with quantum resistance.',
   tag = 'SYS.CYBER // 01',
   status = 'ONLINE',
   accentColor = 'var(--c-primary, #6366f1)',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="cyber-card" style={`--cyber-accent: ${accentColor};`}>
+<div {...rest} class:list={['cyber-card', classAttr]} style={`--cyber-accent: ${accentColor};`}>
   <div class="cyber-card__scanline" aria-hidden="true"></div>
   <div class="cyber-card__glow-spot" aria-hidden="true"></div>
 

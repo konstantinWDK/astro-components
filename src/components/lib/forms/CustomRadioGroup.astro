@@ -7,17 +7,25 @@
  * @param {Array<{label: string, value: string, checked?: boolean}>} options - List of choices.
  * @param {boolean} horizontal - Layout orientation. Default is false (vertical).
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   name: string;
   options: Array<{ label: string; value: string; checked?: boolean }>;
   horizontal?: boolean;
 }
 
-const { label, name, options = [], horizontal = false } = Astro.props;
+/** Own props plus any native <fieldset> attribute (aria-*, data-*, autocomplete…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'fieldset'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, name, options = [], horizontal = false, class: classAttr, ...rest } = Astro.props;
 ---
 
-<fieldset class:list={["radio-group", { "radio-group--horizontal": horizontal }]}>
+<fieldset {...rest} class:list={["radio-group", { "radio-group--horizontal": horizontal }, classAttr]}>
   {label && <legend class="radio-group-legend">{label}</legend>}
   <div class="radio-items">
     {options.map((opt, i) => (

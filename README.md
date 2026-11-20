@@ -86,7 +86,39 @@ import 'astro-component-kit/global.css';
 ---
 ```
 
-### Option 2: Copy & Paste from Docs
+`global.css` bundles fonts + tokens + base page styles. Adding the kit to an **existing site**? Import only what you need so your own styles stay in control:
+
+```astro
+---
+import 'astro-component-kit/tokens.css'; // CSS variables only — no side effects
+import 'astro-component-kit/fonts.css';  // optional: Inter + JetBrains Mono (Google Fonts)
+---
+```
+
+```css
+/* optional: reset + body/heading/link styles, layered so your CSS always wins */
+@import 'astro-component-kit/base.css' layer(ack-base);
+```
+
+Buttons, forms, cards and interactive overlays accept `class` and native HTML attributes (`aria-*`, `data-*`, `target`, `autocomplete`…), forwarded to the root element or the native control:
+
+```astro
+<GlassButton href="/docs" target="_blank" rel="noopener" class="hero-cta" data-track="cta">Docs</GlassButton>
+<AnimatedInput id="email" label="Email" type="email" autocomplete="email" class="w-full" required />
+```
+
+> The remaining categories are being migrated to the same API.
+
+### Option 2: Copy components into your project (CLI)
+
+Own the code, shadcn-style — the CLI copies the component plus any local file it imports:
+
+```bash
+npx astro-component-kit add glass-button animated-input --dir src/components/ui
+npx astro-component-kit list buttons
+```
+
+### Option 3: Copy & Paste from Docs
 
 1. Visit [astrocomponents.dev](https://astrocomponents.dev)
 2. Browse the component library or templates
@@ -94,7 +126,7 @@ import 'astro-component-kit/global.css';
 4. Paste into your `src/components/` directory
 5. Import and use in your Astro pages
 
-### Option 3: Clone & Run Locally
+### Option 4: Clone & Run Locally
 
 ```bash
 git clone https://github.com/konstantinwdk/astro-components.git

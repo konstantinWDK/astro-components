@@ -9,7 +9,9 @@
  * @param {string} name - Form data extraction name binding.
  * @param {boolean} required - HTML required indicator.
  */
-interface Props { 
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps { 
   label: string; 
   id: string; 
   rows?: number;
@@ -18,12 +20,18 @@ interface Props {
   required?: boolean;
 }
 
-const { label, id, rows = 4, placeholder = "Start typing...", name, required = false } = Astro.props;
+/** Own props plus any native <textarea> attribute (aria-*, data-*, autocomplete…), forwarded to the <textarea>. */
+type Props = OwnProps & Omit<HTMLAttributes<'textarea'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, rows = 4, placeholder = "Start typing...", name, required = false, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="glass-textarea-wrap">
+<div class:list={['glass-textarea-wrap', classAttr]}>
   <label for={id} class="glass-label">{label}</label>
-  <textarea {id} {name} {rows} {placeholder} {required} class="glass-textarea"></textarea>
+  <textarea {...rest} {id} {name} {rows} {placeholder} {required} class="glass-textarea"></textarea>
 </div>
 
 <style>

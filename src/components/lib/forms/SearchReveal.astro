@@ -6,17 +6,25 @@
  * @param {string} placeholder - Default placeholder ("Search...").
  * @param {string} name - Standard HTML name grouping.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   id: string;
   placeholder?: string;
   name?: string;
 }
 
-const { id, placeholder = "Search...", name } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { id, placeholder = "Search...", name, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="search-box">
-  <input type="search" {id} {name} {placeholder} class="search-input" aria-label="Search content" />
+<div class:list={['search-box', classAttr]}>
+  <input {...rest} type="search" {id} {name} {placeholder} class="search-input" aria-label="Search content" />
   <button type="button" aria-label="Submit search" class="search-btn">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="8"></circle>

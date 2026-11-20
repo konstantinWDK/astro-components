@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   color?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
@@ -16,15 +23,21 @@ interface Props {
   disabled?: boolean;
 }
 
-const { color = '#6366f1', href, type = 'button', size = 'md', disabled = false } = Astro.props;
+const { color = '#6366f1', href, type = 'button', size = 'md', disabled = false, class: classAttr, target, rel, ...rest } = Astro.props;
 const Tag = href ? 'a' : 'button';
 ---
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`glow-btn glow-btn--${size}`} 
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`glow-btn glow-btn--${size}`,
+    classAttr,
+  ]} 
   style={`--btn-color: ${color}`}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="glow-btn__content"><slot /></span>
 </Tag>
@@ -88,27 +101,28 @@ const Tag = href ? 'a' : 'button';
     z-index: -2;
   }
 
-  .glow-btn:hover:not(:disabled) {
+  .glow-btn:hover:not(:disabled, [aria-disabled='true']) {
     transform: translateY(-3px) scale(1.03);
     box-shadow: 
       0 0 20px color-mix(in srgb, var(--glow-color), transparent 40%),
       0 0 40px color-mix(in srgb, var(--glow-color), transparent 70%);
   }
 
-  .glow-btn:hover:not(:disabled)::before {
+  .glow-btn:hover:not(:disabled, [aria-disabled='true'])::before {
     opacity: 0.4;
   }
 
-  .glow-btn:hover:not(:disabled)::after {
+  .glow-btn:hover:not(:disabled, [aria-disabled='true'])::after {
     opacity: 0.7;
     animation: animate-glow 2.5s ease-in-out infinite;
   }
 
-  .glow-btn:active:not(:disabled) {
+  .glow-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translateY(1px) scale(0.98);
   }
 
-  .glow-btn:disabled {
+  .glow-btn:disabled,
+  .glow-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);

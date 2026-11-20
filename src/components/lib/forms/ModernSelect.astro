@@ -8,7 +8,9 @@
  * @param {Array<{label: string, value: string, disabled?: boolean}>} options - List of select options.
  * @param {boolean} required - HTML required attribute.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label: string;
   id: string;
   name?: string;
@@ -16,13 +18,19 @@ interface Props {
   required?: boolean;
 }
 
-const { label, id, name, options = [], required = false } = Astro.props;
+/** Own props plus any native <select> attribute (aria-*, data-*, autocomplete…), forwarded to the <select>. */
+type Props = OwnProps & Omit<HTMLAttributes<'select'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, name, options = [], required = false, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="select-container">
+<div class:list={['select-container', classAttr]}>
   <label for={id} class="select-label">{label}</label>
   <div class="select-wrap">
-    <select class="custom-select" {id} {name} {required}>
+    <select {...rest} class="custom-select" {id} {name} {required}>
       {options.map(opt => (
         <option value={opt.value} disabled={opt.disabled}>{opt.label}</option>
       ))}

@@ -9,7 +9,14 @@
  * @param {number} strength - Optional. How intense the magnetic pull effect is. Default is 40.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -24,18 +31,28 @@ const {
   variant = 'secondary', 
   size = 'md',
   strength = 0.5,
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`magnetic-btn magnetic-btn--${variant} magnetic-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`magnetic-btn magnetic-btn--${variant} magnetic-btn--${size}`,
+    classAttr,
+  ]}
   data-strength={strength}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="magnetic-btn__inner">
     <slot />
@@ -90,11 +107,12 @@ const Tag = href ? 'a' : 'button';
     border: 1px solid rgba(99, 102, 241, 0.3);
   }
 
-  .magnetic-btn:hover:not(:disabled) {
+  .magnetic-btn:hover:not(:disabled, [aria-disabled='true']) {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
 
-  .magnetic-btn:disabled {
+  .magnetic-btn:disabled,
+  .magnetic-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);

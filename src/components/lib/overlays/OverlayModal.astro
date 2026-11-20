@@ -1,24 +1,321 @@
 ---
+/**
+ * OverlayModal — Accessible modal dialog built on the native <dialog> element.
+ *
+ * Uses `showModal()`, so the browser provides focus trapping, Escape to close,
+ * top-layer rendering (no z-index fights) and focus return to the trigger.
+ *
+ * Open it from any element with `data-dialog-open="<id>"`; close it with any
+ * element inside carrying `data-dialog-close` (its value becomes the dialog's
+ * `returnValue`), with Escape, or by clicking the backdrop. From JS:
+ * `document.getElementById(id).showModal()` / `.close()`; listen to the
+ * native `close` event to react.
+ *
+ * @param {string} id - Required. Dialog id, referenced by `data-dialog-open`.
+ * @param {string} title - Heading shown at the top; labels the dialog for screen readers.
+ * @param {string} description - Optional supporting text below the title (aria-describedby).
+ * @param {'glass'|'solid'|'minimal'} variant - Visual style. Default 'glass'.
+ * @param {'sm'|'md'|'lg'} size - Max width: 400 / 520 / 720px. Default 'md'.
+ * @param {boolean} open - Open on page load. Default false.
+ * @param {boolean} closeOnBackdrop - Close when the backdrop is clicked. Default true.
+ * @param {boolean} hideClose - Hide the × button (keep another way to close!). Default false.
+ * @param {string} closeLabel - Accessible label of the × button. Default 'Close'.
+ * @param {string} class - Extra classes for the <dialog>.
+ *
+ * Slots: default (body), `footer` (actions, right-aligned).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
+  id: string;
+  title?: string;
+  description?: string;
+  variant?: 'glass' | 'solid' | 'minimal';
+  size?: 'sm' | 'md' | 'lg';
+  open?: boolean;
+  closeOnBackdrop?: boolean;
+  hideClose?: boolean;
+  closeLabel?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'dialog'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the <dialog>. */
+  class?: string;
+};
+
+const {
+  id,
+  title,
+  description,
+  variant = 'glass',
+  size = 'md',
+  open = false,
+  closeOnBackdrop = true,
+  hideClose = false,
+  closeLabel = 'Close',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const titleId = title ? `${id}-title` : undefined;
+const descId = description ? `${id}-desc` : undefined;
+const hasFooter = Astro.slots.has('footer');
 ---
-<div class="modal-overlay">
-  <div class="modal-card anim-scale-up">
-    <div class="modal-close">×</div>
-    <h3>Confirm Action</h3>
-    <p>Are you sure you want to proceed with this sensitive operation?</p>
-    <div class="modal-actions">
-      <button class="cancel">Cancel</button>
-      <button class="confirm">Continue</button>
+
+<dialog
+  {...rest}
+  id={id}
+  class:list={['ack-dialog', 'ack-modal', `ack-modal--${variant}`, `ack-modal--${size}`, classAttr]}
+  aria-labelledby={titleId}
+  aria-describedby={descId}
+  data-close-on-backdrop={closeOnBackdrop ? undefined : 'false'}
+  data-open-on-load={open ? '' : undefined}
+>
+  <div class="ack-modal__panel">
+    {(title || !hideClose) && (
+      <header class="ack-modal__header">
+        {title && <h2 id={titleId} class="ack-modal__title">{title}</h2>}
+        {!hideClose && (
+          <button type="button" class="ack-modal__close" aria-label={closeLabel} data-dialog-close>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </header>
+    )}
+    {description && <p id={descId} class="ack-modal__desc">{description}</p>}
+    <div class="ack-modal__body">
+      <slot />
     </div>
+    {hasFooter && (
+      <footer class="ack-modal__footer">
+        <slot name="footer" />
+      </footer>
+    )}
   </div>
-</div>
+</dialog>
+
+<script>
+  // Shared by OverlayModal, SideDrawerRight and BottomSheetMobile: a single
+  // delegated listener per page, so it works with View Transitions and with
+  // any number of dialogs without re-binding.
+  const w = window as Window & { __ackDialogs?: boolean };
+  if (!w.__ackDialogs) {
+    w.__ackDialogs = true;
+    let pressedOnBackdrop = false;
+
+    document.addEventListener('pointerdown', (event) => {
+      const t = event.target;
+      pressedOnBackdrop = t instanceof HTMLDialogElement && t.classList.contains('ack-dialog');
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as Element | null;
+      if (!target) return;
+
+      const opener = target.closest<HTMLElement>('[data-dialog-open]');
+      if (opener) {
+        const dialog = document.getElementById(opener.dataset.dialogOpen ?? '');
+        if (dialog instanceof HTMLDialogElement && !dialog.open) {
+          event.preventDefault();
+          dialog.showModal();
+        }
+        return;
+      }
+
+      const closer = target.closest('[data-dialog-close]');
+      const parent = target.closest('dialog.ack-dialog');
+      if (closer && parent instanceof HTMLDialogElement) {
+        parent.close(closer.getAttribute('data-dialog-close') || '');
+        return;
+      }
+
+      // A click on the backdrop targets the <dialog> itself (the panel fills it).
+      if (
+        pressedOnBackdrop &&
+        target instanceof HTMLDialogElement &&
+        target.classList.contains('ack-dialog') &&
+        target.dataset.closeOnBackdrop !== 'false'
+      ) {
+        target.close();
+      }
+    });
+
+    const openOnLoad = () => {
+      document
+        .querySelectorAll<HTMLDialogElement>('dialog.ack-dialog[data-open-on-load]')
+        .forEach((d) => { if (!d.open) d.showModal(); });
+    };
+    document.addEventListener('astro:page-load', openOnLoad);
+    openOnLoad();
+  }
+</script>
+
 <style>
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: grid; place-items: center; z-index: 1000; }
-  .modal-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 2rem; width: 90%; max-width: 400px; box-shadow: 0 40px 100px rgba(0,0,0,0.5); position: relative; }
-  .modal-close { position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: #94a3b8; font-size: 1.5rem; }
-  h3 { margin: 0 0 1rem; color: #fff; }
-  p { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
-  button { padding: 0.6rem 1.25rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
-  .cancel { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-  .confirm { background: #6366f1; color: #fff; }
+  /* Lock page scroll while any kit dialog is open. */
+  :global(html:has(dialog.ack-dialog[open])) {
+    overflow: hidden;
+  }
+
+  .ack-modal {
+    --modal-bg: rgb(var(--paper-rgb, 5 5 5) / 0.78);
+    --modal-border: var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.08));
+    --modal-shadow: 0 40px 100px -20px rgb(0 0 0 / 0.6);
+    --modal-backdrop: rgb(0 0 0 / 0.55);
+    --modal-max-w: 520px;
+
+    width: calc(100% - 2 * var(--sp-4, 1rem));
+    max-width: var(--modal-max-w);
+    max-height: calc(100dvh - 2 * var(--sp-4, 1rem));
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--modal-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--modal-bg);
+    color: var(--c-text-2, #a3a3a3);
+    box-shadow: var(--modal-shadow);
+    font-family: var(--font-sans, inherit);
+    overflow: hidden;
+
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition:
+      opacity 0.22s ease,
+      transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+      overlay 0.28s allow-discrete,
+      display 0.28s allow-discrete;
+  }
+
+  .ack-modal[open] {
+    opacity: 1;
+    transform: none;
+  }
+
+  @starting-style {
+    .ack-modal[open] {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+  }
+
+  .ack-modal::backdrop {
+    background: rgb(0 0 0 / 0);
+    backdrop-filter: blur(0);
+    transition:
+      background 0.25s ease,
+      backdrop-filter 0.25s ease,
+      overlay 0.25s allow-discrete,
+      display 0.25s allow-discrete;
+  }
+
+  .ack-modal[open]::backdrop {
+    background: var(--modal-backdrop);
+    backdrop-filter: blur(6px);
+  }
+
+  @starting-style {
+    .ack-modal[open]::backdrop {
+      background: rgb(0 0 0 / 0);
+      backdrop-filter: blur(0);
+    }
+  }
+
+  /* Variants */
+  .ack-modal--glass {
+    backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .ack-modal--solid {
+    --modal-bg: var(--c-bg-1, #0a0a0a);
+  }
+
+  .ack-modal--minimal {
+    --modal-bg: var(--c-bg, #050505);
+    --modal-shadow: none;
+    --modal-backdrop: rgb(0 0 0 / 0.7);
+  }
+
+  /* Sizes */
+  .ack-modal--sm { --modal-max-w: 400px; }
+  .ack-modal--md { --modal-max-w: 520px; }
+  .ack-modal--lg { --modal-max-w: 720px; }
+
+  .ack-modal__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    max-height: inherit;
+    padding: var(--sp-6, 1.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ack-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .ack-modal__title {
+    margin: 0;
+    padding-top: var(--sp-2, 0.5rem);
+    color: var(--c-text-1, #ffffff);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .ack-modal__close {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    margin: calc(-1 * var(--sp-2, 0.5rem)) calc(-1 * var(--sp-2, 0.5rem)) 0 auto;
+    border: 0;
+    border-radius: var(--r-full, 9999px);
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .ack-modal__close:hover {
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .ack-modal__close:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 2px;
+  }
+
+  .ack-modal__desc {
+    margin: calc(-1 * var(--sp-2, 0.5rem)) 0 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .ack-modal__body {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .ack-modal__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-3, 0.75rem);
+    padding-top: var(--sp-2, 0.5rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ack-modal,
+    .ack-modal::backdrop {
+      transition: none;
+    }
+  }
 </style>

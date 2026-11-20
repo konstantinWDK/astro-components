@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -21,17 +28,27 @@ const {
   type = 'button', 
   variant = 'primary', 
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`pill-btn pill-btn--${variant} pill-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`pill-btn pill-btn--${variant} pill-btn--${size}`,
+    classAttr,
+  ]}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <slot />
 </Tag>
@@ -55,15 +72,16 @@ const Tag = href ? 'a' : 'button';
     font-family: var(--font-sans, inherit);
   }
 
-  .pill-btn:hover:not(:disabled) {
+  .pill-btn:hover:not(:disabled, [aria-disabled='true']) {
     transform: translateY(-1px);
   }
 
-  .pill-btn:active:not(:disabled) {
+  .pill-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translateY(0);
   }
 
-  .pill-btn:disabled {
+  .pill-btn:disabled,
+  .pill-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);
@@ -75,7 +93,7 @@ const Tag = href ? 'a' : 'button';
     color: var(--c-text-2, #94a3b8);
     border-color: rgba(255, 255, 255, 0.1);
   }
-  .pill-btn--primary:hover:not(:disabled) {
+  .pill-btn--primary:hover:not(:disabled, [aria-disabled='true']) {
     background: #fff;
     color: #000;
     border-color: #fff;
@@ -87,7 +105,7 @@ const Tag = href ? 'a' : 'button';
     color: #fff;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
   }
-  .pill-btn--secondary:hover:not(:disabled) {
+  .pill-btn--secondary:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--c-primary-light, #818cf8);
     box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
   }
@@ -97,7 +115,7 @@ const Tag = href ? 'a' : 'button';
     color: var(--c-text-2, #94a3b8);
     border-color: rgba(255, 255, 255, 0.1);
   }
-  .pill-btn--ghost:hover:not(:disabled) {
+  .pill-btn--ghost:hover:not(:disabled, [aria-disabled='true']) {
     background: rgba(255, 255, 255, 0.05);
     color: #fff;
     border-color: rgba(255, 255, 255, 0.3);

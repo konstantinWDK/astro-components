@@ -4,6 +4,7 @@
 // dynamically discovers and exposes them without any manual sync.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { components, categories } from '../data/registry/index.js';
 import { templates } from '../data/registry/templates.js';
 import type { ComponentDoc } from '../data/registry/types.js';
@@ -16,10 +17,21 @@ import type {
   LibraryStats,
 } from './types.js';
 
-// Resolve project root
-const ROOT_DIR = process.cwd();
+// Resolve the package root from this file (src/mcp/ -> ../..), so the server
+// reports its own version and files even when launched via `npx` from a user's
+// project. Falls back to the working directory.
+function resolveRootDir(): string {
+  try {
+    const fromModule = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+    if (fs.existsSync(path.join(fromModule, 'src/components/lib'))) return fromModule;
+  } catch {
+    // import.meta.url unavailable
+  }
+  return process.cwd();
+}
+const ROOT_DIR = resolveRootDir();
 const PKG_PATH = path.resolve(ROOT_DIR, 'package.json');
-const GLOBAL_CSS_PATH = path.resolve(ROOT_DIR, 'src/styles/global.css');
+const TOKENS_CSS_PATH = path.resolve(ROOT_DIR, 'src/styles/tokens.css');
 
 /**
  * Returns basic package info from package.json.
@@ -29,7 +41,7 @@ export function getPackageMeta() {
     const pkgRaw = fs.readFileSync(PKG_PATH, 'utf8');
     return JSON.parse(pkgRaw);
   } catch {
-    return { name: 'astro-component-kit', version: '0.7.1' };
+    return { name: 'astro-component-kit', version: 'unknown' };
   }
 }
 
@@ -256,15 +268,18 @@ export function getDesignTokens(): {
 } {
   let cssSource = '';
   try {
-    if (fs.existsSync(GLOBAL_CSS_PATH)) {
-      cssSource = fs.readFileSync(GLOBAL_CSS_PATH, 'utf8');
+    if (fs.existsSync(TOKENS_CSS_PATH)) {
+      cssSource = fs.readFileSync(TOKENS_CSS_PATH, 'utf8');
     }
   } catch {
     // ignore
   }
 
   return {
-    cssImport: `import 'astro-component-kit/global.css';`,
+    cssImport: `import 'astro-component-kit/tokens.css'; // variables only, safe in existing sites
+// optional: import 'astro-component-kit/fonts.css';  (Inter + JetBrains Mono)
+// optional: @import 'astro-component-kit/base.css' layer(ack-base);  (reset + page styles)
+// or everything at once: import 'astro-component-kit/global.css';`,
     themeToggleSnippet: `<!-- Add data-theme="light" to html or body for light theme -->
 <html lang="en" data-theme="dark">
   <head>
@@ -279,14 +294,17 @@ export function getDesignTokens(): {
     <!-- components adapt automatically using --ink-rgb, --paper-rgb, --c-on-primary -->
   </body>
 </html>`,
-    tokensOverview: `Astro Components Kit design tokens:
-- Primary Color: var(--c-primary, #b8860b) and var(--c-primary-light)
-- Text Contrast: var(--c-text-1), var(--c-text-2), var(--c-text-3), var(--c-on-primary)
-- Theme Adaptation: rgb(var(--ink-rgb, 255 255 255) / opacity) for dark, rgb(var(--ink-rgb, 10 10 10) / opacity) for light
-- Backgrounds: var(--c-bg), var(--c-bg-subtle), var(--c-card-bg)
-- Radii: var(--r-sm, 6px), var(--r-md, 12px), var(--r-lg, 18px), var(--r-xl, 24px), var(--r-full, 9999px)
-- Spacing: var(--sp-1) (4px) to var(--sp-20) (80px)
-- SVG Charts: var(--chart-1)...var(--chart-8), var(--chart-pos), var(--chart-neg), var(--chart-grid)`,
+    tokensOverview: `Astro Components Kit design tokens (src/styles/tokens.css):
+- Primary: var(--c-primary), var(--c-primary-light), var(--c-primary-glow), var(--c-accent), text on primary: var(--c-on-primary)
+- Text: var(--c-text-1) (headings), var(--c-text-2) (body), var(--c-text-3) (muted)
+- Backgrounds: var(--c-bg), var(--c-bg-1), var(--c-bg-2), var(--c-surface), borders: var(--c-border)
+- Status: var(--c-success), var(--c-danger), var(--c-warning)
+- Theme-aware translucency: rgb(var(--ink-rgb) / 0.08) for lines/fills, rgb(var(--paper-rgb) / 0.8) for surfaces
+- Radii: var(--r-sm) 8px, var(--r-md) 12px, var(--r-lg) 20px, var(--r-xl) 28px, var(--r-full)
+- Spacing (4pt grid): var(--sp-1) 4px, --sp-2 8px, --sp-3 12px, --sp-4 16px, --sp-5 20px, --sp-6 24px, --sp-8 32px, --sp-10 40px, --sp-12 48px, --sp-16 64px
+- Fonts: var(--font-sans), var(--font-mono)
+- Charts: var(--chart-1)...var(--chart-8), var(--chart-pos), var(--chart-neg), var(--chart-grid), var(--chart-axis), var(--chart-surface)
+- Light theme: <html data-theme="light"> swaps the same tokens.`,
     cssSource,
   };
 }
@@ -299,7 +317,7 @@ export function getLibraryStats(): LibraryStats {
   const cats = listCategories();
   return {
     name: pkg.name || 'astro-component-kit',
-    version: pkg.version || '0.7.1',
+    version: pkg.version || 'unknown',
     description: pkg.description || 'A free, open-source accessible UI component library for Astro',
     totalComponents: components.length,
     totalCategories: cats.length,

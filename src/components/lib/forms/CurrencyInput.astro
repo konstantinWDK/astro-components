@@ -9,7 +9,9 @@
  * @param {string} name - HTML name binding.
  * @param {number} step - Numeric increment. Default is 0.01.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label: string;
   id: string;
   symbol?: string;
@@ -18,14 +20,20 @@ interface Props {
   step?: number;
 }
 
-const { label, id, symbol = "$", value = 0.00, name, step = 0.01 } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, symbol = "$", value = 0.00, name, step = 0.01, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="curr-input-container">
+<div class:list={['curr-input-container', classAttr]}>
   <label for={id} class="curr-label">{label}</label>
   <div class="curr-wrap">
     <span class="curr-symbol">{symbol}</span>
-    <input type="number" {id} {name} {step} value={value.toFixed(2)} class="curr-field" />
+    <input {...rest} type="number" {id} {name} {step} value={value.toFixed(2)} class="curr-field" />
   </div>
 </div>
 

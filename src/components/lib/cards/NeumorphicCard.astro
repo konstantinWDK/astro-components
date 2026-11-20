@@ -6,20 +6,30 @@
  * @param {string} subtitle - Descriptive supporting context.
  * @param {'sm'|'md'|'lg'} padding - Inner layout padding size. Default is 'md'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   subtitle?: string;
   padding?: 'sm' | 'md' | 'lg';
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Soft UI Element',
   subtitle = 'Tactile extruded neumorphic shadows calibrated for light and dark viewports.',
   padding = 'md',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class={`neu-card neu-card--p${padding}`}>
+<div {...rest} class:list={[`neu-card neu-card--p${padding}`, classAttr]}>
   <div class="neu-card__inner">
     {title && <h3 class="neu-card__title">{title}</h3>}
     {subtitle && <p class="neu-card__subtitle">{subtitle}</p>}

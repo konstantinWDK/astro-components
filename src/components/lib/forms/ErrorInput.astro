@@ -8,7 +8,9 @@
  * @param {string} placeholder - Optional standard placeholder.
  * @param {string} name - HTML name binding.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   id: string;
   errorMessage: string;
   value?: string;
@@ -16,11 +18,17 @@ interface Props {
   name?: string;
 }
 
-const { id, errorMessage, value = '', placeholder, name } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { id, errorMessage, value = '', placeholder, name, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="error-wrap">
-  <input type="text" {id} {name} {value} {placeholder} class="input-error" aria-invalid="true" aria-describedby={`${id}-error`} />
+<div class:list={['error-wrap', classAttr]}>
+  <input {...rest} type="text" {id} {name} {value} {placeholder} class="input-error" aria-invalid="true" aria-describedby={`${id}-error`} />
   <span id={`${id}-error`} class="error-msg" aria-live="polite">{errorMessage}</span>
 </div>
 

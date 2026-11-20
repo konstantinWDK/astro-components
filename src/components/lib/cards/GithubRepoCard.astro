@@ -11,7 +11,9 @@
  * @param {number} forks - Fork count figure. Default is 32.
  * @param {string} href - Link to the GitHub repository.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   repoName: string;
   owner?: string;
   description?: string;
@@ -22,6 +24,12 @@ interface Props {
   href?: string;
 }
 
+/** Own props plus any native <a> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'a'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   repoName = 'astro-components',
   owner = 'konstantinWDK',
@@ -31,10 +39,12 @@ const {
   stars = 248,
   forks = 32,
   href = '#',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<a href={href} target="_blank" rel="noopener noreferrer" class="gh-repo-card">
+<a {...rest} href={href} target="_blank" rel="noopener noreferrer" class:list={['gh-repo-card', classAttr]}>
   <div class="gh-repo-card__head">
     <svg class="gh-repo-card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>

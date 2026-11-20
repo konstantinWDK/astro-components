@@ -8,7 +8,9 @@
  * @param {string[]} suggestions - Autocomplete candidate options.
  * @param {string} placeholder - Input placeholder. Default is 'Add tag & press Enter...'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   id: string;
   label?: string;
   initialTags?: string[];
@@ -16,16 +18,24 @@ interface Props {
   placeholder?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, autocomplete…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   id = 'tags-autocomplete',
   label = 'Tags',
   initialTags = ['Astro', 'TypeScript'],
   suggestions = ['React', 'Tailwind', 'Three.js', 'SSR', 'Vite', 'GraphQL'],
   placeholder = 'Add tag & press Enter...',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="tags-field" data-tags-root>
+<div {...rest} class:list={['tags-field', classAttr]} data-tags-root>
   <label for={id} class="tags-field__label">{label}</label>
 
   <div class="tags-field__box" data-tags-box>

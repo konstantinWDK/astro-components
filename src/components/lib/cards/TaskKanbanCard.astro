@@ -8,7 +8,9 @@
  * @param {'low'|'med'|'high'} priority - Priority tag variant. Default is 'med'.
  * @param {number} progress - Task completion percentage (0 - 100). Default is 65.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   task?: string;
   date?: string;
   assigneeInitials?: string;
@@ -16,18 +18,26 @@ interface Props {
   progress?: number;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   task = 'Optimize dynamic route code-splitting and asset prefetching',
   date = 'Oct 28',
   assigneeInitials = 'MJ',
   priority = 'med',
   progress = 65,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 const priorityLabels = { low: 'Low', med: 'Medium', high: 'High' };
 ---
 
-<div class="task-card" role="article" aria-label={`Task: ${task}`}>
+<div {...rest} class:list={['task-card', classAttr]} role="article" aria-label={`Task: ${task}`}>
   <div class="task-card__tags">
     <span class={`task-card__tag task-card__tag--${priority}`}>
       <span class="task-card__tag-dot" aria-hidden="true"></span>

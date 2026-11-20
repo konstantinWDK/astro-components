@@ -11,7 +11,9 @@
  * @param {string} ctaText - Action button label (default: 'Add to Cart').
  * @param {string} className - Optional additional CSS class.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   price?: string;
   originalPrice?: string;
@@ -22,6 +24,12 @@ interface Props {
   className?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const { 
   title = 'Ergonomic Precision Keyboard', 
   price = '$189', 
@@ -31,10 +39,12 @@ const {
   rating = '4.9 (128)',
   ctaText = 'Add to Cart',
   className = '',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['prod-card', className]}>
+<div {...rest} class:list={['prod-card', className, classAttr]}>
   <div class="prod-card__image-wrap">
     {imageUrl ? (
       <img src={imageUrl} alt={title} class="prod-card__img" />

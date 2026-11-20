@@ -8,31 +8,48 @@
  * @param {boolean} disabled - Whether the button is disabled.
  * @param {string} className - Additional CSS class names.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   variant?: 'primary' | 'secondary' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   href?: string;
+  type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   className?: string;
 }
 
 const {
+  type = 'button',
   variant = 'primary',
   size = 'md',
   href,
   disabled = false,
   className = '',
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag
-  href={href}
+  href={disabled ? undefined : href}
+  type={href ? undefined : type}
   disabled={!href && disabled ? true : undefined}
   aria-disabled={disabled ? 'true' : undefined}
-  class:list={['ripple-btn', `ripple-btn--${variant}`, `ripple-btn--${size}`, className]}
+  class:list={['ripple-btn', `ripple-btn--${variant}`, `ripple-btn--${size}`, className, classAttr]}
   data-ripple-btn
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="ripple-btn__label"><slot /></span>
   <span class="ripple-btn__container" aria-hidden="true"></span>

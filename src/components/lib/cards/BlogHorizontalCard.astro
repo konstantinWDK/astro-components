@@ -11,7 +11,9 @@
  * @param {string} href - Destination link URL (default: '#').
  * @param {string} className - Optional additional CSS class.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   description?: string;
   tag?: string;
@@ -22,6 +24,12 @@ interface Props {
   className?: string;
 }
 
+/** Own props plus any native <article> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'article'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const { 
   title = 'Architecting High-Performance UI in Astro 5', 
   description = 'How to combine zero runtime dependencies with glassmorphic design tokens and responsive accessibility.', 
@@ -31,10 +39,12 @@ const {
   thumbUrl = '',
   href = '#',
   className = '',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<article class:list={['blog-h-card', className]}>
+<article {...rest} class:list={['blog-h-card', className, classAttr]}>
   <a href={href} class="blog-h-card__thumb-link" aria-label={title}>
     {thumbUrl ? (
       <img src={thumbUrl} alt={title} class="blog-h-card__thumb-img" />

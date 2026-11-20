@@ -223,7 +223,13 @@ export function createMcpServer(): McpServer {
                 ...stats,
                 quickStart: {
                   install: 'npm install astro-component-kit',
-                  cssImport: "import 'astro-component-kit/global.css';",
+                  cssImport: "import 'astro-component-kit/global.css'; // or only tokens: 'astro-component-kit/tokens.css'",
+                  copyIntoProject: 'npx astro-component-kit add <component...> [--dir src/components/ui]',
+                  componentApi: [
+                    'Buttons, forms, cards and dialogs accept `class` (not className) plus native HTML attributes (aria-*, data-*, target, autocomplete…), forwarded to the root element or native control.',
+                    'Buttons render <a> when `href` is set; a disabled link drops href and gets aria-disabled.',
+                    'OverlayModal, SideDrawerRight and BottomSheetMobile are native <dialog>s: give them an `id`, open with any element carrying data-dialog-open="<id>", close with data-dialog-close, Escape or the backdrop.',
+                  ],
                   recommendedCategoryImports: [
                     "import { StoreProductCard, CartDrawer } from 'astro-component-kit/ecommerce';",
                     "import { DataTable, AppSidebar } from 'astro-component-kit/app';",

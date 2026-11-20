@@ -1,16 +1,307 @@
 ---
+/**
+ * SideDrawerRight — Slide-over panel (right or left) built on the native <dialog>.
+ *
+ * Uses `showModal()`: focus trapping, Escape to close, top-layer rendering and
+ * focus return to the trigger come from the browser. Ideal for filters,
+ * settings, carts or detail views.
+ *
+ * Open it from any element with `data-dialog-open="<id>"`; close it with any
+ * element inside carrying `data-dialog-close`, with Escape, or by clicking the
+ * backdrop. From JS: `document.getElementById(id).showModal()` / `.close()`.
+ *
+ * @param {string} id - Required. Dialog id, referenced by `data-dialog-open`.
+ * @param {string} title - Heading of the panel; labels the dialog for screen readers.
+ * @param {'right'|'left'} side - Edge the panel slides from. Default 'right'.
+ * @param {'glass'|'solid'|'minimal'} variant - Visual style. Default 'solid'.
+ * @param {'sm'|'md'|'lg'} size - Panel width: 320 / 400 / 560px. Default 'md'.
+ * @param {boolean} open - Open on page load. Default false.
+ * @param {boolean} closeOnBackdrop - Close when the backdrop is clicked. Default true.
+ * @param {string} closeLabel - Accessible label of the × button. Default 'Close'.
+ * @param {string} class - Extra classes for the <dialog>.
+ *
+ * Slots: default (scrollable body), `footer` (sticky actions at the bottom).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
+  id: string;
+  title?: string;
+  side?: 'right' | 'left';
+  variant?: 'glass' | 'solid' | 'minimal';
+  size?: 'sm' | 'md' | 'lg';
+  open?: boolean;
+  closeOnBackdrop?: boolean;
+  closeLabel?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'dialog'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the <dialog>. */
+  class?: string;
+};
+
+const {
+  id,
+  title,
+  side = 'right',
+  variant = 'solid',
+  size = 'md',
+  open = false,
+  closeOnBackdrop = true,
+  closeLabel = 'Close',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const titleId = title ? `${id}-title` : undefined;
+const hasFooter = Astro.slots.has('footer');
 ---
-<div class="drawer-wrap">
-  <div class="drawer-overlay"></div>
-  <div class="drawer-panel right">
-    <div class="drawer-header"><h3>Filters</h3><span>×</span></div>
-    <div class="drawer-body"><slot /></div>
+
+<dialog
+  {...rest}
+  id={id}
+  class:list={['ack-dialog', 'ack-drawer', `ack-drawer--${side}`, `ack-drawer--${variant}`, `ack-drawer--${size}`, classAttr]}
+  aria-labelledby={titleId}
+  data-close-on-backdrop={closeOnBackdrop ? undefined : 'false'}
+  data-open-on-load={open ? '' : undefined}
+>
+  <div class="ack-drawer__panel">
+    <header class="ack-drawer__header">
+      {title && <h2 id={titleId} class="ack-drawer__title">{title}</h2>}
+      <button type="button" class="ack-drawer__close" aria-label={closeLabel} data-dialog-close>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+    <div class="ack-drawer__body">
+      <slot />
+    </div>
+    {hasFooter && (
+      <footer class="ack-drawer__footer">
+        <slot name="footer" />
+      </footer>
+    )}
   </div>
-</div>
+</dialog>
+
+<script>
+  // Shared by OverlayModal, SideDrawerRight and BottomSheetMobile: a single
+  // delegated listener per page, so it works with View Transitions and with
+  // any number of dialogs without re-binding.
+  const w = window as Window & { __ackDialogs?: boolean };
+  if (!w.__ackDialogs) {
+    w.__ackDialogs = true;
+    let pressedOnBackdrop = false;
+
+    document.addEventListener('pointerdown', (event) => {
+      const t = event.target;
+      pressedOnBackdrop = t instanceof HTMLDialogElement && t.classList.contains('ack-dialog');
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as Element | null;
+      if (!target) return;
+
+      const opener = target.closest<HTMLElement>('[data-dialog-open]');
+      if (opener) {
+        const dialog = document.getElementById(opener.dataset.dialogOpen ?? '');
+        if (dialog instanceof HTMLDialogElement && !dialog.open) {
+          event.preventDefault();
+          dialog.showModal();
+        }
+        return;
+      }
+
+      const closer = target.closest('[data-dialog-close]');
+      const parent = target.closest('dialog.ack-dialog');
+      if (closer && parent instanceof HTMLDialogElement) {
+        parent.close(closer.getAttribute('data-dialog-close') || '');
+        return;
+      }
+
+      // A click on the backdrop targets the <dialog> itself (the panel fills it).
+      if (
+        pressedOnBackdrop &&
+        target instanceof HTMLDialogElement &&
+        target.classList.contains('ack-dialog') &&
+        target.dataset.closeOnBackdrop !== 'false'
+      ) {
+        target.close();
+      }
+    });
+
+    const openOnLoad = () => {
+      document
+        .querySelectorAll<HTMLDialogElement>('dialog.ack-dialog[data-open-on-load]')
+        .forEach((d) => { if (!d.open) d.showModal(); });
+    };
+    document.addEventListener('astro:page-load', openOnLoad);
+    openOnLoad();
+  }
+</script>
+
+
 <style>
-  .drawer-wrap { position: fixed; inset: 0; z-index: 2000; }
-  .drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
-  .drawer-panel { position: absolute; top: 0; bottom: 0; width: 350px; background: #080b14; border-left: 1px solid rgba(255, 255, 255, 0.1); padding: 2rem; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-  .drawer-panel.right { right: 0; transform: translateX(0); }
-  .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; color: #fff; }
+  /* Lock page scroll while any kit dialog is open. */
+  :global(html:has(dialog.ack-dialog[open])) {
+    overflow: hidden;
+  }
+
+  .ack-drawer {
+    --drawer-w: 400px;
+    --drawer-bg: var(--c-bg-1, #0a0a0a);
+    --drawer-border: var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.08));
+    --drawer-backdrop: rgb(0 0 0 / 0.5);
+    --drawer-from: 100%;
+
+    width: min(var(--drawer-w), 100% - 3rem);
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--drawer-border);
+    background: var(--drawer-bg);
+    color: var(--c-text-2, #a3a3a3);
+    box-shadow: -30px 0 80px -30px rgb(0 0 0 / 0.6);
+    font-family: var(--font-sans, inherit);
+
+    transform: translateX(var(--drawer-from));
+    transition:
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      overlay 0.35s allow-discrete,
+      display 0.35s allow-discrete;
+  }
+
+  .ack-drawer--left {
+    --drawer-from: -100%;
+    margin: 0 auto 0 0;
+    border-left: 0;
+    border-right: 1px solid var(--drawer-border);
+    box-shadow: 30px 0 80px -30px rgb(0 0 0 / 0.6);
+  }
+
+  .ack-drawer[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .ack-drawer[open] {
+      transform: translateX(var(--drawer-from));
+    }
+  }
+
+  .ack-drawer::backdrop {
+    background: rgb(0 0 0 / 0);
+    backdrop-filter: blur(0);
+    transition:
+      background 0.3s ease,
+      backdrop-filter 0.3s ease,
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
+  }
+
+  .ack-drawer[open]::backdrop {
+    background: var(--drawer-backdrop);
+    backdrop-filter: blur(4px);
+  }
+
+  @starting-style {
+    .ack-drawer[open]::backdrop {
+      background: rgb(0 0 0 / 0);
+      backdrop-filter: blur(0);
+    }
+  }
+
+  /* Variants */
+  .ack-drawer--glass {
+    --drawer-bg: rgb(var(--paper-rgb, 5 5 5) / 0.72);
+    backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .ack-drawer--minimal {
+    --drawer-bg: var(--c-bg, #050505);
+    --drawer-backdrop: rgb(0 0 0 / 0.7);
+    box-shadow: none;
+  }
+
+  /* Sizes */
+  .ack-drawer--sm { --drawer-w: 320px; }
+  .ack-drawer--md { --drawer-w: 400px; }
+  .ack-drawer--lg { --drawer-w: 560px; }
+
+  .ack-drawer__panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .ack-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-4, 1rem) var(--sp-4, 1rem) var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    border-bottom: 1px solid var(--drawer-border);
+  }
+
+  .ack-drawer__title {
+    margin: 0;
+    color: var(--c-text-1, #ffffff);
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .ack-drawer__close {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    border: 0;
+    border-radius: var(--r-full, 9999px);
+    background: transparent;
+    color: var(--c-text-2, #a3a3a3);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .ack-drawer__close:hover {
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.08);
+    color: var(--c-text-1, #ffffff);
+  }
+
+  .ack-drawer__close:focus-visible {
+    outline: 2px solid var(--c-primary-light, #d4a017);
+    outline-offset: 2px;
+  }
+
+  .ack-drawer__body {
+    flex: 1;
+    padding: var(--sp-6, 1.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .ack-drawer__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--drawer-border);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ack-drawer,
+    .ack-drawer::backdrop {
+      transition: none;
+    }
+  }
 </style>

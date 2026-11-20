@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   color?: string;
@@ -21,7 +28,11 @@ const {
   type = 'button', 
   color = '#6366f1',
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
@@ -30,15 +41,21 @@ const filterId = `gooey-${Math.random().toString(36).substr(2, 9)}`;
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`liquid-btn liquid-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`liquid-btn liquid-btn--${size}`,
+    classAttr,
+  ]}
   style={`--liquid-color: ${color}`}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="liquid-btn__text"><slot /></span>
   
-  <div class="liquid-wrapper">
+  <div class="liquid-wrapper" aria-hidden="true">
     <div class="liquid-main"></div>
     <div class="liquid-container">
       <div class="liquid-blob"></div>
@@ -48,7 +65,7 @@ const filterId = `gooey-${Math.random().toString(36).substr(2, 9)}`;
     </div>
   </div>
 
-  <svg style="position: absolute; width: 0; height: 0; pointer-events: none;">
+  <svg aria-hidden="true" focusable="false" style="position: absolute; width: 0; height: 0; pointer-events: none;">
     <defs>
       <filter id={filterId}>
         <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
@@ -131,25 +148,25 @@ const filterId = `gooey-${Math.random().toString(36).substr(2, 9)}`;
   .liquid-blob:nth-child(4) { left: 30%; width: 70px; height: 70px; transition-delay: 0.08s; }
 
   /* Hover States */
-  .liquid-btn:hover:not(:disabled) {
+  .liquid-btn:hover:not(:disabled, [aria-disabled='true']) {
     border-color: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
     box-shadow: 0 20px 40px -10px color-mix(in srgb, var(--liquid-color), transparent 70%);
   }
 
-  .liquid-btn:hover:not(:disabled) .liquid-main {
+  .liquid-btn:hover:not(:disabled, [aria-disabled='true']) .liquid-main {
     transform: translateY(-100%);
   }
 
-  .liquid-btn:hover:not(:disabled) .liquid-blob {
+  .liquid-btn:hover:not(:disabled, [aria-disabled='true']) .liquid-blob {
     transform: translateY(-180%) scale(1.4);
   }
 
   /* Movement animation for blobs when hovered */
-  .liquid-btn:hover:not(:disabled) .liquid-blob:nth-child(odd) {
+  .liquid-btn:hover:not(:disabled, [aria-disabled='true']) .liquid-blob:nth-child(odd) {
     animation: liquid-wiggle 3s ease-in-out infinite alternate;
   }
-  .liquid-btn:hover:not(:disabled) .liquid-blob:nth-child(even) {
+  .liquid-btn:hover:not(:disabled, [aria-disabled='true']) .liquid-blob:nth-child(even) {
     animation: liquid-wiggle 4s ease-in-out infinite alternate-reverse;
   }
 
@@ -158,11 +175,12 @@ const filterId = `gooey-${Math.random().toString(36).substr(2, 9)}`;
     100% { margin-left: 5px; }
   }
 
-  .liquid-btn:active:not(:disabled) {
+  .liquid-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.96);
   }
 
-  .liquid-btn:disabled {
+  .liquid-btn:disabled,
+  .liquid-btn[aria-disabled='true'] {
     opacity: 0.4;
     cursor: not-allowed;
     filter: grayscale(1);

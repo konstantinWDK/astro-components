@@ -8,7 +8,9 @@
  * @param {string} afterLabel - Label tag. Default is 'After'.
  * @param {number} initialPosition - Starting separator position (0 to 100). Default is 50.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   beforeImage?: string;
   afterImage?: string;
   beforeLabel?: string;
@@ -16,16 +18,24 @@ interface Props {
   initialPosition?: number;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   beforeImage = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
   afterImage = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80',
   beforeLabel = 'Before (Wireframe)',
   afterLabel = 'After (Production)',
   initialPosition = 50,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="img-compare" data-img-compare style={`--pos: ${initialPosition}%;`}>
+<div {...rest} class:list={['img-compare', classAttr]} data-img-compare style={`--pos: ${initialPosition}%;`}>
   <div class="img-compare__layer img-compare__layer--after">
     <img src={afterImage} alt={afterLabel} loading="lazy" />
     <span class="img-compare__tag img-compare__tag--after">{afterLabel}</span>
@@ -37,7 +47,7 @@ const {
   </div>
 
   <div class="img-compare__handle" data-compare-handle aria-hidden="true">
-    <div class="handle-line"></div>
+    <div class="handle-line" aria-hidden="true"></div>
     <div class="handle-button">
       <span>‹</span>
       <span>›</span>

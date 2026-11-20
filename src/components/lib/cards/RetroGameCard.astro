@@ -8,7 +8,9 @@
  * @param {string} highScore - Leaderboard record score. Default is '142,000'.
  * @param {number} lives - Remaining player lives. Default is 3.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   level?: string;
   score?: number | string;
@@ -16,16 +18,24 @@ interface Props {
   lives?: number;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'NEON RUNNER 2084',
   level = 'STAGE 04 • VOID MATRIX',
   score = '084,320',
   highScore = '142,000',
   lives = 3,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="retro-game" role="region" aria-label={`Arcade game card: ${title}`}>
+<div {...rest} class:list={['retro-game', classAttr]} role="region" aria-label={`Arcade game card: ${title}`}>
   <div class="retro-game__scanlines" aria-hidden="true"></div>
 
   <div class="retro-game__header">

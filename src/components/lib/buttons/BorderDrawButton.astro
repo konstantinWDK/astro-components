@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   color?: string;
@@ -21,18 +28,28 @@ const {
   type = 'button', 
   color = '#6366f1',
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`draw-btn draw-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`draw-btn draw-btn--${size}`,
+    classAttr,
+  ]}
   style={`--btn-color: ${color}`}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="draw-btn__text"><slot /></span>
 </Tag>
@@ -82,12 +99,12 @@ const Tag = href ? 'a' : 'button';
     right: -2px;
   }
 
-  .draw-btn:hover:not(:disabled) {
+  .draw-btn:hover:not(:disabled, [aria-disabled='true']) {
     color: #fff;
     border-color: transparent;
   }
 
-  .draw-btn:hover:not(:disabled)::before {
+  .draw-btn:hover:not(:disabled, [aria-disabled='true'])::before {
     width: calc(100% + 4px);
     height: calc(100% + 4px);
     border-top-color: var(--btn-color);
@@ -95,7 +112,7 @@ const Tag = href ? 'a' : 'button';
     transition: width 0.2s ease-out, height 0.2s 0.2s ease-out;
   }
 
-  .draw-btn:hover:not(:disabled)::after {
+  .draw-btn:hover:not(:disabled, [aria-disabled='true'])::after {
     width: calc(100% + 4px);
     height: calc(100% + 4px);
     border-bottom-color: var(--btn-color);
@@ -103,11 +120,12 @@ const Tag = href ? 'a' : 'button';
     transition: width 0.2s ease-out, height 0.2s 0.2s ease-out;
   }
 
-  .draw-btn:active:not(:disabled) {
+  .draw-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.98);
   }
 
-  .draw-btn:disabled {
+  .draw-btn:disabled,
+  .draw-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);

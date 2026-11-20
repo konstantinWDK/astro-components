@@ -11,7 +11,9 @@
  * @param {boolean} verified - Whether to show the verified reviewer badge (default: true).
  * @param {string} className - Optional additional CSS class.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   quote?: string;
   name?: string;
   role?: string;
@@ -22,6 +24,12 @@ interface Props {
   className?: string;
 }
 
+/** Own props plus any native <figure> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'figure'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   quote = 'Astro Components Kit transformed our engineering workflow. We shipped our landing page and design system in days instead of weeks, with flawless dark mode and zero runtime weight.',
   name = 'Elena Rostova',
@@ -31,6 +39,8 @@ const {
   rating = 5,
   verified = true,
   className = '',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 // Compute initials for avatar fallback
@@ -42,7 +52,7 @@ const initials = name
   .toUpperCase() || 'U';
 ---
 
-<figure class:list={['clean-testimonial', className]}>
+<figure {...rest} class:list={['clean-testimonial', className, classAttr]}>
   <div class="clean-testimonial__watermark" aria-hidden="true">
     <svg width="60" height="48" viewBox="0 0 60 48" fill="currentColor">
       <path d="M16.5 0C7.4 0 0 7.4 0 16.5c0 7.6 5.2 13.9 12.2 15.8C10.7 38.4 6 43.8 0 46.5L3.6 48c12.4-5.2 20.4-16.7 20.4-28.5C24 8.7 20.6 0 16.5 0zm33 0C40.4 0 33 7.4 33 16.5c0 7.6 5.2 13.9 12.2 15.8C43.7 38.4 39 43.8 33 46.5L36.6 48c12.4-5.2 20.4-16.7 20.4-28.5C57 8.7 53.6 0 49.5 0z" />

@@ -10,7 +10,9 @@
  * @param {number} max - Maximum allowed value.
  * @param {number} step - Numeric increment step. Default is 1.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   id: string;
   name?: string;
@@ -20,14 +22,20 @@ interface Props {
   step?: number;
 }
 
-const { label, id, name, value = 1, min, max, step = 1 } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, name, value = 1, min, max, step = 1, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="stepper-container">
+<div class:list={['stepper-container', classAttr]}>
   {label && <label class="stepper-label" for={id}>{label}</label>}
   <div class="stepper" data-stepper>
     <button type="button" class="stepper-btn stepper-btn--minus" data-step-minus aria-label="Decrease value">−</button>
-    <input 
+    <input {...rest} 
       type="number" 
       {id} 
       {name} 

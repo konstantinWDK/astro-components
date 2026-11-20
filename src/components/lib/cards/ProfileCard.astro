@@ -10,7 +10,9 @@
  * @param {string} status - Availability status indicator. Default is 'Available for hire'.
  * @param {Array<{ label: string, value: string }>} stats - Quantitative profile metrics.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   name?: string;
   role?: string;
   handle?: string;
@@ -19,6 +21,12 @@ interface Props {
   status?: string;
   stats?: Array<{ label: string; value: string }>;
 }
+
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
 
 const {
   name = 'Sofia Chen',
@@ -32,6 +40,8 @@ const {
     { label: 'Followers', value: '8.4k' },
     { label: 'Rating', value: '4.98' },
   ],
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 const initials = name
@@ -42,9 +52,9 @@ const initials = name
   .toUpperCase();
 ---
 
-<div class="profile-card" role="region" aria-label={`Profile card for ${name}`}>
+<div {...rest} class:list={['profile-card', classAttr]} role="region" aria-label={`Profile card for ${name}`}>
   <div class="profile-card__banner" aria-hidden="true">
-    <div class="profile-card__banner-glow"></div>
+    <div class="profile-card__banner-glow" aria-hidden="true"></div>
   </div>
 
   <div class="profile-card__avatar-wrap">

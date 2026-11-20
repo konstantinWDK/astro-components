@@ -7,19 +7,27 @@
  * @param {string} name - HTML name binding.
  * @param {boolean} checked - Initial toggle state. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   id: string;
   name?: string;
   checked?: boolean;
 }
 
-const { label, id, name, checked = false } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, name, checked = false, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="neu-switch-wrapper">
+<div class:list={['neu-switch-wrapper', classAttr]}>
   <label class="neu-switch">
-    <input type="checkbox" {id} {name} {checked} />
+    <input {...rest} type="checkbox" {id} {name} {checked} />
     <span class="slider"></span>
   </label>
   {label && <label for={id} class="neu-label">{label}</label>}

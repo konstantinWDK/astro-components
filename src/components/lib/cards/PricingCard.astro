@@ -10,7 +10,9 @@
  * @param {string[]} features - Bullet points of plan perks.
  * @param {string} ctaText - Button label. Default is 'Choose Plan'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   plan?: string;
   price?: string;
   period?: string;
@@ -19,6 +21,12 @@ interface Props {
   features?: string[];
   ctaText?: string;
 }
+
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
 
 const {
   plan = 'Pro Developer',
@@ -33,10 +41,12 @@ const {
     'Community Discord support',
   ],
   ctaText = 'Choose Plan',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['price-card', { 'price-card--featured': featured }]}>
+<div {...rest} class:list={['price-card', { 'price-card--featured': featured }, classAttr]}>
   {featured && <span class="price-card__badge">Most Popular</span>}
 
   <div class="price-card__header">

@@ -9,7 +9,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {string} label - Optional. Text used exclusively for duplicate glitch iterations. Default is 'READY'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   primaryColor?: string;
@@ -24,7 +31,11 @@ const {
   primaryColor = '#ff003c', 
   secondaryColor = '#00e0ff',
   size = 'md',
-  label = "READY"
+  label = "READY",
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
@@ -33,15 +44,20 @@ const Tag = href ? 'a' : 'button';
 <Tag 
   href={href} 
   type={href ? undefined : type}
-  class={`cyber-btn cyber-btn--${size}`}
+  class:list={[`cyber-btn cyber-btn--${size}`,
+    classAttr,
+  ]}
   style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}
   data-text={label}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="cyber-btn__inner">
     <slot>{label}</slot>
   </span>
-  <span class="cyber-btn__glitch"></span>
-  <span class="cyber-btn__tag">R25</span>
+  <span class="cyber-btn__glitch" aria-hidden="true"></span>
+  <span class="cyber-btn__tag" aria-hidden="true">R25</span>
 </Tag>
 
 <style>

@@ -10,7 +10,9 @@
  * @param {number} value - Initial starting value. Default is 50.
  * @param {number} step - Step increment. Default is 1.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   id: string;
   name?: string;
@@ -20,12 +22,18 @@ interface Props {
   step?: number;
 }
 
-const { label, id, name, min = 0, max = 100, value = 50, step = 1 } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, name, min = 0, max = 100, value = 50, step = 1, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="slider-container">
+<div class:list={['slider-container', classAttr]}>
   {label && <div class="slider-header"><label for={id}>{label}</label> <span data-slider-value>{value}</span></div>}
-  <input 
+  <input {...rest} 
     type="range" 
     class="glass-slider" 
     {id} 

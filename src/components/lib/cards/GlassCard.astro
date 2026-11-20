@@ -7,22 +7,32 @@
  * @param {boolean} hoverable - Whether the card lifts on hover. Default is true.
  * @param {'sm'|'md'|'lg'} padding - Internal padding control. Default is 'md'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   subtitle?: string;
   hoverable?: boolean;
   padding?: 'sm' | 'md' | 'lg';
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Glassmorphic Surface',
   subtitle = 'Multi-layered frosted glass with backdrop blur and ambient illumination.',
   hoverable = true,
   padding = 'md',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['glass-card', `glass-card--p${padding}`, { 'glass-card--hoverable': hoverable }]}>
+<div {...rest} class:list={['glass-card', `glass-card--p${padding}`, { 'glass-card--hoverable': hoverable }, classAttr]}>
   {title && (
     <div class="glass-card__header">
       <h3 class="glass-card__title">{title}</h3>

@@ -9,7 +9,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   primaryColor?: string;
@@ -24,21 +31,29 @@ const {
   primaryColor = '#6366f1', 
   secondaryColor = '#c084fc',
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
-<div class={`tilt-wrapper tilt-wrapper--${size}`}>
+<div class:list={[`tilt-wrapper tilt-wrapper--${size}`, classAttr]}>
   <Tag 
-    href={href} 
+    href={disabled ? undefined : href} 
     type={href ? undefined : type}
-    disabled={disabled}
+    disabled={!href && disabled ? true : undefined}
+    aria-disabled={disabled ? 'true' : undefined}
     class="tilt-card"
     style={`--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`}
+    target={href ? target : undefined}
+    rel={href ? rel : undefined}
+    {...rest}
   >
-    <div class="tilt-card__glow"></div>
+    <div class="tilt-card__glow" aria-hidden="true"></div>
     <div class="tilt-card__content">
       <slot />
     </div>
@@ -104,7 +119,8 @@ const Tag = href ? 'a' : 'button';
     transform: scale(0.98) translateZ(0);
   }
 
-  .tilt-card:disabled {
+  .tilt-card:disabled,
+  .tilt-card[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);

@@ -10,7 +10,9 @@
  * @param {'revenue' | 'users' | 'activity' | 'growth'} icon - Icon preset (default: 'revenue').
  * @param {string} className - Optional additional CSS class.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   value?: string;
   change?: string;
@@ -20,6 +22,12 @@ interface Props {
   className?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   label = 'Total Revenue',
   value = '$124,590',
@@ -28,10 +36,12 @@ const {
   timeframe = 'vs last month',
   icon = 'revenue',
   className = '',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['stat-card', `stat-card--${trend}`, className]}>
+<div {...rest} class:list={['stat-card', `stat-card--${trend}`, className, classAttr]}>
   <div class="stat-card__top">
     <span class="stat-card__label">{label}</span>
     <div class="stat-card__icon" aria-hidden="true">

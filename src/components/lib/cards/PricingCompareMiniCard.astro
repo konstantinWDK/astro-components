@@ -11,7 +11,9 @@
  * @param {string} ctaText - Label for the call to action button. Default is 'Get Started'.
  * @param {string} ctaHref - Link URL for the button.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   planName: string;
   price: string;
   period?: string;
@@ -21,6 +23,12 @@ interface Props {
   ctaText?: string;
   ctaHref?: string;
 }
+
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
 
 const {
   planName = 'Pro Developer',
@@ -36,10 +44,12 @@ const {
   featured = false,
   ctaText = 'Get Started',
   ctaHref = '#',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['mini-price-card', { 'mini-price-card--featured': featured }]}>
+<div {...rest} class:list={['mini-price-card', { 'mini-price-card--featured': featured }, classAttr]}>
   {featured && <span class="mini-price-card__badge">Most Popular</span>}
 
   <div class="mini-price-card__header">

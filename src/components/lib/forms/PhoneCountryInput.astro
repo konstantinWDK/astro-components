@@ -8,7 +8,9 @@
  * @param {string} placeholder - Phone placeholder. Default is '612 345 678'.
  * @param {boolean} required - HTML required field attribute.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   id: string;
   label?: string;
   name?: string;
@@ -16,12 +18,20 @@ interface Props {
   required?: boolean;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, autocomplete…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   id = 'phone-number-input',
   label = 'Phone Number',
   name = 'phone',
   placeholder = '612 345 678',
   required = false,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 const countries = [
@@ -35,7 +45,7 @@ const countries = [
 ];
 ---
 
-<div class="phone-group">
+<div {...rest} class:list={['phone-group', classAttr]}>
   <label for={id} class="phone-group__label">{label}</label>
 
   <div class="phone-group__wrap">

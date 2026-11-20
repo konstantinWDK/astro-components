@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'pink' | 'cyan' | 'yellow' | 'lime';
@@ -21,17 +28,27 @@ const {
   type = 'button', 
   variant = 'pink', 
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`retro-shadow-btn retro-shadow-btn--${variant} retro-shadow-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`retro-shadow-btn retro-shadow-btn--${variant} retro-shadow-btn--${size}`,
+    classAttr,
+  ]}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <slot />
 </Tag>
@@ -60,17 +77,18 @@ const Tag = href ? 'a' : 'button';
     white-space: nowrap;
   }
 
-  .retro-shadow-btn:hover:not(:disabled) {
+  .retro-shadow-btn:hover:not(:disabled, [aria-disabled='true']) {
     transform: translate(calc(var(--shadow-offset) * -0.2), calc(var(--shadow-offset) * -0.2));
     box-shadow: calc(var(--shadow-offset) * 1.2) calc(var(--shadow-offset) * 1.2) 0 var(--shadow-color);
   }
 
-  .retro-shadow-btn:active:not(:disabled) {
+  .retro-shadow-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translate(calc(var(--shadow-offset) * 0.5), calc(var(--shadow-offset) * 0.5));
     box-shadow: calc(var(--shadow-offset) * 0.5) calc(var(--shadow-offset) * 0.5) 0 var(--shadow-color);
   }
 
-  .retro-shadow-btn:disabled {
+  .retro-shadow-btn:disabled,
+  .retro-shadow-btn[aria-disabled='true'] {
     opacity: 0.6;
     cursor: not-allowed;
     filter: grayscale(0.5);

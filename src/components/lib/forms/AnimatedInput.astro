@@ -10,7 +10,9 @@
  * @param {string} name - HTML input name binding.
  * @param {string} autocomplete - HTML autocomplete hint (e.g. 'email', 'given-name'). Default is 'off'.
  */
-interface Props { 
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps { 
   label: string; 
   id: string; 
   type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url'; 
@@ -20,11 +22,17 @@ interface Props {
   autocomplete?: string; 
 }
 
-const { label, id, type = 'text', placeholder = ' ', required = false, name, autocomplete = 'off' } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, type = 'text', placeholder = ' ', required = false, name, autocomplete = 'off', class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="anim-input-wrap">
-  <input {id} {name} {type} {placeholder} {required} class="anim-input" autocomplete={autocomplete} />
+<div class:list={['anim-input-wrap', classAttr]}>
+  <input {...rest} {id} {name} {type} {placeholder} {required} class="anim-input" autocomplete={autocomplete} />
   <label for={id} class="anim-input-label">{label}</label>
 </div>
 

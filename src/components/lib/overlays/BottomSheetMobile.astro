@@ -1,16 +1,285 @@
 ---
+/**
+ * BottomSheetMobile — Sheet that slides up from the bottom, built on the native <dialog>.
+ *
+ * Full-width on phones, centered card (max 560px) on larger screens. Uses
+ * `showModal()`: focus trapping, Escape to close, top-layer rendering and
+ * focus return to the trigger come from the browser. The grab handle is
+ * decorative (no drag gesture); close via the backdrop, Escape or any element
+ * with `data-dialog-close`.
+ *
+ * Open it from any element with `data-dialog-open="<id>"`. From JS:
+ * `document.getElementById(id).showModal()` / `.close()`.
+ *
+ * @param {string} id - Required. Dialog id, referenced by `data-dialog-open`.
+ * @param {string} title - Heading of the sheet; labels the dialog for screen readers.
+ * @param {string} description - Optional supporting text (aria-describedby).
+ * @param {'glass'|'solid'|'minimal'} variant - Visual style. Default 'solid'.
+ * @param {'sm'|'md'|'lg'} size - Max height: 40 / 65 / 90% of the viewport. Default 'md'.
+ * @param {boolean} open - Open on page load. Default false.
+ * @param {boolean} closeOnBackdrop - Close when the backdrop is clicked. Default true.
+ * @param {string} class - Extra classes for the <dialog>.
+ *
+ * Slots: default (scrollable body), `footer` (actions, stacked full-width).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
+  id: string;
+  title?: string;
+  description?: string;
+  variant?: 'glass' | 'solid' | 'minimal';
+  size?: 'sm' | 'md' | 'lg';
+  open?: boolean;
+  closeOnBackdrop?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'dialog'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the <dialog>. */
+  class?: string;
+};
+
+const {
+  id,
+  title,
+  description,
+  variant = 'solid',
+  size = 'md',
+  open = false,
+  closeOnBackdrop = true,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const titleId = title ? `${id}-title` : undefined;
+const descId = description ? `${id}-desc` : undefined;
+const hasFooter = Astro.slots.has('footer');
 ---
-<div class="sheet-overlay">
-  <div class="sheet-content">
-    <div class="drag-handle"></div>
-    <h3>Select Option</h3>
-    <div class="options"><div>Archive</div><div>Delete</div><div>Share</div></div>
+
+<dialog
+  {...rest}
+  id={id}
+  class:list={['ack-dialog', 'ack-sheet', `ack-sheet--${variant}`, `ack-sheet--${size}`, classAttr]}
+  aria-labelledby={titleId}
+  aria-describedby={descId}
+  data-close-on-backdrop={closeOnBackdrop ? undefined : 'false'}
+  data-open-on-load={open ? '' : undefined}
+>
+  <div class="ack-sheet__panel">
+    <span class="ack-sheet__handle" aria-hidden="true"></span>
+    {title && <h2 id={titleId} class="ack-sheet__title">{title}</h2>}
+    {description && <p id={descId} class="ack-sheet__desc">{description}</p>}
+    <div class="ack-sheet__body">
+      <slot />
+    </div>
+    {hasFooter && (
+      <footer class="ack-sheet__footer">
+        <slot name="footer" />
+      </footer>
+    )}
   </div>
-</div>
+</dialog>
+
+<script>
+  // Shared by OverlayModal, SideDrawerRight and BottomSheetMobile: a single
+  // delegated listener per page, so it works with View Transitions and with
+  // any number of dialogs without re-binding.
+  const w = window as Window & { __ackDialogs?: boolean };
+  if (!w.__ackDialogs) {
+    w.__ackDialogs = true;
+    let pressedOnBackdrop = false;
+
+    document.addEventListener('pointerdown', (event) => {
+      const t = event.target;
+      pressedOnBackdrop = t instanceof HTMLDialogElement && t.classList.contains('ack-dialog');
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as Element | null;
+      if (!target) return;
+
+      const opener = target.closest<HTMLElement>('[data-dialog-open]');
+      if (opener) {
+        const dialog = document.getElementById(opener.dataset.dialogOpen ?? '');
+        if (dialog instanceof HTMLDialogElement && !dialog.open) {
+          event.preventDefault();
+          dialog.showModal();
+        }
+        return;
+      }
+
+      const closer = target.closest('[data-dialog-close]');
+      const parent = target.closest('dialog.ack-dialog');
+      if (closer && parent instanceof HTMLDialogElement) {
+        parent.close(closer.getAttribute('data-dialog-close') || '');
+        return;
+      }
+
+      // A click on the backdrop targets the <dialog> itself (the panel fills it).
+      if (
+        pressedOnBackdrop &&
+        target instanceof HTMLDialogElement &&
+        target.classList.contains('ack-dialog') &&
+        target.dataset.closeOnBackdrop !== 'false'
+      ) {
+        target.close();
+      }
+    });
+
+    const openOnLoad = () => {
+      document
+        .querySelectorAll<HTMLDialogElement>('dialog.ack-dialog[data-open-on-load]')
+        .forEach((d) => { if (!d.open) d.showModal(); });
+    };
+    document.addEventListener('astro:page-load', openOnLoad);
+    openOnLoad();
+  }
+</script>
+
+
 <style>
-  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; z-index: 2000; }
-  .sheet-content { width: 100%; background: #0f172a; border-radius: 20px 20px 0 0; padding: 1.5rem; transform: translateY(0); }
-  .drag-handle { width: 40px; height: 4px; background: #334155; border-radius: 2px; margin: 0 auto 1.5rem; }
-  h3 { color: #fff; text-align: center; margin-bottom: 1.5rem; }
-  .options div { padding: 1rem; color: #e2e8f0; border-bottom: 1px solid #1e293b; text-align: center; cursor: pointer; }
+  /* Lock page scroll while any kit dialog is open. */
+  :global(html:has(dialog.ack-dialog[open])) {
+    overflow: hidden;
+  }
+
+  .ack-sheet {
+    --sheet-bg: var(--c-bg-1, #0a0a0a);
+    --sheet-border: var(--c-border, rgb(var(--ink-rgb, 255 255 255) / 0.08));
+    --sheet-backdrop: rgb(0 0 0 / 0.55);
+    --sheet-max-h: 65dvh;
+
+    width: 100%;
+    max-width: 560px;
+    max-height: var(--sheet-max-h);
+    margin: auto auto 0;
+    padding: 0;
+    border: 1px solid var(--sheet-border);
+    border-bottom: 0;
+    border-radius: var(--r-lg, 20px) var(--r-lg, 20px) 0 0;
+    background: var(--sheet-bg);
+    color: var(--c-text-2, #a3a3a3);
+    box-shadow: 0 -30px 80px -30px rgb(0 0 0 / 0.6);
+    font-family: var(--font-sans, inherit);
+    overflow: hidden;
+
+    transform: translateY(100%);
+    transition:
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      overlay 0.35s allow-discrete,
+      display 0.35s allow-discrete;
+  }
+
+  .ack-sheet[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .ack-sheet[open] {
+      transform: translateY(100%);
+    }
+  }
+
+  .ack-sheet::backdrop {
+    background: rgb(0 0 0 / 0);
+    transition:
+      background 0.3s ease,
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
+  }
+
+  .ack-sheet[open]::backdrop {
+    background: var(--sheet-backdrop);
+  }
+
+  @starting-style {
+    .ack-sheet[open]::backdrop {
+      background: rgb(0 0 0 / 0);
+    }
+  }
+
+  /* Variants */
+  .ack-sheet--glass {
+    --sheet-bg: rgb(var(--paper-rgb, 5 5 5) / 0.75);
+    backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .ack-sheet--minimal {
+    --sheet-bg: var(--c-bg, #050505);
+    --sheet-backdrop: rgb(0 0 0 / 0.7);
+    box-shadow: none;
+  }
+
+  /* Sizes */
+  .ack-sheet--sm { --sheet-max-h: 40dvh; }
+  .ack-sheet--md { --sheet-max-h: 65dvh; }
+  .ack-sheet--lg { --sheet-max-h: 90dvh; }
+
+  .ack-sheet__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    max-height: inherit;
+    padding: var(--sp-3, 0.75rem) var(--sp-6, 1.5rem) calc(var(--sp-6, 1.5rem) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ack-sheet__handle {
+    flex-shrink: 0;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto var(--sp-2, 0.5rem);
+    border-radius: var(--r-full, 9999px);
+    background: rgb(var(--ink-rgb, 255 255 255) / 0.2);
+  }
+
+  .ack-sheet__title {
+    margin: 0;
+    color: var(--c-text-1, #ffffff);
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .ack-sheet__desc {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .ack-sheet__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .ack-sheet__footer {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    padding-top: var(--sp-2, 0.5rem);
+  }
+
+  /* Larger screens: lift the sheet off the bottom edge. */
+  @media (min-width: 640px) {
+    .ack-sheet {
+      margin-bottom: var(--sp-6, 1.5rem);
+      border-bottom: 1px solid var(--sheet-border);
+      border-radius: var(--r-lg, 20px);
+    }
+
+    .ack-sheet[open] {
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ack-sheet,
+    .ack-sheet::backdrop {
+      transition: none;
+    }
+  }
 </style>

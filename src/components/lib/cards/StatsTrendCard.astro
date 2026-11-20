@@ -8,7 +8,9 @@
  * @param {'up' | 'down' | 'neutral'} trend - Direction of the trend. Default is 'up'.
  * @param {string} timeframe - Timeframe subtitle (e.g. 'vs last month').
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label: string;
   value: string;
   change: string;
@@ -16,18 +18,26 @@ interface Props {
   timeframe?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   label = 'Monthly Active Builders',
   value = '14,290',
   change = '+18.4%',
   trend = 'up',
   timeframe = 'vs last 30 days',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 const bars = [35, 55, 40, 75, 60, 90, 80, 100];
 ---
 
-<div class="trend-card">
+<div {...rest} class:list={['trend-card', classAttr]}>
   <div class="trend-card__top">
     <span class="trend-card__label">{label}</span>
     <span class:list={['trend-card__badge', `trend-card__badge--${trend}`]}>

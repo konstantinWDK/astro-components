@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -21,17 +28,27 @@ const {
   type = 'button', 
   variant = 'primary', 
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`shiny-btn shiny-btn--${variant} shiny-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`shiny-btn shiny-btn--${variant} shiny-btn--${size}`,
+    classAttr,
+  ]}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="shiny-btn__content"><slot /></span>
 </Tag>
@@ -83,20 +100,21 @@ const Tag = href ? 'a' : 'button';
     z-index: 1;
   }
 
-  .shiny-btn:hover:not(:disabled)::after {
+  .shiny-btn:hover:not(:disabled, [aria-disabled='true'])::after {
     left: 100%;
   }
 
-  .shiny-btn:hover:not(:disabled) {
+  .shiny-btn:hover:not(:disabled, [aria-disabled='true']) {
     box-shadow: 0 10px 30px -10px rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
   }
 
-  .shiny-btn:active:not(:disabled) {
+  .shiny-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.98);
   }
 
-  .shiny-btn:disabled {
+  .shiny-btn:disabled,
+  .shiny-btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);
@@ -117,7 +135,7 @@ const Tag = href ? 'a' : 'button';
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: var(--c-text-2, #94a3b8);
   }
-  .shiny-btn--ghost:hover:not(:disabled) {
+  .shiny-btn--ghost:hover:not(:disabled, [aria-disabled='true']) {
     color: #fff;
     border-color: #fff;
   }

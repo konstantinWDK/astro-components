@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'yellow' | 'red' | 'blue' | 'green';
@@ -21,17 +28,27 @@ const {
   type = 'button', 
   variant = 'yellow', 
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`retro-arcade-btn retro-arcade-btn--${variant} retro-arcade-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`retro-arcade-btn retro-arcade-btn--${variant} retro-arcade-btn--${size}`,
+    classAttr,
+  ]}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="retro-arcade-btn__inner">
     <slot />
@@ -76,20 +93,21 @@ const Tag = href ? 'a' : 'button';
   }
 
   /* Interaction */
-  .retro-arcade-btn:hover:not(:disabled) .retro-arcade-btn__inner {
+  .retro-arcade-btn:hover:not(:disabled, [aria-disabled='true']) .retro-arcade-btn__inner {
     filter: brightness(110%);
   }
 
-  .retro-arcade-btn:active:not(:disabled) {
+  .retro-arcade-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translate(calc(var(--pixel-size) / 2), calc(var(--pixel-size) / 2));
   }
 
-  .retro-arcade-btn:active:not(:disabled) .retro-arcade-btn__inner {
+  .retro-arcade-btn:active:not(:disabled, [aria-disabled='true']) .retro-arcade-btn__inner {
     box-shadow: 
       inset var(--pixel-size) var(--pixel-size) var(--shadow-color);
   }
 
-  .retro-arcade-btn:disabled {
+  .retro-arcade-btn:disabled,
+  .retro-arcade-btn[aria-disabled='true'] {
     opacity: 0.6;
     cursor: not-allowed;
     filter: grayscale(1);

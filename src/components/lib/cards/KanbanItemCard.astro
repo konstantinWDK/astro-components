@@ -10,7 +10,9 @@
  * @param {number} commentsCount - Number of discussion comments. Default is 3.
  * @param {number} attachmentsCount - Number of files attached. Default is 2.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   tag?: string;
@@ -20,6 +22,12 @@ interface Props {
   attachmentsCount?: number;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Implement WebGL Shader Transition Pipeline',
   priority = 'high',
@@ -28,6 +36,8 @@ const {
   dueDate = 'Tomorrow',
   commentsCount = 3,
   attachmentsCount = 2,
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 const priorityMap = {
@@ -40,7 +50,7 @@ const priorityMap = {
 const currentPriority = priorityMap[priority] || priorityMap.high;
 ---
 
-<div class="k-item" tabindex="0" role="article" aria-label={`Task: ${title}`}>
+<div {...rest} class:list={['k-item', classAttr]} tabindex="0" role="article" aria-label={`Task: ${title}`}>
   <div class="k-item__head">
     <span class="k-item__tag">{tag}</span>
     <span

@@ -7,18 +7,26 @@
  * @param {string} name - HTML name binding.
  * @param {string} accept - Allowed file formats.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   id: string;
   name?: string;
   accept?: string;
 }
 
-const { label = "Choose File", id, name, accept } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label = "Choose File", id, name, accept, class: classAttr, ...rest } = Astro.props;
 ---
 
-<label class="file-btn" for={id}>
-  <input type="file" {id} {name} {accept} class="file-btn__input" />
+<label class:list={['file-btn', classAttr]} for={id}>
+  <input {...rest} type="file" {id} {name} {accept} class="file-btn__input" />
   <span class="file-btn__label">{label}</span>
 </label>
 

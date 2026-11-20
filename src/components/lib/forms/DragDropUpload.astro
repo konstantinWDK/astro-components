@@ -8,7 +8,9 @@
  * @param {string} accept - Allowed file types (e.g. "image/*").
  * @param {boolean} multiple - Enable multiple file selection.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   id: string;
   name?: string;
@@ -16,10 +18,16 @@ interface Props {
   multiple?: boolean;
 }
 
-const { label = "Drag files here or browse", id, name, accept, multiple = false } = Astro.props;
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label = "Drag files here or browse", id, name, accept, multiple = false, class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="upload-zone" data-upload-zone>
+<div class:list={['upload-zone', classAttr]} data-upload-zone>
   <div class="upload-zone__icon" aria-hidden="true">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -32,7 +40,7 @@ const { label = "Drag files here or browse", id, name, accept, multiple = false 
       i === 0 ? <span>{part} <span class="upload-zone__link">browse</span></span> : part
     ))}
   </p>
-  <input type="file" {id} {name} {accept} {multiple} hidden class="upload-zone__input" data-upload-input />
+  <input {...rest} type="file" {id} {name} {accept} {multiple} hidden class="upload-zone__input" data-upload-input />
 </div>
 
 <style>

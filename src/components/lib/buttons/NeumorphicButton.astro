@@ -9,7 +9,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   baseColor?: string;
@@ -24,18 +31,28 @@ const {
   baseColor = 'var(--c-bg-2, #111827)',
   variant = 'convex',
   size = 'md',
-  disabled = false 
+  disabled = false,
+  class: classAttr,
+  target,
+  rel,
+  ...rest
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 ---
 
 <Tag 
-  href={href} 
+  href={disabled ? undefined : href} 
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`neu-btn neu-btn--${size} neu-btn--${variant}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`neu-btn neu-btn--${size} neu-btn--${variant}`,
+    classAttr,
+  ]}
   style={`--base-color: ${baseColor}`}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
   <span class="neu-btn__surface">
     <slot />
@@ -119,30 +136,31 @@ const Tag = href ? 'a' : 'button';
   }
 
   /* Hover States */
-  .neu-btn:hover:not(:disabled) {
+  .neu-btn:hover:not(:disabled, [aria-disabled='true']) {
     transform: translateY(-2px);
     filter: brightness(1.08);
   }
 
-  .neu-btn--convex:hover:not(:disabled) {
+  .neu-btn--convex:hover:not(:disabled, [aria-disabled='true']) {
     box-shadow: 
       calc(var(--distance) * 1.4) calc(var(--distance) * 1.4) calc(var(--blur) * 1.4) var(--shadow-dark),
       calc(var(--distance) * -0.8) calc(var(--distance) * -0.8) calc(var(--blur) * 1.4) var(--shadow-light);
   }
 
   /* Active/Pressed States */
-  .neu-btn:active:not(:disabled) {
+  .neu-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translateY(0) scale(0.97);
   }
 
-  .neu-btn--convex:active:not(:disabled) .neu-btn__surface {
+  .neu-btn--convex:active:not(:disabled, [aria-disabled='true']) .neu-btn__surface {
     background: var(--base-color);
     box-shadow: 
       inset calc(var(--distance) * 0.5) calc(var(--distance) * 0.5) calc(var(--blur) * 0.5) var(--shadow-dark),
       inset calc(var(--distance) * -0.3) calc(var(--distance) * -0.3) calc(var(--blur) * 0.5) var(--shadow-light);
   }
 
-  .neu-btn:disabled {
+  .neu-btn:disabled,
+  .neu-btn[aria-disabled='true'] {
     opacity: 0.4;
     cursor: not-allowed;
     filter: grayscale(1);

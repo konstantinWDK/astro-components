@@ -3,6 +3,7 @@
 // so registry `code` strings are always identical to the real files without drift.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 let rawSources: Record<string, string> = {};
 
@@ -29,13 +30,24 @@ export function source(relPath: string): string {
   if (rawSources[`../../components/lib/${relPath}`]) {
     return rawSources[`../../components/lib/${relPath}`];
   }
+  // Resolve relative to this module first (works when the package is run via
+  // `npx` from any directory), then relative to the current working directory.
+  const roots: string[] = [];
   try {
-    const fullPath = path.resolve(process.cwd(), 'src/components/lib', relPath);
-    if (fs.existsSync(fullPath)) {
-      return fs.readFileSync(fullPath, 'utf8');
-    }
+    roots.push(fileURLToPath(new URL('../../components/lib/', import.meta.url)));
   } catch {
-    // ignore
+    // import.meta.url unavailable
+  }
+  roots.push(path.resolve(process.cwd(), 'src/components/lib'));
+  for (const root of roots) {
+    try {
+      const fullPath = path.resolve(root, relPath);
+      if (fs.existsSync(fullPath)) {
+        return fs.readFileSync(fullPath, 'utf8');
+      }
+    } catch {
+      // try next root
+    }
   }
   return '';
 }

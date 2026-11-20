@@ -7,12 +7,20 @@
  * @param {string} defaultValue - Value of the active option.
  * @param {'sm' | 'md' | 'lg'} size - Pill size scale. Default is 'md'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   name: string;
   options?: Array<{ label: string; value: string; icon?: string }>;
   defaultValue?: string;
   size?: 'sm' | 'md' | 'lg';
 }
+
+/** Own props plus any native <div> attribute (aria-*, data-*, autocomplete…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
 
 const {
   name = 'toggle-options',
@@ -23,10 +31,12 @@ const {
   ],
   defaultValue = 'month',
   size = 'md',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class:list={['glass-toggle-group', `glass-toggle-group--${size}`]} role="radiogroup" data-toggle-group>
+<div {...rest} class:list={['glass-toggle-group', `glass-toggle-group--${size}`, classAttr]} role="radiogroup" data-toggle-group>
   <div class="glass-toggle-group__slider" data-toggle-slider aria-hidden="true"></div>
   {options.map((opt) => {
     const isChecked = opt.value === defaultValue;

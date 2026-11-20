@@ -7,22 +7,32 @@
  * @param {string} badge - Eyebrow pill label. Default is '3D Interactive'.
  * @param {string} ctaText - Action button label. Default is 'Explore Effect'.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   description?: string;
   badge?: string;
   ctaText?: string;
 }
 
+/** Own props plus any native <div> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Interactive 3D Tilt',
   description = 'Physical card response following cursor movement with dynamic perspective distortion, specular highlights, and multi-layer depth.',
   badge = 'Hardware Accelerated',
   ctaText = 'Interact Now',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 ---
 
-<div class="tilt-card-wrap">
+<div {...rest} class:list={['tilt-card-wrap', classAttr]}>
   <div class="tilt-card-inner">
     <div class="tilt-card__glare" aria-hidden="true"></div>
 

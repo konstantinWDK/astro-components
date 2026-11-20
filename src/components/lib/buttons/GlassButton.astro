@@ -8,7 +8,14 @@
  * @param {'sm'|'md'|'lg'} size - Optional. The size variant of the button. Default is 'md'.
  * @param {boolean} disabled - Optional. Whether the button is disabled. Default is false.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'type' | 'class'> {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+  /** Link target/rel, used when `href` renders an <a>. */
+  target?: HTMLAttributes<'a'>['target'];
+  rel?: string;
   href?: string;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -16,16 +23,22 @@ interface Props {
   disabled?: boolean;
 }
 
-const { href, type = 'button', variant = 'primary', size = 'md', disabled = false } = Astro.props;
+const { href, type = 'button', variant = 'primary', size = 'md', disabled = false, class: classAttr, target, rel, ...rest } = Astro.props;
 const Tag = href ? 'a' : 'button';
 ---
 <Tag
-  href={href}
+  href={disabled ? undefined : href}
   type={href ? undefined : type}
-  disabled={disabled}
-  class={`glass-btn glass-btn--${variant} glass-btn--${size}`}
+  disabled={!href && disabled ? true : undefined}
+  aria-disabled={disabled ? 'true' : undefined}
+  class:list={[`glass-btn glass-btn--${variant} glass-btn--${size}`,
+    classAttr,
+  ]}
+  target={href ? target : undefined}
+  rel={href ? rel : undefined}
+  {...rest}
 >
-  <span class="glass-btn__shimmer"></span>
+  <span class="glass-btn__shimmer" aria-hidden="true"></span>
   <span class="glass-btn__content">
     <slot />
   </span>
@@ -76,7 +89,7 @@ const Tag = href ? 'a' : 'button';
     pointer-events: none;
   }
 
-  .glass-btn:hover:not(:disabled) .glass-btn__shimmer {
+  .glass-btn:hover:not(:disabled, [aria-disabled='true']) .glass-btn__shimmer {
     transform: translateX(100%);
   }
 
@@ -95,21 +108,22 @@ const Tag = href ? 'a' : 'button';
     transition: opacity 0.3s ease;
   }
 
-  .glass-btn:hover:not(:disabled)::after {
+  .glass-btn:hover:not(:disabled, [aria-disabled='true'])::after {
     opacity: 1;
   }
 
-  .glass-btn:hover:not(:disabled) {
+  .glass-btn:hover:not(:disabled, [aria-disabled='true']) {
     transform: translateY(-2px);
     border-color: rgba(255, 255, 255, 0.2);
     box-shadow: 0 10px 30px -10px var(--btn-glow);
   }
 
-  .glass-btn:active:not(:disabled) {
+  .glass-btn:active:not(:disabled, [aria-disabled='true']) {
     transform: translateY(0) scale(0.98);
   }
 
-  .glass-btn:disabled {
+  .glass-btn:disabled,
+  .glass-btn[aria-disabled='true'] {
     opacity: 0.4;
     cursor: not-allowed;
     filter: grayscale(1);
@@ -135,7 +149,7 @@ const Tag = href ? 'a' : 'button';
     backdrop-filter: none;
   }
 
-  .glass-btn--ghost:hover:not(:disabled) {
+  .glass-btn--ghost:hover:not(:disabled, [aria-disabled='true']) {
     background: rgba(184, 134, 11, 0.08);
     border-color: rgba(184, 134, 11, 0.4);
   }

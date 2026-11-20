@@ -7,17 +7,25 @@
  * @param {number} length - Number of OTP digits. Default is 4.
  * @param {string} name - Base name for form submission (will be indexed).
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   label?: string;
   id: string;
   length?: number;
   name?: string;
 }
 
-const { label, id, length = 4, name = "otp" } = Astro.props;
+/** Own props plus any native <div> attribute (aria-*, data-*, autocomplete…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const { label, id, length = 4, name = "otp", class: classAttr, ...rest } = Astro.props;
 ---
 
-<div class="otp-container">
+<div {...rest} class:list={['otp-container', classAttr]}>
   {label && <label class="otp-label">{label}</label>}
   <div class="otp-wrap" data-otp-group>
     {Array.from({ length }).map((_, i) => (

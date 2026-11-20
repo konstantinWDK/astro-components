@@ -5,14 +5,24 @@
  * @param {string} title - Header text. Default is 'Privacy Preferences'.
  * @param {string} description - Explanation text for user privacy consent.
  */
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
   title?: string;
   description?: string;
 }
 
+/** Own props plus any native <aside> attribute (aria-*, data-*, title…), forwarded to the root element. */
+type Props = OwnProps & Omit<HTMLAttributes<'aside'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
 const {
   title = 'Privacy & Cookie Settings',
   description = 'We use cookies and telemetry to improve performance, analyze usage, and customize your experience.',
+  class: classAttr,
+  ...rest
 } = Astro.props;
 
 const categories = [
@@ -22,7 +32,7 @@ const categories = [
 ];
 ---
 
-<aside class="cookie-drawer" role="dialog" aria-modal="true" aria-label={title} data-cookie-drawer>
+<aside {...rest} class:list={['cookie-drawer', classAttr]} role="dialog" aria-modal="true" aria-label={title} data-cookie-drawer>
   <div class="cookie-drawer__header">
     <div class="cookie-drawer__icon">🍪</div>
     <div class="cookie-drawer__titles">
@@ -45,7 +55,7 @@ const categories = [
             disabled={cat.locked}
             name={cat.id}
           />
-          <span class="slider"></span>
+          <span class="slider" aria-hidden="true"></span>
         </label>
       </div>
     ))}
