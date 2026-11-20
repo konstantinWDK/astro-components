@@ -870,7 +870,7 @@ export const sectionsExtra: ComponentDoc[] = [
   // === FOOD DELIVERY & KITCHEN OS ("BiteFlow") ===
   section({
     slug: 'food-hero-plate', name: 'Food Hero Plate', file: 'FoodHeroPlate.astro', sectionCategory: 'food',
-    description: 'Pop sticker hero: a giant plate swaps dishes in sync with the headline word, ingredients orbit, a rider zips by and the plate spins on scroll; address finder, dish marquee and pause button.',
+    description: 'Centered pop sticker poster hero: a giant plate swaps dishes in sync with the headline word, ingredients orbit, a rider zips by and the plate spins on scroll; address finder, dish marquee and pause button.',
     tags: ['food', 'hero', 'delivery', 'animation', 'scroll-driven', 'marquee'], featured: true,
     usage: `<FoodHeroPlate menuHref="/carta" trackHref="/pedido" words={['smash burgers', 'ramen', 'tacos']} />`,
   }),

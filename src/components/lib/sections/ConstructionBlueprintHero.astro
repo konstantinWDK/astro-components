@@ -12,7 +12,7 @@
  * @param {Array<{name: string, district: string, progress: number}>} sites - Ticker items.
  * @param {number} floors - Floors in the drawing. Default 7.
  * @param {number} bays - Window bays in the drawing. Default 6.
- * @param {string} variant - 'split' | 'stacked' (drawing below the copy). Default 'split'.
+ * @param {string} variant - 'sheet' (panoramic drawing + bottom title block) | 'split'. Default 'sheet'.
  * @param {string} size - 'md' | 'lg' headline. Default 'lg'.
  * @param {string} class - Extra class for the root.
  *
@@ -32,7 +32,7 @@ interface OwnProps {
   sites?: Array<{ name: string; district: string; progress: number }>;
   floors?: number;
   bays?: number;
-  variant?: 'split' | 'stacked';
+  variant?: 'sheet' | 'split';
   size?: 'md' | 'lg';
 }
 
@@ -45,7 +45,7 @@ const {
   sites = constructionSites,
   floors = 7,
   bays = 6,
-  variant = 'split',
+  variant = 'sheet',
   size = 'lg',
   class: classAttr,
   ...rest
@@ -218,8 +218,46 @@ const uid = `sk-hero-${Math.random().toString(36).slice(2, 7)}`;
     max-width: 1280px;
     margin: 0 auto;
     display: grid;
-    gap: clamp(2rem, 5vw, 4rem);
+    gap: clamp(1.5rem, 4vw, 2.5rem);
     align-items: center;
+  }
+
+  .sk-hero--sheet .sk-hero__inner {
+    gap: 0;
+  }
+
+  .sk-hero--sheet .sk-hero__sheet {
+    order: -1;
+    border-bottom: 0;
+  }
+
+  .sk-hero--sheet .sk-hero__svg {
+    max-height: 48vh;
+  }
+
+  .sk-hero--sheet .sk-hero__copy {
+    display: grid;
+    gap: 1.25rem 2rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid var(--sk-line);
+    background: color-mix(in srgb, var(--sk-panel) 90%, transparent);
+  }
+
+  @media (min-width: 900px) {
+    .sk-hero--sheet .sk-hero__copy {
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      grid-template-areas:
+        'ref ref'
+        'title block'
+        'lead ctas';
+      align-items: end;
+    }
+
+    .sk-hero--sheet .sk-hero__ref { grid-area: ref; margin-bottom: 0; }
+    .sk-hero--sheet .sk-hero__title { grid-area: title; }
+    .sk-hero--sheet .sk-hero__lead { grid-area: lead; margin-top: 0; }
+    .sk-hero--sheet .sk-hero__ctas { grid-area: ctas; margin-top: 0; justify-self: end; }
+    .sk-hero--sheet .sk-hero__block { grid-area: block; margin-top: 0; max-width: none; }
   }
 
   @media (min-width: 980px) {
