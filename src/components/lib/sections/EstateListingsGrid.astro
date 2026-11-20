@@ -1,0 +1,873 @@
+---
+/**
+ * EstateListingsGrid — Property listings with live filters, sorting, favourites and an optional zone map.
+ * Filters run in the browser on data attributes, so the page stays static. On load it reads
+ * ?op=&zone=&type=&max=&beds= from the URL (EstateHero submits those), and keeps the URL in sync.
+ *
+ * @param {EstateProperty[]} properties - Listings to show.
+ * @param {string} detailBase - Base path for property pages (`${detailBase}/${slug}`).
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {boolean} showFilters - Show the filter bar. Default true.
+ * @param {boolean} showMap - Show the zone map with a pin per listing (desktop). Default false.
+ * @param {number} limit - Max cards to render (e.g. 3 on a home page).
+ * @param {string} ctaHref - "See all" link shown when `limit` hides listings.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} variant - 'grid' | 'compact' (smaller cards). Default 'grid'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled filter controls, result count announced through aria-live,
+ * favourites are toggle buttons with aria-pressed, each card has one link (the title)
+ * stretched over the card; map pins are links named after the listing.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import EstatePropertyMedia from './EstatePropertyMedia.astro';
+import {
+  estateProperties,
+  estateTypeLabels,
+  formatEstatePrice,
+  type EstateProperty,
+} from '../templates/real-estate/data';
+
+interface OwnProps {
+  properties?: EstateProperty[];
+  detailBase?: string;
+  title?: string;
+  subtitle?: string;
+  showFilters?: boolean;
+  showMap?: boolean;
+  limit?: number;
+  ctaHref?: string;
+  headingLevel?: 'h1' | 'h2';
+  variant?: 'grid' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  properties = estateProperties,
+  detailBase = '/preview/real-estate/propiedades',
+  title = 'Propiedades en Valencia',
+  subtitle = 'Seleccionadas y visitadas por nuestros agentes. Precios actualizados cada día.',
+  showFilters = true,
+  showMap = false,
+  limit,
+  ctaHref,
+  headingLevel = 'h2',
+  variant = 'grid',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `elg-${Math.random().toString(36).slice(2, 8)}`;
+const shown = typeof limit === 'number' ? properties.slice(0, limit) : properties;
+const zones = [...new Set(properties.map((p) => p.zone))].sort();
+const types = [...new Set(properties.map((p) => p.type))];
+const statusLabels = { reserved: 'Reservado', sold: 'Vendido', draft: 'Borrador', active: '' } as const;
+---
+
+<section
+  class:list={['estate-ui', 'estate-listings', `estate-listings--${variant}`, { 'estate-listings--map': showMap }, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-estate-listings
+  {...rest}
+>
+  <div class="estate-listings__inner">
+    <header class="estate-listings__head">
+      <div>
+        <Heading id={`${uid}-title`} class="estate-listings__title">{title}</Heading>
+        {subtitle && <p class="estate-listings__subtitle">{subtitle}</p>}
+      </div>
+      {ctaHref && typeof limit === 'number' && (
+        <a href={ctaHref} class="estate-listings__all">
+          Ver todas ({properties.length})
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </a>
+      )}
+    </header>
+
+    {showFilters && (
+      <form class="estate-filters" data-filters aria-label="Filtrar propiedades">
+        <fieldset class="estate-filters__ops">
+          <legend class="estate-sr">Operación</legend>
+          {[
+            { value: '', label: 'Todas' },
+            { value: 'sale', label: 'Venta' },
+            { value: 'rent', label: 'Alquiler' },
+          ].map((o) => (
+            <label class="estate-filters__op">
+              <input type="radio" name="op" value={o.value} checked={o.value === ''} />
+              <span>{o.label}</span>
+            </label>
+          ))}
+        </fieldset>
+        <div class="estate-filters__field">
+          <label for={`${uid}-zone`}>Zona</label>
+          <select id={`${uid}-zone`} name="zone">
+            <option value="">Todas</option>
+            {zones.map((z) => <option value={z}>{z}</option>)}
+          </select>
+        </div>
+        <div class="estate-filters__field">
+          <label for={`${uid}-type`}>Tipo</label>
+          <select id={`${uid}-type`} name="type">
+            <option value="">Todos</option>
+            {types.map((t) => <option value={t}>{estateTypeLabels[t]}</option>)}
+          </select>
+        </div>
+        <div class="estate-filters__field">
+          <label for={`${uid}-beds`}>Habitaciones</label>
+          <select id={`${uid}-beds`} name="beds">
+            <option value="">Cualquiera</option>
+            {[1, 2, 3, 4].map((n) => <option value={n}>{n}+</option>)}
+          </select>
+        </div>
+        <div class="estate-filters__field">
+          <label for={`${uid}-max`}>Precio máximo (€)</label>
+          <input id={`${uid}-max`} name="max" type="number" inputmode="numeric" min="0" step="50" placeholder="Sin límite" />
+        </div>
+        <div class="estate-filters__field">
+          <label for={`${uid}-sort`}>Ordenar</label>
+          <select id={`${uid}-sort`} name="sort">
+            <option value="recent">Más recientes</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
+            <option value="m2-desc">Más metros</option>
+          </select>
+        </div>
+        <button type="reset" class="estate-filters__reset">Limpiar</button>
+      </form>
+    )}
+
+    <p class="estate-listings__count" aria-live="polite" data-count>
+      {shown.length} {shown.length === 1 ? 'propiedad' : 'propiedades'}
+    </p>
+
+    <div class="estate-listings__layout">
+      <ul class="estate-listings__grid" role="list" data-grid>
+        {shown.map((p) => {
+          const href = `${detailBase}/${p.slug}`;
+          const dropped = p.previousPrice && p.previousPrice > p.price;
+          return (
+            <li
+              class:list={['estate-card', `estate-card--${p.status}`]}
+              data-card
+              data-slug={p.slug}
+              data-op={p.operation}
+              data-zone={p.zone}
+              data-type={p.type}
+              data-beds={p.beds}
+              data-price={p.price}
+              data-m2={p.m2}
+              data-days={p.publishedDays}
+              data-sold={p.status === 'sold' ? 'true' : undefined}
+            >
+              <div class="estate-card__media-wrap">
+                <EstatePropertyMedia
+                  type={p.type}
+                  hue={p.hue}
+                  src={p.images?.[0]?.src}
+                  alt={p.images?.[0]?.alt ?? `Ilustración de ${estateTypeLabels[p.type].toLowerCase()} en ${p.zone}`}
+                />
+                <div class="estate-card__tags">
+                  <span class:list={['estate-card__op', `estate-card__op--${p.operation}`]}>
+                    {p.operation === 'sale' ? 'Venta' : 'Alquiler'}
+                  </span>
+                  {p.badge && p.status === 'active' && <span class="estate-card__badge">{p.badge}</span>}
+                  {p.status !== 'active' && <span class="estate-card__status">{statusLabels[p.status]}</span>}
+                </div>
+                <button type="button" class="estate-card__fav" aria-pressed="false" data-fav={p.slug}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21s-7.5-4.6-9.5-9.3C1.2 8.5 3.3 5 6.7 5c2 0 3.5 1.1 4.3 2.4h2C13.8 6.1 15.3 5 17.3 5c3.4 0 5.5 3.5 4.2 6.7C19.5 16.4 12 21 12 21z" />
+                  </svg>
+                  <span class="estate-sr">Guardar {p.title}</span>
+                </button>
+              </div>
+              <div class="estate-card__body">
+                <p class="estate-card__price">
+                  <span>{formatEstatePrice(p.price, p.operation)}</span>
+                  {dropped && (
+                    <span class="estate-card__was">
+                      <span class="estate-sr">Antes </span>
+                      <s>{formatEstatePrice(p.previousPrice!, p.operation)}</s>
+                    </span>
+                  )}
+                </p>
+                <h3 class="estate-card__title">
+                  <a href={href} class="estate-card__link">{p.title}</a>
+                </h3>
+                <p class="estate-card__zone">{p.zone}, {p.city}</p>
+                <ul class="estate-card__facts" role="list">
+                  <li><strong>{p.m2}</strong> m²</li>
+                  <li><strong>{p.beds}</strong> hab.</li>
+                  <li><strong>{p.baths}</strong> baños</li>
+                  <li class="estate-card__energy" data-energy={p.energy}>
+                    <span class="estate-sr">Certificado energético </span>{p.energy}
+                  </li>
+                </ul>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {showMap && (
+        <aside class="estate-map" aria-label="Mapa de propiedades">
+          <div class="estate-map__canvas">
+            <svg class="estate-map__svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <rect width="100" height="100" class="estate-map__land" />
+              <path d="M92 0 C86 30 94 60 88 100 L100 100 L100 0 Z" class="estate-map__sea" />
+              <path d="M0 48 C20 40 30 58 48 50 S70 40 86 46" class="estate-map__river" />
+              <path d="M10 0 L30 100 M55 0 L50 100 M0 70 L90 80 M0 22 L90 30" class="estate-map__street" />
+            </svg>
+            {shown.map((p) => (
+              <a
+                href={`${detailBase}/${p.slug}`}
+                class:list={['estate-map__pin', `estate-map__pin--${p.operation}`]}
+                style={`left:${p.map.x}%;top:${p.map.y}%`}
+                data-pin={p.slug}
+              >
+                <span class="estate-map__pin-label">{formatEstatePrice(p.price, p.operation)}</span>
+                <span class="estate-sr">: {p.title}</span>
+              </a>
+            ))}
+          </div>
+          <p class="estate-map__note">Ubicaciones aproximadas por barrio.</p>
+        </aside>
+      )}
+    </div>
+
+    <div class="estate-listings__empty" data-empty hidden>
+      <p><strong>No hay propiedades con estos filtros.</strong></p>
+      <p>Prueba con otra zona o sube el precio máximo.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const FAV_KEY = 'nido-favourites';
+
+  function readFavs(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function writeFavs(list: string[]) {
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(list));
+    } catch {
+      /* storage unavailable: favourites last for this page view only */
+    }
+  }
+
+  function initListings(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+
+    const form = root.querySelector<HTMLFormElement>('[data-filters]');
+    const grid = root.querySelector<HTMLElement>('[data-grid]');
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+    const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-card]'));
+
+    // Favourites
+    const favs = new Set(readFavs());
+    root.querySelectorAll<HTMLButtonElement>('[data-fav]').forEach((btn) => {
+      const slug = btn.dataset.fav!;
+      btn.setAttribute('aria-pressed', String(favs.has(slug)));
+      btn.addEventListener('click', () => {
+        if (favs.has(slug)) favs.delete(slug);
+        else favs.add(slug);
+        btn.setAttribute('aria-pressed', String(favs.has(slug)));
+        writeFavs([...favs]);
+      });
+    });
+
+    if (!form || !grid) return;
+
+    // Prefill from the URL (EstateHero submits op, zone, type, max)
+    const params = new URLSearchParams(location.search);
+    for (const name of ['op', 'zone', 'type', 'beds', 'max', 'sort']) {
+      const value = params.get(name);
+      if (value === null) continue;
+      const field = form.elements.namedItem(name);
+      if (field instanceof RadioNodeList) field.value = value;
+      else if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+        if (field instanceof HTMLSelectElement && ![...field.options].some((o) => o.value === value)) continue;
+        field.value = value;
+      }
+    }
+
+    const apply = (syncUrl = true) => {
+      const data = new FormData(form);
+      const op = String(data.get('op') || '');
+      const zone = String(data.get('zone') || '');
+      const type = String(data.get('type') || '');
+      const beds = Number(data.get('beds') || 0);
+      const max = Number(data.get('max') || 0);
+      const sort = String(data.get('sort') || 'recent');
+
+      let visible = 0;
+      for (const card of cards) {
+        const d = card.dataset;
+        const match =
+          (!op || d.op === op) &&
+          (!zone || d.zone === zone) &&
+          (!type || d.type === type) &&
+          (!beds || Number(d.beds) >= beds) &&
+          (!max || Number(d.price) <= max);
+        card.hidden = !match;
+        root.querySelector<HTMLElement>(`[data-pin="${d.slug}"]`)?.toggleAttribute('hidden', !match);
+        if (match) visible += 1;
+      }
+
+      const key = (c: HTMLElement) => {
+        const d = c.dataset;
+        if (sort === 'price-asc') return Number(d.price);
+        if (sort === 'price-desc') return -Number(d.price);
+        if (sort === 'm2-desc') return -Number(d.m2);
+        return Number(d.days);
+      };
+      // Sold listings always go last
+      [...cards]
+        .sort((a, b) => Number(!!a.dataset.sold) - Number(!!b.dataset.sold) || key(a) - key(b))
+        .forEach((c) => grid.appendChild(c));
+
+      if (count) count.textContent = `${visible} ${visible === 1 ? 'propiedad' : 'propiedades'}`;
+      if (empty) empty.hidden = visible > 0;
+
+      if (syncUrl) {
+        const url = new URL(location.href);
+        for (const [name, value] of [['op', op], ['zone', zone], ['type', type], ['beds', beds ? String(beds) : ''], ['max', max ? String(max) : ''], ['sort', sort === 'recent' ? '' : sort]]) {
+          if (value) url.searchParams.set(name, value);
+          else url.searchParams.delete(name);
+        }
+        history.replaceState(history.state, '', url);
+      }
+    };
+
+    form.addEventListener('input', () => apply());
+    form.addEventListener('change', () => apply());
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      apply();
+    });
+    form.addEventListener('reset', () => requestAnimationFrame(() => apply()));
+    apply(false);
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-listings]').forEach(initListings);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-listings {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--estate-bg);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-listings__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .estate-listings__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .estate-listings__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    letter-spacing: -0.015em;
+  }
+
+  .estate-listings__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    max-width: 620px;
+    color: var(--estate-text-2);
+    line-height: 1.6;
+  }
+
+  .estate-listings__all {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--estate-brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .estate-listings__all:hover {
+    text-decoration: underline;
+  }
+
+  .estate-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3, 0.75rem);
+    align-items: end;
+    padding: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-4, 1rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-filters__ops {
+    grid-column: 1 / -1;
+    display: inline-flex;
+    justify-self: start;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+    padding: var(--sp-1, 0.25rem);
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-surface);
+  }
+
+  .estate-filters__op {
+    position: relative;
+  }
+
+  .estate-filters__op input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .estate-filters__op span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--estate-text-2);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .estate-filters__op input:checked + span {
+    background: var(--estate-text);
+    color: var(--estate-bg);
+  }
+
+  .estate-filters__op input:focus-visible + span {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-filters__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+    min-width: 0;
+  }
+
+  .estate-filters__field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--estate-text-3);
+  }
+
+  .estate-filters__field :is(select, input) {
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--estate-border-strong);
+    background: var(--estate-surface);
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .estate-filters__field :is(select, input):focus-visible,
+  .estate-filters__reset:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 1px;
+  }
+
+  .estate-filters__reset {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--estate-border-strong);
+    background: transparent;
+    color: var(--estate-text-2);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .estate-filters__reset:hover {
+    color: var(--estate-text);
+    border-color: var(--estate-text-3);
+  }
+
+  .estate-listings__count {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--estate-text-3);
+    font-size: 0.92rem;
+  }
+
+  .estate-listings__layout {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .estate-listings__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+    gap: var(--sp-6, 1.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-listings--compact .estate-listings__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: var(--sp-4, 1rem);
+  }
+
+  .estate-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+
+  .estate-card[hidden] {
+    display: none;
+  }
+
+  .estate-card:hover {
+    border-color: var(--estate-border-strong);
+    transform: translateY(-3px);
+  }
+
+  .estate-card:focus-within {
+    border-color: var(--estate-brand);
+  }
+
+  .estate-card--sold .estate-card__media-wrap {
+    filter: grayscale(0.85);
+    opacity: 0.75;
+  }
+
+  .estate-card__media-wrap {
+    position: relative;
+  }
+
+  .estate-card__tags {
+    position: absolute;
+    top: var(--sp-3, 0.75rem);
+    left: var(--sp-3, 0.75rem);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .estate-card__tags > span {
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: rgba(15, 17, 19, 0.82);
+    color: #f4f1ec;
+  }
+
+  .estate-card__op--sale {
+    box-shadow: inset 0 0 0 1px var(--estate-sale);
+  }
+
+  .estate-card__op--rent {
+    box-shadow: inset 0 0 0 1px var(--estate-rent);
+  }
+
+  .estate-card .estate-card__badge {
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+  }
+
+  .estate-card .estate-card__status {
+    background: var(--estate-reserved);
+    color: #1c1610;
+  }
+
+  .estate-card__fav {
+    position: absolute;
+    top: var(--sp-2, 0.5rem);
+    right: var(--sp-2, 0.5rem);
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(15, 17, 19, 0.7);
+    color: #f4f1ec;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .estate-card__fav:hover {
+    transform: scale(1.06);
+  }
+
+  .estate-card__fav[aria-pressed='true'] {
+    color: #ff8f7a;
+  }
+
+  .estate-card__fav[aria-pressed='true'] svg {
+    fill: currentColor;
+  }
+
+  .estate-card__fav:focus-visible {
+    outline: 2px solid #f4f1ec;
+    outline-offset: 2px;
+  }
+
+  .estate-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .estate-card__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .estate-card__was {
+    color: var(--estate-down);
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+
+  .estate-card__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .estate-card__link {
+    color: var(--estate-text);
+    text-decoration: none;
+  }
+
+  .estate-card__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .estate-card__link:focus-visible {
+    outline: none;
+  }
+
+  .estate-card__link:hover {
+    color: var(--estate-brand);
+  }
+
+  .estate-card__zone {
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.9rem;
+  }
+
+  .estate-card__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-3, 0.75rem) 0 0;
+    padding: var(--sp-3, 0.75rem) 0 0;
+    list-style: none;
+    border-top: 1px solid var(--estate-border);
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+  }
+
+  .estate-card__facts strong {
+    color: var(--estate-text);
+  }
+
+  .estate-card__energy {
+    margin-left: auto;
+    min-width: 1.6rem;
+    padding: 0 0.4rem;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    line-height: 1.6rem;
+    color: #10140f;
+    background: #b7d97a;
+  }
+
+  .estate-card__energy[data-energy='A'] { background: #4fbf6b; }
+  .estate-card__energy[data-energy='B'] { background: #8fd16b; }
+  .estate-card__energy[data-energy='C'] { background: #d3e06a; }
+  .estate-card__energy[data-energy='D'] { background: #f2d45c; }
+  .estate-card__energy[data-energy='E'] { background: #f2a85c; }
+  .estate-card__energy[data-energy='F'],
+  .estate-card__energy[data-energy='G'] { background: #f08c7d; }
+
+  .estate-listings__empty {
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+    text-align: center;
+    border-radius: var(--r-lg, 20px);
+    border: 1px dashed var(--estate-border-strong);
+    color: var(--estate-text-2);
+  }
+
+  .estate-listings__empty p {
+    margin: 0 0 var(--sp-1, 0.25rem);
+  }
+
+  .estate-map {
+    display: none;
+  }
+
+  .estate-map__canvas {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+  }
+
+  .estate-map__svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .estate-map__land { fill: var(--estate-surface); }
+  .estate-map__sea { fill: color-mix(in srgb, var(--estate-rent) 30%, var(--estate-surface)); }
+  .estate-map__river { fill: none; stroke: color-mix(in srgb, var(--estate-rent) 45%, var(--estate-surface)); stroke-width: 3.5; }
+  .estate-map__street { fill: none; stroke: var(--estate-border-strong); stroke-width: 0.6; }
+
+  .estate-map__pin {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 0.55rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-text);
+    color: var(--estate-bg);
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.6);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .estate-map__pin[hidden] {
+    display: none;
+  }
+
+  .estate-map__pin--sale { background: var(--estate-sale); color: var(--estate-on-brand); }
+
+  .estate-map__pin:hover,
+  .estate-map__pin:focus-visible {
+    z-index: 2;
+    transform: translate(-50%, -100%) scale(1.08);
+  }
+
+  .estate-map__pin:focus-visible {
+    outline: 2px solid var(--estate-text);
+    outline-offset: 2px;
+  }
+
+  .estate-map__note {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--estate-text-3);
+    font-size: 0.8rem;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 720px) {
+    .estate-filters {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .estate-filters {
+      grid-template-columns: auto repeat(5, minmax(0, 1fr)) auto;
+    }
+
+    .estate-filters__ops {
+      grid-column: auto;
+    }
+
+    .estate-listings--map .estate-listings__layout {
+      grid-template-columns: minmax(0, 1fr) 360px;
+      align-items: start;
+    }
+
+    .estate-listings--map .estate-map {
+      display: block;
+      position: sticky;
+      top: 96px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .estate-card,
+    .estate-card__fav,
+    .estate-map__pin {
+      transition: none;
+    }
+
+    .estate-card:hover {
+      transform: none;
+    }
+  }
+</style>

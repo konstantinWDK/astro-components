@@ -1,0 +1,142 @@
+---
+/**
+ * EstateValuationPage — Owner landing page: valuation wizard, how selling with the agency
+ * works, and recent sales figures by neighbourhood.
+ *
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {typeof estateData} data - Brand, listings, zones and agents.
+ * @param {string} action - Backend endpoint for the valuation form. Empty shows an on-page confirmation.
+ */
+import EstateSiteLayout from './EstateSiteLayout.astro';
+import EstateValuationWizard from '../../app/EstateValuationWizard.astro';
+import EstateNeighborhoods from '../../sections/EstateNeighborhoods.astro';
+import { estateRoutes, estateData, type EstateRoutes } from './data';
+
+interface Props {
+  routes?: EstateRoutes;
+  data?: typeof estateData;
+  action?: string;
+}
+
+const { routes = estateRoutes, data = estateData, action = '' } = Astro.props;
+
+const steps = [
+  { title: 'Valoración con datos reales', text: 'Cruzamos tu vivienda con las ventas cerradas en tu calle en los últimos 12 meses.' },
+  { title: 'Fotos, plano y vídeo', text: 'Fotógrafo profesional, plano acotado y recorrido en vídeo incluidos en nuestros honorarios.' },
+  { title: 'Visitas filtradas', text: 'Solo enseñamos tu casa a compradores con financiación verificada.' },
+  { title: 'Hasta la notaría', text: 'Arras, certificado energético, cédula y firma: nos ocupamos del papeleo.' },
+];
+---
+
+<EstateSiteLayout
+  title={`Valora tu vivienda gratis · ${data.brand.name}`}
+  description="Calcula cuánto vale tu piso o casa en Valencia en dos minutos y recibe la revisión de un agente del barrio."
+  current="valuation"
+  routes={routes}
+>
+  <div class="estate-ui estate-valuation">
+    <div class="estate-valuation__intro">
+      <p class="estate-valuation__kicker">Para propietarios</p>
+      <h1 class="estate-valuation__title">Vende tu casa con quien conoce tu barrio</h1>
+      <p class="estate-valuation__text">
+        Vendemos en una media de 28 días y al 98 % del precio de salida. Empieza por saber cuánto vale tu vivienda hoy.
+      </p>
+      <ol class="estate-valuation__steps" role="list">
+        {steps.map((s, i) => (
+          <li>
+            <span class="estate-valuation__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <div>
+              <h2>{s.title}</h2>
+              <p>{s.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <EstateValuationWizard zones={data.zones} action={action} />
+  </div>
+  <EstateNeighborhoods
+    zones={data.zones}
+    listingsHref={routes.listings}
+    title="Precios por barrio"
+    subtitle="Referencia para tu valoración: precio medio de venta por m² en el último año."
+    variant="list"
+  />
+</EstateSiteLayout>
+
+<style>
+  .estate-valuation {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    color: var(--estate-text);
+  }
+
+  .estate-valuation__kicker {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--estate-sage);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .estate-valuation__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .estate-valuation__text {
+    margin: var(--sp-4, 1rem) 0 var(--sp-8, 2rem);
+    max-width: 520px;
+    color: var(--estate-text-2);
+    font-size: 1.08rem;
+    line-height: 1.6;
+  }
+
+  .estate-valuation__steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-valuation__steps li {
+    display: flex;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .estate-valuation__num {
+    font-family: var(--estate-font-display);
+    font-size: 1.3rem;
+    color: var(--estate-brand);
+  }
+
+  .estate-valuation__steps h2 {
+    margin: 0 0 0.15rem;
+    font-size: 1.02rem;
+    font-weight: 600;
+  }
+
+  .estate-valuation__steps p {
+    margin: 0;
+    color: var(--estate-text-3);
+    line-height: 1.55;
+  }
+
+  @media (min-width: 1024px) {
+    .estate-valuation {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      align-items: start;
+      padding-block: var(--sp-16, 4rem);
+    }
+  }
+</style>

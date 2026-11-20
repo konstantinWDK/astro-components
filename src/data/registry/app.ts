@@ -210,4 +210,22 @@ export const app: ComponentDoc[] = [
     description: 'Technical construction cost estimator: calculate PEM, PEC, architect fees, licenses and timeline duration based on m² and building typology.',
     tags: ['construction', 'calculator', 'budget', 'pem', 'pec', 'estimator', 'pricing'],
     usage: `<ConstructionBudgetEstimator defaultM2={350} contactHref="/preview/construction/contact" />` }),
+
+  // Real estate agency & CRM apps ("Nido")
+  item({ slug: 'estate-mortgage-calculator', name: 'Estate Mortgage Calculator', file: 'EstateMortgageCalculator.astro', featured: true,
+    description: 'Mortgage simulator with paired sliders and number fields: monthly payment, loan amount, total interest and cash needed up front including purchase taxes.',
+    tags: ['real-estate', 'mortgage', 'calculator', 'finance', 'form'],
+    usage: `<EstateMortgageCalculator price={589000} downPct={20} years={30} rate={2.9} taxPct={10} />` }),
+  item({ slug: 'estate-valuation-wizard', name: 'Estate Valuation Wizard', file: 'EstateValuationWizard.astro', featured: true,
+    description: 'Three-step home valuation: address and type, size, rooms, condition and extras, then a price range from the zone’s €/m² and a lead form for an agent to confirm it.',
+    tags: ['real-estate', 'valuation', 'wizard', 'multi-step', 'form', 'lead'],
+    usage: `<EstateValuationWizard zones={estateZones} action="/api/valuation" />` }),
+  item({ slug: 'estate-visit-scheduler', name: 'Estate Visit Scheduler', file: 'EstateVisitScheduler.astro', featured: true,
+    description: 'Viewing booking card: agent, next six days, time slots with taken ones disabled, in-person or video visit, and contact details with an on-page confirmation.',
+    tags: ['real-estate', 'booking', 'schedule', 'calendar', 'visit', 'form'],
+    usage: `<EstateVisitScheduler property={property} taken={['12:00', '17:30']} />` }),
+  item({ slug: 'estate-leads-pipeline', name: 'Estate Leads Pipeline', file: 'EstateLeadsPipeline.astro', featured: true,
+    description: 'Kanban pipeline for buyer and tenant leads (new, contacted, visit, offer, closed) with keyboard-friendly move buttons, live counts, call links and notes.',
+    tags: ['real-estate', 'crm', 'kanban', 'pipeline', 'leads', 'board'],
+    usage: `<EstateLeadsPipeline leads={estateLeads} propertyBase="/propiedades" />` }),
 ];

@@ -1860,6 +1860,178 @@ const data = {
 
 <ConstructionHomePage />`,
   },
+  {
+    slug: 'real-estate',
+    name: {
+      en: 'Nido · Real Estate Agency & CRM',
+      es: 'Nido · Inmobiliaria & CRM',
+      ru: 'Nido · Агентство недвижимости & CRM',
+    },
+    tagline: {
+      en: 'Property search, listings with filters and map, property pages with viewing booking and mortgage simulator, owner valuation and an agent CRM.',
+      es: 'Buscador de pisos, listado con filtros y mapa, fichas con reserva de visitas y simulador de hipoteca, valoración para propietarios y CRM de agentes.',
+      ru: 'Поиск жилья, каталог с фильтрами и картой, карточки объектов с записью на просмотр и ипотечным калькулятором, оценка для владельцев и CRM агентов.',
+    },
+    description: {
+      en: 'Complete template for a neighbourhood real estate agency. 9 page types: home with buy/rent search, listings with live filters, favourites and zone map, a property page per listing (gallery, facts, energy rating, visit booking, mortgage simulator or rental terms, similar homes), a 3-step valuation for owners, contact and agents, plus agent sign-in and a CRM with overview, listings table and lead pipeline.',
+      es: 'Plantilla completa para una inmobiliaria de barrio. 9 tipos de página: home con buscador de compra y alquiler, listado con filtros en vivo, favoritos y mapa por zonas, ficha por propiedad (galería, datos, certificado energético, reserva de visita, simulador de hipoteca o condiciones de alquiler y viviendas similares), valoración en 3 pasos para propietarios, contacto y agentes, y además acceso de agentes y un CRM con resumen, tabla de propiedades y pipeline de leads.',
+      ru: 'Полный шаблон для районного агентства недвижимости. 9 типов страниц: главная с поиском покупки и аренды, каталог с живыми фильтрами, избранным и картой, страница каждого объекта (галерея, характеристики, энергокласс, запись на просмотр, ипотечный калькулятор или условия аренды, похожие объекты), оценка в 3 шага для владельцев, контакты и агенты, а также вход для агентов и CRM с обзором, таблицей объектов и воронкой лидов.',
+    },
+    highlights: {
+      en: [
+        'Hero search opens the listings already filtered, and filters stay in the URL',
+        'Listings with sorting, favourites saved in the browser and price pins on a zone map',
+        'Property page with gallery, viewing booking and live mortgage simulator',
+        '3-step valuation that estimates a price range from each zone’s €/m²',
+        'Agent CRM: KPIs, upcoming viewings, listings table and keyboard-friendly lead pipeline',
+      ],
+      es: [
+        'El buscador del hero abre el listado filtrado y los filtros se guardan en la URL',
+        'Listado con orden, favoritos guardados en el navegador y mapa por zonas con precios',
+        'Ficha con galería, reserva de visitas y simulador de hipoteca en vivo',
+        'Valoración en 3 pasos que estima una horquilla con el €/m² de cada zona',
+        'CRM de agentes: KPIs, próximas visitas, tabla de propiedades y pipeline de leads usable con teclado',
+      ],
+      ru: [
+        'Поиск на главной открывает отфильтрованный каталог, фильтры сохраняются в URL',
+        'Каталог с сортировкой, избранным в браузере и ценами на карте районов',
+        'Страница объекта с галереей, записью на просмотр и ипотечным калькулятором',
+        'Оценка в 3 шага с диапазоном цены по €/м² района',
+        'CRM агентов: KPI, ближайшие просмотры, таблица объектов и воронка лидов с управлением с клавиатуры',
+      ],
+    },
+    tags: ['real-estate', 'property', 'listings', 'mortgage', 'valuation', 'crm', 'agency', 'booking'],
+    previewBase: '/preview/real-estate/',
+    importPath: 'astro-component-kit/templates/real-estate',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Buy/rent search hero, latest listings, neighbourhood price guide, valuation CTA and agents.', es: 'Hero con buscador de compra y alquiler, últimas propiedades, guía de precios por barrio, llamada a valorar y agentes.', ru: 'Поиск покупки и аренды, новые объекты, цены по районам, призыв к оценке и агенты.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { EstateHomePage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateHomePage />`,
+      },
+      {
+        id: 'listings', path: 'propiedades/',
+        name: { en: 'Listings', es: 'Propiedades', ru: 'Каталог' },
+        description: { en: 'Live filters by operation, zone, type, rooms and price, sorting, favourites and a zone map.', es: 'Filtros en vivo por operación, zona, tipo, habitaciones y precio, orden, favoritos y mapa por zonas.', ru: 'Живые фильтры по сделке, району, типу, комнатам и цене, сортировка, избранное и карта.' },
+        file: 'src/pages/propiedades/index.astro',
+        code: `---
+import { EstateListingsPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateListingsPage />`,
+      },
+      {
+        id: 'property', path: 'propiedades/atico-terraza-ruzafa/',
+        name: { en: 'Property page', es: 'Ficha de propiedad', ru: 'Страница объекта' },
+        description: { en: 'Gallery, key facts, description, energy rating, viewing booking, mortgage simulator or rental terms, and similar homes.', es: 'Galería, datos clave, descripción, certificado energético, reserva de visita, simulador de hipoteca o condiciones de alquiler y similares.', ru: 'Галерея, характеристики, описание, энергокласс, запись на просмотр, ипотека или условия аренды и похожие объекты.' },
+        file: 'src/pages/propiedades/[slug].astro',
+        code: `---
+import { EstatePropertyPage, estateProperties } from 'astro-component-kit/templates/real-estate';
+
+export function getStaticPaths() {
+  return estateProperties.map((p) => ({ params: { slug: p.slug } }));
+}
+
+const { slug } = Astro.params;
+---
+
+<EstatePropertyPage slug={slug} />`,
+      },
+      {
+        id: 'valuation', path: 'valoracion/',
+        name: { en: 'Home valuation', es: 'Valoración', ru: 'Оценка жилья' },
+        description: { en: '3-step valuation wizard for owners, how selling works and prices per neighbourhood.', es: 'Asistente de valoración en 3 pasos, cómo vendemos y precios por barrio.', ru: 'Мастер оценки в 3 шага, как проходит продажа и цены по районам.' },
+        file: 'src/pages/valoracion.astro',
+        code: `---
+import { EstateValuationPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateValuationPage action="/api/valuation" />`,
+      },
+      {
+        id: 'contact', path: 'contacto/',
+        name: { en: 'Contact & agents', es: 'Contacto y agentes', ru: 'Контакты и агенты' },
+        description: { en: 'Office, hours, phone and email, contact form and the agent directory.', es: 'Oficina, horario, teléfono y email, formulario de contacto y directorio de agentes.', ru: 'Офис, часы работы, телефон и email, форма связи и команда агентов.' },
+        file: 'src/pages/contacto.astro',
+        code: `---
+import { EstateContactPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateContactPage action="/api/contact" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Agent sign in', es: 'Acceso agentes', ru: 'Вход для агентов' },
+        description: { en: 'Split sign-in for the agent CRM with a testimonial and agency figures.', es: 'Acceso al CRM de agentes con testimonio y cifras de la agencia.', ru: 'Вход в CRM агентов с отзывом и показателями агентства.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { EstateSignInPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'CRM overview', es: 'Resumen del CRM', ru: 'Обзор CRM' },
+        description: { en: 'KPIs, upcoming viewings, most viewed listings and a compact lead pipeline.', es: 'KPIs, próximas visitas, propiedades más vistas y pipeline compacto.', ru: 'KPI, ближайшие просмотры, популярные объекты и компактная воронка.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { EstateDashboardPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateDashboardPage />`,
+      },
+      {
+        id: 'listings-cms', path: 'app/propiedades/',
+        name: { en: 'Listings manager', es: 'Gestión de propiedades', ru: 'Управление объектами' },
+        description: { en: 'Inventory summary and a searchable, sortable table with status filters, views and leads.', es: 'Resumen de cartera y tabla con búsqueda, orden, filtros de estado, visitas y leads.', ru: 'Сводка портфеля и таблица с поиском, сортировкой, статусами, просмотрами и лидами.' },
+        file: 'src/pages/app/propiedades.astro',
+        code: `---
+import { EstateListingsCmsPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateListingsCmsPage />`,
+      },
+      {
+        id: 'leads', path: 'app/leads/',
+        name: { en: 'Lead pipeline', es: 'Pipeline de leads', ru: 'Воронка лидов' },
+        description: { en: 'Every buyer and tenant lead by stage, with move buttons, call links and notes.', es: 'Todos los leads de compra y alquiler por etapa, con botones para moverlos, llamada y notas.', ru: 'Все лиды покупателей и арендаторов по этапам с кнопками перемещения, звонком и заметками.' },
+        file: 'src/pages/app/leads.astro',
+        code: `---
+import { EstateLeadsPage } from 'astro-component-kit/templates/real-estate';
+---
+
+<EstateLeadsPage />`,
+      },
+    ],
+    newComponents: [
+      'estate-hero', 'estate-listings-grid', 'estate-neighborhoods', 'estate-property-gallery', 'estate-agents-grid', 'estate-valuation-cta',
+      'estate-mortgage-calculator', 'estate-valuation-wizard', 'estate-visit-scheduler', 'estate-leads-pipeline',
+    ],
+    reusedComponents: [
+      'app-sidebar', 'app-topbar', 'page-header', 'data-table', 'auth-card', 'footer-mega-section',
+    ],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from a CMS or an API)
+import { EstateHomePage, estateData, estateRoutes } from 'astro-component-kit/templates/real-estate';
+
+const data = {
+  ...estateData,
+  brand: { ...estateData.brand, name: 'Casa Norte', phone: '+34 900 000 000' },
+  properties: await fetch('https://api.example.com/listings').then((r) => r.json()),
+};
+
+const routes = { ...estateRoutes, listings: '/homes', property: '/homes/sample' };
+---
+
+<EstateHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

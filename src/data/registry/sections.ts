@@ -131,6 +131,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20M13 2L3 22h18L15 6M9 12h6M10 16h4"/></svg>`,
   },
   {
+    id: 'real-estate',
+    name: 'Real Estate Agency',
+    description: 'Sections for real estate agencies and property portals: search hero with buy/rent filters, filterable listings with favourites and zone map, neighbourhood price guide, property photo gallery, agent directory, and owner valuation call to action.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

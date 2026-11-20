@@ -942,4 +942,42 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['construction', 'form', 'contact', 'inquiry', 'feasibility', 'promoters'], featured: true,
     usage: `<ConstructionInquiryForm phone="+34 912 400 900" email="contacto@strukto-constructora.es" />`,
   }),
+
+  // === REAL ESTATE AGENCY & LISTINGS PORTAL ("Nido") ===
+  section({
+    slug: 'estate-hero', name: 'Estate Hero', file: 'EstateHero.astro', sectionCategory: 'real-estate',
+    description: 'Real estate hero with a buy/rent property search (zone, type, max price) that opens the listings pre-filtered, trust figures and a featured listing card.',
+    tags: ['real-estate', 'hero', 'search', 'property', 'listings', 'form'], featured: true,
+    usage: `<EstateHero listingsHref="/propiedades" title="Encuentra tu *casa* en Valencia" />`,
+  }),
+  section({
+    slug: 'estate-listings-grid', name: 'Estate Listings Grid', file: 'EstateListingsGrid.astro', sectionCategory: 'real-estate',
+    description: 'Property listings with live filters (operation, zone, type, rooms, max price), sorting, favourites saved in the browser, URL sync and an optional zone map with price pins.',
+    tags: ['real-estate', 'listings', 'filters', 'grid', 'map', 'favourites'], featured: true,
+    usage: `<EstateListingsGrid properties={estateProperties} detailBase="/propiedades" showMap />`,
+  }),
+  section({
+    slug: 'estate-neighborhoods', name: 'Estate Neighborhoods', file: 'EstateNeighborhoods.astro', sectionCategory: 'real-estate',
+    description: 'Neighbourhood guide with average price per m² and year-on-year trend; each card links to listings filtered by zone.',
+    tags: ['real-estate', 'neighborhoods', 'zones', 'prices', 'guide'], featured: true,
+    usage: `<EstateNeighborhoods zones={estateZones} listingsHref="/propiedades" variant="cards" />`,
+  }),
+  section({
+    slug: 'estate-property-gallery', name: 'Estate Property Gallery', file: 'EstatePropertyGallery.astro', sectionCategory: 'real-estate',
+    description: 'Property photo carousel with thumbnails, previous/next buttons and arrow keys; draws illustrated rooms when a listing has no photos yet.',
+    tags: ['real-estate', 'gallery', 'carousel', 'photos', 'property'], featured: true,
+    usage: `<EstatePropertyGallery property={property} variant="stacked" />`,
+  }),
+  section({
+    slug: 'estate-agents-grid', name: 'Estate Agents Grid', file: 'EstateAgentsGrid.astro', sectionCategory: 'real-estate',
+    description: 'Agent directory with initials avatars, zones, languages, closed deals, rating and direct call and email buttons.',
+    tags: ['real-estate', 'agents', 'team', 'contact', 'directory'],
+    usage: `<EstateAgentsGrid agents={estateAgents} variant="cards" />`,
+  }),
+  section({
+    slug: 'estate-valuation-cta', name: 'Estate Valuation CTA', file: 'EstateValuationCta.astro', sectionCategory: 'real-estate',
+    description: 'Call to action for owners: what is my home worth, three selling points and a link to the valuation wizard. Banner or subtle variant.',
+    tags: ['real-estate', 'cta', 'valuation', 'sellers', 'banner'],
+    usage: `<EstateValuationCta href="/valoracion" variant="banner" />`,
+  }),
 ];

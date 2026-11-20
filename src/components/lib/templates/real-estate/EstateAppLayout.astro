@@ -1,0 +1,181 @@
+---
+/**
+ * EstateAppLayout — Agent CRM shell for the "Nido" real estate template.
+ * Reuses AppSidebar and AppTopbar with the agency's navigation, notifications and user.
+ *
+ * @param {string} title - Page title (suffixed with "Nido CRM").
+ * @param {string} current - Active route key (dashboard | listingsCms | leads).
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, sidebar marks the current page.
+ */
+import '../../../../styles/global.css';
+import './real-estate-theme.css';
+import AppSidebar from '../../app/AppSidebar.astro';
+import AppTopbar from '../../app/AppTopbar.astro';
+import { estateRoutes, estateLeads, type EstateRoutes } from './data';
+
+type Key = 'dashboard' | 'listingsCms' | 'leads';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: EstateRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Nido CRM · Panel de agentes: propiedades, leads y visitas.',
+  current = 'dashboard',
+  routes = estateRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const newLeads = estateLeads.filter((l) => l.stage === 'new').length;
+
+const sidebarGroups = [
+  {
+    label: 'Agencia',
+    items: [
+      { label: 'Resumen', href: routes.dashboard, icon: 'dashboard' },
+      { label: 'Propiedades', href: routes.listingsCms, icon: 'building' },
+      { label: 'Leads', href: routes.leads, icon: 'users', badge: newLeads },
+    ],
+  },
+  {
+    label: 'Accesos directos',
+    items: [
+      { label: 'Web pública', href: routes.home, icon: 'mapPin' },
+      { label: 'Ficha de ejemplo', href: routes.property, icon: 'key' },
+    ],
+  },
+];
+
+const notifications = [
+  { title: 'Nuevo lead de portal', text: 'Carmen Ruiz pregunta por el ático de Ruzafa', time: 'hace 12 min', tone: 'info' as const, unread: true },
+  { title: 'Oferta recibida', text: '695.000 € por el piso de Pla del Real', time: 'hace 2 h', tone: 'success' as const, unread: true },
+  { title: 'Visita sin confirmar', text: 'Chalet de Campanar, hoy a las 17:15', time: 'hace 3 h', tone: 'warning' as const },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-estate" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Nido CRM`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="estate-app-body">
+    <a href="#main-content" class="estate-app-skip">Saltar al contenido</a>
+    <div class="estate-app-shell">
+      <AppSidebar
+        currentHref={routes[current] ?? routes.dashboard}
+        workspace={{ name: 'Nido Inmobiliaria', plan: 'CRM Agencia', initials: 'NI' }}
+        groups={sidebarGroups}
+        promo={{ title: 'Objetivo trimestral', text: '9 de 12 operaciones cerradas', href: routes.leads, cta: 'Ver pipeline', progress: 75 }}
+      />
+      <div class="estate-app-column">
+        <AppTopbar
+          searchPlaceholder="Buscar propiedades, clientes o referencias…"
+          notifications={notifications}
+          user={{ name: 'Lucía Ferrer', role: 'Directora comercial', email: 'lucia@nido.example' }}
+          userLinks={[{ label: 'Ver web pública', href: routes.home }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="estate-app-main" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .estate-app-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--estate-font-body);
+    background: var(--estate-bg);
+    color: var(--estate-text);
+    --c-bg: var(--estate-bg);
+    --c-surface: var(--estate-surface);
+    --c-border: var(--estate-border);
+    --c-text-1: var(--estate-text);
+    --c-text-2: var(--estate-text-2);
+    --c-text-3: var(--estate-text-3);
+    --c-primary-light: var(--estate-brand);
+    --c-on-primary: var(--estate-on-brand);
+  }
+
+  .estate-app-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .estate-app-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .estate-app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .estate-app-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .estate-app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-12, 3rem);
+    box-sizing: border-box;
+  }
+
+  .estate-app-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .estate-app-main {
+      padding: var(--sp-8, 2rem) var(--sp-8, 2rem) var(--sp-16, 4rem);
+    }
+  }
+</style>

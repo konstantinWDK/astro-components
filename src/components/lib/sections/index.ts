@@ -165,4 +165,10 @@ export { default as ConstructionFloorPlanViewer } from './ConstructionFloorPlanV
 export { default as ConstructionSustainabilityBanner } from './ConstructionSustainabilityBanner.astro';
 export { default as ConstructionInquiryForm } from './ConstructionInquiryForm.astro';
 
-
+// Real estate agency & listings portal ("Nido")
+export { default as EstateHero } from './EstateHero.astro';
+export { default as EstateListingsGrid } from './EstateListingsGrid.astro';
+export { default as EstateNeighborhoods } from './EstateNeighborhoods.astro';
+export { default as EstatePropertyGallery } from './EstatePropertyGallery.astro';
+export { default as EstateAgentsGrid } from './EstateAgentsGrid.astro';
+export { default as EstateValuationCta } from './EstateValuationCta.astro';

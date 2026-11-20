@@ -901,4 +901,45 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Formulario de consulta de viabilidad técnica y licitaciones: ubicación de la parcela, tipología de edificación, superficie estimada, presupuesto orientativo y contacto con ingeniería.",
     ru: "Форма запроса технико-экономического обоснования и тендеров: расположение участка, тип объекта, площадь, планируемый бюджет и прямая связь с главным инженером.",
   },
+  // ── Real estate agency & CRM ("Nido") ────────────────────
+  'estate-hero': {
+    es: 'Hero inmobiliario con buscador de compra y alquiler (zona, tipo y precio máximo) que abre el listado ya filtrado, cifras de confianza y una propiedad destacada.',
+    ru: 'Главный экран агентства с поиском покупки и аренды (район, тип, максимальная цена), который открывает отфильтрованный каталог, показатели доверия и избранный объект.',
+  },
+  'estate-listings-grid': {
+    es: 'Listado de propiedades con filtros en vivo (operación, zona, tipo, habitaciones y precio), orden, favoritos guardados en el navegador, URL sincronizada y mapa opcional con precios.',
+    ru: 'Каталог объектов с живыми фильтрами (сделка, район, тип, комнаты, цена), сортировкой, избранным в браузере, синхронизацией URL и картой с ценами.',
+  },
+  'estate-neighborhoods': {
+    es: 'Guía de barrios con precio medio por m² y evolución anual; cada tarjeta abre el listado filtrado por zona.',
+    ru: 'Гид по районам со средней ценой за м² и годовой динамикой; каждая карточка открывает каталог по району.',
+  },
+  'estate-property-gallery': {
+    es: 'Galería de fotos de la vivienda con miniaturas, botones y flechas del teclado; dibuja estancias ilustradas si el anuncio aún no tiene fotos.',
+    ru: 'Фотогалерея объекта с миниатюрами, кнопками и стрелками клавиатуры; рисует иллюстрации комнат, если фотографий ещё нет.',
+  },
+  'estate-agents-grid': {
+    es: 'Directorio de agentes con iniciales, zonas, idiomas, operaciones cerradas, valoración y botones de llamada y email.',
+    ru: 'Команда агентов: инициалы, районы, языки, закрытые сделки, рейтинг и кнопки звонка и email.',
+  },
+  'estate-valuation-cta': {
+    es: 'Llamada a la acción para propietarios: cuánto vale tu casa, tres ventajas y enlace al asistente de valoración. Variante banner o sutil.',
+    ru: 'Призыв для владельцев: сколько стоит ваше жильё, три преимущества и ссылка на мастер оценки. Варианты баннер и спокойный.',
+  },
+  'estate-mortgage-calculator': {
+    es: 'Simulador de hipoteca con deslizadores y campos numéricos: cuota mensual, importe del préstamo, intereses totales y ahorro necesario con impuestos.',
+    ru: 'Ипотечный калькулятор с ползунками и числовыми полями: ежемесячный платёж, сумма кредита, переплата и необходимые накопления с налогами.',
+  },
+  'estate-valuation-wizard': {
+    es: 'Valoración de vivienda en tres pasos: dirección y tipo, superficie, estado y extras, y una horquilla de precio por €/m² de la zona con formulario de contacto.',
+    ru: 'Оценка жилья в три шага: адрес и тип, площадь, состояние и опции, затем диапазон цены по району и форма для связи с агентом.',
+  },
+  'estate-visit-scheduler': {
+    es: 'Reserva de visitas: agente, próximos seis días, horas con huecos ocupados desactivados, visita en persona o por vídeo y confirmación en la página.',
+    ru: 'Запись на просмотр: агент, ближайшие шесть дней, слоты с занятыми временами, очно или по видео и подтверждение на странице.',
+  },
+  'estate-leads-pipeline': {
+    es: 'Pipeline kanban de leads de compra y alquiler (nuevo, contactado, visita, oferta, cerrado) con botones para mover accesibles por teclado, contadores, llamada y notas.',
+    ru: 'Канбан лидов покупателей и арендаторов (новый, связались, просмотр, оффер, закрыт) с кнопками перемещения с клавиатуры, счётчиками, звонком и заметками.',
+  },
 };

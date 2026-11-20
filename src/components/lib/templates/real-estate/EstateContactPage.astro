@@ -1,0 +1,237 @@
+---
+/**
+ * EstateContactPage — Office details, opening hours, contact form and the agent directory.
+ *
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {typeof estateData} data - Brand, listings, zones and agents.
+ * @param {string} action - Backend endpoint for the contact form. Empty shows an on-page confirmation.
+ */
+import EstateSiteLayout from './EstateSiteLayout.astro';
+import EstateAgentsGrid from '../../sections/EstateAgentsGrid.astro';
+import { estateRoutes, estateData, type EstateRoutes } from './data';
+
+interface Props {
+  routes?: EstateRoutes;
+  data?: typeof estateData;
+  action?: string;
+}
+
+const { routes = estateRoutes, data = estateData, action = '' } = Astro.props;
+const { brand } = data;
+---
+
+<EstateSiteLayout
+  title={`Contacto y agentes · ${brand.name}`}
+  description={`Oficina de ${brand.name} en Valencia: ${brand.address}. ${brand.hours}.`}
+  current="contact"
+  routes={routes}
+>
+  <div class="estate-ui estate-contact">
+    <div class="estate-contact__info">
+      <h1 class="estate-contact__title">Hablemos de tu próxima casa</h1>
+      <p class="estate-contact__text">Pásate por la oficina, llámanos o escríbenos. Te responde una persona, no un formulario automático.</p>
+      <dl class="estate-contact__list">
+        <div>
+          <dt>Oficina</dt>
+          <dd>{brand.address}</dd>
+        </div>
+        <div>
+          <dt>Horario</dt>
+          <dd>{brand.hours}</dd>
+        </div>
+        <div>
+          <dt>Teléfono</dt>
+          <dd><a href={`tel:${brand.phone.replace(/\s+/g, '')}`}>{brand.phone}</a></dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd><a href={`mailto:${brand.email}`}>{brand.email}</a></dd>
+        </div>
+      </dl>
+    </div>
+
+    <form class="estate-contact__form" action={action || undefined} method="post" data-estate-contact>
+      <h2 class="estate-contact__form-title">Escríbenos</h2>
+      <div class="estate-contact__field">
+        <label for="estate-c-name">Nombre</label>
+        <input id="estate-c-name" name="name" type="text" autocomplete="name" required />
+      </div>
+      <div class="estate-contact__field">
+        <label for="estate-c-email">Email</label>
+        <input id="estate-c-email" name="email" type="email" autocomplete="email" required />
+      </div>
+      <div class="estate-contact__field">
+        <label for="estate-c-topic">Motivo</label>
+        <select id="estate-c-topic" name="topic">
+          <option>Quiero comprar</option>
+          <option>Quiero alquilar</option>
+          <option>Quiero vender</option>
+          <option>Gestión de mi alquiler</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="estate-contact__field">
+        <label for="estate-c-msg">Mensaje</label>
+        <textarea id="estate-c-msg" name="message" rows="4" required></textarea>
+      </div>
+      <button type="submit" class="estate-contact__submit">Enviar mensaje</button>
+      <p class="estate-contact__done" role="status" tabindex="-1" hidden data-done>Gracias. Te responderemos hoy mismo.</p>
+    </form>
+  </div>
+
+  <EstateAgentsGrid agents={data.agents} />
+</EstateSiteLayout>
+
+<script>
+  function initContact() {
+    document.querySelectorAll<HTMLFormElement>('[data-estate-contact]').forEach((form) => {
+      if (form.dataset.bound) return;
+      form.dataset.bound = 'true';
+      form.addEventListener('submit', (e) => {
+        if (form.getAttribute('action')) return;
+        e.preventDefault();
+        const done = form.querySelector<HTMLElement>('[data-done]')!;
+        form.reset();
+        done.hidden = false;
+        done.focus();
+      });
+    });
+  }
+  initContact();
+  document.addEventListener('astro:page-load', initContact);
+</script>
+
+<style>
+  .estate-contact {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--estate-text);
+  }
+
+  .estate-contact__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(2.1rem, 5vw, 3.2rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .estate-contact__text {
+    margin: var(--sp-4, 1rem) 0 var(--sp-8, 2rem);
+    max-width: 480px;
+    color: var(--estate-text-2);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .estate-contact__list {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+  }
+
+  .estate-contact__list dt {
+    color: var(--estate-text-3);
+    font-size: 0.82rem;
+  }
+
+  .estate-contact__list dd {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+
+  .estate-contact__list a {
+    color: var(--estate-text);
+  }
+
+  .estate-contact__list a:hover {
+    color: var(--estate-brand);
+  }
+
+  .estate-contact__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-xl, 28px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-contact__form-title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: 1.6rem;
+  }
+
+  .estate-contact__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .estate-contact__field label {
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .estate-contact__field :is(input, select, textarea) {
+    min-height: 48px;
+    padding: var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    background: var(--estate-surface);
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .estate-contact__field textarea {
+    resize: vertical;
+  }
+
+  .estate-contact :is(input, select, textarea, button, a):focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-contact__submit {
+    min-height: 48px;
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .estate-contact__submit:hover {
+    background: var(--estate-brand-hover);
+  }
+
+  .estate-contact__done {
+    margin: 0;
+    color: var(--estate-sage);
+    font-weight: 600;
+  }
+
+  .estate-contact__done:focus {
+    outline: none;
+  }
+
+  @media (min-width: 960px) {
+    .estate-contact {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      padding-block: var(--sp-16, 4rem);
+    }
+  }
+</style>

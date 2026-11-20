@@ -1,0 +1,418 @@
+---
+/**
+ * EstateSiteLayout — Public layout for the "Nido" real estate template.
+ * Skip link, sticky header with primary nav (collapses into a disclosure menu on
+ * mobile), phone + valuation CTA, and a mega footer.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (home | listings | valuation | contact).
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link,
+ * the mobile menu button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './real-estate-theme.css';
+import FooterMegaSection from '../../sections/FooterMegaSection.astro';
+import { estateRoutes, estateData, type EstateRoutes } from './data';
+
+type NavKey = 'home' | 'listings' | 'valuation' | 'contact';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: EstateRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Nido Inmobiliaria · Pisos, áticos y casas en venta y alquiler en Valencia. Valoración gratuita y agentes de barrio.',
+  current,
+  routes = estateRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const { brand } = estateData;
+
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'listings', label: 'Comprar', href: `${routes.listings}?op=sale` },
+  { key: 'listings', label: 'Alquilar', href: `${routes.listings}?op=rent` },
+  { key: 'valuation', label: 'Vender', href: routes.valuation },
+  { key: 'contact', label: 'Agentes y contacto', href: routes.contact },
+];
+
+const footerColumns = [
+  {
+    title: 'Propiedades',
+    links: [
+      { label: 'Pisos en venta', href: `${routes.listings}?op=sale` },
+      { label: 'Pisos en alquiler', href: `${routes.listings}?op=rent` },
+      { label: 'Áticos', href: `${routes.listings}?type=penthouse` },
+      { label: 'Chalets', href: `${routes.listings}?type=villa` },
+    ],
+  },
+  {
+    title: 'Propietarios',
+    links: [
+      { label: 'Valorar mi vivienda', href: routes.valuation },
+      { label: 'Vender con Nido', href: routes.valuation },
+      { label: 'Gestión de alquileres', href: routes.contact },
+    ],
+  },
+  {
+    title: 'Nido',
+    links: [
+      { label: 'Agentes', href: routes.contact },
+      { label: 'Contacto', href: routes.contact },
+      { label: 'Acceso agentes', href: routes.signIn },
+    ],
+  },
+];
+
+const phoneHref = `tel:${brand.phone.replace(/\s+/g, '')}`;
+---
+
+<!doctype html>
+<html lang={lang} class="theme-estate" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="estate-body">
+    <a href="#main-content" class="estate-skip">Saltar al contenido</a>
+
+    <header class="estate-header">
+      <div class="estate-header__inner">
+        <a href={routes.home} class="estate-logo" aria-label={`${brand.name} inicio`}>
+          <span class="estate-logo__mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 11.5 12 4l9 7.5" />
+              <path d="M5.5 10v9.5h13V10" />
+              <path d="M10 19.5v-5h4v5" />
+            </svg>
+          </span>
+          <span class="estate-logo__name">{brand.name}</span>
+        </a>
+
+        <button
+          type="button"
+          class="estate-menu-btn"
+          aria-expanded="false"
+          aria-controls="estate-nav"
+          data-estate-menu
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+          <span class="estate-sr">Menú</span>
+        </button>
+
+        <nav id="estate-nav" class="estate-nav" aria-label="Navegación principal">
+          <ul class="estate-nav__list">
+            {navLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="estate-nav__link"
+                  aria-current={current === link.key && link.label !== 'Alquilar' ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div class="estate-nav__actions">
+            <a href={phoneHref} class="estate-nav__phone">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
+              </svg>
+              {brand.phone}
+            </a>
+            <a href={routes.valuation} class="estate-nav__cta">Valora tu casa</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="estate-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <FooterMegaSection
+      brand={brand.name}
+      tagline={`${brand.tagline}. ${brand.address} · ${brand.hours}`}
+      columns={footerColumns}
+      status="Agencia colegiada API · Registro de Agentes Inmobiliarios de la Comunitat Valenciana"
+      copyright={`© ${new Date().getFullYear()} ${brand.legalName}`}
+      variant="bordered"
+    />
+
+    <script>
+      function initEstateMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-estate-menu]');
+        const nav = document.getElementById('estate-nav');
+        if (!btn || !nav || btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        const setOpen = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            setOpen(false);
+            btn.focus();
+          }
+        });
+      }
+      initEstateMenu();
+      document.addEventListener('astro:page-load', initEstateMenu);
+    </script>
+  </body>
+</html>
+
+<style>
+  .estate-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--estate-font-body);
+    background: var(--estate-bg);
+    color: var(--estate-text);
+  }
+
+  .estate-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .estate-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .estate-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--estate-bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--estate-border);
+  }
+
+  .estate-header__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .estate-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--estate-text);
+    text-decoration: none;
+    min-height: 44px;
+  }
+
+  .estate-logo__mark {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+  }
+
+  .estate-logo__name {
+    font-family: var(--estate-font-display);
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .estate-menu-btn {
+    display: none;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    background: transparent;
+    color: var(--estate-text);
+    cursor: pointer;
+  }
+
+  .estate-nav {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .estate-nav__list {
+    display: flex;
+    gap: var(--sp-1, 0.25rem);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .estate-nav__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    color: var(--estate-text-2);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .estate-nav__link:hover,
+  .estate-nav__link[aria-current='page'] {
+    color: var(--estate-text);
+    background: var(--estate-surface);
+  }
+
+  .estate-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .estate-nav__phone {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .estate-nav__phone:hover {
+    color: var(--estate-text);
+  }
+
+  .estate-nav__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+
+  .estate-nav__cta:hover {
+    background: var(--estate-brand-hover);
+  }
+
+  .estate-header :is(a, button):focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-main {
+    flex: 1;
+  }
+
+  .estate-main:focus {
+    outline: none;
+  }
+
+  @media (max-width: 960px) {
+    .estate-menu-btn {
+      display: grid;
+    }
+
+    .estate-nav {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      padding: var(--sp-4, 1rem);
+      background: var(--estate-bg-raised);
+      border-bottom: 1px solid var(--estate-border);
+    }
+
+    .estate-nav.is-open {
+      display: flex;
+    }
+
+    .estate-nav__list {
+      flex-direction: column;
+    }
+
+    .estate-nav__actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .estate-nav__cta {
+      justify-content: center;
+    }
+  }
+</style>

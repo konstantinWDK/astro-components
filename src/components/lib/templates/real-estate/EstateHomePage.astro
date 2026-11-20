@@ -1,0 +1,52 @@
+---
+/**
+ * EstateHomePage — Home page of the "Nido" real estate template: search hero, latest listings,
+ * neighbourhood guide, valuation call to action and the agent team.
+ *
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {typeof estateData} data - Brand, listings, zones and agents.
+ */
+import EstateSiteLayout from './EstateSiteLayout.astro';
+import EstateHero from '../../sections/EstateHero.astro';
+import EstateListingsGrid from '../../sections/EstateListingsGrid.astro';
+import EstateNeighborhoods from '../../sections/EstateNeighborhoods.astro';
+import EstateValuationCta from '../../sections/EstateValuationCta.astro';
+import EstateAgentsGrid from '../../sections/EstateAgentsGrid.astro';
+import { estateRoutes, estateData, type EstateRoutes } from './data';
+
+interface Props {
+  routes?: EstateRoutes;
+  data?: typeof estateData;
+}
+
+const { routes = estateRoutes, data = estateData } = Astro.props;
+const active = data.properties.filter((p) => p.status === 'active');
+const featured = active.find((p) => p.badge) ?? active[0];
+---
+
+<EstateSiteLayout
+  title={`${data.brand.name} · Pisos y casas en venta y alquiler en Valencia`}
+  description="Pisos, áticos y casas en venta y alquiler en Valencia, seleccionados por agentes de barrio. Valoración gratuita de tu vivienda."
+  current="home"
+  routes={routes}
+>
+  <EstateHero
+    listingsHref={routes.listings}
+    zones={data.zones}
+    featured={featured}
+    featuredHref={`${routes.listings}/${featured.slug}`}
+    stats={data.stats}
+  />
+  <EstateListingsGrid
+    properties={active}
+    detailBase={routes.listings}
+    title="Recién publicadas"
+    subtitle="Las últimas viviendas que hemos visitado y fotografiado esta semana."
+    showFilters={false}
+    limit={3}
+    ctaHref={routes.listings}
+  />
+  <EstateNeighborhoods zones={data.zones} listingsHref={routes.listings} />
+  <EstateValuationCta href={routes.valuation} />
+  <EstateAgentsGrid agents={data.agents} variant="compact" />
+</EstateSiteLayout>

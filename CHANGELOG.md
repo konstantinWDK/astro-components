@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Real estate template "Nido"** (`astro-component-kit/templates/real-estate`): agency site with buy/rent search, filterable listings with favourites and zone map, a page per property (gallery, viewing booking, mortgage simulator or rental terms), 3-step owner valuation, contact and agents, plus an agent CRM (sign-in, overview, listings table, lead pipeline). 9 page types.
+- Sections: `EstateHero`, `EstateListingsGrid`, `EstateNeighborhoods`, `EstatePropertyGallery`, `EstateAgentsGrid`, `EstateValuationCta` (new "Real Estate Agency" section category).
+- App components: `EstateMortgageCalculator`, `EstateValuationWizard`, `EstateVisitScheduler`, `EstateLeadsPipeline`.
+- The MCP server lists the new template (`get_template` slug `real-estate`).
+
 ## [0.8.0] - 2026-11-20
 
 ### ⚠ Breaking

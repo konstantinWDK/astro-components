@@ -1,0 +1,259 @@
+---
+/**
+ * EstatePropertyGallery — Property photo gallery with thumbnails, previous/next and keyboard arrows.
+ * Uses `property.images` when present; otherwise draws five illustrated rooms (facade, living
+ * room, kitchen, bedroom, terrace) tinted with the property's hue.
+ *
+ * @param {EstateProperty} property - Listing whose photos are shown.
+ * @param {Array<{src: string, alt: string}>} images - Overrides `property.images`.
+ * @param {string} variant - 'stacked' (thumbnails below) | 'side' (thumbnails on the right, desktop). Default 'stacked'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: region with aria-roledescription="carousel"; thumbnails are buttons with
+ * aria-current on the visible photo; ←/→ move between photos while focus is inside;
+ * the "3 / 5" counter is announced politely.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import EstatePropertyMedia from './EstatePropertyMedia.astro';
+import { estateProperties, type EstateProperty } from '../templates/real-estate/data';
+
+interface OwnProps {
+  property?: EstateProperty;
+  images?: Array<{ src: string; alt: string }>;
+  variant?: 'stacked' | 'side';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { property = estateProperties[0], images, variant = 'stacked', class: classAttr, ...rest } = Astro.props;
+
+type Slide = { src?: string; alt: string; scene: 'facade' | 'living' | 'kitchen' | 'bedroom' | 'terrace'; label: string };
+
+const photos = images ?? property.images;
+const slides: Slide[] = photos?.length
+  ? photos.map((img, i) => ({ src: img.src, alt: img.alt, scene: 'facade', label: `Foto ${i + 1}` }))
+  : [
+      { scene: 'facade', label: 'Fachada', alt: `Fachada de ${property.title}` },
+      { scene: 'living', label: 'Salón', alt: 'Salón con ventanal' },
+      { scene: 'kitchen', label: 'Cocina', alt: 'Cocina equipada' },
+      { scene: 'bedroom', label: 'Dormitorio', alt: 'Dormitorio principal' },
+      { scene: 'terrace', label: 'Terraza', alt: 'Terraza con vistas' },
+    ];
+
+const uid = `epg-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section
+  class:list={['estate-ui', 'estate-gallery', `estate-gallery--${variant}`, classAttr]}
+  aria-roledescription="carousel"
+  aria-label={`Fotos de ${property.title}`}
+  data-estate-gallery
+  {...rest}
+>
+  <div id={`${uid}-stage`} class="estate-gallery__stage">
+    {slides.map((s, i) => (
+      <div
+        class="estate-gallery__slide"
+        role="group"
+        aria-roledescription="slide"
+        aria-label={`${i + 1} de ${slides.length}: ${s.label}`}
+        hidden={i !== 0}
+        data-slide
+      >
+        <EstatePropertyMedia
+          src={s.src}
+          alt={s.alt}
+          type={property.type}
+          scene={s.scene}
+          hue={property.hue}
+          loading={i === 0 ? 'eager' : 'lazy'}
+          class="estate-gallery__media"
+        />
+      </div>
+    ))}
+
+    <button type="button" class="estate-gallery__nav estate-gallery__nav--prev" data-prev aria-controls={`${uid}-stage`}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+      <span class="estate-sr">Foto anterior</span>
+    </button>
+    <button type="button" class="estate-gallery__nav estate-gallery__nav--next" data-next aria-controls={`${uid}-stage`}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+      <span class="estate-sr">Foto siguiente</span>
+    </button>
+    <p class="estate-gallery__counter" aria-live="polite" data-counter>1 / {slides.length}</p>
+  </div>
+
+  <div class="estate-gallery__thumbs" role="group" aria-label="Miniaturas">
+    {slides.map((s, i) => (
+      <button type="button" class="estate-gallery__thumb" aria-current={i === 0 ? 'true' : undefined} data-thumb={i}>
+        <EstatePropertyMedia src={s.src} alt="" type={property.type} scene={s.scene} hue={property.hue} class="estate-gallery__thumb-media" aria-hidden="true" />
+        <span class="estate-sr">Ver {s.label}</span>
+      </button>
+    ))}
+  </div>
+</section>
+
+<script>
+  function initGallery(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-slide]'));
+    const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-thumb]'));
+    const counter = root.querySelector<HTMLElement>('[data-counter]');
+    let index = 0;
+
+    const show = (next: number) => {
+      index = (next + slides.length) % slides.length;
+      slides.forEach((s, i) => (s.hidden = i !== index));
+      thumbs.forEach((t, i) => {
+        if (i === index) t.setAttribute('aria-current', 'true');
+        else t.removeAttribute('aria-current');
+      });
+      thumbs[index]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+    };
+
+    root.querySelector('[data-prev]')?.addEventListener('click', () => show(index - 1));
+    root.querySelector('[data-next]')?.addEventListener('click', () => show(index + 1));
+    thumbs.forEach((t, i) => t.addEventListener('click', () => show(i)));
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); show(index - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); show(index + 1); }
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-gallery]').forEach(initGallery);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-gallery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3, 0.75rem);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-gallery__stage {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--r-xl, 28px);
+    background: var(--estate-surface);
+  }
+
+  .estate-gallery__slide[hidden] {
+    display: none;
+  }
+
+  .estate-gallery__stage :global(.estate-gallery__media) {
+    aspect-ratio: 16 / 10;
+  }
+
+  .estate-gallery__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(15, 17, 19, 0.75);
+    color: #f4f1ec;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .estate-gallery__nav:hover {
+    background: rgba(15, 17, 19, 0.92);
+  }
+
+  .estate-gallery__nav--prev { left: var(--sp-3, 0.75rem); }
+  .estate-gallery__nav--next { right: var(--sp-3, 0.75rem); }
+
+  .estate-gallery__nav:focus-visible,
+  .estate-gallery__thumb:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-gallery__counter {
+    position: absolute;
+    right: var(--sp-3, 0.75rem);
+    bottom: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(15, 17, 19, 0.75);
+    color: #f4f1ec;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .estate-gallery__thumbs {
+    position: relative;
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    overflow-x: auto;
+    padding: 2px;
+    scrollbar-width: thin;
+  }
+
+  .estate-gallery__thumb {
+    flex: 0 0 auto;
+    width: 96px;
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: var(--r-md, 12px);
+    background: none;
+    cursor: pointer;
+    opacity: 0.65;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+  }
+
+  .estate-gallery__thumb:hover {
+    opacity: 1;
+  }
+
+  .estate-gallery__thumb[aria-current='true'] {
+    opacity: 1;
+    border-color: var(--estate-brand);
+  }
+
+  .estate-gallery__thumb :global(.estate-gallery__thumb-media) {
+    aspect-ratio: 4 / 3;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 900px) {
+    .estate-gallery--side {
+      grid-template-columns: minmax(0, 1fr) 120px;
+    }
+
+    .estate-gallery--side .estate-gallery__thumbs {
+      flex-direction: column;
+      overflow-x: visible;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+
+    .estate-gallery--side .estate-gallery__thumb {
+      width: 100%;
+    }
+  }
+</style>

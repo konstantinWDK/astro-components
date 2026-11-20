@@ -1,0 +1,261 @@
+---
+/**
+ * EstateNeighborhoods — Neighbourhood guide cards with average €/m² and year-on-year trend.
+ * Each card links to the listings page pre-filtered by zone (?zone=).
+ *
+ * @param {EstateZone[]} zones - Zones to show.
+ * @param {string} listingsHref - Listings page; `?zone=<name>` is appended.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} variant - 'cards' | 'list'. Default 'cards'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one link per card; the trend is written out ("sube 9,4 % en un año"),
+ * not conveyed by the arrow or colour alone.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import { estateZones, type EstateZone } from '../templates/real-estate/data';
+
+interface OwnProps {
+  zones?: EstateZone[];
+  listingsHref?: string;
+  title?: string;
+  subtitle?: string;
+  variant?: 'cards' | 'list';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  zones = estateZones,
+  listingsHref = '/preview/real-estate/propiedades',
+  title = 'Barrios que conocemos de memoria',
+  subtitle = 'Precio medio de venta por metro cuadrado y evolución en los últimos doce meses.',
+  variant = 'cards',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `enb-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (n: number) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 }).format(n);
+const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+---
+
+<section class:list={['estate-ui', 'estate-zones', `estate-zones--${variant}`, classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="estate-zones__inner">
+    <header class="estate-zones__head">
+      <h2 id={`${uid}-title`} class="estate-zones__title">{title}</h2>
+      {subtitle && <p class="estate-zones__subtitle">{subtitle}</p>}
+    </header>
+
+    <ul class="estate-zones__grid" role="list">
+      {zones.map((z) => {
+        const up = z.trend >= 0;
+        return (
+          <li class="estate-zone" style={`--zone-hue:${z.hue}`}>
+            <span class="estate-zone__art" aria-hidden="true">
+              <span class="estate-zone__blob" />
+            </span>
+            <span class="estate-zone__body">
+              <a class="estate-zone__link" href={`${listingsHref}?zone=${encodeURIComponent(z.name)}`}>
+                {z.name}
+              </a>
+              <span class="estate-zone__tagline">{z.tagline}</span>
+              <span class="estate-zone__stats">
+                <span class="estate-zone__price">
+                  {eur(z.avgPriceM2)}<small>/m²</small>
+                </span>
+                <span class:list={['estate-zone__trend', up ? 'is-up' : 'is-down']}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <path d={up ? 'M7 17 17 7M9 7h8v8' : 'M7 7l10 10M17 9v8H9'} />
+                  </svg>
+                  <span class="estate-sr">{up ? 'Sube' : 'Baja'} </span>
+                  {fmt(Math.abs(z.trend))} %<span class="estate-sr"> en un año</span>
+                </span>
+              </span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .estate-zones {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--estate-bg);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-zones__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .estate-zones__head {
+    margin-bottom: var(--sp-8, 2rem);
+    max-width: 640px;
+  }
+
+  .estate-zones__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    letter-spacing: -0.015em;
+  }
+
+  .estate-zones__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--estate-text-2);
+    line-height: 1.6;
+  }
+
+  .estate-zones__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-zone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+
+  .estate-zone:hover {
+    border-color: var(--estate-border-strong);
+    transform: translateY(-3px);
+  }
+
+  .estate-zone:focus-within {
+    border-color: var(--estate-brand);
+  }
+
+  .estate-zone__art {
+    position: relative;
+    height: 96px;
+    background: linear-gradient(135deg, hsl(var(--zone-hue) 40% 32%), hsl(calc(var(--zone-hue) + 40) 45% 22%));
+  }
+
+  .estate-zone__blob {
+    position: absolute;
+    right: -20px;
+    bottom: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 42% 58% 60% 40%;
+    background: hsl(var(--zone-hue) 55% 62% / 0.45);
+  }
+
+  .estate-zone__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .estate-zone__link {
+    font-family: var(--estate-font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+    color: var(--estate-text);
+    text-decoration: none;
+  }
+
+  .estate-zone__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .estate-zone__link:focus-visible {
+    outline: none;
+  }
+
+  .estate-zone__tagline {
+    color: var(--estate-text-3);
+    font-size: 0.92rem;
+  }
+
+  .estate-zone__stats {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin-top: var(--sp-3, 0.75rem);
+  }
+
+  .estate-zone__price {
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .estate-zone__price small {
+    color: var(--estate-text-3);
+    font-weight: 500;
+  }
+
+  .estate-zone__trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .estate-zone__trend.is-up { color: var(--estate-up); }
+  .estate-zone__trend.is-down { color: var(--estate-down); }
+
+  .estate-zones--list .estate-zones__grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: 1px solid var(--estate-border);
+  }
+
+  .estate-zones--list .estate-zone {
+    border: 0;
+    border-bottom: 1px solid var(--estate-border);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .estate-zones--list .estate-zone:hover {
+    transform: none;
+    background: var(--estate-surface);
+  }
+
+  .estate-zones--list .estate-zone__art {
+    display: none;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .estate-zone {
+      transition: none;
+    }
+
+    .estate-zone:hover {
+      transform: none;
+    }
+  }
+</style>

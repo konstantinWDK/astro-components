@@ -1,0 +1,295 @@
+---
+/**
+ * EstateAgentsGrid — Agent directory: initials avatar, role, zones, languages, closed deals,
+ * rating and direct call / email actions.
+ *
+ * @param {EstateAgent[]} agents - Agents to show.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} variant - 'cards' | 'compact' (no zones or languages). Default 'cards'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each card is an <article> named by the agent; the call and email links
+ * include the agent's name so they make sense out of context; the avatar is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import { estateAgents, type EstateAgent } from '../templates/real-estate/data';
+
+interface OwnProps {
+  agents?: EstateAgent[];
+  title?: string;
+  subtitle?: string;
+  variant?: 'cards' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  agents = estateAgents,
+  title = 'Tu agente, en tu barrio',
+  subtitle = 'Cada agente trabaja dos zonas como máximo. Conoce los precios reales, los vecinos y las calles.',
+  variant = 'cards',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `eag-${Math.random().toString(36).slice(2, 8)}`;
+const initialsOf = (name: string) => name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const hueOf = (text: string) => [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+---
+
+<section class:list={['estate-ui', 'estate-agents', `estate-agents--${variant}`, classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="estate-agents__inner">
+    <header class="estate-agents__head">
+      <h2 id={`${uid}-title`} class="estate-agents__title">{title}</h2>
+      {subtitle && <p class="estate-agents__subtitle">{subtitle}</p>}
+    </header>
+
+    <ul class="estate-agents__grid" role="list">
+      {agents.map((a) => (
+        <li>
+          <article class="estate-agent" aria-labelledby={`${uid}-${a.id}`}>
+            <div class="estate-agent__top">
+              <span class="estate-agent__avatar" style={`--agent-hue:${hueOf(a.name)}`} aria-hidden="true">
+                {initialsOf(a.name)}
+              </span>
+              <div>
+                <h3 id={`${uid}-${a.id}`} class="estate-agent__name">{a.name}</h3>
+                <p class="estate-agent__role">{a.role}</p>
+              </div>
+            </div>
+
+            <dl class="estate-agent__stats">
+              <div>
+                <dt>Operaciones</dt>
+                <dd>{a.closedDeals}</dd>
+              </div>
+              <div>
+                <dt>Valoración</dt>
+                <dd>
+                  {a.rating.toLocaleString('es-ES')}<span class="estate-agent__of">/5</span>
+                </dd>
+              </div>
+            </dl>
+
+            {variant === 'cards' && (
+              <dl class="estate-agent__meta">
+                <div>
+                  <dt>Zonas</dt>
+                  <dd>{a.zones.join(', ')}</dd>
+                </div>
+                <div>
+                  <dt>Idiomas</dt>
+                  <dd>{a.languages.join(', ')}</dd>
+                </div>
+              </dl>
+            )}
+
+            <div class="estate-agent__actions">
+              <a href={`tel:${a.phone.replace(/\s+/g, '')}`} class="estate-agent__btn estate-agent__btn--primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
+                </svg>
+                Llamar<span class="estate-sr"> a {a.name}</span>
+              </a>
+              <a href={`mailto:${a.email}`} class="estate-agent__btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" />
+                </svg>
+                Email<span class="estate-sr"> a {a.name}</span>
+              </a>
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .estate-agents {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--estate-bg);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-agents__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .estate-agents__head {
+    margin-bottom: var(--sp-8, 2rem);
+    max-width: 640px;
+  }
+
+  .estate-agents__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    letter-spacing: -0.015em;
+  }
+
+  .estate-agents__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--estate-text-2);
+    line-height: 1.6;
+  }
+
+  .estate-agents__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-agent {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    height: 100%;
+    box-sizing: border-box;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-agent__top {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .estate-agent__avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: hsl(var(--agent-hue) 38% 34%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .estate-agent__name {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 600;
+  }
+
+  .estate-agent__role {
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.9rem;
+  }
+
+  .estate-agent__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+  }
+
+  .estate-agent__stats > div {
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-surface);
+  }
+
+  .estate-agent__stats dt {
+    color: var(--estate-text-3);
+    font-size: 0.78rem;
+  }
+
+  .estate-agent__stats dd {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .estate-agent__of {
+    color: var(--estate-text-3);
+    font-size: 0.9rem;
+  }
+
+  .estate-agent__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .estate-agent__meta dt {
+    color: var(--estate-text-3);
+    font-size: 0.78rem;
+  }
+
+  .estate-agent__meta dd {
+    margin: 0;
+    color: var(--estate-text-2);
+  }
+
+  .estate-agent__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2, 0.5rem);
+    margin-top: auto;
+  }
+
+  .estate-agent__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    color: var(--estate-text);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .estate-agent__btn:hover {
+    background: var(--estate-surface);
+  }
+
+  .estate-agent__btn--primary {
+    border-color: transparent;
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+  }
+
+  .estate-agent__btn--primary:hover {
+    background: var(--estate-brand-hover);
+  }
+
+  .estate-agent__btn:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-agents--compact .estate-agent {
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

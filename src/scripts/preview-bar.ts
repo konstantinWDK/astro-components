@@ -51,6 +51,7 @@
   const templateLabels: Record<string, string> = {
     'food-delivery': 'Food Delivery CMS',
     'construction': isEs ? 'Construcción & Inmobiliaria' : 'Construction & Real Estate',
+    'real-estate': isEs ? 'Inmobiliaria & CRM' : 'Real Estate Agency',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

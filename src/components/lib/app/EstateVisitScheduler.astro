@@ -1,0 +1,459 @@
+---
+/**
+ * EstateVisitScheduler — Book a viewing from a property page: agent card, next six days,
+ * time slots (taken ones disabled), in-person or video visit, and contact details.
+ * Day labels are refreshed in the browser so a static build never shows past dates.
+ *
+ * @param {EstateProperty} property - Listing being visited.
+ * @param {EstateAgent} agent - Agent who runs the visit. Defaults to the property's agent.
+ * @param {string[]} slots - Time slots offered each day. Default 10:00–19:00.
+ * @param {string[]} taken - Slots shown as unavailable. Default ['12:00', '17:30'].
+ * @param {string} action - Form action; when empty the confirmation is shown on the page.
+ * @param {string} variant - 'card' | 'plain'. Default 'card'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: days, times and visit type are native radio groups inside fieldsets with
+ * legends (arrow keys work); unavailable slots are disabled radios with a text hint;
+ * the confirmation is a focused role="status" message.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import { estateProperties, getEstateAgent, type EstateAgent, type EstateProperty } from '../templates/real-estate/data';
+
+interface OwnProps {
+  property?: EstateProperty;
+  agent?: EstateAgent;
+  slots?: string[];
+  taken?: string[];
+  action?: string;
+  variant?: 'card' | 'plain';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  property = estateProperties[0],
+  agent: agentProp,
+  slots = ['10:00', '11:00', '12:00', '13:00', '16:30', '17:30', '18:30', '19:00'],
+  taken = ['12:00', '17:30'],
+  action = '',
+  variant = 'card',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const agent = agentProp ?? getEstateAgent(property.agentId);
+const uid = `evs-${Math.random().toString(36).slice(2, 8)}`;
+
+const dayFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'short' });
+const dateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
+const today = new Date();
+const days = Array.from({ length: 6 }, (_, i) => {
+  const d = new Date(today);
+  d.setDate(today.getDate() + i + 1);
+  return { iso: d.toISOString().slice(0, 10), weekday: dayFmt.format(d), date: dateFmt.format(d) };
+});
+const initials = agent ? agent.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('') : '';
+---
+
+<section
+  class:list={['estate-ui', 'estate-visit', `estate-visit--${variant}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-estate-visit
+  {...rest}
+>
+  <h2 id={`${uid}-title`} class="estate-visit__title">Reserva una visita</h2>
+
+  {agent && (
+    <div class="estate-visit__agent">
+      <span class="estate-visit__avatar" aria-hidden="true">{initials}</span>
+      <div>
+        <p class="estate-visit__agent-name">{agent.name}</p>
+        <p class="estate-visit__agent-role">{agent.role} · responde en menos de 1 h</p>
+      </div>
+      <a href={`tel:${agent.phone.replace(/\s+/g, '')}`} class="estate-visit__call">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
+        </svg>
+        <span class="estate-sr">Llamar a {agent.name}</span>
+      </a>
+    </div>
+  )}
+
+  <form class="estate-visit__form" action={action || undefined} method="post" data-form>
+    <input type="hidden" name="property" value={property.slug} />
+
+    <fieldset class="estate-visit__group">
+      <legend>Tipo de visita</legend>
+      <div class="estate-visit__modes">
+        <label class="estate-visit__chip">
+          <input type="radio" name="mode" value="in-person" checked />
+          <span>En persona</span>
+        </label>
+        <label class="estate-visit__chip">
+          <input type="radio" name="mode" value="video" />
+          <span>Videollamada</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset class="estate-visit__group">
+      <legend>Día</legend>
+      <div class="estate-visit__days">
+        {days.map((d, i) => (
+          <label class="estate-visit__day">
+            <input type="radio" name="day" value={d.iso} checked={i === 0} required data-day={i + 1} />
+            <span>
+              <small data-weekday>{d.weekday}</small>
+              <strong data-date>{d.date}</strong>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="estate-visit__group">
+      <legend>Hora</legend>
+      <div class="estate-visit__slots">
+        {slots.map((s) => {
+          const isTaken = taken.includes(s);
+          return (
+            <label class:list={['estate-visit__chip', { 'is-taken': isTaken }]}>
+              <input type="radio" name="time" value={s} disabled={isTaken} required />
+              <span>
+                {s}
+                {isTaken && <span class="estate-sr"> (ocupado)</span>}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+
+    <div class="estate-visit__fields">
+      <div class="estate-visit__field">
+        <label for={`${uid}-name`}>Nombre</label>
+        <input id={`${uid}-name`} name="name" type="text" autocomplete="name" required />
+      </div>
+      <div class="estate-visit__field">
+        <label for={`${uid}-phone`}>Teléfono</label>
+        <input id={`${uid}-phone`} name="phone" type="tel" autocomplete="tel" required />
+      </div>
+    </div>
+
+    <button type="submit" class="estate-visit__submit">Confirmar visita</button>
+  </form>
+
+  <div class="estate-visit__done" role="status" tabindex="-1" hidden data-done>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m8 12 3 3 5-6" /></svg>
+    <p><strong>Visita solicitada</strong></p>
+    <p data-summary></p>
+  </div>
+</section>
+
+<script>
+  function initVisit(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const done = root.querySelector<HTMLElement>('[data-done]')!;
+    const dayFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'short' });
+    const dateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
+    const longFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    // Refresh the day options relative to today (the HTML was rendered at build time)
+    const today = new Date();
+    root.querySelectorAll<HTMLInputElement>('[data-day]').forEach((input) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + Number(input.dataset.day));
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      input.value = `${y}-${m}-${day}`;
+      const label = input.nextElementSibling;
+      label?.querySelector('[data-weekday]')?.replaceChildren(dayFmt.format(d));
+      label?.querySelector('[data-date]')?.replaceChildren(dateFmt.format(d));
+    });
+
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const data = new FormData(form);
+      const [y, m, d] = String(data.get('day')).split('-').map(Number);
+      const when = longFmt.format(new Date(y, m - 1, d));
+      const mode = data.get('mode') === 'video' ? 'por videollamada' : 'en persona';
+      root.querySelector('[data-summary]')!.textContent = `${when} a las ${data.get('time')}, ${mode}. Te enviaremos la confirmación por SMS.`;
+      form.hidden = true;
+      done.hidden = false;
+      done.focus();
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-visit]').forEach(initVisit);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-visit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-visit--card {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-visit__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: 1.6rem;
+  }
+
+  .estate-visit__agent {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-surface);
+  }
+
+  .estate-visit__avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--estate-sage);
+    color: #10140f;
+    font-weight: 700;
+  }
+
+  .estate-visit__agent-name {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .estate-visit__agent-role {
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.85rem;
+  }
+
+  .estate-visit__call {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    border-radius: 50%;
+    border: 1px solid var(--estate-border-strong);
+    color: var(--estate-text);
+  }
+
+  .estate-visit__call:hover {
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-visit__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .estate-visit__form[hidden] {
+    display: none;
+  }
+
+  .estate-visit__group {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .estate-visit__group legend {
+    padding: 0;
+    margin-bottom: var(--sp-2, 0.5rem);
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .estate-visit__modes,
+  .estate-visit__slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .estate-visit__days {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .estate-visit__chip,
+  .estate-visit__day {
+    position: relative;
+  }
+
+  .estate-visit__chip input,
+  .estate-visit__day input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .estate-visit__chip > span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-full, 999px);
+    border: 1px solid var(--estate-border-strong);
+    color: var(--estate-text-2);
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .estate-visit__day > span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    color: var(--estate-text-2);
+  }
+
+  .estate-visit__day small {
+    font-size: 0.75rem;
+    text-transform: capitalize;
+  }
+
+  .estate-visit__day strong {
+    font-size: 0.95rem;
+  }
+
+  .estate-visit__chip input:checked + span,
+  .estate-visit__day input:checked + span {
+    border-color: var(--estate-brand);
+    background: rgba(var(--estate-brand-rgb), 0.14);
+    color: var(--estate-text);
+  }
+
+  .estate-visit__chip input:focus-visible + span,
+  .estate-visit__day input:focus-visible + span,
+  .estate-visit__field input:focus-visible,
+  .estate-visit__submit:focus-visible,
+  .estate-visit__call:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-visit__chip.is-taken > span {
+    opacity: 0.45;
+    text-decoration: line-through;
+  }
+
+  .estate-visit__chip.is-taken input {
+    cursor: not-allowed;
+  }
+
+  .estate-visit__fields {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .estate-visit__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .estate-visit__field label {
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .estate-visit__field input {
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    background: var(--estate-surface);
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .estate-visit__submit {
+    min-height: 48px;
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .estate-visit__submit:hover {
+    background: var(--estate-brand-hover);
+  }
+
+  .estate-visit__done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-6, 1.5rem) var(--sp-2, 0.5rem);
+    text-align: center;
+    color: var(--estate-sage);
+  }
+
+  .estate-visit__done[hidden] {
+    display: none;
+  }
+
+  .estate-visit__done:focus {
+    outline: none;
+  }
+
+  .estate-visit__done p {
+    margin: 0;
+    color: var(--estate-text);
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 480px) {
+    .estate-visit__fields {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

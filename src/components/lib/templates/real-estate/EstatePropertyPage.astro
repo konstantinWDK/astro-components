@@ -1,0 +1,441 @@
+---
+/**
+ * EstatePropertyPage — Property detail page: gallery, key facts, description, features,
+ * energy rating, visit booking, mortgage simulator (sales) and similar listings.
+ *
+ * @param {string} slug - Property slug. Defaults to the first listing.
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {typeof estateData} data - Brand, listings, zones and agents.
+ */
+import EstateSiteLayout from './EstateSiteLayout.astro';
+import EstatePropertyGallery from '../../sections/EstatePropertyGallery.astro';
+import EstateListingsGrid from '../../sections/EstateListingsGrid.astro';
+import EstateVisitScheduler from '../../app/EstateVisitScheduler.astro';
+import EstateMortgageCalculator from '../../app/EstateMortgageCalculator.astro';
+import {
+  estateRoutes,
+  estateData,
+  estateTypeLabels,
+  formatEstatePrice,
+  getEstateAgent,
+  getEstateProperty,
+  type EstateRoutes,
+} from './data';
+
+interface Props {
+  slug?: string;
+  routes?: EstateRoutes;
+  data?: typeof estateData;
+}
+
+const { slug, routes = estateRoutes, data = estateData } = Astro.props;
+const property = (slug && getEstateProperty(slug, data.properties)) || data.properties[0];
+const agent = getEstateAgent(property.agentId, data.agents);
+const isSale = property.operation === 'sale';
+const priceM2 = Math.round(property.price / property.m2);
+const similar = data.properties
+  .filter((p) => p.slug !== property.slug && p.status !== 'sold' && (p.operation === property.operation || p.zone === property.zone))
+  .slice(0, 3);
+const statusLabel = property.status === 'reserved' ? 'Reservado' : property.status === 'sold' ? 'Vendido' : '';
+const energyScale = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
+---
+
+<EstateSiteLayout
+  title={`${property.title} · ${formatEstatePrice(property.price, property.operation)} · ${data.brand.name}`}
+  description={property.description.slice(0, 155)}
+  current="listings"
+  routes={routes}
+>
+  <article class="estate-ui estate-property">
+    <nav class="estate-property__crumbs" aria-label="Migas de pan">
+      <ol>
+        <li><a href={routes.home}>Inicio</a></li>
+        <li><a href={`${routes.listings}?op=${property.operation}`}>{isSale ? 'Comprar' : 'Alquilar'}</a></li>
+        <li><a href={`${routes.listings}?zone=${encodeURIComponent(property.zone)}`}>{property.zone}</a></li>
+        <li aria-current="page">{estateTypeLabels[property.type]}</li>
+      </ol>
+    </nav>
+
+    <header class="estate-property__head">
+      <div>
+        <p class="estate-property__kicker">
+          {estateTypeLabels[property.type]} en {isSale ? 'venta' : 'alquiler'} · {property.zone}
+          {statusLabel && <span class="estate-property__status">{statusLabel}</span>}
+        </p>
+        <h1 class="estate-property__title">{property.title}</h1>
+        <p class="estate-property__address">{property.address}, {property.city}</p>
+      </div>
+      <div class="estate-property__price">
+        <p class="estate-property__amount">{formatEstatePrice(property.price, property.operation)}</p>
+        {property.previousPrice && property.previousPrice > property.price && (
+          <p class="estate-property__drop">
+            Ha bajado {formatEstatePrice(property.previousPrice - property.price)}
+          </p>
+        )}
+        {isSale && <p class="estate-property__m2">{formatEstatePrice(priceM2)}/m²</p>}
+      </div>
+    </header>
+
+    <EstatePropertyGallery property={property} />
+
+    <div class="estate-property__layout">
+      <div class="estate-property__main">
+        <ul class="estate-property__facts" role="list">
+          <li><span>Superficie</span><strong>{property.m2} m²</strong></li>
+          <li><span>Habitaciones</span><strong>{property.beds}</strong></li>
+          <li><span>Baños</span><strong>{property.baths}</strong></li>
+          {property.floor && <li><span>Planta</span><strong>{property.floor}</strong></li>}
+        </ul>
+
+        <section aria-labelledby="estate-desc-title" class="estate-property__block">
+          <h2 id="estate-desc-title">Descripción</h2>
+          <p>{property.description}</p>
+        </section>
+
+        <section aria-labelledby="estate-features-title" class="estate-property__block">
+          <h2 id="estate-features-title">Características</h2>
+          <ul class="estate-property__features" role="list">
+            {property.features.map((f) => (
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="estate-energy-title" class="estate-property__block">
+          <h2 id="estate-energy-title">Certificado energético</h2>
+          <p class="estate-sr">Calificación {property.energy} en una escala de A a G.</p>
+          <ol class="estate-property__energy" aria-hidden="true">
+            {energyScale.map((e, i) => (
+              <li class:list={[{ 'is-current': e === property.energy }]} style={`--w:${40 + i * 9}%`} data-energy={e}>
+                {e}
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {agent && (
+          <section aria-labelledby="estate-agent-title" class="estate-property__block estate-property__agent">
+            <h2 id="estate-agent-title">Tu agente para esta vivienda</h2>
+            <p>
+              <strong>{agent.name}</strong>, {agent.role.toLowerCase()}. Conoce {property.zone} y ha cerrado {agent.closedDeals} operaciones.
+              Habla {agent.languages.join(', ').toLowerCase()}.
+            </p>
+            <p>
+              <a href={`mailto:${agent.email}?subject=${encodeURIComponent(property.title)}`}>Escribir a {agent.name.split(' ')[0]}</a>
+            </p>
+          </section>
+        )}
+      </div>
+
+      <aside class="estate-property__aside" aria-label="Visitas y financiación">
+        <EstateVisitScheduler property={property} agent={agent} />
+        {isSale ? (
+          <EstateMortgageCalculator price={property.price} contactHref={routes.contact} />
+        ) : (
+          <section class="estate-property__rent" aria-labelledby="estate-rent-title">
+            <h2 id="estate-rent-title">Condiciones del alquiler</h2>
+            <dl>
+              <div><dt>Fianza</dt><dd>{formatEstatePrice(property.price * 2)} (2 meses)</dd></div>
+              <div><dt>Duración mínima</dt><dd>12 meses</dd></div>
+              <div><dt>Ingresos recomendados</dt><dd>{formatEstatePrice(property.price * 3)}/mes</dd></div>
+              <div><dt>Honorarios para el inquilino</dt><dd>0 €</dd></div>
+            </dl>
+          </section>
+        )}
+      </aside>
+    </div>
+  </article>
+
+  {similar.length > 0 && (
+    <EstateListingsGrid
+      properties={similar}
+      detailBase={routes.listings}
+      title="También te puede interesar"
+      subtitle={`Viviendas parecidas en ${property.zone} y alrededores.`}
+      showFilters={false}
+      variant="compact"
+    />
+  )}
+</EstateSiteLayout>
+
+<style>
+  .estate-property {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-8, 2rem);
+    color: var(--estate-text);
+  }
+
+  .estate-property__crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+    color: var(--estate-text-3);
+    font-size: 0.88rem;
+  }
+
+  .estate-property__crumbs li + li::before {
+    content: '/';
+    margin-right: var(--sp-2, 0.5rem);
+    color: var(--estate-border-strong);
+  }
+
+  .estate-property__crumbs a {
+    color: var(--estate-text-2);
+  }
+
+  .estate-property__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .estate-property__kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--estate-sage);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .estate-property__status {
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-reserved);
+    color: #1c1610;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .estate-property__title {
+    margin: 0;
+    max-width: 780px;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(1.9rem, 4.5vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+  }
+
+  .estate-property__address {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--estate-text-3);
+  }
+
+  .estate-property__price {
+    text-align: right;
+  }
+
+  .estate-property__amount {
+    margin: 0;
+    font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+    font-weight: 700;
+  }
+
+  .estate-property__drop {
+    margin: 0;
+    color: var(--estate-up);
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .estate-property__m2 {
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.9rem;
+  }
+
+  .estate-property__layout {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    margin-top: var(--sp-8, 2rem);
+  }
+
+  .estate-property__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-8, 2rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-property__facts li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-surface);
+  }
+
+  .estate-property__facts span {
+    color: var(--estate-text-3);
+    font-size: 0.82rem;
+  }
+
+  .estate-property__facts strong {
+    font-size: 1.15rem;
+  }
+
+  .estate-property__block {
+    padding: var(--sp-6, 1.5rem) 0;
+    border-top: 1px solid var(--estate-border);
+  }
+
+  .estate-property__block h2 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: 1.5rem;
+  }
+
+  .estate-property__block p {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--estate-text-2);
+    line-height: 1.7;
+    font-size: 1.02rem;
+  }
+
+  .estate-property__block a {
+    color: var(--estate-brand);
+    font-weight: 600;
+  }
+
+  .estate-property__features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-property__features li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--estate-text-2);
+  }
+
+  .estate-property__features svg {
+    color: var(--estate-sage);
+    flex-shrink: 0;
+  }
+
+  .estate-property__energy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 360px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-property__energy li {
+    width: var(--w);
+    padding: 0.1rem 0.6rem;
+    border-radius: 0 4px 4px 0;
+    color: #10140f;
+    font-size: 0.78rem;
+    font-weight: 700;
+    opacity: 0.45;
+  }
+
+  .estate-property__energy li.is-current {
+    opacity: 1;
+    outline: 2px solid var(--estate-text);
+    outline-offset: 1px;
+  }
+
+  .estate-property__energy [data-energy='A'] { background: #4fbf6b; }
+  .estate-property__energy [data-energy='B'] { background: #8fd16b; }
+  .estate-property__energy [data-energy='C'] { background: #d3e06a; }
+  .estate-property__energy [data-energy='D'] { background: #f2d45c; }
+  .estate-property__energy [data-energy='E'] { background: #f2a85c; }
+  .estate-property__energy [data-energy='F'] { background: #f0997d; }
+  .estate-property__energy [data-energy='G'] { background: #f08c7d; }
+
+  .estate-property__aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .estate-property__rent {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-property__rent h2 {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: 1.4rem;
+  }
+
+  .estate-property__rent dl {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+  }
+
+  .estate-property__rent dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    font-size: 0.95rem;
+  }
+
+  .estate-property__rent dt {
+    color: var(--estate-text-2);
+  }
+
+  .estate-property__rent dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .estate-property a:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .estate-property__price {
+      text-align: left;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .estate-property__layout {
+      grid-template-columns: minmax(0, 1fr) 400px;
+      align-items: start;
+    }
+  }
+</style>

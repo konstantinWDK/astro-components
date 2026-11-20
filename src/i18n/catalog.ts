@@ -198,6 +198,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Construcción e Inmobiliaria', description: 'Secciones para empresas constructoras y promociones inmobiliarias: hero con obras activas, catálogo de promociones, metodología en 5 fases, planos arquitectónicos, banner de sostenibilidad y formulario de licitación.' },
     ru: { name: 'Строительство и девелопмент', description: 'Секции для генеральных подрядчиков и девелоперов: главный экран с активными стройками, каталог проектов, этапы работ, поэтажные планы, стандарты ESG и форма запроса сметы.' },
   },
+  'real-estate': {
+    en: { name: 'Real Estate Agency', description: 'Sections for real estate agencies and property portals: search hero with buy/rent filters, filterable listings with favourites and zone map, neighbourhood price guide, property photo gallery, agent directory, and owner valuation call to action.' },
+    es: { name: 'Inmobiliaria', description: 'Secciones para agencias inmobiliarias y portales de pisos: hero con buscador de compra y alquiler, listado filtrable con favoritos y mapa por zonas, guía de precios por barrio, galería de fotos, directorio de agentes y llamada a la valoración para propietarios.' },
+    ru: { name: 'Агентство недвижимости', description: 'Секции для агентств недвижимости и порталов объявлений: главный экран с поиском покупки и аренды, каталог с фильтрами, избранным и картой районов, цены по районам, фотогалерея объекта, команда агентов и призыв оценить жильё.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

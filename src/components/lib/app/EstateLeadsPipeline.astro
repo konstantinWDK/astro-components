@@ -1,0 +1,407 @@
+---
+/**
+ * EstateLeadsPipeline — Kanban pipeline for buyer and tenant leads: New → Contacted → Visit →
+ * Offer → Closed. Each card shows the lead, the property, budget, source, age and agent;
+ * move buttons push it to the previous or next stage and column counts update.
+ *
+ * @param {EstateLead[]} leads - Leads to place on the board.
+ * @param {EstateProperty[]} properties - Used to show each lead's property title.
+ * @param {EstateAgent[]} agents - Used for the agent initials.
+ * @param {string} propertyBase - Base path for property links. Omit to show plain text.
+ * @param {string} variant - 'board' (columns) | 'compact' (denser cards). Default 'board'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: no drag-and-drop required — every move is a labelled button
+ * ("Mover a Visita: Javier Gil"); moves are announced in a live region and focus
+ * follows the moved card; the board scrolls horizontally inside a focusable region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import {
+  estateLeads,
+  estateProperties,
+  estateAgents,
+  estateStageLabels,
+  formatEstatePrice,
+  type EstateAgent,
+  type EstateLead,
+  type EstateLeadStage,
+  type EstateProperty,
+} from '../templates/real-estate/data';
+
+interface OwnProps {
+  leads?: EstateLead[];
+  properties?: EstateProperty[];
+  agents?: EstateAgent[];
+  propertyBase?: string;
+  variant?: 'board' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  leads = estateLeads,
+  properties = estateProperties,
+  agents = estateAgents,
+  propertyBase,
+  variant = 'board',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const stages = Object.keys(estateStageLabels) as EstateLeadStage[];
+const uid = `elp-${Math.random().toString(36).slice(2, 8)}`;
+const propertyOf = (slug: string) => properties.find((p) => p.slug === slug);
+const initialsOf = (id: string) => {
+  const a = agents.find((x) => x.id === id);
+  return a ? a.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('') : '?';
+};
+const agentName = (id: string) => agents.find((x) => x.id === id)?.name ?? '';
+---
+
+<section
+  class:list={['estate-ui', 'estate-pipeline', `estate-pipeline--${variant}`, classAttr]}
+  aria-label="Pipeline de leads"
+  data-estate-pipeline
+  data-stages={JSON.stringify(stages.map((s) => ({ id: s, label: estateStageLabels[s] })))}
+  {...rest}
+>
+  <p class="estate-sr" aria-live="polite" data-announce></p>
+  <div class="estate-pipeline__scroll" tabindex="0" role="region" aria-label="Columnas del pipeline (desplazable)">
+    <div class="estate-pipeline__board">
+      {stages.map((stage) => {
+        const items = leads.filter((l) => l.stage === stage);
+        const prev = stages[stages.indexOf(stage) - 1];
+        const next = stages[stages.indexOf(stage) + 1];
+        return (
+          <section class:list={['estate-pipeline__col', `estate-pipeline__col--${stage}`]} aria-labelledby={`${uid}-${stage}`} data-col={stage}>
+            <header class="estate-pipeline__col-head">
+              <h3 id={`${uid}-${stage}`} class="estate-pipeline__col-title">
+                {estateStageLabels[stage]}
+              </h3>
+              <span class="estate-pipeline__count" data-count>
+                {items.length}
+              </span>
+            </header>
+            <ul class="estate-pipeline__list" role="list" data-list>
+              {items.map((l) => {
+                const p = propertyOf(l.propertySlug);
+                const op = p?.operation ?? 'sale';
+                return (
+                  <li class="estate-lead" data-lead={l.id} data-name={l.name} tabindex="-1">
+                    <div class="estate-lead__top">
+                      <p class="estate-lead__name">{l.name}</p>
+                      <span class="estate-lead__agent" title={agentName(l.agentId)}>
+                        <span aria-hidden="true">{initialsOf(l.agentId)}</span>
+                        <span class="estate-sr">Agente: {agentName(l.agentId)}</span>
+                      </span>
+                    </div>
+                    {p && (
+                      <p class="estate-lead__property">
+                        {propertyBase ? <a href={`${propertyBase}/${p.slug}`}>{p.title}</a> : p.title}
+                      </p>
+                    )}
+                    <dl class="estate-lead__meta">
+                      <div>
+                        <dt class="estate-sr">Presupuesto</dt>
+                        <dd class="estate-lead__budget">{formatEstatePrice(l.budget, op)}</dd>
+                      </div>
+                      <div>
+                        <dt class="estate-sr">Origen</dt>
+                        <dd class="estate-lead__source">{l.source}</dd>
+                      </div>
+                      <div>
+                        <dt class="estate-sr">Recibido</dt>
+                        <dd>{l.createdAgo}</dd>
+                      </div>
+                    </dl>
+                    {l.note && variant === 'board' && <p class="estate-lead__note">{l.note}</p>}
+                    <div class="estate-lead__actions">
+                      <button type="button" class="estate-lead__move" data-move="-1" disabled={!prev}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                        <span class="estate-sr" data-move-label>{prev ? `Mover a ${estateStageLabels[prev]}: ${l.name}` : 'Sin etapa anterior'}</span>
+                      </button>
+                      <a href={`tel:${l.phone.replace(/\s+/g, '')}`} class="estate-lead__call">
+                        Llamar<span class="estate-sr"> a {l.name}</span>
+                      </a>
+                      <button type="button" class="estate-lead__move" data-move="1" disabled={!next}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                        <span class="estate-sr" data-move-label>{next ? `Mover a ${estateStageLabels[next]}: ${l.name}` : 'Sin etapa siguiente'}</span>
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<script>
+  type Stage = { id: string; label: string };
+
+  function initPipeline(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const stages: Stage[] = JSON.parse(root.dataset.stages || '[]');
+    const announce = root.querySelector<HTMLElement>('[data-announce]')!;
+    const colOf = (id: string) => root.querySelector<HTMLElement>(`[data-col="${id}"]`)!;
+
+    const refresh = () => {
+      stages.forEach((s, i) => {
+        const col = colOf(s.id);
+        const cards = col.querySelectorAll<HTMLElement>('[data-lead]');
+        col.querySelector('[data-count]')!.textContent = String(cards.length);
+        cards.forEach((card) => {
+          const name = card.dataset.name;
+          card.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((btn) => {
+            const target = stages[i + Number(btn.dataset.move)];
+            btn.disabled = !target;
+            btn.querySelector('[data-move-label]')!.textContent = target ? `Mover a ${target.label}: ${name}` : `Sin etapa ${Number(btn.dataset.move) < 0 ? 'anterior' : 'siguiente'}`;
+          });
+        });
+      });
+    };
+
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-move]');
+      if (!btn || btn.disabled) return;
+      const card = btn.closest<HTMLElement>('[data-lead]')!;
+      const from = card.closest<HTMLElement>('[data-col]')!.dataset.col!;
+      const index = stages.findIndex((s) => s.id === from);
+      const target = stages[index + Number(btn.dataset.move)];
+      if (!target) return;
+      colOf(target.id).querySelector('[data-list]')!.prepend(card);
+      refresh();
+      announce.textContent = `${card.dataset.name} movido a ${target.label}.`;
+      const same = card.querySelector<HTMLButtonElement>(`[data-move="${btn.dataset.move}"]`);
+      (same && !same.disabled ? same : card).focus();
+    });
+
+    refresh();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-pipeline]').forEach(initPipeline);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-pipeline {
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-pipeline__scroll {
+    position: relative;
+    overflow-x: auto;
+    padding-bottom: var(--sp-2, 0.5rem);
+    border-radius: var(--r-md, 12px);
+  }
+
+  .estate-pipeline__scroll:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-pipeline__board {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(250px, 1fr));
+    gap: var(--sp-3, 0.75rem);
+    min-width: min-content;
+  }
+
+  .estate-pipeline__col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--estate-surface);
+    border-top: 3px solid var(--estate-border-strong);
+  }
+
+  .estate-pipeline__col--new { border-top-color: var(--estate-brand); }
+  .estate-pipeline__col--contacted { border-top-color: var(--estate-reserved); }
+  .estate-pipeline__col--visit { border-top-color: var(--estate-rent); }
+  .estate-pipeline__col--offer { border-top-color: #9db4f0; }
+  .estate-pipeline__col--closed { border-top-color: var(--estate-up); }
+
+  .estate-pipeline__col-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--sp-1, 0.25rem);
+  }
+
+  .estate-pipeline__col-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .estate-pipeline__count {
+    min-width: 1.6rem;
+    padding: 0 0.45rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-surface-2);
+    color: var(--estate-text-2);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.6rem;
+    text-align: center;
+  }
+
+  .estate-pipeline__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 80px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-lead {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-lead:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-lead__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .estate-lead__name {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .estate-lead__agent {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--estate-surface-2);
+    color: var(--estate-text-2);
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .estate-lead__property {
+    margin: 0;
+    color: var(--estate-text-2);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .estate-lead__property a {
+    color: inherit;
+  }
+
+  .estate-lead__property a:hover {
+    color: var(--estate-brand);
+  }
+
+  .estate-lead__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1, 0.25rem) var(--sp-3, 0.75rem);
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.8rem;
+  }
+
+  .estate-lead__meta dd {
+    margin: 0;
+  }
+
+  .estate-lead__budget {
+    color: var(--estate-text);
+    font-weight: 700;
+  }
+
+  .estate-lead__note {
+    margin: 0;
+    padding: var(--sp-2, 0.5rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--estate-surface);
+    color: var(--estate-text-2);
+    font-size: 0.8rem;
+  }
+
+  .estate-lead__actions {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .estate-lead__move,
+  .estate-lead__call {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--estate-border-strong);
+    background: transparent;
+    color: var(--estate-text-2);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .estate-lead__move:hover:not(:disabled),
+  .estate-lead__call:hover {
+    background: var(--estate-surface);
+    color: var(--estate-text);
+  }
+
+  .estate-lead__move:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .estate-lead__move:focus-visible,
+  .estate-lead__call:focus-visible,
+  .estate-lead__property a:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-pipeline--compact .estate-lead {
+    gap: var(--sp-1, 0.25rem);
+    padding: var(--sp-2, 0.5rem);
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

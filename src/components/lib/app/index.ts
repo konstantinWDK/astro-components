@@ -43,6 +43,11 @@ export { default as ConstructionSiteProgress } from './ConstructionSiteProgress.
 export { default as ConstructionUnitSelector } from './ConstructionUnitSelector.astro';
 export { default as ConstructionDailyLog } from './ConstructionDailyLog.astro';
 export { default as ConstructionBudgetEstimator } from './ConstructionBudgetEstimator.astro';
+// Real estate agency & CRM apps ("Nido")
+export { default as EstateMortgageCalculator } from './EstateMortgageCalculator.astro';
+export { default as EstateValuationWizard } from './EstateValuationWizard.astro';
+export { default as EstateVisitScheduler } from './EstateVisitScheduler.astro';
+export { default as EstateLeadsPipeline } from './EstateLeadsPipeline.astro';
 
 export { appIcons, appIcon, initials, hueFrom } from './app-icons';
 export type { AppIcon } from './app-icons';

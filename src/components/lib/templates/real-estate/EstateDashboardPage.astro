@@ -1,0 +1,317 @@
+---
+/**
+ * EstateDashboardPage — Agency CRM overview: KPIs, today's and tomorrow's viewings,
+ * a compact lead pipeline and the listings getting the most attention.
+ *
+ * @param {EstateRoutes} routes - Template route URLs.
+ * @param {typeof estateData} data - Listings, leads, visits and agents.
+ */
+import EstateAppLayout from './EstateAppLayout.astro';
+import PageHeader from '../../app/PageHeader.astro';
+import EstateLeadsPipeline from '../../app/EstateLeadsPipeline.astro';
+import { estateRoutes, estateData, formatEstatePrice, getEstateAgent, getEstateProperty, type EstateRoutes } from './data';
+
+interface Props {
+  routes?: EstateRoutes;
+  data?: typeof estateData;
+}
+
+const { routes = estateRoutes, data = estateData } = Astro.props;
+
+const active = data.properties.filter((p) => p.status === 'active');
+const openLeads = data.leads.filter((l) => l.stage !== 'closed');
+const pipelineValue = data.leads
+  .filter((l) => l.stage === 'offer' || l.stage === 'visit')
+  .reduce((sum, l) => sum + (getEstateProperty(l.propertySlug, data.properties)?.operation === 'sale' ? l.budget * 0.03 : 0), 0);
+const visitsToday = data.visits.filter((v) => v.day === 'Hoy');
+
+const kpis = [
+  { label: 'Propiedades activas', value: String(active.length), hint: `${data.properties.filter((p) => p.status === 'reserved').length} reservadas` },
+  { label: 'Leads abiertos', value: String(openLeads.length), hint: `${data.leads.filter((l) => l.stage === 'new').length} sin contactar` },
+  { label: 'Visitas hoy', value: String(visitsToday.length), hint: `${visitsToday.filter((v) => !v.confirmed).length} sin confirmar` },
+  { label: 'Honorarios en negociación', value: formatEstatePrice(pipelineValue), hint: 'Visitas y ofertas (3 %)' },
+];
+
+const topListings = [...data.properties].sort((a, b) => b.views - a.views).slice(0, 5);
+---
+
+<EstateAppLayout title="Resumen" current="dashboard" routes={routes}>
+  <PageHeader
+    title="Buenos días, Lucía"
+    description="Esto es lo que pasa hoy en la agencia."
+    actions={[
+      { label: 'Ver leads', href: routes.leads, icon: 'users' },
+      { label: 'Nueva propiedad', href: routes.listingsCms, icon: 'plus', primary: true },
+    ]}
+    periods={[]}
+  />
+
+  <ul class="estate-ui estate-kpis" role="list">
+    {kpis.map((k) => (
+      <li class="estate-kpi">
+        <span class="estate-kpi__label">{k.label}</span>
+        <span class="estate-kpi__value">{k.value}</span>
+        <span class="estate-kpi__hint">{k.hint}</span>
+      </li>
+    ))}
+  </ul>
+
+  <div class="estate-ui estate-dash">
+    <section class="estate-panel" aria-labelledby="estate-visits-title">
+      <h2 id="estate-visits-title" class="estate-panel__title">Próximas visitas</h2>
+      <ul class="estate-visits" role="list">
+        {data.visits.map((v) => {
+          const p = getEstateProperty(v.propertySlug, data.properties);
+          const a = getEstateAgent(v.agentId, data.agents);
+          return (
+            <li class="estate-visits__item">
+              <span class="estate-visits__time">
+                <small>{v.day}</small>
+                <strong>{v.time}</strong>
+              </span>
+              <span class="estate-visits__body">
+                <span class="estate-visits__client">{v.client}</span>
+                <span class="estate-visits__prop">{p?.title}</span>
+                <span class="estate-visits__agent">con {a?.name}</span>
+              </span>
+              <span class:list={['estate-visits__state', v.confirmed ? 'is-ok' : 'is-pending']}>
+                {v.confirmed ? 'Confirmada' : 'Pendiente'}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+
+    <section class="estate-panel" aria-labelledby="estate-top-title">
+      <h2 id="estate-top-title" class="estate-panel__title">Propiedades más vistas</h2>
+      <ol class="estate-top" role="list">
+        {topListings.map((p, i) => (
+          <li class="estate-top__item">
+            <span class="estate-top__rank" aria-hidden="true">{i + 1}</span>
+            <span class="estate-top__body">
+              <a href={`${routes.listings}/${p.slug}`} class="estate-top__title">{p.title}</a>
+              <span class="estate-top__meta">{formatEstatePrice(p.price, p.operation)} · {p.zone}</span>
+            </span>
+            <span class="estate-top__stats">
+              <strong>{p.views.toLocaleString('es-ES')}</strong> visitas
+              <span>{p.leads} leads</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+
+  <section class="estate-ui estate-dash__pipeline" aria-labelledby="estate-pipe-title">
+    <div class="estate-dash__pipe-head">
+      <h2 id="estate-pipe-title" class="estate-panel__title">Pipeline</h2>
+      <a href={routes.leads} class="estate-dash__link">Abrir pipeline completo</a>
+    </div>
+    <EstateLeadsPipeline leads={data.leads} properties={data.properties} agents={data.agents} variant="compact" propertyBase={routes.listings} />
+  </section>
+</EstateAppLayout>
+
+<style>
+  .estate-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-6, 1.5rem) 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-kpi__label {
+    color: var(--estate-text-3);
+    font-size: 0.85rem;
+  }
+
+  .estate-kpi__value {
+    font-family: var(--estate-font-display);
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  .estate-kpi__hint {
+    color: var(--estate-text-2);
+    font-size: 0.82rem;
+  }
+
+  .estate-dash {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .estate-panel {
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+    min-width: 0;
+  }
+
+  .estate-panel__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .estate-visits,
+  .estate-top {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-visits__item,
+  .estate-top__item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) 0;
+    border-top: 1px solid var(--estate-border);
+  }
+
+  .estate-visits__item:first-child,
+  .estate-top__item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .estate-visits__time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 64px;
+    padding: var(--sp-2, 0.5rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-surface);
+  }
+
+  .estate-visits__time small {
+    color: var(--estate-text-3);
+    font-size: 0.72rem;
+  }
+
+  .estate-visits__body,
+  .estate-top__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .estate-visits__client {
+    font-weight: 600;
+  }
+
+  .estate-visits__prop,
+  .estate-top__meta {
+    overflow: hidden;
+    color: var(--estate-text-2);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .estate-visits__agent {
+    color: var(--estate-text-3);
+    font-size: 0.8rem;
+  }
+
+  .estate-visits__state {
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .estate-visits__state.is-ok {
+    background: color-mix(in srgb, var(--estate-up) 18%, transparent);
+    color: var(--estate-up);
+  }
+
+  .estate-visits__state.is-pending {
+    background: color-mix(in srgb, var(--estate-reserved) 18%, transparent);
+    color: var(--estate-reserved);
+  }
+
+  .estate-top__rank {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--estate-surface);
+    color: var(--estate-text-2);
+    font-weight: 700;
+  }
+
+  .estate-top__title {
+    overflow: hidden;
+    color: var(--estate-text);
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-decoration: none;
+  }
+
+  .estate-top__title:hover {
+    color: var(--estate-brand);
+  }
+
+  .estate-top__stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    color: var(--estate-text-3);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .estate-top__stats strong {
+    color: var(--estate-text);
+  }
+
+  .estate-dash__pipe-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .estate-dash__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--estate-brand);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .estate-dash a:focus-visible,
+  .estate-dash__link:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 1100px) {
+    .estate-dash {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

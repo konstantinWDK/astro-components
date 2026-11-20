@@ -1,0 +1,343 @@
+---
+/**
+ * EstateMortgageCalculator — Mortgage simulator for a property page.
+ * Price, down payment (%), term (years) and interest rate (TIN) update the monthly payment,
+ * loan amount, total interest and the cash needed up front (down payment + purchase taxes)
+ * as you type. Uses the standard French amortisation formula.
+ *
+ * @param {number} price - Property price (EUR). Default 589000.
+ * @param {number} downPct - Initial down payment, in %. Default 20.
+ * @param {number} years - Initial term. Default 30.
+ * @param {number} rate - Initial annual rate (TIN), in %. Default 2.9.
+ * @param {number} taxPct - Purchase taxes and fees as % of price (e.g. ITP + notary). Default 10.
+ * @param {string} contactHref - "Talk to a mortgage advisor" link. Omit to hide it.
+ * @param {string} variant - 'card' | 'plain'. Default 'card'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every slider has a paired, labelled number field; results are an <output>
+ * inside an aria-live region; amounts are formatted as EUR.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+
+interface OwnProps {
+  price?: number;
+  downPct?: number;
+  years?: number;
+  rate?: number;
+  taxPct?: number;
+  contactHref?: string;
+  variant?: 'card' | 'plain';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  price = 589000,
+  downPct = 20,
+  years = 30,
+  rate = 2.9,
+  taxPct = 10,
+  contactHref,
+  variant = 'card',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `emc-${Math.random().toString(36).slice(2, 8)}`;
+
+function monthly(p: number, d: number, y: number, r: number) {
+  const loan = p * (1 - d / 100);
+  const i = r / 100 / 12;
+  const n = y * 12;
+  return i === 0 ? loan / n : (loan * i) / (1 - Math.pow(1 + i, -n));
+}
+
+const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+const initialMonthly = monthly(price, downPct, years, rate);
+const initialLoan = price * (1 - downPct / 100);
+
+const fields = [
+  { name: 'price', label: 'Precio de la vivienda', unit: '€', min: 50000, max: 2000000, step: 1000, value: price },
+  { name: 'down', label: 'Entrada', unit: '%', min: 0, max: 80, step: 1, value: downPct },
+  { name: 'years', label: 'Plazo', unit: 'años', min: 5, max: 40, step: 1, value: years },
+  { name: 'rate', label: 'Tipo de interés (TIN)', unit: '%', min: 0, max: 8, step: 0.05, value: rate },
+];
+---
+
+<section
+  class:list={['estate-ui', 'estate-mortgage', `estate-mortgage--${variant}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-estate-mortgage
+  data-tax={taxPct}
+  {...rest}
+>
+  <h2 id={`${uid}-title`} class="estate-mortgage__title">Calcula tu hipoteca</h2>
+
+  <form class="estate-mortgage__form" data-form onsubmit="return false">
+    {fields.map((f) => (
+      <div class="estate-mortgage__field">
+        <div class="estate-mortgage__row">
+          <label for={`${uid}-${f.name}`}>{f.label}</label>
+          <span class="estate-mortgage__num">
+            <input
+              id={`${uid}-${f.name}`}
+              type="number"
+              name={f.name}
+              min={f.min}
+              max={f.max}
+              step={f.step}
+              value={f.value}
+              inputmode="decimal"
+              data-num={f.name}
+            />
+            <span aria-hidden="true">{f.unit}</span>
+          </span>
+        </div>
+        <input
+          type="range"
+          min={f.min}
+          max={f.max}
+          step={f.step}
+          value={f.value}
+          aria-label={`${f.label} (${f.unit})`}
+          data-range={f.name}
+        />
+      </div>
+    ))}
+  </form>
+
+  <div class="estate-mortgage__result" aria-live="polite">
+    <p class="estate-mortgage__monthly">
+      <span class="estate-mortgage__label">Cuota mensual estimada</span>
+      <output data-out="monthly" for={`${uid}-price ${uid}-down ${uid}-years ${uid}-rate`}>{eur(initialMonthly)}</output>
+    </p>
+    <dl class="estate-mortgage__breakdown">
+      <div>
+        <dt>Importe del préstamo</dt>
+        <dd data-out="loan">{eur(initialLoan)}</dd>
+      </div>
+      <div>
+        <dt>Intereses totales</dt>
+        <dd data-out="interest">{eur(initialMonthly * years * 12 - initialLoan)}</dd>
+      </div>
+      <div>
+        <dt>Ahorro necesario <small>(entrada + {taxPct} % impuestos y gastos)</small></dt>
+        <dd data-out="cash">{eur(price * (downPct / 100) + price * (taxPct / 100))}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <p class="estate-mortgage__note">Simulación orientativa. La oferta final depende de tu perfil y de la entidad.</p>
+  {contactHref && (
+    <a href={contactHref} class="estate-mortgage__cta">Hablar con un asesor hipotecario</a>
+  )}
+</section>
+
+<script>
+  function initMortgage(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const tax = Number(root.dataset.tax || 10);
+    const eur = (n: number) =>
+      new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Math.max(0, n));
+    const num = (name: string) => root.querySelector<HTMLInputElement>(`[data-num="${name}"]`)!;
+    const range = (name: string) => root.querySelector<HTMLInputElement>(`[data-range="${name}"]`)!;
+    const out = (name: string) => root.querySelector<HTMLElement>(`[data-out="${name}"]`)!;
+
+    const compute = () => {
+      const price = Number(num('price').value) || 0;
+      const down = Math.min(100, Number(num('down').value) || 0);
+      const years = Math.max(1, Number(num('years').value) || 1);
+      const rate = Number(num('rate').value) || 0;
+      const loan = price * (1 - down / 100);
+      const i = rate / 100 / 12;
+      const n = years * 12;
+      const monthly = i === 0 ? loan / n : (loan * i) / (1 - Math.pow(1 + i, -n));
+      out('monthly').textContent = eur(monthly);
+      out('loan').textContent = eur(loan);
+      out('interest').textContent = eur(monthly * n - loan);
+      out('cash').textContent = eur(price * (down / 100) + price * (tax / 100));
+    };
+
+    for (const name of ['price', 'down', 'years', 'rate']) {
+      const n = num(name);
+      const r = range(name);
+      n.addEventListener('input', () => {
+        r.value = n.value;
+        compute();
+      });
+      r.addEventListener('input', () => {
+        n.value = r.value;
+        compute();
+      });
+    }
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-mortgage]').forEach(initMortgage);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-mortgage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-mortgage--card {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-mortgage__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: 1.6rem;
+  }
+
+  .estate-mortgage__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .estate-mortgage__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .estate-mortgage__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .estate-mortgage__row label {
+    color: var(--estate-text-2);
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+
+  .estate-mortgage__num {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem);
+    color: var(--estate-text-3);
+    font-size: 0.88rem;
+  }
+
+  .estate-mortgage__num input {
+    width: 7.5rem;
+    min-height: 40px;
+    padding: 0 var(--sp-2, 0.5rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--estate-border-strong);
+    background: var(--estate-surface);
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .estate-mortgage input[type='range'] {
+    width: 100%;
+    min-height: 28px;
+    accent-color: var(--estate-brand);
+    cursor: pointer;
+  }
+
+  .estate-mortgage input:focus-visible,
+  .estate-mortgage__cta:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-mortgage__result {
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-surface);
+  }
+
+  .estate-mortgage__monthly {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 var(--sp-4, 1rem);
+  }
+
+  .estate-mortgage__label {
+    color: var(--estate-text-3);
+    font-size: 0.85rem;
+  }
+
+  .estate-mortgage__monthly output {
+    font-family: var(--estate-font-display);
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--estate-brand);
+  }
+
+  .estate-mortgage__breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+  }
+
+  .estate-mortgage__breakdown > div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    font-size: 0.92rem;
+  }
+
+  .estate-mortgage__breakdown dt {
+    color: var(--estate-text-2);
+  }
+
+  .estate-mortgage__breakdown dt small {
+    display: block;
+    color: var(--estate-text-3);
+    font-size: 0.78rem;
+  }
+
+  .estate-mortgage__breakdown dd {
+    margin: 0;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .estate-mortgage__note {
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.8rem;
+  }
+
+  .estate-mortgage__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    color: var(--estate-text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .estate-mortgage__cta:hover {
+    background: var(--estate-surface);
+  }
+</style>
