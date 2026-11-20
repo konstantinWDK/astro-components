@@ -1,0 +1,164 @@
+---
+/**
+ * GymAreaHeading — Bold page heading for the gym member area: small kicker, uppercase title,
+ * description and action buttons, with an optional back link.
+ *
+ * @param {string} title - Page title (h1).
+ * @param {string} kicker - Small line above the title.
+ * @param {string} description - Supporting text.
+ * @param {{label: string, href: string}} back - Back link above the title. Omit to hide.
+ * @param {Array<{label: string, href?: string, primary?: boolean}>} actions - Buttons (links when `href` is set).
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; actions are real links or buttons with visible text; the back
+ * link arrow is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+
+interface OwnProps {
+  title?: string;
+  kicker?: string;
+  description?: string;
+  back?: { label: string; href: string };
+  actions?: Array<{ label: string; href?: string; primary?: boolean }>;
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Mi progreso',
+  kicker,
+  description,
+  back,
+  actions = [],
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+---
+
+<div class:list={['gym-ui', 'gym-area-heading', `gym-area-heading--${size}`, classAttr]} {...rest}>
+  <div>
+    {back && (
+      <a href={back.href} class="gym-area-heading__back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        {back.label}
+      </a>
+    )}
+    {kicker && <p class="gym-area-heading__kicker">{kicker}</p>}
+    <h1 class="gym-area-heading__title">{title}</h1>
+    {description && <p class="gym-area-heading__desc">{description}</p>}
+  </div>
+  {actions.length > 0 && (
+    <div class="gym-area-heading__actions">
+      {actions.map((a) => {
+        const Tag = a.href ? 'a' : 'button';
+        return (
+          <Tag href={a.href} type={a.href ? undefined : 'button'} class:list={['gym-area-heading__btn', { 'is-primary': a.primary }]}>
+            {a.label}
+          </Tag>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+<style>
+  .gym-area-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-area-heading__back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem);
+    min-height: 36px;
+    color: var(--gym-text-3);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .gym-area-heading__back:hover {
+    color: var(--gym-text);
+  }
+
+  .gym-area-heading__kicker {
+    margin: 0;
+    color: var(--gym-brand);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .gym-area-heading__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-area-heading--lg .gym-area-heading__title {
+    font-size: clamp(2.8rem, 7vw, 4.4rem);
+  }
+
+  .gym-area-heading__desc {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--gym-text-2);
+  }
+
+  .gym-area-heading__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .gym-area-heading__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-sm, 8px);
+    border: 2px solid var(--gym-border-strong);
+    background: transparent;
+    color: var(--gym-text);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .gym-area-heading__btn:hover {
+    border-color: var(--gym-text);
+  }
+
+  .gym-area-heading__btn.is-primary {
+    border-color: var(--gym-brand);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-area-heading__btn.is-primary:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-area-heading :is(a, button):focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+</style>

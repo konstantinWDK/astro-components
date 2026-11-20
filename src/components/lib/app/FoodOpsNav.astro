@@ -1,0 +1,343 @@
+---
+/**
+ * FoodOpsNav — Navigation for the BiteFlow kitchen OS. On desktop it is a chunky sticker column
+ * with the brand, links with icons and counters, and a shift card (service time, orders goal);
+ * on phones it turns into a sticky, swipeable chip strip under the top bar. No JavaScript.
+ *
+ * @param {Array<{label: string, href: string, icon: string, badge?: number|string}>} items - Links.
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {string} brand - Brand name.
+ * @param {string} homeHref - Link for the brand mark (the public site).
+ * @param {{label: string, value: number, goal: number}} shift - Shift card; omit to hide.
+ * @param {string} variant - 'column' (column + chip strip) | 'strip' (chip strip on every size). Default 'column'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; aria-current on the active link; icons are
+ * aria-hidden and every link has a visible label; badges are read as part of the link name.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+
+interface Item { label: string; href: string; icon: string; badge?: number | string }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  brand?: string;
+  homeHref?: string;
+  shift?: { label: string; value: number; goal: number };
+  variant?: 'column' | 'strip';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [
+    { label: 'Servicio', href: '#', icon: 'pulse' },
+    { label: 'Cocina', href: '#kds', icon: 'flame', badge: 4 },
+    { label: 'Pedidos', href: '#pedidos', icon: 'receipt' },
+  ],
+  currentHref = '#',
+  brand = 'BiteFlow',
+  homeHref = '/',
+  shift,
+  variant = 'column',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const icons: Record<string, string> = {
+  pulse: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+  flame: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/>',
+  book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/>',
+  receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  bike: '<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h5l3 8M10 9 8 6H6"/>',
+  cog: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+};
+const norm = (h: string) => h.replace(/\/$/, '');
+const isCurrent = (href: string) => norm(href) === norm(currentHref);
+const pct = shift ? Math.min(100, Math.round((shift.value / shift.goal) * 100)) : 0;
+const hasBadge = (b?: number | string) => b !== undefined && b !== 0 && b !== '';
+---
+
+<nav class:list={['bf-ui', 'bf-nav', `bf-nav--${variant}`, `bf-nav--${size}`, classAttr]} aria-label="Kitchen OS" {...rest}>
+  <a href={homeHref} class="bf-nav__brand">
+    <span class="bf-nav__mark" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 0 16 0z" /><path d="M8 9c0-2 2-2 2-4M13 9c0-2 2-2 2-4" /></svg>
+    </span>
+    <span class="bf-nav__name">{brand}<small>Kitchen OS</small></span>
+  </a>
+
+  <ul class="bf-nav__list" role="list">
+    {items.map((it) => (
+      <li>
+        <a href={it.href} class="bf-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+          <span class="bf-nav__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" set:html={icons[it.icon] ?? icons.pulse} />
+          </span>
+          <span class="bf-nav__label">{it.label}</span>
+          {hasBadge(it.badge) && (
+            <span class="bf-nav__badge">{it.badge}<span class="bf-sr"> pendientes</span></span>
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {shift && (
+    <div class="bf-nav__shift">
+      <p class="bf-nav__shift-label">{shift.label}</p>
+      <p class="bf-nav__shift-value"><strong>{shift.value}</strong> / {shift.goal}</p>
+      <span class="bf-nav__shift-bar" role="img" aria-label={`${shift.label}: ${shift.value} de ${shift.goal}`}><i style={`width:${pct}%`}></i></span>
+    </div>
+  )}
+</nav>
+
+<style>
+  .bf-nav {
+    position: relative;
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-nav__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    color: var(--bf-ink);
+    text-decoration: none;
+  }
+
+  .bf-nav__mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    transform: rotate(-6deg);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-nav__name {
+    display: grid;
+    font-family: var(--bf-font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .bf-nav__name small {
+    font-family: var(--bf-font-body);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--bf-ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .bf-nav__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-nav__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    color: var(--bf-ink-2);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.2s var(--bf-ease-pop), background 0.2s ease;
+  }
+
+  .bf-nav__link:hover {
+    color: var(--bf-ink);
+    background: var(--bf-bg-2);
+    transform: translateX(3px);
+  }
+
+  .bf-nav__link[aria-current='page'] {
+    border-color: var(--bf-outline);
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-nav__link:focus-visible,
+  .bf-nav__brand:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-nav__icon {
+    display: grid;
+    place-items: center;
+  }
+
+  .bf-nav__badge {
+    margin-left: auto;
+    min-width: 24px;
+    padding: 1px 7px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .bf-nav__shift {
+    padding: 14px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 18px;
+    background: var(--bf-mint-soft);
+  }
+
+  .bf-nav__shift p {
+    margin: 0;
+  }
+
+  .bf-nav__shift-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .bf-nav__shift-value {
+    font-family: var(--bf-font-display);
+    font-size: 1.1rem;
+  }
+
+  .bf-nav__shift-value strong {
+    font-size: 1.8rem;
+  }
+
+  .bf-nav__shift-bar {
+    display: block;
+    height: 12px;
+    margin-top: 6px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    overflow: hidden;
+    background: var(--bf-paper);
+  }
+
+  .bf-nav__shift-bar i {
+    display: block;
+    height: 100%;
+    background: var(--bf-mint);
+  }
+
+  /* Column (desktop) */
+  @media (min-width: 1024px) {
+    .bf-nav--column {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-6, 1.5rem);
+      width: 250px;
+      height: 100vh;
+      padding: var(--sp-5, 1.25rem) var(--sp-4, 1rem);
+      border-right: 3px solid var(--bf-outline);
+      background: var(--bf-paper);
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .bf-nav--column.bf-nav--lg {
+      width: 290px;
+    }
+
+    .bf-nav--column .bf-nav__list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .bf-nav--column .bf-nav__shift {
+      margin-top: auto;
+    }
+  }
+
+  /* Strip (phones, or variant="strip") */
+  @media (max-width: 1023px) {
+    .bf-nav--column {
+      position: sticky;
+      top: 64px;
+      z-index: 20;
+      border-bottom: 3px solid var(--bf-outline);
+      background: var(--bf-paper);
+    }
+
+    .bf-nav--column .bf-nav__brand,
+    .bf-nav--column .bf-nav__shift {
+      display: none;
+    }
+  }
+
+  .bf-nav--strip {
+    border-bottom: 3px solid var(--bf-outline);
+    background: var(--bf-paper);
+  }
+
+  .bf-nav--strip .bf-nav__brand,
+  .bf-nav--strip .bf-nav__shift {
+    display: none;
+  }
+
+  @media (max-width: 1023px) {
+    .bf-nav--column .bf-nav__list,
+    .bf-nav--strip .bf-nav__list {
+      display: flex;
+      gap: 6px;
+      padding: 8px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+  }
+
+  .bf-nav--strip .bf-nav__list {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+  }
+
+  @media (max-width: 1023px) {
+    .bf-nav__link:hover {
+      transform: none;
+    }
+
+    .bf-nav__link {
+      min-height: 44px;
+      padding: 0 12px;
+      border-color: var(--bf-line);
+      border-radius: 999px;
+    }
+
+    .bf-nav__badge {
+      margin-left: 2px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-nav * {
+      transition: none !important;
+    }
+  }
+</style>

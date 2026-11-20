@@ -1,0 +1,523 @@
+---
+/**
+ * FoodOpsTopbar — Top bar for the BiteFlow kitchen OS: brand (phones), order lookup that jumps to
+ * the order book, an "accepting orders" switch that pauses new orders on every channel, a rush
+ * mode that adds minutes to the quoted time, a theme toggle, notifications and the crew member
+ * menu (native popovers).
+ *
+ * @param {{name: string, role: string}} user - Signed-in crew member.
+ * @param {Array<{title: string, text: string, time: string, unread?: boolean}>} notifications - Alerts.
+ * @param {string} searchAction - Page the order lookup submits to (GET ?q=). Default '#'.
+ * @param {Array<{label: string, href: string}>} links - Extra links in the user menu.
+ * @param {string} signOutHref - Sign out link.
+ * @param {string} homeHref - Brand link on phones.
+ * @param {number} rushMinutes - Minutes added in rush mode. Default 10.
+ * @param {string} variant - 'solid' | 'ghost' background. Default 'solid'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <header> landmark; search has a label; both service controls are native
+ * checkboxes with role="switch" and visible labels; state changes are announced; popover
+ * triggers expose aria-expanded and close with Escape (native popover behaviour).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+
+interface Note { title: string; text: string; time: string; unread?: boolean }
+
+interface OwnProps {
+  user?: { name: string; role: string };
+  notifications?: Note[];
+  searchAction?: string;
+  links?: Array<{ label: string; href: string }>;
+  signOutHref?: string;
+  homeHref?: string;
+  rushMinutes?: number;
+  variant?: 'solid' | 'ghost';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  user = { name: 'Marta Ibáñez', role: 'Jefa de cocina' },
+  notifications = [],
+  searchAction = '#',
+  links = [],
+  signOutHref = '#',
+  homeHref = '/',
+  rushMinutes = 10,
+  variant = 'solid',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const unread = notifications.filter((n) => n.unread).length;
+const initials = user.name.split(' ').map((p) => p.charAt(0)).slice(0, 2).join('');
+const uid = `bf-top-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<header class:list={['bf-ui', 'bf-top', `bf-top--${variant}`, `bf-top--${size}`, classAttr]} data-bf-top data-rush={rushMinutes} {...rest}>
+  <a href={homeHref} class="bf-top__brand" aria-label="BiteFlow, web pública">
+    <span aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 0 16 0z" /><path d="M8 9c0-2 2-2 2-4M13 9c0-2 2-2 2-4" /></svg>
+    </span>
+  </a>
+
+  <form class="bf-top__search" action={searchAction} method="get" role="search">
+    <label for={`${uid}-q`} class="bf-sr">Buscar pedido</label>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+    <input id={`${uid}-q`} name="q" type="search" placeholder="BF-4821, cliente o calle" />
+  </form>
+
+  <div class="bf-top__service">
+    <label class="bf-top__switch">
+      <input type="checkbox" role="switch" checked data-accept />
+      <span class="bf-top__track" aria-hidden="true"><i></i></span>
+      <span class="bf-top__switch-text" data-accept-label>Recibiendo pedidos</span>
+    </label>
+    <label class="bf-top__switch bf-top__switch--rush">
+      <input type="checkbox" role="switch" data-rushmode />
+      <span class="bf-top__track" aria-hidden="true"><i></i></span>
+      <span class="bf-top__switch-text">Hora punta <small>+{rushMinutes} min</small></span>
+    </label>
+  </div>
+
+  <div class="bf-top__actions">
+    <button type="button" class="bf-top__icon" data-theme-toggle aria-label="Cambiar tema claro u oscuro">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></svg>
+    </button>
+
+    <button type="button" class="bf-top__icon" popovertarget={`${uid}-n`} aria-expanded="false" aria-label={unread ? `Avisos, ${unread} sin leer` : 'Avisos'}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 0 0 4 0" /></svg>
+      {unread ? <span class="bf-top__dot" aria-hidden="true">{unread}</span> : null}
+    </button>
+    <div id={`${uid}-n`} popover class="bf-top__pop" aria-label="Avisos">
+      <p class="bf-top__pop-title">Avisos</p>
+      <ul role="list">
+        {notifications.map((n) => (
+          <li class:list={[{ 'is-unread': n.unread }]}>
+            <strong>{n.title}</strong>
+            <span>{n.text}</span>
+            <time>{n.time}</time>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <button type="button" class="bf-top__user" popovertarget={`${uid}-u`} aria-expanded="false">
+      <span class="bf-top__avatar" aria-hidden="true">{initials}</span>
+      <span class="bf-top__uname">{user.name}<small>{user.role}</small></span>
+    </button>
+    <div id={`${uid}-u`} popover class="bf-top__pop bf-top__pop--user" aria-label="Menú de usuario">
+      <p class="bf-top__pop-title">{user.name}<small>{user.role}</small></p>
+      <ul role="list">
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><a href={signOutHref} class="bf-top__out">Cerrar turno</a></li>
+      </ul>
+    </div>
+  </div>
+  <p class="bf-sr" role="status" aria-live="polite" data-live></p>
+</header>
+
+<script>
+  function initFoodTop() {
+    document.querySelectorAll<HTMLElement>('[data-bf-top]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const live = root.querySelector<HTMLElement>('[data-live]')!;
+      const accept = root.querySelector<HTMLInputElement>('[data-accept]')!;
+      const rush = root.querySelector<HTMLInputElement>('[data-rushmode]')!;
+      const read = (k: string) => {
+        try {
+          return localStorage.getItem(k);
+        } catch {
+          return null;
+        }
+      };
+      const write = (k: string, v: string) => {
+        try {
+          localStorage.setItem(k, v);
+        } catch {}
+      };
+
+      accept.checked = read('bf-accepting') !== '0';
+      rush.checked = read('bf-rush') === '1';
+      const sync = (announce: boolean) => {
+        root.classList.toggle('is-paused', !accept.checked);
+        root.querySelector('[data-accept-label]')!.textContent = accept.checked ? 'Recibiendo pedidos' : 'Pedidos en pausa';
+        if (announce) live.textContent = accept.checked ? 'Cocina abierta: se reciben pedidos.' : 'Pedidos en pausa en web, app y agregadores.';
+      };
+      accept.addEventListener('change', () => {
+        write('bf-accepting', accept.checked ? '1' : '0');
+        sync(true);
+      });
+      rush.addEventListener('change', () => {
+        write('bf-rush', rush.checked ? '1' : '0');
+        live.textContent = rush.checked ? `Hora punta activada: +${root.dataset.rush} min al tiempo de entrega.` : 'Hora punta desactivada.';
+      });
+      sync(false);
+
+      root.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        write('ack-theme', next);
+      });
+
+      root.querySelectorAll<HTMLElement>('[popover]').forEach((pop) => {
+        const trigger = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
+        pop.addEventListener('toggle', (e) => {
+          trigger?.setAttribute('aria-expanded', String((e as ToggleEvent).newState === 'open'));
+        });
+      });
+    });
+  }
+  initFoodTop();
+  document.addEventListener('astro:page-load', initFoodTop);
+</script>
+
+<style>
+  .bf-top {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 64px;
+    padding: 8px var(--sp-4, 1rem);
+    border-bottom: 3px solid var(--bf-outline);
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+    box-sizing: border-box;
+  }
+
+  .bf-top--ghost {
+    background: color-mix(in srgb, var(--bf-bg) 85%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  .bf-top--lg {
+    min-height: 76px;
+  }
+
+  .bf-top.is-paused {
+    background: repeating-linear-gradient(-45deg, var(--bf-bg) 0 14px, var(--bf-pink-soft) 14px 28px);
+  }
+
+  .bf-top__brand {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+  }
+
+  @media (min-width: 1024px) {
+    .bf-top__brand {
+      display: none;
+    }
+  }
+
+  .bf-top__search {
+    position: relative;
+    flex: 1 1 200px;
+    min-width: 0;
+    max-width: 380px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink-2);
+  }
+
+  .bf-top__search:focus-within {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-top__search input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--bf-ink);
+    font: inherit;
+  }
+
+  .bf-top__search input:focus {
+    outline: none;
+  }
+
+  .bf-top__service {
+    display: flex;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .bf-top__switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .bf-top__switch small {
+    color: var(--bf-ink-3);
+    font-weight: 700;
+  }
+
+  .bf-top__switch input {
+    position: absolute;
+    opacity: 0;
+    width: 48px;
+    height: 30px;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .bf-top__track {
+    position: relative;
+    flex: none;
+    width: 48px;
+    height: 28px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-bg-2);
+  }
+
+  .bf-top__track i {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-paper);
+    transition: transform 0.3s var(--bf-ease-pop);
+  }
+
+  .bf-top__switch input:checked + .bf-top__track {
+    background: var(--bf-mint);
+  }
+
+  .bf-top__switch--rush input:checked + .bf-top__track {
+    background: var(--bf-tomato);
+  }
+
+  .bf-top__switch input:checked + .bf-top__track i {
+    transform: translateX(20px);
+  }
+
+  .bf-top__switch input:focus-visible + .bf-top__track,
+  .bf-top__icon:focus-visible,
+  .bf-top__user:focus-visible,
+  .bf-top__brand:focus-visible,
+  .bf-top__pop a:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-top__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .bf-top__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    cursor: pointer;
+  }
+
+  .bf-top__dot {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .bf-top__user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 2px 12px 2px 2px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .bf-top__avatar {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-weight: 800;
+  }
+
+  .bf-top__uname {
+    display: grid;
+    text-align: left;
+    font-weight: 800;
+    font-size: 0.88rem;
+    line-height: 1.15;
+  }
+
+  .bf-top__uname small {
+    color: var(--bf-ink-3);
+    font-weight: 600;
+  }
+
+  .bf-top__pop {
+    position: fixed;
+    inset: 72px 12px auto auto;
+    width: min(340px, calc(100vw - 24px));
+    margin: 0;
+    padding: 12px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 20px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    box-shadow: var(--bf-shadow-lg);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-top__pop-title {
+    display: grid;
+    margin: 0 0 8px;
+    font-family: var(--bf-font-display);
+    font-weight: 800;
+    font-size: 1.1rem;
+  }
+
+  .bf-top__pop-title small {
+    font-family: var(--bf-font-body);
+    color: var(--bf-ink-3);
+    font-size: 0.8rem;
+  }
+
+  .bf-top__pop ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-top__pop li {
+    display: grid;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+  }
+
+  .bf-top__pop li.is-unread {
+    background: var(--bf-pink-soft);
+  }
+
+  .bf-top__pop li span {
+    color: var(--bf-ink-2);
+  }
+
+  .bf-top__pop li time {
+    color: var(--bf-ink-3);
+    font-size: 0.8rem;
+  }
+
+  .bf-top__pop--user li {
+    padding: 0;
+  }
+
+  .bf-top__pop a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 12px;
+    color: var(--bf-ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bf-top__pop a:hover {
+    background: var(--bf-bg-2);
+  }
+
+  .bf-top__out {
+    color: var(--bf-tomato) !important;
+  }
+
+  @media (max-width: 1279px) {
+    .bf-top__switch--rush,
+    .bf-top__uname {
+      display: none;
+    }
+
+    .bf-top__user {
+      padding: 2px;
+    }
+  }
+
+  @media (max-width: 719px) {
+    .bf-top__search,
+    .bf-top [data-theme-toggle] {
+      display: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .bf-top__switch-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-top * {
+      transition: none !important;
+    }
+  }
+</style>

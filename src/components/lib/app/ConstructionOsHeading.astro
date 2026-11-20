@@ -1,0 +1,179 @@
+---
+/**
+ * ConstructionOsHeading — Page heading for the Strukto Site OS, drawn like a plan title: sheet
+ * reference, expanded uppercase title over a dimension line with end ticks, a description and
+ * action links or buttons.
+ *
+ * @param {string} title - Page title (rendered as h1).
+ * @param {string} sheet - Sheet reference shown above the title (e.g. 'OS-02').
+ * @param {string} description - One-line description.
+ * @param {Array<{label: string, href?: string, primary?: boolean}>} actions - Links (href) or buttons.
+ * @param {string} variant - 'line' (dimension line) | 'boxed' (title block frame). Default 'line'.
+ * @param {string} size - 'md' | 'lg' title size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; the dimension line is decorative; actions keep 44px targets with a
+ * visible focus outline.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+
+interface Action { label: string; href?: string; primary?: boolean }
+
+interface OwnProps {
+  title: string;
+  sheet?: string;
+  description?: string;
+  actions?: Action[];
+  variant?: 'line' | 'boxed';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { title, sheet, description, actions = [], variant = 'line', size = 'md', class: classAttr, ...rest } = Astro.props;
+---
+
+<div class:list={['sk-ui', 'sk-head', `sk-head--${variant}`, `sk-head--${size}`, { 'sk-crop': variant === 'boxed' }, classAttr]} {...rest}>
+  <div class="sk-head__text">
+    {sheet && <p class="sk-head__sheet sk-mono">Hoja {sheet}</p>}
+    <h1 class="sk-head__title">{title}</h1>
+    <span class="sk-head__dim" aria-hidden="true"></span>
+    {description && <p class="sk-head__desc">{description}</p>}
+  </div>
+  {actions.length ? (
+    <div class="sk-head__actions">
+      {actions.map((a) =>
+        a.href ? (
+          <a href={a.href} class:list={['sk-head__btn', { 'sk-head__btn--primary': a.primary }]}>{a.label}</a>
+        ) : (
+          <button type="button" class:list={['sk-head__btn', { 'sk-head__btn--primary': a.primary }]}>{a.label}</button>
+        ),
+      )}
+    </div>
+  ) : null}
+</div>
+
+<style>
+  .sk-head {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-head--boxed {
+    padding: 16px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+  }
+
+  .sk-head__text {
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  .sk-head__sheet {
+    margin: 0 0 6px;
+    color: var(--sk-accent);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-head__title {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(1.6rem, 4.6vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .sk-head--lg .sk-head__title {
+    font-size: clamp(2rem, 6vw, 3.4rem);
+  }
+
+  .sk-head__dim {
+    position: relative;
+    display: block;
+    max-width: 360px;
+    height: 10px;
+    margin-top: 10px;
+    border-inline: 1px solid var(--sk-accent);
+  }
+
+  .sk-head__dim::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    height: 1px;
+    background: var(--sk-accent);
+    transform-origin: left;
+    animation: sk-head-draw 0.8s var(--sk-ease) both;
+  }
+
+  .sk-head__desc {
+    max-width: 46rem;
+    margin: 10px 0 0;
+    color: var(--sk-ink-2);
+  }
+
+  .sk-head__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sk-head__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1px solid var(--sk-line);
+    border-radius: var(--sk-radius);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .sk-head__btn:hover {
+    background: var(--sk-fill);
+  }
+
+  .sk-head__btn--primary {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-head__btn--primary:hover {
+    background: var(--sk-accent-hover);
+  }
+
+  .sk-head__btn:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  @keyframes sk-head-draw { from { transform: scaleX(0); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-head__dim::before {
+      animation: none;
+    }
+  }
+</style>

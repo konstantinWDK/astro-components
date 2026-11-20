@@ -1,0 +1,665 @@
+---
+/**
+ * FoodMenuBoard — Full menu for a delivery storefront: sticky category tabs with scroll-spy,
+ * live search and dietary filters, and sticker-style dish cards that pop in on scroll. "Añadir"
+ * fires a `bf:add` window event with the dish and the card's position, so FoodCartDrawer can fly
+ * the dish into the cart. Works without the drawer too (the event is simply ignored).
+ *
+ * @param {FoodDish[]} dishes - Dishes to show.
+ * @param {FoodCategory[]} categories - Category order and labels.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Short intro under the heading.
+ * @param {string} variant - 'grid' (cards) | 'list' (compact rows). Default 'grid'.
+ * @param {string} size - 'md' | 'lg' card size. Default 'md'.
+ * @param {boolean} showFilters - Show search and dietary filters. Default true.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: category links are a <nav> with aria-current on the visible category; filters are
+ * real checkboxes and a labelled search field; the result count is announced in a polite live
+ * region; sold-out dishes use a disabled button with a visible "Agotado" label; every add button
+ * names its dish ("Añadir Doble Smash, 12,90 €").
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodArt } from '../templates/food-delivery/food-art';
+import { foodDishes, foodCategories, type FoodDish, type FoodCategory, type FoodTag } from '../templates/food-delivery/data';
+
+interface OwnProps {
+  dishes?: FoodDish[];
+  categories?: FoodCategory[];
+  title?: string;
+  subtitle?: string;
+  variant?: 'grid' | 'list';
+  size?: 'md' | 'lg';
+  showFilters?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  dishes = foodDishes,
+  categories = foodCategories,
+  title = 'La carta',
+  subtitle = 'Todo se cocina al pedirlo. Elige, añade y en unos minutos sale de cocina.',
+  variant = 'grid',
+  size = 'md',
+  showFilters = true,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const tagLabel: Record<FoodTag, string> = {
+  vegano: 'Vegano',
+  picante: 'Picante',
+  'sin-gluten': 'Sin gluten',
+  nuevo: 'Nuevo',
+  top: 'Top ventas',
+};
+
+const groups = categories
+  .map((c) => ({ ...c, items: dishes.filter((d) => d.category === c.id) }))
+  .filter((g) => g.items.length);
+
+const eur = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const uid = `bf-menu-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section class:list={['bf-ui', 'bf-menu', `bf-menu--${variant}`, `bf-menu--${size}`, classAttr]} aria-labelledby={`${uid}-t`} data-bf-menu {...rest}>
+  <div class="bf-menu__inner">
+    <header class="bf-menu__head">
+      <h2 id={`${uid}-t`} class="bf-menu__title">{title}</h2>
+      {subtitle && <p class="bf-menu__sub">{subtitle}</p>}
+    </header>
+
+    <div class="bf-menu__bar">
+      <nav class="bf-menu__tabs" aria-label="Categorías de la carta">
+        <ul role="list">
+          {groups.map((g, i) => (
+            <li>
+              <a href={`#${uid}-${g.id}`} class="bf-menu__tab" data-tab={g.id} aria-current={i === 0 ? 'true' : undefined}>
+                <svg class="bf-art" viewBox="0 0 120 120" width="26" height="26" aria-hidden="true" set:html={foodArt(g.art)} />
+                {g.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {showFilters && (
+        <div class="bf-menu__filters">
+          <label class="bf-menu__search">
+            <span class="bf-sr">Buscar en la carta</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <input type="search" placeholder="Busca un plato…" data-q />
+          </label>
+          <fieldset class="bf-menu__diet">
+            <legend class="bf-sr">Filtrar por dieta</legend>
+            <label><input type="checkbox" value="vegano" data-diet /> <span>Vegano</span></label>
+            <label><input type="checkbox" value="sin-gluten" data-diet /> <span>Sin gluten</span></label>
+            <label><input type="checkbox" value="picante" data-diet /> <span>Picante</span></label>
+          </fieldset>
+        </div>
+      )}
+    </div>
+
+    <p class="bf-menu__count" role="status" aria-live="polite" data-count>{dishes.length} platos</p>
+
+    {groups.map((g) => (
+      <section class="bf-menu__group" id={`${uid}-${g.id}`} data-group={g.id} aria-labelledby={`${uid}-${g.id}-h`}>
+        <h3 id={`${uid}-${g.id}-h`} class="bf-menu__group-title">{g.label}</h3>
+        <ul class="bf-menu__list" role="list">
+          {g.items.map((d) => (
+            <li
+              class:list={['bf-dish', { 'is-out': !d.available }]}
+              data-dish
+              data-name={d.name.toLowerCase()}
+              data-tags={d.tags.join(' ')}
+            >
+              <div class="bf-dish__art" aria-hidden="true">
+                <svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt(d.art)} />
+              </div>
+              <div class="bf-dish__body">
+                <div class="bf-dish__tags">
+                  {d.tags.map((t) => <span class={`bf-dish__tag bf-dish__tag--${t}`}>{tagLabel[t]}</span>)}
+                </div>
+                <h4 class="bf-dish__name">{d.name}</h4>
+                <p class="bf-dish__desc">{d.description}</p>
+                <p class="bf-dish__meta">
+                  <span>{d.kcal} kcal</span>
+                  <span>{d.prepMin} min</span>
+                  {d.allergens.length ? <span>Alérgenos: {d.allergens.join(', ')}</span> : null}
+                </p>
+              </div>
+              <div class="bf-dish__buy">
+                <span class="bf-dish__price">{eur(d.price)} €</span>
+                {d.available ? (
+                  <button
+                    type="button"
+                    class="bf-dish__add"
+                    data-add
+                    data-id={d.id}
+                    data-dname={d.name}
+                    data-price={d.price}
+                    data-art={d.art}
+                    aria-label={`Añadir ${d.name}, ${eur(d.price)} €`}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                    <span data-add-label>Añadir</span>
+                  </button>
+                ) : (
+                  <button type="button" class="bf-dish__add" disabled>Agotado</button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+
+    <p class="bf-menu__empty" data-empty hidden>No hay platos con esos filtros. Prueba a quitar alguno.</p>
+  </div>
+</section>
+
+<script>
+  function initFoodMenu() {
+    document.querySelectorAll<HTMLElement>('[data-bf-menu]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+
+      const q = root.querySelector<HTMLInputElement>('[data-q]');
+      const diets = [...root.querySelectorAll<HTMLInputElement>('[data-diet]')];
+      const cards = [...root.querySelectorAll<HTMLElement>('[data-dish]')];
+      const groups = [...root.querySelectorAll<HTMLElement>('[data-group]')];
+      const tabs = [...root.querySelectorAll<HTMLAnchorElement>('[data-tab]')];
+      const count = root.querySelector<HTMLElement>('[data-count]');
+      const empty = root.querySelector<HTMLElement>('[data-empty]');
+
+      const filter = () => {
+        const term = (q?.value ?? '').trim().toLowerCase();
+        const need = diets.filter((d) => d.checked).map((d) => d.value);
+        let shown = 0;
+        cards.forEach((c) => {
+          const tags = (c.dataset.tags ?? '').split(' ');
+          const ok = (!term || (c.dataset.name ?? '').includes(term)) && need.every((n) => tags.includes(n));
+          c.hidden = !ok;
+          if (ok) shown++;
+        });
+        groups.forEach((g) => {
+          g.hidden = !g.querySelector('[data-dish]:not([hidden])');
+        });
+        if (count) count.textContent = shown === 1 ? '1 plato' : `${shown} platos`;
+        if (empty) empty.hidden = shown !== 0;
+      };
+      q?.addEventListener('input', filter);
+      diets.forEach((d) => d.addEventListener('change', filter));
+
+      // Scroll-spy for category tabs
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (!e.isIntersecting) return;
+              const id = (e.target as HTMLElement).dataset.group;
+              tabs.forEach((t) => {
+                const on = t.dataset.tab === id;
+                if (on) {
+                  t.setAttribute('aria-current', 'true');
+                  t.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+                } else t.removeAttribute('aria-current');
+              });
+            });
+          },
+          { rootMargin: '-35% 0px -60% 0px' },
+        );
+        groups.forEach((g) => io.observe(g));
+      }
+
+      // Add to cart
+      root.querySelectorAll<HTMLButtonElement>('[data-add]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const card = btn.closest<HTMLElement>('[data-dish]');
+          const art = card?.querySelector('.bf-dish__art svg');
+          const rect = (card?.querySelector('.bf-dish__art') ?? btn).getBoundingClientRect();
+          window.dispatchEvent(
+            new CustomEvent('bf:add', {
+              detail: {
+                id: btn.dataset.id,
+                name: btn.dataset.dname,
+                price: Number(btn.dataset.price),
+                art: btn.dataset.art,
+                svg: art ? art.outerHTML : '',
+                from: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+              },
+            }),
+          );
+          const label = btn.querySelector('[data-add-label]');
+          btn.classList.remove('is-added');
+          void btn.offsetWidth;
+          btn.classList.add('is-added');
+          if (label) {
+            label.textContent = '¡Añadido!';
+            window.setTimeout(() => (label.textContent = 'Añadir'), 1400);
+          }
+        });
+      });
+    });
+  }
+  initFoodMenu();
+  document.addEventListener('astro:page-load', initFoodMenu);
+</script>
+
+<style>
+  .bf-menu {
+    position: relative;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--sp-4, 1rem);
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-menu__inner {
+    position: relative;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .bf-menu__title {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .bf-menu__sub {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    max-width: 40rem;
+    color: var(--bf-ink-2);
+    font-size: 1.05rem;
+  }
+
+  .bf-menu__bar {
+    position: sticky;
+    top: var(--bf-sticky-top, 72px);
+    z-index: 5;
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-6, 1.5rem) calc(var(--sp-4, 1rem) * -1) 0;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    background: color-mix(in srgb, var(--bf-bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 2px solid var(--bf-line);
+  }
+
+  .bf-menu__tabs ul {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 4px 4px 8px;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .bf-menu__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0 0.95rem 0 0.5rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: transform 0.2s var(--bf-ease-pop), background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .bf-menu__tab:hover {
+    transform: translateY(-2px);
+  }
+
+  .bf-menu__tab[aria-current='true'] {
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-menu__tab:focus-visible,
+  .bf-dish__add:focus-visible,
+  .bf-menu__diet input:focus-visible + span {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 3px;
+  }
+
+  .bf-menu__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    align-items: center;
+  }
+
+  .bf-menu__search {
+    position: relative;
+    flex: 1 1 220px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink-2);
+  }
+
+  .bf-menu__search:focus-within {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-menu__search input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--bf-ink);
+    font: inherit;
+  }
+
+  .bf-menu__search input:focus {
+    outline: none;
+  }
+
+  .bf-menu__diet {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bf-menu__diet label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bf-menu__diet input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .bf-menu__diet span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 2px dashed var(--bf-ink-3);
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .bf-menu__diet input:checked + span {
+    border-style: solid;
+    border-color: var(--bf-outline);
+    background: var(--bf-mint-soft);
+    color: var(--bf-ink);
+  }
+
+  .bf-menu__diet input:checked + span::before {
+    content: '✓';
+    margin-right: 6px;
+    font-weight: 900;
+  }
+
+  .bf-menu__count {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--bf-ink-3);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .bf-menu__group {
+    scroll-margin-top: calc(var(--bf-sticky-top, 72px) + 150px);
+    margin-top: var(--sp-8, 2rem);
+  }
+
+  .bf-menu__group-title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--bf-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+
+  .bf-menu__list {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-menu--grid .bf-menu__list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  }
+
+  .bf-menu--grid.bf-menu--lg .bf-menu__list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+
+  .bf-dish {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 3px solid var(--bf-outline);
+    border-radius: var(--bf-radius);
+    background: var(--bf-paper);
+    box-shadow: var(--bf-shadow);
+    transition: transform 0.25s var(--bf-ease-pop), box-shadow 0.25s ease;
+  }
+
+  .bf-dish:hover {
+    transform: translate(-2px, -3px) rotate(-0.6deg);
+    box-shadow: var(--bf-shadow-lg);
+  }
+
+  .bf-dish__art {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-4, 1rem);
+    border-bottom: 3px solid var(--bf-outline);
+    border-radius: calc(var(--bf-radius) - 3px) calc(var(--bf-radius) - 3px) 0 0;
+    background: repeating-linear-gradient(45deg, var(--bf-bg-2) 0 14px, var(--bf-bg) 14px 28px);
+  }
+
+  .bf-dish__art svg {
+    width: min(150px, 60%);
+    height: auto;
+    transition: transform 0.6s var(--bf-ease-pop);
+  }
+
+  .bf-dish:hover .bf-dish__art svg {
+    transform: rotate(-14deg) scale(1.06);
+  }
+
+  .bf-dish__body {
+    flex: 1;
+    padding: var(--sp-4, 1rem) var(--sp-4, 1rem) 0;
+  }
+
+  .bf-dish__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 1.6rem;
+  }
+
+  .bf-dish__tag {
+    padding: 2px 8px;
+    border: 1.5px solid var(--bf-outline);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--bf-bg);
+  }
+
+  .bf-dish__tag--top { background: var(--bf-mustard); color: var(--bf-on-mustard); }
+  .bf-dish__tag--vegano, .bf-dish__tag--sin-gluten { background: var(--bf-mint-soft); }
+  .bf-dish__tag--picante { background: var(--bf-pink-soft); }
+  .bf-dish__tag--nuevo { background: var(--bf-sky-soft); }
+
+  .bf-dish__name {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .bf-dish__desc {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--bf-ink-2);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .bf-dish__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--bf-ink-3);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .bf-dish__buy {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-4, 1rem);
+  }
+
+  .bf-dish__price {
+    font-family: var(--bf-font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+
+  .bf-dish__add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 48px;
+    padding: 0 1.1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--bf-outline);
+    transition: transform 0.2s var(--bf-ease-pop), box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .bf-dish__add:hover:not(:disabled) {
+    background: var(--bf-tomato-hover);
+    transform: translate(-1px, -2px);
+  }
+
+  .bf-dish__add:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--bf-outline);
+  }
+
+  .bf-dish__add:disabled {
+    background: var(--bf-bg-2);
+    color: var(--bf-ink-3);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  .bf-dish__add.is-added {
+    animation: bf-dish-bump 0.5s var(--bf-ease-pop);
+    background: var(--bf-mint);
+    color: var(--bf-paper);
+  }
+
+  .bf-dish.is-out .bf-dish__art {
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
+
+  /* List variant */
+  .bf-menu--list .bf-dish {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .bf-menu--list .bf-dish__art {
+    width: 110px;
+    border-bottom: 0;
+    border-right: 3px solid var(--bf-outline);
+    border-radius: calc(var(--bf-radius) - 3px) 0 0 calc(var(--bf-radius) - 3px);
+    align-self: stretch;
+  }
+
+  .bf-menu--list .bf-dish__body {
+    flex: 1 1 220px;
+    min-width: 0;
+    padding-bottom: var(--sp-4, 1rem);
+  }
+
+  .bf-menu--list .bf-dish__buy {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .bf-menu__empty {
+    margin: var(--sp-8, 2rem) 0;
+    padding: var(--sp-6, 1.5rem);
+    border: 3px dashed var(--bf-ink-3);
+    border-radius: var(--bf-radius);
+    text-align: center;
+    font-weight: 700;
+  }
+
+  @supports (animation-timeline: view()) {
+    .bf-dish {
+      animation: bf-dish-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+
+  @keyframes bf-dish-in {
+    from { opacity: 0; transform: translateY(40px) rotate(2deg) scale(0.96); }
+  }
+
+  @keyframes bf-dish-bump {
+    40% { transform: scale(1.15) rotate(-4deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-menu *,
+    .bf-dish {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

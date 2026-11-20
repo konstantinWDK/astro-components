@@ -1,0 +1,789 @@
+---
+/**
+ * FoodKitchenBoard — Kitchen display system (KDS) for the line. Tickets sit in three lanes
+ * (new · cooking · ready), each with a live timer and a ring that turns mustard near the target and
+ * tomato when late. Cooks tick items off, bump tickets to the next lane (they glide across with the
+ * View Transitions API), hand them to a rider and undo. Station tabs filter the board and a demo
+ * button fires a new ticket.
+ *
+ * @param {FoodTicket[]} tickets - Initial tickets.
+ * @param {string} stationName - Label shown in the header.
+ * @param {boolean} simulate - Show the "Simular comanda" demo button. Default true.
+ * @param {string} variant - 'lanes' (three columns) | 'rail' (one horizontal rail, wall screens). Default 'lanes'.
+ * @param {string} size - 'md' | 'lg' ticket text size for distant screens. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: station tabs are a radio group; each lane is a labelled list; every ticket is an
+ * <article> with its order number as heading, timer text (not only colour), allergy text and named
+ * buttons ("Marcar listo BF-4821"). Bumps and new tickets are announced politely. Shortcut: with a
+ * ticket focused, press B to bump it. Transitions are skipped with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodTickets, type FoodTicket, type FoodStation } from '../templates/food-delivery/data';
+
+interface OwnProps {
+  tickets?: FoodTicket[];
+  stationName?: string;
+  simulate?: boolean;
+  variant?: 'lanes' | 'rail';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  tickets = foodTickets,
+  stationName = 'Pase · Cocina Lavapiés',
+  simulate = true,
+  variant = 'lanes',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const stations: Array<{ id: 'all' | FoodStation; label: string }> = [
+  { id: 'all', label: 'Todas' },
+  { id: 'parrilla', label: 'Parrilla' },
+  { id: 'horno', label: 'Horno' },
+  { id: 'wok', label: 'Wok' },
+  { id: 'frio', label: 'Frío' },
+];
+const lanes = [
+  { id: 'nuevo', label: 'Nuevas' },
+  { id: 'marcha', label: 'En marcha' },
+  { id: 'listo', label: 'Listas para recoger' },
+];
+const uid = `bf-kds-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section
+  class:list={['bf-ui', 'bf-kds', `bf-kds--${variant}`, `bf-kds--${size}`, classAttr]}
+  aria-labelledby={`${uid}-h`}
+  data-bf-kds
+  data-tickets={JSON.stringify(tickets)}
+  {...rest}
+>
+  <header class="bf-kds__head">
+    <div>
+      <h2 id={`${uid}-h`} class="bf-kds__title">Pantalla de cocina</h2>
+      <p class="bf-kds__station">{stationName}</p>
+    </div>
+    <dl class="bf-kds__stats">
+      <div><dt>En cola</dt><dd data-s-queue>0</dd></div>
+      <div><dt>Con retraso</dt><dd data-s-late>0</dd></div>
+      <div><dt>Media</dt><dd data-s-avg>0:00</dd></div>
+    </dl>
+  </header>
+
+  <div class="bf-kds__bar">
+    <div class="bf-kds__tabs" role="radiogroup" aria-label="Filtrar por partida">
+      {stations.map((s, i) => (
+        <label class="bf-kds__tab">
+          <input type="radio" name={`${uid}-st`} value={s.id} checked={i === 0} data-station />
+          <span>{s.label} <b data-count={s.id}>0</b></span>
+        </label>
+      ))}
+    </div>
+    {simulate && <button type="button" class="bf-kds__sim" data-sim>+ Simular comanda</button>}
+  </div>
+
+  <div class="bf-kds__lanes">
+    {lanes.map((l) => (
+      <section class={`bf-kds__lane bf-kds__lane--${l.id}`} aria-labelledby={`${uid}-${l.id}`}>
+        <h3 id={`${uid}-${l.id}`} class="bf-kds__lane-title">{l.label} <span data-lane-count={l.id}>0</span></h3>
+        <ul class="bf-kds__list" role="list" data-lane={l.id}></ul>
+      </section>
+    ))}
+  </div>
+
+  <div class="bf-kds__toast" role="status" aria-live="polite" data-live></div>
+
+  <template data-tpl>
+    <li class="bf-kds__item">
+      <article class="bf-kds__ticket" tabindex="0">
+        <header class="bf-kds__thead">
+          <h4 class="bf-kds__order"></h4>
+          <span class="bf-kds__chan"></span>
+          <span class="bf-kds__timer">
+            <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" class="k-bg" /><circle cx="18" cy="18" r="15" class="k-ring" pathLength="100" /></svg>
+            <span class="bf-kds__time"></span>
+          </span>
+        </header>
+        <p class="bf-kds__allergy"></p>
+        <ul class="bf-kds__items" role="list"></ul>
+        <div class="bf-kds__actions"></div>
+      </article>
+    </li>
+  </template>
+</section>
+
+<script>
+  type Status = 'nuevo' | 'marcha' | 'listo';
+  interface Ticket {
+    id: string;
+    orderId: string;
+    station: string;
+    items: Array<{ name: string; qty: number; mods?: string[]; done?: boolean }>;
+    elapsedSec: number;
+    targetSec: number;
+    allergy?: string;
+    channel: string;
+    status: Status;
+  }
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const stationLabel: Record<string, string> = { parrilla: 'Parrilla', horno: 'Horno', wok: 'Wok', frio: 'Frío' };
+  const demo = [
+    { station: 'parrilla', items: [{ name: 'Smash Chipotle', qty: 2 }, { name: 'Limonada de hierbabuena', qty: 1 }], targetSec: 480 },
+    { station: 'horno', items: [{ name: 'Margarita de horno', qty: 1, mods: ['Masa bien hecha'] }], targetSec: 420 },
+    { station: 'wok', items: [{ name: 'Tonkotsu 18 h', qty: 2 }], targetSec: 540, allergy: 'Alergia al huevo' },
+    { station: 'frio', items: [{ name: 'Poke de salmón', qty: 1 }, { name: 'Kombucha de frutos rojos', qty: 1 }], targetSec: 360 },
+  ];
+
+  function initFoodKds() {
+    document.querySelectorAll<HTMLElement>('[data-bf-kds]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const tpl = $<HTMLTemplateElement>('[data-tpl]');
+      const live = $('[data-live]');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let tickets: Ticket[] = JSON.parse(root.dataset.tickets || '[]');
+      let station = 'all';
+      let lastRemoved: Ticket | null = null;
+      let seq = 4826;
+
+      let hideTimer: number | undefined;
+      const say = (msg: string) => {
+        live.textContent = msg;
+        live.classList.remove('is-on');
+        void live.offsetWidth;
+        live.classList.add('is-on');
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(() => {
+          live.classList.remove('is-on');
+          window.setTimeout(() => {
+            if (!live.classList.contains('is-on')) live.textContent = '';
+          }, 450);
+        }, 6000);
+      };
+
+      const transition = (fn: () => void) => {
+        const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+        if (!reduce && d.startViewTransition) d.startViewTransition(fn);
+        else fn();
+      };
+
+      const tone = (t: Ticket) => {
+        const r = t.elapsedSec / t.targetSec;
+        return t.status === 'listo' ? 'ok' : r >= 1 ? 'late' : r >= 0.75 ? 'warn' : 'ok';
+      };
+
+      const actionsFor = (t: Ticket) => {
+        if (t.status === 'nuevo') return [{ act: 'start', label: 'Empezar', aria: `Empezar ${t.orderId}`, primary: true }];
+        if (t.status === 'marcha')
+          return [
+            { act: 'ready', label: 'Marcar listo', aria: `Marcar listo ${t.orderId}`, primary: true },
+            { act: 'back', label: 'Volver', aria: `Devolver ${t.orderId} a nuevas` },
+          ];
+        return [
+          { act: 'out', label: 'Entregar al rider', aria: `Entregar ${t.orderId} al rider`, primary: true },
+          { act: 'recall', label: 'Reabrir', aria: `Reabrir ${t.orderId}` },
+        ];
+      };
+
+      const paintTimer = (el: HTMLElement, t: Ticket) => {
+        const art = el.querySelector('article')!;
+        art.dataset.tone = tone(t);
+        el.querySelector('.bf-kds__time')!.textContent = fmt(t.elapsedSec);
+        const ring = el.querySelector<SVGCircleElement>('.k-ring')!;
+        ring.style.strokeDashoffset = String(100 - Math.min(100, (t.elapsedSec / t.targetSec) * 100));
+        const late = t.elapsedSec - t.targetSec;
+        el.querySelector('.bf-kds__timer')!.setAttribute(
+          'aria-label',
+          `${fmt(t.elapsedSec)} de ${fmt(t.targetSec)}${late > 0 && t.status !== 'listo' ? `, ${fmt(late)} de retraso` : ''}`,
+        );
+      };
+
+      const render = () => {
+        (['nuevo', 'marcha', 'listo'] as Status[]).forEach((lane) => {
+          const ul = $(`[data-lane="${lane}"]`);
+          ul.innerHTML = '';
+          const list = tickets.filter((t) => t.status === lane && (station === 'all' || t.station === station));
+          $(`[data-lane-count="${lane}"]`).textContent = String(list.length);
+          if (!list.length) {
+            const li = document.createElement('li');
+            li.className = 'bf-kds__none';
+            li.textContent = 'Sin comandas';
+            ul.append(li);
+          }
+          list.forEach((t) => {
+            const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+            node.dataset.id = t.id;
+            const art = node.querySelector('article')!;
+            art.style.setProperty('view-transition-name', `kds-${t.id}`);
+            art.setAttribute('aria-label', `Comanda ${t.orderId}, ${stationLabel[t.station] ?? t.station}`);
+            node.querySelector('.bf-kds__order')!.textContent = t.orderId;
+            node.querySelector('.bf-kds__chan')!.textContent = `${stationLabel[t.station] ?? t.station} · ${t.channel}`;
+            const al = node.querySelector<HTMLElement>('.bf-kds__allergy')!;
+            al.hidden = !t.allergy;
+            al.textContent = t.allergy ? `⚠ ${t.allergy}` : '';
+            const items = node.querySelector('.bf-kds__items')!;
+            t.items.forEach((it, k) => {
+              const li = document.createElement('li');
+              const id = `${t.id}-i${k}`;
+              li.innerHTML = `<input type="checkbox" id="${id}" ${it.done ? 'checked' : ''} data-item="${k}"><label for="${id}"><b>${it.qty}×</b> ${it.name}${it.mods?.length ? `<small>${it.mods.join(' · ')}</small>` : ''}</label>`;
+              items.append(li);
+            });
+            const acts = node.querySelector('.bf-kds__actions')!;
+            actionsFor(t).forEach((a) => {
+              const b = document.createElement('button');
+              b.type = 'button';
+              b.className = `bf-kds__btn${a.primary ? ' bf-kds__btn--primary' : ''}`;
+              b.dataset.act = a.act;
+              b.textContent = a.label;
+              b.setAttribute('aria-label', a.aria);
+              acts.append(b);
+            });
+            paintTimer(node, t);
+            ul.append(node);
+          });
+        });
+
+        const active = tickets.filter((t) => t.status !== 'listo');
+        root.querySelectorAll<HTMLElement>('[data-count]').forEach((c) => {
+          const s = c.dataset.count;
+          c.textContent = String(active.filter((t) => s === 'all' || t.station === s).length);
+        });
+        stats();
+      };
+
+      const stats = () => {
+        const active = tickets.filter((t) => t.status !== 'listo');
+        $('[data-s-queue]').textContent = String(active.length);
+        $('[data-s-late]').textContent = String(active.filter((t) => t.elapsedSec > t.targetSec).length);
+        const avg = active.length ? active.reduce((s, t) => s + t.elapsedSec, 0) / active.length : 0;
+        $('[data-s-avg]').textContent = fmt(avg);
+      };
+
+      const move = (id: string, act: string) => {
+        const t = tickets.find((x) => x.id === id);
+        if (!t) return;
+        const focusAfter = () => {
+          const el = root.querySelector<HTMLElement>(`[data-id="${id}"] article`);
+          el?.focus();
+        };
+        transition(() => {
+          if (act === 'start') t.status = 'marcha';
+          if (act === 'back') t.status = 'nuevo';
+          if (act === 'ready') t.status = 'listo';
+          if (act === 'recall') t.status = 'marcha';
+          if (act === 'out') {
+            lastRemoved = t;
+            tickets = tickets.filter((x) => x !== t);
+          }
+          render();
+        });
+        const msg: Record<string, string> = {
+          start: `${t.orderId} en marcha.`,
+          back: `${t.orderId} devuelta a nuevas.`,
+          ready: `${t.orderId} lista para recoger.`,
+          recall: `${t.orderId} reabierta.`,
+          out: `${t.orderId} entregada al rider.`,
+        };
+        say(msg[act]);
+        if (act === 'out') {
+          const undo = document.createElement('button');
+          undo.type = 'button';
+          undo.className = 'bf-kds__undo';
+          undo.textContent = 'Deshacer';
+          undo.addEventListener('click', () => {
+            if (!lastRemoved) return;
+            tickets.push(lastRemoved);
+            say(`${lastRemoved.orderId} recuperada.`);
+            lastRemoved = null;
+            render();
+          });
+          live.append(' ', undo);
+        } else window.setTimeout(focusAfter, 60);
+      };
+
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act]');
+        if (!b) return;
+        const id = b.closest<HTMLElement>('[data-id]')?.dataset.id;
+        if (id) move(id, b.dataset.act!);
+      });
+
+      root.addEventListener('change', (e) => {
+        const el = e.target as HTMLInputElement;
+        if (el.matches('[data-station]')) {
+          station = el.value;
+          transition(render);
+          return;
+        }
+        if (el.matches('[data-item]')) {
+          const id = el.closest<HTMLElement>('[data-id]')?.dataset.id;
+          const t = tickets.find((x) => x.id === id);
+          if (t) t.items[Number(el.dataset.item)].done = el.checked;
+        }
+      });
+
+      root.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() !== 'b') return;
+        const art = (e.target as HTMLElement).closest('article');
+        const id = art?.closest<HTMLElement>('[data-id]')?.dataset.id;
+        const t = tickets.find((x) => x.id === id);
+        if (!t || e.target !== art) return;
+        move(t.id, t.status === 'nuevo' ? 'start' : t.status === 'marcha' ? 'ready' : 'out');
+      });
+
+      root.querySelector('[data-sim]')?.addEventListener('click', () => {
+        const d = demo[seq % demo.length];
+        seq++;
+        const t: Ticket = { id: `s${seq}`, orderId: `BF-${seq}`, channel: 'app', status: 'nuevo', elapsedSec: 0, ...d };
+        transition(() => {
+          tickets.unshift(t);
+          render();
+        });
+        say(`Nueva comanda ${t.orderId} para ${stationLabel[t.station]}.`);
+      });
+
+      window.setInterval(() => {
+        tickets.forEach((t) => {
+          if (t.status !== 'listo') t.elapsedSec++;
+          const el = root.querySelector<HTMLElement>(`[data-id="${t.id}"]`);
+          if (el) paintTimer(el, t);
+        });
+        stats();
+      }, 1000);
+
+      render();
+    });
+  }
+  initFoodKds();
+  document.addEventListener('astro:page-load', initFoodKds);
+</script>
+
+<style>
+  .bf-kds {
+    position: relative;
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-kds__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bf-kds__title {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(1.6rem, 4vw, 2.3rem);
+    font-weight: 800;
+  }
+
+  .bf-kds__station {
+    margin: 2px 0 0;
+    color: var(--bf-ink-3);
+    font-weight: 600;
+  }
+
+  .bf-kds__stats {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .bf-kds__stats div {
+    padding: 8px 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-paper);
+    text-align: center;
+  }
+
+  .bf-kds__stats dt {
+    color: var(--bf-ink-3);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .bf-kds__stats dd {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bf-kds__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-5, 1.25rem) 0;
+  }
+
+  .bf-kds__tabs {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .bf-kds__tab {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bf-kds__tab input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .bf-kds__tab span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 2px solid var(--bf-line);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    font-weight: 700;
+  }
+
+  .bf-kds__tab b {
+    display: grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 99px;
+    background: var(--bf-bg-2);
+    font-size: 0.78rem;
+  }
+
+  .bf-kds__tab input:checked + span {
+    border-color: var(--bf-outline);
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+  }
+
+  .bf-kds__tab input:focus-visible + span,
+  .bf-kds__sim:focus-visible,
+  .bf-kds :global(.bf-kds__btn:focus-visible),
+  .bf-kds :global(.bf-kds__ticket:focus-visible),
+  .bf-kds :global(.bf-kds__undo:focus-visible),
+  .bf-kds :global(.bf-kds__items input:focus-visible + label) {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-kds__sim {
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 2px dashed var(--bf-outline);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-kds__lanes {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  @media (min-width: 1000px) {
+    .bf-kds--lanes .bf-kds__lanes {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .bf-kds__lane {
+    min-width: 0;
+    padding: var(--sp-3, 0.75rem);
+    border: 2px solid var(--bf-line);
+    border-radius: 22px;
+    background: var(--bf-bg-2);
+  }
+
+  .bf-kds__lane-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--bf-font-display);
+    font-size: 1.15rem;
+    font-weight: 800;
+  }
+
+  .bf-kds__lane-title span {
+    padding: 0 8px;
+    border-radius: 99px;
+    background: var(--bf-paper);
+    font-size: 0.9rem;
+  }
+
+  .bf-kds__lane--listo .bf-kds__lane-title {
+    color: var(--bf-mint);
+  }
+
+  .bf-kds__list {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-kds--rail .bf-kds__list {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(260px, 300px);
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .bf-kds :global(.bf-kds__none) {
+    padding: var(--sp-5, 1.25rem);
+    border: 2px dashed var(--bf-line);
+    border-radius: 16px;
+    color: var(--bf-ink-3);
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .bf-kds :global(.bf-kds__ticket) {
+    --tone: var(--bf-mint);
+    position: relative;
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 3px solid var(--bf-outline);
+    border-top: 10px solid var(--tone);
+    border-radius: 16px;
+    background: var(--bf-paper);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-kds :global(.bf-kds__ticket[data-tone='warn']) {
+    --tone: var(--bf-mustard);
+  }
+
+  .bf-kds :global(.bf-kds__ticket[data-tone='late']) {
+    --tone: var(--bf-tomato);
+    animation: bf-kds-late 1.2s ease-in-out infinite;
+  }
+
+  .bf-kds :global(.bf-kds__thead) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bf-kds :global(.bf-kds__order) {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .bf-kds--lg :global(.bf-kds__order) {
+    font-size: 1.6rem;
+  }
+
+  .bf-kds :global(.bf-kds__chan) {
+    flex: 1;
+    min-width: 0;
+    color: var(--bf-ink-3);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  .bf-kds :global(.bf-kds__timer) {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+  }
+
+  .bf-kds :global(.bf-kds__timer svg) {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+  }
+
+  .bf-kds :global(.k-bg) {
+    fill: none;
+    stroke: var(--bf-bg-2);
+    stroke-width: 4;
+  }
+
+  .bf-kds :global(.k-ring) {
+    fill: none;
+    stroke: var(--tone);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    transition: stroke-dashoffset 1s linear;
+  }
+
+  .bf-kds :global(.bf-kds__time) {
+    font-size: 0.82rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bf-kds :global(.bf-kds__allergy) {
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-weight: 800;
+    font-size: 0.88rem;
+  }
+
+  .bf-kds :global(.bf-kds__allergy[hidden]) {
+    display: none;
+  }
+
+  .bf-kds :global(.bf-kds__items) {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-kds :global(.bf-kds__items li) {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bf-kds :global(.bf-kds__items input) {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: 11px 0 0;
+    accent-color: var(--bf-mint);
+  }
+
+  .bf-kds :global(.bf-kds__items label) {
+    display: grid;
+    min-height: 44px;
+    align-content: center;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .bf-kds--lg :global(.bf-kds__items label) {
+    font-size: 1.15rem;
+  }
+
+  .bf-kds :global(.bf-kds__items small) {
+    color: var(--bf-tomato);
+    font-weight: 700;
+  }
+
+  .bf-kds :global(.bf-kds__items input:checked + label) {
+    color: var(--bf-ink-3);
+    text-decoration: line-through;
+  }
+
+  .bf-kds :global(.bf-kds__actions) {
+    display: flex;
+    gap: 6px;
+  }
+
+  .bf-kds :global(.bf-kds__btn) {
+    min-height: 48px;
+    padding: 0 0.9rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-kds :global(.bf-kds__btn--primary) {
+    flex: 1;
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+  }
+
+  .bf-kds__lane--marcha :global(.bf-kds__btn--primary) {
+    background: var(--bf-mint);
+    color: var(--bf-paper);
+  }
+
+  .bf-kds__toast {
+    position: fixed;
+    left: 50%;
+    bottom: var(--sp-5, 1.25rem);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 2rem);
+    padding: 10px 16px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-weight: 800;
+    transform: translate(-50%, 160%);
+    transition: transform 0.4s var(--bf-ease-pop);
+  }
+
+  .bf-kds__toast:empty {
+    visibility: hidden;
+  }
+
+  .bf-kds__toast.is-on {
+    transform: translate(-50%, 0);
+  }
+
+  .bf-kds__toast :global(.bf-kds__undo) {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  @keyframes bf-kds-late {
+    50% { box-shadow: 3px 3px 0 var(--bf-outline), 0 0 0 4px var(--bf-pink-soft); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-kds *,
+    .bf-kds :global(*) {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

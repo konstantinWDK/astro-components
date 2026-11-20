@@ -1,0 +1,235 @@
+---
+/**
+ * GymOccupancyMeter — Live club occupancy plus the usual occupancy per hour, so members can
+ * pick a quiet time. The current hour is highlighted in the browser.
+ *
+ * @param {number} now - People in the club right now.
+ * @param {number} capacity - Maximum capacity.
+ * @param {number[]} hourly - Usual people per hour, starting at `firstHour`.
+ * @param {number} firstHour - Hour of the first `hourly` value. Default 6.
+ * @param {string} title - Heading.
+ * @param {string} variant - 'card' | 'compact' (gauge only). Default 'card'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the level is written out ("Moderado · 47 de 120 personas"); the hourly chart
+ * is a list of labelled bars, each bar's height is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymOccupancy } from '../templates/gym/data';
+
+interface OwnProps {
+  now?: number;
+  capacity?: number;
+  hourly?: number[];
+  firstHour?: number;
+  title?: string;
+  variant?: 'card' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  now = gymOccupancy.now,
+  capacity = gymOccupancy.capacity,
+  hourly = gymOccupancy.hourly,
+  firstHour = 6,
+  title = 'Aforo en directo',
+  variant = 'card',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gom-${Math.random().toString(36).slice(2, 8)}`;
+const pct = Math.round((now / capacity) * 100);
+const level = pct < 40 ? { label: 'Tranquilo', tone: 'ok' } : pct < 75 ? { label: 'Moderado', tone: 'warn' } : { label: 'Lleno', tone: 'full' };
+const max = Math.max(capacity, ...hourly);
+---
+
+<section
+  class:list={['gym-ui', 'gym-occ', `gym-occ--${variant}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-gym-occupancy
+  data-first-hour={firstHour}
+  {...rest}
+>
+  <div class="gym-occ__head">
+    <h2 id={`${uid}-title`} class="gym-occ__title">{title}</h2>
+    <p class:list={['gym-occ__level', `is-${level.tone}`]}>
+      <span class="gym-occ__dot" aria-hidden="true"></span>
+      {level.label} · {now} de {capacity} personas
+    </p>
+  </div>
+  <div class="gym-occ__meter" aria-hidden="true">
+    <i style={`width:${pct}%`} class={`is-${level.tone}`}></i>
+  </div>
+
+  {variant === 'card' && (
+    <>
+      <h3 class="gym-occ__sub">Afluencia habitual por horas</h3>
+      <ol class="gym-occ__hours" role="list">
+        {hourly.map((v, i) => {
+          const hour = firstHour + i;
+          return (
+            <li class="gym-occ__hour" data-hour={hour}>
+              <span class="gym-occ__bar" style={`height:${Math.max(6, (v / max) * 100)}%`} aria-hidden="true"></span>
+              <span class="gym-occ__h" aria-hidden="true">{hour % 3 === 0 ? `${hour}h` : ''}</span>
+              <span class="gym-sr">{hour}:00, unas {v} personas</span>
+            </li>
+          );
+        })}
+      </ol>
+      <p class="gym-occ__tip">Las horas más tranquilas suelen ser a media mañana y después de las 21:00.</p>
+    </>
+  )}
+</section>
+
+<script>
+  function initOccupancy(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const hour = new Date().getHours();
+    const current = root.querySelector<HTMLElement>(`[data-hour="${hour}"]`);
+    if (current) {
+      current.classList.add('is-now');
+      const sr = current.querySelector('.gym-sr');
+      if (sr) sr.textContent += ' (hora actual)';
+    }
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-occupancy]').forEach(initOccupancy);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-occ {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-occ__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .gym-occ__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+  }
+
+  .gym-occ__level {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.92rem;
+  }
+
+  .gym-occ__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .gym-occ__level.is-ok { color: var(--gym-ok); }
+  .gym-occ__level.is-warn { color: var(--gym-warn); }
+  .gym-occ__level.is-full { color: var(--gym-full); }
+
+  .gym-occ__meter {
+    height: 10px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: var(--gym-surface-2);
+  }
+
+  .gym-occ__meter i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+  }
+
+  .gym-occ__meter i.is-ok { background: var(--gym-ok); }
+  .gym-occ__meter i.is-warn { background: var(--gym-warn); }
+  .gym-occ__meter i.is-full { background: var(--gym-full); }
+
+  .gym-occ__sub {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--gym-text-3);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .gym-occ__hours {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 120px;
+    margin: 0;
+    padding: 0 0 18px;
+    list-style: none;
+  }
+
+  .gym-occ__hour {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+  }
+
+  .gym-occ__bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    background: var(--gym-surface-2);
+  }
+
+  .gym-occ__hour.is-now .gym-occ__bar {
+    background: var(--gym-brand);
+  }
+
+  .gym-occ__h {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--gym-text-3);
+    font-size: 0.7rem;
+  }
+
+  .gym-occ__tip {
+    margin: 0;
+    color: var(--gym-text-2);
+    font-size: 0.85rem;
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

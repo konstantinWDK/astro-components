@@ -1,0 +1,580 @@
+---
+/**
+ * FoodRiderDispatch — Fleet dispatch for delivery riders: a live map with the kitchen and every
+ * rider (riders on a delivery drift along their streets), a queue of orders waiting for a rider
+ * and the fleet list sorted by distance to the kitchen. Pick an order, then "Asignar" on a rider:
+ * a dashed line shoots from the rider to the kitchen, the rider turns "recogiendo" and the order
+ * leaves the queue. Riders can be filtered by status.
+ *
+ * @param {FoodRider[]} riders - Fleet with status, battery and map position (0–100).
+ * @param {FoodOrder[]} orders - Orders; those without a rider and not delivered/cancelled form the queue.
+ * @param {{x: number, y: number}} kitchen - Kitchen position on the map. Default { x: 18, y: 26 }.
+ * @param {string} variant - 'split' (map beside lists) | 'stacked'. Default 'split'.
+ * @param {string} size - 'md' | 'lg' map size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the queue is a radio group (one order selected at a time); each rider row has a
+ * named "Asignar" button that is disabled until an order is chosen or when the rider is not free;
+ * status is written, not only coloured; assignments are announced politely; the map is
+ * role="img" with a text summary. Motion stops with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodRiders, foodOrders, type FoodRider, type FoodOrder } from '../templates/food-delivery/data';
+
+interface OwnProps {
+  riders?: FoodRider[];
+  orders?: FoodOrder[];
+  kitchen?: { x: number; y: number };
+  variant?: 'split' | 'stacked';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  riders = foodRiders,
+  orders = foodOrders,
+  kitchen = { x: 18, y: 26 },
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const queue = orders.filter((o) => !o.riderId && (o.status === 'listo' || o.status === 'cocina' || o.status === 'nuevo'));
+const statusLabel = { libre: 'Libre', recogiendo: 'Recogiendo', repartiendo: 'Repartiendo', descanso: 'Descanso' };
+const vehicleLabel = { bici: 'Bici', moto: 'Moto', patinete: 'Patinete' };
+const dist = (r: FoodRider) => Math.hypot(r.x - kitchen.x, r.y - kitchen.y);
+const sorted = [...riders].sort((a, b) => dist(a) - dist(b));
+const km = (r: FoodRider) => (dist(r) * 0.03).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+const uid = `bf-rd-${Math.random().toString(36).slice(2, 7)}`;
+const free = riders.filter((r) => r.status === 'libre').length;
+const lowBattery = (r: FoodRider) => r.battery < 40;
+const rows = sorted.map((r) => ({ ...r, km: km(r), low: lowBattery(r) }));
+---
+
+<section class:list={['bf-ui', 'bf-rd', `bf-rd--${variant}`, `bf-rd--${size}`, classAttr]} aria-label="Despacho de riders" data-bf-rd data-kx={kitchen.x} data-ky={kitchen.y} {...rest}>
+  <div class="bf-rd__mapwrap">
+    <svg class="bf-rd__map" viewBox="0 0 100 100" role="img" aria-label={`Mapa de la flota: ${riders.length} riders, ${free} libres`} data-map>
+      <rect width="100" height="100" class="m-ground" />
+      <g class="m-streets">
+        {[20, 44, 62, 80].map((v) => <path d={`M0 ${v}H100M${v} 0V100`} />)}
+      </g>
+      <circle cx={kitchen.x} cy={kitchen.y} r="30" class="m-radius" />
+      <g data-lines></g>
+      <g class="m-kitchen" transform={`translate(${kitchen.x} ${kitchen.y})`}><rect x="-5" y="-5" width="10" height="10" rx="2" /><path d="M-2 -1h4M-2 1.5h4" /></g>
+      {riders.map((r) => (
+        <g class={`m-rider m-rider--${r.status}`} data-dot={r.id} transform={`translate(${r.x} ${r.y})`}>
+          <circle r="6" class="m-halo" />
+          <circle r="3.4" class="m-core" />
+          <text y="-6" class="m-label">{r.name.split(' ')[0]}</text>
+        </g>
+      ))}
+    </svg>
+    <ul class="bf-rd__legend" role="list">
+      {Object.entries(statusLabel).map(([k, v]) => <li><i class={`k-${k}`} aria-hidden="true"></i>{v}</li>)}
+    </ul>
+  </div>
+
+  <div class="bf-rd__side">
+    <fieldset class="bf-rd__queue">
+      <legend>Pedidos sin rider <span data-q-count>{queue.length}</span></legend>
+      <div class="bf-rd__qlist" data-queue>
+        {queue.map((o, i) => (
+          <label class="bf-rd__order" data-order={o.id}>
+            <input type="radio" name={`${uid}-order`} value={o.id} checked={i === 0} data-pick />
+            <span class="bf-rd__ocard">
+              <strong>{o.id}</strong>
+              <span>{o.zone} · {o.address}</span>
+              <small class={`bf-rd__ost bf-rd__ost--${o.status}`}>{o.status === 'listo' ? 'Listo en el pase' : o.status === 'cocina' ? 'En cocina' : 'Recién entrado'}</small>
+            </span>
+          </label>
+        ))}
+        <p class="bf-rd__empty" data-q-empty hidden>Todos los pedidos tienen rider.</p>
+      </div>
+    </fieldset>
+
+    <div class="bf-rd__fleet">
+      <div class="bf-rd__fhead">
+        <h3>Flota <span>{riders.length}</span></h3>
+        <label>
+          <span class="bf-sr">Filtrar riders por estado</span>
+          <select data-filter>
+            <option value="all">Todos</option>
+            {Object.entries(statusLabel).map(([k, v]) => <option value={k}>{v}</option>)}
+          </select>
+        </label>
+      </div>
+      <ul class="bf-rd__riders" role="list">
+        {rows.map((r) => (
+          <li class="bf-rd__rider" data-rider={r.id} data-status={r.status}>
+            <span class={`bf-rd__av bf-rd__av--${r.status}`} aria-hidden="true">{r.name.charAt(0)}</span>
+            <span class="bf-rd__rinfo">
+              <strong>{r.name}</strong>
+              <span>{vehicleLabel[r.vehicle]} · {r.km} km · ★ {r.rating.toLocaleString('es-ES')} · {r.deliveriesToday} hoy</span>
+              <span class="bf-rd__rstate"><b data-state-label>{statusLabel[r.status]}</b>{r.orderId && <> · {r.orderId}</>}</span>
+            </span>
+            <span class:list={['bf-rd__bat', { 'is-low': r.low }]} role="img" aria-label={`Batería ${r.battery} %`}><i style={`width:${r.battery}%`}></i></span>
+            <button type="button" class="bf-rd__assign" data-assign={r.id} data-name={r.name} disabled={r.status !== 'libre'} aria-label={`Asignar pedido a ${r.name}`}>Asignar</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+  <p class="bf-sr" role="status" aria-live="polite" data-live></p>
+</section>
+
+<script>
+  function initFoodRd() {
+    document.querySelectorAll<HTMLElement>('[data-bf-rd]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const kx = Number(root.dataset.kx);
+      const ky = Number(root.dataset.ky);
+      const live = $('[data-live]');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const ns = 'http://www.w3.org/2000/svg';
+
+      const picked = () => root.querySelector<HTMLInputElement>('[data-pick]:checked');
+      const syncButtons = () => {
+        const has = !!picked();
+        root.querySelectorAll<HTMLButtonElement>('[data-assign]').forEach((b) => {
+          const row = b.closest<HTMLElement>('[data-rider]')!;
+          b.disabled = !has || row.dataset.status !== 'libre';
+        });
+        const left = root.querySelectorAll('[data-order]:not([hidden])').length;
+        $('[data-q-count]').textContent = String(left);
+        $('[data-q-empty]').hidden = left !== 0;
+      };
+
+      root.addEventListener('change', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.matches('[data-filter]')) {
+          const v = (t as HTMLSelectElement).value;
+          root.querySelectorAll<HTMLElement>('[data-rider]').forEach((r) => (r.hidden = v !== 'all' && r.dataset.status !== v));
+          root.querySelectorAll<SVGGElement>('[data-dot]').forEach((d) => d.classList.toggle('is-dim', v !== 'all' && !d.classList.contains(`m-rider--${v}`)));
+        }
+        syncButtons();
+      });
+
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-assign]');
+        const order = picked();
+        if (!b || !order) return;
+        const id = b.dataset.assign!;
+        const row = b.closest<HTMLElement>('[data-rider]')!;
+        const dot = root.querySelector<SVGGElement>(`[data-dot="${id}"]`)!;
+        const m = /translate\(([\d.]+) ([\d.]+)\)/.exec(dot.getAttribute('transform') || '');
+        const rx = m ? Number(m[1]) : kx;
+        const ry = m ? Number(m[2]) : ky;
+
+        const line = document.createElementNS(ns, 'path');
+        line.setAttribute('d', `M${rx} ${ry} L${kx} ${ky}`);
+        line.setAttribute('class', 'm-assign');
+        line.setAttribute('pathLength', '1');
+        $('[data-lines]').append(line);
+
+        row.dataset.status = 'recogiendo';
+        row.querySelector('[data-state-label]')!.textContent = `Recogiendo · ${order.value}`;
+        row.querySelector('.bf-rd__av')!.className = 'bf-rd__av bf-rd__av--recogiendo';
+        dot.setAttribute('class', 'm-rider m-rider--recogiendo is-new');
+        const label = order.closest<HTMLElement>('[data-order]')!;
+        label.hidden = true;
+        order.checked = false;
+        const next = root.querySelector<HTMLInputElement>('[data-order]:not([hidden]) [data-pick]');
+        if (next) next.checked = true;
+        live.textContent = `${order.value} asignado a ${b.dataset.name}. Va a la cocina a recogerlo.`;
+        syncButtons();
+        next?.focus();
+
+        if (!reduce) {
+          const steps = 40;
+          let k = 0;
+          const run = () => {
+            k++;
+            const t = k / steps;
+            const x = rx + (kx - rx) * t;
+            const y = ry + (ky - ry) * t;
+            dot.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+            if (k < steps) window.setTimeout(run, 60);
+          };
+          window.setTimeout(run, 600);
+        }
+      });
+
+      // Riders on a delivery drift slightly along their street.
+      if (!reduce) {
+        const moving = [...root.querySelectorAll<SVGGElement>('.m-rider--repartiendo')];
+        let t = 0;
+        window.setInterval(() => {
+          t += 0.08;
+          moving.forEach((d, i) => {
+            if (!d.classList.contains('m-rider--repartiendo')) return;
+            const base = d.dataset.base || d.getAttribute('transform') || '';
+            d.dataset.base = base;
+            const m = /translate\(([\d.]+) ([\d.]+)\)/.exec(base);
+            if (!m) return;
+            const dx = i % 2 ? Math.sin(t + i) * 4 : 0;
+            const dy = i % 2 ? 0 : Math.sin(t + i) * 4;
+            d.setAttribute('transform', `translate(${(Number(m[1]) + dx).toFixed(2)} ${(Number(m[2]) + dy).toFixed(2)})`);
+          });
+        }, 80);
+      }
+      syncButtons();
+    });
+  }
+  initFoodRd();
+  document.addEventListener('astro:page-load', initFoodRd);
+</script>
+
+<style>
+  .bf-rd {
+    position: relative;
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  @media (min-width: 1000px) {
+    .bf-rd--split {
+      grid-template-columns: 1.1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  .bf-rd__mapwrap {
+    position: relative;
+    padding: 10px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 24px;
+    background: var(--bf-paper);
+    box-shadow: var(--bf-shadow);
+  }
+
+  @media (min-width: 1000px) {
+    .bf-rd--split .bf-rd__mapwrap {
+      position: sticky;
+      top: 90px;
+    }
+  }
+
+  .bf-rd__map {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 60vh;
+    border-radius: 16px;
+  }
+
+  .bf-rd--lg .bf-rd__map {
+    max-height: 78vh;
+  }
+
+  .bf-rd__map .m-ground { fill: var(--bf-bg-2); }
+  .bf-rd__map .m-streets path { stroke: var(--bf-paper); stroke-width: 4; }
+  .bf-rd__map .m-radius { fill: color-mix(in srgb, var(--bf-mustard) 14%, transparent); stroke: var(--bf-mustard); stroke-width: 0.5; stroke-dasharray: 2 2; }
+  .bf-rd__map .m-kitchen rect { fill: var(--bf-tomato); stroke: var(--bf-outline); stroke-width: 1; }
+  .bf-rd__map .m-kitchen path { stroke: var(--bf-paper); stroke-width: 0.9; stroke-linecap: round; }
+  .bf-rd__map .m-core { stroke: var(--bf-outline); stroke-width: 0.9; }
+  .bf-rd__map .m-halo { opacity: 0.25; }
+  .bf-rd__map .m-label { font-family: var(--bf-font-body); font-size: 3.4px; font-weight: 800; text-anchor: middle; fill: var(--bf-ink); paint-order: stroke; stroke: var(--bf-paper); stroke-width: 1.2px; }
+  .bf-rd__map .m-rider--libre circle { fill: var(--bf-mint); }
+  .bf-rd__map .m-rider--recogiendo circle { fill: var(--bf-mustard); }
+  .bf-rd__map .m-rider--repartiendo circle { fill: var(--bf-sky); }
+  .bf-rd__map .m-rider--descanso circle { fill: var(--bf-ink-3); }
+  .bf-rd__map .m-rider { transition: opacity 0.2s ease; }
+  .bf-rd__map .m-rider.is-dim { opacity: 0.2; }
+  .bf-rd__map .m-rider--libre .m-halo { animation: bf-rd-ping 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  .bf-rd__map :global(.m-assign) { fill: none; stroke: var(--bf-tomato); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; stroke-linecap: round; animation: bf-rd-draw 0.6s ease forwards; }
+
+  .bf-rd__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 10px 4px 2px;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .bf-rd__legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .bf-rd__legend i {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+  }
+
+  .k-libre { background: var(--bf-mint); }
+  .k-recogiendo { background: var(--bf-mustard); }
+  .k-repartiendo { background: var(--bf-sky); }
+  .k-descanso { background: var(--bf-ink-3); }
+
+  .bf-rd__side {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    min-width: 0;
+  }
+
+  .bf-rd__queue {
+    position: relative;
+    margin: 0;
+    padding: 12px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 22px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+  }
+
+  .bf-rd__queue legend,
+  .bf-rd__fhead h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+    font-family: var(--bf-font-display);
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .bf-rd__queue legend span,
+  .bf-rd__fhead h3 span {
+    padding: 0 8px;
+    border-radius: 99px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-size: 0.9rem;
+  }
+
+  .bf-rd__qlist {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 6px;
+  }
+
+  .bf-rd__order {
+    position: relative;
+    flex: 0 0 min(240px, 80%);
+    cursor: pointer;
+  }
+
+  .bf-rd__order[hidden] {
+    display: none;
+  }
+
+  .bf-rd__order input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .bf-rd__ocard {
+    display: grid;
+    gap: 2px;
+    height: 100%;
+    padding: 10px 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    box-sizing: border-box;
+    transition: transform 0.2s var(--bf-ease-pop);
+  }
+
+  .bf-rd__ocard span {
+    color: var(--bf-ink-2);
+    font-size: 0.85rem;
+  }
+
+  .bf-rd__order input:checked + .bf-rd__ocard {
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+    transform: translateY(-3px) rotate(-1deg);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-rd__order input:checked + .bf-rd__ocard span {
+    color: var(--bf-bg);
+  }
+
+  .bf-rd__order input:focus-visible + .bf-rd__ocard,
+  .bf-rd__assign:focus-visible,
+  .bf-rd select:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-rd__ost {
+    justify-self: start;
+    margin-top: 4px;
+    padding: 1px 8px;
+    border-radius: 99px;
+    background: var(--bf-bg-2);
+    color: var(--bf-ink);
+    font-weight: 800;
+    font-size: 0.72rem;
+  }
+
+  .bf-rd__ost--listo {
+    background: var(--bf-mint);
+    color: var(--bf-paper);
+  }
+
+  .bf-rd__empty {
+    margin: 0;
+    padding: 10px;
+    font-weight: 700;
+  }
+
+  .bf-rd__fleet {
+    padding: 12px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 22px;
+    background: var(--bf-paper);
+  }
+
+  .bf-rd__fhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .bf-rd__fhead h3 {
+    margin: 0;
+  }
+
+  .bf-rd select {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .bf-rd__riders {
+    display: grid;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-rd__rider {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 8px;
+    border: 2px solid var(--bf-line);
+    border-radius: 14px;
+  }
+
+  .bf-rd__rider[hidden] {
+    display: none;
+  }
+
+  .bf-rd__av {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    font-family: var(--bf-font-display);
+    font-weight: 800;
+    color: var(--bf-ink);
+  }
+
+  .bf-rd__av--libre { background: var(--bf-mint-soft); }
+  .bf-rd__av--recogiendo { background: var(--bf-mustard); color: var(--bf-on-mustard); }
+  .bf-rd__av--repartiendo { background: var(--bf-sky-soft); }
+  .bf-rd__av--descanso { background: var(--bf-bg-2); }
+
+  .bf-rd__rinfo {
+    display: grid;
+    min-width: 0;
+    font-size: 0.85rem;
+    color: var(--bf-ink-2);
+  }
+
+  .bf-rd__rinfo strong {
+    color: var(--bf-ink);
+    font-size: 1rem;
+  }
+
+  .bf-rd__rstate b {
+    color: var(--bf-ink);
+  }
+
+  .bf-rd__bat {
+    grid-column: 2;
+    display: block;
+    width: 100%;
+    max-width: 120px;
+    height: 8px;
+    border: 1.5px solid var(--bf-outline);
+    border-radius: 9px;
+    overflow: hidden;
+  }
+
+  .bf-rd__bat i {
+    display: block;
+    height: 100%;
+    background: var(--bf-mint);
+  }
+
+  .bf-rd__bat.is-low i {
+    background: var(--bf-tomato);
+  }
+
+  .bf-rd__assign {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-rd__assign:disabled {
+    background: var(--bf-bg-2);
+    color: var(--bf-ink-3);
+    border-color: var(--bf-line);
+    cursor: not-allowed;
+  }
+
+  @keyframes bf-rd-ping { from { transform: scale(0.6); opacity: 0.5; } to { transform: scale(2); opacity: 0; } }
+  @keyframes bf-rd-draw { to { stroke-dashoffset: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-rd *,
+    .bf-rd__map :global(*) {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .bf-rd__map :global(.m-assign) {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>

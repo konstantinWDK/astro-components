@@ -1,101 +1,51 @@
 ---
 /**
- * FoodTrackingPage — Live customer order tracker page.
- * Features real-time preparation status, rider GPS milestones, courier contact, and detailed receipt.
+ * FoodTrackingPage — Live order tracking of the "BiteFlow" template: animated map with the rider
+ * driving to the door, ETA countdown, status steps, rider contact, receipt and rating.
+ * Reads ?pedido= to show the order number placed in the checkout.
+ *
+ * @param {FoodRoutes} routes - Template route URLs.
+ * @param {typeof foodDeliveryData} data - Tracking demo and dishes.
  */
 import FoodSiteLayout from './FoodSiteLayout.astro';
-import FoodOrderTracker from '../../app/FoodOrderTracker.astro';
-import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+import FoodOrderMap from '../../app/FoodOrderMap.astro';
+import { foodRoutes, foodDeliveryData, type FoodRoutes } from './data';
 
 interface Props {
-  routes?: FoodDeliveryRoutes;
+  routes?: FoodRoutes;
+  data?: typeof foodDeliveryData;
 }
 
-const { routes = foodDeliveryRoutes } = Astro.props;
-const sampleOrder = foodDeliveryData.orders[0]; // out_for_delivery order
+const { routes = foodRoutes, data = foodDeliveryData } = Astro.props;
 ---
 
-<FoodSiteLayout
-  title={`Tracking Order #${sampleOrder.reference} — BiteFlow`}
-  routes={routes}
->
-  <div class="tracking-page-wrap">
-    <div class="tracking-container">
-      <div class="tracking-top-bar">
-        <a href={routes.menu} class="back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-          <span>Back to Menu</span>
-        </a>
-        <div class="support-pill">
-          <span>Need help? Call kitchen:</span>
-          <a href={`tel:${foodDeliveryData.restaurant.phone}`}>{foodDeliveryData.restaurant.phone}</a>
-        </div>
-      </div>
-
-      <FoodOrderTracker
-        order={sampleOrder}
-        supportPhone={foodDeliveryData.restaurant.phone}
-      />
-    </div>
+<FoodSiteLayout title={`Tu pedido · ${data.brand.name}`} current="tracking" routes={routes} noindex>
+  <div class="bf-ui bf-trackpage">
+    <FoodOrderMap tracking={data.tracking} dishes={data.dishes} durationSec={60} />
+    <p class="bf-trackpage__help">¿Algún problema? Llámanos al <a href={`tel:${data.brand.phone.replace(/\s+/g, '')}`}>{data.brand.phone}</a> o <a href={routes.menu}>vuelve a la carta</a>.</p>
   </div>
 </FoodSiteLayout>
 
 <style>
-  .tracking-page-wrap {
-    padding: 3rem 1.5rem 5rem;
-    background: radial-gradient(circle at 50% 20%, rgba(234, 88, 12, 0.08) 0%, transparent 60%),
-                var(--c-bg, #0b0f19);
-    min-height: 80vh;
-  }
-
-  .tracking-container {
-    max-width: 900px;
+  .bf-trackpage {
+    max-width: 1240px;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.75rem;
+    padding: clamp(1.5rem, 4vw, 3rem) var(--sp-4, 1rem) clamp(3rem, 6vw, 5rem);
   }
 
-  .tracking-top-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
+  .bf-trackpage__help {
+    margin: var(--sp-6, 1.5rem) 0 0;
+    color: var(--bf-ink-2);
+    text-align: center;
   }
 
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #94a3b8;
-    text-decoration: none;
-    font-size: 0.88rem;
-    font-weight: 600;
+  .bf-trackpage__help a {
+    color: var(--bf-ink);
+    font-weight: 800;
   }
 
-  .back-link:hover {
-    color: #ffffff;
-  }
-
-  .support-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.82rem;
-    color: #64748b;
-  }
-
-  .support-pill a {
-    color: #ea580c;
-    font-weight: 700;
-    text-decoration: none;
-  }
-
-  .support-pill a:hover {
-    text-decoration: underline;
+  .bf-trackpage__help a:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
   }
 </style>
-

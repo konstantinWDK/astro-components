@@ -1,0 +1,627 @@
+---
+/**
+ * ConstructionGanttBoard — Works programme as a blueprint Gantt chart: one row per phase with a
+ * bar whose fill is the progress, a "today" line, critical-path highlighting and zoom between
+ * weeks and months. Selecting a bar opens its sheet (dates, owner, progress, deviation against the
+ * plan) and lets you report new progress, which updates the bar and the overall figure.
+ *
+ * @param {ConstructionPhase[]} phases - Phases with start week, duration, progress and owner.
+ * @param {number} today - Current week of the works. Default 46.
+ * @param {string} title - Board title.
+ * @param {string} startDate - ISO date of week 1, for the dates in the sheet. Default '2025-02-03'.
+ * @param {string} variant - 'full' (chart + sheet) | 'compact' (chart only). Default 'full'.
+ * @param {string} size - 'md' | 'lg' row height. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: phases are a list of buttons (name, weeks, progress, "crítica") with
+ * aria-pressed; the chart grid is aria-hidden; the zoom is a radio group; the progress editor is a
+ * labelled range with output; updates are announced politely.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { constructionProjects, type ConstructionPhase } from '../templates/construction/data';
+
+interface OwnProps {
+  phases?: ConstructionPhase[];
+  today?: number;
+  title?: string;
+  startDate?: string;
+  variant?: 'full' | 'compact';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  phases = constructionProjects[0].phases,
+  today = 46,
+  title = 'Planning de obra',
+  startDate = '2025-02-03',
+  variant = 'full',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const total = Math.max(...phases.map((p) => p.start + p.weeks - 1), today);
+const pct = (w: number) => ((w - 1) / total) * 100;
+const rows = phases.map((p) => {
+  const expected = Math.max(0, Math.min(100, ((today - p.start + 1) / p.weeks) * 100));
+  return {
+    ...p,
+    left: pct(p.start),
+    width: (p.weeks / total) * 100,
+    expected: Math.round(expected),
+    late: p.progress + 5 < expected,
+  };
+});
+const overall = Math.round(rows.reduce((s, r) => s + r.progress * r.weeks, 0) / rows.reduce((s, r) => s + r.weeks, 0));
+const months = Math.ceil(total / 4.345);
+const uid = `sk-gt-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section
+  class:list={['sk-ui', 'sk-gt', `sk-gt--${variant}`, `sk-gt--${size}`, classAttr]}
+  aria-labelledby={`${uid}-h`}
+  data-sk-gt
+  data-phases={JSON.stringify(rows)}
+  data-today={today}
+  data-start={startDate}
+  data-zoom="weeks"
+  style={`--total:${total};--today-n:${((today - 1) / total).toFixed(4)}`}
+  {...rest}
+>
+  <header class="sk-gt__head">
+    <div>
+      <h2 id={`${uid}-h`} class="sk-gt__title">{title}</h2>
+      <p class="sk-gt__meta sk-mono">Semana {today} de {total} · avance ponderado <b data-overall>{overall}</b> %</p>
+    </div>
+    <div class="sk-gt__tools">
+      <fieldset class="sk-gt__zoom">
+        <legend class="sk-sr">Escala</legend>
+        <label><input type="radio" name={`${uid}-z`} value="weeks" checked data-zoom-opt /><span>Semanas</span></label>
+        <label><input type="radio" name={`${uid}-z`} value="months" data-zoom-opt /><span>Meses</span></label>
+      </fieldset>
+      <button type="button" class="sk-gt__tool" aria-pressed="false" data-critical>Camino crítico</button>
+    </div>
+  </header>
+
+  <div class="sk-gt__body">
+    <div class="sk-gt__chart">
+      <div class="sk-gt__scale sk-mono" aria-hidden="true" data-scale>
+        {Array.from({ length: Math.ceil(total / 4) }, (_, i) => <span style={`left:${pct(i * 4 + 1)}%`}>S{i * 4 + 1}</span>)}
+      </div>
+      <div class="sk-gt__scale sk-gt__scale--m sk-mono" aria-hidden="true">
+        {Array.from({ length: months }, (_, i) => <span style={`left:${((i * 4.345) / total) * 100}%`}>M{i + 1}</span>)}
+      </div>
+      <ul class="sk-gt__rows" role="list">
+        {rows.map((r) => (
+          <li class:list={['sk-gt__row', { 'is-critical': r.critical, 'is-late': r.late }]}>
+            <button
+              type="button"
+              class="sk-gt__name"
+              data-phase={r.id}
+              aria-pressed="false"
+              aria-label={`${r.name}, semanas ${r.start} a ${r.start + r.weeks - 1}, ${r.progress} %${r.critical ? ', fase crítica' : ''}${r.late ? ', con retraso' : ''}`}
+            >
+              <span>{r.name}</span>
+              <small class="sk-mono">{r.progress} %</small>
+            </button>
+            <div class="sk-gt__track" aria-hidden="true">
+              <span class="sk-gt__bar" data-bar={r.id} style={`left:${r.left}%;width:${r.width}%`}>
+                <i style={`width:${r.progress}%`}></i>
+                <em class="sk-mono">{r.progress} %</em>
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <span class="sk-gt__today sk-mono" aria-hidden="true"><b>HOY · S{today}</b></span>
+    </div>
+
+    {variant === 'full' && (
+      <aside class="sk-gt__sheet sk-crop" aria-label="Ficha de la fase" data-sheet>
+        <p class="sk-gt__empty sk-mono" data-empty>Selecciona una fase del planning.</p>
+        <div data-detail hidden>
+          <h3 class="sk-gt__dname" data-d-name>—</h3>
+          <dl class="sk-gt__facts sk-mono">
+            <div><dt>Inicio</dt><dd data-d-start>—</dd></div>
+            <div><dt>Fin</dt><dd data-d-end>—</dd></div>
+            <div><dt>Responsable</dt><dd data-d-owner>—</dd></div>
+            <div><dt>Previsto hoy</dt><dd data-d-exp>—</dd></div>
+            <div><dt>Desviación</dt><dd data-d-dev>—</dd></div>
+            <div><dt>Ruta</dt><dd data-d-crit>—</dd></div>
+          </dl>
+          <div class="sk-gt__edit">
+            <label for={`${uid}-p`}>Avance real</label>
+            <output for={`${uid}-p`} class="sk-mono" data-d-out>0 %</output>
+            <input id={`${uid}-p`} type="range" min="0" max="100" step="1" data-d-range />
+          </div>
+          <button type="button" class="sk-gt__save" data-d-save>Registrar avance</button>
+        </div>
+      </aside>
+    )}
+  </div>
+  <p class="sk-sr" role="status" aria-live="polite" data-live></p>
+</section>
+
+<script>
+  interface Row { id: string; name: string; start: number; weeks: number; progress: number; owner: string; critical?: boolean; expected: number }
+
+  function initSkGt() {
+    document.querySelectorAll<HTMLElement>('[data-sk-gt]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s);
+      const rows = JSON.parse(root.dataset.phases || '[]') as Row[];
+      const start = new Date(`${root.dataset.start}T00:00:00`);
+      const live = $('[data-live]')!;
+      let current: Row | null = null;
+
+      const dateOf = (week: number) => {
+        const d = new Date(start);
+        d.setDate(d.getDate() + (week - 1) * 7);
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+      };
+      const overall = () => Math.round(rows.reduce((s, r) => s + r.progress * r.weeks, 0) / rows.reduce((s, r) => s + r.weeks, 0));
+
+      const show = (r: Row) => {
+        current = r;
+        root.querySelectorAll<HTMLButtonElement>('[data-phase]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.phase === r.id)));
+        root.querySelectorAll<HTMLElement>('[data-bar]').forEach((b) => b.classList.toggle('is-sel', b.dataset.bar === r.id));
+        const detail = $('[data-detail]');
+        if (!detail) return;
+        detail.hidden = false;
+        $('[data-empty]')!.hidden = true;
+        $('[data-d-name]')!.textContent = r.name;
+        $('[data-d-start]')!.textContent = `S${r.start} · ${dateOf(r.start)}`;
+        $('[data-d-end]')!.textContent = `S${r.start + r.weeks - 1} · ${dateOf(r.start + r.weeks)}`;
+        $('[data-d-owner]')!.textContent = r.owner;
+        $('[data-d-exp]')!.textContent = `${r.expected} %`;
+        const dev = r.progress - r.expected;
+        const devEl = $('[data-d-dev]')!;
+        devEl.textContent = `${dev > 0 ? '+' : ''}${dev} pts`;
+        devEl.dataset.tone = dev < -5 ? 'bad' : dev > 0 ? 'good' : 'ok';
+        $('[data-d-crit]')!.textContent = r.critical ? 'Crítica' : 'Con holgura';
+        const range = $<HTMLInputElement>('[data-d-range]')!;
+        range.value = String(r.progress);
+        $('[data-d-out]')!.textContent = `${r.progress} %`;
+        const sheet = $<HTMLElement>('[data-sheet]');
+        sheet?.classList.remove('is-flash');
+        void sheet?.offsetWidth;
+        sheet?.classList.add('is-flash');
+      };
+
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-phase]');
+        if (b) {
+          const r = rows.find((x) => x.id === b.dataset.phase);
+          if (r) show(r);
+        }
+      });
+      root.querySelectorAll<HTMLElement>('[data-bar]').forEach((bar) =>
+        bar.addEventListener('click', () => root.querySelector<HTMLButtonElement>(`[data-phase="${bar.dataset.bar}"]`)?.click()),
+      );
+      $('[data-d-range]')?.addEventListener('input', (e) => {
+        $('[data-d-out]')!.textContent = `${(e.target as HTMLInputElement).value} %`;
+      });
+      $('[data-d-save]')?.addEventListener('click', () => {
+        if (!current) return;
+        const v = Number($<HTMLInputElement>('[data-d-range]')!.value);
+        current.progress = v;
+        const bar = root.querySelector<HTMLElement>(`[data-bar="${current.id}"]`)!;
+        bar.querySelector('i')!.style.width = `${v}%`;
+        bar.querySelector('em')!.textContent = `${v} %`;
+        const btn = root.querySelector<HTMLButtonElement>(`[data-phase="${current.id}"]`)!;
+        btn.querySelector('small')!.textContent = `${v} %`;
+        btn.closest('li')!.classList.toggle('is-late', v + 5 < current.expected);
+        $('[data-overall]')!.textContent = String(overall());
+        live.textContent = `${current.name}: avance registrado al ${v} %. Avance total ${overall()} %.`;
+        show(current);
+      });
+      root.addEventListener('change', (e) => {
+        const t = e.target as HTMLInputElement;
+        if (t.matches('[data-zoom-opt]')) root.dataset.zoom = t.value;
+      });
+      const crit = $<HTMLButtonElement>('[data-critical]')!;
+      crit.addEventListener('click', () => {
+        const on = crit.getAttribute('aria-pressed') !== 'true';
+        crit.setAttribute('aria-pressed', String(on));
+        root.classList.toggle('show-critical', on);
+        live.textContent = on ? 'Resaltando el camino crítico.' : 'Camino crítico oculto.';
+      });
+    });
+  }
+  initSkGt();
+  document.addEventListener('astro:page-load', initSkGt);
+</script>
+
+<style>
+  .sk-gt {
+    --row: 46px;
+    --label: 210px;
+    position: relative;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-gt--lg {
+    --row: 58px;
+  }
+
+  .sk-gt__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .sk-gt__title {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+  }
+
+  .sk-gt__meta {
+    margin: 4px 0 0;
+    color: var(--sk-ink-3);
+    font-size: 0.75rem;
+  }
+
+  .sk-gt__meta b {
+    color: var(--sk-accent);
+  }
+
+  .sk-gt__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sk-gt__zoom {
+    position: relative;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sk-gt__zoom label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .sk-gt__zoom input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-gt__zoom span,
+  .sk-gt__tool {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--sk-line-soft);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-gt__zoom label + label span {
+    margin-left: -1px;
+  }
+
+  .sk-gt__zoom input:checked + span,
+  .sk-gt__tool[aria-pressed='true'] {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-gt__zoom input:focus-visible + span,
+  .sk-gt :is(button, input[type='range']):focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-gt__body {
+    display: grid;
+    gap: 16px;
+  }
+
+  @media (min-width: 1180px) {
+    .sk-gt--full .sk-gt__body {
+      grid-template-columns: 1fr 300px;
+      align-items: start;
+    }
+  }
+
+  .sk-gt__chart {
+    position: relative;
+    padding: 30px 0 8px;
+    border: 1px solid var(--sk-line-soft);
+    background-color: var(--sk-panel);
+    background-image: linear-gradient(90deg, var(--sk-grid) 1px, transparent 1px);
+    background-size: calc((100% - var(--label)) / var(--total) * 4) 100%;
+    background-position: var(--label) 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .sk-gt[data-zoom='months'] .sk-gt__chart {
+    background-size: calc((100% - var(--label)) / var(--total) * 4.345) 100%;
+  }
+
+  .sk-gt__scale {
+    position: absolute;
+    top: 6px;
+    left: var(--label);
+    right: 8px;
+    height: 18px;
+    color: var(--sk-ink-3);
+    font-size: 0.62rem;
+  }
+
+  .sk-gt__scale span {
+    position: absolute;
+    transform: translateX(-2px);
+  }
+
+  .sk-gt__scale--m,
+  .sk-gt[data-zoom='months'] .sk-gt__scale:not(.sk-gt__scale--m) {
+    display: none;
+  }
+
+  .sk-gt[data-zoom='months'] .sk-gt__scale--m {
+    display: block;
+  }
+
+  .sk-gt__rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk-gt__row {
+    display: grid;
+    grid-template-columns: var(--label) 1fr;
+    align-items: center;
+    min-height: var(--row);
+    border-top: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-gt__name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+    height: 100%;
+    padding: 0 12px;
+    border: 0;
+    border-right: 1px solid var(--sk-line-soft);
+    background: transparent;
+    color: var(--sk-ink);
+    font: inherit;
+    font-size: 0.88rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .sk-gt__name small {
+    color: var(--sk-ink-3);
+    font-size: 0.7rem;
+  }
+
+  .sk-gt__name[aria-pressed='true'] {
+    background: color-mix(in srgb, var(--sk-accent) 14%, transparent);
+    box-shadow: inset 3px 0 0 var(--sk-accent);
+  }
+
+  .sk-gt__row.is-late .sk-gt__name small::after {
+    content: ' ▲';
+    color: var(--sk-danger);
+  }
+
+  .sk-gt__track {
+    position: relative;
+    height: 100%;
+    min-height: var(--row);
+    margin-right: 8px;
+  }
+
+  .sk-gt__bar {
+    position: absolute;
+    top: 50%;
+    height: 18px;
+    margin-top: -9px;
+    border: 1px solid var(--sk-line);
+    background: repeating-linear-gradient(-45deg, transparent 0 4px, var(--sk-grid-strong) 4px 5px);
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, opacity 0.3s ease;
+  }
+
+  .sk-gt__bar i {
+    display: block;
+    height: 100%;
+    background: var(--sk-line);
+    transition: width 0.6s var(--sk-ease);
+  }
+
+  .sk-gt__bar em {
+    position: absolute;
+    left: calc(100% + 6px);
+    top: 1px;
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+    font-style: normal;
+    white-space: nowrap;
+  }
+
+  .sk-gt__bar.is-sel {
+    box-shadow: 0 0 0 2px var(--sk-accent);
+  }
+
+  .sk-gt__row.is-late .sk-gt__bar {
+    border-color: var(--sk-danger);
+  }
+
+  .sk-gt.show-critical .sk-gt__row:not(.is-critical) .sk-gt__bar {
+    opacity: 0.3;
+  }
+
+  .sk-gt.show-critical .sk-gt__row.is-critical .sk-gt__bar {
+    border-color: var(--sk-accent);
+  }
+
+  .sk-gt.show-critical .sk-gt__row.is-critical .sk-gt__bar i {
+    background: var(--sk-accent);
+  }
+
+  .sk-gt__today {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--label) + (100% - var(--label) - 8px) * var(--today-n, 0));
+    width: 0;
+    border-left: 1.5px dashed var(--sk-accent);
+    pointer-events: none;
+  }
+
+  .sk-gt__today b {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    padding: 1px 5px;
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-size: 0.6rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .sk-gt__sheet {
+    position: relative;
+    padding: 16px;
+    border: 1px solid var(--sk-line);
+    background: var(--sk-panel);
+  }
+
+  .sk-gt__sheet.is-flash {
+    animation: sk-gt-flash 0.5s ease;
+  }
+
+  .sk-gt__empty {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.8rem;
+  }
+
+  .sk-gt__empty[hidden],
+  .sk-gt__sheet [hidden] {
+    display: none;
+  }
+
+  .sk-gt__dname {
+    margin: 0 0 10px;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+  }
+
+  .sk-gt__facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0 0 14px;
+    border-top: 1px solid var(--sk-line-soft);
+    border-left: 1px solid var(--sk-line-soft);
+    font-size: 0.74rem;
+  }
+
+  .sk-gt__facts div {
+    padding: 7px 8px;
+    border-right: 1px solid var(--sk-line-soft);
+    border-bottom: 1px solid var(--sk-line-soft);
+    min-width: 0;
+  }
+
+  .sk-gt__facts dt {
+    color: var(--sk-ink-3);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+  }
+
+  .sk-gt__facts dd {
+    margin: 2px 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sk-gt__facts dd[data-tone='bad'] { color: var(--sk-danger); }
+  .sk-gt__facts dd[data-tone='good'] { color: var(--sk-ok); }
+
+  .sk-gt__edit {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+    align-items: center;
+  }
+
+  .sk-gt__edit input {
+    grid-column: 1 / -1;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--sk-accent);
+  }
+
+  .sk-gt__save {
+    width: 100%;
+    min-height: 46px;
+    margin-top: 8px;
+    border: 1px solid var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-family: var(--sk-font-mono);
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  @keyframes sk-gt-flash { 30% { border-color: var(--sk-accent); } }
+
+  @media (max-width: 640px) {
+    .sk-gt {
+      --label: 128px;
+    }
+
+    .sk-gt__name {
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      font-size: 0.78rem;
+      padding: 4px 8px;
+    }
+
+    .sk-gt__bar em {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-gt * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,544 @@
+---
+/**
+ * ConstructionUnitsLedger — Sales ledger for a development: a stacked bar of free, reserved and
+ * sold homes with the sold value, a stacking-plan mini grid (floors × letters) and a table with
+ * filters (status, floor, bedrooms), sorting by price, €/m² or area, and inline status and price
+ * changes that update the summary live. Rows become cards on phones.
+ *
+ * @param {ConstructionUnit[]} units - Units of the development.
+ * @param {string} projectName - Development name.
+ * @param {string} variant - 'full' (summary + stacking plan + table) | 'table'. Default 'full'.
+ * @param {string} size - 'md' | 'sm' density. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <table> with caption and headers; sort buttons expose aria-sort; filters
+ * are labelled selects; status and price editors are labelled per unit; the summary updates in a
+ * polite live region; the stacking plan cells are buttons that filter to that floor.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { constructionUnits, type ConstructionUnit } from '../templates/construction/data';
+
+interface OwnProps {
+  units?: ConstructionUnit[];
+  projectName?: string;
+  variant?: 'full' | 'table';
+  size?: 'md' | 'sm';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { units = constructionUnits, projectName = 'Residencial Caelum', variant = 'full', size = 'md', class: classAttr, ...rest } = Astro.props;
+
+const floors = [...new Set(units.map((u) => u.floor))].sort((a, b) => b - a);
+const top = Math.max(...floors);
+const floorName = (f: number) => (f === 0 ? 'PB' : f === top ? 'Ático' : `${f}.ª`);
+const name = (u: ConstructionUnit) => (u.type === 'local' ? `Local ${u.letter}` : u.type === 'atico' ? `Ático ${u.letter}` : `${u.floor}.º ${u.letter}`);
+const rows = units.map((u) => ({ ...u, name: name(u), ppm: Math.round(u.price / u.areaM2) }));
+const statuses = { libre: 'Libre', reservada: 'Reservada', vendida: 'Vendida' };
+const uid = `sk-ul-${Math.random().toString(36).slice(2, 7)}`;
+const eur = (n: number) => `${n.toLocaleString('es-ES')} €`;
+---
+
+<section class:list={['sk-ui', 'sk-ul', `sk-ul--${variant}`, `sk-ul--${size}`, classAttr]} aria-label={`Viviendas de ${projectName}`} data-sk-ul {...rest}>
+  {variant === 'full' && (
+    <div class="sk-ul__top">
+      <div class="sk-ul__summary">
+        <p class="sk-ul__label sk-mono">{projectName} · {units.length} unidades</p>
+        <div class="sk-ul__stack" aria-hidden="true" data-stack>
+          <i data-s="vendida"></i><i data-s="reservada"></i><i data-s="libre"></i>
+        </div>
+        <dl class="sk-ul__kpis sk-mono" aria-live="polite" data-kpis>
+          <div><dt>Vendidas</dt><dd data-k="vendida">—</dd></div>
+          <div><dt>Reservadas</dt><dd data-k="reservada">—</dd></div>
+          <div><dt>Libres</dt><dd data-k="libre">—</dd></div>
+          <div><dt>Valor vendido</dt><dd data-k="value">—</dd></div>
+        </dl>
+      </div>
+      <div class="sk-ul__plan" role="group" aria-label="Plano de ventas por planta">
+        {floors.map((f) => (
+          <div class="sk-ul__prow">
+            <button type="button" class="sk-ul__pf sk-mono" data-floor-btn={f} aria-label={`Filtrar ${floorName(f)}`}>{floorName(f)}</button>
+            {rows.filter((u) => u.floor === f).map((u) => (
+              <span class={`sk-ul__pc sk-ul__pc--${u.status}`} data-pc={u.id} title={`${u.name} · ${statuses[u.status]}`}>{u.letter}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <div class="sk-ul__filters">
+    <label><span class="sk-mono">Estado</span>
+      <select data-f="status"><option value="all">Todos</option>{Object.entries(statuses).map(([k, v]) => <option value={k}>{v}</option>)}</select>
+    </label>
+    <label><span class="sk-mono">Planta</span>
+      <select data-f="floor"><option value="all">Todas</option>{[...floors].reverse().map((f) => <option value={f}>{floorName(f)}</option>)}</select>
+    </label>
+    <label><span class="sk-mono">Dormitorios</span>
+      <select data-f="beds"><option value="0">Cualquiera</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select>
+    </label>
+    <p class="sk-ul__count sk-mono" role="status" aria-live="polite" data-count>{units.length} unidades</p>
+  </div>
+
+  <table class="sk-ul__table">
+    <caption class="sk-sr">Inventario de viviendas y locales</caption>
+    <thead>
+      <tr>
+        <th scope="col">Unidad</th>
+        <th scope="col">Tipo</th>
+        <th scope="col" data-th="area"><button type="button" data-sort="area">m²</button></th>
+        <th scope="col">Dorm.</th>
+        <th scope="col">Orientación</th>
+        <th scope="col" data-th="price"><button type="button" data-sort="price">Precio</button></th>
+        <th scope="col" data-th="ppm"><button type="button" data-sort="ppm">€/m²</button></th>
+        <th scope="col">Estado</th>
+      </tr>
+    </thead>
+    <tbody data-body>
+      {rows.map((u) => (
+        <tr data-row={u.id} data-status={u.status} data-floor={u.floor} data-beds={u.beds} data-area={u.areaM2} data-price={u.price} data-ppm={u.ppm}>
+          <th scope="row" data-label="Unidad"><b>{u.name}</b></th>
+          <td data-label="Tipo">{u.type === 'local' ? 'Local' : u.type === 'atico' ? 'Ático' : 'Piso'}</td>
+          <td data-label="m²" class="sk-ul__num">{u.areaM2}{u.terraceM2 ? <small> +{u.terraceM2}</small> : null}</td>
+          <td data-label="Dorm." class="sk-ul__num">{u.beds || '—'}</td>
+          <td data-label="Orientación">{u.orientation}</td>
+          <td data-label="Precio">
+            <label class="sk-ul__price">
+              <span class="sk-sr">Precio de {u.name} en euros</span>
+              <input type="number" min="0" step="1000" value={u.price} data-price-input />
+            </label>
+          </td>
+          <td data-label="€/m²" class="sk-ul__num" data-ppm-out>{eur(u.ppm)}</td>
+          <td data-label="Estado">
+            <label>
+              <span class="sk-sr">Estado de {u.name}</span>
+              <select class={`sk-ul__st sk-ul__st--${u.status}`} data-status-select>
+                {Object.entries(statuses).map(([k, v]) => <option value={k} selected={k === u.status}>{v}</option>)}
+              </select>
+            </label>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <p class="sk-ul__empty sk-mono" data-empty hidden>Ninguna unidad con esos filtros.</p>
+</section>
+
+<script>
+  const eur = (n: number) => `${Math.round(n).toLocaleString('es-ES')} €`;
+
+  function initSkUl() {
+    document.querySelectorAll<HTMLElement>('[data-sk-ul]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s);
+      const body = $<HTMLElement>('[data-body]')!;
+      const rows = () => [...root.querySelectorAll<HTMLElement>('[data-row]')];
+      let sortKey = '';
+      let dir = -1;
+
+      const summary = () => {
+        const all = rows();
+        const c = { libre: 0, reservada: 0, vendida: 0 } as Record<string, number>;
+        let value = 0;
+        all.forEach((r) => {
+          c[r.dataset.status!]++;
+          if (r.dataset.status === 'vendida') value += Number(r.dataset.price);
+          const pc = root.querySelector<HTMLElement>(`[data-pc="${r.dataset.row}"]`);
+          if (pc) pc.className = `sk-ul__pc sk-ul__pc--${r.dataset.status}`;
+        });
+        Object.entries(c).forEach(([k, v]) => {
+          const el = $(`[data-k="${k}"]`);
+          if (el) el.textContent = `${v} · ${Math.round((v / all.length) * 100)} %`;
+          const seg = $<HTMLElement>(`[data-s="${k}"]`);
+          if (seg) seg.style.flexGrow = String(v);
+        });
+        const val = $('[data-k="value"]');
+        if (val) val.textContent = eur(value);
+      };
+
+      const apply = () => {
+        const st = $<HTMLSelectElement>('[data-f="status"]')!.value;
+        const fl = $<HTMLSelectElement>('[data-f="floor"]')!.value;
+        const beds = Number($<HTMLSelectElement>('[data-f="beds"]')!.value);
+        let n = 0;
+        rows().forEach((r) => {
+          const ok = (st === 'all' || r.dataset.status === st) && (fl === 'all' || r.dataset.floor === fl) && (!beds || Number(r.dataset.beds) >= beds);
+          r.hidden = !ok;
+          if (ok) n++;
+        });
+        $('[data-count]')!.textContent = n === 1 ? '1 unidad' : `${n} unidades`;
+        $<HTMLElement>('[data-empty]')!.hidden = n !== 0;
+      };
+
+      root.addEventListener('change', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.matches('[data-f]')) apply();
+        if (t.matches('[data-status-select]')) {
+          const s = t as HTMLSelectElement;
+          const r = s.closest<HTMLElement>('[data-row]')!;
+          r.dataset.status = s.value;
+          s.className = `sk-ul__st sk-ul__st--${s.value}`;
+          r.classList.remove('is-flash');
+          void r.offsetWidth;
+          r.classList.add('is-flash');
+          summary();
+          apply();
+        }
+      });
+      root.addEventListener('input', (e) => {
+        const t = e.target as HTMLInputElement;
+        if (!t.matches('[data-price-input]')) return;
+        const r = t.closest<HTMLElement>('[data-row]')!;
+        const price = Math.max(0, Number(t.value));
+        const ppm = Math.round(price / Number(r.dataset.area));
+        r.dataset.price = String(price);
+        r.dataset.ppm = String(ppm);
+        r.querySelector('[data-ppm-out]')!.textContent = eur(ppm);
+        summary();
+      });
+      root.querySelectorAll<HTMLButtonElement>('[data-sort]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const k = b.dataset.sort!;
+          dir = sortKey === k ? -dir : -1;
+          sortKey = k;
+          rows()
+            .sort((a, z) => (Number(a.dataset[k as 'price']) - Number(z.dataset[k as 'price'])) * dir)
+            .forEach((r) => body.append(r));
+          root.querySelectorAll<HTMLElement>('[data-th]').forEach((th) => {
+            if (th.dataset.th === k) th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+            else th.removeAttribute('aria-sort');
+          });
+        }),
+      );
+      root.querySelectorAll<HTMLButtonElement>('[data-floor-btn]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const sel = $<HTMLSelectElement>('[data-f="floor"]')!;
+          sel.value = sel.value === b.dataset.floorBtn ? 'all' : b.dataset.floorBtn!;
+          root.querySelectorAll('[data-floor-btn]').forEach((x) => x.classList.toggle('is-on', (x as HTMLElement).dataset.floorBtn === sel.value));
+          apply();
+        }),
+      );
+      summary();
+    });
+  }
+  initSkUl();
+  document.addEventListener('astro:page-load', initSkUl);
+</script>
+
+<style>
+  .sk-ul {
+    position: relative;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-ul [hidden] {
+    display: none !important;
+  }
+
+  .sk-ul__top {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  @media (min-width: 900px) {
+    .sk-ul__top {
+      grid-template-columns: 1.2fr 1fr;
+    }
+  }
+
+  .sk-ul__summary,
+  .sk-ul__plan {
+    padding: 14px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+    min-width: 0;
+  }
+
+  .sk-ul__label {
+    margin: 0 0 10px;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ul__stack {
+    display: flex;
+    height: 18px;
+    border: 1px solid var(--sk-line);
+  }
+
+  .sk-ul__stack i {
+    flex: 1 1 0;
+    transition: flex-grow 0.5s var(--sk-ease);
+  }
+
+  [data-s='vendida'] { background: repeating-linear-gradient(45deg, var(--sk-line) 0 2px, transparent 2px 6px); }
+  [data-s='reservada'] { background: var(--sk-warn); }
+  [data-s='libre'] { background: var(--sk-ok); }
+
+  .sk-ul__kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+  }
+
+  .sk-ul__kpis div {
+    padding: 6px 0;
+  }
+
+  .sk-ul__kpis dt {
+    color: var(--sk-ink-3);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ul__kpis dd {
+    margin: 2px 0 0;
+    font-size: 1rem;
+  }
+
+  .sk-ul__plan {
+    display: grid;
+    gap: 3px;
+  }
+
+  .sk-ul__prow {
+    display: grid;
+    grid-template-columns: 4rem repeat(4, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  .sk-ul__pf {
+    min-height: 32px;
+    border: 1px solid var(--sk-line-soft);
+    background: transparent;
+    color: var(--sk-ink-2);
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
+  .sk-ul__pf.is-on {
+    border-color: var(--sk-accent);
+    color: var(--sk-accent);
+  }
+
+  .sk-ul__pc {
+    display: grid;
+    place-items: center;
+    min-height: 32px;
+    border: 1px solid var(--sk-line-soft);
+    font-family: var(--sk-font-mono);
+    font-size: 0.72rem;
+    transition: background 0.3s ease;
+  }
+
+  .sk-ul__prow .sk-ul__pc:only-of-type,
+  .sk-ul__prow:has(.sk-ul__pc:nth-of-type(2):last-child) .sk-ul__pc {
+    grid-column: span 2;
+  }
+
+  .sk-ul__pc--libre { background: color-mix(in srgb, var(--sk-ok) 40%, transparent); }
+  .sk-ul__pc--reservada { background: color-mix(in srgb, var(--sk-warn) 45%, transparent); }
+  .sk-ul__pc--vendida { background: repeating-linear-gradient(45deg, var(--sk-grid-strong) 0 2px, transparent 2px 6px); color: var(--sk-ink-3); }
+
+  .sk-ul__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 16px;
+    margin-bottom: 12px;
+  }
+
+  .sk-ul__filters label {
+    display: grid;
+    gap: 4px;
+  }
+
+  .sk-ul__filters span {
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ul select,
+  .sk-ul input {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .sk-ul :is(select, input, button):focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-ul__count {
+    margin: 0 0 0 auto;
+    color: var(--sk-ink-3);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ul__table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+    font-size: 0.9rem;
+  }
+
+  .sk-ul__table th,
+  .sk-ul__table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--sk-line-soft);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .sk-ul--sm .sk-ul__table :is(th, td) {
+    padding: 4px 8px;
+  }
+
+  .sk-ul__table thead th {
+    height: 44px;
+    color: var(--sk-ink-3);
+    font-family: var(--sk-font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--sk-line);
+  }
+
+  .sk-ul__table thead button {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .sk-ul__table th[aria-sort] button {
+    color: var(--sk-accent);
+  }
+
+  .sk-ul__table th[aria-sort='descending'] button::after { content: ' ↓'; }
+  .sk-ul__table th[aria-sort='ascending'] button::after { content: ' ↑'; }
+
+  .sk-ul__num {
+    font-family: var(--sk-font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sk-ul__num small {
+    color: var(--sk-ink-3);
+  }
+
+  .sk-ul__price input {
+    width: 8.5rem;
+    font-family: var(--sk-font-mono);
+    text-align: right;
+  }
+
+  .sk-ul__st--libre { border-color: var(--sk-ok) !important; color: var(--sk-ok) !important; }
+  .sk-ul__st--reservada { border-color: var(--sk-warn) !important; color: var(--sk-warn) !important; }
+  .sk-ul__st--vendida { color: var(--sk-ink-3) !important; }
+
+  tr.is-flash {
+    animation: sk-ul-flash 0.8s ease;
+  }
+
+  .sk-ul__empty {
+    padding: 16px;
+    border: 1px dashed var(--sk-line-soft);
+    text-align: center;
+  }
+
+  @keyframes sk-ul-flash { 30% { background: color-mix(in srgb, var(--sk-accent) 20%, transparent); } }
+
+  @media (max-width: 860px) {
+    .sk-ul__table,
+    .sk-ul__table tbody,
+    .sk-ul__table tr,
+    .sk-ul__table td,
+    .sk-ul__table tbody th {
+      display: block;
+    }
+
+    .sk-ul__table {
+      border: 0;
+      background: none;
+    }
+
+    .sk-ul__table thead tr {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .sk-ul__table thead th {
+      display: none;
+      border: 1px solid var(--sk-line-soft);
+      height: auto;
+    }
+
+    .sk-ul__table thead th[data-th] {
+      display: block;
+    }
+
+    .sk-ul__table tbody tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-bottom: 10px;
+      border: 1px solid var(--sk-line-soft);
+      background: var(--sk-panel);
+    }
+
+    .sk-ul__table tbody th {
+      grid-column: 1 / -1;
+      border-bottom: 1px solid var(--sk-line);
+      font-family: var(--sk-font-display);
+      font-stretch: 112%;
+      text-transform: uppercase;
+    }
+
+    .sk-ul__table tbody td {
+      border-bottom: 1px dashed var(--sk-line-soft);
+      min-width: 0;
+    }
+
+    .sk-ul__table tbody td::before {
+      content: attr(data-label);
+      display: block;
+      color: var(--sk-ink-3);
+      font-family: var(--sk-font-mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+    }
+
+    .sk-ul__price input,
+    .sk-ul__table select {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-ul * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

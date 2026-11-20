@@ -1,0 +1,507 @@
+---
+/**
+ * ConstructionBlueprintHero — Blueprint hero for a construction company. On a drafting-sheet grid,
+ * a building elevation draws itself line by line (outline, slabs, windows, crane, dimension lines),
+ * then its windows light up floor by floor. A crosshair follows the pointer over the drawing with
+ * live X/Y coordinates in millimetres. Company figures sit in a title block (cajetín) and active
+ * sites scroll in a mono ticker. "Redibujar" replays the drawing.
+ *
+ * @param {string} projectsHref - Projects page.
+ * @param {string} estimatorHref - Budget estimator page.
+ * @param {{activeSites: number, deliveredM2: number, years: number, onTimePct: number}} stats - Figures.
+ * @param {Array<{name: string, district: string, progress: number}>} sites - Ticker items.
+ * @param {number} floors - Floors in the drawing. Default 7.
+ * @param {number} bays - Window bays in the drawing. Default 6.
+ * @param {string} variant - 'split' | 'stacked' (drawing below the copy). Default 'split'.
+ * @param {string} size - 'md' | 'lg' headline. Default 'lg'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the drawing is role="img" with a text description; coordinates and ticker are
+ * aria-hidden decoration; the ticker pauses on hover/focus and with the pause button; the replay
+ * and pause buttons are real buttons; prefers-reduced-motion shows the finished drawing.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { elevation } from '../templates/construction/construction-draw';
+import { constructionCompany, constructionSites } from '../templates/construction/data';
+
+interface OwnProps {
+  projectsHref?: string;
+  estimatorHref?: string;
+  stats?: { activeSites: number; deliveredM2: number; years: number; onTimePct: number };
+  sites?: Array<{ name: string; district: string; progress: number }>;
+  floors?: number;
+  bays?: number;
+  variant?: 'split' | 'stacked';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  projectsHref = '#proyectos',
+  estimatorHref = '#presupuesto',
+  stats = constructionCompany.stats,
+  sites = constructionSites,
+  floors = 7,
+  bays = 6,
+  variant = 'split',
+  size = 'lg',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const draw = elevation(floors, bays, { crane: true });
+const n = (v: number) => v.toLocaleString('es-ES');
+const ticker = [...sites, ...sites];
+const uid = `sk-hero-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section class:list={['sk-ui', 'sk-hero', 'sk-grid-bg', `sk-hero--${variant}`, `sk-hero--${size}`, classAttr]} aria-labelledby={uid} data-sk-hero {...rest}>
+  <div class="sk-hero__inner">
+    <div class="sk-hero__copy">
+      <p class="sk-hero__ref sk-mono">PLANO 00 · ALZADO PRINCIPAL · E 1:200</p>
+      <h1 id={uid} class="sk-hero__title">Construimos<br />lo que <span>dibujamos.</span></h1>
+      <p class="sk-hero__lead">
+        Obra nueva, rehabilitación y naves en Madrid desde {constructionCompany.founded}. Un solo equipo del
+        primer trazo a la entrega de llaves, con plazo y presupuesto cerrados.
+      </p>
+      <div class="sk-hero__ctas">
+        <a href={projectsHref} class="sk-hero__btn sk-hero__btn--primary">Ver proyectos</a>
+        <a href={estimatorHref} class="sk-hero__btn">Calcular presupuesto</a>
+      </div>
+
+      <dl class="sk-hero__block">
+        <div><dt>Obras activas</dt><dd>{stats.activeSites}</dd></div>
+        <div><dt>m² entregados</dt><dd>{n(stats.deliveredM2)}</dd></div>
+        <div><dt>Años</dt><dd>{stats.years}</dd></div>
+        <div><dt>En plazo</dt><dd>{stats.onTimePct} %</dd></div>
+      </dl>
+    </div>
+
+    <figure class="sk-hero__sheet sk-crop" data-sheet>
+      <svg
+        class="sk-draw sk-hero__svg"
+        viewBox={`0 0 ${draw.width} ${draw.height}`}
+        role="img"
+        aria-label={`Alzado de un edificio de ${floors} plantas con grúa torre y cotas`}
+        data-draw
+        set:html={draw.svg}
+      />
+      <div class="sk-hero__cross" aria-hidden="true" data-cross>
+        <span class="sk-hero__cx"></span><span class="sk-hero__cy"></span>
+        <output class="sk-hero__coord sk-mono" data-coord>X 0000 · Y 0000</output>
+      </div>
+      <figcaption class="sk-hero__cap sk-mono">
+        <span>STRUKTO · Residencial tipo</span>
+        <span>{floors} plantas · {bays} crujías</span>
+      </figcaption>
+      <div class="sk-hero__tools">
+        <button type="button" class="sk-hero__tool" data-replay>Redibujar</button>
+        <button type="button" class="sk-hero__tool" aria-pressed="false" data-pause>Pausar animación</button>
+      </div>
+    </figure>
+  </div>
+
+  <div class="sk-hero__ticker" aria-hidden="true">
+    <div class="sk-hero__track">
+      {ticker.map((s) => (
+        <span class="sk-hero__site sk-mono">
+          <i style={`--p:${s.progress}%`}></i>
+          {s.name.toUpperCase()} · {s.district.toUpperCase()} · {s.progress} %
+        </span>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  function initSkHero() {
+    document.querySelectorAll<HTMLElement>('[data-sk-hero]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const svg = root.querySelector<SVGSVGElement>('[data-draw]')!;
+      const sheet = root.querySelector<HTMLElement>('[data-sheet]')!;
+      const cross = root.querySelector<HTMLElement>('[data-cross]')!;
+      const coord = root.querySelector<HTMLElement>('[data-coord]')!;
+      const pauseBtn = root.querySelector<HTMLButtonElement>('[data-pause]')!;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const wins = [...svg.querySelectorAll<SVGRectElement>('[data-win]')];
+      let timers: number[] = [];
+
+      const light = () => {
+        // Light the windows bottom-up, floor by floor, a few at random.
+        const byFloor = new Map<number, SVGRectElement[]>();
+        wins.forEach((w) => {
+          const r = Number(w.dataset.win!.split('-')[0]);
+          byFloor.set(r, [...(byFloor.get(r) ?? []), w]);
+        });
+        const rows = [...byFloor.keys()].sort((a, b) => b - a);
+        rows.forEach((r, i) => {
+          timers.push(
+            window.setTimeout(() => {
+              byFloor.get(r)!.forEach((w) => w.classList.toggle('is-lit', Math.random() > 0.35));
+            }, 1700 + i * 160),
+          );
+        });
+      };
+
+      const play = () => {
+        timers.forEach((t) => window.clearTimeout(t));
+        timers = [];
+        wins.forEach((w) => w.classList.remove('is-lit'));
+        if (reduce) {
+          svg.classList.remove('is-pending');
+          wins.forEach((w, i) => w.classList.toggle('is-lit', i % 3 !== 0));
+          return;
+        }
+        svg.classList.add('is-pending');
+        void svg.getBoundingClientRect();
+        requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('is-pending')));
+        light();
+      };
+
+      root.querySelector('[data-replay]')!.addEventListener('click', play);
+      pauseBtn.addEventListener('click', () => {
+        const on = pauseBtn.getAttribute('aria-pressed') !== 'true';
+        pauseBtn.setAttribute('aria-pressed', String(on));
+        pauseBtn.textContent = on ? 'Reanudar animación' : 'Pausar animación';
+        root.classList.toggle('is-paused', on);
+      });
+      if (reduce) {
+        pauseBtn.setAttribute('aria-pressed', 'true');
+        pauseBtn.textContent = 'Reanudar animación';
+        root.classList.add('is-paused');
+      }
+
+      // Crosshair with coordinates (pointer only, decorative)
+      sheet.addEventListener('pointermove', (e) => {
+        const r = sheet.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        cross.style.setProperty('--x', `${x}px`);
+        cross.style.setProperty('--y', `${y}px`);
+        cross.classList.add('is-on');
+        const mmX = Math.round((x / r.width) * 32000);
+        const mmY = Math.round((1 - y / r.height) * 26000);
+        coord.textContent = `X ${String(mmX).padStart(5, '0')} · Y ${String(mmY).padStart(5, '0')} mm`;
+      });
+      sheet.addEventListener('pointerleave', () => cross.classList.remove('is-on'));
+
+      if ('IntersectionObserver' in window) {
+        svg.classList.add('is-pending');
+        const io = new IntersectionObserver((es) => {
+          if (es.some((e) => e.isIntersecting)) {
+            play();
+            io.disconnect();
+          }
+        }, { threshold: 0.3 });
+        io.observe(svg);
+      } else play();
+    });
+  }
+  initSkHero();
+  document.addEventListener('astro:page-load', initSkHero);
+</script>
+
+<style>
+  .sk-hero {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(2.5rem, 7vw, 5.5rem) var(--sp-4, 1rem) 0;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-hero__inner {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+
+  @media (min-width: 980px) {
+    .sk-hero--split .sk-hero__inner {
+      grid-template-columns: 1fr 1.1fr;
+    }
+  }
+
+  .sk-hero__ref {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--sk-accent);
+    font-size: 0.78rem;
+  }
+
+  .sk-hero__title {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-weight: 800;
+    font-size: clamp(2.3rem, 7.4vw, 3.6rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .sk-hero--lg .sk-hero__title {
+    font-size: clamp(2.4rem, 8.4vw, 5rem);
+  }
+
+  .sk-hero__title span {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--sk-line);
+  }
+
+  .sk-hero__lead {
+    max-width: 36rem;
+    margin: var(--sp-5, 1.25rem) 0 0;
+    color: var(--sk-ink-2);
+    font-size: 1.08rem;
+    line-height: 1.65;
+  }
+
+  .sk-hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .sk-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 1.3rem;
+    border: 1px solid var(--sk-line);
+    border-radius: var(--sk-radius);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.25s var(--sk-ease), color 0.25s var(--sk-ease);
+  }
+
+  .sk-hero__btn:hover {
+    background: var(--sk-fill);
+  }
+
+  .sk-hero__btn--primary {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-hero__btn--primary:hover {
+    background: var(--sk-accent-hover);
+  }
+
+  .sk-hero__btn:focus-visible,
+  .sk-hero__tool:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 3px;
+  }
+
+  .sk-hero__block {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 30rem;
+    margin: var(--sp-8, 2rem) 0 0;
+    border: 1px solid var(--sk-line);
+  }
+
+  @media (min-width: 560px) {
+    .sk-hero__block {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .sk-hero__block div {
+    padding: 10px 12px;
+    border-right: 1px solid var(--sk-line-soft);
+    border-bottom: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-hero__block dt {
+    color: var(--sk-ink-3);
+    font-family: var(--sk-font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sk-hero__block dd {
+    margin: 4px 0 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.45rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sk-hero__sheet {
+    position: relative;
+    margin: 0;
+    padding: clamp(12px, 3vw, 24px);
+    border: 1px solid var(--sk-line-soft);
+    background: color-mix(in srgb, var(--sk-bg) 70%, transparent);
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+
+  .sk-hero__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 64vh;
+  }
+
+  .sk-hero__cross {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .sk-hero__cross.is-on {
+    opacity: 1;
+  }
+
+  .sk-hero__cx,
+  .sk-hero__cy {
+    position: absolute;
+    background: var(--sk-accent);
+    opacity: 0.6;
+  }
+
+  .sk-hero__cx {
+    left: 0;
+    right: 0;
+    top: var(--y);
+    height: 1px;
+  }
+
+  .sk-hero__cy {
+    top: 0;
+    bottom: 0;
+    left: var(--x);
+    width: 1px;
+  }
+
+  .sk-hero__coord {
+    position: absolute;
+    left: min(var(--x), calc(100% - 190px));
+    top: var(--y);
+    margin: 8px 0 0 8px;
+    padding: 2px 6px;
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .sk-hero__cap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--sk-line-soft);
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-hero__tools {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .sk-hero__tool {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: var(--sk-glass);
+    color: var(--sk-ink-2);
+    font-family: var(--sk-font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-hero__tool:hover {
+    color: var(--sk-ink);
+    border-color: var(--sk-line);
+  }
+
+  .sk-hero__ticker {
+    margin: clamp(2rem, 5vw, 3.5rem) calc(var(--sp-4, 1rem) * -1) 0;
+    border-block: 1px solid var(--sk-line-soft);
+    background: var(--sk-glass);
+    overflow: hidden;
+  }
+
+  .sk-hero__track {
+    display: flex;
+    gap: 3rem;
+    width: max-content;
+    padding: 12px 0;
+    animation: sk-hero-tick 48s linear infinite;
+  }
+
+  .sk-hero__ticker:hover .sk-hero__track,
+  .sk-hero.is-paused .sk-hero__track {
+    animation-play-state: paused;
+  }
+
+  .sk-hero.is-paused .sk-draw [pathLength] {
+    transition: none;
+  }
+
+  .sk-hero__site {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--sk-ink-2);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .sk-hero__site i {
+    width: 56px;
+    height: 6px;
+    border: 1px solid var(--sk-line);
+    background: linear-gradient(90deg, var(--sk-accent) var(--p), transparent var(--p));
+  }
+
+  @keyframes sk-hero-tick {
+    to { transform: translateX(-50%); }
+  }
+
+  @media (max-width: 640px) {
+    .sk-hero__tools {
+      position: static;
+      margin-top: 8px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-hero__track {
+      animation: none;
+    }
+
+    .sk-hero * {
+      transition: none !important;
+    }
+  }
+</style>

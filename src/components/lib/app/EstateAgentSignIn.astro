@@ -1,0 +1,514 @@
+---
+/**
+ * EstateAgentSignIn — Split sign-in screen for the agency CRM: brand panel with a testimonial,
+ * figures and an illustrated street, and a form with email, password (show/hide), remember me
+ * and single sign-on buttons. With `action="#"` it validates and goes to `successHref` (demo).
+ *
+ * @param {string} brand - Product name shown on the panel.
+ * @param {string} title - Form heading (h1).
+ * @param {string} subtitle - Text under the heading.
+ * @param {string} action - Form action. '#' = demo mode. Default '#'.
+ * @param {string} successHref - Where demo sign-in goes.
+ * @param {string} forgotHref - "Forgot password" link.
+ * @param {string} backHref - "Back to website" link.
+ * @param {string[]} providers - Single sign-on buttons. Default ['Google', 'Microsoft'].
+ * @param {{quote: string, author: string, role?: string}} testimonial - Panel quote.
+ * @param {Array<{value: string, label: string}>} stats - Panel figures.
+ * @param {string} variant - 'split' | 'centered' (form only). Default 'split'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one h1; labelled inputs with autocomplete; the show-password toggle is a
+ * button with aria-pressed; errors are tied to the fields with aria-describedby and the summary
+ * is announced (role="alert"); the illustration is aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+
+interface OwnProps {
+  brand?: string;
+  title?: string;
+  subtitle?: string;
+  action?: string;
+  successHref?: string;
+  forgotHref?: string;
+  backHref?: string;
+  providers?: string[];
+  testimonial?: { quote: string; author: string; role?: string };
+  stats?: Array<{ value: string; label: string }>;
+  variant?: 'split' | 'centered';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = 'Nido CRM',
+  title = 'Hola de nuevo',
+  subtitle = 'Entra para ver tus leads, visitas y propiedades.',
+  action = '#',
+  successHref = '#',
+  forgotHref = '#',
+  backHref,
+  providers = ['Google', 'Microsoft'],
+  testimonial = {
+    quote: 'Ahora sé qué lead llamar primero cada mañana. Hemos pasado de 41 a 28 días de media para vender.',
+    author: 'Lucía Ferrer',
+    role: 'Directora comercial',
+  },
+  stats = [
+    { value: '23', label: 'leads esta semana' },
+    { value: '5', label: 'visitas hoy' },
+    { value: '98 %', label: 'del precio de salida' },
+  ],
+  variant = 'split',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `eas-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class:list={['estate-ui', 'estate-signin', `estate-signin--${variant}`, classAttr]} data-estate-signin {...rest}>
+  {variant === 'split' && (
+    <aside class="estate-signin__panel" aria-label={brand}>
+      <p class="estate-signin__brand">
+        <span class="estate-signin__mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v9.5h13V10" /><path d="M10 19.5v-5h4v5" /></svg>
+        </span>
+        {brand}
+      </p>
+      <figure class="estate-signin__quote">
+        <blockquote>“{testimonial.quote}”</blockquote>
+        <figcaption>
+          <strong>{testimonial.author}</strong>
+          {testimonial.role && <span>{testimonial.role}</span>}
+        </figcaption>
+      </figure>
+      <dl class="estate-signin__stats">
+        {stats.map((s) => (
+          <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+        ))}
+      </dl>
+      <svg class="estate-signin__street" viewBox="0 0 400 140" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <path d="M0 140V70h40V40l30-20 30 20v30h30V55h60v85zM200 140V30l45-25 45 25v110zM300 140V60h50v-15h50v95z" />
+        <g class="estate-signin__windows">
+          <rect x="52" y="52" width="10" height="12" /><rect x="78" y="52" width="10" height="12" /><rect x="150" y="70" width="12" height="14" />
+          <rect x="220" y="45" width="12" height="14" /><rect x="258" y="45" width="12" height="14" /><rect x="220" y="80" width="12" height="14" />
+          <rect x="258" y="80" width="12" height="14" /><rect x="320" y="80" width="12" height="14" /><rect x="364" y="62" width="12" height="14" />
+        </g>
+      </svg>
+    </aside>
+  )}
+
+  <main class="estate-signin__main">
+    <form class="estate-signin__form" action={action} method="post" novalidate data-form data-success={successHref}>
+      <h1 class="estate-signin__title">{title}</h1>
+      {subtitle && <p class="estate-signin__subtitle">{subtitle}</p>}
+
+      {providers.length > 0 && (
+        <>
+          <div class="estate-signin__sso">
+            {providers.map((p) => (
+              <button type="button" class="estate-signin__sso-btn" data-sso>
+                Continuar con {p}
+              </button>
+            ))}
+          </div>
+          <p class="estate-signin__or"><span>o con tu email</span></p>
+        </>
+      )}
+
+      <div class="estate-signin__alert" role="alert" data-alert hidden></div>
+
+      <div class="estate-signin__field">
+        <label for={`${uid}-email`}>Email</label>
+        <input id={`${uid}-email`} name="email" type="email" autocomplete="username" required aria-describedby={`${uid}-email-err`} />
+        <p id={`${uid}-email-err`} class="estate-signin__err" data-err hidden>Escribe un email válido.</p>
+      </div>
+      <div class="estate-signin__field">
+        <div class="estate-signin__row">
+          <label for={`${uid}-pass`}>Contraseña</label>
+          <a href={forgotHref} class="estate-signin__forgot">¿La has olvidado?</a>
+        </div>
+        <div class="estate-signin__pass">
+          <input id={`${uid}-pass`} name="password" type="password" autocomplete="current-password" required minlength="6" aria-describedby={`${uid}-pass-err`} />
+          <button type="button" class="estate-signin__eye" aria-pressed="false" aria-controls={`${uid}-pass`} data-reveal>
+            <span data-reveal-label>Mostrar</span><span class="estate-sr"> contraseña</span>
+          </button>
+        </div>
+        <p id={`${uid}-pass-err`} class="estate-signin__err" data-err hidden>Mínimo 6 caracteres.</p>
+      </div>
+      <label class="estate-signin__remember">
+        <input type="checkbox" name="remember" checked />
+        <span>Mantener la sesión en este equipo</span>
+      </label>
+      <button type="submit" class="estate-signin__submit">Entrar</button>
+      {backHref && <a href={backHref} class="estate-signin__back">← Volver a la web</a>}
+    </form>
+  </main>
+</div>
+
+<script>
+  function initSignIn(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const alert = root.querySelector<HTMLElement>('[data-alert]')!;
+    const reveal = root.querySelector<HTMLButtonElement>('[data-reveal]');
+
+    reveal?.addEventListener('click', () => {
+      const input = form.querySelector<HTMLInputElement>('input[name="password"]')!;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      reveal.setAttribute('aria-pressed', String(show));
+      reveal.querySelector('[data-reveal-label]')!.textContent = show ? 'Ocultar' : 'Mostrar';
+    });
+
+    const go = () => {
+      const target = form.dataset.success;
+      if (target && target !== '#') location.href = target;
+    };
+    root.querySelectorAll('[data-sso]').forEach((b) => b.addEventListener('click', () => form.getAttribute('action') === '#' && go()));
+
+    form.addEventListener('submit', (e) => {
+      const fields = Array.from(form.querySelectorAll<HTMLInputElement>('input[required]'));
+      let firstBad: HTMLInputElement | null = null;
+      for (const f of fields) {
+        const ok = f.checkValidity();
+        f.setAttribute('aria-invalid', String(!ok));
+        const err = document.getElementById(f.getAttribute('aria-describedby') || '');
+        if (err) err.hidden = ok;
+        if (!ok && !firstBad) firstBad = f;
+      }
+      if (firstBad) {
+        e.preventDefault();
+        alert.hidden = false;
+        alert.textContent = 'Revisa los campos marcados.';
+        firstBad.focus();
+        return;
+      }
+      alert.hidden = true;
+      if (form.getAttribute('action') === '#') {
+        e.preventDefault();
+        go();
+      }
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-signin]').forEach(initSignIn);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-signin {
+    display: grid;
+    min-height: 100vh;
+    background: var(--estate-bg);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-signin__panel {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    gap: var(--sp-8, 2rem);
+    overflow: hidden;
+    padding: var(--sp-10, 2.5rem);
+    background:
+      radial-gradient(80% 60% at 20% 10%, rgba(var(--estate-brand-rgb), 0.35), transparent 70%),
+      #1a1411;
+    color: #f4f1ec;
+  }
+
+  .estate-signin__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .estate-signin__mark {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-md, 12px);
+    background: #e8835e;
+    color: #1c0f09;
+  }
+
+  .estate-signin__quote {
+    margin: auto 0 0;
+    max-width: 460px;
+  }
+
+  .estate-signin__quote blockquote {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--estate-font-display);
+    font-size: 1.6rem;
+    line-height: 1.3;
+  }
+
+  .estate-signin__quote figcaption {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .estate-signin__quote figcaption span {
+    color: rgba(244, 241, 236, 0.7);
+    font-size: 0.9rem;
+  }
+
+  .estate-signin__stats {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: var(--sp-8, 2rem);
+    margin: 0 0 var(--sp-16, 4rem);
+  }
+
+  .estate-signin__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .estate-signin__stats dt {
+    color: rgba(244, 241, 236, 0.7);
+    font-size: 0.82rem;
+  }
+
+  .estate-signin__stats dd {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-size: 1.8rem;
+  }
+
+  .estate-signin__street {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 140px;
+    fill: rgba(244, 241, 236, 0.07);
+  }
+
+  .estate-signin__windows rect {
+    fill: rgba(232, 131, 94, 0.45);
+  }
+
+  .estate-signin__main {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+  }
+
+  .estate-signin__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .estate-signin__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: 2.2rem;
+  }
+
+  .estate-signin__subtitle {
+    margin: calc(var(--sp-2, 0.5rem) * -1) 0 0;
+    color: var(--estate-text-2);
+  }
+
+  .estate-signin__sso {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .estate-signin__sso-btn {
+    min-height: 46px;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    background: var(--estate-bg-raised);
+    color: var(--estate-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .estate-signin__sso-btn:hover {
+    background: var(--estate-surface);
+  }
+
+  .estate-signin__or {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    color: var(--estate-text-3);
+    font-size: 0.85rem;
+  }
+
+  .estate-signin__or::before,
+  .estate-signin__or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--estate-border);
+  }
+
+  .estate-signin__alert {
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: color-mix(in srgb, var(--estate-down) 15%, transparent);
+    color: var(--estate-text);
+    font-size: 0.9rem;
+  }
+
+  .estate-signin__alert[hidden],
+  .estate-signin__err[hidden] {
+    display: none;
+  }
+
+  .estate-signin__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .estate-signin__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .estate-signin__field label {
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .estate-signin__field input {
+    width: 100%;
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    background: var(--estate-surface);
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .estate-signin__field input[aria-invalid='true'] {
+    border-color: var(--estate-down);
+  }
+
+  .estate-signin__pass {
+    position: relative;
+  }
+
+  .estate-signin__pass input {
+    padding-right: 6.5rem;
+  }
+
+  .estate-signin__eye {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-height: 40px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--estate-text-2);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .estate-signin__err {
+    margin: 0;
+    color: var(--estate-down);
+    font-size: 0.85rem;
+  }
+
+  .estate-signin__forgot,
+  .estate-signin__back {
+    color: var(--estate-brand);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .estate-signin__back {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .estate-signin__remember {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--estate-text-2);
+    font-size: 0.9rem;
+  }
+
+  .estate-signin__remember input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--estate-brand);
+  }
+
+  .estate-signin__submit {
+    min-height: 50px;
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .estate-signin__submit:hover {
+    background: var(--estate-brand-hover);
+  }
+
+  .estate-signin :is(input, button, a):focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 960px) {
+    .estate-signin--split {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .estate-signin__panel {
+      display: flex;
+    }
+  }
+</style>

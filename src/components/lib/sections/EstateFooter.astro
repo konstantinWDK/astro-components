@@ -1,0 +1,232 @@
+---
+/**
+ * EstateFooter — Real estate agency footer: brand and pitch, link columns, office contact
+ * card with phone, email and hours, and a legal row with the agency registration.
+ *
+ * @param {string} brand - Agency name.
+ * @param {string} tagline - Short pitch under the brand.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {{address: string, phone: string, email: string, hours: string}} contact - Office details.
+ * @param {string} legal - Registration / licence line.
+ * @param {string} copyright - Copyright text.
+ * @param {string} variant - 'full' | 'minimal' (legal row only). Default 'full'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark, each column is a <nav> labelled by its title, contact
+ * details use an <address> element with real tel: and mailto: links.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import { estateData } from '../templates/real-estate/data';
+
+interface Column {
+  title: string;
+  links: Array<{ label: string; href: string }>;
+}
+
+interface OwnProps {
+  brand?: string;
+  tagline?: string;
+  columns?: Column[];
+  contact?: { address: string; phone: string; email: string; hours: string };
+  legal?: string;
+  copyright?: string;
+  variant?: 'full' | 'minimal';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = estateData.brand.name,
+  tagline = 'Agencia inmobiliaria de barrio. Vendemos y alquilamos casas con historia en Valencia desde 2009.',
+  columns = [
+    { title: 'Propiedades', links: [{ label: 'Comprar', href: '#' }, { label: 'Alquilar', href: '#' }, { label: 'Obra nueva', href: '#' }] },
+    { title: 'Propietarios', links: [{ label: 'Valorar mi casa', href: '#' }, { label: 'Vender con nosotros', href: '#' }] },
+    { title: 'Agencia', links: [{ label: 'Agentes', href: '#' }, { label: 'Contacto', href: '#' }] },
+  ],
+  contact = estateData.brand,
+  legal = 'Agencia inscrita en el Registro de Agentes de Intermediación Inmobiliaria de la Comunitat Valenciana.',
+  copyright = `© ${new Date().getFullYear()} ${estateData.brand.legalName}`,
+  variant = 'full',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+---
+
+<footer class:list={['estate-ui', 'estate-footer', `estate-footer--${variant}`, classAttr]} {...rest}>
+  {variant === 'full' && (
+    <div class="estate-footer__top">
+      <div class="estate-footer__brand">
+        <p class="estate-footer__name">
+          <span class="estate-footer__mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v9.5h13V10" /><path d="M10 19.5v-5h4v5" />
+            </svg>
+          </span>
+          {brand}
+        </p>
+        <p class="estate-footer__tagline">{tagline}</p>
+      </div>
+
+      {columns.map((col) => (
+        <nav class="estate-footer__col" aria-label={col.title}>
+          <p class="estate-footer__heading">{col.title}</p>
+          <ul role="list">
+            {col.links.map((l) => (
+              <li><a href={l.href}>{l.label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      ))}
+
+      <address class="estate-footer__contact">
+        <p class="estate-footer__heading">Oficina</p>
+        <p>{contact.address}</p>
+        <p class="estate-footer__muted">{contact.hours}</p>
+        <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} class="estate-footer__phone">{contact.phone}</a>
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+      </address>
+    </div>
+  )}
+  <div class="estate-footer__legal">
+    <p>{copyright}</p>
+    <p>{legal}</p>
+  </div>
+</footer>
+
+<style>
+  .estate-footer {
+    padding: 0 var(--sp-4, 1rem);
+    border-top: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+    color: var(--estate-text-2);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-footer__top {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-12, 3rem) 0 var(--sp-8, 2rem);
+  }
+
+  .estate-footer__brand {
+    grid-column: 1 / -1;
+    max-width: 420px;
+  }
+
+  .estate-footer__name {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    color: var(--estate-text);
+    font-family: var(--estate-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .estate-footer__mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+  }
+
+  .estate-footer__tagline {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    line-height: 1.6;
+  }
+
+  .estate-footer__heading {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--estate-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .estate-footer__col ul {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    color: var(--estate-text-2);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .estate-footer a:hover {
+    color: var(--estate-brand);
+  }
+
+  .estate-footer a:focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-footer__contact {
+    display: flex;
+    flex-direction: column;
+    font-style: normal;
+  }
+
+  .estate-footer__contact p {
+    margin: 0 0 var(--sp-1, 0.25rem);
+  }
+
+  .estate-footer__muted {
+    color: var(--estate-text-3);
+    font-size: 0.88rem;
+  }
+
+  .estate-footer .estate-footer__phone {
+    color: var(--estate-text);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .estate-footer__legal {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem) var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-top: 1px solid var(--estate-border);
+    color: var(--estate-text-3);
+    font-size: 0.82rem;
+  }
+
+  .estate-footer--minimal .estate-footer__legal {
+    border-top: 0;
+  }
+
+  .estate-footer__legal p {
+    margin: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .estate-footer__top {
+      grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr));
+    }
+
+    .estate-footer__brand {
+      grid-column: auto;
+    }
+  }
+</style>

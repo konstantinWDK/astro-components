@@ -1,0 +1,571 @@
+---
+/**
+ * FoodOrdersTable — Order book for the kitchen: search by order, customer or street, status chips
+ * with live counts, sorting by time or total, a status select on each row and an expandable
+ * ticket (lines, note, phone, rider). Rows turn into stacked cards on phones, so nothing scrolls
+ * sideways.
+ *
+ * @param {FoodOrder[]} orders - Orders to list.
+ * @param {FoodDish[]} dishes - Used to name the order lines.
+ * @param {FoodRider[]} riders - Used to name the assigned rider.
+ * @param {string} variant - 'striped' | 'plain'. Default 'striped'.
+ * @param {string} size - 'md' | 'sm' density. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: a real <table> with caption and column headers; sort buttons live in the headers
+ * and expose aria-sort; status chips are toggle buttons with aria-pressed; each row's details
+ * button uses aria-expanded / aria-controls; result count is announced politely.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodOrders, foodDishes, foodRiders, type FoodOrder, type FoodDish, type FoodRider, type FoodOrderStatus } from '../templates/food-delivery/data';
+
+interface OwnProps {
+  orders?: FoodOrder[];
+  dishes?: FoodDish[];
+  riders?: FoodRider[];
+  variant?: 'striped' | 'plain';
+  size?: 'md' | 'sm';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  orders = foodOrders,
+  dishes = foodDishes,
+  riders = foodRiders,
+  variant = 'striped',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const statuses: Array<{ id: FoodOrderStatus; label: string }> = [
+  { id: 'nuevo', label: 'Nuevo' },
+  { id: 'cocina', label: 'En cocina' },
+  { id: 'listo', label: 'Listo' },
+  { id: 'reparto', label: 'En reparto' },
+  { id: 'entregado', label: 'Entregado' },
+  { id: 'cancelado', label: 'Cancelado' },
+];
+const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const dishName = (id: string) => dishes.find((d) => d.id === id)?.name ?? id;
+const riderName = (id?: string) => (id ? riders.find((r) => r.id === id)?.name ?? id : 'Sin asignar');
+const uid = `bf-ot-${Math.random().toString(36).slice(2, 7)}`;
+const counts = Object.fromEntries(statuses.map((s) => [s.id, orders.filter((o) => o.status === s.id).length]));
+const payLabel = { tarjeta: 'Tarjeta', bizum: 'Bizum', efectivo: 'Efectivo' };
+---
+
+<div class:list={['bf-ui', 'bf-ot', `bf-ot--${variant}`, `bf-ot--${size}`, classAttr]} data-bf-ot {...rest}>
+  <div class="bf-ot__tools">
+    <label class="bf-ot__search">
+      <span class="bf-sr">Buscar pedidos</span>
+      <input type="search" placeholder="Pedido, cliente o calle…" data-q />
+    </label>
+    <div class="bf-ot__chips" role="group" aria-label="Filtrar por estado">
+      {statuses.map((s) => (
+        <button type="button" class={`bf-ot__chip bf-ot__chip--${s.id}`} aria-pressed="false" data-chip={s.id}>
+          {s.label} <b data-chip-n={s.id}>{counts[s.id]}</b>
+        </button>
+      ))}
+    </div>
+  </div>
+  <p class="bf-ot__count" role="status" aria-live="polite" data-count>{orders.length} pedidos</p>
+
+  <table class="bf-ot__table">
+    <caption class="bf-sr">Pedidos de hoy</caption>
+    <thead>
+      <tr>
+        <th scope="col" aria-sort="descending" data-sort-th="time"><button type="button" data-sort="time">Hora</button></th>
+        <th scope="col">Pedido</th>
+        <th scope="col">Cliente</th>
+        <th scope="col" data-sort-th="total"><button type="button" data-sort="total">Total</button></th>
+        <th scope="col">Estado</th>
+        <th scope="col"><span class="bf-sr">Detalles</span></th>
+      </tr>
+    </thead>
+    {orders.map((o) => (
+      <tbody data-row data-status={o.status} data-time={o.placedAt} data-total={o.total} data-text={`${o.id} ${o.customer} ${o.address} ${o.zone}`.toLowerCase()}>
+        <tr class="bf-ot__tr">
+          <td data-label="Hora" class="bf-ot__time">{o.placedAt}</td>
+          <td data-label="Pedido"><strong>{o.id}</strong><span class="bf-ot__chan">{o.channel}</span></td>
+          <td data-label="Cliente"><span class="bf-ot__cust">{o.customer}</span><span class="bf-ot__addr">{o.zone}</span></td>
+          <td data-label="Total" class="bf-ot__num">{eur(o.total)}</td>
+          <td data-label="Estado">
+            <label class="bf-ot__status">
+              <span class="bf-sr">Estado de {o.id}</span>
+              <select data-status-select data-st={o.status}>
+                {statuses.map((s) => <option value={s.id} selected={s.id === o.status}>{s.label}</option>)}
+              </select>
+            </label>
+          </td>
+          <td class="bf-ot__more">
+            <button type="button" class="bf-ot__toggle" aria-expanded="false" aria-controls={`${uid}-${o.id}`} data-toggle>
+              <span class="bf-sr">Ver ticket {o.id}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+          </td>
+        </tr>
+        <tr class="bf-ot__detail" id={`${uid}-${o.id}`} hidden>
+          <td colspan="6">
+            <div class="bf-ot__ticket">
+              <ul role="list">
+                {o.lines.map((l) => <li>{l.qty}× {dishName(l.dishId)}</li>)}
+              </ul>
+              <dl>
+                <div><dt>Dirección</dt><dd>{o.address}</dd></div>
+                <div><dt>Teléfono</dt><dd><a href={`tel:${o.phone.replace(/\s+/g, '')}`}>{o.phone}</a></dd></div>
+                <div><dt>Pago</dt><dd>{payLabel[o.payment]}</dd></div>
+                <div><dt>Rider</dt><dd>{riderName(o.riderId)}</dd></div>
+              </dl>
+              {o.note && <p class="bf-ot__note">“{o.note}”</p>}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    ))}
+  </table>
+  <p class="bf-ot__empty" data-empty hidden>Ningún pedido coincide con la búsqueda.</p>
+</div>
+
+<script>
+  function initFoodOt() {
+    document.querySelectorAll<HTMLElement>('[data-bf-ot]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const table = $<HTMLTableElement>('table');
+      const rows = () => [...root.querySelectorAll<HTMLElement>('[data-row]')];
+      const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-chip]')];
+      const q = $<HTMLInputElement>('[data-q]');
+      let sortKey = 'time';
+      let dir = -1;
+
+      const apply = () => {
+        const term = q.value.trim().toLowerCase();
+        const on = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.chip);
+        let n = 0;
+        rows().forEach((r) => {
+          const ok = (!on.length || on.includes(r.dataset.status)) && (!term || (r.dataset.text ?? '').includes(term));
+          r.hidden = !ok;
+          if (ok) n++;
+        });
+        $('[data-count]').textContent = n === 1 ? '1 pedido' : `${n} pedidos`;
+        $('[data-empty]').hidden = n !== 0;
+      };
+
+      const counts = () => {
+        chips.forEach((c) => {
+          const n = rows().filter((r) => r.dataset.status === c.dataset.chip).length;
+          root.querySelector(`[data-chip-n="${c.dataset.chip}"]`)!.textContent = String(n);
+        });
+      };
+
+      const sort = () => {
+        const list = rows().sort((a, b) => {
+          const va = sortKey === 'total' ? Number(a.dataset.total) : (a.dataset.time ?? '');
+          const vb = sortKey === 'total' ? Number(b.dataset.total) : (b.dataset.time ?? '');
+          return (va > vb ? 1 : va < vb ? -1 : 0) * dir;
+        });
+        list.forEach((r) => table.append(r));
+        root.querySelectorAll<HTMLElement>('[data-sort-th]').forEach((th) => {
+          if (th.dataset.sortTh === sortKey) th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+          else th.removeAttribute('aria-sort');
+        });
+      };
+
+      q.addEventListener('input', apply);
+      chips.forEach((c) =>
+        c.addEventListener('click', () => {
+          c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
+          apply();
+        }),
+      );
+      root.querySelectorAll<HTMLButtonElement>('[data-sort]').forEach((b) =>
+        b.addEventListener('click', () => {
+          if (sortKey === b.dataset.sort) dir *= -1;
+          else {
+            sortKey = b.dataset.sort!;
+            dir = -1;
+          }
+          sort();
+        }),
+      );
+      root.addEventListener('change', (e) => {
+        const s = e.target as HTMLSelectElement;
+        if (!s.matches('[data-status-select]')) return;
+        const row = s.closest<HTMLElement>('[data-row]')!;
+        row.dataset.status = s.value;
+        s.dataset.st = s.value;
+        row.classList.remove('is-flash');
+        void row.offsetWidth;
+        row.classList.add('is-flash');
+        counts();
+        apply();
+      });
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-toggle]');
+        if (!b) return;
+        const open = b.getAttribute('aria-expanded') !== 'true';
+        b.setAttribute('aria-expanded', String(open));
+        root.querySelector<HTMLElement>(`#${b.getAttribute('aria-controls')}`)!.hidden = !open;
+      });
+      sort();
+    });
+  }
+  initFoodOt();
+  document.addEventListener('astro:page-load', initFoodOt);
+</script>
+
+<style>
+  .bf-ot {
+    position: relative;
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-ot [hidden] {
+    display: none !important;
+  }
+
+  .bf-ot__tools {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .bf-ot__search input {
+    width: 100%;
+    max-width: 420px;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .bf-ot__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .bf-ot__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 0.85rem;
+    border: 2px solid var(--bf-line);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bf-ot__chip b {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 99px;
+    background: var(--bf-bg-2);
+    font-size: 0.78rem;
+  }
+
+  .bf-ot__chip[aria-pressed='true'] {
+    border-color: var(--bf-outline);
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+  }
+
+  .bf-ot__chip[aria-pressed='true'] b {
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+  }
+
+  .bf-ot :is(input, select, button, a):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-ot__count {
+    margin: var(--sp-3, 0.75rem) 0;
+    color: var(--bf-ink-3);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .bf-ot__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 3px solid var(--bf-outline);
+    border-radius: 20px;
+    background: var(--bf-paper);
+    overflow: hidden;
+  }
+
+  .bf-ot__table th {
+    padding: 0 12px;
+    height: 48px;
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+    font-size: 0.8rem;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .bf-ot__table th button {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 800;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+  }
+
+  .bf-ot__table th[aria-sort] button::after {
+    content: ' ↓';
+  }
+
+  .bf-ot__table th[aria-sort='ascending'] button::after {
+    content: ' ↑';
+  }
+
+  .bf-ot__table td {
+    padding: 10px 12px;
+    border-top: 2px solid var(--bf-line);
+    vertical-align: middle;
+  }
+
+  .bf-ot--sm .bf-ot__table td {
+    padding: 6px 10px;
+  }
+
+  .bf-ot--striped tbody:nth-of-type(even) .bf-ot__tr {
+    background: color-mix(in srgb, var(--bf-bg-2) 55%, transparent);
+  }
+
+  tbody.is-flash .bf-ot__tr {
+    animation: bf-ot-flash 0.9s ease;
+  }
+
+  .bf-ot__time,
+  .bf-ot__num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .bf-ot__chan,
+  .bf-ot__addr {
+    display: block;
+    color: var(--bf-ink-3);
+    font-size: 0.8rem;
+    text-transform: capitalize;
+  }
+
+  .bf-ot__cust {
+    font-weight: 700;
+  }
+
+  .bf-ot__status select {
+    min-height: 44px;
+    padding: 0 8px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+
+  .bf-ot__status select[data-st='nuevo'] { background: var(--bf-sky-soft); }
+  .bf-ot__status select[data-st='cocina'] { background: var(--bf-mustard); color: var(--bf-on-mustard); }
+  .bf-ot__status select[data-st='listo'],
+  .bf-ot__status select[data-st='entregado'] { background: var(--bf-mint-soft); }
+  .bf-ot__status select[data-st='reparto'] { background: var(--bf-pink-soft); }
+  .bf-ot__status select[data-st='cancelado'] { background: var(--bf-bg-2); color: var(--bf-ink-3); text-decoration: line-through; }
+
+  .bf-ot__more {
+    width: 52px;
+  }
+
+  .bf-ot__toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    cursor: pointer;
+  }
+
+  .bf-ot__toggle svg {
+    transition: transform 0.25s var(--bf-ease-pop);
+  }
+
+  .bf-ot__toggle[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+  }
+
+  .bf-ot__detail td {
+    border-top: 2px dashed var(--bf-line);
+    background: var(--bf-bg);
+  }
+
+  .bf-ot__ticket {
+    display: grid;
+    gap: 10px 24px;
+  }
+
+  @media (min-width: 700px) {
+    .bf-ot__ticket {
+      grid-template-columns: 1fr 2fr;
+    }
+  }
+
+  .bf-ot__ticket ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-weight: 700;
+  }
+
+  .bf-ot__ticket dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+
+  .bf-ot__ticket dt {
+    color: var(--bf-ink-3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .bf-ot__ticket dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .bf-ot__ticket a {
+    color: var(--bf-ink);
+    font-weight: 800;
+  }
+
+  .bf-ot__note {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 8px 12px;
+    border-left: 4px solid var(--bf-mustard);
+    background: var(--bf-paper);
+    font-style: italic;
+  }
+
+  .bf-ot__empty {
+    padding: var(--sp-5, 1.25rem);
+    text-align: center;
+    font-weight: 700;
+  }
+
+  @media (max-width: 720px) {
+    .bf-ot__table,
+    .bf-ot__table tbody,
+    .bf-ot__table tr,
+    .bf-ot__table td {
+      display: block;
+    }
+
+    .bf-ot__table {
+      border: 0;
+      background: none;
+    }
+
+    .bf-ot__table thead {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .bf-ot__table thead tr {
+      display: flex;
+      gap: 8px;
+    }
+
+    .bf-ot__table thead th {
+      display: none;
+      border-radius: 999px;
+    }
+
+    .bf-ot__table thead th[data-sort-th] {
+      display: flex;
+      align-items: center;
+    }
+
+    .bf-ot__table tbody {
+      margin-bottom: 10px;
+      border: 3px solid var(--bf-outline);
+      border-radius: 18px;
+      background: var(--bf-paper);
+      overflow: hidden;
+    }
+
+    .bf-ot__table tbody[hidden] {
+      display: none;
+    }
+
+    .bf-ot__tr {
+      position: relative;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      padding: 6px 4px;
+    }
+
+    .bf-ot__table .bf-ot__tr td {
+      border: 0;
+      padding: 6px 10px;
+    }
+
+    .bf-ot__table .bf-ot__tr td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      color: var(--bf-ink-3);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .bf-ot__more {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: auto;
+    }
+
+    .bf-ot__detail td {
+      border-top: 2px dashed var(--bf-line);
+    }
+  }
+
+  @keyframes bf-ot-flash { 30% { background: var(--bf-mustard); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-ot * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

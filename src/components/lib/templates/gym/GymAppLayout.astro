@@ -1,0 +1,168 @@
+---
+/**
+ * GymAppLayout — Member area and staff shell for the "Forja" gym template.
+ * Uses GymAreaNav (rail on desktop, bottom tab bar on phones) and GymAreaTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Forja").
+ * @param {string} current - Active route key (dashboard | booking | members).
+ * @param {GymRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, sidebar marks the current page.
+ */
+import '../../../../styles/global.css';
+import './gym-theme.css';
+import GymAreaNav from '../../app/GymAreaNav.astro';
+import GymAreaTopbar from '../../app/GymAreaTopbar.astro';
+import { gymRoutes, gymMember, gymOccupancy, type GymRoutes } from './data';
+
+type Key = 'dashboard' | 'booking' | 'members';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: GymRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Forja · Área de socios: progreso, reservas de clases y gestión del club.',
+  current = 'dashboard',
+  routes = gymRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const navItems = [
+  { label: 'Progreso', href: routes.dashboard, icon: 'chart' },
+  { label: 'Reservar', href: routes.booking, icon: 'calendar', badge: gymMember.bookings.length },
+  { label: 'Horario', href: routes.classes, icon: 'clock' },
+  { label: 'Staff', href: routes.members, icon: 'people' },
+];
+
+const notifications = [
+  { title: 'Plaza confirmada', text: 'Ciclo indoor del miércoles a las 18:00', time: 'hace 20 min', unread: true },
+  { title: 'Nuevo récord', text: 'Peso muerto: 115 kg (+7,5 kg)', time: 'ayer', unread: true },
+  { title: 'Lista de espera', text: 'Te avisaremos si se libera plaza en HIIT', time: 'hace 2 días' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-gym" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Forja`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="gym-app-body">
+    <a href="#main-content" class="gym-app-skip">Saltar al contenido</a>
+    <div class="gym-app-shell">
+      <GymAreaNav
+        items={navItems}
+        currentHref={routes[current] ?? routes.dashboard}
+        brand="Forja"
+        homeHref={routes.home}
+        goal={{ label: 'Sesiones este mes', value: gymMember.visitsThisMonth, max: gymMember.visitsGoal }}
+      />
+      <div class="gym-app-column">
+        <GymAreaTopbar
+          member={{ name: gymMember.name, plan: gymMember.plan, id: 'S-2051' }}
+          occupancy={{ now: gymOccupancy.now, capacity: gymOccupancy.capacity }}
+          notifications={notifications}
+          links={[{ label: 'Web del club', href: routes.home }, { label: 'Cambiar de tarifa', href: routes.plans }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="gym-app-main" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .gym-app-body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--gym-font-body);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+  }
+
+  .gym-app-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .gym-app-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .gym-app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .gym-app-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gym-app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-12, 3rem);
+    box-sizing: border-box;
+  }
+
+  .gym-app-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .gym-app-main {
+      padding: var(--sp-8, 2rem) var(--sp-8, 2rem) var(--sp-16, 4rem);
+    }
+  }
+
+  /* Room for the bottom tab bar on phones and tablets */
+  @media (max-width: 959px) {
+    .gym-app-main {
+      padding-bottom: calc(var(--sp-16, 4rem) + 64px);
+    }
+  }
+</style>

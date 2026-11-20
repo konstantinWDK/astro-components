@@ -1,0 +1,519 @@
+---
+/**
+ * ConstructionProjectSheets — Project portfolio as a set of drawing sheets. Each card is a plan
+ * sheet with its own procedurally drawn elevation (from floors × bays) that draws itself when it
+ * scrolls into view, a status stamp, progress as a dimension line and a title block (cajetín) with
+ * reference, area, budget and dates. Filter by type and status, and sort.
+ *
+ * @param {ConstructionProject[]} projects - Projects to show.
+ * @param {string} detailBase - Base URL for project pages (slug is appended).
+ * @param {string} title - Section heading.
+ * @param {boolean} showFilters - Show type/status filters and sort. Default true.
+ * @param {number} limit - Max projects to show (0 = all). Default 0.
+ * @param {string} variant - 'sheets' (grid) | 'list' (wide rows). Default 'sheets'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: filters are labelled radio groups and a select; the result count is announced
+ * politely; each sheet is an <article> whose heading is the link to the project; drawings are
+ * aria-hidden and the facts are real text; progress is a role="meter".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { elevation } from '../templates/construction/construction-draw';
+import {
+  constructionProjects,
+  constructionKindLabel,
+  constructionStatusLabel,
+  formatEurShort,
+  type ConstructionProject,
+} from '../templates/construction/data';
+
+interface OwnProps {
+  projects?: ConstructionProject[];
+  detailBase?: string;
+  title?: string;
+  showFilters?: boolean;
+  limit?: number;
+  variant?: 'sheets' | 'list';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  projects = constructionProjects,
+  detailBase = '/proyectos',
+  title = 'Proyectos',
+  showFilters = true,
+  limit = 0,
+  variant = 'sheets',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const list = (limit ? projects.slice(0, limit) : projects).map((p, i) => ({
+  ...p,
+  ref: `ST-${String(i + 1).padStart(2, '0')}/${p.start.slice(2, 4)}`,
+  draw: elevation(p.floors, p.bays, { dims: true, crane: p.status === 'obra' }),
+  href: `${detailBase.replace(/\/$/, '')}/${p.slug}`,
+}));
+const kinds = [...new Set(projects.map((p) => p.kind))];
+const uid = `sk-ps-${Math.random().toString(36).slice(2, 7)}`;
+const m2 = (n: number) => n.toLocaleString('es-ES');
+---
+
+<section class:list={['sk-ui', 'sk-ps', `sk-ps--${variant}`, `sk-ps--${size}`, classAttr]} aria-labelledby={uid} data-sk-ps {...rest}>
+  <div class="sk-ps__inner">
+    <header class="sk-ps__head">
+      <h2 id={uid} class="sk-ps__title">{title}</h2>
+      <p class="sk-ps__count sk-mono" role="status" aria-live="polite" data-count>{list.length} planos</p>
+    </header>
+
+    {showFilters && (
+      <div class="sk-ps__filters">
+        <fieldset>
+          <legend class="sk-mono">Tipología</legend>
+          <label><input type="radio" name={`${uid}-k`} value="all" checked data-f="kind" /><span>Todas</span></label>
+          {kinds.map((k) => <label><input type="radio" name={`${uid}-k`} value={k} data-f="kind" /><span>{constructionKindLabel[k]}</span></label>)}
+        </fieldset>
+        <fieldset>
+          <legend class="sk-mono">Estado</legend>
+          <label><input type="radio" name={`${uid}-s`} value="all" checked data-f="status" /><span>Todos</span></label>
+          {Object.entries(constructionStatusLabel).map(([k, v]) => <label><input type="radio" name={`${uid}-s`} value={k} data-f="status" /><span>{v}</span></label>)}
+        </fieldset>
+        <label class="sk-ps__sort">
+          <span class="sk-mono">Ordenar</span>
+          <select data-sort>
+            <option value="recent">Más recientes</option>
+            <option value="area">Superficie</option>
+            <option value="budget">Presupuesto</option>
+            <option value="progress">Avance de obra</option>
+          </select>
+        </label>
+      </div>
+    )}
+
+    <ul class="sk-ps__grid" role="list" data-grid>
+      {list.map((p) => (
+        <li data-card data-kind={p.kind} data-status={p.status} data-start={p.start} data-area={p.areaM2} data-budget={p.budget} data-progress={p.progress}>
+          <article class="sk-ps__sheet sk-crop">
+            <div class="sk-ps__drawing">
+              <svg class="sk-draw" viewBox={`0 0 ${p.draw.width} ${p.draw.height}`} aria-hidden="true" set:html={p.draw.svg} data-draw />
+              <span class={`sk-ps__stamp sk-ps__stamp--${p.status} sk-mono`}>
+                {constructionStatusLabel[p.status]}{p.status === 'obra' ? ` · ${p.progress} %` : ''}
+              </span>
+            </div>
+            <div class="sk-ps__body">
+              <p class="sk-ps__kind sk-mono">{constructionKindLabel[p.kind]} · {p.district}</p>
+              <h3 class="sk-ps__name"><a href={p.href}>{p.name}</a></h3>
+              <p class="sk-ps__sum">{p.summary}</p>
+              <div class="sk-ps__meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow={p.progress} aria-label={`Avance de obra de ${p.name}`}>
+                <span style={`--w:${p.progress}%`}></span>
+                <b class="sk-mono">{p.progress} %</b>
+              </div>
+            </div>
+            <dl class="sk-ps__block sk-mono">
+              <div><dt>Ref.</dt><dd>{p.ref}</dd></div>
+              <div><dt>Superficie</dt><dd>{m2(p.areaM2)} m²</dd></div>
+              <div><dt>PEC</dt><dd>{formatEurShort(p.budget)}</dd></div>
+              <div><dt>Plazo</dt><dd>{p.start} → {p.end}</dd></div>
+            </dl>
+          </article>
+        </li>
+      ))}
+    </ul>
+    <p class="sk-ps__empty" data-empty hidden>Ningún proyecto con esos filtros.</p>
+  </div>
+</section>
+
+<script>
+  function initSkPs() {
+    document.querySelectorAll<HTMLElement>('[data-sk-ps]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const grid = root.querySelector<HTMLElement>('[data-grid]')!;
+      const cards = [...root.querySelectorAll<HTMLElement>('[data-card]')];
+      const count = root.querySelector<HTMLElement>('[data-count]')!;
+      const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+      const sort = root.querySelector<HTMLSelectElement>('[data-sort]');
+      const draws = [...root.querySelectorAll<SVGSVGElement>('[data-draw]')];
+
+      if ('IntersectionObserver' in window) {
+        draws.forEach((d) => d.classList.add('is-pending'));
+        const io = new IntersectionObserver(
+          (es) =>
+            es.forEach((e) => {
+              if (!e.isIntersecting) return;
+              requestAnimationFrame(() => e.target.classList.remove('is-pending'));
+              io.unobserve(e.target);
+            }),
+          { threshold: 0.25 },
+        );
+        draws.forEach((d) => io.observe(d));
+      }
+
+      const apply = () => {
+        const kind = root.querySelector<HTMLInputElement>('[data-f="kind"]:checked')?.value ?? 'all';
+        const status = root.querySelector<HTMLInputElement>('[data-f="status"]:checked')?.value ?? 'all';
+        let n = 0;
+        cards.forEach((c) => {
+          const ok = (kind === 'all' || c.dataset.kind === kind) && (status === 'all' || c.dataset.status === status);
+          c.hidden = !ok;
+          if (ok) n++;
+        });
+        const key = sort?.value ?? 'recent';
+        const val = (c: HTMLElement) => (key === 'recent' ? (c.dataset.start ?? '') : Number(c.dataset[key as 'area' | 'budget' | 'progress']));
+        cards
+          .slice()
+          .sort((a, b) => {
+            const va = val(a);
+            const vb = val(b);
+            return va > vb ? -1 : va < vb ? 1 : 0;
+          })
+          .forEach((c) => grid.append(c));
+        count.textContent = n === 1 ? '1 plano' : `${n} planos`;
+        empty.hidden = n !== 0;
+      };
+      root.addEventListener('change', (e) => {
+        if ((e.target as HTMLElement).matches('[data-f], [data-sort]')) apply();
+      });
+    });
+  }
+  initSkPs();
+  document.addEventListener('astro:page-load', initSkPs);
+</script>
+
+<style>
+  .sk-ps {
+    position: relative;
+    padding: clamp(3rem, 7vw, 5rem) var(--sp-4, 1rem);
+    background: var(--sk-bg);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-ps__inner {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .sk-ps__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--sk-line);
+  }
+
+  .sk-ps__title {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(1.9rem, 6vw, 3.2rem);
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .sk-ps__count {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ps__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px 28px;
+    margin: var(--sp-5, 1.25rem) 0 var(--sp-6, 1.5rem);
+  }
+
+  .sk-ps__filters fieldset {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sk-ps__filters legend,
+  .sk-ps__sort > span {
+    margin-bottom: 6px;
+    color: var(--sk-ink-3);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ps__filters label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .sk-ps__filters input[type='radio'] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-ps__filters label > span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    font-family: var(--sk-font-mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .sk-ps__filters input:checked + span {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-ps__filters input:focus-visible + span,
+  .sk-ps select:focus-visible,
+  .sk-ps__name a:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 3px;
+  }
+
+  .sk-ps__sort {
+    display: grid;
+    cursor: default;
+  }
+
+  .sk-ps select {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.82rem;
+  }
+
+  .sk-ps__grid {
+    display: grid;
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk-ps--sheets .sk-ps__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  }
+
+  .sk-ps--lg.sk-ps--sheets .sk-ps__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  }
+
+  .sk-ps__grid > li[hidden] {
+    display: none;
+  }
+
+  .sk-ps__sheet {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+    transition: border-color 0.25s ease, transform 0.35s var(--sk-ease);
+  }
+
+  .sk-ps__sheet:hover,
+  .sk-ps__sheet:focus-within {
+    border-color: var(--sk-line);
+    transform: translateY(-4px);
+  }
+
+  .sk-ps--list .sk-ps__sheet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 900px) {
+    .sk-ps--list .sk-ps__sheet {
+      grid-template-columns: 320px 1fr 260px;
+    }
+  }
+
+  .sk-ps__drawing {
+    position: relative;
+    padding: 14px;
+    border-bottom: 1px solid var(--sk-line-soft);
+    background-image:
+      linear-gradient(var(--sk-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--sk-grid) 1px, transparent 1px);
+    background-size: 12px 12px;
+  }
+
+  .sk-ps__drawing svg {
+    display: block;
+    width: 100%;
+    height: 200px;
+  }
+
+  .sk-ps__stamp {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 3px 8px;
+    border: 1.5px solid currentColor;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    transform: rotate(-4deg);
+    background: var(--sk-glass);
+  }
+
+  .sk-ps__stamp--obra { color: var(--sk-accent); }
+  .sk-ps__stamp--entregado { color: var(--sk-ok); }
+  .sk-ps__stamp--plano { color: var(--sk-line); }
+
+  .sk-ps__body {
+    flex: 1;
+    padding: 14px 16px;
+  }
+
+  .sk-ps__kind {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ps__name {
+    margin: 4px 0 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.35rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .sk-ps__name a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .sk-ps__name a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .sk-ps__name a:hover {
+    color: var(--sk-accent);
+  }
+
+  .sk-ps__sum {
+    margin: 6px 0 0;
+    color: var(--sk-ink-2);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .sk-ps__meter {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .sk-ps__meter span {
+    position: relative;
+    flex: 1;
+    height: 9px;
+    border-inline: 1px solid var(--sk-line);
+  }
+
+  .sk-ps__meter span::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    height: 1px;
+    background: var(--sk-line-soft);
+  }
+
+  .sk-ps__meter span::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: var(--w);
+    height: 5px;
+    background: var(--sk-accent);
+  }
+
+  .sk-ps__meter b {
+    color: var(--sk-accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .sk-ps__block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0;
+    border-top: 1px solid var(--sk-line-soft);
+    font-size: 0.75rem;
+  }
+
+  .sk-ps__block div {
+    padding: 8px 12px;
+    border-right: 1px solid var(--sk-line-soft);
+    border-bottom: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-ps__block div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .sk-ps__block dt {
+    color: var(--sk-ink-3);
+    font-size: 0.64rem;
+    text-transform: uppercase;
+  }
+
+  .sk-ps__block dd {
+    margin: 2px 0 0;
+    color: var(--sk-ink);
+  }
+
+  .sk-ps--list .sk-ps__block {
+    border-top: 0;
+    border-left: 1px solid var(--sk-line-soft);
+    align-content: start;
+  }
+
+  .sk-ps__empty {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px dashed var(--sk-line-soft);
+    text-align: center;
+    font-family: var(--sk-font-mono);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-ps * {
+      transition: none !important;
+    }
+  }
+</style>

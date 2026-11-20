@@ -1,50 +1,118 @@
 ---
 /**
- * FoodHomePage — Customer-facing storefront landing page for BiteFlow.
- * Composes FoodDeliveryHero, FoodCategoryRail, FoodLivePromoBanner, FoodMenuGrid, and FoodRestaurantPartnerCta.
+ * FoodHomePage — Home of the "BiteFlow" template: plate hero with address finder, best sellers
+ * (add straight to the cart), the scroll story from fire to door and a partner band.
+ *
+ * @param {FoodRoutes} routes - Template route URLs.
+ * @param {typeof foodDeliveryData} data - Brand, categories and dishes.
  */
 import FoodSiteLayout from './FoodSiteLayout.astro';
-import FoodDeliveryHero from '../../sections/FoodDeliveryHero.astro';
-import FoodCategoryRail from '../../sections/FoodCategoryRail.astro';
-import FoodLivePromoBanner from '../../sections/FoodLivePromoBanner.astro';
-import FoodMenuGrid from '../../sections/FoodMenuGrid.astro';
-import FoodRestaurantPartnerCta from '../../sections/FoodRestaurantPartnerCta.astro';
-import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+import FoodHeroPlate from '../../sections/FoodHeroPlate.astro';
+import FoodMenuBoard from '../../sections/FoodMenuBoard.astro';
+import FoodScrollStory from '../../sections/FoodScrollStory.astro';
+import { foodRoutes, foodDeliveryData, type FoodRoutes } from './data';
 
 interface Props {
-  routes?: FoodDeliveryRoutes;
+  routes?: FoodRoutes;
+  data?: typeof foodDeliveryData;
 }
 
-const { routes = foodDeliveryRoutes } = Astro.props;
+const { routes = foodRoutes, data = foodDeliveryData } = Astro.props;
+const top = data.dishes.filter((d) => d.tags.includes('top') && d.available);
+const heroDishes = ['d01', 'd06', 'd08', 'd05', 'd10']
+  .flatMap((id) => data.dishes.filter((d) => d.id === id))
+  .map((d) => ({ name: d.name, art: d.art, price: d.price }));
 ---
 
-<FoodSiteLayout
-  title="BiteFlow — Sizzling Hot Food Delivery in 25 Minutes"
-  routes={routes}
->
-  <FoodDeliveryHero
-    menuHref={routes.menu}
-    trackHref={routes.tracking}
-  />
-
-  <FoodCategoryRail
-    baseUrl={routes.menu}
-    activeCategory="all"
-  />
-
-  <FoodLivePromoBanner
-    ctaHref={`${routes.menu}?cat=burgers`}
-  />
-
-  <FoodMenuGrid
-    dishes={foodDeliveryData.dishes}
-    title="Signature Kitchen Favorites"
-    subtitle="Order from our top-rated smash burgers, artisan pizzas and fresh poke bowls."
-  />
-
-  <FoodRestaurantPartnerCta
-    partnerHref={routes.partner}
-    demoHref={routes.dashboard}
-  />
+<FoodSiteLayout title={`${data.brand.name} · Comida a domicilio en Madrid en ~${data.brand.avgMinutes} min`} current="home" routes={routes}>
+  <FoodHeroPlate menuHref={routes.menu} trackHref={routes.tracking} dishes={heroDishes} minutes={data.brand.avgMinutes} freeFrom={data.brand.freeDeliveryFrom} />
+  <FoodMenuBoard dishes={top} categories={data.categories} title="Lo que más se pide" subtitle="Los favoritos de Lavapiés esta semana. Añádelos y míralos volar a la cesta." showFilters={false} />
+  <div class="bf-ui bf-home__more">
+    <a href={routes.menu} class="bf-home__btn">Ver la carta completa ({data.dishes.length} platos)</a>
+  </div>
+  <FoodScrollStory />
+  <section class="bf-ui bf-home__partner" aria-labelledby="bf-home-partner">
+    <div>
+      <h2 id="bf-home-partner">¿Tienes un restaurante?</h2>
+      <p>Vende a domicilio sin pagar el 30 % de comisión. Web, app, pantalla de cocina y riders eléctricos.</p>
+    </div>
+    <a href={routes.partner} class="bf-home__btn bf-home__btn--light">Calcula tu ahorro</a>
+  </section>
 </FoodSiteLayout>
 
+<style>
+  .bf-home__more {
+    display: flex;
+    justify-content: center;
+    padding: 0 var(--sp-4, 1rem) clamp(3rem, 6vw, 5rem);
+    background: var(--bf-bg);
+  }
+
+  .bf-home__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 1.4rem;
+    border: 3px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-family: var(--bf-font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: var(--bf-shadow);
+    transition: transform 0.2s var(--bf-ease-pop);
+  }
+
+  .bf-home__btn:hover {
+    transform: translate(-2px, -2px) rotate(-1deg);
+  }
+
+  .bf-home__btn:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 3px;
+  }
+
+  .bf-home__btn--light {
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+  }
+
+  .bf-home__partner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-5, 1.25rem);
+    max-width: 1240px;
+    margin: clamp(3rem, 6vw, 5rem) auto;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 3px solid var(--bf-outline);
+    border-radius: 28px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: var(--bf-shadow-lg);
+    box-sizing: border-box;
+    width: calc(100% - 2rem);
+  }
+
+  .bf-home__partner h2 {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 800;
+  }
+
+  .bf-home__partner p {
+    margin: 6px 0 0;
+    max-width: 36rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-home__btn {
+      transition: none;
+    }
+  }
+</style>

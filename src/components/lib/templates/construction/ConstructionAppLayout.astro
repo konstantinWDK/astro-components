@@ -1,0 +1,168 @@
+---
+/**
+ * ConstructionAppLayout — Site OS shell for the "Strukto" template: ConstructionOsSidebar (CAD
+ * layer panel; a sheet under the top bar on phones) and ConstructionOsTopbar (sheet path, active
+ * site with weather, theme, alerts, user). Blueprint theme by default.
+ *
+ * @param {string} title - Page title (suffixed with "Strukto Site OS").
+ * @param {string} current - Active route key (dashboard | sites | dailyLog | unitsCms | settings).
+ * @param {ConstructionRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('dark' | 'light' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, the sidebar marks the current page.
+ */
+import '../../../../styles/global.css';
+import './construction-theme.css';
+import ConstructionOsSidebar from '../../app/ConstructionOsSidebar.astro';
+import ConstructionOsTopbar from '../../app/ConstructionOsTopbar.astro';
+import { constructionRoutes, constructionSites, constructionUnits, type ConstructionRoutes } from './data';
+
+type Key = 'dashboard' | 'sites' | 'dailyLog' | 'unitsCms' | 'settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: ConstructionRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Strukto Site OS · planning, obras, diario de obra y ventas de viviendas.',
+  current = 'dashboard',
+  routes = constructionRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const late = constructionSites.filter((s) => s.health !== 'en-plazo').length;
+const free = constructionUnits.filter((u) => u.status === 'libre').length;
+const items = [
+  { label: 'Cuadro de mando', href: routes.dashboard },
+  { label: 'Obras', href: routes.sites, badge: late },
+  { label: 'Diario de obra', href: routes.dailyLog },
+  { label: 'Viviendas', href: routes.unitsCms, badge: free },
+  { label: 'Ajustes', href: routes.settings },
+];
+const names: Record<Key, string> = { dashboard: 'Cuadro de mando', sites: 'Obras', dailyLog: 'Diario de obra', unitsCms: 'Viviendas', settings: 'Ajustes' };
+const notifications = [
+  { title: 'Viento fuerte', text: 'Enclave Moraleja: grúa parada (38 km/h)', time: 'hace 12 min', unread: true },
+  { title: 'Visado pendiente', text: 'Mirador Valdebebas: licencia de vaciado', time: 'hace 2 h', unread: true },
+  { title: 'Certificación', text: 'Caelum · certificación n.º 18 aprobada', time: 'ayer' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-construction" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Strukto Site OS`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="sk-app">
+    <a href="#main-content" class="sk-app__skip">Saltar al contenido</a>
+    <div class="sk-app__shell">
+      <ConstructionOsSidebar
+        items={items}
+        currentHref={routes[current] ?? routes.dashboard}
+        homeHref={routes.home}
+        site={{ name: 'Residencial Caelum', progress: 64, week: 46 }}
+      />
+      <div class="sk-app__col">
+        <ConstructionOsTopbar
+          page={names[current]}
+          sites={constructionSites.map((s) => ({ id: s.id, name: s.name, weather: s.weather }))}
+          activeSite="s1"
+          notifications={notifications}
+          links={[{ label: 'Web pública', href: routes.home }, { label: 'Diario de hoy', href: routes.dailyLog }, { label: 'Ajustes', href: routes.settings }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="sk-app__main sk-grid-bg" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .sk-app {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--sk-bg);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+    overflow-x: clip;
+  }
+
+  .sk-app__skip {
+    position: absolute;
+    left: 16px;
+    top: -100px;
+    z-index: 100;
+    padding: 8px 16px;
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-family: var(--sk-font-mono);
+    text-decoration: none;
+  }
+
+  .sk-app__skip:focus {
+    top: 12px;
+  }
+
+  .sk-app__shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .sk-app__col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sk-app__main {
+    flex: 1;
+    width: 100%;
+    padding: 24px 16px 48px;
+    box-sizing: border-box;
+  }
+
+  .sk-app__main > :global(*) {
+    max-width: 1400px;
+    margin-inline: auto;
+  }
+
+  .sk-app__main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .sk-app__main {
+      padding: 32px 32px 64px;
+    }
+  }
+</style>

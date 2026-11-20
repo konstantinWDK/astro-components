@@ -1,0 +1,413 @@
+---
+/**
+ * EstateCrmSidebar — Navigation for the real estate agency CRM: agency badge, grouped links
+ * with icons and counters, and a quarterly goal card. On screens under 960px it becomes a
+ * slide-in panel opened by any element with `data-estate-crm-toggle="<id>"` (EstateCrmTopbar
+ * has one).
+ *
+ * @param {string} id - Element id, used by the toggle. Default 'estate-crm-nav'.
+ * @param {{name: string, plan?: string, initials?: string}} workspace - Agency badge.
+ * @param {Array<{label?: string, items: Array<{label: string, href: string, icon?: string, badge?: string|number}>}>} groups - Nav groups.
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {{title: string, text?: string, progress?: number, href?: string, cta?: string}} goal - Goal card. Omit to hide.
+ * @param {string} variant - 'surface' | 'transparent'. Default 'surface'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; the current page uses aria-current; on mobile
+ * the panel closes with Escape, the close button or a click on the backdrop, and focus returns
+ * to the toggle; icons are aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+
+interface Item { label: string; href: string; icon?: string; badge?: string | number }
+interface Group { label?: string; items: Item[] }
+
+interface OwnProps {
+  id?: string;
+  workspace?: { name: string; plan?: string; initials?: string };
+  groups?: Group[];
+  currentHref?: string;
+  goal?: { title: string; text?: string; progress?: number; href?: string; cta?: string };
+  variant?: 'surface' | 'transparent';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  id = 'estate-crm-nav',
+  workspace = { name: 'Nido Inmobiliaria', plan: 'CRM Agencia', initials: 'NI' },
+  groups = [
+    { label: 'Agencia', items: [
+      { label: 'Resumen', href: '#', icon: 'home' },
+      { label: 'Propiedades', href: '#propiedades', icon: 'building' },
+      { label: 'Leads', href: '#leads', icon: 'people', badge: 2 },
+    ] },
+  ],
+  currentHref = '#',
+  goal,
+  variant = 'surface',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const icons: Record<string, string> = {
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/>',
+  building: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/>',
+  people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+  pin: '<path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M15 8l2 2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+};
+const isCurrent = (href: string) => href === currentHref || href.replace(/\/$/, '') === currentHref.replace(/\/$/, '');
+---
+
+<nav
+  id={id}
+  class:list={['estate-ui', 'estate-crm-nav', `estate-crm-nav--${variant}`, classAttr]}
+  aria-label="CRM"
+  data-estate-crm-nav
+  {...rest}
+>
+  <div class="estate-crm-nav__head">
+    <span class="estate-crm-nav__logo" aria-hidden="true">{workspace.initials ?? workspace.name.slice(0, 2).toUpperCase()}</span>
+    <span class="estate-crm-nav__ws">
+      <strong>{workspace.name}</strong>
+      {workspace.plan && <small>{workspace.plan}</small>}
+    </span>
+    <button type="button" class="estate-crm-nav__close" data-estate-crm-close>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      <span class="estate-sr">Cerrar menú</span>
+    </button>
+  </div>
+
+  {groups.map((g) => (
+    <div class="estate-crm-nav__group">
+      {g.label && <p class="estate-crm-nav__label">{g.label}</p>}
+      <ul role="list">
+        {g.items.map((it) => (
+          <li>
+            <a href={it.href} class="estate-crm-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+              {it.icon && icons[it.icon] && (
+                <svg class="estate-crm-nav__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={icons[it.icon]} />
+              )}
+              <span class="estate-crm-nav__text">{it.label}</span>
+              {it.badge !== undefined && it.badge !== 0 && <span class="estate-crm-nav__badge">{it.badge}</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+
+  {goal && (
+    <div class="estate-crm-nav__goal">
+      <p class="estate-crm-nav__goal-title">{goal.title}</p>
+      {goal.text && <p class="estate-crm-nav__goal-text">{goal.text}</p>}
+      {typeof goal.progress === 'number' && (
+        <span class="estate-crm-nav__meter" role="img" aria-label={`${goal.progress} % completado`}>
+          <i style={`width:${Math.min(100, goal.progress)}%`}></i>
+        </span>
+      )}
+      {goal.href && <a href={goal.href} class="estate-crm-nav__goal-link">{goal.cta ?? 'Ver'}</a>}
+    </div>
+  )}
+</nav>
+<div class="estate-crm-nav-backdrop" data-estate-crm-backdrop hidden></div>
+
+<script>
+  function initCrmNav(nav: HTMLElement) {
+    if (nav.dataset.bound) return;
+    nav.dataset.bound = 'true';
+    const backdrop = nav.nextElementSibling as HTMLElement | null;
+    let opener: HTMLElement | null = null;
+
+    const setOpen = (open: boolean, trigger?: HTMLElement | null) => {
+      nav.classList.toggle('is-open', open);
+      if (backdrop) backdrop.hidden = !open;
+      document.querySelectorAll(`[data-estate-crm-toggle="${nav.id}"]`).forEach((b) => b.setAttribute('aria-expanded', String(open)));
+      if (open) {
+        opener = trigger ?? null;
+        nav.querySelector<HTMLElement>('a, button')?.focus();
+      } else {
+        opener?.focus();
+      }
+    };
+
+    document.addEventListener('click', (e) => {
+      const toggle = (e.target as HTMLElement).closest<HTMLElement>(`[data-estate-crm-toggle="${nav.id}"]`);
+      if (toggle) setOpen(!nav.classList.contains('is-open'), toggle);
+    });
+    nav.querySelector('[data-estate-crm-close]')?.addEventListener('click', () => setOpen(false));
+    backdrop?.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.classList.contains('is-open')) setOpen(false);
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-crm-nav]').forEach(initCrmNav);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-crm-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5, 1.25rem);
+    width: 248px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: var(--sp-5, 1.25rem) var(--sp-3, 0.75rem);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-crm-nav--surface {
+    border-right: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+  }
+
+  .estate-crm-nav__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: 0 var(--sp-2, 0.5rem);
+  }
+
+  .estate-crm-nav__logo {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font-family: var(--estate-font-display);
+    font-weight: 600;
+  }
+
+  .estate-crm-nav__ws {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .estate-crm-nav__ws strong {
+    overflow: hidden;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .estate-crm-nav__ws small {
+    color: var(--estate-text-3);
+    font-size: 0.78rem;
+  }
+
+  .estate-crm-nav__close {
+    display: none;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--estate-text-2);
+    cursor: pointer;
+  }
+
+  .estate-crm-nav__group ul {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .estate-crm-nav__label {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    padding: 0 var(--sp-3, 0.75rem);
+    color: var(--estate-text-3);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .estate-crm-nav__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    color: var(--estate-text-2);
+    font-size: 0.93rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .estate-crm-nav__link:hover {
+    background: var(--estate-surface);
+    color: var(--estate-text);
+  }
+
+  .estate-crm-nav__link[aria-current='page'] {
+    background: rgba(var(--estate-brand-rgb), 0.14);
+    color: var(--estate-text);
+    font-weight: 600;
+  }
+
+  .estate-crm-nav__link[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--estate-brand);
+  }
+
+  .estate-crm-nav__link[aria-current='page'] .estate-crm-nav__icon {
+    color: var(--estate-brand);
+  }
+
+  .estate-crm-nav__text {
+    flex: 1;
+  }
+
+  .estate-crm-nav__badge {
+    min-width: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.4rem;
+    text-align: center;
+  }
+
+  .estate-crm-nav :is(a, button):focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-crm-nav__goal {
+    margin-top: auto;
+    padding: var(--sp-4, 1rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--estate-surface);
+  }
+
+  .estate-crm-nav__goal p {
+    margin: 0;
+  }
+
+  .estate-crm-nav__goal-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .estate-crm-nav__goal-text {
+    color: var(--estate-text-3);
+    font-size: 0.82rem;
+  }
+
+  .estate-crm-nav__meter {
+    display: block;
+    height: 6px;
+    margin: var(--sp-3, 0.75rem) 0;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--estate-surface-2);
+  }
+
+  .estate-crm-nav__meter i {
+    display: block;
+    height: 100%;
+    background: var(--estate-brand);
+  }
+
+  .estate-crm-nav__goal-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    color: var(--estate-brand);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .estate-crm-nav-backdrop {
+    display: none;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 959px) {
+    .estate-crm-nav {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 60;
+      width: min(300px, 86vw);
+      overflow-y: auto;
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition: transform 0.25s ease, visibility 0s linear 0.25s;
+      background: var(--estate-bg-raised);
+      border-right: 1px solid var(--estate-border);
+    }
+
+    .estate-crm-nav.is-open {
+      transform: none;
+      visibility: visible;
+      transition: transform 0.25s ease;
+    }
+
+    .estate-crm-nav__close {
+      display: grid;
+    }
+
+    .estate-crm-nav-backdrop:not([hidden]) {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      background: rgba(0, 0, 0, 0.55);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .estate-crm-nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .estate-crm-nav,
+    .estate-crm-nav.is-open {
+      transition: none;
+    }
+  }
+</style>

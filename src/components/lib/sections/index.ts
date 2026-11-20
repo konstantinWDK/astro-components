@@ -149,21 +149,19 @@ export { default as MovingCareersBanner } from './MovingCareersBanner.astro';
 export { default as MovingPricingTiers } from './MovingPricingTiers.astro';
 export { default as MovingApplicationForm } from './MovingApplicationForm.astro';
 
-// Food Delivery & Kitchen OS ("BiteFlow") — food ordering & ghost kitchen platform
-export { default as FoodDeliveryHero } from './FoodDeliveryHero.astro';
-export { default as FoodCategoryRail } from './FoodCategoryRail.astro';
-export { default as FoodMenuGrid } from './FoodMenuGrid.astro';
-export { default as FoodLivePromoBanner } from './FoodLivePromoBanner.astro';
-export { default as FoodRestaurantPartnerCta } from './FoodRestaurantPartnerCta.astro';
-export { default as FoodCheckoutWizard } from './FoodCheckoutWizard.astro';
+// Food delivery storefront ("BiteFlow")
+export { default as FoodHeroPlate } from './FoodHeroPlate.astro';
+export { default as FoodMenuBoard } from './FoodMenuBoard.astro';
+export { default as FoodScrollStory } from './FoodScrollStory.astro';
+export { default as FoodPartnerPitch } from './FoodPartnerPitch.astro';
+export { default as FoodFooter } from './FoodFooter.astro';
 
 // Construction & Real Estate Developments ("Strukto")
-export { default as ConstructionHero } from './ConstructionHero.astro';
-export { default as ConstructionProjectsGrid } from './ConstructionProjectsGrid.astro';
-export { default as ConstructionStageTimeline } from './ConstructionStageTimeline.astro';
-export { default as ConstructionFloorPlanViewer } from './ConstructionFloorPlanViewer.astro';
-export { default as ConstructionSustainabilityBanner } from './ConstructionSustainabilityBanner.astro';
-export { default as ConstructionInquiryForm } from './ConstructionInquiryForm.astro';
+export { default as ConstructionBlueprintHero } from './ConstructionBlueprintHero.astro';
+export { default as ConstructionBuildSequence } from './ConstructionBuildSequence.astro';
+export { default as ConstructionProjectSheets } from './ConstructionProjectSheets.astro';
+export { default as ConstructionTenderForm } from './ConstructionTenderForm.astro';
+export { default as ConstructionFooter } from './ConstructionFooter.astro';
 
 // Real estate agency & listings portal ("Nido")
 export { default as EstateHero } from './EstateHero.astro';
@@ -172,3 +170,13 @@ export { default as EstateNeighborhoods } from './EstateNeighborhoods.astro';
 export { default as EstatePropertyGallery } from './EstatePropertyGallery.astro';
 export { default as EstateAgentsGrid } from './EstateAgentsGrid.astro';
 export { default as EstateValuationCta } from './EstateValuationCta.astro';
+export { default as EstateFooter } from './EstateFooter.astro';
+
+// Gym & training club ("Forja")
+export { default as GymHero } from './GymHero.astro';
+export { default as GymDisciplines } from './GymDisciplines.astro';
+export { default as GymSchedule } from './GymSchedule.astro';
+export { default as GymMembershipPlans } from './GymMembershipPlans.astro';
+export { default as GymTrainersGrid } from './GymTrainersGrid.astro';
+export { default as GymTrialForm } from './GymTrialForm.astro';
+export { default as GymFooter } from './GymFooter.astro';

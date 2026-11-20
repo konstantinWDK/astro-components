@@ -1,0 +1,472 @@
+---
+/**
+ * ConstructionSignIn — Sign-in to the Strukto Site OS. A blueprint panel draws a floor plan with
+ * dimension lines while you type; the form takes a corporate email and password (with show/hide)
+ * and a site profile (site manager, works direction, safety, sales) that decides where you land.
+ * Demo buttons fill the form for each profile.
+ *
+ * @param {{obra: string, direccion: string, prl: string, comercial: string}} destinations - Landing page per profile.
+ * @param {string} backHref - Link back to the public site.
+ * @param {string} action - Optional form action (POST); without it the demo redirects on the client.
+ * @param {string} variant - 'split' (plan + form) | 'card'. Default 'split'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields with autocomplete; errors are linked with aria-describedby and
+ * announced (role="alert"); the password toggle has aria-pressed; the profile is a radio group;
+ * the drawing is decorative and finished at once with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+
+interface OwnProps {
+  destinations?: { obra: string; direccion: string; prl: string; comercial: string };
+  backHref?: string;
+  action?: string;
+  variant?: 'split' | 'card';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  destinations = { obra: '#obras', direccion: '#panel', prl: '#diario', comercial: '#viviendas' },
+  backHref = '/',
+  action,
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const roles = [
+  { id: 'obra', label: 'Jefatura de obra', email: 'r.garrido@strukto.es' },
+  { id: 'direccion', label: 'Dirección facultativa', email: 'arenal@estudioarenal.es' },
+  { id: 'prl', label: 'Seguridad y salud', email: 'prl@strukto.es' },
+  { id: 'comercial', label: 'Comercial', email: 'ventas@strukto.es' },
+] as const;
+const uid = `sk-in-${Math.random().toString(36).slice(2, 7)}`;
+const plan = [
+  'M20 20H280V200H20Z',
+  'M20 110H130M160 110H280',
+  'M130 20V80M130 140V200',
+  'M200 110V200',
+  'M60 200V180M100 200V180',
+  'M250 20V40M270 20V40',
+];
+---
+
+<div class:list={['sk-ui', 'sk-in', `sk-in--${variant}`, `sk-in--${size}`, classAttr]} data-sk-in data-dest={JSON.stringify(destinations)} {...rest}>
+  {variant === 'split' && (
+    <aside class="sk-in__panel sk-grid-bg" aria-hidden="true">
+      <p class="sk-in__ref sk-mono">PLANO 12 · PLANTA TIPO · E 1:50</p>
+      <svg viewBox="0 0 300 240" class="sk-draw sk-in__svg is-pending" data-plan>
+        {plan.map((d, i) => <path d={d} pathLength="1" style={`--k:${i * 4}`} class={i ? 'p-wall' : 'p-out'} />)}
+        <path d="M20 224H280M20 218V230M280 218V230" pathLength="1" style="--k:28" class="d-dim" />
+        <text x="150" y="238" text-anchor="middle" class="d-txt">12,60 m</text>
+        <path d="M292 20V200M286 20H298M286 200H298" pathLength="1" style="--k:30" class="d-dim" />
+        <text x="60" y="66" class="p-room">SALÓN 32 m²</text>
+        <text x="190" y="66" class="p-room">COCINA 14 m²</text>
+        <text x="50" y="160" class="p-room">DORM. 1</text>
+        <text x="150" y="160" class="p-room">DORM. 2</text>
+        <text x="225" y="160" class="p-room">BAÑO</text>
+      </svg>
+      <p class="sk-in__typing sk-mono" data-typing>Esperando credenciales…</p>
+    </aside>
+  )}
+
+  <form class="sk-in__form" method="post" action={action} novalidate data-form>
+    <a href={backHref} class="sk-in__back sk-mono">← Web de Strukto</a>
+    <h1 class="sk-in__title">Site OS</h1>
+    <p class="sk-in__lead">Acceso para equipos de obra, dirección facultativa y comercial.</p>
+
+    <fieldset class="sk-in__roles">
+      <legend class="sk-mono">Perfil</legend>
+      {roles.map((r, i) => (
+        <label>
+          <input type="radio" name="role" value={r.id} checked={i === 0} />
+          <span>{r.label}</span>
+        </label>
+      ))}
+    </fieldset>
+
+    <div class="sk-in__field">
+      <label for={`${uid}-e`}>Email corporativo</label>
+      <input id={`${uid}-e`} name="email" type="email" autocomplete="username" required data-email />
+    </div>
+    <div class="sk-in__field">
+      <div class="sk-in__row">
+        <label for={`${uid}-p`}>Contraseña</label>
+        <button type="button" class="sk-in__show" aria-pressed="false" aria-controls={`${uid}-p`} data-show>Mostrar</button>
+      </div>
+      <input id={`${uid}-p`} name="password" type="password" autocomplete="current-password" required minlength="6" data-pass />
+    </div>
+    <p class="sk-in__err" id={`${uid}-err`} role="alert" data-err></p>
+
+    <label class="sk-in__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo de obra</label>
+    <button type="submit" class="sk-in__submit">Entrar</button>
+
+    <div class="sk-in__demo">
+      <p class="sk-mono">Acceso de demostración</p>
+      <div>
+        {roles.map((r) => <button type="button" data-demo={r.id} data-mail={r.email} aria-label={`Entrar como ${r.label} (demo)`}>{r.label}</button>)}
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  function initSkIn() {
+    document.querySelectorAll<HTMLElement>('[data-sk-in]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+      const email = root.querySelector<HTMLInputElement>('[data-email]')!;
+      const pass = root.querySelector<HTMLInputElement>('[data-pass]')!;
+      const err = root.querySelector<HTMLElement>('[data-err]')!;
+      const plan = root.querySelector<SVGSVGElement>('[data-plan]');
+      const typing = root.querySelector<HTMLElement>('[data-typing]');
+      const dest = JSON.parse(root.dataset.dest || '{}') as Record<string, string>;
+      requestAnimationFrame(() => requestAnimationFrame(() => plan?.classList.remove('is-pending')));
+
+      form.addEventListener('input', () => {
+        if (!typing) return;
+        const n = email.value.length + pass.value.length;
+        typing.textContent = n ? `Trazando… ${String(n * 37).padStart(4, '0')} mm` : 'Esperando credenciales…';
+        plan?.style.setProperty('--zoom', String(1 + Math.min(n, 30) / 300));
+      });
+
+      const show = root.querySelector<HTMLButtonElement>('[data-show]')!;
+      show.addEventListener('click', () => {
+        const on = pass.type === 'password';
+        pass.type = on ? 'text' : 'password';
+        show.setAttribute('aria-pressed', String(on));
+        show.textContent = on ? 'Ocultar' : 'Mostrar';
+      });
+
+      const go = () => {
+        const role = form.querySelector<HTMLInputElement>('input[name="role"]:checked')?.value ?? 'obra';
+        if (form.getAttribute('action')) form.submit();
+        else window.location.href = dest[role] ?? '#';
+      };
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const badMail = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value);
+        const badPass = pass.value.length < 6;
+        [email, pass].forEach((i) => {
+          i.removeAttribute('aria-invalid');
+          i.removeAttribute('aria-describedby');
+        });
+        if (badMail || badPass) {
+          const f = badMail ? email : pass;
+          err.textContent = badMail ? 'Escribe un email válido.' : 'La contraseña tiene al menos 6 caracteres.';
+          f.setAttribute('aria-invalid', 'true');
+          f.setAttribute('aria-describedby', err.id);
+          f.focus();
+          return;
+        }
+        err.textContent = '';
+        go();
+      });
+
+      root.querySelectorAll<HTMLButtonElement>('[data-demo]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const r = form.querySelector<HTMLInputElement>(`input[name="role"][value="${b.dataset.demo}"]`);
+          if (r) r.checked = true;
+          email.value = b.dataset.mail ?? '';
+          pass.value = 'demo-strukto';
+          form.dispatchEvent(new Event('input'));
+          window.setTimeout(go, 300);
+        }),
+      );
+    });
+  }
+  initSkIn();
+  document.addEventListener('astro:page-load', initSkIn);
+</script>
+
+<style>
+  .sk-in {
+    position: relative;
+    display: grid;
+    min-height: 100vh;
+    background: var(--sk-bg);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  @media (min-width: 960px) {
+    .sk-in--split {
+      grid-template-columns: 1.1fr 1fr;
+    }
+  }
+
+  .sk-in__panel {
+    position: relative;
+    display: grid;
+    align-content: center;
+    gap: 12px;
+    padding: 32px;
+    border-right: 1px solid var(--sk-line);
+    overflow: hidden;
+  }
+
+  .sk-in__ref,
+  .sk-in__typing {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+  }
+
+  .sk-in__typing {
+    color: var(--sk-accent);
+  }
+
+  .sk-in__svg {
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    transform: scale(var(--zoom, 1));
+    transition: transform 0.6s var(--sk-ease);
+  }
+
+  .sk-in__svg .p-out {
+    stroke: var(--sk-line);
+    stroke-width: 4;
+  }
+
+  .sk-in__svg .p-wall {
+    stroke: var(--sk-line);
+    stroke-width: 2;
+  }
+
+  .sk-in__svg .p-room {
+    fill: var(--sk-ink-3);
+    font-family: var(--sk-font-mono);
+    font-size: 8px;
+  }
+
+  .sk-in__form {
+    position: relative;
+    display: grid;
+    gap: 14px;
+    width: min(440px, 100%);
+    margin: 0 auto;
+    padding: 32px 16px;
+    align-self: center;
+    box-sizing: border-box;
+  }
+
+  .sk-in__back {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--sk-ink-2);
+    font-size: 0.78rem;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .sk-in__title {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(2.4rem, 8vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .sk-in--lg .sk-in__title {
+    font-size: clamp(3rem, 10vw, 4.6rem);
+  }
+
+  .sk-in__lead {
+    margin: 0;
+    color: var(--sk-ink-2);
+  }
+
+  .sk-in__roles {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sk-in__roles legend {
+    margin-bottom: 6px;
+    color: var(--sk-ink-3);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+  }
+
+  .sk-in__roles label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .sk-in__roles input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-in__roles span {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    height: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--sk-line-soft);
+    font-size: 0.88rem;
+    box-sizing: border-box;
+  }
+
+  .sk-in__roles input:checked + span {
+    border-color: var(--sk-accent);
+    box-shadow: inset 0 0 0 1px var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 12%, transparent);
+  }
+
+  .sk-in__roles input:focus-visible + span,
+  .sk-in :is(input:not([type='radio']), button, a):focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-in__field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .sk-in__field label {
+    color: var(--sk-ink-2);
+    font-family: var(--sk-font-mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+  }
+
+  .sk-in__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sk-in__field input {
+    min-height: 48px;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 1px solid var(--sk-line);
+    background: var(--sk-fill);
+    color: var(--sk-ink);
+    font: inherit;
+  }
+
+  .sk-in__field input[aria-invalid='true'] {
+    border-bottom-color: var(--sk-danger);
+  }
+
+  .sk-in__show {
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    background: none;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.74rem;
+    text-decoration: underline;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-in__err {
+    min-height: 1.2em;
+    margin: 0;
+    color: var(--sk-danger);
+  }
+
+  .sk-in__check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    color: var(--sk-ink-2);
+    font-size: 0.92rem;
+  }
+
+  .sk-in__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--sk-accent);
+  }
+
+  .sk-in__submit {
+    min-height: 52px;
+    border: 1px solid var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-family: var(--sk-font-mono);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-in__submit:hover {
+    background: var(--sk-accent-hover);
+  }
+
+  .sk-in__demo {
+    padding-top: 12px;
+    border-top: 1px dashed var(--sk-line-soft);
+  }
+
+  .sk-in__demo p {
+    margin: 0 0 8px;
+    color: var(--sk-ink-3);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+
+  .sk-in__demo div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .sk-in__demo button {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px dashed var(--sk-line);
+    background: transparent;
+    color: var(--sk-ink);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 959px) {
+    .sk-in__panel {
+      border-right: 0;
+      border-bottom: 1px solid var(--sk-line);
+      padding: 20px 16px;
+    }
+
+    .sk-in__svg {
+      max-height: 220px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-in__svg {
+      transition: none;
+      transform: none;
+    }
+  }
+</style>

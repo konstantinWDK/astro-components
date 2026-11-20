@@ -1,0 +1,356 @@
+---
+/**
+ * GymMembershipPlans — Membership pricing with a monthly / yearly billing switch.
+ * Prices, the "billed yearly" note and the saving per year update when switching.
+ *
+ * @param {GymPlan[]} plans - Plans to show.
+ * @param {string} ctaHref - Sign-up link; `?plan=<id>` is appended.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} billing - Initial billing ('monthly' | 'yearly'). Default 'monthly'.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the billing switch is a native radio group in a fieldset; prices are plain
+ * text that updates in place; the highlighted plan is labelled in text, not only by colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymPlans, type GymPlan } from '../templates/gym/data';
+
+interface OwnProps {
+  plans?: GymPlan[];
+  ctaHref?: string;
+  title?: string;
+  subtitle?: string;
+  billing?: 'monthly' | 'yearly';
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  plans = gymPlans,
+  ctaHref = '/preview/gym/prueba-gratis',
+  title = 'Tarifas sin permanencia',
+  subtitle = 'Sin matrícula. Congela tu cuota hasta 2 meses al año sin coste.',
+  billing = 'monthly',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `gp-${Math.random().toString(36).slice(2, 8)}`;
+const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+---
+
+<section
+  class:list={['gym-ui', 'gym-plans', classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-gym-plans
+  data-billing={billing}
+  {...rest}
+>
+  <div class="gym-plans__inner">
+    <header class="gym-plans__head">
+      <Heading id={`${uid}-title`} class="gym-plans__title">{title}</Heading>
+      {subtitle && <p class="gym-plans__subtitle">{subtitle}</p>}
+      <fieldset class="gym-plans__switch">
+        <legend class="gym-sr">Forma de pago</legend>
+        <label>
+          <input type="radio" name={`${uid}-billing`} value="monthly" checked={billing === 'monthly'} data-billing-input />
+          <span>Mensual</span>
+        </label>
+        <label>
+          <input type="radio" name={`${uid}-billing`} value="yearly" checked={billing === 'yearly'} data-billing-input />
+          <span>Anual <em>ahorra hasta un 17 %</em></span>
+        </label>
+      </fieldset>
+    </header>
+
+    <ul class="gym-plans__grid" role="list">
+      {plans.map((p) => (
+        <li class:list={['gym-plan', { 'gym-plan--highlight': p.highlighted }]}>
+          {p.highlighted && <p class="gym-plan__flag">El más elegido</p>}
+          <h3 class="gym-plan__name">{p.name}</h3>
+          <p class="gym-plan__tagline">{p.tagline}</p>
+          <p class="gym-plan__price">
+            <span class="gym-plan__amount" data-monthly={eur(p.monthly)} data-yearly={eur(p.yearly)}>
+              {eur(billing === 'yearly' ? p.yearly : p.monthly)}
+            </span>
+            <span class="gym-plan__per">/mes</span>
+          </p>
+          <p class="gym-plan__note" data-note data-monthly="Pago mensual, cancela cuando quieras" data-yearly={`${eur(p.yearly * 12)} al año · ahorras ${eur((p.monthly - p.yearly) * 12)}`}>
+            {billing === 'yearly' ? `${eur(p.yearly * 12)} al año · ahorras ${eur((p.monthly - p.yearly) * 12)}` : 'Pago mensual, cancela cuando quieras'}
+          </p>
+          <ul class="gym-plan__features" role="list">
+            {p.features.map((f) => (
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <a href={`${ctaHref}?plan=${p.id}`} class="gym-plan__cta">
+            Empezar con {p.name}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  function initPlans(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const apply = (billing: string) => {
+      root.dataset.billing = billing;
+      root.querySelectorAll<HTMLElement>('[data-monthly][data-yearly]').forEach((el) => {
+        el.textContent = (billing === 'yearly' ? el.dataset.yearly : el.dataset.monthly) ?? '';
+      });
+    };
+    root.querySelectorAll<HTMLInputElement>('[data-billing-input]').forEach((input) => {
+      input.addEventListener('change', () => input.checked && apply(input.value));
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-plans]').forEach(initPlans);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-plans {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-plans__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .gym-plans__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .gym-plans__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-plans__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--gym-text-2);
+  }
+
+  .gym-plans__switch {
+    display: inline-flex;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+    padding: var(--sp-1, 0.25rem);
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--gym-surface);
+  }
+
+  .gym-plans__switch label {
+    position: relative;
+  }
+
+  .gym-plans__switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .gym-plans__switch span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--gym-text-2);
+    font-weight: 700;
+  }
+
+  .gym-plans__switch em {
+    font-style: normal;
+    font-size: 0.75rem;
+    color: var(--gym-brand);
+  }
+
+  .gym-plans__switch input:checked + span {
+    background: var(--gym-text);
+    color: var(--gym-bg);
+  }
+
+  .gym-plans__switch input:checked + span em {
+    color: inherit;
+  }
+
+  .gym-plans__switch input:focus-visible + span {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-plans__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    align-items: stretch;
+  }
+
+  .gym-plan {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-plan--highlight {
+    border: 2px solid var(--gym-brand);
+    background:
+      linear-gradient(180deg, rgba(var(--gym-brand-rgb), 0.1), transparent 45%),
+      var(--gym-bg-raised);
+  }
+
+  .gym-plan__flag {
+    align-self: flex-start;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .gym-plan__name {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-plan__tagline {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--gym-text-3);
+  }
+
+  .gym-plan__price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+  }
+
+  .gym-plan__amount {
+    font-family: var(--gym-font-display);
+    font-size: 3.4rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gym-plan__per {
+    color: var(--gym-text-3);
+  }
+
+  .gym-plan__note {
+    min-height: 2.6em;
+    margin: var(--sp-1, 0.25rem) 0 var(--sp-5, 1.25rem);
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-plan__features {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    list-style: none;
+    color: var(--gym-text-2);
+  }
+
+  .gym-plan__features li {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    align-items: flex-start;
+  }
+
+  .gym-plan__features svg {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+    color: var(--gym-brand);
+  }
+
+  .gym-plan__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    margin-top: auto;
+    border-radius: var(--r-sm, 8px);
+    border: 2px solid var(--gym-border-strong);
+    color: var(--gym-text);
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 0.88rem;
+    letter-spacing: 0.04em;
+  }
+
+  .gym-plan__cta:hover {
+    border-color: var(--gym-text);
+  }
+
+  .gym-plan--highlight .gym-plan__cta {
+    border-color: var(--gym-brand);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-plan--highlight .gym-plan__cta:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-plan__cta:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 3px;
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

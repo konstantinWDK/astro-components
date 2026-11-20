@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BiteFlow food delivery template redesigned** (`astro-component-kit/templates/food-delivery`): pop "sticker" aesthetic with cream paper, dark ink outlines and tomato/mustard accents; 16 dedicated components (`FoodHeroPlate`, `FoodMenuBoard`, `FoodScrollStory`, `FoodPartnerPitch`, `FoodFooter`, `FoodCartDrawer`, `FoodOrderMap`, `FoodKitchenBoard`, `FoodMenuManager`, `FoodRiderDispatch`, `FoodOrdersTable`, `FoodServicePulse`, `FoodOpsNav`, `FoodOpsTopbar`, `FoodOpsHeading`, `FoodCrewSignIn`) and 11 pages with Spanish preview routes (`/preview/food-delivery/carta`, `/pedido`, `/cocina/...`), zero reused generic components.
+- **Strukto construction & Site OS template redesigned** (`astro-component-kit/templates/construction`): architectural blueprint theme (navy drafting sheet with light tracing-paper variant), self-drawing elevation generator and 15 dedicated components (`ConstructionBlueprintHero`, `ConstructionProjectSheets`, `ConstructionBuildSequence`, `ConstructionTenderForm`, `ConstructionFooter`, `ConstructionCostEstimator`, `ConstructionIsoUnitPicker`, `ConstructionGanttBoard`, `ConstructionSitesBoard`, `ConstructionSiteLogbook`, `ConstructionUnitsLedger`, `ConstructionOsSidebar`, `ConstructionOsTopbar`, `ConstructionOsHeading`, `ConstructionSignIn`) across 11 pages, zero reused generic components.
+
 ### Added
 - **Real estate template "Nido"** (`astro-component-kit/templates/real-estate`): agency site with buy/rent search, filterable listings with favourites and zone map, a page per property (gallery, viewing booking, mortgage simulator or rental terms), 3-step owner valuation, contact and agents, plus an agent CRM (sign-in, overview, listings table, lead pipeline). 9 page types.
 - Sections: `EstateHero`, `EstateListingsGrid`, `EstateNeighborhoods`, `EstatePropertyGallery`, `EstateAgentsGrid`, `EstateValuationCta` (new "Real Estate Agency" section category).
-- App components: `EstateMortgageCalculator`, `EstateValuationWizard`, `EstateVisitScheduler`, `EstateLeadsPipeline`.
-- The MCP server lists the new template (`get_template` slug `real-estate`).
+- App components: `EstateMortgageCalculator`, `EstateValuationWizard`, `EstateVisitScheduler`, `EstateLeadsPipeline`, plus its own CRM shell: `EstateCrmSidebar`, `EstateCrmTopbar`, `EstateCrmHeading`, `EstateListingsTable`, `EstateAgentSignIn` (and the `EstateFooter` section).
+- **Gym template "Forja"** (`astro-component-kit/templates/gym`): club site with today's classes, disciplines, live occupancy, weekly timetable, plans with monthly/yearly billing, coaches and a free-trial pass, plus a member area (sign-in, progress, class booking with waitlist) and a staff view (members table, occupancy). 9 page types.
+- Sections: `GymHero`, `GymDisciplines`, `GymSchedule`, `GymMembershipPlans`, `GymTrainersGrid`, `GymTrialForm` (new "Gym & Fitness" section category).
+- App components: `GymClassBooking`, `GymProgressTracker`, `GymOccupancyMeter`, plus its own member-area shell: `GymAreaNav` (bottom tab bar on phones), `GymAreaTopbar` (with check-in pass), `GymAreaHeading`, `GymMembersTable`, `GymSignIn` (and the `GymFooter` section).
+- Both templates are built only from their own components; nothing is shared with other templates.
+- The MCP server lists the new templates (`get_template` slugs `real-estate` and `gym`).
 
 ## [0.8.0] - 2026-11-20
 

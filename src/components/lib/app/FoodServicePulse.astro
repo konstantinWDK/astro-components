@@ -1,0 +1,577 @@
+---
+/**
+ * FoodServicePulse — Service overview for the kitchen: KPI stickers whose numbers count up when
+ * they come into view, an hourly orders chart (today as bars, last week as a dashed line you can
+ * toggle) with a keyboard-reachable readout, station load meters and a live feed of service
+ * events that you can pause.
+ *
+ * @param {typeof foodStats} stats - Revenue, orders, ticket, delivery time, on-time %, rating.
+ * @param {typeof foodHourly} hourly - Hour labels with today and last-week counts.
+ * @param {Array<{station: string, load: number}>} stations - Load per station (0–100).
+ * @param {Array<{name: string, sold: number}>} top - Best sellers today.
+ * @param {boolean} liveFeed - Simulate a live event feed. Default true.
+ * @param {string} variant - 'full' | 'compact' (KPIs + chart only). Default 'full'.
+ * @param {string} size - 'md' | 'lg' KPI size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: KPIs are a description list (final values are in the HTML, the count-up is
+ * visual); the chart is described by a data table for screen readers, and each hour is a button
+ * that updates a visible, polite readout; meters use role="meter"; the feed is a log region
+ * with a pause button. Motion respects prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodStats, foodHourly } from '../templates/food-delivery/data';
+
+interface OwnProps {
+  stats?: typeof foodStats;
+  hourly?: typeof foodHourly;
+  stations?: Array<{ station: string; load: number }>;
+  top?: Array<{ name: string; sold: number }>;
+  liveFeed?: boolean;
+  variant?: 'full' | 'compact';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  stats = foodStats,
+  hourly = foodHourly,
+  stations = [
+    { station: 'Parrilla', load: 86 },
+    { station: 'Horno', load: 64 },
+    { station: 'Wok', load: 41 },
+    { station: 'Frío', load: 28 },
+  ],
+  top = [
+    { name: 'Doble Smash Lavapiés', sold: 48 },
+    { name: 'Tacos al pastor (3)', sold: 37 },
+    { name: 'Tonkotsu 18 h', sold: 31 },
+    { name: 'Poke de salmón', sold: 26 },
+    { name: 'Diavola Picantona', sold: 22 },
+  ],
+  liveFeed = true,
+  variant = 'full',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const fmt = (n: number, d = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+const kpis = [
+  { label: 'Ventas hoy', value: stats.revenueToday, dec: 0, suffix: ' €', tone: 'tomato' },
+  { label: 'Pedidos', value: stats.ordersToday, dec: 0, suffix: '', tone: 'mustard' },
+  { label: 'Ticket medio', value: stats.avgTicket, dec: 2, suffix: ' €', tone: 'paper' },
+  { label: 'Entrega media', value: stats.avgDeliveryMin, dec: 0, suffix: ' min', tone: 'mint' },
+  { label: 'A tiempo', value: stats.onTimePct, dec: 0, suffix: ' %', tone: 'sky' },
+  { label: 'Valoración', value: stats.rating, dec: 1, suffix: ' ★', tone: 'paper' },
+];
+const max = Math.max(...hourly.today, ...hourly.lastWeek, 1);
+const W = 600;
+const H = 220;
+const bw = W / hourly.hours.length;
+const y = (v: number) => H - (v / max) * (H - 24);
+const bars = hourly.hours.map((h, i) => ({
+  h,
+  i,
+  today: hourly.today[i],
+  last: hourly.lastWeek[i],
+  x: i * bw + bw * 0.18,
+  w: bw * 0.64,
+  top: y(hourly.today[i]),
+  height: H - y(hourly.today[i]),
+  diff: hourly.today[i] - hourly.lastWeek[i],
+}));
+const lastLine = hourly.lastWeek.map((v, i) => `${i ? 'L' : 'M'}${(i * bw + bw / 2).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+const peak = bars.reduce((a, b) => (b.today > a.today ? b : a), bars[0]);
+const topMax = Math.max(...top.map((t) => t.sold), 1);
+const topRows = top.map((t) => ({ ...t, pct: Math.round((t.sold / topMax) * 100) }));
+const stationRows = stations.map((s) => ({ ...s, tone: s.load >= 80 ? 'hot' : s.load >= 55 ? 'warm' : 'ok' }));
+const diffLabel = (d: number) => (d === 0 ? 'igual que la semana pasada' : d > 0 ? `${d} más que la semana pasada` : `${Math.abs(d)} menos que la semana pasada`);
+const uid = `bf-pulse-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section class:list={['bf-ui', 'bf-pulse', `bf-pulse--${variant}`, `bf-pulse--${size}`, classAttr]} aria-label="Pulso del servicio" data-bf-pulse data-feed={liveFeed ? 'true' : 'false'} {...rest}>
+  <dl class="bf-pulse__kpis">
+    {kpis.map((k, i) => (
+      <div class={`bf-pulse__kpi bf-pulse__kpi--${k.tone}`} style={`--i:${i}`}>
+        <dt>{k.label}</dt>
+        <dd data-count={k.value} data-dec={k.dec} data-suffix={k.suffix}>{fmt(k.value, k.dec)}{k.suffix}</dd>
+      </div>
+    ))}
+  </dl>
+
+  <div class="bf-pulse__grid">
+    <figure class="bf-pulse__chart">
+      <figcaption class="bf-pulse__chead">
+        <span class="bf-pulse__ctitle" id={`${uid}-c`}>Pedidos por hora</span>
+        <label class="bf-pulse__toggle">
+          <input type="checkbox" checked data-last />
+          <span>Comparar con la semana pasada</span>
+        </label>
+      </figcaption>
+      <svg viewBox={`0 0 ${W} ${H + 28}`} class="bf-pulse__svg" aria-hidden="true">
+        {[0.25, 0.5, 0.75].map((g) => <line x1="0" x2={W} y1={H - g * (H - 24)} y2={H - g * (H - 24)} class="c-grid" />)}
+        {bars.map((b) => (
+          <g class="c-bar" data-bar={b.i}>
+            <rect x={b.x} y={b.top} width={b.w} height={b.height} rx="8" style={`--d:${b.i * 40}ms`} />
+            <text x={b.x + b.w / 2} y={H + 20} class="c-label">{b.h}</text>
+          </g>
+        ))}
+        <path d={lastLine} class="c-last" data-last-line />
+      </svg>
+      <div class="bf-pulse__hours" role="group" aria-labelledby={`${uid}-c`}>
+        {bars.map((b) => (
+          <button type="button" class="bf-pulse__hour" data-hour={b.i} data-text={`${b.h}:00 — ${b.today} pedidos, ${diffLabel(b.diff)}`} aria-label={`${b.h}:00`}></button>
+        ))}
+      </div>
+      <p class="bf-pulse__readout" aria-live="polite" data-readout>Pico de hoy: {peak.h}:00 con {peak.today} pedidos.</p>
+      <table class="bf-sr">
+        <caption>Pedidos por hora, hoy y el mismo día de la semana pasada</caption>
+        <thead><tr><th scope="col">Hora</th><th scope="col">Hoy</th><th scope="col">Semana pasada</th></tr></thead>
+        <tbody>{bars.map((b) => <tr><th scope="row">{b.h}:00</th><td>{b.today}</td><td>{b.last}</td></tr>)}</tbody>
+      </table>
+    </figure>
+
+    {variant === 'full' && (
+      <div class="bf-pulse__side">
+        <section class="bf-pulse__card" aria-labelledby={`${uid}-st`}>
+          <h3 id={`${uid}-st`}>Carga por partida</h3>
+          <ul role="list" class="bf-pulse__meters">
+            {stationRows.map((s) => (
+              <li>
+                <span>{s.station}</span>
+                <span class={`bf-pulse__meter bf-pulse__meter--${s.tone}`} role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow={s.load} aria-label={`Carga de ${s.station}`}>
+                  <i style={`--w:${s.load}%`}></i>
+                </span>
+                <b>{s.load} %</b>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section class="bf-pulse__card" aria-labelledby={`${uid}-top`}>
+          <h3 id={`${uid}-top`}>Lo más pedido hoy</h3>
+          <ol class="bf-pulse__top">
+            {topRows.map((t) => (
+              <li style={`--w:${t.pct}%`}><span>{t.name}</span><b>{t.sold}</b></li>
+            ))}
+          </ol>
+        </section>
+      </div>
+    )}
+  </div>
+
+  {variant === 'full' && (
+    <section class="bf-pulse__feed" aria-labelledby={`${uid}-f`}>
+      <div class="bf-pulse__fhead">
+        <h3 id={`${uid}-f`}><span class="bf-pulse__live" aria-hidden="true"></span> En directo</h3>
+        <button type="button" class="bf-pulse__pause" aria-pressed="false" data-pause>Pausar</button>
+      </div>
+      <ol class="bf-pulse__log" role="log" aria-live="polite" data-log>
+        <li><time>21:06</time> Nueva comanda <b>BF-4822</b> · Embajadores · 21,89 €</li>
+        <li><time>21:05</time> <b>Samira</b> recogió BF-4819</li>
+        <li><time>21:03</time> Valoración ★★★★★ en BF-4815</li>
+      </ol>
+    </section>
+  )}
+</section>
+
+<script>
+  const events = [
+    (id: number) => `Nueva comanda <b>BF-${id}</b> · Lavapiés · ${(12 + (id % 20)).toFixed(2).replace('.', ',')} €`,
+    () => '<b>Leo</b> entregó un pedido en 19 min',
+    (id: number) => `<b>BF-${id - 3}</b> lista en el pase`,
+    () => 'Valoración ★★★★★: «Llegó ardiendo»',
+    () => '<b>Inés</b> sale con 2 pedidos a Atocha',
+  ];
+
+  function initFoodPulse() {
+    document.querySelectorAll<HTMLElement>('[data-bf-pulse]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Count-up
+      const nums = [...root.querySelectorAll<HTMLElement>('[data-count]')];
+      const run = (el: HTMLElement) => {
+        const end = Number(el.dataset.count);
+        const dec = Number(el.dataset.dec);
+        const suf = el.dataset.suffix ?? '';
+        const t0 = performance.now();
+        const step = (t: number) => {
+          const k = Math.min(1, (t - t0) / 1100);
+          const e = 1 - Math.pow(1 - k, 3);
+          el.textContent = `${(end * e).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec })}${suf}`;
+          if (k < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+      if (!reduce && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((es) => {
+          es.forEach((e) => {
+            if (!e.isIntersecting) return;
+            run(e.target as HTMLElement);
+            io.unobserve(e.target);
+          });
+        });
+        nums.forEach((n) => io.observe(n));
+        root.classList.add('is-anim');
+      }
+
+      // Chart readout
+      const out = root.querySelector<HTMLElement>('[data-readout]');
+      root.querySelectorAll<HTMLButtonElement>('[data-hour]').forEach((b) => {
+        const show = () => {
+          root.querySelectorAll('.c-bar').forEach((g) => g.classList.toggle('is-on', (g as SVGGElement).dataset.bar === b.dataset.hour));
+          if (out) out.textContent = b.dataset.text ?? '';
+        };
+        b.addEventListener('mouseenter', show);
+        b.addEventListener('focus', show);
+        b.addEventListener('click', show);
+      });
+      root.querySelector<HTMLInputElement>('[data-last]')?.addEventListener('change', (e) => {
+        root.classList.toggle('no-last', !(e.target as HTMLInputElement).checked);
+      });
+
+      // Live feed
+      const log = root.querySelector<HTMLOListElement>('[data-log]');
+      const pause = root.querySelector<HTMLButtonElement>('[data-pause]');
+      if (!log || root.dataset.feed !== 'true') return;
+      let id = 4830;
+      let paused = reduce;
+      if (pause) {
+        pause.setAttribute('aria-pressed', String(paused));
+        pause.textContent = paused ? 'Reanudar' : 'Pausar';
+        pause.addEventListener('click', () => {
+          paused = !paused;
+          pause.setAttribute('aria-pressed', String(paused));
+          pause.textContent = paused ? 'Reanudar' : 'Pausar';
+        });
+      }
+      window.setInterval(() => {
+        if (paused || document.hidden) return;
+        id++;
+        const now = new Date();
+        const li = document.createElement('li');
+        li.innerHTML = `<time>${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}</time> ${events[id % events.length](id)}`;
+        log.prepend(li);
+        while (log.children.length > 6) log.lastElementChild?.remove();
+      }, 4500);
+    });
+  }
+  initFoodPulse();
+  document.addEventListener('astro:page-load', initFoodPulse);
+</script>
+
+<style>
+  .bf-pulse {
+    position: relative;
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-pulse__kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+  }
+
+  .bf-pulse__kpi {
+    padding: 14px 16px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 20px;
+    background: var(--bf-paper);
+    box-shadow: 4px 4px 0 var(--bf-outline);
+    transform: rotate(calc((var(--i) - 2.5) * 0.4deg));
+  }
+
+  .bf-pulse.is-anim .bf-pulse__kpi {
+    animation: bf-pulse-pop 0.6s var(--bf-ease-pop) both;
+    animation-delay: calc(var(--i) * 70ms);
+  }
+
+  .bf-pulse__kpi--tomato { background: var(--bf-tomato); color: var(--bf-on-tomato); }
+  .bf-pulse__kpi--mustard { background: var(--bf-mustard); color: var(--bf-on-mustard); }
+  .bf-pulse__kpi--mint { background: var(--bf-mint-soft); }
+  .bf-pulse__kpi--sky { background: var(--bf-sky-soft); }
+
+  .bf-pulse__kpi dt {
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .bf-pulse__kpi dd {
+    margin: 4px 0 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(1.6rem, 3.6vw, 2.2rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .bf-pulse--lg .bf-pulse__kpi dd {
+    font-size: clamp(2rem, 5vw, 3rem);
+  }
+
+  .bf-pulse__grid {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  @media (min-width: 1100px) {
+    .bf-pulse--full .bf-pulse__grid {
+      grid-template-columns: 1.6fr 1fr;
+    }
+  }
+
+  .bf-pulse__chart,
+  .bf-pulse__card,
+  .bf-pulse__feed {
+    position: relative;
+    margin: 0;
+    padding: 16px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 22px;
+    background: var(--bf-paper);
+  }
+
+  .bf-pulse__chead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .bf-pulse__ctitle,
+  .bf-pulse__card h3,
+  .bf-pulse__feed h3 {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .bf-pulse__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bf-pulse__toggle input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--bf-tomato);
+  }
+
+  .bf-pulse__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: 8px;
+  }
+
+  .bf-pulse__svg .c-grid { stroke: var(--bf-line); stroke-dasharray: 4 6; }
+  .bf-pulse__svg .c-bar rect { fill: var(--bf-mustard); stroke: var(--bf-outline); stroke-width: 2.5; transform-box: fill-box; transform-origin: bottom; transition: fill 0.2s ease; }
+  .bf-pulse__svg .c-bar.is-on rect { fill: var(--bf-tomato); }
+  .bf-pulse.is-anim .c-bar rect { animation: bf-pulse-grow 0.8s var(--bf-ease-pop) both; animation-delay: var(--d); }
+  .bf-pulse__svg .c-label { fill: var(--bf-ink-3); font-family: var(--bf-font-body); font-size: 15px; font-weight: 700; text-anchor: middle; }
+  .bf-pulse__svg .c-last { fill: none; stroke: var(--bf-ink); stroke-width: 3; stroke-dasharray: 8 7; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.2s ease; }
+  .bf-pulse.no-last .c-last { opacity: 0; }
+
+  .bf-pulse__hours {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 70px;
+    bottom: 64px;
+    display: flex;
+  }
+
+  .bf-pulse__hour {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    cursor: crosshair;
+  }
+
+  .bf-pulse__hour:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: -2px;
+    border-radius: 8px;
+  }
+
+  .bf-pulse__readout {
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--bf-bg);
+    font-weight: 700;
+  }
+
+  .bf-pulse__side {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+  }
+
+  .bf-pulse__meters {
+    display: grid;
+    gap: 10px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-pulse__meters li {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr 3rem;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+
+  .bf-pulse__meters b {
+    text-align: right;
+  }
+
+  .bf-pulse__meter {
+    height: 16px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    overflow: hidden;
+    background: var(--bf-bg-2);
+  }
+
+  .bf-pulse__meter i {
+    display: block;
+    width: var(--w);
+    height: 100%;
+    background: var(--bf-mint);
+    transform-origin: left;
+  }
+
+  .bf-pulse.is-anim .bf-pulse__meter i {
+    animation: bf-pulse-fill 1s var(--bf-ease-pop) both;
+  }
+
+  .bf-pulse__meter--warm i { background: var(--bf-mustard); }
+  .bf-pulse__meter--hot i { background: repeating-linear-gradient(-45deg, var(--bf-tomato) 0 6px, var(--bf-tomato-hover) 6px 12px); }
+
+  .bf-pulse__top {
+    display: grid;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: top;
+  }
+
+  .bf-pulse__top li {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px 8px 36px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--bf-pink-soft) var(--w), transparent var(--w));
+    font-weight: 700;
+    counter-increment: top;
+  }
+
+  .bf-pulse__top li::before {
+    content: counter(top);
+    position: absolute;
+    left: 10px;
+    font-family: var(--bf-font-display);
+    font-weight: 800;
+    color: var(--bf-tomato);
+  }
+
+  .bf-pulse__fhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bf-pulse__feed h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bf-pulse__live {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bf-tomato);
+    animation: bf-pulse-blink 1.2s ease-in-out infinite;
+  }
+
+  .bf-pulse__pause {
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-pulse__pause:focus-visible,
+  .bf-pulse__toggle input:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-pulse__log {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-pulse__log :global(li) {
+    display: flex;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 2px solid var(--bf-line);
+    border-radius: 12px;
+    animation: bf-pulse-in 0.4s var(--bf-ease-pop);
+  }
+
+  .bf-pulse__log :global(time) {
+    color: var(--bf-ink-3);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes bf-pulse-pop { from { opacity: 0; transform: translateY(20px) scale(0.9) rotate(-4deg); } }
+  @keyframes bf-pulse-grow { from { transform: scaleY(0); } }
+  @keyframes bf-pulse-fill { from { transform: scaleX(0); } }
+  @keyframes bf-pulse-blink { 50% { opacity: 0.25; } }
+  @keyframes bf-pulse-in { from { opacity: 0; transform: translateY(-10px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-pulse *,
+    .bf-pulse :global(*) {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

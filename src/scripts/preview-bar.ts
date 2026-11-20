@@ -49,9 +49,10 @@
 
   // Human-readable template label
   const templateLabels: Record<string, string> = {
-    'food-delivery': 'Food Delivery CMS',
-    'construction': isEs ? 'Construcción & Inmobiliaria' : 'Construction & Real Estate',
+    'food-delivery': isEs ? 'BiteFlow · Delivery & Cocina' : isRu ? 'BiteFlow · Доставка и кухня' : 'BiteFlow · Food Delivery',
+    'construction': isEs ? 'Strukto · Constructora & Site OS' : isRu ? 'Strukto · Строительство и Site OS' : 'Strukto · Construction & Site OS',
     'real-estate': isEs ? 'Inmobiliaria & CRM' : 'Real Estate Agency',
+    'gym': isEs ? 'Gimnasio & Socios' : 'Gym & Member Area',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

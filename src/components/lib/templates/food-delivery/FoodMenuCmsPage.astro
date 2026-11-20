@@ -1,36 +1,33 @@
 ---
 /**
- * FoodMenuCmsPage — Restaurant Menu & Stock CMS editor for BiteFlow Kitchen OS.
- * Enables live price tuning, quick 86'd out-of-stock toggles, calorie counts and allergen updates.
+ * FoodMenuCmsPage — Menu and stock manager of the "BiteFlow" kitchen OS (FoodMenuManager): 86
+ * switches, inline prices, filters and a save bar that publishes to every channel.
+ *
+ * @param {FoodRoutes} routes - Template route URLs.
+ * @param {typeof foodDeliveryData} data - Dishes and categories.
+ * @param {string} action - Optional save endpoint (POST, field `changes`).
  */
-import FoodLayout from './FoodLayout.astro';
-import FoodMenuCmsEditor from '../../app/FoodMenuCmsEditor.astro';
-import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+import FoodAppLayout from './FoodAppLayout.astro';
+import FoodOpsHeading from '../../app/FoodOpsHeading.astro';
+import FoodMenuManager from '../../app/FoodMenuManager.astro';
+import { foodRoutes, foodDeliveryData, type FoodRoutes } from './data';
 
 interface Props {
-  routes?: FoodDeliveryRoutes;
+  routes?: FoodRoutes;
+  data?: typeof foodDeliveryData;
+  action?: string;
 }
 
-const { routes = foodDeliveryRoutes } = Astro.props;
+const { routes = foodRoutes, data = foodDeliveryData, action } = Astro.props;
 ---
 
-<FoodLayout
-  title="Menu CMS & Stock Control (86'd)"
-  current="menuCms"
-  routes={routes}
->
-  <div class="menu-cms-page-wrap">
-    <FoodMenuCmsEditor
-      dishes={foodDeliveryData.dishes}
-    />
-  </div>
-</FoodLayout>
-
-<style>
-  .menu-cms-page-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-</style>
-
+<FoodAppLayout title="Carta y stock" current="menuCms" routes={routes}>
+  <FoodOpsHeading
+    kicker="Carta"
+    title="Carta y stock"
+    description="Apaga un plato agotado (86) o cambia un precio y se actualiza en web, app y agregadores a la vez."
+    clock={false}
+    actions={[{ label: 'Ver la carta pública', href: routes.menu }]}
+  />
+  <FoodMenuManager dishes={data.dishes} categories={data.categories} action={action} />
+</FoodAppLayout>

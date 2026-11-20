@@ -1,0 +1,177 @@
+---
+/**
+ * GymDashboardPage — Member home: progress (goal, streak, weekly sessions, records, weight),
+ * upcoming booked classes and the club's live occupancy.
+ *
+ * @param {GymRoutes} routes - Template route URLs.
+ * @param {typeof gymData} data - Member, classes, disciplines, trainers and occupancy.
+ */
+import GymAppLayout from './GymAppLayout.astro';
+import GymAreaHeading from '../../app/GymAreaHeading.astro';
+import GymProgressTracker from '../../app/GymProgressTracker.astro';
+import GymOccupancyMeter from '../../app/GymOccupancyMeter.astro';
+import { gymRoutes, gymData, gymDays, gymEndTime, getGymDiscipline, getGymTrainer, type GymRoutes } from './data';
+
+interface Props {
+  routes?: GymRoutes;
+  data?: typeof gymData;
+}
+
+const { routes = gymRoutes, data = gymData } = Astro.props;
+const upcoming = data.classes
+  .filter((c) => data.member.bookings.includes(c.id))
+  .sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+const firstName = data.member.name.split(' ')[0];
+---
+
+<GymAppLayout title="Mi progreso" current="dashboard" routes={routes}>
+  <GymAreaHeading
+    kicker="Área de socios"
+    title={`Aupa, ${firstName}`}
+    description={`Plan ${data.member.plan} · socia desde ${data.member.since}`}
+    actions={[{ label: 'Reservar clase', href: routes.booking, primary: true }]}
+  />
+
+  <div class="gym-dash">
+    <GymProgressTracker member={data.member} bookingHref={routes.booking} />
+
+    <div class="gym-ui gym-dash__row">
+      <section class="gym-dash__panel" aria-labelledby="gym-next-title">
+        <h2 id="gym-next-title" class="gym-dash__title">Tus próximas clases</h2>
+        {upcoming.length ? (
+          <ul class="gym-dash__list" role="list">
+            {upcoming.map((c) => {
+              const d = getGymDiscipline(c.disciplineId, data.disciplines);
+              return (
+                <li style={`--disc-hue:${d?.hue ?? 74}`}>
+                  <span class="gym-dash__when">
+                    <strong>{gymDays[c.day].slice(0, 3)}</strong>
+                    <span>{c.start}–{gymEndTime(c.start, c.minutes)}</span>
+                  </span>
+                  <span class="gym-dash__what">
+                    <span class="gym-dash__name">{d?.name}</span>
+                    <span class="gym-dash__meta">{getGymTrainer(c.trainerId, data.trainers)?.name} · {c.room}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p class="gym-dash__empty">No tienes clases reservadas.</p>
+        )}
+        <a href={routes.booking} class="gym-dash__link">Gestionar reservas</a>
+      </section>
+      <GymOccupancyMeter now={data.occupancy.now} capacity={data.occupancy.capacity} hourly={data.occupancy.hourly} />
+    </div>
+  </div>
+</GymAppLayout>
+
+<style>
+  .gym-dash {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .gym-dash__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .gym-dash__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+    min-width: 0;
+  }
+
+  .gym-dash__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+  }
+
+  .gym-dash__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-dash__list li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--gym-surface);
+    border-left: 4px solid hsl(var(--disc-hue) 80% 60%);
+  }
+
+  .gym-dash__when {
+    display: flex;
+    flex-direction: column;
+    min-width: 92px;
+  }
+
+  .gym-dash__when strong {
+    font-family: var(--gym-font-display);
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .gym-dash__when span {
+    color: var(--gym-text-3);
+    font-size: 0.82rem;
+  }
+
+  .gym-dash__what {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .gym-dash__name {
+    font-weight: 700;
+  }
+
+  .gym-dash__meta {
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-dash__empty {
+    margin: 0;
+    color: var(--gym-text-3);
+  }
+
+  .gym-dash__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--gym-brand);
+    font-weight: 700;
+  }
+
+  .gym-dash__link:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 1100px) {
+    .gym-dash__row {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+</style>

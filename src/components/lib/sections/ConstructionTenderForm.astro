@@ -1,0 +1,650 @@
+---
+/**
+ * ConstructionTenderForm — Project request as a three-step work order: type of works (drawn
+ * cards), site data (area, plot, timing, budget range) and contact. A live title block (cajetín)
+ * on the side fills in as you answer; sending stamps it with a registration number.
+ *
+ * @param {string} action - Optional form action (POST). Without it the form confirms on the page.
+ * @param {string} title - Section heading.
+ * @param {{phone: string, email: string, address: string, hours: string}} contact - Office contact.
+ * @param {string} variant - 'split' (form + title block) | 'compact' (form only). Default 'split'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each step is a fieldset with a legend and a "Paso n de 3" status; required
+ * fields have labels and inline errors linked with aria-describedby; focus moves to the first
+ * error or to the next step's legend; the confirmation receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { constructionCompany } from '../templates/construction/data';
+
+interface OwnProps {
+  action?: string;
+  title?: string;
+  contact?: { phone: string; email: string; address: string; hours: string };
+  variant?: 'split' | 'compact';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  action,
+  title = 'Cuéntanos tu proyecto',
+  contact = constructionCompany,
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const types = [
+  { id: 'vivienda', label: 'Vivienda unifamiliar', icon: '<path d="M4 20V10l8-6 8 6v10z"/><path d="M10 20v-6h4v6"/>' },
+  { id: 'plurifamiliar', label: 'Edificio plurifamiliar', icon: '<path d="M5 21V4h10v17M15 9h4v12"/><path d="M8 8h1M11 8h1M8 12h1M11 12h1M8 16h1M11 16h1"/>' },
+  { id: 'rehabilitacion', label: 'Rehabilitación', icon: '<path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-5h6v5M3 13l18-4"/>' },
+  { id: 'industrial', label: 'Nave o terciario', icon: '<path d="M3 21V11l6 3V11l6 3V8l6 3v10z"/>' },
+];
+const uid = `sk-tf-${Math.random().toString(36).slice(2, 7)}`;
+const telHref = `tel:${contact.phone.replace(/\s+/g, '')}`;
+---
+
+<section class:list={['sk-ui', 'sk-tf', `sk-tf--${variant}`, `sk-tf--${size}`, classAttr]} aria-labelledby={uid} data-sk-tf {...rest}>
+  <div class="sk-tf__inner">
+    <div class="sk-tf__main">
+      <p class="sk-tf__kicker sk-mono">Orden de trabajo · solicitud de estudio</p>
+      <h2 id={uid} class="sk-tf__title">{title}</h2>
+      <p class="sk-tf__step sk-mono" role="status" aria-live="polite" data-steplabel>Paso 1 de 3</p>
+      <div class="sk-tf__bar" aria-hidden="true"><i data-bar></i></div>
+
+      <form class="sk-tf__form" method="post" action={action} novalidate data-form>
+        <fieldset class="sk-tf__fs" data-step="0">
+          <legend tabindex="-1">Tipo de obra</legend>
+          <div class="sk-tf__types">
+            {types.map((t, i) => (
+              <label class="sk-tf__type">
+                <input type="radio" name="type" value={t.id} checked={i === 1} data-sync="type" data-label={t.label} />
+                <span>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="square" aria-hidden="true" set:html={t.icon} />
+                  {t.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset class="sk-tf__fs" data-step="1" hidden>
+          <legend tabindex="-1">Datos de la obra</legend>
+          <div class="sk-tf__grid">
+            <div class="sk-tf__field">
+              <label for={`${uid}-m2`}>Superficie construida (m²)</label>
+              <input id={`${uid}-m2`} name="area" type="number" min="20" inputmode="numeric" required data-sync="area" />
+              <p class="sk-tf__err" id={`${uid}-m2-e`} hidden>Indica una superficie de al menos 20 m².</p>
+            </div>
+            <div class="sk-tf__field">
+              <label for={`${uid}-loc`}>Municipio</label>
+              <input id={`${uid}-loc`} name="city" required autocomplete="address-level2" data-sync="city" />
+              <p class="sk-tf__err" id={`${uid}-loc-e`} hidden>¿Dónde está la parcela o el edificio?</p>
+            </div>
+            <div class="sk-tf__field">
+              <label for={`${uid}-when`}>¿Cuándo quieres empezar?</label>
+              <select id={`${uid}-when`} name="when" data-sync="when">
+                <option>En menos de 3 meses</option>
+                <option selected>En 3–6 meses</option>
+                <option>En 6–12 meses</option>
+                <option>Solo estoy estudiando</option>
+              </select>
+            </div>
+            <div class="sk-tf__field">
+              <label for={`${uid}-bud`}>Presupuesto orientativo</label>
+              <select id={`${uid}-bud`} name="budget" data-sync="budget">
+                <option>Menos de 300.000 €</option>
+                <option selected>300.000 – 1 M€</option>
+                <option>1 – 5 M€</option>
+                <option>Más de 5 M€</option>
+              </select>
+            </div>
+          </div>
+          <label class="sk-tf__check"><input type="checkbox" name="project" /> Ya tengo proyecto de arquitecto</label>
+        </fieldset>
+
+        <fieldset class="sk-tf__fs" data-step="2" hidden>
+          <legend tabindex="-1">Datos de contacto</legend>
+          <div class="sk-tf__grid">
+            <div class="sk-tf__field">
+              <label for={`${uid}-n`}>Nombre y apellidos</label>
+              <input id={`${uid}-n`} name="name" required autocomplete="name" data-sync="name" />
+              <p class="sk-tf__err" id={`${uid}-n-e`} hidden>Escribe tu nombre.</p>
+            </div>
+            <div class="sk-tf__field">
+              <label for={`${uid}-e`}>Email</label>
+              <input id={`${uid}-e`} name="email" type="email" required autocomplete="email" />
+              <p class="sk-tf__err" id={`${uid}-e-e`} hidden>Revisa el email.</p>
+            </div>
+            <div class="sk-tf__field">
+              <label for={`${uid}-t`}>Teléfono</label>
+              <input id={`${uid}-t`} name="phone" type="tel" autocomplete="tel" />
+            </div>
+            <div class="sk-tf__field sk-tf__field--wide">
+              <label for={`${uid}-msg`}>Cuéntanos algo más <span>(opcional)</span></label>
+              <textarea id={`${uid}-msg`} name="message" rows="3"></textarea>
+            </div>
+          </div>
+          <label class="sk-tf__check"><input type="checkbox" name="privacy" required data-privacy /> Acepto que Strukto use estos datos para responder a mi solicitud.</label>
+          <p class="sk-tf__err" id={`${uid}-pv-e`} hidden data-privacy-err>Necesitamos tu permiso para contestarte.</p>
+        </fieldset>
+
+        <div class="sk-tf__nav" data-nav>
+          <button type="button" class="sk-tf__btn" data-back hidden>Atrás</button>
+          <button type="submit" class="sk-tf__btn sk-tf__btn--primary" data-next>Siguiente</button>
+        </div>
+
+        <div class="sk-tf__done" tabindex="-1" data-done hidden>
+          <p class="sk-tf__stamp sk-mono" aria-hidden="true">REGISTRADO</p>
+          <h3>Solicitud registrada</h3>
+          <p>Número <strong class="sk-mono" data-reg>—</strong>. Un jefe de estudios te llamará en 48 h laborables.</p>
+        </div>
+      </form>
+    </div>
+
+    {variant === 'split' && (
+      <aside class="sk-tf__side" aria-label="Resumen de la solicitud">
+        <dl class="sk-tf__block sk-crop sk-mono">
+          <div class="sk-tf__block-h"><dt>Strukto</dt><dd>Solicitud de estudio</dd></div>
+          <div><dt>Obra</dt><dd data-out="type">Edificio plurifamiliar</dd></div>
+          <div><dt>Superficie</dt><dd data-out="area">— m²</dd></div>
+          <div><dt>Municipio</dt><dd data-out="city">—</dd></div>
+          <div><dt>Inicio</dt><dd data-out="when">En 3–6 meses</dd></div>
+          <div><dt>Presupuesto</dt><dd data-out="budget">300.000 – 1 M€</dd></div>
+          <div><dt>Solicitante</dt><dd data-out="name">—</dd></div>
+          <div><dt>Nº registro</dt><dd data-out="reg">pendiente</dd></div>
+        </dl>
+        <div class="sk-tf__contact">
+          <p class="sk-mono">¿Prefieres hablar?</p>
+          <a href={telHref}>{contact.phone}</a>
+          <a href={`mailto:${contact.email}`}>{contact.email}</a>
+          <p>{contact.address}<br />{contact.hours}</p>
+        </div>
+      </aside>
+    )}
+  </div>
+</section>
+
+<script>
+  function initSkTf() {
+    document.querySelectorAll<HTMLElement>('[data-sk-tf]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+      const steps = [...root.querySelectorAll<HTMLFieldSetElement>('[data-step]')];
+      const label = root.querySelector<HTMLElement>('[data-steplabel]')!;
+      const bar = root.querySelector<HTMLElement>('[data-bar]')!;
+      const back = root.querySelector<HTMLButtonElement>('[data-back]')!;
+      const next = root.querySelector<HTMLButtonElement>('[data-next]')!;
+      let step = 0;
+
+      const out = (k: string, v: string) => {
+        const el = root.querySelector<HTMLElement>(`[data-out="${k}"]`);
+        if (!el) return;
+        el.textContent = v;
+        el.classList.remove('is-ink');
+        void el.offsetWidth;
+        el.classList.add('is-ink');
+      };
+
+      form.addEventListener('input', (e) => {
+        const t = e.target as HTMLInputElement;
+        const k = t.dataset.sync;
+        if (!k) return;
+        if (k === 'type') out(k, t.dataset.label ?? t.value);
+        else if (k === 'area') out(k, t.value ? `${Number(t.value).toLocaleString('es-ES')} m²` : '— m²');
+        else out(k, t.value || '—');
+      });
+
+      const go = (n: number) => {
+        step = n;
+        steps.forEach((s, i) => (s.hidden = i !== n));
+        label.textContent = `Paso ${n + 1} de 3`;
+        bar.style.width = `${((n + 1) / 3) * 100}%`;
+        back.hidden = n === 0;
+        next.textContent = n === 2 ? 'Enviar solicitud' : 'Siguiente';
+        steps[n].querySelector<HTMLElement>('legend')?.focus();
+      };
+
+      const validate = () => {
+        let first: HTMLElement | null = null;
+        steps[step].querySelectorAll<HTMLInputElement>('input[required]').forEach((i) => {
+          let bad = false;
+          if (i.type === 'checkbox') bad = !i.checked;
+          else if (i.type === 'email') bad = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(i.value);
+          else if (i.type === 'number') bad = !(Number(i.value) >= Number(i.min || 0)) || !i.value;
+          else bad = !i.value.trim();
+          const err = i.type === 'checkbox' ? root.querySelector<HTMLElement>('[data-privacy-err]')! : (i.nextElementSibling as HTMLElement);
+          err.hidden = !bad;
+          i.setAttribute('aria-invalid', String(bad));
+          if (bad) i.setAttribute('aria-describedby', err.id);
+          else i.removeAttribute('aria-describedby');
+          if (bad && !first) first = i;
+        });
+        if (first) (first as HTMLElement).focus();
+        return !first;
+      };
+
+      back.addEventListener('click', () => go(step - 1));
+      form.addEventListener('submit', (e) => {
+        if (!validate()) {
+          e.preventDefault();
+          return;
+        }
+        if (step !== 2) {
+          e.preventDefault();
+          go(step + 1);
+          return;
+        }
+        if (form.getAttribute('action')) return;
+        e.preventDefault();
+        const reg = `ST-${new Date().getFullYear()}-${String(400 + Math.floor(Math.random() * 500)).padStart(4, '0')}`;
+        out('reg', reg);
+        root.querySelector('[data-reg]')!.textContent = reg;
+        steps.forEach((s) => (s.hidden = true));
+        root.querySelector<HTMLElement>('[data-nav]')!.hidden = true;
+        label.textContent = 'Solicitud enviada';
+        bar.style.width = '100%';
+        root.classList.add('is-sent');
+        const done = root.querySelector<HTMLElement>('[data-done]')!;
+        done.hidden = false;
+        done.focus();
+      });
+    });
+  }
+  initSkTf();
+  document.addEventListener('astro:page-load', initSkTf);
+</script>
+
+<style>
+  .sk-tf {
+    position: relative;
+    padding: clamp(3rem, 7vw, 5rem) var(--sp-4, 1rem);
+    background: var(--sk-bg);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-tf__inner {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  @media (min-width: 960px) {
+    .sk-tf--split .sk-tf__inner {
+      grid-template-columns: 1.4fr 1fr;
+    }
+  }
+
+  .sk-tf__main {
+    position: relative;
+    min-width: 0;
+  }
+
+  .sk-tf__kicker {
+    margin: 0;
+    color: var(--sk-accent);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-tf__title {
+    margin: 8px 0 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(1.8rem, 5.4vw, 3rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .sk-tf--lg .sk-tf__title {
+    font-size: clamp(2.2rem, 7vw, 4rem);
+  }
+
+  .sk-tf__step {
+    margin: var(--sp-5, 1.25rem) 0 6px;
+    color: var(--sk-ink-3);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-tf__bar {
+    height: 3px;
+    background: var(--sk-grid-strong);
+  }
+
+  .sk-tf__bar i {
+    display: block;
+    width: 33.3%;
+    height: 100%;
+    background: var(--sk-accent);
+    transition: width 0.5s var(--sk-ease);
+  }
+
+  .sk-tf__form {
+    position: relative;
+    margin-top: var(--sp-5, 1.25rem);
+  }
+
+  .sk-tf__fs {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .sk-tf__fs legend {
+    margin-bottom: 12px;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .sk-tf__fs legend:focus {
+    outline: none;
+  }
+
+  .sk-tf__types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    gap: 10px;
+  }
+
+  .sk-tf__type {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .sk-tf__type input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-tf__type span {
+    display: grid;
+    gap: 10px;
+    height: 100%;
+    padding: 14px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+    font-weight: 600;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .sk-tf__type svg {
+    color: var(--sk-line);
+  }
+
+  .sk-tf__type input:checked + span {
+    border-color: var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 12%, var(--sk-panel));
+    box-shadow: inset 0 0 0 1px var(--sk-accent);
+  }
+
+  .sk-tf__type input:checked + span svg {
+    color: var(--sk-accent);
+  }
+
+  .sk-tf__type input:focus-visible + span,
+  .sk-tf :is(input:not([type='radio']), select, textarea, button, a):focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-tf__grid {
+    display: grid;
+    gap: 14px;
+  }
+
+  @media (min-width: 620px) {
+    .sk-tf__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .sk-tf__field--wide {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .sk-tf__field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .sk-tf__field label {
+    color: var(--sk-ink-2);
+    font-family: var(--sk-font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-tf__field label span {
+    text-transform: none;
+    color: var(--sk-ink-3);
+  }
+
+  .sk-tf__field :is(input, select, textarea) {
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--sk-line);
+    border-radius: 0;
+    background: var(--sk-fill);
+    color: var(--sk-ink);
+    font: inherit;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .sk-tf__field select option {
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+  }
+
+  .sk-tf__field :is(input, textarea)[aria-invalid='true'] {
+    border-bottom-color: var(--sk-danger);
+  }
+
+  .sk-tf__err {
+    margin: 0;
+    color: var(--sk-danger);
+    font-size: 0.85rem;
+  }
+
+  .sk-tf__check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 44px;
+    margin-top: 14px;
+    padding-top: 10px;
+    color: var(--sk-ink-2);
+  }
+
+  .sk-tf__check input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--sk-accent);
+  }
+
+  .sk-tf__nav {
+    display: flex;
+    gap: 10px;
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .sk-tf__nav[hidden] {
+    display: none;
+  }
+
+  .sk-tf__btn {
+    min-height: 48px;
+    padding: 0 1.3rem;
+    border: 1px solid var(--sk-line);
+    border-radius: var(--sk-radius);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-tf__btn--primary {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-tf__done {
+    position: relative;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--sk-ok);
+  }
+
+  .sk-tf__done:focus {
+    outline: none;
+  }
+
+  .sk-tf__done h3 {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  .sk-tf__stamp {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    margin: 0;
+    padding: 4px 10px;
+    border: 2px solid var(--sk-ok);
+    color: var(--sk-ok);
+    font-size: 0.9rem;
+    font-weight: 600;
+    transform: rotate(-8deg);
+    animation: sk-tf-stamp 0.45s var(--sk-ease);
+  }
+
+  .sk-tf__side {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+  }
+
+  .sk-tf__block {
+    display: grid;
+    margin: 0;
+    border: 1px solid var(--sk-line);
+    background: var(--sk-panel);
+    font-size: 0.8rem;
+  }
+
+  .sk-tf__block div {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 8px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-tf__block div:last-child {
+    border-bottom: 0;
+  }
+
+  .sk-tf__block dt {
+    color: var(--sk-ink-3);
+    text-transform: uppercase;
+    font-size: 0.68rem;
+  }
+
+  .sk-tf__block dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sk-tf__block dd.is-ink {
+    animation: sk-tf-ink 0.6s ease;
+  }
+
+  .sk-tf__block-h {
+    background: var(--sk-line);
+    color: var(--sk-bg);
+  }
+
+  .sk-tf__block-h dt {
+    color: inherit !important;
+    font-weight: 600;
+  }
+
+  .sk-tf.is-sent [data-out='reg'] {
+    color: var(--sk-ok);
+  }
+
+  .sk-tf__contact {
+    display: grid;
+    gap: 4px;
+    padding: 16px;
+    border: 1px dashed var(--sk-line-soft);
+  }
+
+  .sk-tf__contact p {
+    margin: 0;
+    color: var(--sk-ink-2);
+  }
+
+  .sk-tf__contact p.sk-mono {
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-tf__contact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .sk-tf__contact a:hover {
+    color: var(--sk-accent);
+  }
+
+  @keyframes sk-tf-stamp { from { transform: scale(2) rotate(-24deg); opacity: 0; } }
+  @keyframes sk-tf-ink { from { color: var(--sk-accent); background: color-mix(in srgb, var(--sk-accent) 14%, transparent); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-tf * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

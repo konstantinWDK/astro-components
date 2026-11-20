@@ -1,0 +1,249 @@
+---
+/**
+ * EstateCrmHeading — Page heading for the real estate CRM: breadcrumb, title, description,
+ * action buttons and an optional date-range switch.
+ *
+ * @param {string} title - Page title (rendered as h1).
+ * @param {string} description - Supporting text.
+ * @param {Array<{label: string, href?: string}>} breadcrumb - Trail; the last item is the current page.
+ * @param {Array<{label: string, href?: string, icon?: 'plus'|'download'|'people'|'calendar', primary?: boolean}>} actions - Buttons (links when `href` is set).
+ * @param {string[]} ranges - Date-range options (e.g. ['7 días', '30 días']). Omit to hide.
+ * @param {number} activeRange - Index of the selected range. Default 0.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: breadcrumb is a labelled <nav> with aria-current on the last item; the range
+ * switch is a native radio group with a hidden legend; icons are aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+
+interface Action { label: string; href?: string; icon?: 'plus' | 'download' | 'people' | 'calendar'; primary?: boolean }
+
+interface OwnProps {
+  title?: string;
+  description?: string;
+  breadcrumb?: Array<{ label: string; href?: string }>;
+  actions?: Action[];
+  ranges?: string[];
+  activeRange?: number;
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Resumen',
+  description,
+  breadcrumb = [],
+  actions = [],
+  ranges = [],
+  activeRange = 0,
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `ech-${Math.random().toString(36).slice(2, 8)}`;
+const icons: Record<string, string> = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+};
+---
+
+<div class:list={['estate-ui', 'estate-crm-heading', `estate-crm-heading--${size}`, classAttr]} {...rest}>
+  <div class="estate-crm-heading__copy">
+    {breadcrumb.length > 0 && (
+      <nav aria-label="Migas de pan" class="estate-crm-heading__crumbs">
+        <ol>
+          {breadcrumb.map((b, i) => (
+            <li>
+              {b.href && i !== breadcrumb.length - 1 ? <a href={b.href}>{b.label}</a> : <span aria-current={i === breadcrumb.length - 1 ? 'page' : undefined}>{b.label}</span>}
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )}
+    <h1 class="estate-crm-heading__title">{title}</h1>
+    {description && <p class="estate-crm-heading__desc">{description}</p>}
+  </div>
+
+  {(actions.length > 0 || ranges.length > 0) && (
+    <div class="estate-crm-heading__tools">
+      {ranges.length > 0 && (
+        <fieldset class="estate-crm-heading__ranges">
+          <legend class="estate-sr">Periodo</legend>
+          {ranges.map((r, i) => (
+            <label>
+              <input type="radio" name={`${uid}-range`} value={r} checked={i === activeRange} />
+              <span>{r}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      {actions.map((a) => {
+        const Tag = a.href ? 'a' : 'button';
+        return (
+          <Tag
+            href={a.href}
+            type={a.href ? undefined : 'button'}
+            class:list={['estate-crm-heading__btn', { 'is-primary': a.primary }]}
+          >
+            {a.icon && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={icons[a.icon]} />
+            )}
+            {a.label}
+          </Tag>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+<style>
+  .estate-crm-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-crm-heading__crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-2, 0.5rem);
+    padding: 0;
+    list-style: none;
+    color: var(--estate-text-3);
+    font-size: 0.85rem;
+  }
+
+  .estate-crm-heading__crumbs li + li::before {
+    content: '/';
+    margin-right: var(--sp-2, 0.5rem);
+    color: var(--estate-border-strong);
+  }
+
+  .estate-crm-heading__crumbs a {
+    color: var(--estate-text-2);
+  }
+
+  .estate-crm-heading__title {
+    margin: 0;
+    font-family: var(--estate-font-display);
+    font-weight: 500;
+    font-size: clamp(1.7rem, 3vw, 2.2rem);
+    letter-spacing: -0.01em;
+  }
+
+  .estate-crm-heading--lg .estate-crm-heading__title {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+  }
+
+  .estate-crm-heading__desc {
+    margin: var(--sp-1, 0.25rem) 0 0;
+    color: var(--estate-text-2);
+  }
+
+  .estate-crm-heading__tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .estate-crm-heading__ranges {
+    position: relative;
+    display: inline-flex;
+    gap: 2px;
+    margin: 0;
+    padding: 3px;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--estate-surface);
+  }
+
+  .estate-crm-heading__ranges label {
+    position: relative;
+  }
+
+  .estate-crm-heading__ranges input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .estate-crm-heading__ranges span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    color: var(--estate-text-2);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .estate-crm-heading__ranges input:checked + span {
+    background: var(--estate-bg-raised);
+    color: var(--estate-text);
+  }
+
+  .estate-crm-heading__ranges input:focus-visible + span {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 1px;
+  }
+
+  .estate-crm-heading__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border-strong);
+    background: transparent;
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .estate-crm-heading__btn:hover {
+    background: var(--estate-surface);
+  }
+
+  .estate-crm-heading__btn.is-primary {
+    border-color: transparent;
+    background: var(--estate-brand);
+    color: var(--estate-on-brand);
+  }
+
+  .estate-crm-heading__btn.is-primary:hover {
+    background: var(--estate-brand-hover);
+  }
+
+  .estate-crm-heading :is(a, button):focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

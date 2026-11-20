@@ -1,0 +1,947 @@
+---
+/**
+ * ConstructionIsoUnitPicker — Isometric unit picker for a development. The building is a stack of
+ * CSS 3D floor slabs you can orbit by dragging (or with "Girar"), explode apart, and pick floor by
+ * floor: the chosen slab lifts out of the stack and its plan opens beside it with every home
+ * coloured and labelled by status. Pick a home to see its facts and request information in a
+ * native dialog. Filters by bedrooms and "only available" dim the rest in 3D and in the plan.
+ *
+ * @param {ConstructionUnit[]} units - Units with floor, letter, plan rectangle and status.
+ * @param {string} projectName - Development name.
+ * @param {number} initialFloor - Floor selected on load. Default 3.
+ * @param {string} action - Optional action for the information request (POST).
+ * @param {string} variant - 'split' (3D + plan side by side) | 'stacked'. Default 'split'.
+ * @param {string} size - 'md' | 'lg' 3D scale. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the 3D stack is decorative (aria-hidden); floors are chosen with a labelled radio
+ * group that states free homes per floor; homes are buttons with full names ("3.º B, 2 dormitorios,
+ * 86 m², libre") and aria-pressed; status is written and patterned, not only coloured; changes are
+ * announced politely; the request form is a modal <dialog> with labelled fields. Orbit and
+ * explode transitions are disabled with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { constructionUnits, type ConstructionUnit } from '../templates/construction/data';
+
+interface OwnProps {
+  units?: ConstructionUnit[];
+  projectName?: string;
+  initialFloor?: number;
+  action?: string;
+  variant?: 'split' | 'stacked';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  units = constructionUnits,
+  projectName = 'Residencial Caelum',
+  initialFloor = 3,
+  action,
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const floors = [...new Set(units.map((u) => u.floor))].sort((a, b) => a - b);
+const top = floors[floors.length - 1] ?? 0;
+const floorName = (f: number) => (f === 0 ? 'Planta baja' : f === top && units.some((u) => u.floor === f && u.type === 'atico') ? 'Ático' : `Planta ${f}`);
+const statusLabel = { libre: 'Libre', reservada: 'Reservada', vendida: 'Vendida' };
+const floorInfo = floors.map((f) => {
+  const list = units.filter((u) => u.floor === f);
+  return { f, name: floorName(f), free: list.filter((u) => u.status === 'libre').length, total: list.length };
+});
+const start = floors.includes(initialFloor) ? initialFloor : floors[0];
+const unitName = (u: ConstructionUnit) =>
+  u.type === 'local' ? `Local ${u.letter}` : u.type === 'atico' ? `Ático ${u.letter}` : `${u.floor}.º ${u.letter}`;
+const payload = units.map((u) => ({ ...u, name: unitName(u) }));
+const uid = `sk-iso-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section
+  class:list={['sk-ui', 'sk-iso', `sk-iso--${variant}`, `sk-iso--${size}`, classAttr]}
+  aria-labelledby={`${uid}-h`}
+  data-sk-iso
+  data-units={JSON.stringify(payload)}
+  data-floor={start}
+  data-action={action}
+  style={`--n:${floors.length}`}
+  {...rest}
+>
+  <header class="sk-iso__head">
+    <div>
+      <p class="sk-iso__kicker sk-mono">Selector de viviendas · {projectName}</p>
+      <h2 id={`${uid}-h`} class="sk-iso__title">Elige planta y vivienda</h2>
+    </div>
+    <div class="sk-iso__tools">
+      <button type="button" class="sk-iso__tool" data-rotate>Girar 90°</button>
+      <button type="button" class="sk-iso__tool" aria-pressed="false" data-explode>Vista explosionada</button>
+    </div>
+  </header>
+
+  <div class="sk-iso__grid">
+    <div class="sk-iso__stage sk-grid-bg" data-stage>
+      <div class="sk-iso__scene" aria-hidden="true">
+        <div class="sk-iso__building" data-building>
+          {floors.map((f, i) => (
+            <div class="sk-iso__floor" data-f={f} style={`--i:${i}`}>
+              {units.filter((u) => u.floor === f).map((u) => (
+                <span class={`sk-iso__cell sk-iso__cell--${u.status}`} data-cell={u.id} style={`left:${u.plan.x}%;top:${(u.plan.y / 60) * 100}%;width:${u.plan.w}%;height:${(u.plan.h / 60) * 100}%`}></span>
+              ))}
+              <span class="sk-iso__flabel sk-mono">{f === 0 ? 'PB' : f === top ? 'AT' : `P${f}`}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p class="sk-iso__hint sk-mono" aria-hidden="true">Arrastra para girar</p>
+      <ul class="sk-iso__legend sk-mono" role="list">
+        <li><i class="k-libre" aria-hidden="true"></i>Libre</li>
+        <li><i class="k-reservada" aria-hidden="true"></i>Reservada</li>
+        <li><i class="k-vendida" aria-hidden="true"></i>Vendida</li>
+      </ul>
+    </div>
+
+    <div class="sk-iso__panel">
+      <fieldset class="sk-iso__floors">
+        <legend class="sk-mono">Planta</legend>
+        {[...floorInfo].reverse().map((fi) => (
+          <label class="sk-iso__fopt">
+            <input type="radio" name={`${uid}-f`} value={fi.f} checked={fi.f === start} data-pick-floor />
+            <span><b>{fi.name}</b><small>{fi.free} de {fi.total} libres</small></span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div class="sk-iso__filters">
+        <label>
+          <span class="sk-mono">Dormitorios</span>
+          <select data-beds>
+            <option value="0">Cualquiera</option>
+            <option value="2">2 o más</option>
+            <option value="3">3 o más</option>
+            <option value="4">4 o más</option>
+          </select>
+        </label>
+        <label class="sk-iso__only"><input type="checkbox" data-only /> Solo libres</label>
+      </div>
+
+      <div class="sk-iso__plan">
+        <p class="sk-iso__plan-title sk-mono" data-plan-title>{floorName(start)} · E 1:100</p>
+        <div class="sk-iso__planbox" role="group" aria-label="Viviendas de la planta" data-plan></div>
+      </div>
+
+      <div class="sk-iso__card" data-card hidden>
+        <div class="sk-iso__card-head">
+          <h3 data-u-name>—</h3>
+          <span class="sk-iso__badge sk-mono" data-u-status>—</span>
+        </div>
+        <dl class="sk-iso__facts sk-mono">
+          <div><dt>Superficie</dt><dd data-u-area>—</dd></div>
+          <div><dt>Terraza</dt><dd data-u-terrace>—</dd></div>
+          <div><dt>Dormitorios</dt><dd data-u-beds>—</dd></div>
+          <div><dt>Baños</dt><dd data-u-baths>—</dd></div>
+          <div><dt>Orientación</dt><dd data-u-orient>—</dd></div>
+          <div><dt>Precio</dt><dd data-u-price>—</dd></div>
+        </dl>
+        <button type="button" class="sk-iso__cta" data-request aria-haspopup="dialog">Pedir información</button>
+      </div>
+      <p class="sk-iso__empty sk-mono" data-pick-hint>Selecciona una vivienda en el plano.</p>
+    </div>
+  </div>
+
+  <p class="sk-sr" role="status" aria-live="polite" data-live></p>
+
+  <dialog class="sk-iso__dialog sk-ui" aria-labelledby={`${uid}-dh`} data-dialog>
+    <form method="dialog" class="sk-iso__dform" data-dform>
+      <h3 id={`${uid}-dh`}>Información de <span data-d-unit>—</span></h3>
+      <label>Nombre<input name="name" required autocomplete="name" /></label>
+      <label>Teléfono<input name="phone" type="tel" required autocomplete="tel" /></label>
+      <label>Email<input name="email" type="email" autocomplete="email" /></label>
+      <p class="sk-iso__derr" role="alert" data-derr></p>
+      <div class="sk-iso__dnav">
+        <button type="button" class="sk-iso__tool" data-dclose>Cancelar</button>
+        <button type="submit" class="sk-iso__cta" value="send">Enviar</button>
+      </div>
+    </form>
+    <div class="sk-iso__dok" data-dok hidden tabindex="-1">
+      <p class="sk-mono">Solicitud enviada</p>
+      <p>Te llamamos hoy para enseñarte el piso piloto.</p>
+      <button type="button" class="sk-iso__cta" data-dclose>Cerrar</button>
+    </div>
+  </dialog>
+</section>
+
+<script>
+  interface Unit {
+    id: string;
+    name: string;
+    floor: number;
+    letter: string;
+    type: string;
+    beds: number;
+    baths: number;
+    areaM2: number;
+    terraceM2: number;
+    orientation: string;
+    price: number;
+    status: 'libre' | 'reservada' | 'vendida';
+    plan: { x: number; y: number; w: number; h: number };
+  }
+
+  const statusLabel = { libre: 'Libre', reservada: 'Reservada', vendida: 'Vendida' };
+  const eur = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+  function initSkIso() {
+    document.querySelectorAll<HTMLElement>('[data-sk-iso]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const units = JSON.parse(root.dataset.units || '[]') as Unit[];
+      const building = $('[data-building]');
+      const stage = $('[data-stage]');
+      const plan = $('[data-plan]');
+      const live = $('[data-live]');
+      const dialog = $<HTMLDialogElement>('[data-dialog]');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let floor = Number(root.dataset.floor);
+      let selected: Unit | null = null;
+      let angle = -40;
+
+      const matches = (u: Unit) => {
+        const beds = Number($<HTMLSelectElement>('[data-beds]').value);
+        const only = $<HTMLInputElement>('[data-only]').checked;
+        return (!beds || u.beds >= beds) && (!only || u.status === 'libre');
+      };
+
+      const paintCells = () => {
+        units.forEach((u) => {
+          const c = root.querySelector<HTMLElement>(`[data-cell="${u.id}"]`);
+          c?.classList.toggle('is-dim', !matches(u));
+          c?.classList.toggle('is-sel', selected?.id === u.id);
+        });
+      };
+
+      const renderPlan = () => {
+        plan.innerHTML = '';
+        units
+          .filter((u) => u.floor === floor)
+          .forEach((u) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = `sk-iso__unit sk-iso__unit--${u.status}`;
+            b.style.cssText = `left:${u.plan.x}%;top:${(u.plan.y / 60) * 100}%;width:${u.plan.w}%;height:${(u.plan.h / 60) * 100}%`;
+            b.dataset.unit = u.id;
+            b.setAttribute('aria-pressed', String(selected?.id === u.id));
+            const what = u.type === 'local' ? 'local comercial' : `${u.beds} dormitorios`;
+            b.setAttribute('aria-label', `${u.name}, ${what}, ${u.areaM2} m², ${statusLabel[u.status].toLowerCase()}`);
+            b.innerHTML = `<b>${u.letter}</b><span>${u.areaM2} m²</span><small>${statusLabel[u.status]}</small>`;
+            b.classList.toggle('is-dim', !matches(u));
+            plan.append(b);
+          });
+        const opt = root.querySelector<HTMLInputElement>(`[data-pick-floor][value="${floor}"]`);
+        $('[data-plan-title]').textContent = `${opt?.parentElement?.querySelector('b')?.textContent ?? ''} · E 1:100`;
+      };
+
+      const setFloor = (f: number, announce = true) => {
+        floor = f;
+        root.dataset.floor = String(f);
+        root.querySelectorAll<HTMLElement>('.sk-iso__floor').forEach((el) => el.classList.toggle('is-active', Number(el.dataset.f) === f));
+        if (selected && selected.floor !== f) selectUnit(null);
+        renderPlan();
+        paintCells();
+        if (announce) {
+          const free = units.filter((u) => u.floor === f && u.status === 'libre').length;
+          live.textContent = `Planta seleccionada. ${free} viviendas libres.`;
+        }
+      };
+
+      const selectUnit = (u: Unit | null) => {
+        selected = u;
+        $('[data-card]').hidden = !u;
+        $('[data-pick-hint]').hidden = !!u;
+        plan.querySelectorAll<HTMLButtonElement>('[data-unit]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.unit === u?.id)));
+        paintCells();
+        if (!u) return;
+        $('[data-u-name]').textContent = u.name;
+        const st = $('[data-u-status]');
+        st.textContent = statusLabel[u.status];
+        st.className = `sk-iso__badge sk-mono sk-iso__badge--${u.status}`;
+        $('[data-u-area]').textContent = `${u.areaM2} m²`;
+        $('[data-u-terrace]').textContent = u.terraceM2 ? `${u.terraceM2} m²` : '—';
+        $('[data-u-beds]').textContent = u.type === 'local' ? '—' : String(u.beds);
+        $('[data-u-baths]').textContent = String(u.baths);
+        $('[data-u-orient]').textContent = u.orientation;
+        $('[data-u-price]').textContent = u.status === 'vendida' ? 'Vendida' : eur(u.price);
+        const req = $<HTMLButtonElement>('[data-request]');
+        req.disabled = u.status === 'vendida';
+        req.textContent = u.status === 'vendida' ? 'No disponible' : u.status === 'reservada' ? 'Apuntarme a lista de espera' : 'Pedir información';
+        live.textContent = `${u.name}: ${u.areaM2} m², ${statusLabel[u.status].toLowerCase()}${u.status === 'vendida' ? '' : `, ${eur(u.price)}`}.`;
+      };
+
+      root.addEventListener('change', (e) => {
+        const t = e.target as HTMLInputElement;
+        if (t.matches('[data-pick-floor]')) setFloor(Number(t.value));
+        if (t.matches('[data-beds], [data-only]')) {
+          renderPlan();
+          paintCells();
+          const n = units.filter((u) => u.floor === floor && matches(u)).length;
+          live.textContent = `${n} viviendas coinciden en esta planta.`;
+        }
+      });
+      plan.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-unit]');
+        if (b) selectUnit(units.find((u) => u.id === b.dataset.unit) ?? null);
+      });
+
+      // Click a slab in 3D (pointer convenience; the radio group is the accessible control)
+      building.addEventListener('click', (e) => {
+        const fl = (e.target as HTMLElement).closest<HTMLElement>('.sk-iso__floor');
+        if (!fl || moved) return;
+        const f = Number(fl.dataset.f);
+        const radio = root.querySelector<HTMLInputElement>(`[data-pick-floor][value="${f}"]`);
+        if (radio) radio.checked = true;
+        setFloor(f);
+      });
+
+      // Orbit
+      const setAngle = (a: number) => {
+        angle = a;
+        root.style.setProperty('--rz', `${a}deg`);
+      };
+      let dragX: number | null = null;
+      let moved = false;
+      stage.addEventListener('pointerdown', (e) => {
+        dragX = e.clientX;
+        moved = false;
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (dragX === null) return;
+        const dx = e.clientX - dragX;
+        if (Math.abs(dx) > 3) {
+          moved = true;
+          root.classList.add('is-dragging');
+          setAngle(angle + dx * 0.4);
+          dragX = e.clientX;
+        }
+      });
+      window.addEventListener('pointerup', () => {
+        dragX = null;
+        root.classList.remove('is-dragging');
+        window.setTimeout(() => (moved = false), 0);
+      });
+      $('[data-rotate]').addEventListener('click', () => {
+        setAngle(angle + 90);
+        live.textContent = 'Vista girada 90 grados.';
+      });
+      const ex = $<HTMLButtonElement>('[data-explode]');
+      ex.addEventListener('click', () => {
+        const on = ex.getAttribute('aria-pressed') !== 'true';
+        ex.setAttribute('aria-pressed', String(on));
+        root.classList.toggle('is-exploded', on);
+      });
+
+      // Request dialog
+      const dform = $<HTMLFormElement>('[data-dform]');
+      $('[data-request]').addEventListener('click', () => {
+        if (!selected) return;
+        $('[data-d-unit]').textContent = selected.name;
+        dform.hidden = false;
+        $('[data-dok]').hidden = true;
+        dialog.showModal();
+      });
+      root.querySelectorAll('[data-dclose]').forEach((b) => b.addEventListener('click', () => dialog.close()));
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) dialog.close();
+      });
+      dform.addEventListener('submit', (e) => {
+        const bad = [...dform.querySelectorAll<HTMLInputElement>('input[required]')].find((i) => !i.value.trim());
+        if (bad) {
+          e.preventDefault();
+          $('[data-derr]').textContent = 'Rellena nombre y teléfono.';
+          bad.focus();
+          return;
+        }
+        e.preventDefault();
+        if (root.dataset.action) fetch(root.dataset.action, { method: 'POST', body: new FormData(dform) }).catch(() => {});
+        dform.hidden = true;
+        const ok = $('[data-dok]');
+        ok.hidden = false;
+        ok.focus();
+      });
+
+      if (!reduce) root.classList.add('is-anim');
+      setAngle(angle);
+      setFloor(floor, false);
+    });
+  }
+  initSkIso();
+  document.addEventListener('astro:page-load', initSkIso);
+</script>
+
+<style>
+  .sk-iso {
+    --gap: 30px;
+    --rz: -40deg;
+    --fw: 220px;
+    position: relative;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-iso--lg {
+    --gap: 38px;
+    --fw: 280px;
+  }
+
+  .sk-iso.is-exploded {
+    --gap: 56px;
+  }
+
+  .sk-iso__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--sk-line);
+  }
+
+  .sk-iso__kicker {
+    margin: 0;
+    color: var(--sk-accent);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__title {
+    margin: 4px 0 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(1.5rem, 4.4vw, 2.3rem);
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sk-iso__tool {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-iso__tool[aria-pressed='true'] {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-iso :is(button, select, input):focus-visible,
+  .sk-iso__fopt input:focus-visible + span {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-iso__grid {
+    display: grid;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  @media (min-width: 980px) {
+    .sk-iso--split .sk-iso__grid {
+      grid-template-columns: 1.1fr 1fr;
+    }
+  }
+
+  .sk-iso__stage {
+    position: relative;
+    min-height: calc(var(--n) * var(--gap) + 300px);
+    border: 1px solid var(--sk-line-soft);
+    overflow: hidden;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+    transition: min-height 0.5s var(--sk-ease);
+  }
+
+  .sk-iso.is-dragging .sk-iso__stage {
+    cursor: grabbing;
+  }
+
+  .sk-iso__scene {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding-top: calc(var(--n) * var(--gap) * 0.75);
+  }
+
+  .sk-iso__building {
+    position: relative;
+    width: var(--fw);
+    aspect-ratio: 100 / 60;
+    transform: rotateX(58deg) rotateZ(var(--rz));
+    transform-style: preserve-3d;
+  }
+
+  .sk-iso.is-anim .sk-iso__building {
+    transition: transform 0.7s var(--sk-ease);
+  }
+
+  .sk-iso.is-dragging .sk-iso__building {
+    transition: none;
+  }
+
+  .sk-iso__floor {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--sk-line);
+    background: color-mix(in srgb, var(--sk-panel) 88%, transparent);
+    transform: translateZ(calc(var(--i) * var(--gap)));
+    transform-style: preserve-3d;
+    cursor: pointer;
+  }
+
+  .sk-iso.is-anim .sk-iso__floor {
+    transition: transform 0.6s var(--sk-ease), opacity 0.4s ease, background 0.3s ease;
+  }
+
+  .sk-iso__floor::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--sk-line-soft);
+    background: color-mix(in srgb, var(--sk-line) 18%, transparent);
+    transform: translateZ(-7px);
+  }
+
+  .sk-iso__floor.is-active {
+    transform: translateZ(calc(var(--i) * var(--gap) + 22px));
+    border-color: var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 14%, var(--sk-panel));
+    box-shadow: 0 0 0 2px var(--sk-accent);
+  }
+
+  .sk-iso:has(.sk-iso__floor.is-active) .sk-iso__floor:not(.is-active) {
+    opacity: 0.5;
+  }
+
+  .sk-iso__floor:hover {
+    background: color-mix(in srgb, var(--sk-line) 20%, var(--sk-panel));
+  }
+
+  .sk-iso__cell {
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px solid var(--sk-line-soft);
+    transition: opacity 0.3s ease;
+  }
+
+  .sk-iso__cell--libre { background: color-mix(in srgb, var(--sk-ok) 45%, transparent); }
+  .sk-iso__cell--reservada { background: color-mix(in srgb, var(--sk-warn) 45%, transparent); }
+  .sk-iso__cell--vendida { background: repeating-linear-gradient(45deg, var(--sk-line-soft) 0 2px, transparent 2px 6px); }
+  .sk-iso__cell.is-dim { opacity: 0.15; }
+  .sk-iso__cell.is-sel { outline: 2px solid var(--sk-accent); outline-offset: -2px; }
+
+  .sk-iso__flabel {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 6px;
+    color: var(--sk-ink-3);
+    font-size: 10px;
+  }
+
+  .sk-iso__hint {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__legend {
+    position: absolute;
+    left: 12px;
+    bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sk-iso__legend i {
+    width: 14px;
+    height: 10px;
+    border: 1px solid var(--sk-line);
+  }
+
+  .k-libre { background: color-mix(in srgb, var(--sk-ok) 60%, transparent); }
+  .k-reservada { background: color-mix(in srgb, var(--sk-warn) 60%, transparent); }
+  .k-vendida { background: repeating-linear-gradient(45deg, var(--sk-line) 0 1px, transparent 1px 4px); }
+
+  .sk-iso__panel {
+    position: relative;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .sk-iso__floors {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .sk-iso__floors legend,
+  .sk-iso__filters label > span {
+    margin-bottom: 6px;
+    color: var(--sk-ink-3);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__fopt {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .sk-iso__fopt input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-iso__fopt span {
+    display: grid;
+    min-height: 44px;
+    align-content: center;
+    padding: 4px 10px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    font-size: 0.85rem;
+  }
+
+  .sk-iso__fopt small {
+    color: var(--sk-ink-3);
+    font-family: var(--sk-font-mono);
+    font-size: 0.68rem;
+  }
+
+  .sk-iso__fopt input:checked + span {
+    border-color: var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 14%, transparent);
+  }
+
+  .sk-iso__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+  }
+
+  .sk-iso__filters label {
+    display: grid;
+  }
+
+  .sk-iso select {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+    font: inherit;
+  }
+
+  .sk-iso__only {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+  }
+
+  .sk-iso__only input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--sk-accent);
+  }
+
+  .sk-iso__plan {
+    padding: 12px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+  }
+
+  .sk-iso__plan-title {
+    margin: 0 0 8px;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__planbox {
+    position: relative;
+    aspect-ratio: 100 / 60;
+    border: 2px solid var(--sk-line);
+    background-image:
+      linear-gradient(var(--sk-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--sk-grid) 1px, transparent 1px);
+    background-size: 10px 10px;
+  }
+
+  .sk-iso__planbox :global(.sk-iso__unit) {
+    position: absolute;
+    display: grid;
+    place-content: center;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--sk-line);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.72rem;
+    text-align: center;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.2s ease, opacity 0.2s ease;
+  }
+
+  .sk-iso__planbox :global(.sk-iso__unit b) {
+    font-family: var(--sk-font-display);
+    font-size: 1.3rem;
+  }
+
+  .sk-iso__planbox :global(.sk-iso__unit--libre) { background: color-mix(in srgb, var(--sk-ok) 22%, transparent); }
+  .sk-iso__planbox :global(.sk-iso__unit--reservada) { background: color-mix(in srgb, var(--sk-warn) 22%, transparent); }
+  .sk-iso__planbox :global(.sk-iso__unit--vendida) { background: repeating-linear-gradient(45deg, var(--sk-grid-strong) 0 2px, transparent 2px 8px); color: var(--sk-ink-3); }
+  .sk-iso__planbox :global(.sk-iso__unit.is-dim) { opacity: 0.3; }
+  .sk-iso__planbox :global(.sk-iso__unit[aria-pressed='true']) { box-shadow: inset 0 0 0 3px var(--sk-accent); }
+  .sk-iso__planbox :global(.sk-iso__unit:hover) { background-color: color-mix(in srgb, var(--sk-accent) 18%, transparent); }
+  .sk-iso__planbox :global(.sk-iso__unit:focus-visible) { outline: 2px solid var(--sk-accent); outline-offset: -4px; z-index: 1; }
+
+  .sk-iso__card {
+    padding: 14px;
+    border: 1px solid var(--sk-line);
+    background: var(--sk-panel);
+    animation: sk-iso-in 0.35s var(--sk-ease);
+  }
+
+  .sk-iso__card[hidden],
+  .sk-iso__empty[hidden] {
+    display: none;
+  }
+
+  .sk-iso__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .sk-iso__card h3 {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__badge {
+    padding: 2px 8px;
+    border: 1px solid currentColor;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__badge--libre { color: var(--sk-ok); }
+  .sk-iso__badge--reservada { color: var(--sk-warn); }
+  .sk-iso__badge--vendida { color: var(--sk-ink-3); }
+
+  .sk-iso__facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 12px 0;
+    border-top: 1px solid var(--sk-line-soft);
+    border-left: 1px solid var(--sk-line-soft);
+    font-size: 0.8rem;
+  }
+
+  .sk-iso__facts div {
+    padding: 8px;
+    border-right: 1px solid var(--sk-line-soft);
+    border-bottom: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-iso__facts dt {
+    color: var(--sk-ink-3);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__facts dd {
+    margin: 2px 0 0;
+  }
+
+  .sk-iso__cta {
+    min-height: 48px;
+    padding: 0 1.2rem;
+    border: 1px solid var(--sk-accent);
+    border-radius: var(--sk-radius);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-family: var(--sk-font-mono);
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-iso__cta:disabled {
+    border-color: var(--sk-line-soft);
+    background: transparent;
+    color: var(--sk-ink-3);
+    cursor: not-allowed;
+  }
+
+  .sk-iso__empty {
+    margin: 0;
+    padding: 14px;
+    border: 1px dashed var(--sk-line-soft);
+    color: var(--sk-ink-3);
+    font-size: 0.8rem;
+  }
+
+  .sk-iso__dialog {
+    width: min(420px, calc(100vw - 32px));
+    padding: 0;
+    border: 1px solid var(--sk-line);
+    border-radius: var(--sk-radius);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+  }
+
+  .sk-iso__dialog::backdrop {
+    background: rgba(5, 20, 36, 0.7);
+  }
+
+  .sk-iso__dform,
+  .sk-iso__dok {
+    display: grid;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  .sk-iso__dform[hidden],
+  .sk-iso__dok[hidden] {
+    display: none;
+  }
+
+  .sk-iso__dform h3 {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__dform label {
+    display: grid;
+    gap: 4px;
+    font-family: var(--sk-font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-iso__dform input {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-bottom: 1px solid var(--sk-line);
+    background: var(--sk-fill);
+    color: var(--sk-ink);
+    font: inherit;
+    font-family: var(--sk-font-body);
+    text-transform: none;
+  }
+
+  .sk-iso__derr {
+    min-height: 1.2em;
+    margin: 0;
+    color: var(--sk-danger);
+  }
+
+  .sk-iso__dnav {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .sk-iso__dok:focus {
+    outline: none;
+  }
+
+  .sk-iso__dok p:first-child {
+    margin: 0;
+    color: var(--sk-ok);
+    text-transform: uppercase;
+  }
+
+  @keyframes sk-iso-in { from { opacity: 0; transform: translateY(8px); } }
+
+  @media (max-width: 520px) {
+    .sk-iso {
+      --gap: 22px;
+      --fw: 180px;
+    }
+
+    .sk-iso.is-exploded {
+      --gap: 40px;
+    }
+
+    .sk-iso__facts {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-iso *,
+    .sk-iso .sk-iso__building,
+    .sk-iso .sk-iso__floor {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

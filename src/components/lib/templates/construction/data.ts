@@ -1,95 +1,107 @@
 // src/components/lib/templates/construction/data.ts
-// Domain entities, project catalog, unit inventories, daily logs and routing for Strukto · Construction, Developments & Site OS.
+// Demo data for "Strukto" · construction company, developments and Site OS (Madrid).
+// Replace with your own ERP / project data: every page and component takes these shapes as props.
 
-export type ProjectTypology = 'residential' | 'commercial' | 'industrial' | 'rehabilitation';
-export type ProjectStatus = 'in_progress' | 'completed' | 'off_plan';
-export type UnitTypology = 'apartment' | 'penthouse' | 'ground_floor' | 'commercial_local';
-export type UnitStatus = 'available' | 'reserved' | 'sold';
+export type ConstructionKind = 'residencial' | 'terciario' | 'rehabilitacion' | 'industrial';
+export type ConstructionStatus = 'obra' | 'entregado' | 'plano';
+export type ConstructionUnitStatus = 'libre' | 'reservada' | 'vendida';
+export type ConstructionUnitType = 'piso' | 'atico' | 'local';
+export type ConstructionSiteHealth = 'en-plazo' | 'riesgo' | 'retraso';
 
-export interface ConstructionMilestone {
+export interface ConstructionPhase {
   id: string;
-  stage: 'licensing' | 'excavation' | 'structure' | 'enclosures' | 'mep' | 'finishes' | 'handover';
-  title: string;
-  plannedDate: string;
-  progressPct: number;
-  status: 'done' | 'in_progress' | 'pending';
+  name: string;
+  /** Start week (1 = first week of the works). */
+  start: number;
+  weeks: number;
+  /** 0–100. */
+  progress: number;
+  owner: string;
+  critical?: boolean;
 }
 
 export interface ConstructionProject {
   id: string;
   slug: string;
-  title: string;
-  subtitle: string;
-  typology: ProjectTypology;
-  status: ProjectStatus;
-  location: string;
+  name: string;
+  kind: ConstructionKind;
+  status: ConstructionStatus;
+  district: string;
   city: string;
-  surfaceM2: number;
-  budgetEur: number;
-  certifiedBudgetEur: number;
-  certifiedPercent: number;
-  startDate: string;
-  completionDate: string;
-  unitsTotal: number;
-  unitsAvailable: number;
+  address: string;
+  /** Floors above ground (for the elevation drawing). */
+  floors: number;
+  /** Window bays per floor (for the elevation drawing). */
+  bays: number;
+  units: number;
+  unitsFree: number;
+  areaM2: number;
+  budget: number;
+  /** Works progress 0–100. */
+  progress: number;
+  start: string;
+  end: string;
   architect: string;
-  energyRating: 'A' | 'B' | 'Passivhaus';
+  energy: 'A' | 'A+' | 'Passivhaus';
   tags: string[];
-  specs: {
-    concreteVolumeM3: number;
-    steelTonnes: number;
-    craneCount: number;
-    solarKWp: number;
-  };
-  description: string;
-  milestones: ConstructionMilestone[];
+  summary: string;
+  phases: ConstructionPhase[];
 }
 
 export interface ConstructionUnit {
   id: string;
-  projectId: string;
-  unitNumber: string;
-  floor: string;
-  typology: UnitTypology;
-  surfaceUsableM2: number;
-  surfaceBuiltM2: number;
-  bedrooms: number;
-  bathrooms: number;
+  /** 0 = ground floor. */
+  floor: number;
+  letter: string;
+  type: ConstructionUnitType;
+  beds: number;
+  baths: number;
+  areaM2: number;
   terraceM2: number;
-  garageSpaces: number;
-  priceEur: number;
-  status: UnitStatus;
-  orientation: 'South' | 'North' | 'East' | 'West' | 'Dual';
-  features: string[];
+  orientation: 'Norte' | 'Sur' | 'Este' | 'Oeste' | 'Sur-Este' | 'Sur-Oeste';
+  price: number;
+  status: ConstructionUnitStatus;
+  /** Rectangle on the 100 × 60 floor plan. */
+  plan: { x: number; y: number; w: number; h: number };
 }
 
-export interface SiteDailyLog {
+export interface ConstructionSite {
   id: string;
-  siteId: string;
-  siteName: string;
+  projectSlug: string;
+  name: string;
+  district: string;
+  health: ConstructionSiteHealth;
+  progress: number;
+  /** Planned certification to date, % of budget. */
+  planned: number;
+  /** Certified to date, % of budget. */
+  certified: number;
+  budget: number;
+  crew: number;
+  foreman: string;
+  phase: string;
+  weather: string;
+  alerts: string[];
+  /** Position on the 0–100 situation map. */
+  x: number;
+  y: number;
+}
+
+export interface ConstructionLogEntry {
+  time: string;
+  type: 'avance' | 'incidencia' | 'visita' | 'material';
+  text: string;
+  author: string;
+}
+
+export interface ConstructionDailyLog {
   date: string;
-  weather: {
-    tempC: number;
-    condition: 'Sunny' | 'Overcast' | 'Rain' | 'Wind';
-    windKmh: number;
-    rainMm: number;
-  };
-  crewTotal: number;
-  activeTrades: {
-    trade: string;
-    subcontractor: string;
-    workers: number;
-    zone: string;
-  }[];
-  materialDeliveries: {
-    material: string;
-    quantity: string;
-    supplier: string;
-    qualityTicket: string;
-  }[];
-  safetyInspectionPassed: boolean;
-  notes: string;
-  supervisor: string;
+  siteId: string;
+  weather: 'Despejado' | 'Nublado' | 'Lluvia' | 'Viento';
+  tempC: number;
+  crews: Array<{ trade: string; company: string; workers: number }>;
+  entries: ConstructionLogEntry[];
+  checklist: string[];
 }
 
 export interface ConstructionRoutes {
@@ -107,324 +119,184 @@ export interface ConstructionRoutes {
 }
 
 export const constructionRoutes: ConstructionRoutes = {
-  home: '/preview/construction',
-  projects: '/preview/construction/projects',
-  projectDetail: '/preview/construction/projects/caelum-chamberi',
-  estimator: '/preview/construction/estimator',
-  contact: '/preview/construction/contact',
-  signIn: '/preview/construction/sign-in',
-  dashboard: '/preview/construction/app',
-  sites: '/preview/construction/app/sites',
-  dailyLog: '/preview/construction/app/daily-log',
-  unitsCms: '/preview/construction/app/units',
-  settings: '/preview/construction/app/settings',
+  home: '/',
+  projects: '/proyectos',
+  projectDetail: '/proyectos/caelum-chamberi',
+  estimator: '/presupuesto',
+  contact: '/contacto',
+  signIn: '/acceso',
+  dashboard: '/obra',
+  sites: '/obra/obras',
+  dailyLog: '/obra/diario',
+  unitsCms: '/obra/viviendas',
+  settings: '/obra/ajustes',
 };
+
+export const constructionCompany = {
+  name: 'Strukto',
+  legalName: 'Strukto Construcciones S.L.',
+  address: 'Calle de Alcalá 182, 28028 Madrid',
+  phone: '+34 912 400 900',
+  email: 'obras@strukto.es',
+  hours: 'L–V · 8:00–18:00',
+  rea: 'REA 13/28/0004512',
+  iso: ['ISO 9001', 'ISO 14001', 'ISO 45001'],
+  founded: 1989,
+  stats: { activeSites: 7, deliveredM2: 148000, years: 37, onTimePct: 96 },
+};
+
+const caelumPhases: ConstructionPhase[] = [
+  { id: 'p1', name: 'Movimiento de tierras', start: 1, weeks: 6, progress: 100, owner: 'Excavaciones Tajo' },
+  { id: 'p2', name: 'Cimentación y muros', start: 5, weeks: 9, progress: 100, owner: 'Strukto', critical: true },
+  { id: 'p3', name: 'Estructura (7 forjados)', start: 13, weeks: 20, progress: 100, owner: 'Strukto', critical: true },
+  { id: 'p4', name: 'Cerramientos y fachada', start: 28, weeks: 16, progress: 82, owner: 'Fachadas Lumen', critical: true },
+  { id: 'p5', name: 'Instalaciones (MEP)', start: 34, weeks: 22, progress: 48, owner: 'Instalaciones Meridiano' },
+  { id: 'p6', name: 'Carpintería y vidrio', start: 40, weeks: 10, progress: 35, owner: 'Carpinterías Ébano' },
+  { id: 'p7', name: 'Acabados interiores', start: 48, weeks: 18, progress: 6, owner: 'Strukto', critical: true },
+  { id: 'p8', name: 'Urbanización y entrega', start: 64, weeks: 6, progress: 0, owner: 'Strukto' },
+];
 
 export const constructionProjects: ConstructionProject[] = [
   {
-    id: 'proj-01',
-    slug: 'caelum-chamberi',
-    title: 'Residencial Caelum Chamberí',
-    subtitle: '24 Luxury apartments, rooftop infinity pool & 2 ground commercial locals',
-    typology: 'residential',
-    status: 'in_progress',
-    location: 'Calle Bretón de los Herreros 42',
-    city: 'Madrid, Chamberí',
-    surfaceM2: 5400,
-    budgetEur: 7850000,
-    certifiedBudgetEur: 5495000,
-    certifiedPercent: 70,
-    startDate: '2025-02-15',
-    completionDate: '2026-12-20',
-    unitsTotal: 26,
-    unitsAvailable: 7,
-    architect: 'Rafael Moneo & Partners Studio',
-    energyRating: 'A',
-    tags: ['Obra Nueva', 'Aerotermia', 'Suelo Radiante', 'Piscina Rooftop', 'Locales Comerciales'],
-    specs: {
-      concreteVolumeM3: 2450,
-      steelTonnes: 320,
-      craneCount: 2,
-      solarKWp: 45,
-    },
-    description: 'Promoción residencial premium en pleno corazón de Chamberí. Estructura de hormigón armado con losas aligeradas, cerramiento térmico con fachada ventilada de piedra caliza y carpintería de rotura de puente térmico triple acristalamiento.',
-    milestones: [
-      { id: 'm1', stage: 'licensing', title: 'Licencia Urbanística y Proyecto Básico', plannedDate: '2025-01-10', progressPct: 100, status: 'done' },
-      { id: 'm2', stage: 'excavation', title: 'Vaciado, Muros Pantalla y Cimentación', plannedDate: '2025-04-15', progressPct: 100, status: 'done' },
-      { id: 'm3', stage: 'structure', title: 'Estructura de Forjados 7 Plantas', plannedDate: '2025-09-30', progressPct: 100, status: 'done' },
-      { id: 'm4', stage: 'enclosures', title: 'Fachada Ventilada y Carpinterías', plannedDate: '2026-03-20', progressPct: 90, status: 'in_progress' },
-      { id: 'm5', stage: 'mep', title: 'Instalaciones MEP, Suelo Radiante y Clima', plannedDate: '2026-07-15', progressPct: 45, status: 'in_progress' },
-      { id: 'm6', stage: 'finishes', title: 'Solados Porcelanosa, Cocinas y Pintura', plannedDate: '2026-10-30', progressPct: 10, status: 'pending' },
-      { id: 'm7', stage: 'handover', title: 'LPO (Licencia de Primera Ocupación) y Llaves', plannedDate: '2026-12-20', progressPct: 0, status: 'pending' },
-    ],
+    id: 'pr01', slug: 'caelum-chamberi', name: 'Residencial Caelum', kind: 'residencial', status: 'obra',
+    district: 'Chamberí', city: 'Madrid', address: 'Calle de Bretón de los Herreros 42', floors: 7, bays: 6,
+    units: 24, unitsFree: 7, areaM2: 5400, budget: 7850000, progress: 64, start: '2025-02', end: '2026-12',
+    architect: 'Estudio Arenal Arquitectos', energy: 'A', tags: ['Aerotermia', 'Suelo radiante', 'Piscina en cubierta'],
+    summary: '24 viviendas y 2 locales con estructura de hormigón, fachada ventilada de piedra caliza y carpintería con triple vidrio.',
+    phases: caelumPhases,
   },
   {
-    id: 'proj-02',
-    slug: 'torre-norte-tech',
-    title: 'Torre Norte Tech & Commercial Hub',
-    subtitle: 'Headquarters corporativo, auditorio y 4 locales comerciales diáfanos',
-    typology: 'commercial',
-    status: 'completed',
-    location: 'Paseo de la Castellana 280',
-    city: 'Madrid, Chamartín',
-    surfaceM2: 14200,
-    budgetEur: 18400000,
-    certifiedBudgetEur: 18400000,
-    certifiedPercent: 100,
-    startDate: '2023-04-10',
-    completionDate: '2025-10-05',
-    unitsTotal: 18,
-    unitsAvailable: 2,
-    architect: 'Estudio Lamela Arquitectos',
-    energyRating: 'A',
-    tags: ['LEED Platinum', 'Fachada Doble Piel', 'Locales Diáfanos', 'Comercial'],
-    specs: {
-      concreteVolumeM3: 6800,
-      steelTonnes: 940,
-      craneCount: 3,
-      solarKWp: 120,
-    },
-    description: 'Edificio terciario de alta eficiencia con muro cortina de doble piel bioclimática y espacios diáfanos de hasta 950 m² sin pilares intermedios mediante postensado.',
-    milestones: [
-      { id: 'm1', stage: 'structure', title: 'Estructura Postensada', plannedDate: '2024-03-15', progressPct: 100, status: 'done' },
-      { id: 'm2', stage: 'enclosures', title: 'Muro Cortina Bioclimático', plannedDate: '2024-11-20', progressPct: 100, status: 'done' },
-      { id: 'm3', stage: 'handover', title: 'Entrega Definitiva y Recepción', plannedDate: '2025-10-05', progressPct: 100, status: 'done' },
-    ],
+    id: 'pr02', slug: 'torre-norte', name: 'Torre Norte', kind: 'terciario', status: 'entregado',
+    district: 'Chamartín', city: 'Madrid', address: 'Paseo de la Castellana 280', floors: 12, bays: 8,
+    units: 18, unitsFree: 2, areaM2: 14200, budget: 18400000, progress: 100, start: '2023-04', end: '2025-10',
+    architect: 'Lamela & Asociados', energy: 'A+', tags: ['LEED Platinum', 'Doble piel', 'Postensado'],
+    summary: 'Oficinas con muro cortina de doble piel y plantas diáfanas de 950 m² sin pilares intermedios.',
+    phases: [],
   },
   {
-    id: 'proj-03',
-    slug: 'villas-passivhaus-moraleja',
-    title: 'Residencial Enclave Moraleja',
-    subtitle: '6 Villas bioclimáticas Passivhaus Premium con parcela privada y geotermia',
-    typology: 'residential',
-    status: 'in_progress',
-    location: 'Camino Ancho 18',
-    city: 'Madrid, La Moraleja',
-    surfaceM2: 3800,
-    budgetEur: 6200000,
-    certifiedBudgetEur: 3100000,
-    certifiedPercent: 50,
-    startDate: '2025-06-01',
-    completionDate: '2027-02-15',
-    unitsTotal: 6,
-    unitsAvailable: 2,
-    architect: 'A-cero / Joaquín Torres',
-    energyRating: 'Passivhaus',
-    tags: ['Passivhaus', 'Geotermia', 'Villas de Lujo', 'Consumo Casi Nulo'],
-    specs: {
-      concreteVolumeM3: 1850,
-      steelTonnes: 210,
-      craneCount: 2,
-      solarKWp: 60,
-    },
-    description: 'Conjunto de 6 exclusivas viviendas unifamiliares con certificación Passivhaus Plus, climatización por geotermia y sistema de ventilación mecánica con recuperación de calor del 92%.',
-    milestones: [
-      { id: 'm1', stage: 'structure', title: 'Estructura Muros Hormigón Blanco', plannedDate: '2025-12-10', progressPct: 100, status: 'done' },
-      { id: 'm2', stage: 'enclosures', title: 'Aislamiento SATE 16cm y Envolvente', plannedDate: '2026-05-15', progressPct: 75, status: 'in_progress' },
-      { id: 'm3', stage: 'finishes', title: 'Interiores y Piscinas Salinas', plannedDate: '2026-11-30', progressPct: 10, status: 'pending' },
-    ],
+    id: 'pr03', slug: 'enclave-moraleja', name: 'Enclave Moraleja', kind: 'residencial', status: 'obra',
+    district: 'La Moraleja', city: 'Alcobendas', address: 'Camino Ancho 15', floors: 2, bays: 4,
+    units: 6, unitsFree: 2, areaM2: 2350, budget: 6200000, progress: 38, start: '2025-09', end: '2027-03',
+    architect: 'Taller Bioclima', energy: 'Passivhaus', tags: ['Passivhaus', 'Geotermia', 'Madera CLT'],
+    summary: 'Seis villas Passivhaus con estructura de madera contralaminada, geotermia y parcela privada.',
+    phases: [],
   },
   {
-    id: 'proj-04',
-    slug: 'logistica-san-fernando',
-    title: 'Parque Logístico San Fernando E-Hub',
-    subtitle: 'Nave logística inteligente para distribución última milla con 32 muelles de carga',
-    typology: 'industrial',
-    status: 'completed',
-    location: 'Polígono Industrial Puerta de Madrid',
-    city: 'San Fernando de Henares',
-    surfaceM2: 28500,
-    budgetEur: 14700000,
-    certifiedBudgetEur: 14700000,
-    certifiedPercent: 100,
-    startDate: '2023-09-01',
-    completionDate: '2025-03-30',
-    unitsTotal: 4,
-    unitsAvailable: 0,
-    architect: 'Ghesa Ingeniería y Arquitectura',
-    energyRating: 'A',
-    tags: ['BREEAM Very Good', 'Nave Logística', 'Suelo Alta Resistencia', 'Solera Láser'],
-    specs: {
-      concreteVolumeM3: 11200,
-      steelTonnes: 1450,
-      craneCount: 4,
-      solarKWp: 450,
-    },
-    description: 'Plataforma logística clase A con altura libre de 12,5 metros, solera continua sin juntas ejecutada con tecnología láser y certificación de sostenibilidad BREEAM.',
-    milestones: [
-      { id: 'm1', stage: 'handover', title: 'Puesta en Marcha y Licencia de Actividad', plannedDate: '2025-03-30', progressPct: 100, status: 'done' },
-    ],
+    id: 'pr04', slug: 'fabrica-arganzuela', name: 'La Fábrica Arganzuela', kind: 'rehabilitacion', status: 'obra',
+    district: 'Arganzuela', city: 'Madrid', address: 'Calle de Méndez Álvaro 9', floors: 4, bays: 7,
+    units: 32, unitsFree: 11, areaM2: 4100, budget: 5300000, progress: 81, start: '2024-11', end: '2026-06',
+    architect: 'Ruiz Barbarín Estudio', energy: 'A', tags: ['Rehabilitación', 'Ladrillo visto', 'Lofts'],
+    summary: 'Antigua fábrica de 1924 convertida en 32 lofts conservando la fachada de ladrillo y las cerchas de acero.',
+    phases: [],
+  },
+  {
+    id: 'pr05', slug: 'nave-coslada', name: 'Hub Logístico Coslada', kind: 'industrial', status: 'entregado',
+    district: 'Coslada', city: 'Madrid', address: 'Av. de la Industria 50', floors: 1, bays: 10,
+    units: 4, unitsFree: 0, areaM2: 22000, budget: 9900000, progress: 100, start: '2023-09', end: '2024-12',
+    architect: 'Ingeniería Vértice', energy: 'A', tags: ['Prefabricado', '1,2 MWp solar', 'Muelles de carga'],
+    summary: 'Nave logística con estructura prefabricada, 24 muelles de carga y 1,2 MWp de fotovoltaica en cubierta.',
+    phases: [],
+  },
+  {
+    id: 'pr06', slug: 'mirador-valdebebas', name: 'Mirador Valdebebas', kind: 'residencial', status: 'plano',
+    district: 'Valdebebas', city: 'Madrid', address: 'Av. de las Fuerzas Armadas 120', floors: 9, bays: 5,
+    units: 64, unitsFree: 41, areaM2: 8900, budget: 12600000, progress: 0, start: '2026-05', end: '2028-09',
+    architect: 'Estudio Arenal Arquitectos', energy: 'A+', tags: ['Sobre plano', 'Zonas comunes', 'Cooperativa'],
+    summary: '64 viviendas sobre plano con piscina, coworking y huertos urbanos en cubierta.',
+    phases: [],
   },
 ];
+
+/** Units of Residencial Caelum: ground floor shops, floors 1–5 (A–D) and two penthouses. */
+const orient = ['Sur', 'Sur-Este', 'Norte', 'Oeste'] as const;
+const quad = [
+  { x: 0, y: 0, w: 50, h: 30 },
+  { x: 50, y: 0, w: 50, h: 30 },
+  { x: 50, y: 30, w: 50, h: 30 },
+  { x: 0, y: 30, w: 50, h: 30 },
+];
+const sold = new Set(['1A', '1C', '2A', '2B', '2D', '3A', '3C', '4B', '4C', '5A', '5D', '6A', '0A']);
+const reserved = new Set(['1B', '3D', '4A', '5B', '0B']);
 
 export const constructionUnits: ConstructionUnit[] = [
-  {
-    id: 'unit-1a',
-    projectId: 'proj-01',
-    unitNumber: 'Vivienda 1º A',
-    floor: 'Planta 1ª',
-    typology: 'apartment',
-    surfaceUsableM2: 118,
-    surfaceBuiltM2: 142,
-    bedrooms: 3,
-    bathrooms: 2,
-    terraceM2: 16,
-    garageSpaces: 1,
-    priceEur: 685000,
-    status: 'available',
-    orientation: 'South',
-    features: ['Cocina isla Porcelanosa', 'Suelo radiante/refrescante', 'Suite principal con vestidor', 'Doble orientación cruzada'],
-  },
-  {
-    id: 'unit-3b',
-    projectId: 'proj-01',
-    unitNumber: 'Vivienda 3º B',
-    floor: 'Planta 3ª',
-    typology: 'apartment',
-    surfaceUsableM2: 92,
-    surfaceBuiltM2: 115,
-    bedrooms: 2,
-    bathrooms: 2,
-    terraceM2: 12,
-    garageSpaces: 1,
-    priceEur: 535000,
-    status: 'reserved',
-    orientation: 'East',
-    features: ['Gran salón acristalado', 'Domótica KNX integrada', 'Armarios empotrados lacados', 'Trastero incluido'],
-  },
-  {
-    id: 'unit-atico-a',
-    projectId: 'proj-01',
-    unitNumber: 'Ático Dúplex Ático A',
-    floor: 'Planta Ático 7ª',
-    typology: 'penthouse',
-    surfaceUsableM2: 184,
-    surfaceBuiltM2: 228,
-    bedrooms: 4,
-    bathrooms: 3,
-    terraceM2: 85,
-    garageSpaces: 2,
-    priceEur: 1390000,
-    status: 'available',
-    orientation: 'Dual',
-    features: ['Jacuzzi privado en terraza', 'Vistas panorámicas 360° Madrid', 'Acceso directo de ascensor con llave', 'Acabados en mármol Calacatta'],
-  },
-  {
-    id: 'unit-local-01',
-    projectId: 'proj-01',
-    unitNumber: 'Local Comercial 01 (Chamberí)',
-    floor: 'Planta Baja / Calle',
-    typology: 'commercial_local',
-    surfaceUsableM2: 240,
-    surfaceBuiltM2: 275,
-    bedrooms: 0,
-    bathrooms: 2,
-    terraceM2: 0,
-    garageSpaces: 1,
-    priceEur: 820000,
-    status: 'available',
-    orientation: 'South',
-    features: ['Salida de humos reglamentaria', 'Fachada lineal de 18 metros a calle', 'Altura libre 4.20 m', 'Idóneo restauración o clínica'],
-  },
-  {
-    id: 'unit-local-02',
-    projectId: 'proj-01',
-    unitNumber: 'Local Comercial 02 (Escaparate)',
-    floor: 'Planta Baja',
-    typology: 'commercial_local',
-    surfaceUsableM2: 165,
-    surfaceBuiltM2: 190,
-    bedrooms: 0,
-    bathrooms: 1,
-    terraceM2: 0,
-    garageSpaces: 1,
-    priceEur: 560000,
-    status: 'sold',
-    orientation: 'East',
-    features: ['Gran visibilidad peatonal', 'Apto para cualquier actividad comercial', 'Carga y descarga en sótano'],
-  },
+  ...['A', 'B'].map((l, i): ConstructionUnit => ({
+    id: `0${l}`, floor: 0, letter: l, type: 'local', beds: 0, baths: 1, areaM2: i ? 118 : 146, terraceM2: 0,
+    orientation: i ? 'Este' : 'Sur', price: i ? 420000 : 515000,
+    status: sold.has(`0${l}`) ? 'vendida' : reserved.has(`0${l}`) ? 'reservada' : 'libre',
+    plan: { x: i * 50, y: 0, w: 50, h: 60 },
+  })),
+  ...[1, 2, 3, 4, 5].flatMap((f) =>
+    ['A', 'B', 'C', 'D'].map((l, i): ConstructionUnit => {
+      const big = i % 2 === 0;
+      const area = (big ? 104 : 82) + f * 2;
+      const key = `${f}${l}`;
+      return {
+        id: key, floor: f, letter: l, type: 'piso', beds: big ? 3 : 2, baths: big ? 2 : 1, areaM2: area,
+        terraceM2: i === 0 ? 9 : i === 1 ? 6 : 0, orientation: orient[i], price: Math.round((area * (6900 + f * 120)) / 1000) * 1000,
+        status: sold.has(key) ? 'vendida' : reserved.has(key) ? 'reservada' : 'libre',
+        plan: quad[i],
+      };
+    }),
+  ),
+  ...['A', 'B'].map((l, i): ConstructionUnit => ({
+    id: `6${l}`, floor: 6, letter: l, type: 'atico', beds: 4, baths: 3, areaM2: i ? 168 : 184, terraceM2: i ? 62 : 85,
+    orientation: i ? 'Sur-Oeste' : 'Sur', price: i ? 1690000 : 1890000,
+    status: sold.has(`6${l}`) ? 'vendida' : reserved.has(`6${l}`) ? 'reservada' : 'libre',
+    plan: { x: i * 50, y: 0, w: 50, h: 60 },
+  })),
 ];
 
-export const siteDailyLogs: SiteDailyLog[] = [
-  {
-    id: 'log-01',
-    siteId: 'proj-01',
-    siteName: 'Residencial Caelum Chamberí',
-    date: '2026-11-07',
-    weather: {
-      tempC: 17,
-      condition: 'Sunny',
-      windKmh: 12,
-      rainMm: 0,
-    },
-    crewTotal: 34,
-    activeTrades: [
-      { trade: 'Fachadas Ventiladas', subcontractor: 'Castecon Fachadas S.L.', workers: 10, zone: 'Fachada Sur y Este (Plantas 4 a 6)' },
-      { trade: 'Fontanería & Climatización', subcontractor: 'Instalaciones TermoSol', workers: 8, zone: 'Plantas 2 y 3 (Suelo radiante)' },
-      { trade: 'Electricidad y Domótica', subcontractor: 'ElecSur Ingeniería', workers: 6, zone: 'Plantas 1 a 3 (Tendido de tubos)' },
-      { trade: 'Yesos y Pladur', subcontractor: 'Tabiquerías Madrid', workers: 10, zone: 'Planta 2 (Distribución interior)' },
-    ],
-    materialDeliveries: [
-      { material: 'Placas Lana de Roca Aislante 100mm', quantity: '480 m²', supplier: 'Rockwool Ibérica', qualityTicket: 'ISO-CERT-8841' },
-      { material: 'Tubería PEX multicapa suelo radiante', quantity: '2.400 m', supplier: 'Uponor', qualityTicket: 'UP-2026-11' },
-      { material: 'Mortero autonivelante para recrecido', quantity: '18 t', supplier: 'Cementos Portland', qualityTicket: 'ALB-99214' },
-    ],
-    safetyInspectionPassed: true,
-    notes: 'Jornada transcurrida sin incidencias de seguridad. Se completa el aislamiento de lana de roca en fachada Sur. Se realiza prueba de estanqueidad en suelo radiante de Planta 2 superada a 6 bar de presión sin fugas.',
-    supervisor: 'Ing. Carlos Mendoza (Jefe de Obra)',
-  },
-  {
-    id: 'log-02',
-    siteId: 'proj-03',
-    siteName: 'Residencial Enclave Moraleja',
-    date: '2026-11-06',
-    weather: {
-      tempC: 15,
-      condition: 'Overcast',
-      windKmh: 18,
-      rainMm: 0,
-    },
-    crewTotal: 19,
-    activeTrades: [
-      { trade: 'Muros de Hormigón Visto', subcontractor: 'Estructuras y Encofrados Sierra', workers: 12, zone: 'Villa 3 y Villa 4' },
-      { trade: 'Geotermia y Sondeos', subcontractor: 'GeoEnergía Ibérica', workers: 4, zone: 'Zona de pozos geotérmicos Villa 1' },
-      { trade: 'Impermeabilización', subcontractor: 'Danosa Protect', workers: 3, zone: 'Cubiertas planas Villa 2' },
-    ],
-    materialDeliveries: [
-      { material: 'Hormigón Blanco Autocompactante HA-30', quantity: '42 m³', supplier: 'Hormigones Holcim', qualityTicket: 'HOL-4410' },
-      { material: 'Armadura Acero Corrugado B-500S', quantity: '6.200 kg', supplier: 'Celsa Group', qualityTicket: 'CELSA-099' },
-    ],
-    safetyInspectionPassed: true,
-    notes: 'Hormigonado de muros exteriores de hormigón blanco autocompactante en Villa 3 ejecutado según pliego. Probetas de control tomadas por laboratorio acreditado Ensayos Técnicos S.A.',
-    supervisor: 'Arq. Técnica Laura Vidal',
-  },
+export const constructionSites: ConstructionSite[] = [
+  { id: 's1', projectSlug: 'caelum-chamberi', name: 'Residencial Caelum', district: 'Chamberí', health: 'en-plazo', progress: 64, planned: 66, certified: 63, budget: 7850000, crew: 46, foreman: 'Raúl Garrido', phase: 'Cerramientos y fachada', weather: '14 °C · despejado', alerts: ['Inspección de fachada el jueves'], x: 44, y: 34 },
+  { id: 's2', projectSlug: 'enclave-moraleja', name: 'Enclave Moraleja', district: 'Alcobendas', health: 'riesgo', progress: 38, planned: 44, certified: 37, budget: 6200000, crew: 22, foreman: 'Nuria Peña', phase: 'Estructura de madera CLT', weather: '12 °C · viento 38 km/h', alerts: ['Viento fuerte: grúa parada', 'Retraso de 6 días en paneles CLT'], x: 66, y: 10 },
+  { id: 's3', projectSlug: 'fabrica-arganzuela', name: 'La Fábrica Arganzuela', district: 'Arganzuela', health: 'en-plazo', progress: 81, planned: 80, certified: 82, budget: 5300000, crew: 31, foreman: 'Iván Lozano', phase: 'Acabados interiores', weather: '15 °C · nublado', alerts: [], x: 40, y: 62 },
+  { id: 's4', projectSlug: 'mirador-valdebebas', name: 'Mirador Valdebebas · vaciado', district: 'Valdebebas', health: 'retraso', progress: 9, planned: 15, certified: 8, budget: 12600000, crew: 12, foreman: 'Sonia Prieto', phase: 'Movimiento de tierras', weather: '13 °C · lluvia 6 mm', alerts: ['Licencia de vaciado pendiente de visado', 'Lluvia: tajo parado por la tarde'], x: 78, y: 22 },
+  { id: 's5', projectSlug: 'caelum-chamberi', name: 'Reforma Hotel Prado', district: 'Retiro', health: 'en-plazo', progress: 52, planned: 50, certified: 51, budget: 2900000, crew: 18, foreman: 'Álvaro Méndez', phase: 'Instalaciones', weather: '15 °C · despejado', alerts: [], x: 52, y: 52 },
 ];
 
-export const constructionSubcontractors = [
-  { id: 'sub-01', name: 'Castecon Fachadas S.L.', trade: 'Fachadas Ventiladas y Piedra', rating: 4.9, activeWorkers: 10, currentSite: 'Residencial Caelum' },
-  { id: 'sub-02', name: 'Estructuras y Encofrados Sierra', trade: 'Estructura y Ferralla', rating: 4.8, activeWorkers: 12, currentSite: 'Enclave Moraleja' },
-  { id: 'sub-03', name: 'Instalaciones TermoSol', trade: 'Aerotermia y Suelo Radiante', rating: 4.9, activeWorkers: 8, currentSite: 'Residencial Caelum' },
-  { id: 'sub-04', name: 'ElecSur Ingeniería', trade: 'Baja Tensión y Domótica KNX', rating: 4.7, activeWorkers: 6, currentSite: 'Residencial Caelum' },
-  { id: 'sub-05', name: 'GeoEnergía Ibérica', trade: 'Sondeos Geotérmicos', rating: 5.0, activeWorkers: 4, currentSite: 'Enclave Moraleja' },
-];
+export const constructionDailyLog: ConstructionDailyLog = {
+  date: '2026-11-20',
+  siteId: 's1',
+  weather: 'Despejado',
+  tempC: 14,
+  crews: [
+    { trade: 'Fachada ventilada', company: 'Fachadas Lumen', workers: 12 },
+    { trade: 'Fontanería y clima', company: 'Instalaciones Meridiano', workers: 9 },
+    { trade: 'Electricidad', company: 'Instalaciones Meridiano', workers: 7 },
+    { trade: 'Albañilería', company: 'Strukto', workers: 14 },
+    { trade: 'Carpintería exterior', company: 'Carpinterías Ébano', workers: 4 },
+  ],
+  entries: [
+    { time: '07:58', type: 'visita', text: 'Charla de seguridad en caseta: trabajos en altura en fachada norte.', author: 'R. Garrido' },
+    { time: '09:20', type: 'material', text: 'Recepción de 28 paneles de piedra caliza (albarán 22-4471).', author: 'R. Garrido' },
+    { time: '11:05', type: 'avance', text: 'Fachada sur terminada hasta planta 5. Andamio baja a planta 4.', author: 'Fachadas Lumen' },
+    { time: '12:40', type: 'incidencia', text: 'Falta un premarco en 3.º C. Se pide reposición para el lunes.', author: 'Carpinterías Ébano' },
+  ],
+  checklist: ['Andamios revisados y etiquetados', 'Líneas de vida en cubierta', 'Orden y limpieza en plantas', 'Accesos y vallado de obra', 'EPIs del personal subcontratado'],
+};
 
 export const constructionData = {
-  company: {
-    name: 'Strukto Constructora & Desarrollos',
-    tagline: 'Construcción residencial, comercial y obra civil de máxima eficiencia',
-    establishedYear: 1991,
-    yearsExperience: 35,
-    m2BuiltTotal: 148000,
-    activeSitesCount: 6,
-    homesDelivered: 840,
-    headquarters: 'Calle Velázquez 110, Barrio de Salamanca, Madrid',
-    phone: '+34 912 400 900',
-    email: 'contacto@strukto-constructora.es',
-    certifications: ['ISO 9001 (Calidad)', 'ISO 14001 (Medio Ambiente)', 'ISO 45001 (Seguridad Laboral)', 'BREEAM Official Partner', 'Passivhaus Tradesperson'],
-  },
+  company: constructionCompany,
   projects: constructionProjects,
   units: constructionUnits,
-  dailyLogs: siteDailyLogs,
-  subcontractors: constructionSubcontractors,
-  routes: constructionRoutes,
+  sites: constructionSites,
+  dailyLog: constructionDailyLog,
 };
+
+export const constructionKindLabel: Record<ConstructionKind, string> = {
+  residencial: 'Residencial',
+  terciario: 'Oficinas',
+  rehabilitacion: 'Rehabilitación',
+  industrial: 'Industrial',
+};
+
+export const constructionStatusLabel: Record<ConstructionStatus, string> = {
+  obra: 'En obra',
+  entregado: 'Entregado',
+  plano: 'Sobre plano',
+};
+
+export const formatEurShort = (n: number) =>
+  n >= 1_000_000
+    ? `${(n / 1_000_000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} M€`
+    : `${Math.round(n / 1000).toLocaleString('es-ES')} k€`;

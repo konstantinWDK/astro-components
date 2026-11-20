@@ -1,0 +1,313 @@
+---
+/**
+ * ConstructionOsSidebar — Navigation for the Strukto Site OS, styled like the layer panel of a CAD
+ * program: each link is a numbered layer (L-01…) with a visibility tick, a counter badge, and a
+ * card with the active site's progress on a ruler. On phones it is hidden and opens as a full-width
+ * sheet under the top bar (ConstructionOsTopbar's menu button controls it through its id).
+ *
+ * @param {Array<{label: string, href: string, badge?: number|string}>} items - Links.
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {string} brand - Company name.
+ * @param {string} homeHref - Brand link (public site).
+ * @param {{name: string, progress: number, week: number}} site - Active site card; omit to hide.
+ * @param {string} id - Element id the top bar menu button points at. Default 'sk-os-nav'.
+ * @param {string} variant - 'layers' (numbered) | 'plain'. Default 'layers'.
+ * @param {string} size - 'md' | 'lg' width. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; aria-current on the active link; codes and
+ * ticks are aria-hidden; badges are read with the link; on phones the sheet closes with Escape
+ * (handled by the top bar) and is hidden from the accessibility tree while closed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+
+interface Item { label: string; href: string; badge?: number | string }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  brand?: string;
+  homeHref?: string;
+  site?: { name: string; progress: number; week: number };
+  id?: string;
+  variant?: 'layers' | 'plain';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [
+    { label: 'Cuadro de mando', href: '#' },
+    { label: 'Obras', href: '#obras', badge: 5 },
+  ],
+  currentHref = '#',
+  brand = 'Strukto',
+  homeHref = '/',
+  site,
+  id = 'sk-os-nav',
+  variant = 'layers',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const norm = (h: string) => h.replace(/\/$/, '');
+const isCurrent = (href: string) => norm(href) === norm(currentHref);
+const hasBadge = (b?: number | string) => b !== undefined && b !== 0 && b !== '';
+---
+
+<nav id={id} class:list={['sk-ui', 'sk-side', `sk-side--${variant}`, `sk-side--${size}`, classAttr]} aria-label="Site OS" data-sk-side {...rest}>
+  <a href={homeHref} class="sk-side__brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3 25h22M6 25V9l8-6 8 6v16M10 25v-7h8v7M6 13h16" /></svg>
+    <span>{brand}<small class="sk-mono">Site OS</small></span>
+  </a>
+
+  <p class="sk-side__cap sk-mono" aria-hidden="true">Capas</p>
+  <ul class="sk-side__list" role="list">
+    {items.map((it, i) => (
+      <li>
+        <a href={it.href} class="sk-side__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+          <span class="sk-side__code sk-mono" aria-hidden="true">L-{String(i + 1).padStart(2, '0')}</span>
+          <span class="sk-side__label">{it.label}</span>
+          {hasBadge(it.badge) && <span class="sk-side__badge sk-mono">{it.badge}<span class="sk-sr"> pendientes</span></span>}
+          <span class="sk-side__eye" aria-hidden="true"></span>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {site && (
+    <div class="sk-side__site">
+      <p class="sk-mono">Obra activa · S{site.week}</p>
+      <strong>{site.name}</strong>
+      <span class="sk-side__ruler" role="img" aria-label={`Avance ${site.progress} %`}>
+        <i style={`width:${site.progress}%`}></i>
+      </span>
+      <span class="sk-side__ticks sk-mono" aria-hidden="true"><span>0</span><span>50</span><span>100</span></span>
+    </div>
+  )}
+</nav>
+
+<style>
+  .sk-side {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 250px;
+    height: 100vh;
+    padding: 16px 12px;
+    border-right: 1px solid var(--sk-line);
+    background: var(--sk-bg);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+
+  .sk-side--lg {
+    width: 290px;
+  }
+
+  @media (min-width: 1024px) {
+    .sk-side {
+      position: sticky;
+      top: 0;
+    }
+  }
+
+  .sk-side__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 6px;
+    color: var(--sk-ink);
+    text-decoration: none;
+  }
+
+  .sk-side__brand svg {
+    color: var(--sk-accent);
+  }
+
+  .sk-side__brand span {
+    display: grid;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .sk-side__brand small {
+    margin-top: 3px;
+    color: var(--sk-ink-3);
+    font-size: 0.62rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+  }
+
+  .sk-side__cap {
+    margin: 6px 6px 0;
+    color: var(--sk-ink-3);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+  }
+
+  .sk-side__list {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk-side__link {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    color: var(--sk-ink-2);
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .sk-side__link:hover {
+    background: var(--sk-fill);
+    color: var(--sk-ink);
+  }
+
+  .sk-side__link[aria-current='page'] {
+    border-color: var(--sk-line-soft);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+    box-shadow: inset 3px 0 0 var(--sk-accent);
+  }
+
+  .sk-side__link:focus-visible,
+  .sk-side__brand:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: -2px;
+  }
+
+  .sk-side__code {
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+  }
+
+  .sk-side--plain .sk-side__code,
+  .sk-side--plain .sk-side__cap {
+    display: none;
+  }
+
+  .sk-side__link[aria-current='page'] .sk-side__code {
+    color: var(--sk-accent);
+  }
+
+  .sk-side__label {
+    font-size: 0.92rem;
+  }
+
+  .sk-side__badge {
+    padding: 1px 6px;
+    border: 1px solid var(--sk-accent);
+    color: var(--sk-accent);
+    font-size: 0.68rem;
+  }
+
+  .sk-side__eye {
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-side__link[aria-current='page'] .sk-side__eye {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+  }
+
+  .sk-side__site {
+    display: grid;
+    gap: 6px;
+    margin-top: auto;
+    padding: 12px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+  }
+
+  .sk-side__site p {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.64rem;
+    text-transform: uppercase;
+  }
+
+  .sk-side__site strong {
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    text-transform: uppercase;
+  }
+
+  .sk-side__ruler {
+    display: block;
+    height: 8px;
+    border: 1px solid var(--sk-line);
+    background: repeating-linear-gradient(90deg, transparent 0 9%, var(--sk-line-soft) 9% 10%);
+  }
+
+  .sk-side__ruler i {
+    display: block;
+    height: 100%;
+    background: var(--sk-accent);
+  }
+
+  .sk-side__ticks {
+    display: flex;
+    justify-content: space-between;
+    color: var(--sk-ink-3);
+    font-size: 0.6rem;
+  }
+
+  @media (max-width: 1023px) {
+    .sk-side {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      z-index: 45;
+      width: auto;
+      height: auto;
+      max-height: calc(100dvh - 64px);
+      border-right: 0;
+      border-bottom: 1px solid var(--sk-line);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+      transform: translateY(-110%);
+      visibility: hidden;
+      transition: transform 0.35s var(--sk-ease), visibility 0s linear 0.35s;
+    }
+
+    .sk-side.is-open {
+      transform: none;
+      visibility: visible;
+      transition: transform 0.35s var(--sk-ease), visibility 0s;
+    }
+
+    .sk-side__brand {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-side,
+    .sk-side * {
+      transition: none !important;
+    }
+  }
+</style>

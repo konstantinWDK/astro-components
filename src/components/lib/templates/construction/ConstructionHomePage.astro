@@ -1,49 +1,102 @@
 ---
 /**
- * ConstructionHomePage — Corporate landing page for Strukto Constructora & Desarrollos.
- * Showcases high-precision buildings, active sites ticker, portfolio grid, 5-stage turnkey workflow,
- * Passivhaus sustainability credentials, and project inquiry form.
+ * ConstructionHomePage — Home of the "Strukto" template: self-drawing blueprint hero, recent
+ * projects as drawing sheets, the scroll-scrubbed construction sequence, an estimator band and
+ * the work-order request form.
  *
- * @param {ConstructionRoutes} routes - Template route paths.
+ * @param {ConstructionRoutes} routes - Template route URLs.
+ * @param {typeof constructionData} data - Company, projects and sites.
+ * @param {string} action - Optional action for the request form.
  */
 import ConstructionSiteLayout from './ConstructionSiteLayout.astro';
-import ConstructionHero from '../../sections/ConstructionHero.astro';
-import ConstructionProjectsGrid from '../../sections/ConstructionProjectsGrid.astro';
-import ConstructionStageTimeline from '../../sections/ConstructionStageTimeline.astro';
-import ConstructionSustainabilityBanner from '../../sections/ConstructionSustainabilityBanner.astro';
-import ConstructionInquiryForm from '../../sections/ConstructionInquiryForm.astro';
-import { constructionRoutes, constructionProjects, type ConstructionRoutes } from './data';
+import ConstructionBlueprintHero from '../../sections/ConstructionBlueprintHero.astro';
+import ConstructionProjectSheets from '../../sections/ConstructionProjectSheets.astro';
+import ConstructionBuildSequence from '../../sections/ConstructionBuildSequence.astro';
+import ConstructionTenderForm from '../../sections/ConstructionTenderForm.astro';
+import { constructionRoutes, constructionData, type ConstructionRoutes } from './data';
 
 interface Props {
   routes?: ConstructionRoutes;
+  data?: typeof constructionData;
+  action?: string;
 }
 
-const { routes = constructionRoutes } = Astro.props;
+const { routes = constructionRoutes, data = constructionData, action } = Astro.props;
 ---
 
-<ConstructionSiteLayout
-  title="Strukto Constructora & Desarrollos · Edificación Residencial y Terciario de Alta Eficiencia"
-  description="Líderes en construcción residencial prémium, locales comerciales y edificación Passivhaus con más de 35 años de experiencia técnica."
-  routes={routes}
->
-  <ConstructionHero
-    projectsHref={routes.projects}
-    estimatorHref={routes.estimator}
-  />
-
-  <ConstructionProjectsGrid
-    projects={constructionProjects}
-    detailBase={routes.projects}
-  />
-
-  <ConstructionStageTimeline
-    ctaHref={routes.estimator}
-  />
-
-  <ConstructionSustainabilityBanner />
-
-  <ConstructionInquiryForm
-    phone="+34 912 400 900"
-    email="contacto@strukto-constructora.es"
-  />
+<ConstructionSiteLayout title={`${data.company.name} · Constructora en Madrid desde ${data.company.founded}`} current="home" routes={routes}>
+  <ConstructionBlueprintHero projectsHref={routes.projects} estimatorHref={routes.estimator} stats={data.company.stats} sites={data.sites} />
+  <ConstructionProjectSheets projects={data.projects} detailBase={routes.projects} title="Obras recientes" showFilters={false} limit={3} />
+  <div class="sk-ui sk-home__more"><a href={routes.projects}>Ver los {data.projects.length} proyectos →</a></div>
+  <ConstructionBuildSequence />
+  <section class="sk-ui sk-home__band sk-grid-bg" aria-labelledby="sk-home-band">
+    <p class="sk-mono">Calculadora · PEM, PEC, honorarios y plazo</p>
+    <h2 id="sk-home-band">¿Cuánto cuesta construir lo tuyo?</h2>
+    <a href={routes.estimator}>Calcular en 1 minuto</a>
+  </section>
+  <ConstructionTenderForm action={action} variant="split" />
 </ConstructionSiteLayout>
+
+<style>
+  .sk-home__more {
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 56px;
+    background: var(--sk-bg);
+  }
+
+  .sk-home__more a,
+  .sk-home__band a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 1.3rem;
+    border: 1px solid var(--sk-line);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .sk-home__more a:hover {
+    background: var(--sk-fill);
+  }
+
+  .sk-home__band {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: clamp(3rem, 8vw, 6rem) 16px;
+    border-block: 1px solid var(--sk-line);
+    text-align: center;
+  }
+
+  .sk-home__band p {
+    margin: 0;
+    color: var(--sk-accent);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-home__band h2 {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(1.8rem, 6vw, 3.4rem);
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .sk-home__band a {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-home__more a:focus-visible,
+  .sk-home__band a:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 3px;
+  }
+</style>

@@ -1,0 +1,582 @@
+---
+/**
+ * FoodCrewSignIn — Crew sign-in for the BiteFlow kitchen OS: pick your station as a sticker card
+ * (kitchen, pass, dispatch, manager), type your crew number and a 4-digit PIN with the big
+ * on-screen keypad (made for greasy fingers and tablets), and land on the right screen. The left
+ * panel shows tonight's service on a tilted order ticket.
+ *
+ * @param {Record<string, string>} destinations - Where each role lands: { cocina, pase, reparto, gerencia }.
+ * @param {string} backHref - Link back to the public site.
+ * @param {string} action - Optional form action (POST). Without it, the demo redirects on the client.
+ * @param {string} variant - 'split' (ticket panel + form) | 'card' (form only). Default 'split'.
+ * @param {string} size - 'md' | 'lg' keypad size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: roles are a radio group; the crew number and PIN have visible labels; the PIN can
+ * be shown; keypad keys are buttons with names ("Borrar"); errors are linked with
+ * aria-describedby and announced; demo buttons are named for their role.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodArt } from '../templates/food-delivery/food-art';
+
+interface OwnProps {
+  destinations?: { cocina: string; pase: string; reparto: string; gerencia: string };
+  backHref?: string;
+  action?: string;
+  variant?: 'split' | 'card';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  destinations = { cocina: '#kds', pase: '#pedidos', reparto: '#riders', gerencia: '#panel' },
+  backHref = '/',
+  action,
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const roles = [
+  { id: 'cocina', label: 'Cocina', hint: 'Pantalla KDS', icon: 'flame' },
+  { id: 'pase', label: 'Pase', hint: 'Pedidos y tickets', icon: 'receipt' },
+  { id: 'reparto', label: 'Reparto', hint: 'Riders y mapa', icon: 'bike' },
+  { id: 'gerencia', label: 'Gerencia', hint: 'Panel del servicio', icon: 'pulse' },
+] as const;
+const icons: Record<string, string> = {
+  flame: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/>',
+  receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  bike: '<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h5l3 8"/>',
+  pulse: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+};
+const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'];
+const uid = `bf-in-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<div class:list={['bf-ui', 'bf-in', `bf-in--${variant}`, `bf-in--${size}`, classAttr]} data-bf-in data-dest={JSON.stringify(destinations)} {...rest}>
+  {variant === 'split' && (
+    <aside class="bf-in__panel" aria-label="Servicio de esta noche">
+      <a href={backHref} class="bf-in__back">← Volver a la web</a>
+      <div class="bf-in__ticket">
+        <p class="bf-in__ticket-top">BiteFlow · Cocina Lavapiés</p>
+        <p class="bf-in__ticket-title">Turno de noche</p>
+        <ul role="list">
+          <li><span>Reservas de horno</span><b>18</b></li>
+          <li><span>Riders en turno</span><b>5</b></li>
+          <li><span>Pedidos previstos</span><b>~240</b></li>
+          <li><span>Plato del día</span><b>Diavola</b></li>
+        </ul>
+        <p class="bf-in__ticket-foot">¡Buen servicio, equipo!</p>
+      </div>
+      <div class="bf-in__float" aria-hidden="true">
+        <svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt('pizza')} />
+        <svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt('burger')} />
+        <svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt('ramen')} />
+      </div>
+    </aside>
+  )}
+
+  <form class="bf-in__form" method="post" action={action} novalidate data-form>
+    <h1 class="bf-in__title">Entrar al turno</h1>
+    <p class="bf-in__lead">Elige tu partida y marca tu PIN.</p>
+
+    <fieldset class="bf-in__roles">
+      <legend>Partida</legend>
+      {roles.map((r, i) => (
+        <label class="bf-in__role">
+          <input type="radio" name="role" value={r.id} checked={i === 0} />
+          <span class="bf-in__role-card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={icons[r.icon]} />
+            <strong>{r.label}</strong>
+            <small>{r.hint}</small>
+          </span>
+        </label>
+      ))}
+    </fieldset>
+
+    <div class="bf-in__field">
+      <label for={`${uid}-crew`}>Número de equipo</label>
+      <input id={`${uid}-crew`} name="crew" type="text" inputmode="numeric" autocomplete="username" placeholder="Ej. 0412" data-crew />
+    </div>
+
+    <div class="bf-in__field">
+      <div class="bf-in__pinhead">
+        <label for={`${uid}-pin`}>PIN de 4 cifras</label>
+        <button type="button" class="bf-in__show" aria-pressed="false" data-show>Mostrar</button>
+      </div>
+      <input id={`${uid}-pin`} name="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" class="bf-in__pin" data-pin />
+      <div class="bf-in__dots" aria-hidden="true" data-dots><i></i><i></i><i></i><i></i></div>
+      <p class="bf-in__err" id={`${uid}-err`} role="alert" data-err></p>
+    </div>
+
+    <div class="bf-in__pad" role="group" aria-label="Teclado del PIN">
+      {keys.map((k) => (
+        <button
+          type="button"
+          class:list={['bf-in__key', { 'bf-in__key--fn': k === 'clear' || k === 'back' }]}
+          data-key={k}
+          aria-label={k === 'clear' ? 'Borrar todo' : k === 'back' ? 'Borrar' : k}
+        >
+          {k === 'clear' ? 'C' : k === 'back' ? '⌫' : k}
+        </button>
+      ))}
+    </div>
+
+    <button type="submit" class="bf-in__submit">Entrar</button>
+
+    <div class="bf-in__demo">
+      <p>Acceso de demostración:</p>
+      <div>
+        {roles.map((r) => (
+          <button type="button" class="bf-in__demo-btn" data-demo={r.id} aria-label={`Entrar como demo de ${r.label}`}>{r.label}</button>
+        ))}
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  function initFoodIn() {
+    document.querySelectorAll<HTMLElement>('[data-bf-in]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+      const pin = root.querySelector<HTMLInputElement>('[data-pin]')!;
+      const crew = root.querySelector<HTMLInputElement>('[data-crew]')!;
+      const err = root.querySelector<HTMLElement>('[data-err]')!;
+      const dots = [...root.querySelectorAll<HTMLElement>('[data-dots] i')];
+      const dest = JSON.parse(root.dataset.dest || '{}') as Record<string, string>;
+
+      const paint = () => {
+        pin.value = pin.value.replace(/\D/g, '').slice(0, 4);
+        dots.forEach((d, i) => d.classList.toggle('is-on', i < pin.value.length));
+      };
+      pin.addEventListener('input', paint);
+
+      root.querySelectorAll<HTMLButtonElement>('[data-key]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const k = b.dataset.key!;
+          if (k === 'clear') pin.value = '';
+          else if (k === 'back') pin.value = pin.value.slice(0, -1);
+          else if (pin.value.length < 4) pin.value += k;
+          paint();
+          b.classList.remove('is-hit');
+          void b.offsetWidth;
+          b.classList.add('is-hit');
+        }),
+      );
+
+      const show = root.querySelector<HTMLButtonElement>('[data-show]')!;
+      show.addEventListener('click', () => {
+        const on = pin.type === 'password';
+        pin.type = on ? 'text' : 'password';
+        show.setAttribute('aria-pressed', String(on));
+        show.textContent = on ? 'Ocultar' : 'Mostrar';
+      });
+
+      const go = () => {
+        const role = (form.querySelector<HTMLInputElement>('input[name="role"]:checked')?.value ?? 'cocina') as string;
+        if (form.getAttribute('action')) form.submit();
+        else window.location.href = dest[role] ?? '#';
+      };
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const bad = !crew.value.trim() ? 'Escribe tu número de equipo.' : pin.value.length !== 4 ? 'El PIN tiene 4 cifras.' : '';
+        err.textContent = bad;
+        const field = !crew.value.trim() ? crew : pin;
+        [crew, pin].forEach((f) => f.removeAttribute('aria-invalid'));
+        if (bad) {
+          field.setAttribute('aria-invalid', 'true');
+          field.setAttribute('aria-describedby', err.id);
+          root.classList.remove('is-shake');
+          void root.offsetWidth;
+          root.classList.add('is-shake');
+          field.focus();
+          return;
+        }
+        go();
+      });
+
+      root.querySelectorAll<HTMLButtonElement>('[data-demo]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const r = form.querySelector<HTMLInputElement>(`input[name="role"][value="${b.dataset.demo}"]`);
+          if (r) r.checked = true;
+          crew.value = '0000';
+          pin.value = '0000';
+          paint();
+          window.setTimeout(go, 250);
+        }),
+      );
+    });
+  }
+  initFoodIn();
+  document.addEventListener('astro:page-load', initFoodIn);
+</script>
+
+<style>
+  .bf-in {
+    position: relative;
+    display: grid;
+    min-height: 100vh;
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  @media (min-width: 960px) {
+    .bf-in--split {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .bf-in__panel {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+    background: repeating-linear-gradient(90deg, var(--bf-tomato) 0 44px, var(--bf-tomato-hover) 44px 88px);
+    border-right: 3px solid var(--bf-outline);
+    overflow: hidden;
+  }
+
+  .bf-in__back {
+    position: absolute;
+    top: var(--sp-4, 1rem);
+    left: var(--sp-4, 1rem);
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .bf-in__ticket {
+    position: relative;
+    z-index: 1;
+    width: min(320px, 86%);
+    margin-top: var(--sp-8, 2rem);
+    padding: 20px 20px 26px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    border: 3px solid var(--bf-outline);
+    box-shadow: 8px 8px 0 var(--bf-outline);
+    transform: rotate(-4deg);
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    -webkit-mask: radial-gradient(circle 8px at 50% 100%, transparent 98%, #000) 0 0 / 22px 100% repeat-x;
+    mask: radial-gradient(circle 8px at 50% 100%, transparent 98%, #000) 0 0 / 22px 100% repeat-x;
+  }
+
+  .bf-in__ticket-top {
+    margin: 0;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bf-ink-3);
+  }
+
+  .bf-in__ticket-title {
+    margin: 4px 0 12px;
+    font-family: var(--bf-font-display);
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .bf-in__ticket ul {
+    margin: 0;
+    padding: 12px 0;
+    border-block: 2px dashed var(--bf-line);
+    list-style: none;
+  }
+
+  .bf-in__ticket li {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+  }
+
+  .bf-in__ticket-foot {
+    margin: 12px 0 0;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .bf-in__float svg {
+    position: absolute;
+    width: clamp(90px, 14vw, 150px);
+    filter: drop-shadow(6px 6px 0 var(--bf-outline));
+    animation: bf-in-float 6s ease-in-out infinite;
+  }
+
+  .bf-in__float svg:nth-child(1) { top: 12%; right: 8%; }
+  .bf-in__float svg:nth-child(2) { bottom: 8%; left: 6%; animation-delay: -2s; }
+  .bf-in__float svg:nth-child(3) { bottom: 14%; right: 12%; animation-delay: -4s; width: clamp(70px, 10vw, 110px); }
+
+  .bf-in__form {
+    position: relative;
+    width: min(460px, 100%);
+    margin: 0 auto;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+    box-sizing: border-box;
+    align-self: center;
+  }
+
+  .bf-in.is-shake .bf-in__form {
+    animation: bf-in-shake 0.4s ease;
+  }
+
+  .bf-in__title {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(2.2rem, 7vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .bf-in__lead {
+    margin: 4px 0 var(--sp-5, 1.25rem);
+    color: var(--bf-ink-2);
+  }
+
+  .bf-in__roles {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .bf-in__roles legend,
+  .bf-in__field label {
+    margin-bottom: 6px;
+    font-weight: 800;
+  }
+
+  .bf-in__role {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bf-in__role input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .bf-in__role-card {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 2px solid var(--bf-line);
+    border-radius: 16px;
+    background: var(--bf-paper);
+    transition: transform 0.2s var(--bf-ease-pop);
+  }
+
+  .bf-in__role-card small {
+    color: var(--bf-ink-3);
+    font-weight: 600;
+  }
+
+  .bf-in__role input:checked + .bf-in__role-card {
+    border-color: var(--bf-outline);
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+    transform: rotate(-1.5deg);
+  }
+
+  .bf-in__role input:checked + .bf-in__role-card small {
+    color: inherit;
+  }
+
+  .bf-in__role input:focus-visible + .bf-in__role-card,
+  .bf-in :is(button, a, input):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-in__field {
+    display: grid;
+    margin-bottom: var(--sp-3, 0.75rem);
+  }
+
+  .bf-in__field input {
+    min-height: 52px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-size: 1.1rem;
+  }
+
+  .bf-in__field input[aria-invalid='true'] {
+    border-color: var(--bf-tomato);
+  }
+
+  .bf-in__pinhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bf-in__show {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    background: none;
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .bf-in__pin {
+    letter-spacing: 0.6em;
+    font-weight: 800;
+  }
+
+  .bf-in__dots {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .bf-in__dots i {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    transition: background 0.15s ease, transform 0.25s var(--bf-ease-pop);
+  }
+
+  .bf-in__dots i.is-on {
+    background: var(--bf-tomato);
+    transform: scale(1.2);
+  }
+
+  .bf-in__err {
+    min-height: 1.3em;
+    margin: 6px 0 0;
+    color: var(--bf-tomato);
+    font-weight: 800;
+  }
+
+  .bf-in__pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .bf-in__key {
+    min-height: 56px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 16px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--bf-outline);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .bf-in--lg .bf-in__key {
+    min-height: 68px;
+    font-size: 1.7rem;
+  }
+
+  .bf-in__key:active,
+  .bf-in__key.is-hit {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--bf-outline);
+  }
+
+  .bf-in__key--fn {
+    background: var(--bf-bg-2);
+  }
+
+  .bf-in__submit {
+    width: 100%;
+    min-height: 56px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-family: var(--bf-font-display);
+    font-size: 1.3rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: var(--bf-shadow);
+  }
+
+  .bf-in__demo {
+    margin-top: var(--sp-5, 1.25rem);
+    padding-top: var(--sp-4, 1rem);
+    border-top: 2px dashed var(--bf-line);
+  }
+
+  .bf-in__demo p {
+    margin: 0 0 8px;
+    color: var(--bf-ink-3);
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  .bf-in__demo div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .bf-in__demo-btn {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 2px dashed var(--bf-outline);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  @media (max-width: 959px) {
+    .bf-in__panel {
+      border-right: 0;
+      border-bottom: 3px solid var(--bf-outline);
+      min-height: 300px;
+    }
+
+    .bf-in__float svg:nth-child(3) {
+      display: none;
+    }
+  }
+
+  @keyframes bf-in-float { 50% { transform: translateY(-14px) rotate(10deg); } }
+  @keyframes bf-in-shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-in *,
+    .bf-in.is-shake .bf-in__form {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

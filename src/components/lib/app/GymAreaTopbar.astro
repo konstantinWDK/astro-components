@@ -1,0 +1,443 @@
+---
+/**
+ * GymAreaTopbar — Top bar for the gym member area: today's date, live occupancy chip, a
+ * check-in pass (access code to show at reception), notifications and the member menu.
+ * Menus use the native `popover` attribute (Escape and outside click close them).
+ *
+ * @param {{name: string, plan?: string, id?: string}} member - Signed-in member (id is the check-in code).
+ * @param {{now: number, capacity: number}} occupancy - Live occupancy chip. Omit to hide.
+ * @param {Array<{title: string, text?: string, time: string, unread?: boolean}>} notifications - Notifications.
+ * @param {Array<{label: string, href: string}>} links - Member menu links.
+ * @param {string} signOutHref - Sign-out link.
+ * @param {string} variant - 'solid' | 'blur'. Default 'blur'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <header> landmark; the date is a <time> refreshed in the browser; buttons have
+ * text names (unread count included); the check-in pattern is decorative, the code is text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+
+interface Notice { title: string; text?: string; time: string; unread?: boolean }
+
+interface OwnProps {
+  member?: { name: string; plan?: string; id?: string };
+  occupancy?: { now: number; capacity: number };
+  notifications?: Notice[];
+  links?: Array<{ label: string; href: string }>;
+  signOutHref?: string;
+  variant?: 'solid' | 'blur';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = { name: 'Maite Arrieta', plan: 'Completo', id: 'S-2051' },
+  occupancy,
+  notifications = [
+    { title: 'Plaza confirmada', text: 'Ciclo indoor del miércoles a las 18:00', time: 'hace 20 min', unread: true },
+  ],
+  links = [],
+  signOutHref = '#',
+  variant = 'blur',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gat-${Math.random().toString(36).slice(2, 8)}`;
+const unread = notifications.filter((n) => n.unread).length;
+const initials = member.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const code = member.id ?? 'S-0000';
+// Deterministic 9x9 pattern from the member id (decorative)
+const seed = [...code].reduce((h, c) => (h * 33 + c.charCodeAt(0)) >>> 0, 5381);
+const cells = Array.from({ length: 81 }, (_, i) => ((seed >> (i % 29)) ^ (i * 7)) % 3 === 0);
+const pct = occupancy ? Math.round((occupancy.now / occupancy.capacity) * 100) : 0;
+const occTone = pct >= 75 ? 'is-full' : pct >= 40 ? 'is-mid' : 'is-low';
+const today = new Date();
+---
+
+<header class:list={['gym-ui', 'gym-area-top', `gym-area-top--${variant}`, classAttr]} data-gym-area-top {...rest}>
+  <div class="gym-area-top__left">
+    <time class="gym-area-top__date" datetime={today.toISOString().slice(0, 10)} data-today>
+      {new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(today)}
+    </time>
+    {occupancy && (
+      <span class:list={['gym-area-top__occ', occTone]}>
+        <span class="gym-area-top__dot" aria-hidden="true"></span>
+        Aforo {pct} %
+      </span>
+    )}
+  </div>
+
+  <div class="gym-area-top__actions">
+    <button type="button" class="gym-area-top__pass-btn" popovertarget={`${uid}-pass`}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><path d="M14 14h3v3h-3zM18 18h3v3h-3z" /></svg>
+      <span>Check-in</span>
+    </button>
+    <div id={`${uid}-pass`} popover class="gym-area-pop gym-area-pop--pass" data-gym-pop>
+      <p class="gym-area-pop__title">Pase de acceso</p>
+      <div class="gym-area-pop__code" aria-hidden="true">
+        {cells.map((on) => <i class:list={[{ 'is-on': on }]}></i>)}
+      </div>
+      <p class="gym-area-pop__id">Código <strong>{code}</strong></p>
+      <p class="gym-area-pop__hint">Acerca la pantalla al lector de recepción.</p>
+    </div>
+
+    <button type="button" class="gym-area-top__icon" popovertarget={`${uid}-notes`}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></svg>
+      {unread > 0 && <span class="gym-area-top__count" aria-hidden="true">{unread}</span>}
+      <span class="gym-sr">Avisos{unread > 0 ? `, ${unread} sin leer` : ''}</span>
+    </button>
+    <div id={`${uid}-notes`} popover class="gym-area-pop" data-gym-pop>
+      <p class="gym-area-pop__title">Avisos</p>
+      <ul role="list" class="gym-area-pop__notes">
+        {notifications.map((n) => (
+          <li class:list={[{ 'is-unread': n.unread }]}>
+            <strong>{n.title}</strong>
+            {n.text && <span>{n.text}</span>}
+            <small>{n.time}</small>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <button type="button" class="gym-area-top__me" popovertarget={`${uid}-me`} aria-label={`Menú de ${member.name}`}>
+      <span class="gym-area-top__avatar" aria-hidden="true">{initials}</span>
+    </button>
+    <div id={`${uid}-me`} popover class="gym-area-pop" data-gym-pop>
+      <p class="gym-area-pop__title">{member.name}</p>
+      {member.plan && <p class="gym-area-pop__sub">Plan {member.plan}</p>}
+      <ul role="list" class="gym-area-pop__links">
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><a href={signOutHref} class="gym-area-pop__out">Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  function initTop(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const time = root.querySelector<HTMLTimeElement>('[data-today]');
+    if (time) {
+      const now = new Date();
+      time.dateTime = now.toISOString().slice(0, 10);
+      time.textContent = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+    }
+    root.querySelectorAll<HTMLElement>('[data-gym-pop]').forEach((pop) => {
+      pop.addEventListener('toggle', (e) => {
+        if ((e as Event & { newState?: string }).newState !== 'open') return;
+        const btn = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        pop.style.top = `${r.bottom + 8}px`;
+        pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth))}px`;
+      });
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-area-top]').forEach(initTop);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-area-top {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 64px;
+    padding: 0 var(--sp-4, 1rem);
+    border-bottom: 1px solid var(--gym-border);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-area-top--blur {
+    background: color-mix(in srgb, var(--gym-bg) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .gym-area-top--solid {
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-area-top__left {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+  }
+
+  .gym-area-top__date {
+    overflow: hidden;
+    font-family: var(--gym-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .gym-area-top__occ {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem);
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--gym-surface);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .gym-area-top__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .gym-area-top__occ.is-low { color: var(--gym-ok); }
+  .gym-area-top__occ.is-mid { color: var(--gym-warn); }
+  .gym-area-top__occ.is-full { color: var(--gym-full); }
+
+  .gym-area-top__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .gym-area-top__pass-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .gym-area-top__icon,
+  .gym-area-top__me {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--gym-border);
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--gym-text-2);
+    cursor: pointer;
+  }
+
+  .gym-area-top__me {
+    border: 0;
+    padding: 0;
+  }
+
+  .gym-area-top__icon:hover {
+    background: var(--gym-surface);
+    color: var(--gym-text);
+  }
+
+  .gym-area-top__count {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    min-width: 16px;
+    border-radius: 8px;
+    background: var(--gym-hot);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 16px;
+  }
+
+  .gym-area-top__avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gym-surface-2);
+    color: var(--gym-text);
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+
+  .gym-area-top button:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-area-pop {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: min(300px, calc(100vw - 16px));
+    padding: var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--gym-border-strong);
+    background: var(--gym-bg-raised);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  }
+
+  .gym-area-pop p {
+    margin: 0;
+  }
+
+  .gym-area-pop__title {
+    margin-bottom: var(--sp-2, 0.5rem) !important;
+    font-family: var(--gym-font-display);
+    font-size: 1.3rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-area-pop__sub {
+    margin: -0.4rem 0 var(--sp-2, 0.5rem) !important;
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-area-pop__code {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 3px;
+    width: 180px;
+    margin: var(--sp-2, 0.5rem) auto var(--sp-3, 0.75rem);
+    padding: 10px;
+    border-radius: var(--r-sm, 8px);
+    background: #fff;
+  }
+
+  .gym-area-pop__code i {
+    aspect-ratio: 1;
+    background: transparent;
+  }
+
+  .gym-area-pop__code i.is-on {
+    background: #10140a;
+  }
+
+  .gym-area-pop__id {
+    text-align: center;
+  }
+
+  .gym-area-pop__id strong {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+  }
+
+  .gym-area-pop__hint {
+    margin-top: var(--sp-1, 0.25rem) !important;
+    color: var(--gym-text-3);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  .gym-area-pop ul {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-area-pop__notes li {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-2, 0.5rem);
+    border-radius: var(--r-sm, 8px);
+    font-size: 0.88rem;
+  }
+
+  .gym-area-pop__notes li.is-unread {
+    background: rgba(var(--gym-brand-rgb), 0.1);
+  }
+
+  .gym-area-pop__notes span {
+    color: var(--gym-text-2);
+  }
+
+  .gym-area-pop__notes small {
+    color: var(--gym-text-3);
+  }
+
+  .gym-area-pop__links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-2, 0.5rem);
+    border-radius: var(--r-sm, 8px);
+    color: var(--gym-text);
+    text-decoration: none;
+  }
+
+  .gym-area-pop__links a:hover {
+    background: var(--gym-surface);
+  }
+
+  .gym-area-pop__links a:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: -2px;
+  }
+
+  .gym-area-pop .gym-area-pop__out {
+    color: var(--gym-full);
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .gym-area-top__occ {
+      display: none;
+    }
+
+    /* Keep the button's name for screen readers, show only the icon */
+    .gym-area-top__pass-btn span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .gym-area-top__pass-btn {
+      position: relative;
+      width: 44px;
+      justify-content: center;
+      padding: 0;
+    }
+  }
+</style>

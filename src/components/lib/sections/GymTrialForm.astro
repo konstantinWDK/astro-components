@@ -1,0 +1,426 @@
+---
+/**
+ * GymTrialForm — Free trial sign-up with club details. On submit (without a backend `action`)
+ * it shows a 7-day pass with an access code and its validity dates.
+ * Reads ?plan=<id> from the URL so plan buttons pre-select the plan of interest.
+ *
+ * @param {GymDiscipline[]} disciplines - Options for "what do you want to try".
+ * @param {GymPlan[]} plans - Options for the plan of interest.
+ * @param {string} action - Form action; empty shows the pass on the page.
+ * @param {number} trialDays - Length of the trial. Default 7.
+ * @param {string} title - Heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {boolean} showInfo - Show address, hours and phone next to the form. Default true.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields with autocomplete, a fieldset for the time preference,
+ * native validation, and the pass is a focused role="status" region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymDisciplines, gymPlans, gymData, type GymDiscipline, type GymPlan } from '../templates/gym/data';
+
+interface OwnProps {
+  disciplines?: GymDiscipline[];
+  plans?: GymPlan[];
+  action?: string;
+  trialDays?: number;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+  showInfo?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  disciplines = gymDisciplines,
+  plans = gymPlans,
+  action = '',
+  trialDays = 7,
+  title = 'Prueba 7 días gratis',
+  headingLevel = 'h2',
+  showInfo = true,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `gtf-${Math.random().toString(36).slice(2, 8)}`;
+const { brand } = gymData;
+---
+
+<section
+  class:list={['gym-ui', 'gym-trial', { 'gym-trial--info': showInfo }, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-gym-trial
+  data-days={trialDays}
+  {...rest}
+>
+  <div class="gym-trial__inner">
+    <div class="gym-trial__intro">
+      <Heading id={`${uid}-title`} class="gym-trial__title">{title}</Heading>
+      <p class="gym-trial__text">Acceso a sala y a todas las clases durante {trialDays} días. Sin tarjeta y sin compromiso: el último día te preguntamos si quieres seguir.</p>
+      {showInfo && (
+        <dl class="gym-trial__info">
+          <div><dt>Dónde</dt><dd>{brand.address}</dd></div>
+          <div><dt>Horario</dt><dd>{brand.hours}</dd></div>
+          <div><dt>Teléfono</dt><dd><a href={`tel:${brand.phone.replace(/\s+/g, '')}`}>{brand.phone}</a></dd></div>
+          <div><dt>Email</dt><dd><a href={`mailto:${brand.email}`}>{brand.email}</a></dd></div>
+        </dl>
+      )}
+    </div>
+
+    <div class="gym-trial__panel">
+      <form class="gym-trial__form" action={action || undefined} method="post" data-form>
+        <div class="gym-trial__field">
+          <label for={`${uid}-name`}>Nombre</label>
+          <input id={`${uid}-name`} name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="gym-trial__field">
+          <label for={`${uid}-email`}>Email</label>
+          <input id={`${uid}-email`} name="email" type="email" autocomplete="email" required />
+        </div>
+        <div class="gym-trial__field">
+          <label for={`${uid}-phone`}>Teléfono</label>
+          <input id={`${uid}-phone`} name="phone" type="tel" autocomplete="tel" required />
+        </div>
+        <div class="gym-trial__field">
+          <label for={`${uid}-disc`}>¿Qué quieres probar?</label>
+          <select id={`${uid}-disc`} name="discipline">
+            <option value="">Un poco de todo</option>
+            {disciplines.map((d) => <option value={d.id}>{d.name}</option>)}
+          </select>
+        </div>
+        <div class="gym-trial__field">
+          <label for={`${uid}-plan`}>Tarifa que te interesa</label>
+          <select id={`${uid}-plan`} name="plan" data-plan>
+            <option value="">Aún no lo sé</option>
+            {plans.map((p) => <option value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <fieldset class="gym-trial__times">
+          <legend>¿Cuándo sueles entrenar?</legend>
+          {['Mañanas', 'Mediodía', 'Tardes'].map((t, i) => (
+            <label>
+              <input type="radio" name="time" value={t} checked={i === 2} />
+              <span>{t}</span>
+            </label>
+          ))}
+        </fieldset>
+        <label class="gym-trial__consent">
+          <input type="checkbox" name="consent" required />
+          <span>Acepto las normas del club y que me contactéis sobre la prueba.</span>
+        </label>
+        <button type="submit" class="gym-trial__submit">Conseguir mi pase gratis</button>
+      </form>
+
+      <div class="gym-trial__pass" role="status" tabindex="-1" hidden data-pass>
+        <p class="gym-trial__pass-kicker">Pase de prueba</p>
+        <p class="gym-trial__pass-name" data-pass-name></p>
+        <p class="gym-trial__pass-code">
+          <span class="gym-trial__pass-label">Código de acceso</span>
+          <strong data-pass-code></strong>
+        </p>
+        <p class="gym-trial__pass-dates" data-pass-dates></p>
+        <p class="gym-trial__pass-hint">Te lo hemos enviado por email. Enséñalo en recepción el primer día.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initTrial(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const pass = root.querySelector<HTMLElement>('[data-pass]')!;
+    const days = Number(root.dataset.days || 7);
+
+    const plan = new URLSearchParams(location.search).get('plan');
+    const planSelect = root.querySelector<HTMLSelectElement>('[data-plan]');
+    if (plan && planSelect && [...planSelect.options].some((o) => o.value === plan)) planSelect.value = plan;
+
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const data = new FormData(form);
+      const start = new Date();
+      const end = new Date();
+      end.setDate(start.getDate() + days - 1);
+      const fmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
+      const code = `FJ-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      root.querySelector('[data-pass-name]')!.textContent = String(data.get('name'));
+      root.querySelector('[data-pass-code]')!.textContent = code;
+      root.querySelector('[data-pass-dates]')!.textContent = `Válido del ${fmt.format(start)} al ${fmt.format(end)}`;
+      form.hidden = true;
+      pass.hidden = false;
+      pass.focus();
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-trial]').forEach(initTrial);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-trial {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-trial__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .gym-trial__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    line-height: 0.92;
+    text-transform: uppercase;
+  }
+
+  .gym-trial__text {
+    margin: var(--sp-4, 1rem) 0 var(--sp-6, 1.5rem);
+    max-width: 480px;
+    color: var(--gym-text-2);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .gym-trial__info {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+  }
+
+  .gym-trial__info dt {
+    color: var(--gym-text-3);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .gym-trial__info dd {
+    margin: 0;
+  }
+
+  .gym-trial__info a {
+    color: var(--gym-text);
+  }
+
+  .gym-trial__panel {
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-trial__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .gym-trial__form[hidden] {
+    display: none;
+  }
+
+  .gym-trial__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+    min-width: 0;
+  }
+
+  .gym-trial__field label,
+  .gym-trial__times legend {
+    color: var(--gym-text-2);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .gym-trial__field :is(input, select) {
+    min-height: 48px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-border-strong);
+    background: var(--gym-surface);
+    color: var(--gym-text);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .gym-trial__times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .gym-trial__times legend {
+    padding: 0;
+    margin-bottom: var(--sp-2, 0.5rem);
+  }
+
+  .gym-trial__times label {
+    position: relative;
+  }
+
+  .gym-trial__times input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .gym-trial__times span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-border-strong);
+    color: var(--gym-text-2);
+    font-weight: 600;
+  }
+
+  .gym-trial__times input:checked + span {
+    border-color: var(--gym-brand);
+    background: rgba(var(--gym-brand-rgb), 0.14);
+    color: var(--gym-text);
+  }
+
+  .gym-trial__consent {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    align-items: flex-start;
+    color: var(--gym-text-2);
+    font-size: 0.88rem;
+  }
+
+  .gym-trial__consent input {
+    width: 20px;
+    height: 20px;
+    margin: 0.1rem 0 0;
+    accent-color: var(--gym-brand);
+  }
+
+  .gym-trial__submit {
+    min-height: 52px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font: inherit;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .gym-trial__submit:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-trial :is(input, select, button, a):focus-visible,
+  .gym-trial__times input:focus-visible + span {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-trial__pass {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-6, 1.5rem);
+    border-radius: var(--r-md, 12px);
+    border: 2px dashed var(--gym-brand);
+    background: rgba(var(--gym-brand-rgb), 0.06);
+  }
+
+  .gym-trial__pass[hidden] {
+    display: none;
+  }
+
+  .gym-trial__pass:focus {
+    outline: none;
+  }
+
+  .gym-trial__pass p {
+    margin: 0;
+  }
+
+  .gym-trial__pass-kicker {
+    color: var(--gym-brand);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.8rem;
+  }
+
+  .gym-trial__pass-name {
+    font-family: var(--gym-font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-trial__pass-code {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gym-trial__pass-label {
+    color: var(--gym-text-3);
+    font-size: 0.8rem;
+  }
+
+  .gym-trial__pass-code strong {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 1.8rem;
+    letter-spacing: 0.1em;
+  }
+
+  .gym-trial__pass-dates {
+    font-weight: 700;
+  }
+
+  .gym-trial__pass-hint {
+    color: var(--gym-text-3);
+    font-size: 0.88rem;
+  }
+
+  @media (min-width: 640px) {
+    .gym-trial__form {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .gym-trial__times,
+    .gym-trial__consent,
+    .gym-trial__submit {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: 960px) {
+    .gym-trial__inner {
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+      align-items: start;
+    }
+  }
+</style>

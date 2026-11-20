@@ -1,0 +1,426 @@
+---
+/**
+ * GymSignIn — Sign-in screen for the gym member area: bold striped background, member/staff
+ * switch, member number or email, PIN-style password with show/hide, and demo quick-access
+ * buttons. With `action="#"` it validates and goes to the member or staff page (demo).
+ *
+ * @param {string} brand - Club name.
+ * @param {string} title - Heading (h1).
+ * @param {string} action - Form action. '#' = demo mode. Default '#'.
+ * @param {string} memberHref - Where a member goes after demo sign-in.
+ * @param {string} staffHref - Where staff go after demo sign-in.
+ * @param {string} trialHref - "Not a member yet" link. Omit to hide.
+ * @param {string} backHref - "Back to website" link. Omit to hide.
+ * @param {boolean} demoButtons - Show one-click demo access. Default true.
+ * @param {string} variant - 'striped' | 'plain' background. Default 'striped'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one h1; the member/staff switch is a native radio group; inputs are labelled
+ * with autocomplete; errors are linked with aria-describedby and summarised in role="alert";
+ * the password toggle uses aria-pressed; the striped background is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+
+interface OwnProps {
+  brand?: string;
+  title?: string;
+  action?: string;
+  memberHref?: string;
+  staffHref?: string;
+  trialHref?: string;
+  backHref?: string;
+  demoButtons?: boolean;
+  variant?: 'striped' | 'plain';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = 'Forja',
+  title = 'Entra a tu área',
+  action = '#',
+  memberHref = '#',
+  staffHref = '#',
+  trialHref,
+  backHref,
+  demoButtons = true,
+  variant = 'striped',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class:list={['gym-ui', 'gym-signin', `gym-signin--${variant}`, classAttr]} data-gym-signin {...rest}>
+  <main class="gym-signin__card">
+    <p class="gym-signin__brand">
+      <span class="gym-signin__mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12" /></svg>
+      </span>
+      {brand}
+    </p>
+    <h1 class="gym-signin__title">{title}</h1>
+
+    <form class="gym-signin__form" action={action} method="post" novalidate data-form data-member={memberHref} data-staff={staffHref}>
+      <fieldset class="gym-signin__role">
+        <legend class="gym-sr">Tipo de acceso</legend>
+        <label><input type="radio" name="role" value="member" checked /><span>Socio</span></label>
+        <label><input type="radio" name="role" value="staff" /><span>Staff</span></label>
+      </fieldset>
+
+      <div class="gym-signin__alert" role="alert" data-alert hidden></div>
+
+      <div class="gym-signin__field">
+        <label for={`${uid}-user`}>Nº de socio o email</label>
+        <input id={`${uid}-user`} name="user" type="text" autocomplete="username" required aria-describedby={`${uid}-user-err`} />
+        <p id={`${uid}-user-err`} class="gym-signin__err" hidden>Escribe tu número de socio o email.</p>
+      </div>
+      <div class="gym-signin__field">
+        <label for={`${uid}-pin`}>Contraseña o PIN</label>
+        <div class="gym-signin__pin">
+          <input id={`${uid}-pin`} name="password" type="password" autocomplete="current-password" required minlength="4" aria-describedby={`${uid}-pin-err`} />
+          <button type="button" aria-pressed="false" aria-controls={`${uid}-pin`} data-reveal>
+            <span data-reveal-label>Ver</span><span class="gym-sr"> contraseña</span>
+          </button>
+        </div>
+        <p id={`${uid}-pin-err`} class="gym-signin__err" hidden>Mínimo 4 caracteres.</p>
+      </div>
+      <button type="submit" class="gym-signin__submit">Entrar</button>
+    </form>
+
+    {demoButtons && (
+      <div class="gym-signin__demo">
+        <p>Acceso de demostración</p>
+        <a href={memberHref}>Entrar como socia</a>
+        <a href={staffHref}>Entrar como staff</a>
+      </div>
+    )}
+
+    {(trialHref || backHref) && (
+      <p class="gym-signin__links">
+        {trialHref && <a href={trialHref}>¿Aún no eres socio? Prueba gratis</a>}
+        {backHref && <a href={backHref}>Volver a la web</a>}
+      </p>
+    )}
+  </main>
+</div>
+
+<script>
+  function initSignIn(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const alert = root.querySelector<HTMLElement>('[data-alert]')!;
+    const reveal = root.querySelector<HTMLButtonElement>('[data-reveal]')!;
+
+    reveal.addEventListener('click', () => {
+      const input = form.querySelector<HTMLInputElement>('input[name="password"]')!;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      reveal.setAttribute('aria-pressed', String(show));
+      reveal.querySelector('[data-reveal-label]')!.textContent = show ? 'Ocultar' : 'Ver';
+    });
+
+    form.addEventListener('submit', (e) => {
+      let first: HTMLInputElement | null = null;
+      form.querySelectorAll<HTMLInputElement>('input[required]').forEach((f) => {
+        const ok = f.checkValidity();
+        f.setAttribute('aria-invalid', String(!ok));
+        const err = document.getElementById(f.getAttribute('aria-describedby') || '');
+        if (err) err.hidden = ok;
+        if (!ok && !first) first = f;
+      });
+      if (first) {
+        e.preventDefault();
+        alert.hidden = false;
+        alert.textContent = 'Revisa los campos marcados.';
+        (first as HTMLInputElement).focus();
+        return;
+      }
+      alert.hidden = true;
+      if (form.getAttribute('action') === '#') {
+        e.preventDefault();
+        const role = new FormData(form).get('role');
+        const target = role === 'staff' ? form.dataset.staff : form.dataset.member;
+        if (target && target !== '#') location.href = target;
+      }
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-signin]').forEach(initSignIn);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-signin {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem);
+    box-sizing: border-box;
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-signin--striped {
+    background:
+      repeating-linear-gradient(-60deg, rgba(var(--gym-brand-rgb), 0.08) 0 26px, transparent 26px 70px),
+      var(--gym-bg);
+  }
+
+  .gym-signin__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+    padding: var(--sp-8, 2rem) var(--sp-6, 1.5rem);
+    box-sizing: border-box;
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+    box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7);
+  }
+
+  .gym-signin__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-signin__mark {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-signin__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-signin__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .gym-signin__role {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    margin: 0;
+    padding: 3px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-surface);
+  }
+
+  .gym-signin__role label {
+    position: relative;
+  }
+
+  .gym-signin__role input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .gym-signin__role span {
+    display: grid;
+    place-items: center;
+    min-height: 42px;
+    border-radius: 6px;
+    color: var(--gym-text-2);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+  }
+
+  .gym-signin__role input:checked + span {
+    background: var(--gym-text);
+    color: var(--gym-bg);
+  }
+
+  .gym-signin__role input:focus-visible + span {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-signin__alert {
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    background: color-mix(in srgb, var(--gym-full) 16%, transparent);
+    font-size: 0.9rem;
+  }
+
+  .gym-signin__alert[hidden],
+  .gym-signin__err[hidden] {
+    display: none;
+  }
+
+  .gym-signin__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .gym-signin__field label {
+    color: var(--gym-text-2);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .gym-signin__field input {
+    width: 100%;
+    min-height: 50px;
+    box-sizing: border-box;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    border: 2px solid var(--gym-border-strong);
+    background: var(--gym-surface);
+    color: var(--gym-text);
+    font: inherit;
+    font-size: 1.05rem;
+  }
+
+  .gym-signin__field input[aria-invalid='true'] {
+    border-color: var(--gym-full);
+  }
+
+  .gym-signin__pin {
+    position: relative;
+  }
+
+  .gym-signin__pin input {
+    padding-right: 6rem;
+    letter-spacing: 0.15em;
+  }
+
+  .gym-signin__pin button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    min-height: 40px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 0;
+    border-radius: 6px;
+    background: var(--gym-surface-2);
+    color: var(--gym-text);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .gym-signin__err {
+    margin: 0;
+    color: var(--gym-full);
+    font-size: 0.85rem;
+  }
+
+  .gym-signin__submit {
+    min-height: 54px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font: inherit;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .gym-signin__submit:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-signin__demo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-2, 0.5rem);
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px dashed var(--gym-border-strong);
+  }
+
+  .gym-signin__demo p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--gym-text-3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .gym-signin__demo a {
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-border-strong);
+    color: var(--gym-text);
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .gym-signin__demo a:hover {
+    border-color: var(--gym-brand);
+  }
+
+  .gym-signin__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  .gym-signin__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    color: var(--gym-brand);
+    font-weight: 600;
+  }
+
+  .gym-signin :is(input, button, a):focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

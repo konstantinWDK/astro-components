@@ -819,87 +819,131 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: "Formulario accesible de solicitud de empleo para transportistas y mozos: tipo de carnet de conducir (B, C1, C), datos de furgoneta propia y experiencia.",
     ru: "Доступная форма онлайн-заявки на работу водителем или грузчиком: категория прав (B, C1, C), параметры своего авто и опыт работы.",
   },
-  // ── Food Delivery & Kitchen OS ──────────────────────────────
-  'food-kitchen-display': {
-    es: "Pantalla KDS táctil para cocina: cronómetros de tiempo transcurrido, alertas de urgencia y retraso, badges de alérgenos y avance de comandas por estación.",
-    ru: "Сенсорный экран KDS для поваров кухни: таймеры готовности, сигналы задержки, бейджи аллергенов и переключение статусов по станциям.",
+  // ── Food Delivery & Kitchen OS ("BiteFlow") ─────────────────
+  'food-hero-plate': {
+    es: "Hero pop tipo sticker: un plato gigante cambia de receta al ritmo del titular, los ingredientes orbitan, pasa un repartidor y gira con el scroll; incluye buscador de dirección, marquesina y botón de pausa.",
+    ru: "Главный экран в стиле поп-стикеров: большая тарелка меняет блюда в такт заголовку, ингредиенты вращаются по орбите, проезжает курьер и тарелка крутится при скролле; поиск адреса и пауза анимации.",
   },
-  'food-menu-cms-editor': {
-    es: "CMS y gestor de carta para restaurantes: editor de precios en directo, control de calorías y botón de apagado de platos agotados (86'd) en todos los canales.",
-    ru: "CMS и управление меню ресторана: изменение цен в реальном времени, подсчёт калорий и стоп-лист для закончившихся блюд (86'd) во всех витринах.",
+  'food-menu-board': {
+    es: "Carta de reparto con pestañas fijas y scroll-spy, búsqueda en vivo y filtros dietéticos, tarjetas sticker que aparecen al hacer scroll y botón de añadir que lanza el plato hacia la cesta.",
+    ru: "Меню доставки с липкими вкладками и scroll-spy, живым поиском и диетическими фильтрами, карточками-стикерами и кнопкой добавления с анимацией полёта блюда в корзину.",
   },
-  'food-order-tracker': {
-    es: "Seguimiento de pedidos en tiempo real: fases de cocinado y reparto, tarjeta del repartidor con vehículo y teléfono, notas de entrega y ticket desglosado.",
-    ru: "Отслеживание доставки в реальном времени: этапы приготовления и пути курьера, карточка курьера с телефоном и транспортом, чек и адрес.",
+  'food-scroll-story': {
+    es: "Historia interactiva «Del fuego a tu puerta»: un escenario fijo cambia de escena (pedido, cocina, repartidor, mesa) al avanzar cada paso con el scroll, con barra de progreso.",
+    ru: "Скролл-история «От огня до вашей двери»: закреплённая сцена переключает этапы (заказ, кухня, курьер, стол) по мере прокрутки с индикатором прогресса.",
   },
-  'food-dish-customizer': {
-    es: "Personalizador interactivo de platos: opciones obligatorias, ingredientes adicionales de pago, recálculo de precio en tiempo real y notas para cocina.",
-    ru: "Интерактивный конфигуратор блюд: обязательные опции, платные топпинги, пересчёт цены в реальном времени и комментарии для кухни.",
+  'food-partner-pitch': {
+    es: "Sección B2B para restaurantes: calculadora de ahorro que compara agregadores frente a plataforma propia con cifra anual animada, y formulario validado con sello de confirmación.",
+    ru: "B2B-секция для ресторанов: калькулятор экономии, сравнивающий агрегаторы с собственной платформой, и форма заявки со штампом подтверждения.",
   },
-  'food-delivery-hero': {
-    es: "Hero para delivery de comida: buscador rápido de dirección, tiempo de entrega garantizado en 25 minutos, accesos a categorías y recomendación del chef.",
-    ru: "Главный экран сервиса доставки еды: ввод адреса доставки, гарантия 25 минут, быстрый выбор категорий и блюдо дня от шефа.",
+  'food-footer': {
+    es: "Pie de tienda con pegatina inclinada de cupón de descuento, columnas de enlaces, horario de cocina y contacto, y marca gigante con ola animada.",
+    ru: "Подвал магазина со стикером купона, колонками ссылок, графиком кухни и контактами, а также крупным логотипом с волновой анимацией.",
   },
-  'food-category-rail': {
-    es: "Carrusel adhesivo de categorías para menús: iconos por tipo de cocina, contadores de platos disponibles y navegación suave mediante chips.",
-    ru: "Горизонтальная лента категорий для ресторанов: иконки кухонь, счётчики блюд и удобные переключатели.",
+  'food-cart-drawer': {
+    es: "Cesta lateral en <dialog> nativo: selector de raciones, barra de envío gratis, extras sugeridos en 1 clic, código promocional y paso rápido a cocina.",
+    ru: "Боковая корзина на нативном <dialog>: счётчик порций, шкала бесплатной доставки, допродажи в 1 клик, промокод и быстрое оформление заказа.",
   },
-  'food-menu-grid': {
-    es: "Cuadrícula responsiva de platos: etiquetas dietéticas (Halal, Vegano, Sin Gluten, Picante), calorías, estado de agotado (86'd) y personalización rápida.",
-    ru: "Сетка блюд меню: диетические метки (Халяль, Веган, Без глютена, Острое), калории, стоп-лист и кнопка добавления/настройки.",
+  'food-order-map': {
+    es: "Seguimiento en vivo del pedido: mapa animado con repartidor avanzando por la ruta, tiempo estimado, línea de fases, tarjeta del rider y resumen del ticket.",
+    ru: "Отслеживание заказа в реальном времени: анимированная карта с движущимся курьером, таймер прибытия, шкала этапов, карточка курьера и чек.",
   },
-  'food-live-promo-banner': {
-    es: "Banner promocional de alta conversión: ofertas flash por tiempo limitado, caja para copiar el código descuento y llamada directa al pedido.",
-    ru: "Промо-баннер с высоким откликом: горячие скидки со счетчиком времени, блок с промокодом и кнопка быстрого заказа.",
+  'food-kitchen-board': {
+    es: "Pantalla de cocina (KDS) con tres columnas (En cola, En marcha, Listas): cronómetros de espera, alergias destacadas, botón de avanzar con View Transitions y modo compacto.",
+    ru: "Экран кухни (KDS) с тремя колонками (Очередь, В работе, Готово): таймеры ожидания, выделенные аллергены, перенос карточек через View Transitions и компактный режим.",
   },
-  'food-restaurant-partner-cta': {
-    es: "Sección de captación B2B para restaurantes y dark kitchens: ventajas del software Kitchen OS, vista previa de la pantalla KDS y registro online.",
-    ru: "Блок подключения ресторанов и Dark Kitchen: преимущества Kitchen OS, превью экрана KDS и форма заявки на сотрудничество.",
+  'food-menu-manager': {
+    es: "Gestor de carta y stock (CMS): interruptores 86 que suben los platos agotados arriba, edición de precio en línea por pasos, filtros y barra de guardado multicanal.",
+    ru: "CMS меню и стоп-листа: переключатели 86 для мгновенного скрытия позиций, редактирование цены на месте, фильтры и панель сохранения по каналам.",
   },
-  'food-checkout-wizard': {
-    es: "Asistente de checkout para reparto de comida: dirección y notas de entrega sin contacto, selector de propina para el repartidor, método de pago y desglose total.",
-    ru: "Мастер оформления заказа еды: адрес и инструкция бесконтактной доставки, чаевые курьеру, выбор способа оплаты и итоговый чек.",
+  'food-rider-dispatch': {
+    es: "Despacho de flota: mapa en vivo con cocina y repartidores, cola de pedidos sin asignar y flota ordenada por distancia; asignar dibuja la ruta y actualiza al rider.",
+    ru: "Диспетчерская курьеров: живая карта кухни и курьеров, очередь неназначенных заказов и список по расстоянию; назначение строит маршрут.",
   },
-  // ── Construction, Developments & Site OS ────────────────────
-  'construction-site-progress': {
-    es: "Control visual de ejecución de obra y certificaciones: porcentaje completado, seguimiento de hitos de cimentación y estructura, sello del jefe de obra y bitácora fotográfica.",
-    ru: "Визуальный контроль хода строительства: процент готовности, контроль этапов фундаментов и каркаса, подпись начальника участка и фотоотчёт.",
+  'food-orders-table': {
+    es: "Libro de pedidos con buscador, filtros por estado con contadores, ordenación por hora o importe, cambio de estado por fila y tickets desplegables.",
+    ru: "Журнал заказов с поиском, фильтрами по статусу со счётчиками, сортировкой по времени или сумме, сменой статуса и раскрывающимися чеками.",
   },
-  'construction-unit-selector': {
-    es: "Selector interactivo de viviendas y locales en planta: disponibilidad en tiempo real, planos acotados, metros cuadrados útiles y construidos, terrazas, orientación y reserva con fianza.",
-    ru: "Интерактивный выбор квартир и коммерческих помещений: доступность в реальном времени, площади, террасы, стороны света и онлайн-бронирование.",
+  'food-service-pulse': {
+    es: "Cuadro de mando de servicio: KPIs animados, gráfica de pedidos por hora frente a la semana pasada, carga por partida, platos estrella y feed en vivo pausable.",
+    ru: "Дашборд смены: анимированные KPI, график заказов по часам, загрузка станций кухни, хиты продаж и лента событий с паузой.",
   },
-  'construction-daily-log': {
-    es: "Libro digital de bitácora y órdenes de obra: meteorología, operarios en tajo por subcontrata, albaranes de laboratorio de hormigón y acero, control de seguridad e incidencias.",
-    ru: "Электронный журнал работ и распоряжений: погода, количество рабочих по субподрядчикам, паспорта партий бетона и арматуры, техника безопасности и подпись технадзора.",
+  'food-ops-nav': {
+    es: "Navegación de Kitchen OS: columna tipo sticker con marca, enlaces con contadores y objetivo del turno en escritorio; tira deslizable de chips en móvil.",
+    ru: "Навигация Kitchen OS: боковая панель в стиле стикеров со счётчиками и целью смены на десктопе; прокручиваемая полоса чипов на мобильных.",
   },
-  'construction-budget-estimator': {
-    es: "Calculadora técnica de costes de construcción: estimación del Presupuesto de Ejecución Material (PEM), contrata (PEC), honorarios de dirección facultativa, licencias y duración estimada.",
-    ru: "Инженерный калькулятор сметы строительства: расчёт стоимости материалов, подрядных работ, проектирования, разрешений и сроков строительства по площади объекта.",
+  'food-ops-topbar': {
+    es: "Barra superior de Kitchen OS con buscador de pedidos, interruptores de aceptación y hora punta, cambio de tema, alertas y menú de equipo.",
+    ru: "Верхняя панель Kitchen OS с поиском заказов, тумблерами приёма и пиковой нагрузки, темой, уведомлениями и меню команды.",
   },
-  'construction-hero': {
-    es: "Hero corporativo para empresas constructoras y promotoras: ticker de obras activas, cifras de metros cuadrados ejecutados, certificaciones ISO y acceso a la calculadora de presupuestos.",
-    ru: "Корпоративный главный экран для строительных и девелоперских компаний: бегущая строка активных строек, объём построенных площадей, сертификаты ISO и кнопка расчёта сметы.",
+  'food-ops-heading': {
+    es: "Cabecera de página para Kitchen OS con kicker tipo sticker, título contundente, reloj de servicio en vivo y botones de acción.",
+    ru: "Заголовок страницы Kitchen OS со стикер-кикером, крупным шрифтом, живыми часами смены и кнопками действий.",
   },
-  'construction-projects-grid': {
-    es: "Catálogo filtrable de obras ejecutadas y promociones: residencial de lujo, sedes terciarias, naves industriales y rehabilitación de edificios con ficha técnica y estado de avance.",
-    ru: "Каталог строительных объектов с фильтрами: жилые комплексы бизнес-класса, офисные здания, логистические склады и реставрация с характеристиками и статусом.",
+  'food-crew-sign-in': {
+    es: "Acceso de personal por estación, número de empleado y PIN de 4 dígitos con teclado táctil grande; cada perfil entra directo a su pantalla.",
+    ru: "Вход персонала по станции, номеру сотрудника и 4-значному PIN-коду с крупной экранной клавиатурой; каждая роль открывает свой экран.",
   },
-  'construction-stage-timeline': {
-    es: "Metodología constructiva llave en mano en 5 etapas: desde el estudio de viabilidad y licencias municipales hasta cimentación, estructura, acabados de alta gama y entrega de llaves.",
-    ru: "Методология строительства под ключ в 5 этапов: от градостроительного анализа и экспертизы проекта до возведения каркаса, премиальной отделки и ввода в эксплуатацию.",
+  // ── Construction, Developments & Site OS ("Strukto") ────────
+  'construction-blueprint-hero': {
+    es: "Hero de plano azul que se dibuja solo con cruceta de coordenadas, alzado arquitectónico con grúa, ticker de obras activas y acceso a la calculadora.",
+    ru: "Главный экран в стиле синего чертежа с саморисующимся фасадом, краном, перекрестием координат, лентой строек и переходом к смете.",
   },
-  'construction-floorplan-viewer': {
-    es: "Visor vectorial de planos de planta arquitectónicos: distribución espacial acotada, desglose de superficies por estancia, orientación solar y descarga de planos técnicos en PDF.",
-    ru: "Векторный просмотр поэтажных планов: точные размеры комнат, экспликация помещений, инсоляция и скачивание архитектурного паспорта в PDF.",
+  'construction-project-sheets': {
+    es: "Catálogo filtrable de obras dibujadas como láminas de plano con alzados vectoriales, barras de avance y filtros por tipología o estado.",
+    ru: "Фильтруемый каталог объектов в виде чертёжных листов с векторными фасадами, шкалой готовности и фильтрами по типу и статусу.",
   },
-  'construction-sustainability-banner': {
-    es: "Banner de sostenibilidad y edificación Passivhaus: edificios de consumo casi nulo (nZEB), calificación energética A, climatización por aerotermia/geotermia y sellos BREEAM/LEED.",
-    ru: "Баннер стандартов энергоэффективности и Passivhaus: здания нулевого энергопотребления (nZEB), класс A, геотермальные системы и международные сертификаты BREEAM/LEED.",
+  'construction-build-sequence': {
+    es: "Secuencia de obra guiada por el scroll: el edificio se levanta planta a planta conforme avanzan las fases estructurales y de acabados.",
+    ru: "Последовательность строительства по скроллу: здание вырастает этаж за этажом по мере прохождения фаз от фундамента до отделки.",
   },
-  'construction-inquiry-form': {
-    es: "Formulario de consulta de viabilidad técnica y licitaciones: ubicación de la parcela, tipología de edificación, superficie estimada, presupuesto orientativo y contacto con ingeniería.",
-    ru: "Форма запроса технико-экономического обоснования и тендеров: расположение участка, тип объекта, площадь, планируемый бюджет и прямая связь с главным инженером.",
+  'construction-tender-form': {
+    es: "Formulario de solicitud de estudio y licitación con tipología de obra, superficie, presupuesto estimado y confirmación sellada.",
+    ru: "Форма заявки на расчёт и тендер с выбором типа объекта, площади, ориентировочного бюджета и штампом подтверждения.",
+  },
+  'construction-footer': {
+    es: "Pie arquitectónico con formato de cajetín de plano: datos registrales de la constructora, columnas de enlaces, certificaciones y retícula técnica.",
+    ru: "Архитектурный подвал в виде чертёжного штампа: реквизиты компании, колонки ссылок, сертификаты и техническая сетка.",
+  },
+  'construction-cost-estimator': {
+    es: "Calculadora técnica de presupuesto con edificio SVG que crece en tiempo real: calcula PEM, PEC, honorarios, licencias, IVA y plazo estimado.",
+    ru: "Инженерный калькулятор сметы с растущим SVG-зданием: расчёт PEM, PEC, гонораров, лицензий, НДС и сроков строительства.",
+  },
+  'construction-iso-unit-picker': {
+    es: "Selector isométrico 3D de viviendas: permite girar el edificio, explosionar plantas, revisar el plano acotado, filtrar libres y pedir dossier.",
+    ru: "Изометрический 3D-выбор квартир: вращение здания, раздвижение этажей, поэтажный план, фильтр свободных и запрос досье.",
+  },
+  'construction-gantt-board': {
+    es: "Diagrama de Gantt en plano azul con línea de hoy, ruta crítica resaltada, zoom por semanas o meses y reporte interactivo de avance por fase.",
+    ru: "Диаграмма Ганта на чертеже с линией «сегодня», критическим путём, масштабом недели/месяцы и отчётом прогресса по этапам.",
+  },
+  'construction-sites-board': {
+    es: "Tablero de obras activas con plano de situación interactivo, pines con pulso en retrasos, anillos de avance, certificación vs plan y filtros.",
+    ru: "Мониторинг активных строек с картой города, пульсирующими метками рисков, кольцами прогресса, план/фактом бюджета и фильтрами.",
+  },
+  'construction-site-logbook': {
+    es: "Diario digital de obra (libro de órdenes): tiempo meteorológico, contadores de cuadrillas por oficio, entradas con hora, checklist PRL y firma.",
+    ru: "Электронный журнал работ: погода, счётчики бригад по специальностям, лента записей с временем, чек-лист охраны труда и подпись.",
+  },
+  'construction-units-ledger': {
+    es: "Libro comercial de viviendas: barra apilada de libres, reservadas y vendidas, plano de ventas por planta y tabla ordenable con edición en línea.",
+    ru: "Реестр продаж квартир: стек-диаграмма статусов, поэтажная матрица, сортируемая таблица и редактирование цен и статусов на месте.",
+  },
+  'construction-os-sidebar': {
+    es: "Barra lateral de Site OS dibujada como panel de capas CAD con tarjeta de obra activa; se convierte en cajón desplegable en móvil.",
+    ru: "Боковая панель Site OS в стиле панели слоёв CAD с карточкой активной стройки; на мобильных сворачивается в выдвижное меню.",
+  },
+  'construction-os-topbar': {
+    es: "Barra superior de Site OS con ruta de hoja, selector de obra con meteorología, cambio entre plano azul y papel de calco, alertas y usuario.",
+    ru: "Верхняя панель Site OS с номером листа, выбором объекта с погодой, переключением тем (синька/калька), уведомлениями и профилем.",
+  },
+  'construction-os-heading': {
+    es: "Cabecera de página de Site OS con referencia de hoja, título sobre línea de cota con remates y botones de acción.",
+    ru: "Заголовок страницы Site OS с номером листа, размерной линией с засечками и кнопками действий.",
+  },
+  'construction-sign-in': {
+    es: "Portal de acceso a Site OS con tarjetas de perfil (Obra, Dirección, PRL, Comercial) que dirigen a cada usuario a su pantalla.",
+    ru: "Портал входа в Site OS с карточками ролей (Участок, Дирекция, Охрана труда, Продажи), направляющими на нужный экран.",
   },
   // ── Real estate agency & CRM ("Nido") ────────────────────
   'estate-hero': {
@@ -941,5 +985,90 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
   'estate-leads-pipeline': {
     es: 'Pipeline kanban de leads de compra y alquiler (nuevo, contactado, visita, oferta, cerrado) con botones para mover accesibles por teclado, contadores, llamada y notas.',
     ru: 'Канбан лидов покупателей и арендаторов (новый, связались, просмотр, оффер, закрыт) с кнопками перемещения с клавиатуры, счётчиками, звонком и заметками.',
+  },
+  // ── Gym & training club ("Forja") ────────────────────────
+  'gym-hero': {
+    es: 'Hero de gimnasio con llamadas a la prueba gratis y al horario, cifras del club y las próximas clases del día con plazas libres.',
+    ru: 'Главный экран спортзала с кнопками пробного периода и расписания, цифрами клуба и ближайшими занятиями дня со свободными местами.',
+  },
+  'gym-disciplines': {
+    es: 'Tarjetas de disciplinas con duración, kcal aproximadas e intensidad; cada una abre el horario filtrado.',
+    ru: 'Карточки направлений с длительностью, примерными ккал и интенсивностью; каждая открывает отфильтрованное расписание.',
+  },
+  'gym-schedule': {
+    es: 'Horario semanal con pestañas accesibles por día, filtros por disciplina, nivel, entrenador, sala, plazas libres y enlace para reservar. Se abre en el día de hoy.',
+    ru: 'Недельное расписание с доступными вкладками по дням, фильтрами по направлениям, уровнем, тренером, залом, местами и ссылкой на запись. Открывается на сегодня.',
+  },
+  'gym-membership-plans': {
+    es: 'Tarifas con interruptor mensual o anual que actualiza precios, el total anual y el ahorro.',
+    ru: 'Абонементы с переключателем помесячно или за год, который обновляет цены, годовую сумму и экономию.',
+  },
+  'gym-trainers-grid': {
+    es: 'Tarjetas del equipo de entrenadores con iniciales, especialidad, años, titulaciones, clases que imparten y una cita.',
+    ru: 'Карточки тренеров с инициалами, специализацией, стажем, сертификатами, занятиями и цитатой.',
+  },
+  'gym-trial-form': {
+    es: 'Alta de prueba gratis con datos del club; al enviar muestra un pase de 7 días con código de acceso y fechas. Preselecciona ?plan=.',
+    ru: 'Запись на бесплатную пробу с контактами клуба; после отправки показывает пропуск на 7 дней с кодом и датами. Учитывает ?plan=.',
+  },
+  'gym-class-booking': {
+    es: 'Reserva de clases para socios: día de la semana, clases con barra de aforo, reservar, cancelar o lista de espera, límite de reservas y lista de mis reservas en vivo.',
+    ru: 'Запись на занятия для участников: день недели, занятия с заполненностью, запись, отмена или лист ожидания, лимит и список своих записей.',
+  },
+  'gym-progress-tracker': {
+    es: 'Progreso del socio: anillo del objetivo mensual, racha semanal, sesiones por semana, marcas personales con su mejora y evolución del peso. SVG sin JavaScript.',
+    ru: 'Прогресс участника: кольцо месячной цели, серия недель, тренировки по неделям, личные рекорды и динамика веса. SVG без JavaScript.',
+  },
+  'gym-occupancy-meter': {
+    es: 'Aforo del club en directo con nivel tranquilo, moderado o lleno y la afluencia habitual por horas, resaltando la hora actual.',
+    ru: 'Заполненность клуба в реальном времени (спокойно, средне, полно) и обычная посещаемость по часам с текущим часом.',
+  },
+  'estate-footer': {
+    es: 'Pie de página para inmobiliaria con presentación, columnas de enlaces, tarjeta de oficina (dirección, teléfono, email y horario) y fila legal con el registro de la agencia.',
+    ru: 'Подвал агентства недвижимости: описание, колонки ссылок, карточка офиса (адрес, телефон, email, часы) и юридическая строка с регистрацией.',
+  },
+  'estate-crm-sidebar': {
+    es: 'Navegación del CRM inmobiliario con insignia de la agencia, enlaces agrupados con contadores y objetivo trimestral; en pantallas pequeñas se abre como panel lateral.',
+    ru: 'Навигация CRM агентства: значок агентства, группы ссылок со счётчиками и квартальная цель; на маленьких экранах — выдвижная панель.',
+  },
+  'estate-crm-topbar': {
+    es: 'Barra superior del CRM inmobiliario con botón de menú, buscador, cambio de tema, notificaciones y menú de usuario con popover nativo.',
+    ru: 'Верхняя панель CRM: кнопка меню, поиск, смена темы, уведомления и меню пользователя на нативном popover.',
+  },
+  'estate-crm-heading': {
+    es: 'Encabezado de página del CRM inmobiliario con migas de pan, título, descripción, botones de acción y selector de periodo opcional.',
+    ru: 'Заголовок страницы CRM: хлебные крошки, заголовок, описание, кнопки действий и выбор периода.',
+  },
+  'estate-listings-table': {
+    es: 'Tabla de gestión de anuncios: búsqueda, filtros por estado, orden por precio, visitas, leads y días publicados, aviso de precio a revisar y enlace a cada ficha.',
+    ru: 'Таблица объявлений: поиск, фильтр по статусу, сортировка по цене, просмотрам, лидам и дням, пометка «пересмотреть цену» и ссылка на объект.',
+  },
+  'estate-agent-sign-in': {
+    es: 'Acceso de agentes a pantalla partida: panel de marca con testimonio, cifras y calle ilustrada, y formulario con mostrar contraseña, recordar sesión y acceso con Google o Microsoft.',
+    ru: 'Экран входа агентов: панель бренда с отзывом, цифрами и иллюстрацией улицы и форма с показом пароля, запоминанием и входом через Google или Microsoft.',
+  },
+  'gym-footer': {
+    es: 'Pie de página de gimnasio con llamada a la prueba gratis a todo el ancho, tabla de horarios, columnas de enlaces, contacto y fila legal.',
+    ru: 'Подвал спортзала: широкий призыв к бесплатной пробе, таблица часов работы, ссылки, контакты и юридическая строка.',
+  },
+  'gym-area-nav': {
+    es: 'Navegación del área de socios: barra lateral con marca y objetivo mensual en escritorio y barra de pestañas fija abajo en móvil. Sin JavaScript.',
+    ru: 'Навигация кабинета участника: боковая панель с логотипом и целью на десктопе и нижняя панель вкладок на телефоне. Без JavaScript.',
+  },
+  'gym-area-topbar': {
+    es: 'Barra superior del área de socios con fecha de hoy, aforo en directo, pase de acceso con código, avisos y menú del socio (popovers nativos).',
+    ru: 'Верхняя панель кабинета: сегодняшняя дата, заполненность клуба, пропуск с кодом доступа, уведомления и меню участника (нативные popover).',
+  },
+  'gym-area-heading': {
+    es: 'Encabezado en mayúsculas para el área de socios con antetítulo, descripción, enlace de vuelta y botones de acción.',
+    ru: 'Крупный заголовок кабинета участника с надзаголовком, описанием, ссылкой назад и кнопками.',
+  },
+  'gym-members-table': {
+    es: 'Tabla de socios para el staff: búsqueda, filtros por estado y riesgo de baja, orden por visitas, última visita y alta, barras de actividad y recordatorio en un clic.',
+    ru: 'Таблица участников для персонала: поиск, фильтры по статусу и риску ухода, сортировка по посещениям и датам, полосы активности и напоминание в один клик.',
+  },
+  'gym-sign-in': {
+    es: 'Acceso al gimnasio con selector socio o staff, número de socio o email, PIN con mostrar y botones de acceso de demostración sobre fondo de rayas.',
+    ru: 'Вход в спортзал: переключатель участник/персонал, номер или email, PIN с показом и демо-кнопки на полосатом фоне.',
   },
 };

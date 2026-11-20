@@ -1,0 +1,484 @@
+---
+/**
+ * GymSchedule — Weekly class timetable with day tabs and discipline filters.
+ * Opens on today's weekday, reads ?d=<discipline> from the URL (GymDisciplines links there),
+ * and shows level, room, trainer and spots left; each class links to the booking page.
+ *
+ * @param {GymClass[]} classes - Weekly classes.
+ * @param {GymDiscipline[]} disciplines - Used for names, colours and filter chips.
+ * @param {GymTrainer[]} trainers - Used for trainer names.
+ * @param {string} bookingHref - Booking page; `?class=<id>` is appended. Omit to hide the buttons.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {boolean} showFilters - Show discipline chips. Default true.
+ * @param {string} variant - 'list' | 'compact'. Default 'list'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: WAI-ARIA tabs (←/→/Home/End move between days, roving tabindex);
+ * filter chips are toggle buttons with aria-pressed; the visible class count is announced.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import {
+  gymClasses,
+  gymDisciplines,
+  gymTrainers,
+  gymDays,
+  gymEndTime,
+  type GymClass,
+  type GymDiscipline,
+  type GymTrainer,
+} from '../templates/gym/data';
+
+interface OwnProps {
+  classes?: GymClass[];
+  disciplines?: GymDiscipline[];
+  trainers?: GymTrainer[];
+  bookingHref?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+  showFilters?: boolean;
+  variant?: 'list' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  classes = gymClasses,
+  disciplines = gymDisciplines,
+  trainers = gymTrainers,
+  bookingHref,
+  title = 'Horario de clases',
+  headingLevel = 'h2',
+  showFilters = true,
+  variant = 'list',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `gs-${Math.random().toString(36).slice(2, 8)}`;
+const disc = (id: string) => disciplines.find((d) => d.id === id);
+const trainer = (id: string) => trainers.find((t) => t.id === id);
+const short = (d: string) => d.slice(0, 3);
+const spotsOf = (left: number) => ({ full: left <= 0, tone: left <= 0 ? 'is-full' : left <= 3 ? 'is-low' : '' });
+---
+
+<section
+  class:list={['gym-ui', 'gym-sched', `gym-sched--${variant}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-gym-schedule
+  {...rest}
+>
+  <div class="gym-sched__inner">
+    <header class="gym-sched__head">
+      <Heading id={`${uid}-title`} class="gym-sched__title">{title}</Heading>
+      <p class="gym-sched__count" aria-live="polite" data-count></p>
+    </header>
+
+    {showFilters && (
+      <div class="gym-sched__filters" role="group" aria-label="Filtrar por disciplina">
+        <button type="button" class="gym-sched__chip" aria-pressed="true" data-filter=''>Todas</button>
+        {disciplines.map((d) => (
+          <button type="button" class="gym-sched__chip" aria-pressed="false" data-filter={d.id} style={`--disc-hue:${d.hue}`}>
+            {d.name}
+          </button>
+        ))}
+      </div>
+    )}
+
+    <div class="gym-sched__tabs" role="tablist" aria-label="Día de la semana">
+      {gymDays.map((d, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`${uid}-tab-${i}`}
+          aria-controls={`${uid}-panel-${i}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          tabindex={i === 0 ? 0 : -1}
+          class="gym-sched__tab"
+          data-tab={i}
+        >
+          <span class="gym-sched__tab-long">{d}</span>
+          <span class="gym-sched__tab-short" aria-hidden="true">{short(d)}</span>
+        </button>
+      ))}
+    </div>
+
+    {gymDays.map((d, i) => {
+      const dayClasses = classes.filter((c) => c.day === i).sort((a, b) => a.start.localeCompare(b.start));
+      return (
+        <div
+          role="tabpanel"
+          id={`${uid}-panel-${i}`}
+          aria-labelledby={`${uid}-tab-${i}`}
+          class="gym-sched__panel"
+          hidden={i !== 0}
+          tabindex="0"
+          data-panel={i}
+        >
+          <ul class="gym-sched__list" role="list">
+            {dayClasses.map((c) => {
+              const dd = disc(c.disciplineId);
+              const left = c.capacity - c.booked;
+              const { tone, full } = spotsOf(left);
+              return (
+                <li class="gym-sched__item" style={`--disc-hue:${dd?.hue ?? 74}`} data-discipline={c.disciplineId}>
+                  <span class="gym-sched__time">
+                    <strong>{c.start}</strong>
+                    <small>{gymEndTime(c.start, c.minutes)}</small>
+                  </span>
+                  <span class="gym-sched__body">
+                    <span class="gym-sched__name">
+                      {dd?.name}
+                      {c.level !== 'Todos' && <span class="gym-sched__level">{c.level}</span>}
+                    </span>
+                    <span class="gym-sched__meta">{trainer(c.trainerId)?.name} · {c.room} · {c.minutes} min</span>
+                  </span>
+                  <span class:list={['gym-sched__spots', tone]}>{full ? 'Completa' : `${left} libres`}</span>
+                  {bookingHref && (
+                    <a href={`${bookingHref}?class=${c.id}`} class="gym-sched__book">
+                      {full ? 'Lista de espera' : 'Reservar'}
+                      <span class="gym-sr">: {dd?.name} {d} {c.start}</span>
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <p class="gym-sched__empty" data-empty hidden>No hay clases de esta disciplina este día.</p>
+        </div>
+      );
+    })}
+  </div>
+</section>
+
+<script>
+  function initSchedule(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tab]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-panel]'));
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    let filter = '';
+    let current = 0;
+
+    const update = () => {
+      panels.forEach((panel) => {
+        let visible = 0;
+        panel.querySelectorAll<HTMLElement>('[data-discipline]').forEach((item) => {
+          const show = !filter || item.dataset.discipline === filter;
+          item.hidden = !show;
+          if (show) visible += 1;
+        });
+        panel.querySelector<HTMLElement>('[data-empty]')!.hidden = visible > 0;
+        if (Number(panel.dataset.panel) === current && count) {
+          count.textContent = `${visible} ${visible === 1 ? 'clase' : 'clases'}`;
+        }
+      });
+    };
+
+    const select = (i: number, focus = false) => {
+      current = (i + tabs.length) % tabs.length;
+      tabs.forEach((t, idx) => {
+        const on = idx === current;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach((p, idx) => (p.hidden = idx !== current));
+      if (focus) tabs[current].focus();
+      update();
+    };
+
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(i));
+      t.addEventListener('keydown', (e) => {
+        const map: Record<string, number> = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 };
+        if (e.key in map) {
+          e.preventDefault();
+          select(map[e.key], true);
+        }
+      });
+    });
+
+    const setFilter = (value: string) => {
+      filter = value;
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.filter === value)));
+      update();
+    };
+    chips.forEach((c) => c.addEventListener('click', () => setFilter(c.dataset.filter || '')));
+
+    const fromUrl = new URLSearchParams(location.search).get('d');
+    if (fromUrl && chips.some((c) => c.dataset.filter === fromUrl)) filter = fromUrl;
+    chips.forEach((c) => c.setAttribute('aria-pressed', String((c.dataset.filter || '') === filter)));
+    // Open on today's weekday (JS getDay: 0 = Sunday)
+    select((new Date().getDay() + 6) % 7);
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-schedule]').forEach(initSchedule);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-sched {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-sched__inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .gym-sched__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-5, 1.25rem);
+  }
+
+  .gym-sched__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-sched__count {
+    margin: 0;
+    color: var(--gym-text-3);
+  }
+
+  .gym-sched__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .gym-sched__chip {
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-full, 999px);
+    border: 1px solid var(--gym-border-strong);
+    background: transparent;
+    color: var(--gym-text-2);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .gym-sched__chip:hover {
+    color: var(--gym-text);
+    border-color: var(--gym-text-3);
+  }
+
+  .gym-sched__chip[aria-pressed='true'] {
+    background: var(--gym-text);
+    border-color: var(--gym-text);
+    color: var(--gym-bg);
+  }
+
+  .gym-sched__tabs {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--sp-1, 0.25rem);
+    padding: var(--sp-1, 0.25rem);
+    margin-bottom: var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--gym-surface);
+  }
+
+  .gym-sched__tab {
+    min-height: 44px;
+    padding: 0 var(--sp-1, 0.25rem);
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--gym-text-2);
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .gym-sched__tab[aria-selected='true'] {
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-sched__tab-short {
+    display: none;
+  }
+
+  .gym-sched :is(.gym-sched__chip, .gym-sched__tab, .gym-sched__book, .gym-sched__panel):focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-sched__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-sched__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--gym-border);
+    border-left: 4px solid hsl(var(--disc-hue) 80% 60%);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-sched__item[hidden] {
+    display: none;
+  }
+
+  .gym-sched__time {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gym-sched__time strong {
+    font-family: var(--gym-font-display);
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .gym-sched__time small {
+    color: var(--gym-text-3);
+    font-size: 0.78rem;
+  }
+
+  .gym-sched__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .gym-sched__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    font-weight: 700;
+    font-size: 1.02rem;
+  }
+
+  .gym-sched__level {
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--gym-surface-2);
+    color: var(--gym-text-2);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .gym-sched__meta {
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-sched__spots {
+    color: var(--gym-ok);
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .gym-sched__spots.is-low { color: var(--gym-warn); }
+  .gym-sched__spots.is-full { color: var(--gym-full); }
+
+  .gym-sched__book {
+    grid-column: 2 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-brand);
+    color: var(--gym-brand);
+    font-weight: 700;
+    font-size: 0.88rem;
+    text-decoration: none;
+  }
+
+  .gym-sched__book:hover {
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-sched__empty {
+    margin: 0;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px dashed var(--gym-border-strong);
+    text-align: center;
+    color: var(--gym-text-3);
+  }
+
+  .gym-sched--compact .gym-sched__item {
+    padding-block: var(--sp-2, 0.5rem);
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 720px) {
+    .gym-sched__item {
+      grid-template-columns: 72px minmax(0, 1fr) auto auto;
+    }
+
+    .gym-sched__book {
+      grid-column: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    /* Keep the full day name for screen readers; show the short one */
+    .gym-sched__tab {
+      position: relative;
+    }
+
+    .gym-sched__tab-long {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .gym-sched__tab-short {
+      display: inline;
+    }
+  }
+</style>

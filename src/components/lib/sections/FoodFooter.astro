@@ -1,0 +1,363 @@
+---
+/**
+ * FoodFooter — Footer for the BiteFlow storefront: a coupon sign-up on a tilted mustard sticker,
+ * link columns, kitchen hours and contact, and a giant wordmark whose letters bounce in a wave as
+ * it scrolls into view.
+ *
+ * @param {string} brand - Wordmark text.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {{address: string, phone: string, email: string, hours: string}} contact - Contact block.
+ * @param {string} couponAction - Optional action for the coupon form; without it the page confirms.
+ * @param {string} copyright - Legal line.
+ * @param {string} variant - 'night' (dark band) | 'cream'. Default 'night'.
+ * @param {string} size - 'md' | 'lg' wordmark size. Default 'lg'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark with labelled <nav> columns; the coupon email has a visible
+ * label and an announced result; the wordmark is aria-hidden (the brand is in the legal line);
+ * the wave is skipped with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+
+interface Column { title: string; links: Array<{ label: string; href: string }> }
+
+interface OwnProps {
+  brand?: string;
+  columns?: Column[];
+  contact?: { address: string; phone: string; email: string; hours: string };
+  couponAction?: string;
+  copyright?: string;
+  variant?: 'night' | 'cream';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = 'BiteFlow',
+  columns = [
+    { title: 'Pide', links: [{ label: 'Carta', href: '#carta' }, { label: 'Seguir pedido', href: '#pedido' }] },
+    { title: 'Empresa', links: [{ label: 'Restaurantes', href: '#restaurantes' }, { label: 'Equipo', href: '#acceso' }] },
+  ],
+  contact = { address: 'Calle del Ave María 31, Madrid', phone: '+34 910 555 214', email: 'hola@biteflow.es', hours: 'Todos los días · 12:30–00:00' },
+  couponAction,
+  copyright = `© ${new Date().getFullYear()} BiteFlow`,
+  variant = 'night',
+  size = 'lg',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bf-ft-${Math.random().toString(36).slice(2, 7)}`;
+const letters = brand.split('');
+const telHref = `tel:${contact.phone.replace(/\s+/g, '')}`;
+---
+
+<footer class:list={['bf-ui', 'bf-ft', `bf-ft--${variant}`, `bf-ft--${size}`, classAttr]} data-bf-ft {...rest}>
+  <div class="bf-ft__inner">
+    <form class="bf-ft__coupon" method="post" action={couponAction} novalidate data-coupon>
+      <p class="bf-ft__ctitle">10 % en tu primer pedido</p>
+      <label for={`${uid}-m`}>Tu email y te mandamos el código</label>
+      <div class="bf-ft__cfield">
+        <input id={`${uid}-m`} type="email" name="email" autocomplete="email" required placeholder="tu@email.com" data-mail />
+        <button type="submit">Quiero el cupón</button>
+      </div>
+      <p class="bf-ft__cmsg" role="status" aria-live="polite" data-msg></p>
+    </form>
+
+    <div class="bf-ft__cols">
+      {columns.map((c, i) => (
+        <nav aria-labelledby={`${uid}-c${i}`}>
+          <h2 id={`${uid}-c${i}`} class="bf-ft__h">{c.title}</h2>
+          <ul role="list">
+            {c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+          </ul>
+        </nav>
+      ))}
+      <div>
+        <h2 class="bf-ft__h">Cocina</h2>
+        <address>
+          <p>{contact.address}</p>
+          <p>{contact.hours}</p>
+          <p><a href={telHref}>{contact.phone}</a></p>
+          <p><a href={`mailto:${contact.email}`}>{contact.email}</a></p>
+        </address>
+      </div>
+    </div>
+  </div>
+
+  <p class="bf-ft__word" aria-hidden="true">
+    {letters.map((l, i) => <span style={`--i:${i}`}>{l}</span>)}
+  </p>
+
+  <div class="bf-ft__legal">
+    <p>{copyright}</p>
+    <a href="#top" class="bf-ft__top" data-top>Volver arriba ↑</a>
+  </div>
+</footer>
+
+<script>
+  function initFoodFt() {
+    document.querySelectorAll<HTMLElement>('[data-bf-ft]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const word = root.querySelector('.bf-ft__word');
+      if (word && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((es) => {
+          es.forEach((e) => e.target.classList.toggle('is-in', e.isIntersecting));
+        }, { threshold: 0.4 });
+        io.observe(word);
+      }
+      root.querySelector('[data-top]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+        const main = document.querySelector<HTMLElement>('main, [tabindex="-1"]');
+        main?.focus({ preventScroll: true });
+      });
+      const form = root.querySelector<HTMLFormElement>('[data-coupon]');
+      form?.addEventListener('submit', (e) => {
+        const mail = form.querySelector<HTMLInputElement>('[data-mail]')!;
+        const msg = form.querySelector<HTMLElement>('[data-msg]')!;
+        const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.value);
+        mail.setAttribute('aria-invalid', String(!ok));
+        if (!ok) {
+          e.preventDefault();
+          msg.textContent = 'Ese email no parece válido.';
+          mail.focus();
+          return;
+        }
+        if (form.getAttribute('action')) return;
+        e.preventDefault();
+        msg.textContent = '¡Listo! Tu código HOLA10 va de camino al correo.';
+        form.classList.add('is-done');
+      });
+    });
+  }
+  initFoodFt();
+  document.addEventListener('astro:page-load', initFoodFt);
+</script>
+
+<style>
+  .bf-ft {
+    position: relative;
+    padding: clamp(3rem, 7vw, 5rem) var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    background: var(--bf-night);
+    color: var(--bf-on-night);
+    font-family: var(--bf-font-body);
+    overflow: hidden;
+  }
+
+  .bf-ft--cream {
+    background: var(--bf-bg-2);
+    color: var(--bf-ink);
+  }
+
+  .bf-ft__inner {
+    position: relative;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+
+  @media (min-width: 900px) {
+    .bf-ft__inner {
+      grid-template-columns: 1fr 1.4fr;
+    }
+  }
+
+  .bf-ft__coupon {
+    position: relative;
+    display: grid;
+    gap: 8px;
+    padding: var(--sp-5, 1.25rem);
+    border: 3px solid var(--bf-outline);
+    border-radius: 24px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: 6px 6px 0 var(--bf-tomato);
+    transform: rotate(-1.5deg);
+    align-self: start;
+  }
+
+  .bf-ft__coupon.is-done {
+    background: var(--bf-mint-soft);
+    color: var(--bf-ink);
+  }
+
+  .bf-ft__ctitle {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .bf-ft__coupon label {
+    font-weight: 700;
+  }
+
+  .bf-ft__cfield {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .bf-ft__cfield input {
+    flex: 1 1 180px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+  }
+
+  .bf-ft__cfield button {
+    min-height: 48px;
+    padding: 0 1.1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-ft__cmsg {
+    min-height: 1.3em;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .bf-ft :is(a, input, button):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-ft__cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .bf-ft__h {
+    margin: 0 0 10px;
+    color: var(--bf-mustard);
+    font-family: var(--bf-font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  .bf-ft--cream .bf-ft__h {
+    color: var(--bf-tomato);
+  }
+
+  .bf-ft ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-ft__cols a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .bf-ft__cols a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+
+  .bf-ft address {
+    font-style: normal;
+  }
+
+  .bf-ft address p {
+    margin: 0 0 4px;
+  }
+
+  .bf-ft address a {
+    min-height: 32px;
+  }
+
+  .bf-ft__word {
+    display: flex;
+    justify-content: center;
+    margin: clamp(2rem, 6vw, 4rem) 0 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(4rem, 19vw, 15rem);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 0.8;
+    color: var(--bf-tomato);
+    -webkit-text-stroke: 3px var(--bf-outline);
+    user-select: none;
+  }
+
+  .bf-ft--md .bf-ft__word {
+    font-size: clamp(3rem, 13vw, 9rem);
+  }
+
+  .bf-ft__word span {
+    display: inline-block;
+    transform: translateY(30%);
+    opacity: 0.4;
+    transition: transform 0.6s var(--bf-ease-pop), opacity 0.4s ease;
+    transition-delay: calc(var(--i) * 60ms);
+  }
+
+  .bf-ft__word.is-in span {
+    transform: none;
+    opacity: 1;
+    animation: bf-ft-wave 2.8s ease-in-out infinite;
+    animation-delay: calc(var(--i) * 120ms + 0.8s);
+  }
+
+  .bf-ft__legal {
+    position: relative;
+    max-width: 1240px;
+    margin: var(--sp-5, 1.25rem) auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 2px dashed color-mix(in srgb, currentColor 30%, transparent);
+    font-size: 0.9rem;
+  }
+
+  .bf-ft__legal p {
+    margin: 0;
+  }
+
+  .bf-ft__top {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: inherit;
+    font-weight: 800;
+  }
+
+  @keyframes bf-ft-wave { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(-12%) rotate(-4deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-ft__word span {
+      transform: none;
+      opacity: 1;
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

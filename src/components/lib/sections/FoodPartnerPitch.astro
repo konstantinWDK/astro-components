@@ -1,0 +1,554 @@
+---
+/**
+ * FoodPartnerPitch — B2B section for restaurants: a savings calculator (orders per week, average
+ * ticket, plan) that races two bars — what aggregators keep vs what BiteFlow keeps — and counts up
+ * the yearly saving, next to a sign-up form with validation and a stamped confirmation.
+ *
+ * @param {number} aggregatorPct - Typical aggregator commission (%). Default 30.
+ * @param {Array<{id: string, name: string, pct: number, weekly: number, text: string}>} plans - Plans.
+ * @param {string} action - Optional form action; without it the form confirms on the page.
+ * @param {string} title - Section heading.
+ * @param {string} variant - 'split' | 'stacked'. Default 'split'.
+ * @param {string} size - 'md' | 'lg' heading size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: sliders are native range inputs with visible labels and live <output>s; the
+ * result sentence is announced politely; plan choice is a radio group; form fields have labels,
+ * required errors linked by aria-describedby, and the confirmation receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+
+interface Plan { id: string; name: string; pct: number; weekly: number; text: string }
+
+interface OwnProps {
+  aggregatorPct?: number;
+  plans?: Plan[];
+  action?: string;
+  title?: string;
+  variant?: 'split' | 'stacked';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  aggregatorPct = 30,
+  plans = [
+    { id: 'tech', name: 'Solo tecnología', pct: 0, weekly: 19, text: 'Web, app, KDS y pagos. Repartes con tus riders.' },
+    { id: 'riders', name: 'Con riders BiteFlow', pct: 12, weekly: 0, text: 'Todo lo anterior + nuestra flota eléctrica.' },
+  ],
+  action,
+  title = 'Tu cocina, tus clientes, tu margen',
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bf-pp-${Math.random().toString(36).slice(2, 7)}`;
+const cuisines = ['Hamburguesas', 'Pizza', 'Asiática', 'Mexicana', 'Mediterránea', 'Saludable', 'Postres', 'Otra'];
+---
+
+<section class:list={['bf-ui', 'bf-pp', `bf-pp--${variant}`, `bf-pp--${size}`, classAttr]} aria-labelledby={uid} data-bf-pp data-agg={aggregatorPct} data-plans={JSON.stringify(plans)} {...rest}>
+  <div class="bf-pp__inner">
+    <div class="bf-pp__calc">
+      <p class="bf-pp__kicker">Para restaurantes y dark kitchens</p>
+      <h2 id={uid} class="bf-pp__title">{title}</h2>
+      <p class="bf-pp__lead">Calcula cuánto te quedas con BiteFlow frente a un agregador que se lleva el {aggregatorPct} %.</p>
+
+      <div class="bf-pp__sliders">
+        <div class="bf-pp__slider">
+          <label for={`${uid}-o`}>Pedidos a la semana</label>
+          <output for={`${uid}-o`} data-o-out>180</output>
+          <input id={`${uid}-o`} type="range" min="20" max="800" step="10" value="180" data-orders />
+        </div>
+        <div class="bf-pp__slider">
+          <label for={`${uid}-t`}>Ticket medio</label>
+          <output for={`${uid}-t`} data-t-out>22 €</output>
+          <input id={`${uid}-t`} type="range" min="8" max="60" step="1" value="22" data-ticket />
+        </div>
+      </div>
+
+      <fieldset class="bf-pp__plans">
+        <legend>Plan</legend>
+        {plans.map((p, i) => (
+          <label>
+            <input type="radio" name={`${uid}-plan`} value={p.id} checked={i === 0} data-plan />
+            <span>
+              <strong>{p.name}</strong>
+              <small>{p.pct ? `${p.pct} % por pedido` : `${p.weekly} € / semana`} · {p.text}</small>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div class="bf-pp__race" aria-hidden="true">
+        <div class="bf-pp__lane">
+          <span>Agregador</span>
+          <span class="bf-pp__bar bf-pp__bar--agg"><i data-bar-agg></i></span>
+          <b data-agg-out>0 €</b>
+        </div>
+        <div class="bf-pp__lane">
+          <span>BiteFlow</span>
+          <span class="bf-pp__bar bf-pp__bar--bf"><i data-bar-bf></i></span>
+          <b data-bf-out>0 €</b>
+        </div>
+      </div>
+      <p class="bf-pp__result" aria-live="polite" data-result></p>
+    </div>
+
+    <form class="bf-pp__form" method="post" action={action} novalidate data-form>
+      <h3 class="bf-pp__ftitle">Date de alta en 48 h</h3>
+      <div class="bf-pp__field">
+        <label for={`${uid}-n`}>Nombre del restaurante</label>
+        <input id={`${uid}-n`} name="restaurant" required autocomplete="organization" />
+        <p class="bf-pp__err" id={`${uid}-n-e`} hidden>¿Cómo se llama tu restaurante?</p>
+      </div>
+      <div class="bf-pp__row">
+        <div class="bf-pp__field">
+          <label for={`${uid}-c`}>Persona de contacto</label>
+          <input id={`${uid}-c`} name="contact" required autocomplete="name" />
+          <p class="bf-pp__err" id={`${uid}-c-e`} hidden>Escribe tu nombre.</p>
+        </div>
+        <div class="bf-pp__field">
+          <label for={`${uid}-p`}>Teléfono</label>
+          <input id={`${uid}-p`} name="phone" type="tel" required autocomplete="tel" />
+          <p class="bf-pp__err" id={`${uid}-p-e`} hidden>Necesitamos un teléfono.</p>
+        </div>
+      </div>
+      <div class="bf-pp__field">
+        <label for={`${uid}-e`}>Email</label>
+        <input id={`${uid}-e`} name="email" type="email" required autocomplete="email" />
+        <p class="bf-pp__err" id={`${uid}-e-e`} hidden>Revisa el email.</p>
+      </div>
+      <div class="bf-pp__field">
+        <label for={`${uid}-k`}>Tipo de cocina</label>
+        <select id={`${uid}-k`} name="cuisine">
+          {cuisines.map((c) => <option>{c}</option>)}
+        </select>
+      </div>
+      <label class="bf-pp__check"><input type="checkbox" name="kds" checked /> Quiero la tablet KDS de regalo</label>
+      <button type="submit" class="bf-pp__submit">Quiero vender sin comisiones</button>
+      <div class="bf-pp__done" tabindex="-1" data-done hidden>
+        <span class="bf-pp__stamp" aria-hidden="true">¡Hecho!</span>
+        <p><strong>Recibido.</strong> Te llamamos en menos de 24 h para preparar tu carta.</p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  function initFoodPp() {
+    document.querySelectorAll<HTMLElement>('[data-bf-pp]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const plans = JSON.parse(root.dataset.plans || '[]') as Array<{ id: string; pct: number; weekly: number }>;
+      const agg = Number(root.dataset.agg || 30);
+      const eur = (n: number) => `${Math.round(n).toLocaleString('es-ES')} €`;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let shown = 0;
+      let raf = 0;
+
+      const calc = () => {
+        const o = Number($<HTMLInputElement>('[data-orders]').value);
+        const t = Number($<HTMLInputElement>('[data-ticket]').value);
+        const planId = root.querySelector<HTMLInputElement>('[data-plan]:checked')?.value;
+        const plan = plans.find((p) => p.id === planId) ?? plans[0];
+        $('[data-o-out]').textContent = String(o);
+        $('[data-t-out]').textContent = `${t} €`;
+        const yearly = o * t * 52;
+        const aggCost = yearly * (agg / 100);
+        const bfCost = yearly * (plan.pct / 100) + plan.weekly * 52;
+        const save = Math.max(0, aggCost - bfCost);
+        const max = Math.max(aggCost, bfCost, 1);
+        $<HTMLElement>('[data-bar-agg]').style.width = `${(aggCost / max) * 100}%`;
+        $<HTMLElement>('[data-bar-bf]').style.width = `${(bfCost / max) * 100}%`;
+        $('[data-agg-out]').textContent = eur(aggCost);
+        $('[data-bf-out]').textContent = eur(bfCost);
+
+        cancelAnimationFrame(raf);
+        const from = shown;
+        const t0 = performance.now();
+        const step = (now: number) => {
+          const k = reduce ? 1 : Math.min(1, (now - t0) / 500);
+          shown = from + (save - from) * k;
+          $('[data-result]').innerHTML = `Al año te ahorras <strong>${eur(shown)}</strong> en comisiones.`;
+          if (k < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      };
+      root.addEventListener('input', (e) => {
+        if ((e.target as HTMLElement).matches('[data-orders], [data-ticket], [data-plan]')) calc();
+      });
+      root.addEventListener('change', (e) => {
+        if ((e.target as HTMLElement).matches('[data-plan]')) calc();
+      });
+      calc();
+
+      const form = $<HTMLFormElement>('[data-form]');
+      form.addEventListener('submit', (e) => {
+        let first: HTMLInputElement | null = null;
+        form.querySelectorAll<HTMLInputElement>('input[required]').forEach((i) => {
+          const err = i.nextElementSibling as HTMLElement;
+          const bad = !i.value.trim() || (i.type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(i.value));
+          i.setAttribute('aria-invalid', String(bad));
+          if (bad) i.setAttribute('aria-describedby', err.id);
+          else i.removeAttribute('aria-describedby');
+          err.hidden = !bad;
+          if (bad && !first) first = i;
+        });
+        if (first) {
+          e.preventDefault();
+          (first as HTMLInputElement).focus();
+          return;
+        }
+        if (form.getAttribute('action')) return;
+        e.preventDefault();
+        const done = $('[data-done]');
+        done.hidden = false;
+        done.focus();
+      });
+    });
+  }
+  initFoodPp();
+  document.addEventListener('astro:page-load', initFoodPp);
+</script>
+
+<style>
+  .bf-pp {
+    position: relative;
+    padding: clamp(3rem, 7vw, 5.5rem) var(--sp-4, 1rem);
+    background: var(--bf-night);
+    color: var(--bf-on-night);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-pp__inner {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  @media (min-width: 960px) {
+    .bf-pp--split .bf-pp__inner {
+      grid-template-columns: 1.1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  .bf-pp__kicker {
+    display: inline-block;
+    margin: 0 0 12px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-weight: 800;
+    font-size: 0.82rem;
+    transform: rotate(-2deg);
+  }
+
+  .bf-pp__title {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(2.1rem, 6vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .bf-pp--lg .bf-pp__title {
+    font-size: clamp(2.5rem, 8vw, 4.4rem);
+  }
+
+  .bf-pp__lead {
+    margin: 12px 0 var(--sp-5, 1.25rem);
+    color: color-mix(in srgb, var(--bf-on-night) 82%, transparent);
+    font-size: 1.05rem;
+  }
+
+  .bf-pp__sliders {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bf-pp__slider {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    align-items: center;
+  }
+
+  .bf-pp__slider label {
+    font-weight: 700;
+  }
+
+  .bf-pp__slider output {
+    font-family: var(--bf-font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--bf-mustard);
+  }
+
+  .bf-pp__slider input {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--bf-mustard);
+    cursor: pointer;
+  }
+
+  .bf-pp__plans {
+    display: grid;
+    gap: 8px;
+    margin: var(--sp-5, 1.25rem) 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bf-pp__plans legend {
+    margin-bottom: 8px;
+    font-weight: 800;
+  }
+
+  .bf-pp__plans label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bf-pp__plans input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .bf-pp__plans span {
+    display: grid;
+    padding: 10px 14px;
+    border: 2px solid color-mix(in srgb, var(--bf-on-night) 30%, transparent);
+    border-radius: 16px;
+  }
+
+  .bf-pp__plans small {
+    color: color-mix(in srgb, var(--bf-on-night) 78%, transparent);
+  }
+
+  .bf-pp__plans input:checked + span {
+    border-color: var(--bf-mustard);
+    background: color-mix(in srgb, var(--bf-mustard) 14%, transparent);
+  }
+
+  .bf-pp__plans input:focus-visible + span,
+  .bf-pp__slider input:focus-visible {
+    outline: 3px solid var(--bf-mustard);
+    outline-offset: 2px;
+  }
+
+  .bf-pp__race {
+    display: grid;
+    gap: 10px;
+  }
+
+  .bf-pp__lane {
+    display: grid;
+    grid-template-columns: 6rem 1fr auto;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+  }
+
+  .bf-pp__lane b {
+    font-variant-numeric: tabular-nums;
+    min-width: 6.5rem;
+    text-align: right;
+  }
+
+  .bf-pp__bar {
+    height: 26px;
+    border: 2px solid var(--bf-on-night);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .bf-pp__bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    transition: width 0.7s var(--bf-ease-pop);
+  }
+
+  .bf-pp__bar--agg i {
+    background: repeating-linear-gradient(-45deg, var(--bf-tomato) 0 8px, var(--bf-tomato-hover) 8px 16px);
+  }
+
+  .bf-pp__bar--bf i {
+    background: var(--bf-mint);
+  }
+
+  .bf-pp__result {
+    margin: var(--sp-4, 1rem) 0 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(1.3rem, 3.6vw, 1.8rem);
+    font-weight: 800;
+  }
+
+  .bf-pp__result :global(strong) {
+    color: var(--bf-mustard);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bf-pp__form {
+    position: relative;
+    padding: var(--sp-6, 1.5rem);
+    border: 3px solid var(--bf-outline);
+    border-radius: 28px;
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    box-shadow: 8px 8px 0 var(--bf-tomato);
+  }
+
+  .bf-pp__ftitle {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--bf-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+
+  .bf-pp__row {
+    display: grid;
+    gap: 0 12px;
+  }
+
+  @media (min-width: 560px) {
+    .bf-pp__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .bf-pp__field {
+    display: grid;
+    gap: 6px;
+    margin-bottom: var(--sp-3, 0.75rem);
+    min-width: 0;
+  }
+
+  .bf-pp__field label {
+    font-weight: 700;
+  }
+
+  .bf-pp__field input,
+  .bf-pp__field select {
+    min-height: 48px;
+    padding: 0 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    min-width: 0;
+  }
+
+  .bf-pp__field input[aria-invalid='true'] {
+    border-color: var(--bf-tomato);
+  }
+
+  .bf-pp__form :is(input, select, button):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-pp__err {
+    margin: 0;
+    color: var(--bf-tomato);
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  .bf-pp__check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font-weight: 600;
+  }
+
+  .bf-pp__check input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--bf-tomato);
+  }
+
+  .bf-pp__submit {
+    width: 100%;
+    min-height: 54px;
+    margin-top: 8px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-family: var(--bf-font-display);
+    font-size: 1.15rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: var(--bf-shadow);
+  }
+
+  .bf-pp__done {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 10px;
+    padding: var(--sp-6, 1.5rem);
+    border-radius: 25px;
+    background: var(--bf-bg);
+    text-align: center;
+  }
+
+  .bf-pp__done[hidden] {
+    display: none;
+  }
+
+  .bf-pp__done:focus {
+    outline: none;
+  }
+
+  .bf-pp__stamp {
+    padding: 10px 24px;
+    border: 4px solid var(--bf-mint);
+    border-radius: 14px;
+    color: var(--bf-mint);
+    font-family: var(--bf-font-display);
+    font-size: 2.6rem;
+    font-weight: 800;
+    transform: rotate(-10deg);
+    animation: bf-pp-stamp 0.5s var(--bf-ease-pop);
+  }
+
+  @keyframes bf-pp-stamp { from { transform: scale(2.4) rotate(-30deg); opacity: 0; } }
+
+  @media (max-width: 480px) {
+    .bf-pp__lane {
+      grid-template-columns: 1fr auto;
+    }
+
+    .bf-pp__bar {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-pp * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

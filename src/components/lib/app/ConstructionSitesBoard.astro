@@ -1,0 +1,618 @@
+---
+/**
+ * ConstructionSitesBoard — Active sites at a glance: a situation plan of the city (ring road,
+ * river, districts) with one pin per site, pulsing when late, next to cards with a progress ring,
+ * planned vs certified budget, crew, weather and alerts. Hovering or focusing a card lights its
+ * pin and choosing a pin brings its card into view. Filter by health and sort.
+ *
+ * @param {ConstructionSite[]} sites - Sites to show.
+ * @param {string} logHref - Daily log page (site id is added as ?obra=).
+ * @param {string} projectBase - Base URL of project pages (slug appended).
+ * @param {string} variant - 'map' (plan + cards) | 'cards'. Default 'map'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: health filter chips are toggle buttons with aria-pressed; sort is a labelled
+ * select; each card is an <article> with a heading; health is written ("En plazo", "En riesgo",
+ * "Con retraso"), not only coloured; map pins are buttons named after their site; the result count
+ * is announced politely; pulses stop with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { constructionSites, formatEurShort, type ConstructionSite } from '../templates/construction/data';
+
+interface OwnProps {
+  sites?: ConstructionSite[];
+  logHref?: string;
+  projectBase?: string;
+  variant?: 'map' | 'cards';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  sites = constructionSites,
+  logHref = '#diario',
+  projectBase = '/proyectos',
+  variant = 'map',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const health = { 'en-plazo': 'En plazo', riesgo: 'En riesgo', retraso: 'Con retraso' } as const;
+const C = 2 * Math.PI * 22;
+const list = sites.map((s) => ({
+  ...s,
+  dash: ((s.progress / 100) * C).toFixed(1),
+  gap: (C - (s.progress / 100) * C).toFixed(1),
+  dev: s.certified - s.planned,
+  hasAlerts: s.alerts.length > 0,
+}));
+const counts = Object.fromEntries(Object.keys(health).map((k) => [k, sites.filter((s) => s.health === k).length]));
+const uid = `sk-sb-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section class:list={['sk-ui', 'sk-sb', `sk-sb--${variant}`, `sk-sb--${size}`, classAttr]} aria-label="Obras en ejecución" data-sk-sb {...rest}>
+  <div class="sk-sb__tools">
+    <div class="sk-sb__chips" role="group" aria-label="Filtrar por estado">
+      {Object.entries(health).map(([k, v]) => (
+        <button type="button" class={`sk-sb__chip sk-sb__chip--${k}`} aria-pressed="false" data-chip={k}>
+          <i aria-hidden="true"></i>{v} <b>{counts[k]}</b>
+        </button>
+      ))}
+    </div>
+    <label class="sk-sb__sort">
+      <span class="sk-mono">Ordenar</span>
+      <select data-sort>
+        <option value="risk">Primero las que van peor</option>
+        <option value="progress">Avance</option>
+        <option value="budget">Presupuesto</option>
+        <option value="crew">Personal en obra</option>
+      </select>
+    </label>
+    <p class="sk-sb__count sk-mono" role="status" aria-live="polite" data-count>{sites.length} obras</p>
+  </div>
+
+  <div class="sk-sb__grid">
+    {variant === 'map' && (
+      <div class="sk-sb__map sk-grid-bg">
+        <svg viewBox="0 0 100 80" class="sk-sb__svg" aria-hidden="true">
+          <ellipse cx="50" cy="42" rx="20" ry="24" class="m-ring" />
+          <path d="M18 78C30 70 34 60 42 56S60 58 66 50 80 34 98 30" class="m-river" />
+          <path d="M0 40H100M50 0V80M12 8L88 74M88 8L12 74" class="m-road" />
+          <text x="50" y="18" class="m-label">M-30</text>
+          <text x="86" y="27" class="m-label">Manzanares</text>
+        </svg>
+        <div class="sk-sb__pins">
+          {list.map((s) => (
+            <button
+              type="button"
+              class={`sk-sb__pin sk-sb__pin--${s.health}`}
+              style={`left:${s.x}%;top:${(s.y / 80) * 100}%`}
+              data-pin={s.id}
+              aria-label={`${s.name}, ${health[s.health]}`}
+            >
+              <span aria-hidden="true"></span>
+            </button>
+          ))}
+        </div>
+        <p class="sk-sb__north sk-mono" aria-hidden="true">N ↑ · E 1:150.000</p>
+      </div>
+    )}
+
+    <ul class="sk-sb__list" role="list" data-list>
+      {list.map((s) => (
+        <li data-card={s.id} data-health={s.health} data-progress={s.progress} data-budget={s.budget} data-crew={s.crew} data-dev={s.dev}>
+          <article class:list={['sk-sb__card', 'sk-crop', `sk-sb__card--${s.health}`]} tabindex="-1">
+            <header class="sk-sb__chead">
+              <svg viewBox="0 0 52 52" class="sk-sb__ring" role="img" aria-label={`Avance ${s.progress} %`}>
+                <circle cx="26" cy="26" r="22" class="r-bg" />
+                <circle cx="26" cy="26" r="22" class="r-fg" style={`stroke-dasharray:${s.dash} ${s.gap}`} />
+                <text x="26" y="30" text-anchor="middle">{s.progress}</text>
+              </svg>
+              <div class="sk-sb__ctitle">
+                <h3>{s.name}</h3>
+                <p class="sk-mono">{s.district} · {s.phase}</p>
+              </div>
+              <span class={`sk-sb__state sk-sb__state--${s.health} sk-mono`}>{health[s.health]}</span>
+            </header>
+
+            <div class="sk-sb__burn">
+              <div><span class="sk-mono">Previsto</span><i style={`--w:${s.planned}%`} class="b-plan"></i><b class="sk-mono">{s.planned} %</b></div>
+              <div><span class="sk-mono">Certificado</span><i style={`--w:${s.certified}%`} class="b-cert"></i><b class="sk-mono">{s.certified} %</b></div>
+            </div>
+
+            <dl class="sk-sb__facts sk-mono">
+              <div><dt>PEC</dt><dd>{formatEurShort(s.budget)}</dd></div>
+              <div><dt>En obra</dt><dd>{s.crew} pers.</dd></div>
+              <div><dt>Jefe de obra</dt><dd>{s.foreman}</dd></div>
+              <div><dt>Tiempo</dt><dd>{s.weather}</dd></div>
+            </dl>
+
+            {s.hasAlerts && (
+              <ul class="sk-sb__alerts" role="list">
+                {s.alerts.map((a) => <li>{a}</li>)}
+              </ul>
+            )}
+
+            <div class="sk-sb__links">
+              <a href={`${logHref}?obra=${s.id}`}>Diario de obra</a>
+              <a href={`${projectBase.replace(/\/$/, '')}/${s.projectSlug}`}>Ficha del proyecto</a>
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+  <p class="sk-sb__empty sk-mono" data-empty hidden>Ninguna obra con ese estado.</p>
+</section>
+
+<script>
+  function initSkSb() {
+    document.querySelectorAll<HTMLElement>('[data-sk-sb]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const list = root.querySelector<HTMLElement>('[data-list]')!;
+      const cards = [...root.querySelectorAll<HTMLElement>('[data-card]')];
+      const chips = [...root.querySelectorAll<HTMLButtonElement>('[data-chip]')];
+      const sort = root.querySelector<HTMLSelectElement>('[data-sort]')!;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const rank = { retraso: 0, riesgo: 1, 'en-plazo': 2 } as Record<string, number>;
+
+      const apply = () => {
+        const on = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.chip);
+        let n = 0;
+        cards.forEach((c) => {
+          const ok = !on.length || on.includes(c.dataset.health);
+          c.hidden = !ok;
+          root.querySelector(`[data-pin="${c.dataset.card}"]`)?.classList.toggle('is-off', !ok);
+          if (ok) n++;
+        });
+        const k = sort.value;
+        cards
+          .slice()
+          .sort((a, b) =>
+            k === 'risk'
+              ? rank[a.dataset.health!] - rank[b.dataset.health!] || Number(a.dataset.dev) - Number(b.dataset.dev)
+              : Number(b.dataset[k as 'progress' | 'budget' | 'crew']) - Number(a.dataset[k as 'progress' | 'budget' | 'crew']),
+          )
+          .forEach((c) => list.append(c));
+        root.querySelector('[data-count]')!.textContent = n === 1 ? '1 obra' : `${n} obras`;
+        root.querySelector<HTMLElement>('[data-empty]')!.hidden = n !== 0;
+      };
+
+      chips.forEach((c) =>
+        c.addEventListener('click', () => {
+          c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
+          apply();
+        }),
+      );
+      sort.addEventListener('change', apply);
+
+      const light = (id: string | undefined, on: boolean) => {
+        if (!id) return;
+        root.querySelector(`[data-pin="${id}"]`)?.classList.toggle('is-hot', on);
+        root.querySelector(`[data-card="${id}"] article`)?.classList.toggle('is-hot', on);
+      };
+      cards.forEach((c) => {
+        c.addEventListener('mouseenter', () => light(c.dataset.card, true));
+        c.addEventListener('mouseleave', () => light(c.dataset.card, false));
+        c.addEventListener('focusin', () => light(c.dataset.card, true));
+        c.addEventListener('focusout', () => light(c.dataset.card, false));
+      });
+      root.querySelectorAll<HTMLButtonElement>('[data-pin]').forEach((p) => {
+        p.addEventListener('mouseenter', () => light(p.dataset.pin, true));
+        p.addEventListener('mouseleave', () => light(p.dataset.pin, false));
+        p.addEventListener('click', () => {
+          const art = root.querySelector<HTMLElement>(`[data-card="${p.dataset.pin}"] article`);
+          if (!art) return;
+          art.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+          art.focus({ preventScroll: true });
+          art.classList.remove('is-ping');
+          void art.offsetWidth;
+          art.classList.add('is-ping');
+        });
+      });
+      apply();
+    });
+  }
+  initSkSb();
+  document.addEventListener('astro:page-load', initSkSb);
+</script>
+
+<style>
+  .sk-sb {
+    position: relative;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-sb__tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 20px;
+    margin-bottom: 16px;
+  }
+
+  .sk-sb__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .sk-sb__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-sb__chip i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .sk-sb__chip--en-plazo i { background: var(--sk-ok); }
+  .sk-sb__chip--riesgo i { background: var(--sk-warn); }
+  .sk-sb__chip--retraso i { background: var(--sk-danger); }
+
+  .sk-sb__chip[aria-pressed='true'] {
+    border-color: var(--sk-accent);
+    box-shadow: inset 0 0 0 1px var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 14%, transparent);
+  }
+
+  .sk-sb__sort {
+    display: grid;
+    gap: 4px;
+  }
+
+  .sk-sb__sort span {
+    color: var(--sk-ink-3);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+  }
+
+  .sk-sb select {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+    font: inherit;
+  }
+
+  .sk-sb__count {
+    margin: 0 0 0 auto;
+    color: var(--sk-ink-3);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-sb :is(button, select, a):focus-visible,
+  .sk-sb__card:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-sb__grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  @media (min-width: 1100px) {
+    .sk-sb--map .sk-sb__grid {
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: start;
+    }
+
+    .sk-sb__map {
+      position: sticky;
+      top: 90px;
+    }
+  }
+
+  .sk-sb__map {
+    position: relative;
+    border: 1px solid var(--sk-line-soft);
+    aspect-ratio: 100 / 80;
+  }
+
+  .sk-sb__svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .sk-sb__svg .m-ring { fill: none; stroke: var(--sk-line); stroke-width: 0.6; stroke-dasharray: 2 1; }
+  .sk-sb__svg .m-river { fill: none; stroke: var(--sk-line); stroke-width: 1.4; opacity: 0.6; }
+  .sk-sb__svg .m-road { stroke: var(--sk-line-soft); stroke-width: 0.3; }
+  .sk-sb__svg .m-label { fill: var(--sk-ink-3); font-family: var(--sk-font-mono); font-size: 2.6px; text-anchor: middle; }
+
+  .sk-sb__pins {
+    position: absolute;
+    inset: 0;
+  }
+
+  .sk-sb__pin {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+  }
+
+  .sk-sb__pin span {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--sk-bg);
+    border-radius: 50%;
+    background: var(--sk-ok);
+    transition: transform 0.25s var(--sk-ease);
+  }
+
+  .sk-sb__pin--riesgo span { background: var(--sk-warn); }
+  .sk-sb__pin--retraso span { background: var(--sk-danger); }
+
+  .sk-sb__pin--retraso span::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 2px solid var(--sk-danger);
+    border-radius: 50%;
+    animation: sk-sb-pulse 1.6s ease-out infinite;
+  }
+
+  .sk-sb__pin.is-hot span {
+    transform: scale(1.5);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--sk-accent) 40%, transparent);
+  }
+
+  .sk-sb__pin.is-off {
+    opacity: 0.2;
+  }
+
+  .sk-sb__north {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+  }
+
+  .sk-sb__list {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: 0;
+  }
+
+  .sk-sb--cards .sk-sb__list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  }
+
+  .sk-sb__list > li[hidden] {
+    display: none;
+  }
+
+  .sk-sb__card {
+    position: relative;
+    padding: 14px;
+    border: 1px solid var(--sk-line-soft);
+    border-left: 3px solid var(--sk-ok);
+    background: var(--sk-panel);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .sk-sb__card--riesgo { border-left-color: var(--sk-warn); }
+  .sk-sb__card--retraso { border-left-color: var(--sk-danger); }
+
+  .sk-sb__card.is-hot {
+    background: var(--sk-panel-2);
+    border-color: var(--sk-line);
+  }
+
+  .sk-sb__card.is-ping {
+    animation: sk-sb-ping 0.8s ease;
+  }
+
+  .sk-sb__chead {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sk-sb__ring .r-bg { fill: none; stroke: var(--sk-grid-strong); stroke-width: 4; }
+  .sk-sb__ring .r-fg { fill: none; stroke: var(--sk-accent); stroke-width: 4; transform: rotate(-90deg); transform-origin: center; }
+  .sk-sb__ring text { fill: var(--sk-ink); font-family: var(--sk-font-mono); font-size: 12px; }
+
+  .sk-sb__ctitle {
+    min-width: 0;
+  }
+
+  .sk-sb__ctitle h3 {
+    margin: 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+  }
+
+  .sk-sb__ctitle p {
+    margin: 2px 0 0;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+  }
+
+  .sk-sb__state {
+    padding: 2px 8px;
+    border: 1px solid currentColor;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .sk-sb__state--en-plazo { color: var(--sk-ok); }
+  .sk-sb__state--riesgo { color: var(--sk-warn); }
+  .sk-sb__state--retraso { color: var(--sk-danger); }
+
+  .sk-sb__burn {
+    display: grid;
+    gap: 6px;
+    margin: 14px 0 10px;
+  }
+
+  .sk-sb__burn div {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr 3rem;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+  }
+
+  .sk-sb__burn span {
+    color: var(--sk-ink-3);
+    text-transform: uppercase;
+    font-size: 0.66rem;
+  }
+
+  .sk-sb__burn i {
+    position: relative;
+    height: 8px;
+    border: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-sb__burn i::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--w);
+  }
+
+  .sk-sb__burn .b-plan::after { background: var(--sk-line-soft); }
+  .sk-sb__burn .b-cert::after { background: var(--sk-accent); }
+
+  .sk-sb__burn b {
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .sk-sb__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid var(--sk-line-soft);
+    border-left: 1px solid var(--sk-line-soft);
+    font-size: 0.72rem;
+  }
+
+  .sk-sb__facts div {
+    padding: 6px 8px;
+    border-right: 1px solid var(--sk-line-soft);
+    border-bottom: 1px solid var(--sk-line-soft);
+    min-width: 0;
+  }
+
+  .sk-sb__facts dt {
+    color: var(--sk-ink-3);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+  }
+
+  .sk-sb__facts dd {
+    margin: 2px 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sk-sb__alerts {
+    display: grid;
+    gap: 4px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+  }
+
+  .sk-sb__alerts li {
+    padding: 6px 10px;
+    border-left: 2px solid var(--sk-warn);
+    background: color-mix(in srgb, var(--sk-warn) 10%, transparent);
+  }
+
+  .sk-sb__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 8px;
+  }
+
+  .sk-sb__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    text-underline-offset: 4px;
+  }
+
+  .sk-sb__links a:hover {
+    color: var(--sk-accent);
+  }
+
+  .sk-sb__empty {
+    padding: 16px;
+    border: 1px dashed var(--sk-line-soft);
+    text-align: center;
+  }
+
+  @keyframes sk-sb-pulse { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+  @keyframes sk-sb-ping { 30% { box-shadow: 0 0 0 3px var(--sk-accent); } }
+
+  @media (max-width: 480px) {
+    .sk-sb__chead {
+      grid-template-columns: 52px 1fr;
+    }
+
+    .sk-sb__state {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+
+    .sk-sb__count {
+      margin-left: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-sb * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

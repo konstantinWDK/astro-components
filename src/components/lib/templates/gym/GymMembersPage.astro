@@ -1,0 +1,116 @@
+---
+/**
+ * GymMembersPage — Staff view: membership KPIs, live occupancy and a searchable member table
+ * with plan, status, last visit and visits in the last 30 days.
+ *
+ * @param {GymRoutes} routes - Template route URLs.
+ * @param {typeof gymData} data - Members, plans and occupancy.
+ */
+import GymAppLayout from './GymAppLayout.astro';
+import GymAreaHeading from '../../app/GymAreaHeading.astro';
+import GymMembersTable from '../../app/GymMembersTable.astro';
+import GymOccupancyMeter from '../../app/GymOccupancyMeter.astro';
+import { gymRoutes, gymData, type GymRoutes } from './data';
+
+interface Props {
+  routes?: GymRoutes;
+  data?: typeof gymData;
+}
+
+const { routes = gymRoutes, data = gymData } = Astro.props;
+
+const priceOf = (plan: string) => data.plans.find((p) => p.name === plan)?.monthly ?? 0;
+const active = data.members.filter((m) => m.status === 'Activo' || m.status === 'Prueba');
+const mrr = data.members.filter((m) => m.status === 'Activo').reduce((s, m) => s + priceOf(m.plan), 0);
+const atRisk = data.members.filter((m) => m.status === 'Activo' && m.visits30 < 5).length;
+const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+
+const kpis = [
+  { label: 'Socios activos', value: String(active.length), hint: `${data.members.filter((m) => m.status === 'Prueba').length} en prueba` },
+  { label: 'Cuotas del mes', value: eur(mrr), hint: 'Socios activos' },
+  { label: 'Impagos', value: String(data.members.filter((m) => m.status === 'Impago').length), hint: 'Requieren llamada' },
+  { label: 'Riesgo de baja', value: String(atRisk), hint: 'Menos de 5 visitas en 30 días' },
+];
+
+---
+
+<GymAppLayout title="Socios y aforo" current="members" routes={routes}>
+  <GymAreaHeading
+    title="Socios y aforo"
+    description="Estado de las cuotas, actividad de los socios y ocupación del club."
+    kicker="Staff"
+    actions={[
+      { label: 'Exportar' },
+      { label: 'Nuevo socio', primary: true },
+    ]}
+  />
+
+  <ul class="gym-ui gym-kpis" role="list">
+    {kpis.map((k) => (
+      <li>
+        <span class="gym-kpis__label">{k.label}</span>
+        <span class="gym-kpis__value">{k.value}</span>
+        <span class="gym-kpis__hint">{k.hint}</span>
+      </li>
+    ))}
+  </ul>
+
+  <div class="gym-members">
+    <GymOccupancyMeter now={data.occupancy.now} capacity={data.occupancy.capacity} hourly={data.occupancy.hourly} />
+    <GymMembersTable members={data.members} title="Socios" />
+  </div>
+</GymAppLayout>
+
+<style>
+  .gym-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-6, 1.5rem) 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-kpis li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-kpis__label {
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-kpis__value {
+    font-family: var(--gym-font-display);
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gym-kpis__hint {
+    color: var(--gym-text-2);
+    font-size: 0.82rem;
+  }
+
+  .gym-members {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .gym-members > :global(*) {
+    min-width: 0;
+  }
+
+  @media (min-width: 1280px) {
+    .gym-members {
+      grid-template-columns: 340px minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+</style>

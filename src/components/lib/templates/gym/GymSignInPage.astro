@@ -1,0 +1,65 @@
+---
+/**
+ * GymSignInPage — Member and staff sign-in for Forja, built on GymSignIn.
+ * In the demo any email and password open the member area.
+ *
+ * @param {GymRoutes} routes - Template route URLs (sign-in goes to `routes.dashboard`).
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import '../../../../styles/global.css';
+import './gym-theme.css';
+import GymSignIn from '../../app/GymSignIn.astro';
+import { gymRoutes, type GymRoutes } from './data';
+
+interface Props {
+  routes?: GymRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = gymRoutes, theme = 'dark', noindex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es" class="theme-gym" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Área de socios — Forja</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="gym-signin-page">
+    <GymSignIn
+      brand="Forja"
+      memberHref={routes.dashboard}
+      staffHref={routes.members}
+      trialHref={routes.trial}
+      backHref={routes.home}
+    />
+  </body>
+</html>
+
+<style>
+  .gym-signin-page {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--gym-font-body);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+  }
+</style>

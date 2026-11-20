@@ -1,0 +1,207 @@
+---
+/**
+ * GymTrainersGrid — Coaching team: initials portrait, specialty, years, certifications,
+ * the disciplines they teach and a short quote.
+ *
+ * @param {GymTrainer[]} trainers - Trainers to show.
+ * @param {GymDiscipline[]} disciplines - Used to name each trainer's classes.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} variant - 'cards' | 'compact' (no certifications or quote). Default 'cards'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each trainer is an <article> named by its heading; the portrait is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymTrainers, gymDisciplines, type GymDiscipline, type GymTrainer } from '../templates/gym/data';
+
+interface OwnProps {
+  trainers?: GymTrainer[];
+  disciplines?: GymDiscipline[];
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+  variant?: 'cards' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  trainers = gymTrainers,
+  disciplines = gymDisciplines,
+  title = 'Entrenadores que te corrigen',
+  subtitle = 'Titulados, con años en sala y con grupos pequeños para poder mirarte de verdad.',
+  headingLevel = 'h2',
+  variant = 'cards',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const uid = `gt-${Math.random().toString(36).slice(2, 8)}`;
+const initialsOf = (n: string) => n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const discName = (id: string) => disciplines.find((d) => d.id === id)?.name ?? id;
+const hueOf = (id: string) => disciplines.find((d) => d.id === id)?.hue ?? 74;
+---
+
+<section class:list={['gym-ui', 'gym-team', `gym-team--${variant}`, classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="gym-team__inner">
+    <header class="gym-team__head">
+      <Heading id={`${uid}-title`} class="gym-team__title">{title}</Heading>
+      {subtitle && <p class="gym-team__subtitle">{subtitle}</p>}
+    </header>
+    <ul class="gym-team__grid" role="list">
+      {trainers.map((t) => (
+        <li>
+          <article class="gym-coach" aria-labelledby={`${uid}-${t.id}`}>
+            <div class="gym-coach__portrait" style={`--coach-hue:${hueOf(t.disciplines[0])}`} aria-hidden="true">
+              <span>{initialsOf(t.name)}</span>
+            </div>
+            <div class="gym-coach__body">
+              <Sub id={`${uid}-${t.id}`} class="gym-coach__name">{t.name}</Sub>
+              <p class="gym-coach__specialty">{t.specialty} · {t.years} años</p>
+              <ul class="gym-coach__tags" role="list" aria-label="Clases que imparte">
+                {t.disciplines.map((d) => <li>{discName(d)}</li>)}
+              </ul>
+              {variant === 'cards' && (
+                <>
+                  <p class="gym-coach__certs">{t.certifications.join(' · ')}</p>
+                  <blockquote class="gym-coach__quote">“{t.quote}”</blockquote>
+                </>
+              )}
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .gym-team {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-team__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .gym-team__head {
+    max-width: 640px;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .gym-team__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-team__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--gym-text-2);
+    line-height: 1.6;
+  }
+
+  .gym-team__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-coach {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-coach__portrait {
+    display: grid;
+    place-items: end start;
+    aspect-ratio: 4 / 3;
+    padding: var(--sp-4, 1rem);
+    background:
+      repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.05) 0 14px, transparent 14px 34px),
+      linear-gradient(150deg, hsl(var(--coach-hue) 60% 38%), hsl(calc(var(--coach-hue) + 40) 50% 14%));
+  }
+
+  .gym-coach__portrait span {
+    font-family: var(--gym-font-display);
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 0.8;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .gym-coach__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-5, 1.25rem);
+    flex: 1;
+  }
+
+  .gym-coach__name {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .gym-coach__specialty {
+    margin: 0;
+    color: var(--gym-text-2);
+    font-size: 0.92rem;
+  }
+
+  .gym-coach__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-coach__tags li {
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--gym-surface-2);
+    color: var(--gym-text-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .gym-coach__certs {
+    margin: 0;
+    color: var(--gym-text-3);
+    font-size: 0.8rem;
+  }
+
+  .gym-coach__quote {
+    margin: auto 0 0;
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--gym-border);
+    color: var(--gym-text);
+    font-style: italic;
+  }
+</style>

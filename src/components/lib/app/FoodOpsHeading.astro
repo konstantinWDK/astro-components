@@ -1,0 +1,214 @@
+---
+/**
+ * FoodOpsHeading — Page heading for the BiteFlow kitchen OS: sticker kicker, chunky title, short
+ * description, a live service clock and action links or buttons.
+ *
+ * @param {string} title - Page title (rendered as h1).
+ * @param {string} kicker - Small label above the title.
+ * @param {string} description - One-line description.
+ * @param {Array<{label: string, href?: string, primary?: boolean}>} actions - Links (href) or buttons.
+ * @param {boolean} clock - Show the live clock. Default true.
+ * @param {string} variant - 'default' | 'banner' (mustard band). Default 'default'.
+ * @param {string} size - 'md' | 'lg' title size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; the clock is a <time> element updated once a minute, without a live
+ * region so it does not chatter; actions keep 44px targets and visible focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+
+interface Action { label: string; href?: string; primary?: boolean }
+
+interface OwnProps {
+  title: string;
+  kicker?: string;
+  description?: string;
+  actions?: Action[];
+  clock?: boolean;
+  variant?: 'default' | 'banner';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { title, kicker, description, actions = [], clock = true, variant = 'default', size = 'md', class: classAttr, ...rest } = Astro.props;
+---
+
+<div class:list={['bf-ui', 'bf-head', `bf-head--${variant}`, `bf-head--${size}`, classAttr]} data-bf-head {...rest}>
+  <div class="bf-head__text">
+    {kicker && <p class="bf-head__kicker">{kicker}</p>}
+    <h1 class="bf-head__title">{title}</h1>
+    {description && <p class="bf-head__desc">{description}</p>}
+  </div>
+  <div class="bf-head__side">
+    {clock && (
+      <time class="bf-head__clock" data-clock>
+        <span aria-hidden="true" class="bf-head__clock-dot"></span>
+        <span data-clock-text>--:--</span>
+      </time>
+    )}
+    {actions.map((a) =>
+      a.href ? (
+        <a href={a.href} class:list={['bf-head__btn', { 'bf-head__btn--primary': a.primary }]}>{a.label}</a>
+      ) : (
+        <button type="button" class:list={['bf-head__btn', { 'bf-head__btn--primary': a.primary }]}>{a.label}</button>
+      ),
+    )}
+  </div>
+</div>
+
+<script>
+  function initFoodHead() {
+    document.querySelectorAll<HTMLElement>('[data-bf-head] [data-clock]').forEach((el) => {
+      if (el.dataset.bound) return;
+      el.dataset.bound = 'true';
+      const txt = el.querySelector('[data-clock-text]')!;
+      const tick = () => {
+        const d = new Date();
+        const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        txt.textContent = `Servicio · ${hm}`;
+        el.setAttribute('datetime', hm);
+      };
+      tick();
+      window.setInterval(tick, 30000);
+    });
+  }
+  initFoodHead();
+  document.addEventListener('astro:page-load', initFoodHead);
+</script>
+
+<style>
+  .bf-head {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-head--banner {
+    padding: var(--sp-5, 1.25rem);
+    border: 3px solid var(--bf-outline);
+    border-radius: 24px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: var(--bf-shadow);
+  }
+
+  .bf-head__text {
+    min-width: 0;
+    flex: 1 1 320px;
+  }
+
+  .bf-head__kicker {
+    display: inline-block;
+    margin: 0 0 8px;
+    padding: 2px 10px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transform: rotate(-2deg);
+  }
+
+  .bf-head__title {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .bf-head--lg .bf-head__title {
+    font-size: clamp(2.3rem, 7vw, 3.8rem);
+  }
+
+  .bf-head__desc {
+    margin: 8px 0 0;
+    max-width: 44rem;
+    color: var(--bf-ink-2);
+  }
+
+  .bf-head--banner .bf-head__desc {
+    color: inherit;
+  }
+
+  .bf-head__side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bf-head__clock {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bf-head__clock-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bf-mint);
+    animation: bf-head-blink 1.4s ease-in-out infinite;
+  }
+
+  .bf-head__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s var(--bf-ease-pop);
+  }
+
+  .bf-head__btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .bf-head__btn--primary {
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-head__btn:focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  @keyframes bf-head-blink { 50% { opacity: 0.3; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-head * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

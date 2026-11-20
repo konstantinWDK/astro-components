@@ -1,0 +1,1049 @@
+---
+/**
+ * FoodCartDrawer — Cart button + slide-in cart with a 3-step checkout (basket → delivery →
+ * payment) and a confirmation that links to live tracking. Listens for the `bf:add` window event
+ * (sent by FoodMenuBoard) and flies the dish illustration from the card into the cart button,
+ * which bounces while the counter ticks up. The cart persists in localStorage.
+ *
+ * @param {string} trackHref - Tracking page; the confirmation links here with ?pedido=.
+ * @param {number} deliveryFee - Delivery fee in EUR below the free threshold.
+ * @param {number} freeFrom - Subtotal for free delivery (EUR).
+ * @param {number} minutes - Estimated delivery time for "as soon as possible".
+ * @param {string} promoCode - Demo promo code (10 % off). Default 'HOLA10'.
+ * @param {string} variant - Trigger style: 'pill' (count + total) | 'icon'. Default 'pill'.
+ * @param {string} size - Trigger size: 'md' | 'lg'. Default 'md'.
+ * @param {string} storageKey - localStorage key. Default 'bf-cart'.
+ * @param {string} class - Extra class for the trigger wrapper.
+ *
+ * Accessibility: the drawer is a native modal <dialog> (focus trap, Escape, focus returns to the
+ * trigger); the trigger's name includes the item count; steps are headed and numbered; quantity
+ * buttons name the dish; adds, quantity changes and promo results are announced in a live region.
+ * The fly animation is decorative (aria-hidden) and skipped with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+
+interface OwnProps {
+  trackHref?: string;
+  deliveryFee?: number;
+  freeFrom?: number;
+  minutes?: number;
+  promoCode?: string;
+  variant?: 'pill' | 'icon';
+  size?: 'md' | 'lg';
+  storageKey?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  trackHref = '#pedido',
+  deliveryFee = 2.49,
+  freeFrom = 25,
+  minutes = 24,
+  promoCode = 'HOLA10',
+  variant = 'pill',
+  size = 'md',
+  storageKey = 'bf-cart',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bf-cart-${Math.random().toString(36).slice(2, 7)}`;
+const slots = ['21:30', '21:45', '22:00', '22:15', '22:30', '22:45', '23:00'];
+---
+
+<div
+  class:list={['bf-ui', 'bf-cart', `bf-cart--${variant}`, `bf-cart--${size}`, classAttr]}
+  data-bf-cart
+  data-key={storageKey}
+  data-fee={deliveryFee}
+  data-free={freeFrom}
+  data-track={trackHref}
+  data-promo={promoCode}
+  {...rest}
+>
+  <button type="button" class="bf-cart__trigger" aria-haspopup="dialog" aria-controls={uid} data-open>
+    <svg class="bf-cart__bag" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></svg>
+    <span class="bf-cart__badge" data-badge aria-hidden="true">0</span>
+    <span class="bf-cart__sum" data-sum aria-hidden="true">0,00 €</span>
+    <span class="bf-sr" data-trigger-name>Cesta, vacía</span>
+  </button>
+  <p class="bf-sr" role="status" aria-live="polite" data-live></p>
+
+  <dialog id={uid} class="bf-cart__dialog" aria-labelledby={`${uid}-h`}>
+    <div class="bf-cart__panel">
+      <header class="bf-cart__head">
+        <h2 id={`${uid}-h`} class="bf-cart__title" data-step-title>Tu cesta</h2>
+        <button type="button" class="bf-cart__x" data-close aria-label="Cerrar cesta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </header>
+
+      <ol class="bf-cart__steps" aria-label="Pasos del pedido">
+        <li data-dot="0" aria-current="step"><span>1</span> Cesta</li>
+        <li data-dot="1"><span>2</span> Entrega</li>
+        <li data-dot="2"><span>3</span> Pago</li>
+      </ol>
+
+      <form class="bf-cart__form" novalidate data-form>
+        <!-- Step 1: basket -->
+        <section class="bf-cart__step" data-step="0">
+          <div class="bf-cart__free" data-free-box>
+            <p data-free-text>Añade platos para empezar.</p>
+            <span class="bf-cart__meter" aria-hidden="true"><i data-free-bar></i></span>
+          </div>
+          <ul class="bf-cart__lines" role="list" data-lines></ul>
+          <div class="bf-cart__empty" data-empty>
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z" /><path d="M9 8V6a3 3 0 0 1 6 0v2M9.5 14c1.5 1.4 3.5 1.4 5 0" /></svg>
+            <p>Tu cesta está vacía.<br />Elige algo de la carta.</p>
+          </div>
+        </section>
+
+        <!-- Step 2: delivery -->
+        <section class="bf-cart__step" data-step="1" hidden>
+          <div class="bf-cart__field">
+            <label for={`${uid}-addr`}>Dirección de entrega</label>
+            <input id={`${uid}-addr`} name="address" type="text" autocomplete="street-address" required data-addr />
+            <p class="bf-cart__err" id={`${uid}-addr-e`} hidden>Escribe la calle y el número.</p>
+          </div>
+          <div class="bf-cart__field">
+            <label for={`${uid}-floor`}>Piso, puerta o indicaciones <span>(opcional)</span></label>
+            <input id={`${uid}-floor`} name="floor" type="text" placeholder="3.º B, portero automático" />
+          </div>
+          <fieldset class="bf-cart__radios">
+            <legend>¿Cuándo?</legend>
+            <label><input type="radio" name="when" value="asap" checked /> <span>Lo antes posible <small>~{minutes} min</small></span></label>
+            <label><input type="radio" name="when" value="later" /> <span>Programar</span></label>
+          </fieldset>
+          <div class="bf-cart__field" data-slot hidden>
+            <label for={`${uid}-slot`}>Hora de entrega</label>
+            <select id={`${uid}-slot`} name="slot">
+              {slots.map((s) => <option>{s}</option>)}
+            </select>
+          </div>
+          <label class="bf-cart__check"><input type="checkbox" name="contactless" checked /> Entrega sin contacto (en la puerta)</label>
+        </section>
+
+        <!-- Step 3: payment -->
+        <section class="bf-cart__step" data-step="2" hidden>
+          <fieldset class="bf-cart__radios bf-cart__radios--pay">
+            <legend>Forma de pago</legend>
+            <label><input type="radio" name="pay" value="bizum" checked /> <span>Bizum <small>te llega una solicitud al móvil</small></span></label>
+            <label><input type="radio" name="pay" value="datafono" /> <span>Tarjeta al repartidor <small>datáfono en la entrega</small></span></label>
+            <label><input type="radio" name="pay" value="efectivo" /> <span>Efectivo</span></label>
+          </fieldset>
+          <fieldset class="bf-cart__tips">
+            <legend>Propina para el rider <small>(100 % para quien reparte)</small></legend>
+            {[0, 1, 2, 3].map((t) => (
+              <label><input type="radio" name="tip" value={t} checked={t === 1} /> <span>{t === 0 ? 'Sin' : `${t} €`}</span></label>
+            ))}
+          </fieldset>
+          <div class="bf-cart__promo">
+            <label for={`${uid}-promo`}>Código promocional</label>
+            <div>
+              <input id={`${uid}-promo`} type="text" autocomplete="off" placeholder={promoCode} data-promo-input />
+              <button type="button" data-promo-apply>Aplicar</button>
+            </div>
+            <p class="bf-cart__promo-msg" data-promo-msg></p>
+          </div>
+        </section>
+
+        <!-- Done -->
+        <section class="bf-cart__step bf-cart__done" data-step="3" hidden tabindex="-1">
+          <div class="bf-cart__stamp" aria-hidden="true">
+            <svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="s-ring" /><path d="M36 62l16 16 32-34" class="s-check" /></svg>
+          </div>
+          <h3>¡Pedido enviado a cocina!</h3>
+          <p>Pedido <strong data-order-id>BF-0000</strong>. Ya están encendiendo la plancha.</p>
+          <a class="bf-cart__btn bf-cart__btn--primary" data-track-link href={trackHref}>Seguir mi pedido en directo</a>
+        </section>
+
+        <footer class="bf-cart__foot" data-foot>
+          <dl class="bf-cart__totals">
+            <div><dt>Subtotal</dt><dd data-t-sub>0,00 €</dd></div>
+            <div data-t-disc-row hidden><dt>Descuento</dt><dd data-t-disc>0,00 €</dd></div>
+            <div><dt>Envío</dt><dd data-t-fee>0,00 €</dd></div>
+            <div data-t-tip-row hidden><dt>Propina</dt><dd data-t-tip>0,00 €</dd></div>
+            <div class="bf-cart__total"><dt>Total</dt><dd data-t-total>0,00 €</dd></div>
+          </dl>
+          <div class="bf-cart__nav">
+            <button type="button" class="bf-cart__btn" data-back hidden>Atrás</button>
+            <button type="submit" class="bf-cart__btn bf-cart__btn--primary" data-next>Continuar</button>
+          </div>
+        </footer>
+      </form>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  interface Line { id: string; name: string; price: number; qty: number; svg: string }
+
+  const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
+  function initFoodCart() {
+    const root = document.querySelector<HTMLElement>('[data-bf-cart]:not([data-bound])');
+    if (!root) return;
+    root.dataset.bound = 'true';
+
+    const key = root.dataset.key || 'bf-cart';
+    const fee = Number(root.dataset.fee || 0);
+    const free = Number(root.dataset.free || 0);
+    const promo = (root.dataset.promo || '').toUpperCase();
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+
+    const trigger = $<HTMLButtonElement>('[data-open]');
+    const dialog = $<HTMLDialogElement>('dialog');
+    const form = $<HTMLFormElement>('[data-form]');
+    const linesEl = $('[data-lines]');
+    const live = $('[data-live]');
+    const steps = [...root.querySelectorAll<HTMLElement>('[data-step]')];
+    const dots = [...root.querySelectorAll<HTMLElement>('[data-dot]')];
+    const titles = ['Tu cesta', 'Entrega', 'Pago', '¡Listo!'];
+    let step = 0;
+    let discount = false;
+
+    let lines: Line[] = [];
+    try {
+      lines = JSON.parse(localStorage.getItem(key) || '[]');
+    } catch {
+      lines = [];
+    }
+    const save = () => {
+      try {
+        localStorage.setItem(key, JSON.stringify(lines));
+      } catch {}
+    };
+
+    const totals = () => {
+      const sub = lines.reduce((s, l) => s + l.price * l.qty, 0);
+      const disc = discount ? Math.round(sub * 10) / 100 : 0;
+      const delivery = sub === 0 || sub >= free ? 0 : fee;
+      const tipInput = form.querySelector<HTMLInputElement>('input[name="tip"]:checked');
+      const tip = step >= 2 && tipInput ? Number(tipInput.value) : 0;
+      return { sub, disc, delivery, tip, total: sub - disc + delivery + tip, count: lines.reduce((s, l) => s + l.qty, 0) };
+    };
+
+    const render = () => {
+      const t = totals();
+      linesEl.innerHTML = '';
+      lines.forEach((l) => {
+        const li = document.createElement('li');
+        li.className = 'bf-cart__line';
+        li.innerHTML = `<span class="bf-cart__thumb" aria-hidden="true">${l.svg}</span>
+          <span class="bf-cart__lname">${l.name}<small>${eur(l.price)}</small></span>
+          <span class="bf-cart__qty">
+            <button type="button" data-dec="${l.id}" aria-label="Quitar una ${l.name}">−</button>
+            <output aria-label="Cantidad de ${l.name}">${l.qty}</output>
+            <button type="button" data-inc="${l.id}" aria-label="Añadir otra ${l.name}">+</button>
+          </span>`;
+        linesEl.append(li);
+      });
+      $('[data-empty]').hidden = lines.length > 0;
+      $('[data-badge]').textContent = String(t.count);
+      $('[data-sum]').textContent = eur(t.sub);
+      root.classList.toggle('has-items', t.count > 0);
+      $('[data-trigger-name]').textContent = t.count ? `Cesta, ${t.count} artículos, ${eur(t.sub)}` : 'Cesta, vacía';
+
+      const left = Math.max(0, free - t.sub);
+      $('[data-free-text]').innerHTML = !t.sub
+        ? `Envío gratis a partir de <strong>${eur(free)}</strong>.`
+        : left
+          ? `Te faltan <strong>${eur(left)}</strong> para el envío gratis.`
+          : '<strong>¡Envío gratis desbloqueado!</strong>';
+      $<HTMLElement>('[data-free-bar]').style.width = `${Math.min(100, (t.sub / free) * 100)}%`;
+      root.classList.toggle('is-free', !!t.sub && !left);
+
+      $('[data-t-sub]').textContent = eur(t.sub);
+      $('[data-t-fee]').textContent = t.delivery ? eur(t.delivery) : 'Gratis';
+      $('[data-t-disc-row]').hidden = !t.disc;
+      $('[data-t-disc]').textContent = `−${eur(t.disc)}`;
+      $('[data-t-tip-row]').hidden = !t.tip;
+      $('[data-t-tip]').textContent = eur(t.tip);
+      $('[data-t-total]').textContent = eur(t.total);
+      $<HTMLButtonElement>('[data-next]').disabled = step === 0 && !lines.length;
+    };
+
+    const go = (n: number) => {
+      step = n;
+      steps.forEach((s) => (s.hidden = Number(s.dataset.step) !== n));
+      dots.forEach((d) => {
+        const k = Number(d.dataset.dot);
+        d.toggleAttribute('data-done', k < n);
+        if (k === n) d.setAttribute('aria-current', 'step');
+        else d.removeAttribute('aria-current');
+      });
+      $('[data-step-title]').textContent = titles[n];
+      $('[data-back]').hidden = n === 0 || n === 3;
+      $('[data-foot]').hidden = n === 3;
+      $('[data-next]').textContent = n === 2 ? 'Confirmar pedido' : 'Continuar';
+      root.querySelector<HTMLElement>('.bf-cart__steps')!.hidden = n === 3;
+      render();
+    };
+
+    const open = () => {
+      if (!dialog.open) dialog.showModal();
+      go(step === 3 ? 0 : step);
+    };
+
+    trigger.addEventListener('click', open);
+    $('[data-close]').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => trigger.focus());
+
+    linesEl.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest('button');
+      if (!b) return;
+      const id = b.dataset.inc || b.dataset.dec;
+      const l = lines.find((x) => x.id === id);
+      if (!l) return;
+      l.qty += b.dataset.inc ? 1 : -1;
+      if (l.qty <= 0) {
+        lines = lines.filter((x) => x !== l);
+        live.textContent = `${l.name} eliminado de la cesta.`;
+      } else live.textContent = `${l.name}: ${l.qty}.`;
+      save();
+      render();
+    });
+
+    form.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.name === 'when') $('[data-slot]').hidden = t.value !== 'later';
+      render();
+    });
+
+    $('[data-promo-apply]').addEventListener('click', () => {
+      const v = $<HTMLInputElement>('[data-promo-input]').value.trim().toUpperCase();
+      const msg = $('[data-promo-msg]');
+      discount = !!v && v === promo;
+      msg.textContent = discount ? 'Código aplicado: 10 % de descuento.' : 'Ese código no es válido.';
+      msg.classList.toggle('is-ok', discount);
+      live.textContent = msg.textContent;
+      render();
+    });
+
+    $('[data-back]').addEventListener('click', () => go(Math.max(0, step - 1)));
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (step === 1) {
+        const addr = $<HTMLInputElement>('[data-addr]');
+        const err = addr.nextElementSibling as HTMLElement;
+        const bad = addr.value.trim().length < 5;
+        err.hidden = !bad;
+        addr.setAttribute('aria-invalid', String(bad));
+        if (bad) {
+          addr.setAttribute('aria-describedby', err.id);
+          addr.focus();
+          return;
+        }
+      }
+      if (step === 2) {
+        const id = `BF-${4830 + Math.floor(Math.random() * 160)}`;
+        $('[data-order-id]').textContent = id;
+        const link = $<HTMLAnchorElement>('[data-track-link]');
+        link.href = `${root.dataset.track}?pedido=${id}`;
+        lines = [];
+        discount = false;
+        save();
+        go(3);
+        $('[data-step="3"]').focus();
+        return;
+      }
+      go(step + 1);
+    });
+
+    // Prefill address from ?dir=
+    const dir = new URLSearchParams(location.search).get('dir');
+    if (dir) $<HTMLInputElement>('[data-addr]').value = dir;
+
+    // Add + fly
+    window.addEventListener('bf:add', (ev) => {
+      const d = (ev as CustomEvent).detail as { id: string; name: string; price: number; svg: string; from?: { x: number; y: number; w: number; h: number } };
+      const found = lines.find((l) => l.id === d.id);
+      if (found) found.qty++;
+      else lines.push({ id: d.id, name: d.name, price: d.price, qty: 1, svg: d.svg });
+      save();
+      const count = lines.reduce((s, l) => s + l.qty, 0);
+      live.textContent = `${d.name} añadido. ${count} ${count === 1 ? 'artículo' : 'artículos'} en la cesta.`;
+
+      const land = () => {
+        render();
+        trigger.classList.remove('is-bump');
+        void trigger.offsetWidth;
+        trigger.classList.add('is-bump');
+      };
+      if (reduce || !d.from || !d.svg || !trigger.animate) return land();
+
+      const to = trigger.getBoundingClientRect();
+      const fly = document.createElement('div');
+      fly.className = 'bf-ui bf-cart-fly';
+      fly.setAttribute('aria-hidden', 'true');
+      fly.innerHTML = d.svg;
+      const size = Math.min(d.from.w, 140);
+      Object.assign(fly.style, { left: `${d.from.x + (d.from.w - size) / 2}px`, top: `${d.from.y + (d.from.h - size) / 2}px`, width: `${size}px`, height: `${size}px` });
+      document.body.append(fly);
+      const dx = to.left + to.width / 2 - (d.from.x + d.from.w / 2);
+      const dy = to.top + to.height / 2 - (d.from.y + d.from.h / 2);
+      fly
+        .animate(
+          [
+            { transform: 'translate(0,0) scale(1) rotate(0)', opacity: 1 },
+            { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 140}px) scale(0.7) rotate(-200deg)`, opacity: 1, offset: 0.55 },
+            { transform: `translate(${dx}px, ${dy}px) scale(0.15) rotate(-360deg)`, opacity: 0.6 },
+          ],
+          { duration: 780, easing: 'cubic-bezier(.5,0,.3,1)' },
+        )
+        .finished.then(() => {
+          fly.remove();
+          land();
+        });
+    });
+
+    render();
+  }
+  initFoodCart();
+  document.addEventListener('astro:page-load', initFoodCart);
+</script>
+
+<style>
+  .bf-cart {
+    position: relative;
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-cart__trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    min-width: 48px;
+    padding: 0 1rem 0 0.8rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--bf-tomato);
+    transition: transform 0.2s var(--bf-ease-pop);
+  }
+
+  .bf-cart--lg .bf-cart__trigger {
+    min-height: 56px;
+    font-size: 1.05rem;
+  }
+
+  .bf-cart--icon .bf-cart__trigger {
+    padding: 0;
+    justify-content: center;
+  }
+
+  .bf-cart--icon .bf-cart__sum {
+    display: none;
+  }
+
+  .bf-cart__trigger:hover {
+    transform: translateY(-2px) rotate(-2deg);
+  }
+
+  .bf-cart__trigger:focus-visible,
+  .bf-cart__x:focus-visible,
+  .bf-cart__btn:focus-visible,
+  .bf-cart__dialog :is(input, select, button):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-cart__badge {
+    display: grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-size: 0.78rem;
+  }
+
+  .bf-cart--icon .bf-cart__badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    border: 2px solid var(--bf-outline);
+  }
+
+  .bf-cart__trigger.is-bump {
+    animation: bf-cart-bump 0.55s var(--bf-ease-pop);
+  }
+
+  .bf-cart__trigger.is-bump .bf-cart__badge {
+    animation: bf-cart-badge 0.55s var(--bf-ease-pop);
+  }
+
+  /* Dialog */
+  .bf-cart__dialog {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(440px, 100vw);
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 3px solid var(--bf-outline);
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+  }
+
+  .bf-cart__dialog[open] {
+    animation: bf-cart-in 0.4s var(--bf-ease-pop);
+  }
+
+  .bf-cart__dialog::backdrop {
+    background: rgba(20, 10, 30, 0.55);
+    backdrop-filter: blur(3px);
+  }
+
+  .bf-cart__panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .bf-cart__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border-bottom: 3px solid var(--bf-outline);
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+  }
+
+  .bf-cart__title {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.7rem;
+    font-weight: 800;
+  }
+
+  .bf-cart__x {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    cursor: pointer;
+  }
+
+  .bf-cart__steps {
+    display: flex;
+    gap: 6px;
+    margin: 0;
+    padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem);
+    list-style: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--bf-ink-3);
+  }
+
+  .bf-cart__steps li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .bf-cart__steps span {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+  }
+
+  .bf-cart__steps [aria-current='step'] {
+    color: var(--bf-ink);
+  }
+
+  .bf-cart__steps [aria-current='step'] span {
+    background: var(--bf-tomato);
+    border-color: var(--bf-outline);
+    color: var(--bf-on-tomato);
+  }
+
+  .bf-cart__steps [data-done] {
+    color: var(--bf-mint);
+  }
+
+  .bf-cart__form {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bf-cart__step {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .bf-cart__step:focus {
+    outline: none;
+  }
+
+  .bf-cart__free {
+    padding: var(--sp-3, 0.75rem);
+    border: 2px solid var(--bf-outline);
+    border-radius: var(--bf-radius-sm);
+    background: var(--bf-paper);
+  }
+
+  .bf-cart__free p {
+    margin: 0 0 8px;
+    font-size: 0.92rem;
+  }
+
+  .bf-cart__meter {
+    display: block;
+    height: 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--bf-bg-2);
+  }
+
+  .bf-cart__meter i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: repeating-linear-gradient(-45deg, var(--bf-tomato) 0 8px, var(--bf-tomato-hover) 8px 16px);
+    transition: width 0.5s var(--bf-ease-pop);
+  }
+
+  .bf-cart.is-free .bf-cart__meter i {
+    background: var(--bf-mint);
+  }
+
+  .bf-cart__lines {
+    display: grid;
+    gap: 10px;
+    margin: var(--sp-4, 1rem) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-cart__lines :global(.bf-cart__line) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border: 2px solid var(--bf-outline);
+    border-radius: var(--bf-radius-sm);
+    background: var(--bf-paper);
+    animation: bf-cart-line 0.35s var(--bf-ease-pop);
+  }
+
+  .bf-cart__lines :global(.bf-cart__thumb svg) {
+    width: 48px;
+    height: 48px;
+    display: block;
+  }
+
+  .bf-cart__lines :global(.bf-cart__lname) {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .bf-cart__lines :global(.bf-cart__lname small) {
+    color: var(--bf-ink-3);
+    font-weight: 600;
+  }
+
+  .bf-cart__lines :global(.bf-cart__qty) {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+  }
+
+  .bf-cart__lines :global(.bf-cart__qty button) {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--bf-ink);
+    font-size: 1.3rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-cart__lines :global(.bf-cart__qty button:focus-visible) {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: -2px;
+  }
+
+  .bf-cart__lines :global(.bf-cart__qty output) {
+    min-width: 1.4rem;
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .bf-cart__empty {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: var(--sp-8, 2rem) 0;
+    text-align: center;
+    color: var(--bf-ink-3);
+    font-weight: 600;
+  }
+
+  .bf-cart__empty[hidden] {
+    display: none;
+  }
+
+  .bf-cart__field {
+    display: grid;
+    gap: 6px;
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .bf-cart__field label,
+  .bf-cart__promo label,
+  .bf-cart__radios legend,
+  .bf-cart__tips legend {
+    font-weight: 700;
+  }
+
+  .bf-cart__field label span,
+  .bf-cart__tips legend small {
+    color: var(--bf-ink-3);
+    font-weight: 500;
+  }
+
+  .bf-cart__field input,
+  .bf-cart__field select,
+  .bf-cart__promo input {
+    min-height: 48px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: var(--bf-radius-sm);
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+  }
+
+  .bf-cart__field input[aria-invalid='true'] {
+    border-color: var(--bf-tomato);
+  }
+
+  .bf-cart__err {
+    margin: 0;
+    color: var(--bf-tomato);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .bf-cart__radios,
+  .bf-cart__tips {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .bf-cart__radios label,
+  .bf-cart__tips label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bf-cart__radios input,
+  .bf-cart__tips input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .bf-cart__radios span {
+    display: grid;
+    min-height: 48px;
+    align-content: center;
+    padding: 8px 14px;
+    border: 2px solid var(--bf-line);
+    border-radius: var(--bf-radius-sm);
+    background: var(--bf-paper);
+    font-weight: 700;
+  }
+
+  .bf-cart__radios small {
+    color: var(--bf-ink-3);
+    font-weight: 500;
+  }
+
+  .bf-cart__radios input:checked + span,
+  .bf-cart__tips input:checked + span {
+    border-color: var(--bf-outline);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+    background: var(--bf-mint-soft);
+  }
+
+  .bf-cart__radios input:focus-visible + span,
+  .bf-cart__tips input:focus-visible + span {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-cart__tips {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .bf-cart__tips legend {
+    margin-bottom: 8px;
+  }
+
+  .bf-cart__tips span {
+    display: grid;
+    place-items: center;
+    min-height: 48px;
+    border: 2px solid var(--bf-line);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    font-weight: 800;
+  }
+
+  .bf-cart__check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font-weight: 600;
+  }
+
+  .bf-cart__check input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--bf-tomato);
+  }
+
+  .bf-cart__promo div {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .bf-cart__promo input {
+    flex: 1;
+    min-width: 0;
+    text-transform: uppercase;
+  }
+
+  .bf-cart__promo button {
+    min-height: 48px;
+    padding: 0 1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: var(--bf-radius-sm);
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-cart__promo-msg {
+    min-height: 1.3em;
+    margin: 6px 0 0;
+    color: var(--bf-tomato);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .bf-cart__promo-msg.is-ok {
+    color: var(--bf-mint);
+  }
+
+  .bf-cart__foot {
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border-top: 3px solid var(--bf-outline);
+    background: var(--bf-paper);
+  }
+
+  .bf-cart__foot[hidden] {
+    display: none;
+  }
+
+  .bf-cart__totals {
+    display: grid;
+    gap: 4px;
+    margin: 0 0 var(--sp-3, 0.75rem);
+  }
+
+  .bf-cart__totals div {
+    display: flex;
+    justify-content: space-between;
+    color: var(--bf-ink-2);
+  }
+
+  .bf-cart__totals dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .bf-cart__total {
+    padding-top: 6px;
+    border-top: 2px dashed var(--bf-line);
+    color: var(--bf-ink) !important;
+    font-family: var(--bf-font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+  }
+
+  .bf-cart__nav {
+    display: flex;
+    gap: 8px;
+  }
+
+  .bf-cart__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 1.2rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .bf-cart__btn--primary {
+    flex: 1;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+  }
+
+  .bf-cart__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .bf-cart__done {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .bf-cart__done[hidden] {
+    display: none;
+  }
+
+  .bf-cart__done h3 {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.8rem;
+  }
+
+  .bf-cart__stamp .s-ring {
+    fill: var(--bf-mint-soft);
+    stroke: var(--bf-outline);
+    stroke-width: 4;
+  }
+
+  .bf-cart__stamp .s-check {
+    fill: none;
+    stroke: var(--bf-mint);
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 90;
+    stroke-dashoffset: 90;
+    animation: bf-cart-check 0.6s 0.2s ease forwards;
+  }
+
+  .bf-cart__stamp {
+    animation: bf-cart-stamp 0.6s var(--bf-ease-pop);
+  }
+
+  :global(.bf-cart-fly) {
+    position: fixed;
+    z-index: 2147483000;
+    pointer-events: none;
+    filter: drop-shadow(4px 6px 0 rgba(0, 0, 0, 0.35));
+  }
+
+  :global(.bf-cart-fly svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 560px) {
+    .bf-cart__dialog {
+      inset: auto 0 0 0;
+      width: 100vw;
+      height: 92dvh;
+      border-left: 0;
+      border-top: 3px solid var(--bf-outline);
+      border-radius: 24px 24px 0 0;
+    }
+
+    .bf-cart__dialog[open] {
+      animation-name: bf-cart-up;
+    }
+
+    .bf-cart__head {
+      border-radius: 21px 21px 0 0;
+    }
+
+    .bf-cart--pill .bf-cart__sum {
+      display: none;
+    }
+  }
+
+  @keyframes bf-cart-in { from { transform: translateX(100%); } }
+  @keyframes bf-cart-up { from { transform: translateY(100%); } }
+  @keyframes bf-cart-bump { 30% { transform: scale(1.18) rotate(-6deg); } 60% { transform: scale(0.94) rotate(3deg); } }
+  @keyframes bf-cart-badge { 40% { transform: scale(1.6); } }
+  @keyframes bf-cart-line { from { opacity: 0; transform: translateX(20px); } }
+  @keyframes bf-cart-check { to { stroke-dashoffset: 0; } }
+  @keyframes bf-cart-stamp { from { transform: scale(0.2) rotate(-40deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-cart *,
+    .bf-cart__dialog[open] {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .bf-cart__stamp .s-check {
+      stroke-dashoffset: 0;
+    }
+  }
+</style>

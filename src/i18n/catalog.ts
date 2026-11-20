@@ -189,19 +189,24 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     ru: { name: 'Переезды и логистика', description: 'Секции для переездов и грузоперевозок: главный экран с расчётом маршрута, гид по объёму жилья, каталог фургонов, прозрачные тарифы, баннер вакансий и форма найма водителей.' },
   },
   food: {
-    en: { name: 'Food & Delivery', description: 'Sections for food delivery platforms, ghost kitchens, and restaurants: fast-order hero with address finder, category navigation rail, dish menu grid with allergens, flash promo ribbons, B2B kitchen partner CTA, and multi-step checkout wizard.' },
-    es: { name: 'Restauración y Delivery', description: 'Secciones para plataformas de comida a domicilio, dark kitchens y restaurantes: hero con buscador de dirección, rail de categorías, carta con alérgenos, banner de ofertas flash, partner B2B y checkout completo.' },
-    ru: { name: 'Доставка еды и рестораны', description: 'Секции для сервисов доставки еды, dark kitchen и ресторанов: главный экран с вводом адреса, лента категорий, меню блюд с аллергенами, промо-баннеры, подключение партнеров и оформление заказа.' },
+    en: { name: 'Food & Delivery', description: 'Pop sticker sections for food delivery platforms and restaurants: animated hero plate, scroll-spy menu board with flying cart items, scroll-driven order story, B2B partner savings pitch, and coupon footer.' },
+    es: { name: 'Restauración y Delivery', description: 'Secciones estilo sticker para plataformas de comida a domicilio y restaurantes: hero con plato animado, carta con scroll-spy y carrito volante, historia con el scroll, comparativa de ahorro B2B y pie con cupón.' },
+    ru: { name: 'Доставка еды и рестораны', description: 'Секции в стиле поп-стикеров для доставки еды и ресторанов: главный экран с анимированной тарелкой, меню со scroll-spy и корзиной, история по скроллу, калькулятор выгоды B2B и подвал с купоном.' },
   },
   construction: {
-    en: { name: 'Construction & Real Estate', description: 'Sections for general contractors, real estate developments and builders: high-precision hero, projects catalog, 5-stage turnkey timeline, vector floor plan viewer, Passivhaus ESG banner, and project feasibility inquiry form.' },
-    es: { name: 'Construcción e Inmobiliaria', description: 'Secciones para empresas constructoras y promociones inmobiliarias: hero con obras activas, catálogo de promociones, metodología en 5 fases, planos arquitectónicos, banner de sostenibilidad y formulario de licitación.' },
-    ru: { name: 'Строительство и девелопмент', description: 'Секции для генеральных подрядчиков и девелоперов: главный экран с активными стройками, каталог проектов, этапы работ, поэтажные планы, стандарты ESG и форма запроса сметы.' },
+    en: { name: 'Construction & Real Estate', description: 'Blueprint sections for general contractors and developers: self-drawing hero with coordinate crosshair, architectural project sheets, scroll-driven build sequence, tender request form, and title-block footer.' },
+    es: { name: 'Construcción e Inmobiliaria', description: 'Secciones de plano azul para constructoras y promotoras: hero autodibujado con cruceta de coordenadas, fichas de proyecto en plano, secuencia de obra con el scroll, formulario de licitación y pie tipo cajetín.' },
+    ru: { name: 'Строительство и девелопмент', description: 'Секции в стиле чертежа для строительных компаний и девелоперов: саморисующийся hero с перекрестием координат, листы проектов, поэтажная сборка при скролле, форма тендера и подвал-штамп.' },
   },
   'real-estate': {
     en: { name: 'Real Estate Agency', description: 'Sections for real estate agencies and property portals: search hero with buy/rent filters, filterable listings with favourites and zone map, neighbourhood price guide, property photo gallery, agent directory, and owner valuation call to action.' },
     es: { name: 'Inmobiliaria', description: 'Secciones para agencias inmobiliarias y portales de pisos: hero con buscador de compra y alquiler, listado filtrable con favoritos y mapa por zonas, guía de precios por barrio, galería de fotos, directorio de agentes y llamada a la valoración para propietarios.' },
     ru: { name: 'Агентство недвижимости', description: 'Секции для агентств недвижимости и порталов объявлений: главный экран с поиском покупки и аренды, каталог с фильтрами, избранным и картой районов, цены по районам, фотогалерея объекта, команда агентов и призыв оценить жильё.' },
+  },
+  gym: {
+    en: { name: 'Gym & Fitness', description: 'Sections for gyms, boxes and fitness studios: bold hero with today’s classes, discipline cards with intensity, weekly timetable with day tabs and filters, membership plans with monthly/yearly billing, coaching team, and free-trial sign-up.' },
+    es: { name: 'Gimnasio y fitness', description: 'Secciones para gimnasios, boxes y estudios: hero con las clases de hoy, disciplinas con intensidad, horario semanal con pestañas y filtros, tarifas con pago mensual o anual, equipo de entrenadores y alta de prueba gratis.' },
+    ru: { name: 'Спортзал и фитнес', description: 'Секции для спортзалов и фитнес-студий: главный экран с занятиями на сегодня, направления с интенсивностью, недельное расписание с вкладками и фильтрами, абонементы с оплатой помесячно или за год, команда тренеров и запись на пробный период.' },
   },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },

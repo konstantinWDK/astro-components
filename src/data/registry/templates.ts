@@ -1496,48 +1496,52 @@ const data = {
   },
   {
     slug: 'food-delivery',
-    name: { en: 'Food Delivery & Kitchen OS', es: 'Delivery de Comida y Kitchen OS', ru: 'Доставка еды и Kitchen OS' },
+    name: {
+      en: 'BiteFlow · Food Delivery & Kitchen OS',
+      es: 'BiteFlow · Comida a domicilio & Kitchen OS',
+      ru: 'BiteFlow · Доставка еды & Kitchen OS',
+    },
     tagline: {
-      en: 'Complete online ordering storefront, real-time GPS tracking, tactile KDS display, and menu stock backoffice.',
-      es: 'Tienda de delivery completa, tracking GPS en tiempo real, pantalla KDS de cocina y CMS de stock para restaurantes.',
-      ru: 'Готовая платформа доставки еды, трекинг курьера в реальном времени, экран кухни KDS и CMS меню.',
+      en: 'Pop sticker storefront where dishes fly into the cart and the rider drives across an animated map, plus a kitchen OS with KDS, menu stock, orders and rider dispatch.',
+      es: 'Tienda pop estilo sticker donde los platos vuelan a la cesta y el rider cruza un mapa animado, y un Kitchen OS con KDS, stock de carta, pedidos y despacho de riders.',
+      ru: 'Яркая витрина в стиле стикеров: блюда летят в корзину, курьер едет по анимированной карте; плюс Kitchen OS с KDS, стоп-листом, заказами и диспетчером курьеров.',
     },
     description: {
-      en: 'BiteFlow is a full-stack restaurant delivery & ghost kitchen operating system built on Astro. It features a high-converting customer ordering portal with live dish modifier selection, checkout wizard with tip and contactless drop-off options, live step-by-step courier delivery tracker, touch-screen Kitchen Display System (KDS) with cook timers and allergy alerts, and an instant 86’d out-of-stock menu CMS.',
-      es: 'BiteFlow es un sistema operativo completo de reparto de comida y dark kitchens construido con Astro. Ofrece portal de pedidos para clientes con personalización de platos e ingredientes en tiempo real, asistente de checkout con propinas y entrega sin contacto, seguimiento de repartidores en tiempo real, pantalla táctil de cocina (KDS) con cronómetros de preparación y alertas de alergias, y CMS de menú con apagado instantáneo de platos agotados (86’d).',
-      ru: 'BiteFlow — готовая платформа доставки еды и кухня-фабрика (Dark Kitchen) на Astro. Включает клиентский портал с модификаторами блюд, чекаут с чаевыми курьеру, отслеживание доставки в реальном времени, кухонный экран KDS с таймерами и стоп-листом 86’d.',
+      en: 'Complete template for a delivery kitchen or ghost kitchen, in a warm pop "sticker" style (cream paper, ink outlines, tomato and mustard, chunky Bricolage Grotesque). 11 page types: home with a spinning plate hero, best sellers and a scroll story; full menu with scroll-spy tabs and filters where dishes fly into the cart and a 3-step checkout; live tracking on an animated city map; a restaurant partner page with a savings calculator; plus crew sign-in with a PIN keypad and a kitchen OS: service dashboard, KDS with timers and bump, menu & stock (86) CMS, order book, rider dispatch and settings. Dish illustrations are included, no photos needed.',
+      es: 'Plantilla completa para una cocina de reparto o dark kitchen, en estilo pop "sticker" cálido (papel crema, contornos de tinta, tomate y mostaza, tipografía Bricolage Grotesque). 11 tipos de página: home con plato giratorio, lo más pedido e historia con scroll; carta completa con pestañas que siguen el scroll y filtros, donde los platos vuelan a la cesta y el pedido se cierra en 3 pasos; seguimiento en directo sobre un mapa animado; página para restaurantes con calculadora de ahorro; y además acceso del equipo con teclado de PIN y un Kitchen OS: panel del servicio, KDS con cronómetros, carta y stock (86), pedidos, despacho de riders y ajustes. Incluye ilustraciones de los platos: no hacen falta fotos.',
+      ru: 'Полный шаблон для кухни доставки или dark kitchen в тёплом стиле стикеров (кремовая бумага, контуры, томатный и горчичный, шрифт Bricolage Grotesque). 11 типов страниц: главная с вращающейся тарелкой, хитами и scroll-историей; меню с вкладками и фильтрами, где блюда летят в корзину, и оформление в 3 шага; отслеживание на анимированной карте; страница для ресторанов с калькулятором экономии; а также вход команды с PIN-клавиатурой и Kitchen OS: обзор смены, KDS с таймерами, меню и стоп-лист, заказы, диспетчер курьеров и настройки. Иллюстрации блюд включены.',
     },
     highlights: {
       en: [
-        'Touch-friendly Kitchen Display System (KDS) with station timers',
-        'Menu CMS with instant 86’d out-of-stock emergency switches',
-        'Live delivery tracker with courier contact and GPS milestones',
-        'Interactive dish customizer with required & optional modifiers',
-        'Full backoffice with fleet dispatch, order book and kitchen settings',
+        'Add to cart sends the dish flying into the bouncing cart button',
+        'Live tracking: the route draws itself and the rider drives to the door',
+        'Scroll-driven hero and a sticky scroll story, with a pause button',
+        'KDS with urgency rings, allergy bands and View Transitions between lanes',
+        'Own shell, tables and sign-in: no shared library components',
       ],
       es: [
-        'Sistema KDS táctil para cocina con cronómetros por estación',
-        'CMS de menú con botón de apagado de platos agotados (86’d)',
-        'Tracker de pedidos en vivo con llamada al repartidor y mapa GPS',
-        'Personalizador interactivo de platos con cálculo de precio al instante',
-        'Backoffice completo con despacho de flota, albaranes y ajustes',
+        'Al añadir, el plato vuela a la cesta y el botón rebota',
+        'Seguimiento en directo: la ruta se dibuja y el rider llega a tu puerta',
+        'Hero con animación ligada al scroll e historia con escena fija, con botón de pausa',
+        'KDS con anillos de urgencia, alergias resaltadas y View Transitions entre carriles',
+        'Shell, tablas y acceso propios: sin componentes compartidos de la librería',
       ],
       ru: [
-        'Кухонный экран KDS с таймерами готовности и контролем аллергенов',
-        'CMS меню с мгновенной блокировкой закончившихся блюд (86’d)',
-        'Живой трекинг доставки со связью с курьером',
-        'Интерактивный конструктор блюд с пересчетом цены',
-        'Панель управления с диспетчеризацией флота и чеками',
+        'При добавлении блюдо летит в корзину, а кнопка подпрыгивает',
+        'Живое отслеживание: маршрут рисуется, курьер едет к двери',
+        'Hero с анимацией по прокрутке и scroll-история с кнопкой паузы',
+        'KDS с кольцами срочности, аллергенами и View Transitions между колонками',
+        'Свои оболочка, таблицы и вход: без общих компонентов библиотеки',
       ],
     },
-    tags: ['food-delivery', 'restaurant', 'kitchen-os', 'kds', 'ghost-kitchen', 'cms', 'courier-tracking'],
+    tags: ['food-delivery', 'restaurant', 'kitchen-os', 'kds', 'cart', 'tracking', 'scroll-driven', 'animation'],
     previewBase: '/preview/food-delivery/',
     importPath: 'astro-component-kit/templates/food-delivery',
     pages: [
       {
         id: 'home', path: '',
-        name: { en: 'Food Ordering Storefront', es: 'Home de Pedidos Online', ru: 'Витрина доставки еды' },
-        description: { en: 'Above-the-fold delivery address finder, category pills, flash promo countdown, and chef recommendations.', es: 'Buscador de dirección de entrega, filtros por categorías, banner de promo flash y recomendados del chef.', ru: 'Главная с поиском адреса доставки, категориями, промо-акциями и хитами кухни.' },
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Plate hero with address finder, best sellers you can add to the cart, scroll story and partner band.', es: 'Hero con plato giratorio y buscador de dirección, los más pedidos con añadir a la cesta, historia con scroll y banda para restaurantes.', ru: 'Hero с вращающейся тарелкой и поиском адреса, хиты с добавлением в корзину, scroll-история и блок для ресторанов.' },
         file: 'src/pages/index.astro',
         code: `---
 import { FoodHomePage } from 'astro-component-kit/templates/food-delivery';
@@ -1546,10 +1550,10 @@ import { FoodHomePage } from 'astro-component-kit/templates/food-delivery';
 <FoodHomePage />`,
       },
       {
-        id: 'menu', path: 'menu/',
-        name: { en: 'Digital Menu & Customizer', es: 'Carta Digital y Personalizador', ru: 'Меню и конструктор блюд' },
-        description: { en: 'Full restaurant catalog with category rail, live dish customizer with required/optional modifiers, and checkout wizard.', es: 'Carta completa con rail de categorías, personalizador de ingredientes con recálculo de precio y checkout.', ru: 'Полный каталог блюд с фильтрами, конструктором модификаторов и оформлением заказа.' },
-        file: 'src/pages/menu.astro',
+        id: 'menu', path: 'carta/',
+        name: { en: 'Menu & checkout', es: 'Carta y checkout', ru: 'Меню и оформление' },
+        description: { en: 'Full menu with category scroll-spy, search and dietary filters; dishes fly into the cart and check out in 3 steps.', es: 'Carta completa con pestañas que siguen el scroll, búsqueda y filtros de dieta; los platos vuelan a la cesta y el pedido se cierra en 3 pasos.', ru: 'Полное меню с вкладками по прокрутке, поиском и фильтрами; блюда летят в корзину, оформление в 3 шага.' },
+        file: 'src/pages/carta.astro',
         code: `---
 import { FoodMenuPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1557,10 +1561,10 @@ import { FoodMenuPage } from 'astro-component-kit/templates/food-delivery';
 <FoodMenuPage />`,
       },
       {
-        id: 'track', path: 'track/',
-        name: { en: 'Live Delivery Tracker', es: 'Seguimiento de Pedido en Vivo', ru: 'Отслеживание заказа онлайн' },
-        description: { en: 'Real-time order progress tracker with cooking countdown, courier contact card, vehicle badge, and itemized receipt.', es: 'Seguimiento de pedido en tiempo real con cuenta atrás de cocina, tarjeta del repartidor y recibo.', ru: 'Трекер статуса заказа с обратным отсчетом кухни, контактом курьера и чеком.' },
-        file: 'src/pages/track.astro',
+        id: 'tracking', path: 'pedido/',
+        name: { en: 'Live tracking', es: 'Seguimiento en directo', ru: 'Отслеживание' },
+        description: { en: 'Animated map with the rider driving to the door, ETA countdown, status steps, rider call, receipt and rating.', es: 'Mapa animado con el rider camino de tu puerta, cuenta atrás, pasos del pedido, llamada al rider, ticket y valoración.', ru: 'Анимированная карта с курьером, обратный отсчёт, этапы заказа, звонок курьеру, чек и оценка.' },
+        file: 'src/pages/pedido.astro',
         code: `---
 import { FoodTrackingPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1568,21 +1572,21 @@ import { FoodTrackingPage } from 'astro-component-kit/templates/food-delivery';
 <FoodTrackingPage />`,
       },
       {
-        id: 'partner', path: 'partner/',
-        name: { en: 'Partner With Us (B2B)', es: 'Hazte Partner / Restaurantes', ru: 'Партнерство для ресторанов' },
-        description: { en: 'B2B restaurant onboarding portal highlighting Kitchen OS hardware, commission plans, and instant registration form.', es: 'Portal para restaurantes y dark kitchens con planes de comisión, tablet Kitchen OS y formulario de alta.', ru: 'Портал для ресторанов и Dark Kitchen с тарифами комиссии и формой подключения.' },
-        file: 'src/pages/partner.astro',
+        id: 'partner', path: 'restaurantes/',
+        name: { en: 'For restaurants', es: 'Para restaurantes', ru: 'Для ресторанов' },
+        description: { en: 'Perks, savings calculator vs aggregators, sign-up form and FAQ.', es: 'Ventajas, calculadora de ahorro frente a agregadores, formulario de alta y preguntas frecuentes.', ru: 'Преимущества, калькулятор экономии против агрегаторов, форма заявки и FAQ.' },
+        file: 'src/pages/restaurantes.astro',
         code: `---
 import { FoodPartnerPage } from 'astro-component-kit/templates/food-delivery';
 ---
 
-<FoodPartnerPage />`,
+<FoodPartnerPage action="/api/partners" />`,
       },
       {
-        id: 'sign-in', path: 'sign-in/',
-        name: { en: 'Kitchen Crew Sign In', es: 'Acceso Personal de Cocina', ru: 'Вход для сотрудников кухни' },
-        description: { en: 'Terminal sign-in screen with 1-click test roles for Head Chef, KDS Line Cook, and Fleet Dispatcher.', es: 'Pantalla de acceso al terminal con roles de 1 clic para Jefe de Cocina, Cocinero KDS y Despachador.', ru: 'Экран входа в терминал с быстрым доступом для шеф-повара, повара KDS и диспетчера.' },
-        file: 'src/pages/sign-in.astro',
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Crew sign in', es: 'Acceso del equipo', ru: 'Вход для команды' },
+        description: { en: 'Station cards and a 4-digit PIN keypad; each station lands on its own screen.', es: 'Tarjetas de partida y teclado de PIN de 4 cifras; cada partida entra en su pantalla.', ru: 'Карточки участков и клавиатура PIN; каждый участок попадает на свой экран.' },
+        file: 'src/pages/acceso.astro',
         code: `---
 import { FoodSignInPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1590,10 +1594,10 @@ import { FoodSignInPage } from 'astro-component-kit/templates/food-delivery';
 <FoodSignInPage />`,
       },
       {
-        id: 'dashboard', path: 'app/',
-        name: { en: 'Kitchen Operations Dashboard', es: 'Panel de Operaciones de Cocina', ru: 'Панель управления кухней' },
-        description: { en: 'High-level kitchen overview: live prep queues, urgent ticket alarms, station thermal loads, and daily revenue.', es: 'Visión general de cocina: cola de comandas en vivo, alarmas de retraso, carga de estaciones e ingresos.', ru: 'Обзор кухни: очередь заказов, контроль задержек, нагрузка цехов и выручка за смену.' },
-        file: 'src/pages/app/index.astro',
+        id: 'dashboard', path: 'cocina/',
+        name: { en: 'Service overview', es: 'Servicio', ru: 'Обзор смены' },
+        description: { en: 'Count-up KPIs, orders per hour vs last week, station load, best sellers and a live feed.', es: 'KPIs animados, pedidos por hora frente a la semana pasada, carga por partida, lo más pedido y feed en directo.', ru: 'Анимированные KPI, заказы по часам против прошлой недели, загрузка участков, хиты и живая лента.' },
+        file: 'src/pages/cocina/index.astro',
         code: `---
 import { FoodDashboardPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1601,10 +1605,10 @@ import { FoodDashboardPage } from 'astro-component-kit/templates/food-delivery';
 <FoodDashboardPage />`,
       },
       {
-        id: 'kds', path: 'app/kds/',
-        name: { en: 'Kitchen Display System (KDS)', es: 'Pantalla de Cocina KDS', ru: 'Кухонный экран KDS' },
-        description: { en: 'Commercial touchscreen display with elapsed prep timers, color-coded urgency, allergen badges, and bump stage actions.', es: 'Pantalla táctil para línea de cocinado con cronómetros por comanda, avisos de alergias y avance de fase.', ru: 'Сенсорный кухонный экран с таймерами готовности, контролем аллергенов и сменой статусов.' },
-        file: 'src/pages/app/kds.astro',
+        id: 'kds', path: 'cocina/kds/',
+        name: { en: 'Kitchen display (KDS)', es: 'Pantalla de cocina (KDS)', ru: 'Кухонный экран (KDS)' },
+        description: { en: 'Lanes with live timers, allergy bands, item tick-off, bump with undo and station filters.', es: 'Carriles con cronómetros, alergias resaltadas, marcar platos, avanzar comandas con deshacer y filtro por partida.', ru: 'Колонки с таймерами, аллергены, отметка блюд, перевод заказов с отменой и фильтр участков.' },
+        file: 'src/pages/cocina/kds.astro',
         code: `---
 import { FoodKdsPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1612,10 +1616,10 @@ import { FoodKdsPage } from 'astro-component-kit/templates/food-delivery';
 <FoodKdsPage />`,
       },
       {
-        id: 'menu-cms', path: 'app/menu/',
-        name: { en: 'Menu CMS & 86’d Stock', es: 'CMS de Menú y Stock (86’d)', ru: 'CMS меню и стоп-лист' },
-        description: { en: 'Restaurant catalog manager with live price editing, calories and 1-click out-of-stock switches across all channels.', es: 'Gestor de carta con edición de precios, alérgenos y botón de apagado de platos agotados (86’d).', ru: 'Управление меню: изменение цен, калорийности и кнопка стоп-листа для закончившихся блюд.' },
-        file: 'src/pages/app/menu.astro',
+        id: 'menu-cms', path: 'cocina/carta/',
+        name: { en: 'Menu & stock', es: 'Carta y stock', ru: 'Меню и стоп-лист' },
+        description: { en: '86 switches, inline prices, filters and a save bar for every channel.', es: 'Interruptores de agotado (86), precios en línea, filtros y barra de guardado para todos los canales.', ru: 'Переключатели стоп-листа, цены прямо в карточке, фильтры и сохранение для всех каналов.' },
+        file: 'src/pages/cocina/carta.astro',
         code: `---
 import { FoodMenuCmsPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1623,10 +1627,10 @@ import { FoodMenuCmsPage } from 'astro-component-kit/templates/food-delivery';
 <FoodMenuCmsPage />`,
       },
       {
-        id: 'orders', path: 'app/orders/',
-        name: { en: 'Orders & Receipts', es: 'Comandas y Recibos', ru: 'Заказы и чеки' },
-        description: { en: 'Order book with customer addresses, courier assignments, itemized breakdowns, and status filters.', es: 'Libro de pedidos con direcciones, repartidor asignado, desglose de platos y filtros por estado.', ru: 'Журнал заказов с адресами, назначенными курьерами, составом блюд и статусами.' },
-        file: 'src/pages/app/orders.astro',
+        id: 'orders', path: 'cocina/pedidos/',
+        name: { en: 'Orders', es: 'Pedidos', ru: 'Заказы' },
+        description: { en: 'Order book with search, status chips, sorting, status change and expandable tickets.', es: 'Libro de pedidos con búsqueda, chips de estado, orden, cambio de estado y ticket desplegable.', ru: 'Журнал заказов с поиском, фильтрами статусов, сортировкой и раскрывающимся чеком.' },
+        file: 'src/pages/cocina/pedidos.astro',
         code: `---
 import { FoodOrdersPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1634,10 +1638,10 @@ import { FoodOrdersPage } from 'astro-component-kit/templates/food-delivery';
 <FoodOrdersPage />`,
       },
       {
-        id: 'riders', path: 'app/riders/',
-        name: { en: 'Fleet Dispatch & Couriers', es: 'Flota de Reparto y Riders', ru: 'Диспетчеризация курьеров' },
-        description: { en: 'Live courier roster: track e-bikes and scooters, active delivery destinations, daily drop counts, and driver ratings.', es: 'Control de flota: e-bikes y scooters activas, destino de reparto actual, entregas del día y valoración.', ru: 'Управление курьерами: электровелосипеды и скутеры, активные заказы и рейтинг водителей.' },
-        file: 'src/pages/app/riders.astro',
+        id: 'riders', path: 'cocina/riders/',
+        name: { en: 'Rider dispatch', es: 'Despacho de riders', ru: 'Диспетчер курьеров' },
+        description: { en: 'Live fleet map, queue of orders without rider and assignment by distance.', es: 'Mapa de la flota en directo, cola de pedidos sin rider y asignación por cercanía.', ru: 'Карта флота, очередь заказов без курьера и назначение по расстоянию.' },
+        file: 'src/pages/cocina/riders.astro',
         code: `---
 import { FoodRidersPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1645,10 +1649,10 @@ import { FoodRidersPage } from 'astro-component-kit/templates/food-delivery';
 <FoodRidersPage />`,
       },
       {
-        id: 'settings', path: 'app/settings/',
-        name: { en: 'Kitchen & Delivery Settings', es: 'Ajustes de Cocina y Reparto', ru: 'Настройки кухни и доставки' },
-        description: { en: 'Delivery radius, minimum order threshold, ESC/POS thermal printer integration, and acoustic KDS alarms.', es: 'Radio de reparto, pedido mínimo, conexión con impresora térmica ESC/POS y avisos acústicos de comanda.', ru: 'Радиус доставки, минимальный чек, интеграция чековых принтеров ESC/POS и звуковые сигналы KDS.' },
-        file: 'src/pages/app/settings.astro',
+        id: 'settings', path: 'cocina/ajustes/',
+        name: { en: 'Kitchen settings', es: 'Ajustes de cocina', ru: 'Настройки кухни' },
+        description: { en: 'Delivery radius with map preview, fees, opening hours, ticket printer test and kitchen alarms.', es: 'Radio de reparto con vista en mapa, envío, horarios, prueba de impresora y avisos de cocina.', ru: 'Радиус доставки с картой, тарифы, часы работы, тест принтера и сигналы кухни.' },
+        file: 'src/pages/cocina/ajustes.astro',
         code: `---
 import { FoodSettingsPage } from 'astro-component-kit/templates/food-delivery';
 ---
@@ -1657,23 +1661,25 @@ import { FoodSettingsPage } from 'astro-component-kit/templates/food-delivery';
       },
     ],
     newComponents: [
-      'food-kitchen-display', 'food-menu-cms-editor', 'food-order-tracker', 'food-dish-customizer',
-      'food-delivery-hero', 'food-category-rail', 'food-menu-grid', 'food-live-promo-banner', 'food-restaurant-partner-cta', 'food-checkout-wizard',
+      'food-hero-plate', 'food-menu-board', 'food-scroll-story', 'food-partner-pitch', 'food-footer',
+      'food-cart-drawer', 'food-order-map', 'food-kitchen-board', 'food-menu-manager', 'food-rider-dispatch', 'food-orders-table', 'food-service-pulse',
+      'food-ops-nav', 'food-ops-topbar', 'food-ops-heading', 'food-crew-sign-in',
     ],
-    reusedComponents: [
-      'app-sidebar', 'app-topbar', 'page-header', 'settings-section', 'switch-row', 'badge',
-    ],
+    reusedComponents: [],
     storeConfigExample: `---
-// src/pages/index.astro — pass the same data + routes across all food delivery pages
-import { FoodHomePage, foodDeliveryData, type FoodDeliveryRoutes } from 'astro-component-kit/templates/food-delivery';
+// Pass your own data and routes to every page (e.g. from your POS)
+import { FoodHomePage, foodDeliveryData, foodRoutes } from 'astro-component-kit/templates/food-delivery';
 
 const data = {
   ...foodDeliveryData,
-  restaurant: { ...foodDeliveryData.restaurant, name: 'Smashed & Co Kitchen' },
+  brand: { ...foodDeliveryData.brand, name: 'Smash & Co', phone: '+34 900 000 000' },
+  dishes: await fetch('https://api.example.com/menu').then((r) => r.json()),
 };
+
+const routes = { ...foodRoutes, menu: '/menu', tracking: '/track' };
 ---
 
-<FoodHomePage />`,
+<FoodHomePage data={data} routes={routes} />`,
   },
   {
     slug: 'construction',
@@ -1842,12 +1848,11 @@ import { ConstructionSettingsPage } from 'astro-component-kit/templates/construc
       },
     ],
     newComponents: [
-      'construction-site-progress', 'construction-unit-selector', 'construction-daily-log', 'construction-budget-estimator',
-      'construction-hero', 'construction-projects-grid', 'construction-stage-timeline', 'construction-floorplan-viewer', 'construction-sustainability-banner', 'construction-inquiry-form',
+      'construction-blueprint-hero', 'construction-project-sheets', 'construction-build-sequence', 'construction-tender-form', 'construction-footer',
+      'construction-cost-estimator', 'construction-iso-unit-picker', 'construction-gantt-board', 'construction-sites-board', 'construction-site-logbook',
+      'construction-units-ledger', 'construction-os-sidebar', 'construction-os-topbar', 'construction-os-heading', 'construction-sign-in',
     ],
-    reusedComponents: [
-      'app-sidebar', 'app-topbar', 'page-header', 'settings-section', 'badge',
-    ],
+    reusedComponents: [],
     storeConfigExample: `---
 // src/pages/index.astro — pass the same data + routes across all construction pages
 import { ConstructionHomePage, constructionData, type ConstructionRoutes } from 'astro-component-kit/templates/construction';
@@ -2013,10 +2018,9 @@ import { EstateLeadsPage } from 'astro-component-kit/templates/real-estate';
     newComponents: [
       'estate-hero', 'estate-listings-grid', 'estate-neighborhoods', 'estate-property-gallery', 'estate-agents-grid', 'estate-valuation-cta',
       'estate-mortgage-calculator', 'estate-valuation-wizard', 'estate-visit-scheduler', 'estate-leads-pipeline',
+      'estate-footer', 'estate-crm-sidebar', 'estate-crm-topbar', 'estate-crm-heading', 'estate-listings-table', 'estate-agent-sign-in',
     ],
-    reusedComponents: [
-      'app-sidebar', 'app-topbar', 'page-header', 'data-table', 'auth-card', 'footer-mega-section',
-    ],
+    reusedComponents: [],
     storeConfigExample: `---
 // Pass your own data and routes to every page (e.g. from a CMS or an API)
 import { EstateHomePage, estateData, estateRoutes } from 'astro-component-kit/templates/real-estate';
@@ -2031,6 +2035,171 @@ const routes = { ...estateRoutes, listings: '/homes', property: '/homes/sample' 
 ---
 
 <EstateHomePage data={data} routes={routes} />`,
+  },
+  {
+    slug: 'gym',
+    name: {
+      en: 'Forja · Gym & Member Area',
+      es: 'Forja · Gimnasio & Área de socios',
+      ru: 'Forja · Спортзал & Кабинет участника',
+    },
+    tagline: {
+      en: 'Gym site with weekly timetable, plans and free trial, plus a member area with class booking and progress, and a staff view with members and occupancy.',
+      es: 'Web de gimnasio con horario semanal, tarifas y prueba gratis, más un área de socios con reservas y progreso, y una vista de staff con socios y aforo.',
+      ru: 'Сайт спортзала с недельным расписанием, абонементами и пробным периодом, кабинет участника с записью и прогрессом и панель персонала с участниками и заполненностью.',
+    },
+    description: {
+      en: 'Complete template for a gym, box or fitness studio. 9 page types: home with today\'s classes, disciplines, live occupancy, plans, coaches and trial form; weekly timetable with day tabs and filters; plans with monthly/yearly billing and FAQ; coaches; free-trial pass; plus member sign-in, a progress dashboard (goal, streak, sessions, records, weight), class booking with waitlist, and a staff view with membership KPIs, occupancy and a members table.',
+      es: 'Plantilla completa para un gimnasio, box o estudio. 9 tipos de página: home con las clases de hoy, disciplinas, aforo en directo, tarifas, entrenadores y formulario de prueba; horario semanal con pestañas y filtros; tarifas con pago mensual o anual y preguntas frecuentes; entrenadores; pase de prueba gratis; y además acceso de socios, panel de progreso (objetivo, racha, sesiones, marcas y peso), reserva de clases con lista de espera y vista de staff con KPIs, aforo y tabla de socios.',
+      ru: 'Полный шаблон для спортзала, бокса или фитнес-студии. 9 типов страниц: главная с занятиями на сегодня, направлениями, заполненностью, абонементами, тренерами и формой пробы; недельное расписание с вкладками и фильтрами; абонементы с оплатой помесячно или за год и FAQ; тренеры; пропуск на пробный период; а также вход для участников, панель прогресса (цель, серия, тренировки, рекорды, вес), запись на занятия с листом ожидания и панель персонала с KPI, заполненностью и таблицей участников.',
+    },
+    highlights: {
+      en: [
+        'Timetable with accessible day tabs that opens on today and filters by discipline',
+        'Plans with a monthly/yearly switch that recalculates prices and savings',
+        'Class booking with live spots, waitlist and booking limit',
+        'Member progress with goal ring, streak, records and weight trend in plain SVG',
+        'Live occupancy with usual crowd per hour so members pick quiet times',
+      ],
+      es: [
+        'Horario con pestañas accesibles que se abre en el día de hoy y filtra por disciplina',
+        'Tarifas con interruptor mensual o anual que recalcula precios y ahorro',
+        'Reserva de clases con plazas en vivo, lista de espera y límite de reservas',
+        'Progreso del socio con objetivo, racha, marcas y peso en SVG puro',
+        'Aforo en directo y afluencia habitual por horas para elegir momentos tranquilos',
+      ],
+      ru: [
+        'Расписание с доступными вкладками, открывается на сегодня и фильтрует по направлениям',
+        'Абонементы с переключателем помесячно или за год и пересчётом экономии',
+        'Запись на занятия с местами в реальном времени, листом ожидания и лимитом',
+        'Прогресс участника: цель, серия, рекорды и вес на чистом SVG',
+        'Заполненность клуба и обычная посещаемость по часам',
+      ],
+    },
+    tags: ['gym', 'fitness', 'schedule', 'booking', 'membership', 'pricing', 'dashboard', 'classes'],
+    previewBase: '/preview/gym/',
+    importPath: 'astro-component-kit/templates/gym',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with today\'s classes, disciplines, live occupancy, plans, coaches and trial form.', es: 'Hero con las clases de hoy, disciplinas, aforo en directo, tarifas, entrenadores y prueba gratis.', ru: 'Главный экран с занятиями на сегодня, направления, заполненность, абонементы, тренеры и проба.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { GymHomePage } from 'astro-component-kit/templates/gym';
+---
+
+<GymHomePage />`,
+      },
+      {
+        id: 'classes', path: 'clases/',
+        name: { en: 'Timetable', es: 'Clases y horario', ru: 'Расписание' },
+        description: { en: 'Weekly timetable with day tabs, discipline filters and booking links, plus what each class is.', es: 'Horario semanal con pestañas por día, filtros por disciplina y enlaces para reservar, y qué es cada clase.', ru: 'Недельное расписание с вкладками, фильтрами и ссылками на запись, плюс описание занятий.' },
+        file: 'src/pages/clases.astro',
+        code: `---
+import { GymClassesPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymClassesPage />`,
+      },
+      {
+        id: 'plans', path: 'tarifas/',
+        name: { en: 'Plans', es: 'Tarifas', ru: 'Абонементы' },
+        description: { en: 'Membership plans with monthly/yearly billing and membership FAQ.', es: 'Tarifas con pago mensual o anual y preguntas frecuentes.', ru: 'Абонементы с оплатой помесячно или за год и частые вопросы.' },
+        file: 'src/pages/tarifas.astro',
+        code: `---
+import { GymPlansPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymPlansPage />`,
+      },
+      {
+        id: 'trainers', path: 'entrenadores/',
+        name: { en: 'Coaches', es: 'Entrenadores', ru: 'Тренеры' },
+        description: { en: 'Coaching team with certifications, years and classes.', es: 'Equipo de entrenadores con titulaciones, años y clases.', ru: 'Команда тренеров с сертификатами, стажем и занятиями.' },
+        file: 'src/pages/entrenadores.astro',
+        code: `---
+import { GymTrainersPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymTrainersPage />`,
+      },
+      {
+        id: 'trial', path: 'prueba-gratis/',
+        name: { en: 'Free trial', es: 'Prueba gratis', ru: 'Пробный период' },
+        description: { en: 'Free-trial sign-up that returns a 7-day pass with an access code; club address and hours.', es: 'Alta de prueba que devuelve un pase de 7 días con código; dirección y horario del club.', ru: 'Запись на пробу с пропуском на 7 дней и кодом; адрес и часы клуба.' },
+        file: 'src/pages/prueba-gratis.astro',
+        code: `---
+import { GymTrialPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymTrialPage action="/api/trial" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Member sign in', es: 'Acceso socios', ru: 'Вход для участников' },
+        description: { en: 'Split sign-in for members and staff with a testimonial and club figures.', es: 'Acceso para socios y staff con testimonio y cifras del club.', ru: 'Вход для участников и персонала с отзывом и цифрами клуба.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { GymSignInPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'socios/',
+        name: { en: 'Member progress', es: 'Mi progreso', ru: 'Мой прогресс' },
+        description: { en: 'Goal, streak, weekly sessions, records, weight, upcoming classes and occupancy.', es: 'Objetivo, racha, sesiones por semana, marcas, peso, próximas clases y aforo.', ru: 'Цель, серия, тренировки, рекорды, вес, ближайшие занятия и заполненность.' },
+        file: 'src/pages/socios/index.astro',
+        code: `---
+import { GymDashboardPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymDashboardPage />`,
+      },
+      {
+        id: 'booking', path: 'socios/reservar/',
+        name: { en: 'Class booking', es: 'Reservar clase', ru: 'Запись на занятие' },
+        description: { en: 'Pick a day, book, cancel or join the waitlist; my bookings update live.', es: 'Elige día, reserva, cancela o apúntate a la lista de espera; mis reservas se actualizan al momento.', ru: 'Выбор дня, запись, отмена или лист ожидания; список записей обновляется сразу.' },
+        file: 'src/pages/socios/reservar.astro',
+        code: `---
+import { GymBookingPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymBookingPage />`,
+      },
+      {
+        id: 'members', path: 'socios/staff/',
+        name: { en: 'Staff: members & occupancy', es: 'Staff: socios y aforo', ru: 'Персонал: участники и заполненность' },
+        description: { en: 'Membership KPIs, live occupancy and a searchable members table.', es: 'KPIs de cuotas, aforo en directo y tabla de socios con búsqueda.', ru: 'KPI абонементов, заполненность и таблица участников с поиском.' },
+        file: 'src/pages/socios/staff.astro',
+        code: `---
+import { GymMembersPage } from 'astro-component-kit/templates/gym';
+---
+
+<GymMembersPage />`,
+      },
+    ],
+    newComponents: [
+      'gym-hero', 'gym-disciplines', 'gym-schedule', 'gym-membership-plans', 'gym-trainers-grid', 'gym-trial-form',
+      'gym-class-booking', 'gym-progress-tracker', 'gym-occupancy-meter',
+      'gym-footer', 'gym-area-nav', 'gym-area-topbar', 'gym-area-heading', 'gym-members-table', 'gym-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your booking system)
+import { GymHomePage, gymData, gymRoutes } from 'astro-component-kit/templates/gym';
+
+const data = {
+  ...gymData,
+  brand: { ...gymData.brand, name: 'Iron Hall', phone: '+34 900 000 000' },
+  classes: await fetch('https://api.example.com/classes').then((r) => r.json()),
+};
+
+const routes = { ...gymRoutes, classes: '/timetable', trial: '/free-trial' };
+---
+
+<GymHomePage data={data} routes={routes} />`,
   },
 ];
 

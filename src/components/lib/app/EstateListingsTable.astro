@@ -1,0 +1,457 @@
+---
+/**
+ * EstateListingsTable — Listings manager table for the agency CRM: search, status filter chips,
+ * sortable columns (price, views, leads, days on market) and a link to each property page.
+ * Rows carry a "stale" flag when a listing has been published 30+ days with few leads.
+ *
+ * @param {EstateProperty[]} properties - Listings.
+ * @param {EstateAgent[]} agents - Used for the agent column.
+ * @param {string} detailBase - Base path for property links. Omit to hide the link column.
+ * @param {string} title - Table caption / heading.
+ * @param {string} density - 'comfortable' | 'compact'. Default 'comfortable'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <table> with a caption; sortable headers are buttons with aria-sort on the
+ * <th>; status chips are toggle buttons (aria-pressed); the result count is announced; the table
+ * scrolls inside a focusable, labelled region on small screens.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/real-estate/real-estate-theme.css';
+import {
+  estateProperties,
+  estateAgents,
+  estateTypeLabels,
+  formatEstatePrice,
+  type EstateAgent,
+  type EstateProperty,
+} from '../templates/real-estate/data';
+
+interface OwnProps {
+  properties?: EstateProperty[];
+  agents?: EstateAgent[];
+  detailBase?: string;
+  title?: string;
+  density?: 'comfortable' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  properties = estateProperties,
+  agents = estateAgents,
+  detailBase,
+  title = 'Anuncios',
+  density = 'comfortable',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `elt-${Math.random().toString(36).slice(2, 8)}`;
+const statusNames = { active: 'Activa', reserved: 'Reservada', sold: 'Vendida', draft: 'Borrador' } as const;
+const statuses = Object.entries(statusNames).filter(([key]) => properties.some((p) => p.status === key));
+const agentName = (id: string) => agents.find((a) => a.id === id)?.name ?? '—';
+const isStale = (p: EstateProperty) => p.status === 'active' && p.publishedDays >= 30 && p.leads <= 10;
+const nf = new Intl.NumberFormat('es-ES');
+const sortable = [
+  { key: 'price', label: 'Precio' },
+  { key: 'views', label: 'Visitas' },
+  { key: 'leads', label: 'Leads' },
+  { key: 'days', label: 'Días' },
+];
+---
+
+<section
+  class:list={['estate-ui', 'estate-ltable', `estate-ltable--${density}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-estate-ltable
+  {...rest}
+>
+  <div class="estate-ltable__bar">
+    <h2 id={`${uid}-title`} class="estate-ltable__title">
+      {title} <span class="estate-ltable__count" aria-live="polite" data-count>{properties.length}</span>
+    </h2>
+    <label class="estate-ltable__search">
+      <span class="estate-sr">Buscar anuncios</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <input type="search" placeholder="Título, barrio o agente…" data-search />
+    </label>
+  </div>
+
+  <div class="estate-ltable__chips" role="group" aria-label="Filtrar por estado">
+    <button type="button" aria-pressed="true" data-status="">Todas <span>{properties.length}</span></button>
+    {statuses.map(([key, label]) => (
+      <button type="button" aria-pressed="false" data-status={key}>
+        {label} <span>{properties.filter((p) => p.status === key).length}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="estate-ltable__scroll" role="region" aria-label={`${title} (desplazable)`} tabindex="0">
+    <table class="estate-ltable__table">
+      <caption class="estate-sr">{title}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Propiedad</th>
+          <th scope="col">Agente</th>
+          {sortable.map((s) => (
+            <th scope="col" class="is-num" data-sort-col={s.key}>
+              <button type="button" data-sort={s.key}>
+                {s.label}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m7 9 5-5 5 5M7 15l5 5 5-5" /></svg>
+              </button>
+            </th>
+          ))}
+          <th scope="col">Estado</th>
+          {detailBase && <th scope="col"><span class="estate-sr">Acciones</span></th>}
+        </tr>
+      </thead>
+      <tbody data-body>
+        {properties.map((p) => (
+          <tr
+            data-row
+            data-status={p.status}
+            data-text={`${p.title} ${p.zone} ${agentName(p.agentId)} ${estateTypeLabels[p.type]}`.toLowerCase()}
+            data-price={p.price}
+            data-views={p.views}
+            data-leads={p.leads}
+            data-days={p.publishedDays}
+          >
+            <td>
+              <span class="estate-ltable__prop">
+                <span class="estate-ltable__swatch" style={`--h:${p.hue}`} aria-hidden="true"></span>
+                <span>
+                  <strong>{p.title}</strong>
+                  <small>{estateTypeLabels[p.type]} · {p.zone} · {p.operation === 'sale' ? 'Venta' : 'Alquiler'}</small>
+                </span>
+              </span>
+            </td>
+            <td>{agentName(p.agentId)}</td>
+            <td class="is-num">{formatEstatePrice(p.price, p.operation)}</td>
+            <td class="is-num">{nf.format(p.views)}</td>
+            <td class="is-num">{p.leads}</td>
+            <td class="is-num">
+              {p.publishedDays}
+              {isStale(p) && <span class="estate-ltable__stale">Revisar precio</span>}
+            </td>
+            <td><span class:list={['estate-ltable__status', `is-${p.status}`]}>{statusNames[p.status]}</span></td>
+            {detailBase && (
+              <td>
+                <a href={`${detailBase}/${p.slug}`} class="estate-ltable__link">
+                  Ver<span class="estate-sr"> {p.title}</span>
+                </a>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="estate-ltable__empty" data-empty hidden>No hay anuncios con estos filtros.</p>
+</section>
+
+<script>
+  function initTable(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const body = root.querySelector<HTMLElement>('[data-body]')!;
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-row]'));
+    const search = root.querySelector<HTMLInputElement>('[data-search]')!;
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-status]')).filter((el) => el.tagName === 'BUTTON');
+    const count = root.querySelector<HTMLElement>('[data-count]')!;
+    let status = '';
+    let sortKey = '';
+    let dir = 1;
+
+    const apply = () => {
+      const q = search.value.trim().toLowerCase();
+      let visible = 0;
+      for (const r of rows) {
+        const show = (!status || r.dataset.status === status) && (!q || r.dataset.text!.includes(q));
+        r.hidden = !show;
+        if (show) visible += 1;
+      }
+      if (sortKey) {
+        [...rows].sort((a, b) => (Number(a.dataset[sortKey]) - Number(b.dataset[sortKey])) * dir).forEach((r) => body.appendChild(r));
+      }
+      count.textContent = String(visible);
+      root.querySelector<HTMLElement>('[data-empty]')!.hidden = visible > 0;
+    };
+
+    search.addEventListener('input', apply);
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        status = c.dataset.status || '';
+        chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+        apply();
+      }),
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-sort]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.sort!;
+        dir = sortKey === key ? -dir : -1;
+        sortKey = key;
+        root.querySelectorAll<HTMLElement>('[data-sort-col]').forEach((th) => {
+          if (th.dataset.sortCol === key) th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+          else th.removeAttribute('aria-sort');
+        });
+        apply();
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-estate-ltable]').forEach(initTable);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .estate-ltable {
+    position: relative;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-bg-raised);
+    color: var(--estate-text);
+    font-family: var(--estate-font-body);
+  }
+
+  .estate-ltable__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-3, 0.75rem);
+  }
+
+  .estate-ltable__title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .estate-ltable__count {
+    margin-left: var(--sp-1, 0.25rem);
+    padding: 0 0.5rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--estate-surface-2);
+    color: var(--estate-text-2);
+    font-size: 0.8rem;
+  }
+
+  .estate-ltable__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    flex: 0 1 300px;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--estate-border);
+    background: var(--estate-surface);
+    color: var(--estate-text-3);
+  }
+
+  .estate-ltable__search:focus-within {
+    border-color: var(--estate-brand);
+  }
+
+  .estate-ltable__search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--estate-text);
+    font: inherit;
+    font-size: 0.95rem;
+    outline: none;
+  }
+
+  .estate-ltable__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .estate-ltable__chips button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 38px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-full, 999px);
+    border: 1px solid var(--estate-border-strong);
+    background: transparent;
+    color: var(--estate-text-2);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .estate-ltable__chips button span {
+    color: var(--estate-text-3);
+    font-weight: 500;
+  }
+
+  .estate-ltable__chips button[aria-pressed='true'] {
+    border-color: var(--estate-text);
+    background: var(--estate-text);
+    color: var(--estate-bg);
+  }
+
+  .estate-ltable__chips button[aria-pressed='true'] span {
+    color: inherit;
+  }
+
+  .estate-ltable__scroll {
+    position: relative;
+    overflow-x: auto;
+    border-radius: var(--r-md, 12px);
+  }
+
+  .estate-ltable :is(button, a, .estate-ltable__scroll):focus-visible {
+    outline: 2px solid var(--estate-brand);
+    outline-offset: 2px;
+  }
+
+  .estate-ltable__table {
+    width: 100%;
+    min-width: 860px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .estate-ltable__table th {
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border-bottom: 1px solid var(--estate-border-strong);
+    color: var(--estate-text-3);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .estate-ltable__table th button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .estate-ltable__table th[aria-sort] button {
+    color: var(--estate-text);
+  }
+
+  .estate-ltable__table td {
+    padding: var(--sp-3, 0.75rem);
+    border-bottom: 1px solid var(--estate-border);
+    vertical-align: middle;
+  }
+
+  .estate-ltable--compact .estate-ltable__table td {
+    padding-block: var(--sp-2, 0.5rem);
+  }
+
+  .estate-ltable__table tr[hidden] {
+    display: none;
+  }
+
+  .estate-ltable__table tbody tr:hover {
+    background: var(--estate-surface);
+  }
+
+  .estate-ltable__table .is-num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .estate-ltable__table th.is-num button {
+    flex-direction: row-reverse;
+  }
+
+  .estate-ltable__prop {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 260px;
+  }
+
+  .estate-ltable__prop span {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .estate-ltable__prop small {
+    color: var(--estate-text-3);
+  }
+
+  .estate-ltable__swatch {
+    flex-shrink: 0;
+    width: 44px;
+    height: 34px;
+    border-radius: var(--r-sm, 8px);
+    background: linear-gradient(160deg, hsl(var(--h) 45% 62%), hsl(calc(var(--h) + 30) 40% 34%));
+  }
+
+  .estate-ltable__stale {
+    display: block;
+    color: var(--estate-reserved);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .estate-ltable__status {
+    display: inline-flex;
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: var(--estate-surface-2);
+    color: var(--estate-text-2);
+  }
+
+  .estate-ltable__status.is-active {
+    background: color-mix(in srgb, var(--estate-up) 18%, transparent);
+    color: var(--estate-up);
+  }
+
+  .estate-ltable__status.is-reserved {
+    background: color-mix(in srgb, var(--estate-reserved) 18%, transparent);
+    color: var(--estate-reserved);
+  }
+
+  .estate-ltable__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    color: var(--estate-brand);
+    font-weight: 600;
+  }
+
+  .estate-ltable__empty {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--estate-text-3);
+    text-align: center;
+  }
+
+  .estate-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

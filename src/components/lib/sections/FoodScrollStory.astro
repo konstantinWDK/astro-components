@@ -1,0 +1,484 @@
+---
+/**
+ * FoodScrollStory — "From the fire to your door" scroll story. A sticky stage on the left changes
+ * scene (order → kitchen → rider → table) as each step on the right scrolls into view, while a
+ * progress rail fills with the scroll position.
+ *
+ * @param {string} title - Section heading.
+ * @param {Array<{title: string, text: string, stat?: string}>} steps - Up to four steps.
+ * @param {string} variant - 'tomato' | 'ink' stage colour. Default 'tomato'.
+ * @param {string} size - 'md' | 'lg' heading size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: steps are an ordered list with real headings and stay readable without
+ * JavaScript; the stage is decorative (aria-hidden). With prefers-reduced-motion the scenes
+ * switch without transitions.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodArt } from '../templates/food-delivery/food-art';
+
+interface Step { title: string; text: string; stat?: string }
+
+interface OwnProps {
+  title?: string;
+  steps?: Step[];
+  variant?: 'tomato' | 'ink';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Del fuego a tu puerta',
+  steps = [
+    { title: 'Pides en 30 segundos', text: 'Eliges en la carta, pagas con Bizum o al repartidor y tu pedido entra directo en la pantalla de cocina.', stat: '0 € de comisión' },
+    { title: 'Se cocina al momento', text: 'Nada espera bajo una lámpara: la plancha se enciende cuando pides. Cada comanda tiene su cronómetro.', stat: '9 min de media' },
+    { title: 'Sale con el rider más cercano', text: 'Asignamos el reparto a quien está más cerca y puedes seguirlo en el mapa calle a calle.', stat: '1,8 km de radio' },
+    { title: 'Llega caliente', text: 'Bolsas térmicas selladas y entrega sin contacto. Si llega tarde, el envío corre de nuestra cuenta.', stat: '94 % a tiempo' },
+  ],
+  variant = 'tomato',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const list = steps.slice(0, 4);
+const uid = `bf-story-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section class:list={['bf-ui', 'bf-story', `bf-story--${variant}`, `bf-story--${size}`, classAttr]} aria-labelledby={uid} data-bf-story data-scene="0" {...rest}>
+  <div class="bf-story__inner">
+    <div class="bf-story__stage" aria-hidden="true">
+      <div class="bf-story__frame">
+        <div class="bf-story__scene bf-story__scene--0">
+          <div class="bf-story__phone">
+            <span class="bf-story__notch"></span>
+            <span class="bf-story__row"><svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt('burger')} /></span>
+            <span class="bf-story__row"><svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt('drink')} /></span>
+            <span class="bf-story__pay">Pagar</span>
+          </div>
+        </div>
+        <div class="bf-story__scene bf-story__scene--1">
+          <div class="bf-story__pan">
+            <span class="bf-story__flame"></span><span class="bf-story__flame"></span><span class="bf-story__flame"></span>
+            <svg class="bf-art bf-story__cook" viewBox="0 0 120 120" set:html={foodArt('burger')} />
+            <span class="bf-story__timer">08:42</span>
+          </div>
+        </div>
+        <div class="bf-story__scene bf-story__scene--2">
+          <svg class="bf-story__map" viewBox="0 0 200 200">
+            <path d="M0 60h200M0 140h200M60 0v200M140 0v200" class="m-street" />
+            <path d="M30 40 V100 H110 V160 H170" class="m-route" />
+            <circle cx="30" cy="40" r="9" class="m-a" />
+            <circle cx="170" cy="160" r="9" class="m-b" />
+            <circle r="8" class="m-dot"><animateMotion dur="3.6s" repeatCount="indefinite" path="M30 40 V100 H110 V160 H170" /></circle>
+          </svg>
+        </div>
+        <div class="bf-story__scene bf-story__scene--3">
+          <div class="bf-story__table">
+            <svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt('pizza')} />
+            <span class="bf-story__heart">♥</span>
+          </div>
+        </div>
+      </div>
+      <span class="bf-story__rail"><i data-rail></i></span>
+    </div>
+
+    <div class="bf-story__copy">
+      <h2 id={uid} class="bf-story__title">{title}</h2>
+      <ol class="bf-story__steps">
+        {list.map((s, i) => (
+          <li class:list={['bf-story__step', { 'is-on': i === 0 }]} data-step={i}>
+            <span class="bf-story__num" aria-hidden="true">{i + 1}</span>
+            <h3>{s.title}</h3>
+            <p>{s.text}</p>
+            {s.stat && <strong class="bf-story__stat">{s.stat}</strong>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initFoodStory() {
+    document.querySelectorAll<HTMLElement>('[data-bf-story]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const steps = [...root.querySelectorAll<HTMLElement>('[data-step]')];
+      const rail = root.querySelector<HTMLElement>('[data-rail]');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        root.querySelectorAll('animateMotion').forEach((a) => a.remove());
+        root.querySelectorAll('.m-dot').forEach((d) => {
+          d.setAttribute('cx', '110');
+          d.setAttribute('cy', '100');
+        });
+      }
+
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (!e.isIntersecting) return;
+              const n = (e.target as HTMLElement).dataset.step ?? '0';
+              root.dataset.scene = n;
+              steps.forEach((s) => s.classList.toggle('is-on', s.dataset.step === n));
+            });
+          },
+          { rootMargin: '-45% 0px -45% 0px' },
+        );
+        steps.forEach((s) => io.observe(s));
+      }
+
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const r = root.getBoundingClientRect();
+          const total = r.height - window.innerHeight;
+          const p = total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 0;
+          if (rail) rail.style.transform = `scaleY(${p})`;
+          ticking = false;
+        });
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    });
+  }
+  initFoodStory();
+  document.addEventListener('astro:page-load', initFoodStory);
+</script>
+
+<style>
+  .bf-story {
+    --bf-story-bg: var(--bf-tomato);
+    --bf-story-fg: var(--bf-on-tomato);
+    position: relative;
+    padding: clamp(3rem, 8vw, 6rem) var(--sp-4, 1rem);
+    background: var(--bf-bg-2);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-story--ink {
+    --bf-story-bg: var(--bf-ink);
+    --bf-story-fg: var(--bf-bg);
+  }
+
+  .bf-story__inner {
+    position: relative;
+    max-width: 1160px;
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+
+  @media (min-width: 860px) {
+    .bf-story__inner {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .bf-story__stage {
+    position: sticky;
+    top: 90px;
+    align-self: start;
+    display: flex;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .bf-story__frame {
+    position: relative;
+    flex: 1;
+    aspect-ratio: 1;
+    border: 3px solid var(--bf-outline);
+    border-radius: 32px;
+    background: var(--bf-story-bg);
+    box-shadow: var(--bf-shadow-lg);
+    overflow: hidden;
+  }
+
+  .bf-story__rail {
+    width: 10px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    overflow: hidden;
+  }
+
+  .bf-story__rail i {
+    display: block;
+    height: 100%;
+    background: var(--bf-mustard);
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+
+  .bf-story__scene {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: scale(0.8) rotate(-6deg);
+    transition: opacity 0.4s ease, transform 0.6s var(--bf-ease-pop);
+  }
+
+  .bf-story[data-scene='0'] .bf-story__scene--0,
+  .bf-story[data-scene='1'] .bf-story__scene--1,
+  .bf-story[data-scene='2'] .bf-story__scene--2,
+  .bf-story[data-scene='3'] .bf-story__scene--3 {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Scene 0: phone */
+  .bf-story__phone {
+    display: grid;
+    gap: 10px;
+    width: 46%;
+    padding: 18px 12px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 26px;
+    background: var(--bf-paper);
+    box-shadow: 6px 6px 0 var(--bf-outline);
+  }
+
+  .bf-story__notch {
+    justify-self: center;
+    width: 40%;
+    height: 8px;
+    border-radius: 99px;
+    background: var(--bf-ink);
+  }
+
+  .bf-story__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 2px solid var(--bf-line);
+    border-radius: 12px;
+  }
+
+  .bf-story__row::after {
+    content: '';
+    flex: 1;
+    height: 8px;
+    border-radius: 9px;
+    background: var(--bf-bg-2);
+  }
+
+  .bf-story__row svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bf-story__pay {
+    display: grid;
+    place-items: center;
+    height: 36px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-weight: 800;
+    animation: bf-story-tap 1.6s ease-in-out infinite;
+  }
+
+  /* Scene 1: pan */
+  .bf-story__pan {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 62%;
+    aspect-ratio: 1;
+    border: 4px solid var(--bf-outline);
+    border-radius: 50%;
+    background: radial-gradient(circle, #3a3340 0 58%, #1f1a24 60%);
+  }
+
+  .bf-story__cook {
+    width: 70%;
+    animation: bf-story-sizzle 0.5s ease-in-out infinite alternate;
+  }
+
+  .bf-story__flame {
+    position: absolute;
+    bottom: -14%;
+    width: 18%;
+    aspect-ratio: 0.7;
+    border: 3px solid var(--bf-outline);
+    border-radius: 50% 50% 40% 40% / 70% 70% 30% 30%;
+    background: var(--bf-mustard);
+    animation: bf-story-flame 0.6s ease-in-out infinite alternate;
+  }
+
+  .bf-story__flame:nth-child(1) { left: 18%; }
+  .bf-story__flame:nth-child(2) { left: 41%; animation-delay: 0.2s; }
+  .bf-story__flame:nth-child(3) { left: 64%; animation-delay: 0.4s; }
+
+  .bf-story__timer {
+    position: absolute;
+    top: -6%;
+    right: -18%;
+    padding: 6px 12px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    transform: rotate(8deg);
+  }
+
+  /* Scene 2: map */
+  .bf-story__map {
+    width: 78%;
+    border: 3px solid var(--bf-outline);
+    border-radius: 22px;
+    background: var(--bf-paper);
+  }
+
+  .bf-story__map .m-street { stroke: var(--bf-bg-2); stroke-width: 18; }
+  .bf-story__map .m-route { fill: none; stroke: var(--bf-tomato); stroke-width: 6; stroke-dasharray: 10 8; stroke-linecap: round; stroke-linejoin: round; }
+  .bf-story__map .m-a { fill: var(--bf-mustard); stroke: var(--bf-outline); stroke-width: 3; }
+  .bf-story__map .m-b { fill: var(--bf-mint); stroke: var(--bf-outline); stroke-width: 3; }
+  .bf-story__map .m-dot { fill: var(--bf-ink); stroke: var(--bf-paper); stroke-width: 3; }
+
+  /* Scene 3: table */
+  .bf-story__table {
+    position: relative;
+    width: 64%;
+  }
+
+  .bf-story__table svg {
+    width: 100%;
+    filter: drop-shadow(8px 8px 0 var(--bf-outline));
+    animation: bf-story-float 2.4s ease-in-out infinite;
+  }
+
+  .bf-story__heart {
+    position: absolute;
+    top: -8%;
+    right: -4%;
+    color: var(--bf-mustard);
+    font-size: 3.4rem;
+    -webkit-text-stroke: 2px var(--bf-outline);
+    animation: bf-story-tap 1.2s ease-in-out infinite;
+  }
+
+  /* Copy */
+  .bf-story__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--bf-font-display);
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .bf-story--lg .bf-story__title {
+    font-size: clamp(2.4rem, 8vw, 4.4rem);
+  }
+
+  .bf-story__steps {
+    display: grid;
+    gap: clamp(1.5rem, 14vh, 9rem);
+    margin: 0;
+    padding: 0 0 20vh;
+    list-style: none;
+  }
+
+  .bf-story__step {
+    position: relative;
+    padding: var(--sp-5, 1.25rem);
+    border: 3px solid var(--bf-outline);
+    border-radius: var(--bf-radius);
+    background: var(--bf-paper);
+    opacity: 0.55;
+    transform: scale(0.97);
+    transition: opacity 0.3s ease, transform 0.4s var(--bf-ease-pop), box-shadow 0.3s ease;
+  }
+
+  .bf-story__step.is-on {
+    opacity: 1;
+    transform: none;
+    box-shadow: var(--bf-shadow-lg);
+  }
+
+  .bf-story__num {
+    position: absolute;
+    top: -18px;
+    left: -10px;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-family: var(--bf-font-display);
+    font-weight: 800;
+    font-size: 1.2rem;
+  }
+
+  .bf-story__step h3 {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.45rem;
+    font-weight: 800;
+  }
+
+  .bf-story__step p {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--bf-ink-2);
+    line-height: 1.6;
+  }
+
+  .bf-story__stat {
+    display: inline-block;
+    margin-top: var(--sp-3, 0.75rem);
+    padding: 4px 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-mint-soft);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 859px) {
+    .bf-story__stage {
+      top: 72px;
+      z-index: 1;
+      width: min(100%, 320px);
+      margin: 0 auto;
+    }
+
+    .bf-story__steps {
+      gap: 45vh;
+      padding-bottom: 10vh;
+    }
+
+    .bf-story__copy {
+      position: relative;
+      z-index: 2;
+    }
+  }
+
+  @keyframes bf-story-tap { 50% { transform: scale(1.08); } }
+  @keyframes bf-story-sizzle { to { transform: translateY(-3px) rotate(2deg); } }
+  @keyframes bf-story-flame { to { transform: scaleY(1.25) translateY(-4px); } }
+  @keyframes bf-story-float { 50% { transform: translateY(-8px) rotate(6deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-story *,
+    .bf-story__map * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

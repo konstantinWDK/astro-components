@@ -1,0 +1,565 @@
+---
+/**
+ * GymClassBooking — Member class booking: pick a weekday, see each class with a capacity bar,
+ * then book, cancel or join the waitlist. Spots, the member's bookings list and the booking
+ * limit update live. Reads ?class=<id> to open that class's day and highlight it.
+ *
+ * @param {GymClass[]} classes - Weekly classes.
+ * @param {GymDiscipline[]} disciplines - Names and colours.
+ * @param {GymTrainer[]} trainers - Trainer names.
+ * @param {string[]} booked - Class ids the member already booked.
+ * @param {number} maxBookings - Max simultaneous bookings. Default 6.
+ * @param {string} variant - 'split' (list + "my bookings" side panel) | 'stacked'. Default 'split'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: days are a native radio group; each action button names its class
+ * ("Reservar Fuerza, lunes 07:00"); changes are announced in a live region; capacity is
+ * given as text ("9 de 12 plazas ocupadas"), the bar is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import {
+  gymClasses,
+  gymDisciplines,
+  gymTrainers,
+  gymDays,
+  gymMember,
+  gymEndTime,
+  type GymClass,
+  type GymDiscipline,
+  type GymTrainer,
+} from '../templates/gym/data';
+
+interface OwnProps {
+  classes?: GymClass[];
+  disciplines?: GymDiscipline[];
+  trainers?: GymTrainer[];
+  booked?: string[];
+  maxBookings?: number;
+  variant?: 'split' | 'stacked';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  classes = gymClasses,
+  disciplines = gymDisciplines,
+  trainers = gymTrainers,
+  booked = gymMember.bookings,
+  maxBookings = 6,
+  variant = 'split',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gcb-${Math.random().toString(36).slice(2, 8)}`;
+const disc = (id: string) => disciplines.find((d) => d.id === id);
+const trainer = (id: string) => trainers.find((t) => t.id === id);
+const sorted = [...classes].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+const describe = (c: GymClass) => `${disc(c.disciplineId)?.name}, ${gymDays[c.day].toLowerCase()} ${c.start}`;
+---
+
+<section
+  class:list={['gym-ui', 'gym-book', `gym-book--${variant}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-gym-booking
+  data-max={maxBookings}
+  {...rest}
+>
+  <p class="gym-sr" aria-live="polite" data-announce></p>
+  <div class="gym-book__main">
+    <h2 id={`${uid}-title`} class="gym-book__title">Reserva tu clase</h2>
+    <fieldset class="gym-book__days">
+      <legend class="gym-sr">Día</legend>
+      {gymDays.map((d, i) => (
+        <label class="gym-book__day">
+          <input type="radio" name={`${uid}-day`} value={i} checked={i === 0} data-day-input />
+          <span>
+            <span class="gym-book__day-long">{d}</span>
+            <span class="gym-book__day-short" aria-hidden="true">{d.slice(0, 3)}</span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
+
+    <ul class="gym-book__list" role="list">
+      {sorted.map((c) => {
+        const dd = disc(c.disciplineId);
+        const isBooked = booked.includes(c.id);
+        const taken = c.booked;
+        const full = taken >= c.capacity;
+        const action = isBooked ? 'Cancelar' : full ? 'Lista de espera' : 'Reservar';
+        return (
+          <li
+            class:list={['gym-slot', { 'is-booked': isBooked }]}
+            style={`--disc-hue:${dd?.hue ?? 74}`}
+            data-slot={c.id}
+            data-day={c.day}
+            data-capacity={c.capacity}
+            data-taken={taken}
+            data-label={describe(c)}
+            hidden={c.day !== 0}
+            tabindex="-1"
+          >
+            <span class="gym-slot__time">
+              <strong>{c.start}</strong>
+              <small>{gymEndTime(c.start, c.minutes)}</small>
+            </span>
+            <span class="gym-slot__body">
+              <span class="gym-slot__name">{dd?.name}{c.level !== 'Todos' && <small> · {c.level}</small>}</span>
+              <span class="gym-slot__meta">{trainer(c.trainerId)?.name} · {c.room}</span>
+              <span class="gym-slot__cap">
+                <span class="gym-slot__bar" aria-hidden="true"><i style={`width:${Math.min(100, (taken / c.capacity) * 100)}%`} data-bar></i></span>
+                <span data-cap-text>{taken} de {c.capacity} plazas ocupadas</span>
+              </span>
+            </span>
+            <button
+              type="button"
+              class:list={['gym-slot__btn', { 'is-secondary': isBooked || full }]}
+              aria-label={`${action}: ${describe(c)}`}
+              data-action={isBooked ? 'cancel' : full ? 'wait' : 'book'}
+            >
+              {action}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+    <p class="gym-book__empty" data-empty hidden>No hay clases este día.</p>
+  </div>
+
+  <aside class="gym-book__mine" aria-labelledby={`${uid}-mine`}>
+    <h2 id={`${uid}-mine`} class="gym-book__mine-title">
+      Mis reservas <span class="gym-book__mine-count" data-mine-count></span>
+    </h2>
+    <ul class="gym-book__mine-list" role="list" data-mine></ul>
+    <p class="gym-book__mine-empty" data-mine-empty>Aún no tienes clases reservadas.</p>
+    <p class="gym-book__policy">Cancela gratis hasta 2 horas antes. Si no vienes sin avisar, no podrás reservar durante 48 h.</p>
+  </aside>
+</section>
+
+<script>
+  function initBooking(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const max = Number(root.dataset.max || 6);
+    const slots = Array.from(root.querySelectorAll<HTMLElement>('[data-slot]'));
+    const announce = root.querySelector<HTMLElement>('[data-announce]')!;
+    const mine = root.querySelector<HTMLElement>('[data-mine]')!;
+    const dayInputs = Array.from(root.querySelectorAll<HTMLInputElement>('[data-day-input]'));
+    const waitlist = new Set<string>();
+
+    const bookedCount = () => slots.filter((s) => s.classList.contains('is-booked')).length;
+
+    const render = () => {
+      const limitReached = bookedCount() >= max;
+      for (const s of slots) {
+        const cap = Number(s.dataset.capacity);
+        const taken = Number(s.dataset.taken);
+        const isBooked = s.classList.contains('is-booked');
+        const full = taken >= cap;
+        const onWait = waitlist.has(s.dataset.slot!);
+        s.classList.toggle('is-full', full && !isBooked);
+        s.querySelector<HTMLElement>('[data-bar]')!.style.width = `${Math.min(100, (taken / cap) * 100)}%`;
+        s.querySelector('[data-cap-text]')!.textContent = full ? `Completa · ${cap} de ${cap} plazas` : `${taken} de ${cap} plazas ocupadas`;
+        const btn = s.querySelector<HTMLButtonElement>('[data-action]')!;
+        const label = s.dataset.label;
+        let text = 'Reservar';
+        let action = 'book';
+        if (isBooked) { text = 'Cancelar'; action = 'cancel'; }
+        else if (onWait) { text = 'Salir de la lista'; action = 'unwait'; }
+        else if (full) { text = 'Lista de espera'; action = 'wait'; }
+        btn.dataset.action = action;
+        btn.textContent = text;
+        btn.setAttribute('aria-label', `${text}: ${label}`);
+        btn.disabled = action === 'book' && limitReached;
+        btn.classList.toggle('is-secondary', action !== 'book');
+      }
+
+      mine.replaceChildren(
+        ...slots
+          .filter((s) => s.classList.contains('is-booked'))
+          .map((s) => {
+            const li = document.createElement('li');
+            li.textContent = s.dataset.label!;
+            return li;
+          }),
+      );
+      root.querySelector<HTMLElement>('[data-mine-empty]')!.hidden = bookedCount() > 0;
+      root.querySelector('[data-mine-count]')!.textContent = `${bookedCount()}/${max}`;
+    };
+
+    const showDay = (day: number) => {
+      let visible = 0;
+      for (const s of slots) {
+        const show = Number(s.dataset.day) === day;
+        s.hidden = !show;
+        if (show) visible += 1;
+      }
+      root.querySelector<HTMLElement>('[data-empty]')!.hidden = visible > 0;
+    };
+
+    dayInputs.forEach((input) => input.addEventListener('change', () => input.checked && showDay(Number(input.value))));
+
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-action]');
+      if (!btn || btn.disabled) return;
+      const slot = btn.closest<HTMLElement>('[data-slot]')!;
+      const id = slot.dataset.slot!;
+      const taken = Number(slot.dataset.taken);
+      const label = slot.dataset.label;
+      switch (btn.dataset.action) {
+        case 'book':
+          slot.classList.add('is-booked');
+          slot.dataset.taken = String(taken + 1);
+          announce.textContent = `Reservada: ${label}.`;
+          break;
+        case 'cancel':
+          slot.classList.remove('is-booked');
+          slot.dataset.taken = String(Math.max(0, taken - 1));
+          announce.textContent = `Reserva cancelada: ${label}.`;
+          break;
+        case 'wait':
+          waitlist.add(id);
+          announce.textContent = `En lista de espera: ${label}. Te avisaremos si se libera una plaza.`;
+          break;
+        case 'unwait':
+          waitlist.delete(id);
+          announce.textContent = `Has salido de la lista de espera: ${label}.`;
+          break;
+      }
+      render();
+      btn.focus();
+    });
+
+    // Open on today, or on the class given in ?class=
+    const wanted = new URLSearchParams(location.search).get('class');
+    const target = wanted ? slots.find((s) => s.dataset.slot === wanted) : undefined;
+    const day = target ? Number(target.dataset.day) : (new Date().getDay() + 6) % 7;
+    dayInputs[day].checked = true;
+    showDay(day);
+    render();
+    if (target) {
+      target.classList.add('is-target');
+      target.focus();
+    }
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-booking]').forEach(initBooking);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-book {
+    position: relative;
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-book__title,
+  .gym-book__mine-title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: 1.9rem;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .gym-book__days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--sp-1, 0.25rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: var(--sp-1, 0.25rem);
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--gym-surface);
+  }
+
+  .gym-book__day {
+    position: relative;
+  }
+
+  .gym-book__day input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .gym-book__day > span {
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    border-radius: var(--r-sm, 8px);
+    color: var(--gym-text-2);
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+
+  .gym-book__day-short {
+    display: none;
+  }
+
+  .gym-book__day input:checked + span {
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-book__day input:focus-visible + span {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-book__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-slot {
+    position: relative;
+    display: grid;
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: var(--sp-3, 0.75rem);
+    align-items: center;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--gym-border);
+    border-left: 4px solid hsl(var(--disc-hue) 80% 60%);
+    background: var(--gym-bg-raised);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .gym-slot[hidden] {
+    display: none;
+  }
+
+  .gym-slot.is-booked {
+    border-color: var(--gym-brand);
+    background:
+      linear-gradient(90deg, rgba(var(--gym-brand-rgb), 0.1), transparent 60%),
+      var(--gym-bg-raised);
+  }
+
+  .gym-slot.is-target {
+    box-shadow: 0 0 0 2px var(--gym-brand);
+  }
+
+  .gym-slot:focus {
+    outline: none;
+  }
+
+  .gym-slot__time {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gym-slot__time strong {
+    font-family: var(--gym-font-display);
+    font-size: 1.45rem;
+    line-height: 1;
+  }
+
+  .gym-slot__time small {
+    color: var(--gym-text-3);
+    font-size: 0.78rem;
+  }
+
+  .gym-slot__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .gym-slot__name {
+    font-weight: 700;
+  }
+
+  .gym-slot__name small {
+    color: var(--gym-text-3);
+    font-weight: 600;
+  }
+
+  .gym-slot__meta {
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-slot__cap {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--gym-text-2);
+    font-size: 0.8rem;
+  }
+
+  .gym-slot__bar {
+    flex: 0 0 80px;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--gym-surface-2);
+  }
+
+  .gym-slot__bar i {
+    display: block;
+    height: 100%;
+    background: var(--gym-ok);
+    transition: width 0.3s ease;
+  }
+
+  .gym-slot.is-full .gym-slot__bar i {
+    background: var(--gym-full);
+  }
+
+  .gym-slot__btn {
+    grid-column: 1 / -1;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 2px solid var(--gym-brand);
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font: inherit;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  .gym-slot__btn.is-secondary {
+    background: transparent;
+    border-color: var(--gym-border-strong);
+    color: var(--gym-text);
+  }
+
+  .gym-slot__btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .gym-slot__btn:focus-visible {
+    outline: 2px solid var(--gym-text);
+    outline-offset: 2px;
+  }
+
+  .gym-book__empty,
+  .gym-book__mine-empty {
+    margin: 0;
+    color: var(--gym-text-3);
+  }
+
+  .gym-book__empty[hidden],
+  .gym-book__mine-empty[hidden] {
+    display: none;
+  }
+
+  .gym-book__mine {
+    align-self: start;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-book__mine-title {
+    font-size: 1.5rem;
+  }
+
+  .gym-book__mine-count {
+    color: var(--gym-text-3);
+    font-family: var(--gym-font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .gym-book__mine-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-book__mine-list li {
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-surface);
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  .gym-book__policy {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--gym-text-3);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 640px) {
+    .gym-slot {
+      grid-template-columns: 68px minmax(0, 1fr) auto;
+    }
+
+    .gym-slot__btn {
+      grid-column: auto;
+      min-width: 150px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .gym-book__day-long {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .gym-book__day-short {
+      display: inline;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .gym-book--split {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+
+    .gym-book--split .gym-book__mine {
+      position: sticky;
+      top: var(--sp-6, 1.5rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gym-slot,
+    .gym-slot__bar i {
+      transition: none;
+    }
+  }
+</style>

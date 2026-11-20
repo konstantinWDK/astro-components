@@ -1,0 +1,257 @@
+---
+/**
+ * GymFooter — Gym footer with a full-width trial call to action, opening hours table,
+ * link columns, contact and legal row.
+ *
+ * @param {string} brand - Club name.
+ * @param {{title: string, href: string, label: string}} cta - Band at the top. Omit to hide.
+ * @param {Array<{days: string, time: string}>} hours - Opening hours rows.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {{address: string, phone: string, email: string}} contact - Club contact.
+ * @param {string} copyright - Copyright text.
+ * @param {string} variant - 'full' | 'minimal' (legal row only). Default 'full'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark; hours are a real table with a caption; link columns are
+ * labelled <nav>s; contact uses <address> with tel: and mailto: links.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymData } from '../templates/gym/data';
+
+interface OwnProps {
+  brand?: string;
+  cta?: { title: string; href: string; label: string };
+  hours?: Array<{ days: string; time: string }>;
+  columns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  contact?: { address: string; phone: string; email: string };
+  copyright?: string;
+  variant?: 'full' | 'minimal';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = gymData.brand.name,
+  cta = { title: 'Tu primera semana es gratis', href: '#', label: 'Empezar prueba' },
+  hours = [
+    { days: 'Lunes a viernes', time: '6:00 – 23:00' },
+    { days: 'Sábados', time: '8:00 – 21:00' },
+    { days: 'Domingos y festivos', time: '8:00 – 14:00' },
+  ],
+  columns = [
+    { title: 'Entrena', links: [{ label: 'Horario', href: '#' }, { label: 'Tarifas', href: '#' }, { label: 'Entrenadores', href: '#' }] },
+    { title: 'Socios', links: [{ label: 'Área de socios', href: '#' }, { label: 'Reservar clase', href: '#' }] },
+  ],
+  contact = gymData.brand,
+  copyright = `© ${new Date().getFullYear()} ${gymData.brand.legalName}`,
+  variant = 'full',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gf-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<footer class:list={['gym-ui', 'gym-footer', `gym-footer--${variant}`, classAttr]} {...rest}>
+  {variant === 'full' && cta && (
+    <div class="gym-footer__cta">
+      <p class="gym-footer__cta-title">{cta.title}</p>
+      <a href={cta.href} class="gym-footer__cta-btn">
+        {cta.label}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </a>
+    </div>
+  )}
+
+  {variant === 'full' && (
+    <div class="gym-footer__grid">
+      <div class="gym-footer__brand">
+        <p class="gym-footer__name">{brand}</p>
+        <address class="gym-footer__contact">
+          <span>{contact.address}</span>
+          <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+          <a href={`mailto:${contact.email}`}>{contact.email}</a>
+        </address>
+      </div>
+
+      <table class="gym-footer__hours" aria-labelledby={`${uid}-hours`}>
+        <caption id={`${uid}-hours`}>Horario</caption>
+        <tbody>
+          {hours.map((h) => (
+            <tr>
+              <th scope="row">{h.days}</th>
+              <td>{h.time}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {columns.map((c) => (
+        <nav aria-label={c.title} class="gym-footer__col">
+          <p class="gym-footer__heading">{c.title}</p>
+          <ul role="list">
+            {c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+          </ul>
+        </nav>
+      ))}
+    </div>
+  )}
+
+  <div class="gym-footer__legal">
+    <p>{copyright}</p>
+    <p>Sin permanencia · Precios con IVA incluido</p>
+  </div>
+</footer>
+
+<style>
+  .gym-footer {
+    padding: 0 var(--sp-4, 1rem);
+    background: var(--gym-bg-raised);
+    border-top: 1px solid var(--gym-border);
+    color: var(--gym-text-2);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-footer__cta {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-10, 2.5rem) 0;
+    border-bottom: 1px solid var(--gym-border);
+  }
+
+  .gym-footer__cta-title {
+    margin: 0;
+    color: var(--gym-text);
+    font-family: var(--gym-font-display);
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-footer__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+
+  .gym-footer__cta-btn:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-footer__grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem) 0;
+  }
+
+  .gym-footer__name {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--gym-text);
+    font-family: var(--gym-font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-footer__contact {
+    display: flex;
+    flex-direction: column;
+    font-style: normal;
+  }
+
+  .gym-footer__hours {
+    border-collapse: collapse;
+    align-self: start;
+    font-size: 0.92rem;
+  }
+
+  .gym-footer__hours caption,
+  .gym-footer__heading {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--gym-text);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .gym-footer__hours th {
+    padding: var(--sp-1, 0.25rem) var(--sp-4, 1rem) var(--sp-1, 0.25rem) 0;
+    font-weight: 500;
+    text-align: left;
+  }
+
+  .gym-footer__hours td {
+    color: var(--gym-text);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .gym-footer__col ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    color: var(--gym-text-2);
+    text-decoration: none;
+  }
+
+  .gym-footer a:hover {
+    color: var(--gym-brand);
+  }
+
+  .gym-footer .gym-footer__cta-btn {
+    color: var(--gym-on-brand);
+  }
+
+  .gym-footer a:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-footer__legal {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-top: 1px solid var(--gym-border);
+    color: var(--gym-text-3);
+    font-size: 0.82rem;
+  }
+
+  .gym-footer--minimal .gym-footer__legal {
+    border-top: 0;
+  }
+
+  .gym-footer__legal p {
+    margin: 0;
+  }
+</style>

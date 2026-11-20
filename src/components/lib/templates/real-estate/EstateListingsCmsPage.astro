@@ -1,15 +1,15 @@
 ---
 /**
- * EstateListingsCmsPage — Listings manager: inventory summary and a searchable, sortable
- * table with status filters (active, reserved, sold), price, views and leads per listing.
+ * EstateListingsCmsPage — Listings manager: inventory summary and EstateListingsTable
+ * (search, status filters, sorting by price, views, leads and days on market).
  *
  * @param {EstateRoutes} routes - Template route URLs.
  * @param {typeof estateData} data - Listings and agents.
  */
 import EstateAppLayout from './EstateAppLayout.astro';
-import PageHeader from '../../app/PageHeader.astro';
-import DataTable from '../../app/DataTable.astro';
-import { estateRoutes, estateData, estateTypeLabels, getEstateAgent, type EstateRoutes } from './data';
+import EstateCrmHeading from '../../app/EstateCrmHeading.astro';
+import EstateListingsTable from '../../app/EstateListingsTable.astro';
+import { estateRoutes, estateData, type EstateRoutes } from './data';
 
 interface Props {
   routes?: EstateRoutes;
@@ -18,25 +18,12 @@ interface Props {
 
 const { routes = estateRoutes, data = estateData } = Astro.props;
 
-const statusNames = { active: 'Activa', reserved: 'Reservada', sold: 'Vendida', draft: 'Borrador' } as const;
-
-const rows = data.properties.map((p) => ({
-  property: { name: p.title, sub: `${estateTypeLabels[p.type]} · ${p.zone}` },
-  operation: p.operation === 'sale' ? 'Venta' : 'Alquiler',
-  agent: getEstateAgent(p.agentId, data.agents)?.name ?? '—',
-  price: p.price,
-  status: statusNames[p.status],
-  views: p.views,
-  leads: p.leads,
-  days: p.publishedDays,
-}));
-
 const saleVolume = data.properties.filter((p) => p.operation === 'sale' && p.status !== 'sold').reduce((s, p) => s + p.price, 0);
 const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', notation: 'compact', maximumFractionDigits: 1 }).format(n);
 ---
 
 <EstateAppLayout title="Propiedades" current="listingsCms" routes={routes}>
-  <PageHeader
+  <EstateCrmHeading
     title="Propiedades"
     description="Gestiona la cartera: precios, estado y rendimiento de cada anuncio."
     breadcrumb={[{ label: 'CRM', href: routes.dashboard }, { label: 'Propiedades' }]}
@@ -44,7 +31,6 @@ const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', c
       { label: 'Exportar', icon: 'download' },
       { label: 'Nueva propiedad', icon: 'plus', primary: true },
     ]}
-    periods={[]}
   />
 
   <ul class="estate-ui estate-inv" role="list">
@@ -54,27 +40,7 @@ const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', c
     <li><span>Volumen en venta</span><strong>{eur(saleVolume)}</strong></li>
   </ul>
 
-  <DataTable
-    id="estate-listings"
-    title="Anuncios"
-    columns={[
-      { key: 'property', label: 'Propiedad', type: 'person', sortable: true },
-      { key: 'operation', label: 'Operación', sortable: true },
-      { key: 'agent', label: 'Agente', sortable: true },
-      { key: 'price', label: 'Precio', type: 'money', align: 'right', sortable: true },
-      { key: 'status', label: 'Estado', type: 'status' },
-      { key: 'views', label: 'Visitas', type: 'number', align: 'right', sortable: true },
-      { key: 'leads', label: 'Leads', type: 'number', align: 'right', sortable: true },
-      { key: 'days', label: 'Días publicada', type: 'number', align: 'right', sortable: true },
-    ]}
-    rows={rows}
-    statusTones={{ Activa: 'success', Reservada: 'warning', Vendida: 'default', Borrador: 'info' }}
-    filterKey="status"
-    bulkActions={['Exportar', 'Republicar en portales']}
-    searchPlaceholder="Buscar por título, barrio o agente…"
-    locale="es-ES"
-    emptyText="No hay propiedades con estos filtros."
-  />
+  <EstateListingsTable properties={data.properties} agents={data.agents} detailBase={routes.listings} title="Anuncios" />
 </EstateAppLayout>
 
 <style>

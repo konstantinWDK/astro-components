@@ -1,318 +1,271 @@
 ---
 /**
- * ConstructionSettingsPage — Contractor technical settings, ISO quality standards & safety certifications.
- * Configures company information, official building registry numbers, Passivhaus credentials, and subcontractor compliance rules.
+ * ConstructionSettingsPage — Technical and regulatory settings of the "Strukto" Site OS:
+ * company registry (REA, TRC insurance), active quality/sustainability certifications and
+ * site-alert thresholds (wind, daily log reminder, automatic certification lock).
  *
- * @param {ConstructionRoutes} routes - Template route paths.
+ * @param {ConstructionRoutes} routes - Template route URLs.
+ * @param {typeof constructionData} data - Company details.
+ * @param {string} action - Optional POST endpoint.
+ *
+ * Accessibility: grouped fieldsets with legends, native switches with role="switch", labelled
+ * inputs and a polite status announcement when saving.
  */
-import ConstructionLayout from './ConstructionLayout.astro';
+import ConstructionAppLayout from './ConstructionAppLayout.astro';
+import ConstructionOsHeading from '../../app/ConstructionOsHeading.astro';
 import { constructionRoutes, constructionData, type ConstructionRoutes } from './data';
 
 interface Props {
   routes?: ConstructionRoutes;
+  data?: typeof constructionData;
+  action?: string;
 }
 
-const { routes = constructionRoutes } = Astro.props;
-const comp = constructionData.company;
+const { routes = constructionRoutes, data = constructionData, action } = Astro.props;
+const c = data.company;
+const alerts = [
+  { id: 'wind', label: 'Parar grúa automáticamente con rachas > 35 km/h', checked: true },
+  { id: 'prl', label: 'Exigir checklist PRL completo antes de firmar el diario', checked: true },
+  { id: 'cert', label: 'Avisar a dirección si el desvío de certificación supera el 5 %', checked: true },
+  { id: 'digest', label: 'Enviar resumen diario de tajos a las 19:30', checked: false },
+];
 ---
 
-<ConstructionLayout
-  title="Ajustes Técnicos & Homologaciones"
-  current="settings"
-  routes={routes}
->
-  <div class="settings-header">
-    <div>
-      <span class="eyebrow">Configuración Empresarial &amp; Normativa</span>
-      <h1 class="page-title">Parámetros Técnicos, ISO & Subcontratación</h1>
-      <p class="page-sub">Gestión de acreditaciones oficiales, registros REA (Registro de Empresas Acreditadas), pólizas de seguro todo riesgo construcción y sellos ESG.</p>
-    </div>
+<ConstructionAppLayout title="Ajustes" current="settings" routes={routes}>
+  <ConstructionOsHeading
+    sheet="OS-05"
+    title="Ajustes técnicos"
+    description="Datos de la constructora, acreditaciones REA, pólizas y avisos automáticos de obra."
+  />
 
-    <div class="actions">
-      <button class="btn-save" type="button" onclick="alert('Configuración técnica y normativas guardadas con éxito.')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-          <polyline points="17 21 17 13 7 13 7 21"/>
-          <polyline points="7 3 7 8 15 8"/>
-        </svg>
-        <span>Guardar Cambios</span>
-      </button>
-    </div>
-  </div>
+  <form class="sk-ui sk-set" method="post" action={action} data-sk-set>
+    <fieldset class="sk-set__card sk-crop">
+      <legend>Identificación y registro</legend>
+      <div class="sk-set__grid">
+        <label>Razón social<input type="text" name="legalName" value={c.legalName} /></label>
+        <label>CIF<input type="text" name="cif" value="B-84992102" /></label>
+        <label>N.º Registro REA<input type="text" name="rea" value="REA-12/28/0094120" /></label>
+        <label>Póliza TRC<input type="text" name="trc" value="Mapfre Empresas · 12.000.000 €" /></label>
+        <label class="sk-set__full">Sede central<input type="text" name="address" value={c.address} /></label>
+        <label>Teléfono de obra<input type="tel" name="phone" value={c.phone} /></label>
+        <label>Correo técnico<input type="email" name="email" value={c.email} /></label>
+      </div>
+    </fieldset>
 
-  <div class="settings-grid">
-    <!-- Left Column: Company & Legal Details -->
-    <div class="settings-card">
-      <h2 class="card-title">Identificación de la Constructora</h2>
-      <p class="card-sub">Datos oficiales y colegiación técnica para visados y licitaciones.</p>
-
-      <form class="settings-form" onsubmit="event.preventDefault();">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Razón Social</label>
-            <input type="text" value={comp.name} />
-          </div>
-          <div class="form-group">
-            <label>CIF / NIF Empresarial</label>
-            <input type="text" value="B-84992102" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nº Registro REA (Construcción)</label>
-            <input type="text" value="REA-12/28/0094120" />
-          </div>
-          <div class="form-group">
-            <label>Póliza Todo Riesgo Construcción (TRC)</label>
-            <input type="text" value="Mapfre Empresas · Cobertura 12.000.000 €" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Dirección Sede Central</label>
-          <input type="text" value={comp.headquarters} />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Teléfono Oficial</label>
-            <input type="text" value={comp.phone} />
-          </div>
-          <div class="form-group">
-            <label>Email Técnico</label>
-            <input type="email" value={comp.email} />
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <!-- Right Column: Certifications & Safety -->
-    <div class="settings-card">
-      <h2 class="card-title">Certificaciones Técnicas Activas</h2>
-      <p class="card-sub">Sellos de calidad, sostenibilidad y prevención de riesgos laborales.</p>
-
-      <div class="certs-list">
-        {comp.certifications.map((cert) => (
-          <div class="cert-item">
-            <div class="cert-check">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
-            <div class="cert-info">
-              <span class="cert-name">{cert}</span>
-              <span class="cert-valid">Auditoría vigente 2026/2027 · AENOR / Passivhaus Institut</span>
-            </div>
-          </div>
+    <fieldset class="sk-set__card">
+      <legend>Certificaciones y normativa</legend>
+      <ul class="sk-set__certs" role="list">
+        {c.certifications.map((cert, i) => (
+          <li>
+            <label class="sk-set__switch">
+              <input type="checkbox" role="switch" name={`cert-${i}`} checked />
+              <span class="sk-set__track" aria-hidden="true"><i></i></span>
+              <span>{cert}</span>
+            </label>
+          </li>
         ))}
-      </div>
+      </ul>
+    </fieldset>
 
-      <div class="subcontract-rules-box">
-        <h3 class="rules-title">Requisitos Obligatorios Subcontratas (CAE)</h3>
-        <ul class="rules-list">
-          <li>Certificado de estar al corriente con Hacienda y Seguridad Social (mensual).</li>
-          <li>Acreditación de formación PRL de 20h para todos los trabajadores en tajo.</li>
-          <li>Apertura de centro de trabajo y designación de recurso preventivo.</li>
-          <li>Revisión de maquinaria y marcado CE con libro de mantenimiento al día.</li>
-        </ul>
-      </div>
+    <fieldset class="sk-set__card">
+      <legend>Reglas de obra y PRL</legend>
+      <ul class="sk-set__certs" role="list">
+        {alerts.map((rule) => (
+          <li>
+            <label class="sk-set__switch">
+              <input type="checkbox" role="switch" name={rule.id} checked={rule.checked} />
+              <span class="sk-set__track" aria-hidden="true"><i></i></span>
+              <span>{rule.label}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </fieldset>
+
+    <div class="sk-set__bar">
+      <p class="sk-mono" role="status" aria-live="polite" data-set-status>Sin cambios pendientes.</p>
+      <button type="submit" class="sk-set__save">Guardar configuración</button>
     </div>
-  </div>
-</ConstructionLayout>
+  </form>
+</ConstructionAppLayout>
 
 <style>
-  .settings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
+  .sk-set {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
   }
 
-  .eyebrow {
-    font-size: 0.76rem;
+  .sk-set__card {
+    margin: 0;
+    padding: 20px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+  }
+
+  .sk-set__card legend {
+    padding: 0 8px;
+    color: var(--sk-accent);
+    font-family: var(--sk-font-mono);
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #f59e0b;
-    font-weight: 700;
   }
 
-  .page-title {
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: #f8fafc;
-    margin: 0.25rem 0 0.35rem;
-  }
-
-  .page-sub {
-    font-size: 0.88rem;
-    color: #94a3b8;
-    margin: 0;
-    max-width: 760px;
-  }
-
-  .btn-save {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    background: #f59e0b;
-    color: #0f172a;
-    font-size: 0.84rem;
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .btn-save:hover {
-    background: #d97706;
-  }
-
-  .settings-grid {
+  .sk-set__grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
-  }
-
-  @media (min-width: 960px) {
-    .settings-grid {
-      grid-template-columns: 1.2fr 1fr;
-    }
-  }
-
-  .settings-card {
-    background: rgba(15, 23, 42, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 1.75rem;
-  }
-
-  .card-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin: 0 0 0.25rem;
-  }
-
-  .card-sub {
-    font-size: 0.82rem;
-    color: #94a3b8;
-    margin: 0 0 1.5rem;
-  }
-
-  .settings-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   @media (max-width: 600px) {
-    .form-row {
+    .sk-set__grid {
       grid-template-columns: 1fr;
     }
   }
 
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+  .sk-set__full {
+    grid-column: 1 / -1;
   }
 
-  .form-group label {
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: #cbd5e1;
-  }
-
-  .form-group input {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 0.6rem 0.85rem;
-    color: #f8fafc;
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .form-group input:focus {
-    border-color: #f59e0b;
-  }
-
-  .certs-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.75rem;
-  }
-
-  .cert-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 0.85rem;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .cert-check {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .cert-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .cert-name {
-    font-size: 0.86rem;
-    font-weight: 600;
-    color: #f8fafc;
-  }
-
-  .cert-valid {
+  .sk-set__grid label {
+    display: grid;
+    gap: 6px;
+    color: var(--sk-ink-2);
+    font-family: var(--sk-font-mono);
     font-size: 0.72rem;
-    color: #64748b;
+    text-transform: uppercase;
   }
 
-  .subcontract-rules-box {
-    padding: 1.25rem;
-    border-radius: 10px;
-    background: rgba(245, 158, 11, 0.07);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+  .sk-set__grid input {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: var(--sk-bg);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+    font-size: 0.92rem;
   }
 
-  .rules-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #f59e0b;
-    margin: 0 0 0.6rem;
+  .sk-set__grid input:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
   }
 
-  .rules-list {
+  .sk-set__certs {
+    display: grid;
+    gap: 12px;
     margin: 0;
-    padding-left: 1.25rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk-set__switch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    color: var(--sk-ink);
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+
+  .sk-set__switch input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-set__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 42px;
+    height: 24px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-bg);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .sk-set__track i {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: var(--sk-ink-3);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .sk-set__switch input:checked + .sk-set__track {
+    border-color: var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 22%, var(--sk-bg));
+  }
+
+  .sk-set__switch input:checked + .sk-set__track i {
+    transform: translateX(18px);
+    background: var(--sk-accent);
+  }
+
+  .sk-set__switch input:focus-visible + .sk-set__track {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-set__bar {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+  }
+
+  .sk-set__bar p {
+    margin: 0;
+    color: var(--sk-ink-2);
     font-size: 0.78rem;
-    color: #cbd5e1;
-    line-height: 1.6;
+  }
+
+  .sk-set__save {
+    min-height: 44px;
+    padding: 0 20px;
+    border: 1px solid var(--sk-accent);
+    border-radius: var(--sk-radius);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-family: var(--sk-font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-set__save:hover {
+    background: var(--sk-accent-hover);
+  }
+
+  .sk-set__save:focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 3px;
   }
 </style>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-sk-set]').forEach((form) => {
+    const status = form.querySelector<HTMLElement>('[data-set-status]');
+    form.addEventListener('input', () => {
+      if (status) status.textContent = 'Cambios sin guardar.';
+    });
+    form.addEventListener('submit', (e) => {
+      if (!form.getAttribute('action')) {
+        e.preventDefault();
+        if (status) status.textContent = `Configuración guardada (${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}).`;
+      }
+    });
+  });
+</script>

@@ -1,0 +1,589 @@
+---
+/**
+ * ConstructionCostEstimator — Construction budget estimator. Pick the type of works, area, floors,
+ * quality and extras, and the drawing next to it grows: the building gains floors and width, the
+ * extras appear (solar panels, pool, geothermal loop) and dimension lines update. The total counts
+ * to its new value and a stacked bar breaks it down into execution cost (PEM), overheads, profit,
+ * fees, licences and VAT, with an estimated duration.
+ *
+ * @param {number} defaultArea - Initial built area in m². Default 320.
+ * @param {string} contactHref - Contact page; the summary link carries the estimate in the query.
+ * @param {Record<string, number>} rates - €/m² execution cost per type (vivienda, plurifamiliar, rehabilitacion, industrial).
+ * @param {string} variant - 'split' (drawing + controls) | 'compact' (no drawing). Default 'split'.
+ * @param {string} size - 'md' | 'lg' total size. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: all inputs are native (radio cards, range with paired number field, checkboxes)
+ * with visible labels; the total and duration live in an aria-live region (debounced); the
+ * breakdown is a list with text values; the drawing is aria-hidden. Animations respect
+ * prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+
+interface OwnProps {
+  defaultArea?: number;
+  contactHref?: string;
+  rates?: Record<'vivienda' | 'plurifamiliar' | 'rehabilitacion' | 'industrial', number>;
+  variant?: 'split' | 'compact';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  defaultArea = 320,
+  contactHref = '#contacto',
+  rates = { vivienda: 1450, plurifamiliar: 1250, rehabilitacion: 980, industrial: 620 },
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const types = [
+  { id: 'vivienda', label: 'Vivienda unifamiliar' },
+  { id: 'plurifamiliar', label: 'Edificio plurifamiliar' },
+  { id: 'rehabilitacion', label: 'Rehabilitación integral' },
+  { id: 'industrial', label: 'Nave industrial' },
+];
+const qualities = [
+  { id: 'estandar', label: 'Estándar', k: 1 },
+  { id: 'alta', label: 'Alta', k: 1.18 },
+  { id: 'premium', label: 'Premium', k: 1.42 },
+];
+const extras = [
+  { id: 'solar', label: 'Fotovoltaica', price: 14000 },
+  { id: 'geo', label: 'Geotermia', price: 32000 },
+  { id: 'pool', label: 'Piscina', price: 38000 },
+  { id: 'smart', label: 'Domótica', price: 9500 },
+];
+const uid = `sk-est-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section
+  class:list={['sk-ui', 'sk-est', `sk-est--${variant}`, `sk-est--${size}`, classAttr]}
+  aria-labelledby={`${uid}-h`}
+  data-sk-est
+  data-rates={JSON.stringify(rates)}
+  data-q={JSON.stringify(Object.fromEntries(qualities.map((q) => [q.id, q.k])))}
+  data-x={JSON.stringify(Object.fromEntries(extras.map((x) => [x.id, x.price])))}
+  data-contact={contactHref}
+  {...rest}
+>
+  <h2 id={`${uid}-h`} class="sk-sr">Calculadora de presupuesto de obra</h2>
+  <div class="sk-est__grid">
+    <form class="sk-est__controls" data-form onsubmit="return false">
+      <fieldset class="sk-est__fs">
+        <legend class="sk-mono">01 · Tipo de obra</legend>
+        <div class="sk-est__types">
+          {types.map((t, i) => (
+            <label class="sk-est__radio">
+              <input type="radio" name="type" value={t.id} checked={i === 0} />
+              <span>{t.label}<small class="sk-mono">{rates[t.id as keyof typeof rates].toLocaleString('es-ES')} €/m²</small></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset class="sk-est__fs">
+        <legend class="sk-mono">02 · Dimensiones</legend>
+        <div class="sk-est__range">
+          <label for={`${uid}-a`}>Superficie construida</label>
+          <span class="sk-est__num">
+            <input type="number" min="40" max="6000" step="10" value={defaultArea} aria-label="Superficie en metros cuadrados" data-area-n />
+            <span aria-hidden="true">m²</span>
+          </span>
+          <input id={`${uid}-a`} type="range" min="40" max="6000" step="10" value={defaultArea} data-area />
+        </div>
+        <div class="sk-est__range">
+          <label for={`${uid}-f`}>Plantas sobre rasante</label>
+          <output for={`${uid}-f`} class="sk-mono" data-floors-out>2</output>
+          <input id={`${uid}-f`} type="range" min="1" max="10" step="1" value="2" data-floors />
+        </div>
+      </fieldset>
+
+      <fieldset class="sk-est__fs">
+        <legend class="sk-mono">03 · Calidades</legend>
+        <div class="sk-est__seg">
+          {qualities.map((q, i) => (
+            <label class="sk-est__radio sk-est__radio--seg">
+              <input type="radio" name="quality" value={q.id} checked={i === 1} />
+              <span>{q.label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset class="sk-est__fs">
+        <legend class="sk-mono">04 · Extras</legend>
+        <div class="sk-est__extras">
+          {extras.map((x) => (
+            <label class="sk-est__check">
+              <input type="checkbox" name="extra" value={x.id} />
+              <span>{x.label} <small class="sk-mono">+{x.price.toLocaleString('es-ES')} €</small></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="sk-est__out">
+      {variant === 'split' && (
+        <div class="sk-est__draw sk-grid-bg" aria-hidden="true">
+          <svg viewBox="0 0 300 220" class="sk-est__svg" data-svg>
+            <path d="M10 190H290" class="e-ground" />
+            <g data-bld></g>
+            <g class="e-extra e-extra--solar" data-ex="solar"></g>
+            <g class="e-extra e-extra--pool" data-ex="pool"><rect x="226" y="184" width="54" height="6" /><path d="M230 187h46" /></g>
+            <g class="e-extra e-extra--geo" data-ex="geo"><path d="M60 192v20h20v-20M90 192v20h20v-20" /></g>
+            <g class="e-extra e-extra--smart" data-ex="smart"><circle cx="40" cy="40" r="5" /><path d="M32 32a11 11 0 0 1 16 0M28 28a17 17 0 0 1 24 0" /></g>
+            <g data-dims></g>
+          </svg>
+        </div>
+      )}
+
+      <div class="sk-est__total" role="status" aria-live="polite" aria-atomic="true">
+        <p class="sk-est__label sk-mono">Presupuesto estimado (IVA incl.)</p>
+        <p class="sk-est__big" data-total>—</p>
+        <p class="sk-est__sub sk-mono"><span data-m2>—</span> · <span data-months>—</span></p>
+      </div>
+
+      <div class="sk-est__stack" aria-hidden="true" data-stack>
+        <i data-seg="pem"></i><i data-seg="gg"></i><i data-seg="bi"></i><i data-seg="fees"></i><i data-seg="lic"></i><i data-seg="iva"></i>
+      </div>
+      <ul class="sk-est__break sk-mono" role="list">
+        <li><i class="c-pem" aria-hidden="true"></i>Ejecución material (PEM)<b data-v="pem">—</b></li>
+        <li><i class="c-gg" aria-hidden="true"></i>Gastos generales 13 %<b data-v="gg">—</b></li>
+        <li><i class="c-bi" aria-hidden="true"></i>Beneficio industrial 6 %<b data-v="bi">—</b></li>
+        <li><i class="c-fees" aria-hidden="true"></i>Honorarios técnicos 8 %<b data-v="fees">—</b></li>
+        <li><i class="c-lic" aria-hidden="true"></i>Licencia e ICIO 4 %<b data-v="lic">—</b></li>
+        <li><i class="c-iva" aria-hidden="true"></i>IVA 10 %<b data-v="iva">—</b></li>
+      </ul>
+      <a href={contactHref} class="sk-est__cta" data-cta>Pedir presupuesto cerrado</a>
+      <p class="sk-est__note">Estimación orientativa para Madrid. El presupuesto cerrado se hace sobre proyecto y mediciones.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const eur = (n: number) => `${Math.round(n).toLocaleString('es-ES')} €`;
+
+  function initSkEst() {
+    document.querySelectorAll<HTMLElement>('[data-sk-est]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s);
+      const rates = JSON.parse(root.dataset.rates || '{}') as Record<string, number>;
+      const qk = JSON.parse(root.dataset.q || '{}') as Record<string, number>;
+      const xp = JSON.parse(root.dataset.x || '{}') as Record<string, number>;
+      const form = $<HTMLFormElement>('[data-form]')!;
+      const area = $<HTMLInputElement>('[data-area]')!;
+      const areaN = $<HTMLInputElement>('[data-area-n]')!;
+      const floors = $<HTMLInputElement>('[data-floors]')!;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let shown = 0;
+      let raf = 0;
+
+      const drawBuilding = (fl: number, m2: number, type: string, ex: string[]) => {
+        const bld = $('[data-bld]');
+        const dims = $('[data-dims]');
+        if (!bld || !dims) return;
+        const fh = Math.min(16, 150 / fl);
+        const w = Math.max(60, Math.min(200, 50 + Math.sqrt(m2 / fl) * 6));
+        const x0 = 150 - w / 2 - (ex.includes('pool') ? 24 : 0);
+        const top = 190 - fl * fh;
+        let s = '';
+        if (type === 'industrial') {
+          s += `<path d="M${x0} 190V${top + fh}L${x0 + w / 2} ${top}L${x0 + w} ${top + fh}V190" class="e-out"/>`;
+          for (let i = 1; i < 6; i++) s += `<path d="M${x0 + (w / 6) * i} 190V${top + fh * 0.9}" class="e-slab"/>`;
+        } else {
+          s += `<rect x="${x0}" y="${top}" width="${w}" height="${190 - top}" class="e-out"/>`;
+          for (let i = 1; i < fl; i++) s += `<path d="M${x0} ${top + i * fh}H${x0 + w}" class="e-slab"/>`;
+          const bays = Math.max(2, Math.round(w / 26));
+          for (let r = 0; r < fl; r++)
+            for (let c = 0; c < bays; c++) {
+              const bx = x0 + 6 + c * ((w - 12) / bays);
+              s += `<rect x="${bx.toFixed(1)}" y="${(top + r * fh + fh * 0.25).toFixed(1)}" width="${((w - 12) / bays - 6).toFixed(1)}" height="${(fh * 0.45).toFixed(1)}" class="e-win"/>`;
+            }
+          if (type === 'rehabilitacion') s += `<path d="M${x0 - 6} ${top}L${x0 + w / 2} ${top - 18}L${x0 + w + 6} ${top}" class="e-out"/>`;
+        }
+        bld.innerHTML = s;
+        const solar = $('[data-ex="solar"]');
+        if (solar) solar.innerHTML = `<path d="M${x0 + 8} ${top - 4}l10-8h22l-10 8zM${x0 + 44} ${top - 4}l10-8h22l-10 8z"/>`;
+        root.querySelectorAll<SVGGElement>('[data-ex]').forEach((g) => g.classList.toggle('is-on', ex.includes(g.dataset.ex!)));
+        const hm = (fl * 3.05).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+        dims.innerHTML = `<path d="M${x0 + w + 14} ${top}V190M${x0 + w + 9} ${top}h10M${x0 + w + 9} 190h10" class="e-dim"/><text x="${x0 + w + 20}" y="${(top + 190) / 2}" class="e-txt">${hm} m</text><path d="M${x0} 202H${x0 + w}M${x0} 197v10M${x0 + w} 197v10" class="e-dim"/><text x="${150 - (ex.includes('pool') ? 24 : 0)}" y="216" class="e-txt" text-anchor="middle">${Math.round(m2).toLocaleString('es-ES')} m² · ${fl} pl.</text>`;
+      };
+
+      const calc = () => {
+        const fd = new FormData(form);
+        const type = String(fd.get('type') ?? 'vivienda');
+        const q = String(fd.get('quality') ?? 'alta');
+        const ex = fd.getAll('extra').map(String);
+        const m2 = Math.max(40, Math.min(6000, Number(area.value)));
+        const fl = Number(floors.value);
+        $('[data-floors-out]')!.textContent = String(fl);
+        const pem = m2 * (rates[type] ?? 1200) * (qk[q] ?? 1) * (1 + Math.max(0, fl - 3) * 0.015) + ex.reduce((s, x) => s + (xp[x] ?? 0), 0);
+        const gg = pem * 0.13;
+        const bi = pem * 0.06;
+        const fees = pem * 0.08;
+        const lic = pem * 0.04;
+        const iva = (pem + gg + bi) * 0.1;
+        const total = pem + gg + bi + fees + lic + iva;
+        const months = Math.max(5, Math.round(6 + Math.sqrt(m2) / 4 + fl * 0.8));
+        const parts = { pem, gg, bi, fees, lic, iva };
+        Object.entries(parts).forEach(([k, v]) => {
+          $(`[data-v="${k}"]`)!.textContent = eur(v);
+          const seg = $<HTMLElement>(`[data-seg="${k}"]`);
+          if (seg) seg.style.flexGrow = String(v);
+        });
+        $('[data-m2]')!.textContent = `${eur(total / m2)}/m²`;
+        $('[data-months]')!.textContent = `${months} meses de obra`;
+        const cta = $<HTMLAnchorElement>('[data-cta]')!;
+        cta.href = `${root.dataset.contact}?tipo=${type}&m2=${m2}&plantas=${fl}&estimado=${Math.round(total)}`;
+        drawBuilding(fl, m2, type, ex);
+
+        cancelAnimationFrame(raf);
+        const from = shown;
+        const t0 = performance.now();
+        const step = (now: number) => {
+          const k = reduce ? 1 : Math.min(1, (now - t0) / 600);
+          const e = 1 - Math.pow(1 - k, 3);
+          shown = from + (total - from) * e;
+          $('[data-total]')!.textContent = eur(shown);
+          if (k < 1) raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      };
+
+      area.addEventListener('input', () => {
+        areaN.value = area.value;
+      });
+      areaN.addEventListener('input', () => {
+        if (Number(areaN.value) >= 40) area.value = areaN.value;
+      });
+      form.addEventListener('input', calc);
+      form.addEventListener('change', calc);
+      calc();
+    });
+  }
+  initSkEst();
+  document.addEventListener('astro:page-load', initSkEst);
+</script>
+
+<style>
+  .sk-est {
+    position: relative;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-est__grid {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  @media (min-width: 980px) {
+    .sk-est__grid {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  .sk-est__controls {
+    display: grid;
+    gap: 22px;
+    min-width: 0;
+  }
+
+  .sk-est__fs {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0 0 18px;
+    border: 0;
+    border-bottom: 1px solid var(--sk-line-soft);
+    min-width: 0;
+  }
+
+  .sk-est__fs legend {
+    margin-bottom: 10px;
+    color: var(--sk-accent);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .sk-est__types,
+  .sk-est__extras {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .sk-est__radio,
+  .sk-est__check {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .sk-est__radio input,
+  .sk-est__check input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .sk-est__radio span,
+  .sk-est__check span {
+    display: grid;
+    gap: 2px;
+    min-height: 48px;
+    height: 100%;
+    align-content: center;
+    padding: 8px 12px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+    font-size: 0.92rem;
+    box-sizing: border-box;
+  }
+
+  .sk-est__radio small,
+  .sk-est__check small {
+    color: var(--sk-ink-3);
+    font-size: 0.7rem;
+  }
+
+  .sk-est__radio input:checked + span,
+  .sk-est__check input:checked + span {
+    border-color: var(--sk-accent);
+    box-shadow: inset 0 0 0 1px var(--sk-accent);
+    background: color-mix(in srgb, var(--sk-accent) 12%, var(--sk-panel));
+  }
+
+  .sk-est__check input:checked + span::before {
+    content: '✓ ';
+    color: var(--sk-accent);
+  }
+
+  .sk-est__radio input:focus-visible + span,
+  .sk-est__check input:focus-visible + span,
+  .sk-est :is(input[type='range'], input[type='number'], a):focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-est__seg {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sk-est__radio--seg span {
+    justify-content: center;
+    text-align: center;
+    margin-left: -1px;
+  }
+
+  .sk-est__range {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 10px;
+  }
+
+  .sk-est__range label {
+    font-weight: 600;
+  }
+
+  .sk-est__range output {
+    font-size: 1.2rem;
+    color: var(--sk-accent);
+  }
+
+  .sk-est__range input[type='range'] {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--sk-accent);
+  }
+
+  .sk-est__num {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sk-font-mono);
+  }
+
+  .sk-est__num input {
+    width: 6rem;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    border-bottom: 1px solid var(--sk-line);
+    background: var(--sk-fill);
+    color: var(--sk-accent);
+    font: inherit;
+    font-size: 1.05rem;
+    text-align: right;
+  }
+
+  .sk-est__out {
+    position: relative;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  @media (min-width: 980px) {
+    .sk-est__out {
+      position: sticky;
+      top: 90px;
+    }
+  }
+
+  .sk-est__draw {
+    border: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-est__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sk-est__svg :global(.e-out) { fill: color-mix(in srgb, var(--sk-line) 8%, transparent); stroke: var(--sk-line); stroke-width: 1.5; }
+  .sk-est__svg :global(.e-slab) { stroke: var(--sk-line-soft); }
+  .sk-est__svg :global(.e-win) { fill: none; stroke: var(--sk-line); stroke-width: 0.8; }
+  .sk-est__svg :global(.e-dim) { stroke: var(--sk-accent); fill: none; }
+  .sk-est__svg :global(.e-txt) { fill: var(--sk-accent); font-family: var(--sk-font-mono); font-size: 9px; }
+  .sk-est__svg .e-ground { stroke: var(--sk-line); stroke-width: 1.5; }
+  .sk-est__svg [data-bld] { transition: transform 0.5s var(--sk-ease); }
+  .sk-est__svg .e-extra { opacity: 0; transform: translateY(6px); transition: opacity 0.4s ease, transform 0.4s var(--sk-ease); }
+  .sk-est__svg .e-extra.is-on { opacity: 1; transform: none; }
+  .sk-est__svg .e-extra--solar :global(path) { fill: color-mix(in srgb, var(--sk-line) 40%, transparent); stroke: var(--sk-line); }
+  .sk-est__svg .e-extra--pool rect { fill: color-mix(in srgb, var(--sk-line) 45%, transparent); stroke: var(--sk-line); }
+  .sk-est__svg .e-extra--pool path { stroke: var(--sk-bg); }
+  .sk-est__svg .e-extra--geo path { fill: none; stroke: var(--sk-accent); stroke-dasharray: 3 2; }
+  .sk-est__svg .e-extra--smart :is(circle, path) { fill: none; stroke: var(--sk-ok); }
+
+  .sk-est__total {
+    padding: 14px 16px;
+    border: 1px solid var(--sk-line);
+    background: var(--sk-panel);
+  }
+
+  .sk-est__label {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-est__big {
+    margin: 4px 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: clamp(2rem, 7vw, 3rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .sk-est--lg .sk-est__big {
+    font-size: clamp(2.4rem, 9vw, 4rem);
+  }
+
+  .sk-est__sub {
+    margin: 0;
+    color: var(--sk-accent);
+    font-size: 0.82rem;
+  }
+
+  .sk-est__stack {
+    display: flex;
+    height: 14px;
+    border: 1px solid var(--sk-line);
+  }
+
+  .sk-est__stack i {
+    flex: 1 1 0;
+    transition: flex-grow 0.6s var(--sk-ease);
+  }
+
+  .sk-est__stack i + i {
+    border-left: 1px solid var(--sk-bg);
+  }
+
+  [data-seg='pem'], .c-pem { background: var(--sk-line); }
+  [data-seg='gg'], .c-gg { background: color-mix(in srgb, var(--sk-line) 55%, transparent); }
+  [data-seg='bi'], .c-bi { background: color-mix(in srgb, var(--sk-line) 30%, transparent); }
+  [data-seg='fees'], .c-fees { background: var(--sk-ok); }
+  [data-seg='lic'], .c-lic { background: var(--sk-warn); }
+  [data-seg='iva'], .c-iva { background: var(--sk-accent); }
+
+  .sk-est__break {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.78rem;
+  }
+
+  .sk-est__break li {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--sk-line-soft);
+    color: var(--sk-ink-2);
+  }
+
+  .sk-est__break i {
+    width: 12px;
+    height: 12px;
+  }
+
+  .sk-est__break b {
+    color: var(--sk-ink);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sk-est__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    padding: 0 1.3rem;
+    border: 1px solid var(--sk-accent);
+    border-radius: var(--sk-radius);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+    font-family: var(--sk-font-mono);
+    font-weight: 600;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .sk-est__cta:hover {
+    background: var(--sk-accent-hover);
+  }
+
+  .sk-est__note {
+    margin: 0;
+    color: var(--sk-ink-3);
+    font-size: 0.85rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-est *,
+    .sk-est__svg * {
+      transition: none !important;
+    }
+  }
+</style>

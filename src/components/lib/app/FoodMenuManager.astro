@@ -1,0 +1,520 @@
+---
+/**
+ * FoodMenuManager — Menu CMS for the kitchen: one card per dish with an "86" switch (sold out on
+ * every channel at once), inline price editing with +/− steps, category filter, search and a
+ * live "unsaved changes" bar with save and discard. Sold-out dishes slide to a strip at the top so
+ * the pass always sees what is off.
+ *
+ * @param {FoodDish[]} dishes - Dishes to manage.
+ * @param {FoodCategory[]} categories - Category labels for the filter.
+ * @param {string} action - Optional form action; the save button posts the changes as JSON in `changes`.
+ * @param {string} variant - 'cards' | 'rows'. Default 'cards'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every switch is a native checkbox with role="switch" and a name ("Disponible:
+ * Doble Smash"); prices are labelled number inputs; the change counter and save result are
+ * announced politely; filters are a labelled select and search field.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/food-delivery/food-theme.css';
+import { foodArt } from '../templates/food-delivery/food-art';
+import { foodDishes, foodCategories, type FoodDish, type FoodCategory } from '../templates/food-delivery/data';
+
+interface OwnProps {
+  dishes?: FoodDish[];
+  categories?: FoodCategory[];
+  action?: string;
+  variant?: 'cards' | 'rows';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'form'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  dishes = foodDishes,
+  categories = foodCategories,
+  action,
+  variant = 'cards',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const catLabel = Object.fromEntries(categories.map((c) => [c.id, c.label]));
+const uid = `bf-mm-${Math.random().toString(36).slice(2, 7)}`;
+const outCount = dishes.filter((d) => !d.available).length;
+---
+
+<form class:list={['bf-ui', 'bf-mm', `bf-mm--${variant}`, `bf-mm--${size}`, classAttr]} method="post" action={action} data-bf-mm {...rest}>
+  <input type="hidden" name="changes" data-changes />
+  <div class="bf-mm__tools">
+    <label class="bf-mm__search">
+      <span class="bf-sr">Buscar plato</span>
+      <input type="search" placeholder="Buscar plato…" data-q />
+    </label>
+    <label class="bf-mm__select">
+      <span>Categoría</span>
+      <select data-cat>
+        <option value="all">Todas</option>
+        {categories.map((c) => <option value={c.id}>{c.label}</option>)}
+      </select>
+    </label>
+    <p class="bf-mm__out" data-out-summary><strong data-out-n>{outCount}</strong> agotados hoy (86)</p>
+  </div>
+
+  <ul class="bf-mm__grid" role="list" data-grid>
+    {dishes.map((d) => (
+      <li class:list={['bf-mm__card', { 'is-out': !d.available }]} data-card data-id={d.id} data-cat={d.category} data-name={d.name.toLowerCase()} style={`order:${d.available ? 1 : 0}`}>
+        <span class="bf-mm__art" aria-hidden="true"><svg class="bf-art" viewBox="0 0 120 120" set:html={foodArt(d.art)} /></span>
+        <div class="bf-mm__info">
+          <h3 class="bf-mm__name">{d.name}</h3>
+          <p class="bf-mm__meta">{catLabel[d.category] ?? d.category} · {d.prepMin} min · {d.kcal} kcal</p>
+          <span class="bf-mm__flag">Agotado</span>
+        </div>
+        <div class="bf-mm__price">
+          <label for={`${uid}-${d.id}-p`} class="bf-sr">Precio de {d.name} en euros</label>
+          <button type="button" class="bf-mm__step" data-step="-0.5" aria-label={`Bajar 50 céntimos ${d.name}`}>−</button>
+          <input id={`${uid}-${d.id}-p`} type="number" inputmode="decimal" min="0" step="0.1" value={d.price.toFixed(2)} data-price data-orig={d.price.toFixed(2)} />
+          <span class="bf-mm__eur" aria-hidden="true">€</span>
+          <button type="button" class="bf-mm__step" data-step="0.5" aria-label={`Subir 50 céntimos ${d.name}`}>+</button>
+        </div>
+        <label class="bf-mm__switch">
+          <input type="checkbox" role="switch" checked={d.available} data-avail data-orig={d.available ? '1' : '0'} />
+          <span class="bf-mm__track" aria-hidden="true"><i></i></span>
+          <span class="bf-mm__switch-label">Disponible<span class="bf-sr">: {d.name}</span></span>
+        </label>
+      </li>
+    ))}
+  </ul>
+
+  <div class="bf-mm__savebar" data-bar hidden>
+    <p role="status" aria-live="polite" data-pending>0 cambios sin guardar</p>
+    <button type="button" class="bf-mm__btn" data-discard>Descartar</button>
+    <button type="submit" class="bf-mm__btn bf-mm__btn--primary">Guardar en todos los canales</button>
+  </div>
+  <p class="bf-sr" role="status" aria-live="polite" data-saved></p>
+</form>
+
+<script>
+  function initFoodMm() {
+    document.querySelectorAll<HTMLFormElement>('[data-bf-mm]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const cards = [...root.querySelectorAll<HTMLElement>('[data-card]')];
+      const q = $<HTMLInputElement>('[data-q]');
+      const cat = $<HTMLSelectElement>('[data-cat]');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const changes = () =>
+        cards
+          .map((c) => {
+            const p = c.querySelector<HTMLInputElement>('[data-price]')!;
+            const a = c.querySelector<HTMLInputElement>('[data-avail]')!;
+            const price = Number(p.value);
+            const avail = a.checked;
+            const dp = Math.abs(price - Number(p.dataset.orig)) > 0.001;
+            const da = avail !== (a.dataset.orig === '1');
+            return dp || da ? { id: c.dataset.id, ...(dp ? { price } : {}), ...(da ? { available: avail } : {}) } : null;
+          })
+          .filter(Boolean);
+
+      const refresh = () => {
+        const list = changes();
+        $('[data-bar]').hidden = !list.length;
+        $('[data-pending]').textContent = list.length === 1 ? '1 cambio sin guardar' : `${list.length} cambios sin guardar`;
+        const out = cards.filter((c) => !c.querySelector<HTMLInputElement>('[data-avail]')!.checked).length;
+        $('[data-out-n]').textContent = String(out);
+        cards.forEach((c) => {
+          const p = c.querySelector<HTMLInputElement>('[data-price]')!;
+          c.classList.toggle('is-dirty', Math.abs(Number(p.value) - Number(p.dataset.orig)) > 0.001);
+        });
+      };
+
+      const filter = () => {
+        const term = q.value.trim().toLowerCase();
+        cards.forEach((c) => {
+          c.hidden = !((cat.value === 'all' || c.dataset.cat === cat.value) && (!term || (c.dataset.name ?? '').includes(term)));
+        });
+      };
+      q.addEventListener('input', filter);
+      cat.addEventListener('change', filter);
+
+      const reorder = (card: HTMLElement, out: boolean) => {
+        const first = card.getBoundingClientRect();
+        card.classList.toggle('is-out', out);
+        card.style.order = out ? '0' : '1';
+        if (reduce || !card.animate) return;
+        const last = card.getBoundingClientRect();
+        card.animate(
+          [{ transform: `translate(${first.left - last.left}px, ${first.top - last.top}px)` }, { transform: 'none' }],
+          { duration: 450, easing: 'cubic-bezier(.34,1.56,.64,1)' },
+        );
+      };
+
+      root.addEventListener('change', (e) => {
+        const t = e.target as HTMLInputElement;
+        if (t.matches('[data-avail]')) reorder(t.closest<HTMLElement>('[data-card]')!, !t.checked);
+        refresh();
+      });
+      root.addEventListener('input', (e) => {
+        if ((e.target as HTMLElement).matches('[data-price]')) refresh();
+      });
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-step]');
+        if (!b) return;
+        const input = b.parentElement!.querySelector<HTMLInputElement>('[data-price]')!;
+        input.value = Math.max(0, Number(input.value) + Number(b.dataset.step)).toFixed(2);
+        refresh();
+      });
+      $('[data-discard]').addEventListener('click', () => {
+        cards.forEach((c) => {
+          const p = c.querySelector<HTMLInputElement>('[data-price]')!;
+          const a = c.querySelector<HTMLInputElement>('[data-avail]')!;
+          p.value = p.dataset.orig!;
+          const orig = a.dataset.orig === '1';
+          if (a.checked !== orig) {
+            a.checked = orig;
+            reorder(c, !orig);
+          }
+        });
+        refresh();
+      });
+      root.addEventListener('submit', (e) => {
+        const list = changes();
+        $<HTMLInputElement>('[data-changes]').value = JSON.stringify(list);
+        if (root.getAttribute('action')) return;
+        e.preventDefault();
+        cards.forEach((c) => {
+          const p = c.querySelector<HTMLInputElement>('[data-price]')!;
+          const a = c.querySelector<HTMLInputElement>('[data-avail]')!;
+          p.dataset.orig = Number(p.value).toFixed(2);
+          a.dataset.orig = a.checked ? '1' : '0';
+        });
+        $('[data-saved]').textContent = `Guardado: ${list.length} cambios publicados en web, app y agregadores.`;
+        root.classList.add('is-saved');
+        window.setTimeout(() => root.classList.remove('is-saved'), 1200);
+        refresh();
+      });
+    });
+  }
+  initFoodMm();
+  document.addEventListener('astro:page-load', initFoodMm);
+</script>
+
+<style>
+  .bf-mm {
+    position: relative;
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+  }
+
+  .bf-mm__tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-5, 1.25rem);
+  }
+
+  .bf-mm__search {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+
+  .bf-mm__search input,
+  .bf-mm__select select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 14px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .bf-mm__select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+
+  .bf-mm__select select {
+    width: auto;
+  }
+
+  .bf-mm__out {
+    margin: 0;
+    padding: 8px 14px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-pink-soft);
+    font-weight: 700;
+  }
+
+  .bf-mm :is(input, select, button):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-mm__grid {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-mm--cards .bf-mm__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+
+  .bf-mm__card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 10px 12px;
+    align-items: center;
+    padding: 12px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 18px;
+    background: var(--bf-paper);
+    box-shadow: 3px 3px 0 var(--bf-outline);
+    transition: background 0.2s ease;
+  }
+
+  .bf-mm--lg .bf-mm__card {
+    grid-template-columns: 88px 1fr;
+  }
+
+  .bf-mm--rows .bf-mm__card {
+    grid-template-columns: 56px 1fr auto auto;
+  }
+
+  .bf-mm__card.is-out {
+    background: repeating-linear-gradient(-45deg, var(--bf-paper) 0 12px, var(--bf-bg-2) 12px 24px);
+  }
+
+  .bf-mm__card.is-dirty {
+    border-style: dashed;
+  }
+
+  .bf-mm__art svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .bf-mm__card.is-out .bf-mm__art {
+    filter: grayscale(1);
+    opacity: 0.55;
+  }
+
+  .bf-mm__info {
+    min-width: 0;
+  }
+
+  .bf-mm__name {
+    margin: 0;
+    font-family: var(--bf-font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  .bf-mm__meta {
+    margin: 2px 0 0;
+    color: var(--bf-ink-3);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .bf-mm__flag {
+    display: none;
+    margin-top: 4px;
+    padding: 1px 8px;
+    border-radius: 99px;
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .bf-mm__card.is-out .bf-mm__flag {
+    display: inline-block;
+  }
+
+  .bf-mm__price {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bf-mm--cards .bf-mm__price,
+  .bf-mm--cards .bf-mm__switch {
+    grid-column: span 2;
+  }
+
+  .bf-mm--cards .bf-mm__price {
+    justify-self: start;
+  }
+
+  .bf-mm__step {
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    font: inherit;
+    font-size: 1.2rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-mm__price input {
+    width: 5.5rem;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .bf-mm__eur {
+    font-weight: 800;
+  }
+
+  .bf-mm__switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bf-mm__switch input {
+    position: absolute;
+    opacity: 0;
+    width: 52px;
+    height: 32px;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .bf-mm__track {
+    position: relative;
+    width: 52px;
+    height: 32px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-bg-2);
+    transition: background 0.2s ease;
+  }
+
+  .bf-mm__track i {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-paper);
+    transition: transform 0.3s var(--bf-ease-pop);
+  }
+
+  .bf-mm__switch input:checked + .bf-mm__track {
+    background: var(--bf-mint);
+  }
+
+  .bf-mm__switch input:checked + .bf-mm__track i {
+    transform: translateX(20px);
+  }
+
+  .bf-mm__switch input:focus-visible + .bf-mm__track {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-mm__savebar {
+    position: sticky;
+    bottom: var(--sp-4, 1rem);
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--sp-5, 1.25rem);
+    padding: 10px 12px 10px 18px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 20px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    box-shadow: var(--bf-shadow);
+    animation: bf-mm-up 0.35s var(--bf-ease-pop);
+  }
+
+  .bf-mm__savebar[hidden] {
+    display: none;
+  }
+
+  .bf-mm__savebar p {
+    flex: 1 1 160px;
+    margin: 0;
+    font-weight: 800;
+  }
+
+  .bf-mm__btn {
+    min-height: 48px;
+    padding: 0 1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-mm__btn--primary {
+    background: var(--bf-ink);
+    color: var(--bf-bg);
+  }
+
+  .bf-mm.is-saved .bf-mm__card {
+    animation: bf-mm-flash 0.8s ease;
+  }
+
+  @keyframes bf-mm-up { from { transform: translateY(30px); opacity: 0; } }
+  @keyframes bf-mm-flash { 30% { background: var(--bf-mint-soft); } }
+
+  @media (max-width: 640px) {
+    .bf-mm--rows .bf-mm__card {
+      grid-template-columns: 56px 1fr;
+    }
+
+    .bf-mm--rows .bf-mm__price,
+    .bf-mm--rows .bf-mm__switch {
+      grid-column: span 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-mm * ,
+    .bf-mm.is-saved .bf-mm__card {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

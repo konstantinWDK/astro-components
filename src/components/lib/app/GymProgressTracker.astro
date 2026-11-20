@@ -1,0 +1,360 @@
+---
+/**
+ * GymProgressTracker — Member progress dashboard: monthly sessions goal ring, weekly streak,
+ * sessions per week (last 8 weeks), personal records with change, and body-weight trend.
+ * Server-rendered SVG, no JavaScript.
+ *
+ * @param {typeof gymMember} member - Member stats (see the template's data.ts).
+ * @param {string} bookingHref - "Book next class" link. Omit to hide it.
+ * @param {string} variant - 'grid' (cards) | 'compact' (goal, streak and records only). Default 'grid'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each chart has a text alternative (role="img" with a summary label), the
+ * weekly sessions are also listed in a visually hidden table, and deltas are written in words.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymMember } from '../templates/gym/data';
+
+type Member = typeof gymMember;
+
+interface OwnProps {
+  member?: Member;
+  bookingHref?: string;
+  variant?: 'grid' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { member = gymMember, bookingHref, variant = 'grid', class: classAttr, ...rest } = Astro.props;
+
+const uid = `gpt-${Math.random().toString(36).slice(2, 8)}`;
+const pct = Math.min(1, member.visitsThisMonth / member.visitsGoal);
+const R = 52;
+const C = 2 * Math.PI * R;
+const maxWeek = Math.max(4, ...member.weekly);
+const fmt = (n: number) => n.toLocaleString('es-ES');
+
+const w = member.weight;
+const wMin = Math.min(...w) - 0.5;
+const wMax = Math.max(...w) + 0.5;
+const points = w.map((v, i) => `${(i / (w.length - 1)) * 280 + 10},${70 - ((v - wMin) / (wMax - wMin)) * 60}`).join(' ');
+const wDelta = w[w.length - 1] - w[0];
+const deltaOf = (r: { unit: string; delta: number }) => ({
+  better: r.unit === 'min' ? r.delta < 0 : r.delta > 0,
+  sign: r.delta > 0 ? '+' : '−',
+});
+const remaining = member.visitsGoal - member.visitsThisMonth;
+const goalText = remaining > 0 ? `Te faltan ${remaining} sesiones para cumplirlo.` : '¡Objetivo cumplido!';
+const weightText = `${wDelta < 0 ? 'Has bajado' : 'Has subido'} ${fmt(Math.abs(Math.round(wDelta * 10) / 10))} kg desde el primer registro`;
+---
+
+<section class:list={['gym-ui', 'gym-prog', `gym-prog--${variant}`, classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <h2 id={`${uid}-title`} class="gym-sr">Tu progreso</h2>
+
+  <article class="gym-prog__card gym-prog__goal">
+    <h3 class="gym-prog__label">Objetivo del mes</h3>
+    <div class="gym-prog__ring-wrap">
+      <svg class="gym-prog__ring" viewBox="0 0 120 120" role="img" aria-label={`${member.visitsThisMonth} de ${member.visitsGoal} sesiones este mes`}>
+        <circle cx="60" cy="60" r={R} class="gym-prog__ring-bg" />
+        <circle
+          cx="60"
+          cy="60"
+          r={R}
+          class="gym-prog__ring-fg"
+          stroke-dasharray={`${C * pct} ${C}`}
+          transform="rotate(-90 60 60)"
+        />
+      </svg>
+      <p class="gym-prog__ring-text" aria-hidden="true">
+        <strong>{member.visitsThisMonth}</strong>
+        <span>de {member.visitsGoal}</span>
+      </p>
+    </div>
+    <p class="gym-prog__hint">
+      {goalText}
+    </p>
+    {bookingHref && <a href={bookingHref} class="gym-prog__cta">Reservar siguiente clase</a>}
+  </article>
+
+  <article class="gym-prog__card gym-prog__streak">
+    <h3 class="gym-prog__label">Racha</h3>
+    <p class="gym-prog__big">{member.streakWeeks}<small> semanas</small></p>
+    <p class="gym-prog__hint">seguidas con 2 o más sesiones</p>
+    <p class="gym-prog__goal-text">Meta: {member.goal}</p>
+  </article>
+
+  {variant === 'grid' && (
+    <article class="gym-prog__card gym-prog__weeks">
+      <h3 class="gym-prog__label">Sesiones por semana</h3>
+      <svg class="gym-prog__bars" viewBox="0 0 300 110" role="img" aria-label={`Sesiones en las últimas 8 semanas: ${member.weekly.join(', ')}`}>
+        {member.weekly.map((v, i) => {
+          const h = (v / maxWeek) * 80;
+          return (
+            <g>
+              <rect x={i * 37 + 6} y={90 - h} width="26" height={h} rx="4" class:list={['gym-prog__bar', { 'is-last': i === member.weekly.length - 1 }]} />
+              <text x={i * 37 + 19} y={86 - h} text-anchor="middle" class="gym-prog__bar-val">{v}</text>
+              <text x={i * 37 + 19} y="106" text-anchor="middle" class="gym-prog__bar-lbl">{i === member.weekly.length - 1 ? 'Esta' : `-${member.weekly.length - 1 - i}`}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <table class="gym-sr">
+        <caption>Sesiones por semana</caption>
+        <tr><th scope="col">Semana</th><th scope="col">Sesiones</th></tr>
+        {member.weekly.map((v, i) => (
+          <tr><td>{i === member.weekly.length - 1 ? 'Esta semana' : `Hace ${member.weekly.length - 1 - i} semanas`}</td><td>{v}</td></tr>
+        ))}
+      </table>
+    </article>
+  )}
+
+  <article class="gym-prog__card gym-prog__records">
+    <h3 class="gym-prog__label">Marcas personales</h3>
+    <ul class="gym-prog__list" role="list">
+      {member.records.map((r) => {
+        const { better, sign } = deltaOf(r);
+        return (
+          <li>
+            <span class="gym-prog__lift">{r.lift}</span>
+            <span class="gym-prog__value">{fmt(r.value)} {r.unit}</span>
+            <span class:list={['gym-prog__delta', better ? 'is-up' : 'is-down']}>
+              <span aria-hidden="true">{sign}{fmt(Math.abs(r.delta))}</span>
+              <span class="gym-sr">{better ? 'mejora de' : 'empeora'} {fmt(Math.abs(r.delta))} {r.unit}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  </article>
+
+  {variant === 'grid' && (
+    <article class="gym-prog__card gym-prog__weight">
+      <h3 class="gym-prog__label">Peso corporal · 6 meses</h3>
+      <p class="gym-prog__big">{fmt(w[w.length - 1])}<small> kg</small></p>
+      <p class="gym-prog__hint">{weightText}</p>
+      <svg class="gym-prog__spark" viewBox="0 0 300 80" role="img" aria-label={`Peso en los últimos 6 meses: ${w.map(fmt).join(', ')} kg`} preserveAspectRatio="none">
+        <polyline points={points} class="gym-prog__line" />
+        {w.map((v, i) => (
+          <circle cx={(i / (w.length - 1)) * 280 + 10} cy={70 - ((v - wMin) / (wMax - wMin)) * 60} r="3.5" class="gym-prog__dot" />
+        ))}
+      </svg>
+    </article>
+  )}
+</section>
+
+<style>
+  .gym-prog {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: var(--sp-4, 1rem);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-prog__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+    min-width: 0;
+  }
+
+  .gym-prog__label {
+    margin: 0;
+    color: var(--gym-text-3);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .gym-prog__ring-wrap {
+    position: relative;
+    width: 140px;
+    margin: var(--sp-2, 0.5rem) auto;
+  }
+
+  .gym-prog__ring {
+    display: block;
+    width: 100%;
+  }
+
+  .gym-prog__ring-bg {
+    fill: none;
+    stroke: var(--gym-surface-2);
+    stroke-width: 12;
+  }
+
+  .gym-prog__ring-fg {
+    fill: none;
+    stroke: var(--gym-brand);
+    stroke-width: 12;
+    stroke-linecap: round;
+  }
+
+  .gym-prog__ring-text {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    margin: 0;
+    text-align: center;
+  }
+
+  .gym-prog__ring-text strong {
+    font-family: var(--gym-font-display);
+    font-size: 2.6rem;
+    line-height: 1;
+  }
+
+  .gym-prog__ring-text span {
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-prog__hint {
+    margin: 0;
+    color: var(--gym-text-2);
+    font-size: 0.88rem;
+  }
+
+  .gym-prog__goal {
+    text-align: center;
+  }
+
+  .gym-prog__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin-top: var(--sp-2, 0.5rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .gym-prog__cta:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-prog__cta:focus-visible {
+    outline: 2px solid var(--gym-text);
+    outline-offset: 2px;
+  }
+
+  .gym-prog__big {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gym-prog__big small {
+    font-size: 1.1rem;
+    color: var(--gym-text-3);
+  }
+
+  .gym-prog__goal-text {
+    margin: auto 0 0;
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--gym-border);
+    font-weight: 700;
+  }
+
+  .gym-prog__bars,
+  .gym-prog__spark {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .gym-prog__bar {
+    fill: var(--gym-surface-2);
+  }
+
+  .gym-prog__bar.is-last {
+    fill: var(--gym-brand);
+  }
+
+  .gym-prog__bar-val {
+    fill: var(--gym-text);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .gym-prog__bar-lbl {
+    fill: var(--gym-text-3);
+    font-size: 10px;
+  }
+
+  .gym-prog__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-prog__list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: var(--sp-3, 0.75rem);
+    align-items: baseline;
+    padding: var(--sp-2, 0.5rem) 0;
+    border-top: 1px solid var(--gym-border);
+  }
+
+  .gym-prog__list li:first-child {
+    border-top: 0;
+  }
+
+  .gym-prog__lift {
+    color: var(--gym-text-2);
+  }
+
+  .gym-prog__value {
+    font-weight: 800;
+  }
+
+  .gym-prog__delta {
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .gym-prog__delta.is-up { color: var(--gym-ok); }
+  .gym-prog__delta.is-down { color: var(--gym-full); }
+
+  .gym-prog__line {
+    fill: none;
+    stroke: var(--gym-brand);
+    stroke-width: 2.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .gym-prog__dot {
+    fill: var(--gym-bg-raised);
+    stroke: var(--gym-brand);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

@@ -121,13 +121,13 @@ export const sectionCategories: SectionCategory[] = [
   {
     id: 'food',
     name: 'Food & Delivery',
-    description: 'Sections for food delivery platforms, ghost kitchens, and restaurants: fast-order hero with address finder, category navigation rail, dish menu grid with allergens, flash promo ribbons, B2B kitchen partner CTA, and multi-step checkout wizard.',
+    description: 'Pop sticker sections for food delivery platforms and restaurants: animated hero plate, scroll-spy menu board with flying cart items, scroll-driven order story, B2B partner savings pitch, and coupon footer.',
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
   },
   {
     id: 'construction',
     name: 'Construction & Real Estate',
-    description: 'Sections for general contractors, real estate developments and builders: high-precision hero, projects catalog, 5-stage turnkey timeline, vector floor plan viewer, Passivhaus ESG banner, and project feasibility inquiry form.',
+    description: 'Blueprint sections for general contractors and developers: self-drawing hero with coordinate crosshair, architectural project sheets, scroll-driven build sequence, tender request form, and title-block footer.',
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22h20M13 2L3 22h18L15 6M9 12h6M10 16h4"/></svg>`,
   },
   {
@@ -135,6 +135,12 @@ export const sectionCategories: SectionCategory[] = [
     name: 'Real Estate Agency',
     description: 'Sections for real estate agencies and property portals: search hero with buy/rent filters, filterable listings with favourites and zone map, neighbourhood price guide, property photo gallery, agent directory, and owner valuation call to action.',
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>`,
+  },
+  {
+    id: 'gym',
+    name: 'Gym & Fitness',
+    description: 'Sections for gyms, boxes and fitness studios: bold hero with today’s classes, discipline cards with intensity, weekly timetable with day tabs and filters, membership plans with monthly/yearly billing, coaching team, and free-trial sign-up.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>`,
   },
   {
     id: 'logos',

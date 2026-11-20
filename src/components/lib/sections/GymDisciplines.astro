@@ -1,0 +1,230 @@
+---
+/**
+ * GymDisciplines — Class types with duration, approximate kcal and an intensity meter.
+ * Each card links to the schedule filtered by that discipline (?d=<id>).
+ *
+ * @param {GymDiscipline[]} disciplines - Class types to show.
+ * @param {string} classesHref - Schedule page; `?d=<id>` is appended.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} variant - 'cards' | 'list'. Default 'cards'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: intensity is written as text ("Intensidad 4 de 5"); the bar is aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymDisciplines, type GymDiscipline } from '../templates/gym/data';
+
+interface OwnProps {
+  disciplines?: GymDiscipline[];
+  classesHref?: string;
+  title?: string;
+  subtitle?: string;
+  variant?: 'cards' | 'list';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  disciplines = gymDisciplines,
+  classesHref = '/preview/gym/clases',
+  title = 'Elige cómo quieres sudar',
+  subtitle = 'Seis disciplinas, todas escalables. Si es tu primera vez, el entrenador adapta cada ejercicio.',
+  variant = 'cards',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gd-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['gym-ui', 'gym-disc', `gym-disc--${variant}`, classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="gym-disc__inner">
+    <header class="gym-disc__head">
+      <h2 id={`${uid}-title`} class="gym-disc__title">{title}</h2>
+      {subtitle && <p class="gym-disc__subtitle">{subtitle}</p>}
+    </header>
+    <ul class="gym-disc__grid" role="list">
+      {disciplines.map((d) => (
+        <li class="gym-disc__card" style={`--disc-hue:${d.hue}`}>
+          <a class="gym-disc__link" href={`${classesHref}?d=${d.id}`}>
+            {d.name}
+          </a>
+          <p class="gym-disc__desc">{d.description}</p>
+          <dl class="gym-disc__facts">
+            <div><dt>Duración</dt><dd>{d.minutes} min</dd></div>
+            <div><dt>Gasto aprox.</dt><dd>{d.kcal} kcal</dd></div>
+          </dl>
+          <p class="gym-disc__intensity">
+            <span class="gym-disc__label">Intensidad {d.intensity} de 5</span>
+            <span class="gym-disc__bar" aria-hidden="true">
+              {[1, 2, 3, 4, 5].map((n) => <span class:list={[{ 'is-on': n <= d.intensity }]} />)}
+            </span>
+          </p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .gym-disc {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-disc__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .gym-disc__head {
+    max-width: 640px;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .gym-disc__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .gym-disc__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--gym-text-2);
+    line-height: 1.6;
+  }
+
+  .gym-disc__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-disc__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background:
+      linear-gradient(160deg, hsl(var(--disc-hue) 70% 50% / 0.14), transparent 55%),
+      var(--gym-bg-raised);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .gym-disc__card:hover {
+    border-color: hsl(var(--disc-hue) 70% 60% / 0.6);
+    transform: translateY(-3px);
+  }
+
+  .gym-disc__card:focus-within {
+    border-color: var(--gym-brand);
+  }
+
+  .gym-disc__link {
+    font-family: var(--gym-font-display);
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--gym-text);
+    text-decoration: none;
+  }
+
+  .gym-disc__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .gym-disc__link:focus-visible {
+    outline: none;
+  }
+
+  .gym-disc__desc {
+    margin: 0;
+    color: var(--gym-text-2);
+    line-height: 1.55;
+    font-size: 0.95rem;
+  }
+
+  .gym-disc__facts {
+    display: flex;
+    gap: var(--sp-6, 1.5rem);
+    margin: auto 0 0;
+  }
+
+  .gym-disc__facts dt {
+    color: var(--gym-text-3);
+    font-size: 0.78rem;
+  }
+
+  .gym-disc__facts dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .gym-disc__intensity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    color: var(--gym-text-3);
+    font-size: 0.82rem;
+  }
+
+  .gym-disc__bar {
+    display: flex;
+    gap: 3px;
+  }
+
+  .gym-disc__bar span {
+    width: 18px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--gym-surface-2);
+  }
+
+  .gym-disc__bar span.is-on {
+    background: var(--gym-brand);
+  }
+
+  .gym-disc--list .gym-disc__grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .gym-disc--list .gym-disc__card {
+    border-radius: 0;
+    border-width: 0 0 1px;
+    background: transparent;
+  }
+
+  .gym-disc--list .gym-disc__card:hover {
+    transform: none;
+    background: var(--gym-surface);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gym-disc__card {
+      transition: none;
+    }
+
+    .gym-disc__card:hover {
+      transform: none;
+    }
+  }
+</style>

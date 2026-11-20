@@ -1,198 +1,466 @@
 ---
 /**
- * FoodSettingsPage — Kitchen OS & restaurant operating preferences.
- * Configures ticket prep buffers, delivery radiuses, thermal printer integration and audio alarms.
+ * FoodSettingsPage — Kitchen and delivery settings of the "BiteFlow" kitchen OS: delivery radius
+ * with a live map preview, minimum order and fee, opening hours per day, ticket printer with a
+ * test print, and kitchen alarms. Changes raise a save bar.
+ *
+ * @param {FoodRoutes} routes - Template route URLs.
+ * @param {string} action - Optional save endpoint (POST).
+ *
+ * Accessibility: each block is a fieldset with legend; sliders show their value in an <output>;
+ * switches are native checkboxes with role="switch"; save and test-print results are announced.
  */
-import FoodLayout from './FoodLayout.astro';
-import PageHeader from '../../app/PageHeader.astro';
-import SettingsSection from '../../app/SettingsSection.astro';
-import SwitchRow from '../../app/SwitchRow.astro';
-import { foodDeliveryRoutes, foodDeliveryData, type FoodDeliveryRoutes } from './data';
+import FoodAppLayout from './FoodAppLayout.astro';
+import FoodOpsHeading from '../../app/FoodOpsHeading.astro';
+import { foodRoutes, foodBrand, type FoodRoutes } from './data';
 
 interface Props {
-  routes?: FoodDeliveryRoutes;
+  routes?: FoodRoutes;
+  action?: string;
 }
 
-const { routes = foodDeliveryRoutes } = Astro.props;
-const rest = foodDeliveryData.restaurant;
+const { routes = foodRoutes, action } = Astro.props;
+const days = [
+  { d: 'Lunes', open: true, from: '12:30', to: '23:30' },
+  { d: 'Martes', open: true, from: '12:30', to: '23:30' },
+  { d: 'Miércoles', open: true, from: '12:30', to: '23:30' },
+  { d: 'Jueves', open: true, from: '12:30', to: '00:00' },
+  { d: 'Viernes', open: true, from: '12:30', to: '01:00' },
+  { d: 'Sábado', open: true, from: '13:00', to: '01:00' },
+  { d: 'Domingo', open: false, from: '13:00', to: '23:00' },
+];
 ---
 
-<FoodLayout
-  title="Kitchen Settings & Operations"
-  current="settings"
-  routes={routes}
->
-  <PageHeader
-    title="Kitchen &amp; Delivery Settings"
-    description="Configure kitchen service parameters, delivery zones, order throttling, and tablet alerts."
-  >
-    <div slot="actions">
-      <button type="button" class="btn-save-settings">Save Changes</button>
+<FoodAppLayout title="Ajustes" current="settings" routes={routes}>
+  <FoodOpsHeading kicker="Cocina" title="Ajustes de cocina y reparto" description={`${foodBrand.kitchen} · ${foodBrand.address}`} clock={false} />
+
+  <form class="bf-ui bf-set" method="post" action={action} data-bf-set>
+    <fieldset class="bf-set__card bf-set__card--zone">
+      <legend>Zona de reparto</legend>
+      <div class="bf-set__zone">
+        <svg viewBox="0 0 200 200" class="bf-set__map" aria-hidden="true">
+          <rect width="200" height="200" rx="18" class="z-ground" />
+          <path d="M0 50h200M0 110h200M0 160h200M40 0v200M100 0v200M150 0v200" class="z-street" />
+          <circle cx="100" cy="100" r="60" class="z-area" data-zone-circle />
+          <rect x="92" y="92" width="16" height="16" rx="4" class="z-kitchen" />
+        </svg>
+        <div class="bf-set__fields">
+          <div class="bf-set__range">
+            <label for="bf-set-r">Radio de reparto</label>
+            <output for="bf-set-r" data-r-out>1,8 km</output>
+            <input id="bf-set-r" name="radius" type="range" min="0.5" max="4" step="0.1" value="1.8" data-radius />
+          </div>
+          <div class="bf-set__two">
+            <label>Pedido mínimo (€)<input type="number" name="min" min="0" step="0.5" value="12" /></label>
+            <label>Gastos de envío (€)<input type="number" name="fee" min="0" step="0.01" value={foodBrand.deliveryFee} /></label>
+          </div>
+          <label>Envío gratis desde (€)<input type="number" name="free" min="0" step="1" value={foodBrand.freeDeliveryFrom} /></label>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="bf-set__card">
+      <legend>Horario de cocina</legend>
+      <ul class="bf-set__days" role="list">
+        {days.map((d, i) => (
+          <li>
+            <label class="bf-set__switch">
+              <input type="checkbox" role="switch" name={`open-${i}`} checked={d.open} data-day />
+              <span class="bf-set__track" aria-hidden="true"><i></i></span>
+              <span class="bf-set__day">{d.d}</span>
+            </label>
+            <label><span class="bf-sr">Abre el {d.d}</span><input type="time" name={`from-${i}`} value={d.from} /></label>
+            <span aria-hidden="true">–</span>
+            <label><span class="bf-sr">Cierra el {d.d}</span><input type="time" name={`to-${i}`} value={d.to} /></label>
+          </li>
+        ))}
+      </ul>
+    </fieldset>
+
+    <fieldset class="bf-set__card">
+      <legend>Impresora de tickets</legend>
+      <label>Modelo
+        <select name="printer">
+          <option>Térmica 80 mm · ESC/POS (red)</option>
+          <option>Térmica 58 mm · Bluetooth</option>
+          <option>Sin impresora (solo pantalla)</option>
+        </select>
+      </label>
+      <label class="bf-set__switch">
+        <input type="checkbox" role="switch" name="autoprint" checked />
+        <span class="bf-set__track" aria-hidden="true"><i></i></span>
+        Imprimir cada comanda al entrar
+      </label>
+      <button type="button" class="bf-set__btn" data-test-print>Imprimir ticket de prueba</button>
+      <div class="bf-set__paper" aria-hidden="true" data-paper>
+        <p>BITEFLOW · PRUEBA</p>
+        <p>1× Doble Smash Lavapiés</p>
+        <p>— sin mostaza —</p>
+        <p>21:42 · Pase</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="bf-set__card">
+      <legend>Avisos en cocina</legend>
+      <label class="bf-set__switch">
+        <input type="checkbox" role="switch" name="sound" checked />
+        <span class="bf-set__track" aria-hidden="true"><i></i></span>
+        Sonido al entrar una comanda
+      </label>
+      <label class="bf-set__switch">
+        <input type="checkbox" role="switch" name="late" checked />
+        <span class="bf-set__track" aria-hidden="true"><i></i></span>
+        Parpadeo cuando una comanda va tarde
+      </label>
+      <div class="bf-set__range">
+        <label for="bf-set-late">Margen antes de “tarde”</label>
+        <output for="bf-set-late" data-l-out>0 min</output>
+        <input id="bf-set-late" name="lateAfter" type="range" min="0" max="5" step="1" value="0" data-late />
+      </div>
+    </fieldset>
+
+    <div class="bf-set__bar" data-bar hidden>
+      <p>Hay cambios sin guardar</p>
+      <button type="reset" class="bf-set__btn">Descartar</button>
+      <button type="submit" class="bf-set__btn bf-set__btn--primary">Guardar ajustes</button>
     </div>
-  </PageHeader>
+    <p class="bf-sr" role="status" aria-live="polite" data-live></p>
+  </form>
+</FoodAppLayout>
 
-  <div class="settings-stack">
-    <!-- Section 1: Kitchen Profile -->
-    <SettingsSection
-      title="Restaurant & Kitchen Profile"
-      description="Public storefront branding and contact details for customers and dispatch."
-    >
-      <div class="settings-fields-grid">
-        <div class="field-item">
-          <label>Restaurant Display Name</label>
-          <input type="text" value={rest.name} />
-        </div>
-        <div class="field-item">
-          <label>Kitchen Street Address</label>
-          <input type="text" value={rest.address} />
-        </div>
-        <div class="field-item">
-          <label>Emergency Kitchen Phone</label>
-          <input type="tel" value={rest.phone} />
-        </div>
-        <div class="field-item">
-          <label>Kitchen Tagline</label>
-          <input type="text" value={rest.tagline} />
-        </div>
-      </div>
-    </SettingsSection>
-
-    <!-- Section 2: Order Prep & KDS Throttling -->
-    <SettingsSection
-      title="Cooking Times & KDS Station Alarms"
-      description="Manage ticket timers, urgency thresholds, and kitchen rush-hour throttling."
-    >
-      <div class="switches-list">
-        <SwitchRow
-          label="Loud Kitchen Buzzer on New Ticket"
-          description="Plays an acoustic chime on the KDS tablet whenever a new order is received."
-          checked={true}
-        />
-        <SwitchRow
-          label="Auto-Accept Incoming Orders"
-          description="Bypasses manual kitchen acceptance and places orders straight onto the cooking line."
-          checked={true}
-        />
-        <SwitchRow
-          label="Urgent Ticket Warning (> 12 min)"
-          description="Highlights tickets with a flashing red border when elapsed prep time exceeds target."
-          checked={true}
-        />
-        <SwitchRow
-          label="Rush Hour 15-Minute Buffer"
-          description="Automatically adds 15 minutes to customer delivery ETAs during peak hours (20:30–22:30)."
-          checked={false}
-        />
-      </div>
-    </SettingsSection>
-
-    <!-- Section 3: Delivery Zones & Pricing -->
-    <SettingsSection
-      title="Delivery Radius & Order Thresholds"
-      description="Set operational delivery radius and fee calculation."
-    >
-      <div class="settings-fields-grid">
-        <div class="field-item">
-          <label>Maximum Delivery Radius (km)</label>
-          <input type="number" step="0.5" value={rest.deliveryRadiusKm} />
-        </div>
-        <div class="field-item">
-          <label>Base Delivery Fee (€)</label>
-          <input type="number" step="0.10" value={rest.deliveryFeeEur} />
-        </div>
-        <div class="field-item">
-          <label>Minimum Order Value (€)</label>
-          <input type="number" step="1.00" value={rest.minOrderEur} />
-        </div>
-        <div class="field-item">
-          <label>Free Delivery Threshold (€)</label>
-          <input type="number" step="1.00" value={rest.freeDeliveryThresholdEur} />
-        </div>
-      </div>
-    </SettingsSection>
-
-    <!-- Section 4: Hardware & ESC/POS Printing -->
-    <SettingsSection
-      title="Hardware & Printer Integrations"
-      description="Connect Bluetooth & LAN thermal receipt printers for the bagging station."
-    >
-      <div class="switches-list">
-        <SwitchRow
-          label="Auto-Print Thermal Receipt on Order Ready"
-          description="Generates an ESC/POS paper receipt to staple onto the thermal delivery bag."
-          checked={true}
-        />
-        <SwitchRow
-          label="Print Kitchen Station Slips"
-          description="Prints duplicate slips for the fryer and salad stations."
-          checked={false}
-        />
-      </div>
-    </SettingsSection>
-  </div>
-</FoodLayout>
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-bf-set]').forEach((form) => {
+    const live = form.querySelector<HTMLElement>('[data-live]')!;
+    const bar = form.querySelector<HTMLElement>('[data-bar]')!;
+    const radius = form.querySelector<HTMLInputElement>('[data-radius]')!;
+    const circle = form.querySelector<SVGCircleElement>('[data-zone-circle]')!;
+    const late = form.querySelector<HTMLInputElement>('[data-late]')!;
+    const sync = () => {
+      const r = Number(radius.value);
+      form.querySelector('[data-r-out]')!.textContent = `${r.toLocaleString('es-ES')} km`;
+      circle.setAttribute('r', String(Math.round((r / 4) * 96)));
+      form.querySelector('[data-l-out]')!.textContent = `${late.value} min`;
+    };
+    form.addEventListener('input', () => {
+      sync();
+      bar.hidden = false;
+    });
+    form.addEventListener('change', () => (bar.hidden = false));
+    form.addEventListener('reset', () => {
+      window.setTimeout(() => {
+        sync();
+        bar.hidden = true;
+        live.textContent = 'Cambios descartados.';
+      });
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      bar.hidden = true;
+      live.textContent = 'Ajustes guardados.';
+    });
+    form.querySelector('[data-test-print]')?.addEventListener('click', () => {
+      const paper = form.querySelector<HTMLElement>('[data-paper]')!;
+      paper.classList.remove('is-printing');
+      void paper.offsetWidth;
+      paper.classList.add('is-printing');
+      live.textContent = 'Ticket de prueba enviado a la impresora.';
+    });
+    sync();
+  });
+</script>
 
 <style>
-  .btn-save-settings {
-    padding: 0.65rem 1.4rem;
-    background: #ea580c;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.88rem;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
-  }
-
-  .btn-save-settings:hover {
-    background: #c2410c;
-  }
-
-  .settings-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .settings-fields-grid {
+  .bf-set {
+    position: relative;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.25rem;
-    padding: 0.5rem 0;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--bf-ink);
   }
 
-  .field-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+  @media (min-width: 1100px) {
+    .bf-set {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .bf-set__card--zone {
+      grid-column: 1 / -1;
+    }
   }
 
-  .field-item label {
+  .bf-set__card {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    min-width: 0;
+    margin: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 3px solid var(--bf-outline);
+    border-radius: 22px;
+    background: var(--bf-paper);
+  }
+
+  .bf-set__card legend {
+    padding: 2px 12px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-family: var(--bf-font-display);
+    font-weight: 800;
+  }
+
+  .bf-set label {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+  }
+
+  .bf-set input[type='number'],
+  .bf-set input[type='time'],
+  .bf-set select {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 12px;
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    font: inherit;
+    min-width: 0;
+  }
+
+  .bf-set :is(input, select, button):focus-visible {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-set__zone {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-items: center;
+  }
+
+  @media (min-width: 700px) {
+    .bf-set__zone {
+      grid-template-columns: 220px 1fr;
+    }
+  }
+
+  .bf-set__map {
+    width: 100%;
+    max-width: 260px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 20px;
+  }
+
+  .bf-set__map .z-ground { fill: var(--bf-bg-2); }
+  .bf-set__map .z-street { stroke: var(--bf-paper); stroke-width: 8; }
+  .bf-set__map .z-area { fill: color-mix(in srgb, var(--bf-tomato) 22%, transparent); stroke: var(--bf-tomato); stroke-width: 3; stroke-dasharray: 8 6; transition: r 0.4s var(--bf-ease-pop); }
+  .bf-set__map .z-kitchen { fill: var(--bf-tomato); stroke: var(--bf-outline); stroke-width: 3; }
+
+  .bf-set__fields {
+    display: grid;
+    gap: 12px;
+  }
+
+  .bf-set__two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .bf-set__range {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    align-items: center;
+  }
+
+  .bf-set__range label {
+    display: block;
+  }
+
+  .bf-set__range output {
+    font-family: var(--bf-font-display);
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--bf-tomato);
+  }
+
+  .bf-set__range input {
+    grid-column: 1 / -1;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--bf-tomato);
+  }
+
+  .bf-set__days {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bf-set__days li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .bf-set__days input[type='time'] {
+    width: 6.4rem;
+  }
+
+  .bf-set__switch {
+    position: relative;
+    display: flex !important;
+    align-items: center;
+    gap: 10px !important;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .bf-set__switch input {
+    position: absolute;
+    opacity: 0;
+    width: 48px;
+    height: 30px;
+    margin: 0;
+  }
+
+  .bf-set__track {
+    position: relative;
+    flex: none;
+    width: 48px;
+    height: 28px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 99px;
+    background: var(--bf-bg-2);
+  }
+
+  .bf-set__track i {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--bf-outline);
+    border-radius: 50%;
+    background: var(--bf-paper);
+    transition: transform 0.3s var(--bf-ease-pop);
+  }
+
+  .bf-set__switch input:checked + .bf-set__track {
+    background: var(--bf-mint);
+  }
+
+  .bf-set__switch input:checked + .bf-set__track i {
+    transform: translateX(20px);
+  }
+
+  .bf-set__switch input:focus-visible + .bf-set__track {
+    outline: 3px solid var(--bf-sky);
+    outline-offset: 2px;
+  }
+
+  .bf-set__btn {
+    justify-self: start;
+    min-height: 48px;
+    padding: 0 1.1rem;
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bf-set__btn--primary {
+    background: var(--bf-tomato);
+    color: var(--bf-on-tomato);
+  }
+
+  .bf-set__paper {
+    justify-self: start;
+    width: 200px;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 14px;
+    background: var(--bf-paper);
+    color: var(--bf-ink);
+    font-family: ui-monospace, Menlo, monospace;
     font-size: 0.8rem;
-    font-weight: 600;
-    color: #cbd5e1;
+    box-shadow: 0 4px 0 var(--bf-outline);
   }
 
-  .field-item input {
-    padding: 0.7rem 0.85rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    color: #ffffff;
-    font-size: 0.88rem;
-    outline: none;
+  .bf-set__paper p {
+    margin: 4px 0;
   }
 
-  .field-item input:focus {
-    border-color: #ea580c;
+  .bf-set__paper.is-printing {
+    animation: bf-set-print 2.4s steps(12) forwards;
+    padding-block: 10px;
   }
 
-  .switches-list {
+  .bf-set__bar {
+    position: sticky;
+    bottom: var(--sp-4, 1rem);
+    z-index: 10;
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.5rem 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px 10px 18px;
+    border: 3px solid var(--bf-outline);
+    border-radius: 20px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+  }
+
+  @media (min-width: 1100px) {
+    .bf-set__bar {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .bf-set__bar[hidden] {
+    display: none;
+  }
+
+  .bf-set__bar p {
+    flex: 1 1 160px;
+    margin: 0;
+    font-weight: 800;
+  }
+
+  @keyframes bf-set-print { from { max-height: 0; } to { max-height: 160px; } }
+
+  @media (max-width: 420px) {
+    .bf-set__days li {
+      grid-template-columns: 1fr auto 1fr;
+    }
+
+    .bf-set__days li > .bf-set__switch {
+      grid-column: 1 / -1;
+    }
+
+    .bf-set__days input[type='time'] {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bf-set * {
+      transition: none !important;
+    }
+
+    .bf-set__paper.is-printing {
+      animation: none;
+      max-height: 160px;
+    }
   }
 </style>
-

@@ -1,0 +1,449 @@
+---
+/**
+ * GymSiteLayout — Public layout for the "Forja" gym template.
+ * Skip link, live occupancy strip, sticky header with primary nav (collapses into a
+ * disclosure menu on mobile), member area link + free trial CTA, and a mega footer.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (home | classes | plans | trainers | trial).
+ * @param {GymRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link,
+ * the mobile menu button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './gym-theme.css';
+import GymFooter from '../../sections/GymFooter.astro';
+import { gymRoutes, gymData, type GymRoutes } from './data';
+
+type NavKey = 'home' | 'classes' | 'plans' | 'trainers' | 'trial';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: GymRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Forja · Gimnasio en Bilbao con sala de fuerza, clases de HIIT, boxeo, ciclo indoor y yoga. Prueba gratis 7 días.',
+  current,
+  routes = gymRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const { brand, occupancy } = gymData;
+const occupancyPct = Math.round((occupancy.now / occupancy.capacity) * 100);
+
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'classes', label: 'Clases y horario', href: routes.classes },
+  { key: 'plans', label: 'Tarifas', href: routes.plans },
+  { key: 'trainers', label: 'Entrenadores', href: routes.trainers },
+  { key: 'trial', label: 'Contacto', href: routes.trial },
+];
+
+const footerColumns = [
+  {
+    title: 'Entrena',
+    links: [
+      { label: 'Horario de clases', href: routes.classes },
+      { label: 'Tarifas', href: routes.plans },
+      { label: 'Entrenadores', href: routes.trainers },
+    ],
+  },
+  {
+    title: 'Socios',
+    links: [
+      { label: 'Área de socios', href: routes.signIn },
+      { label: 'Reservar clase', href: routes.booking },
+      { label: 'Prueba gratis', href: routes.trial },
+    ],
+  },
+];
+
+const phoneHref = `tel:${brand.phone.replace(/\s+/g, '')}`;
+---
+
+<!doctype html>
+<html lang={lang} class="theme-gym" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="gym-body">
+    <a href="#main-content" class="gym-skip">Saltar al contenido</a>
+
+    <p class="gym-strip">
+      <span class="gym-strip__dot" aria-hidden="true"></span>
+      Aforo ahora: <strong>{occupancyPct} %</strong> · {brand.hours}
+      <a href={phoneHref} class="gym-strip__phone">{brand.phone}</a>
+    </p>
+
+    <header class="gym-header">
+      <div class="gym-header__inner">
+        <a href={routes.home} class="gym-logo" aria-label={`${brand.name} inicio`}>
+          <span class="gym-logo__mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12" />
+            </svg>
+          </span>
+          <span class="gym-logo__name">{brand.name}</span>
+        </a>
+
+        <button
+          type="button"
+          class="gym-menu-btn"
+          aria-expanded="false"
+          aria-controls="gym-nav"
+          data-gym-menu
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+          <span class="gym-sr">Menú</span>
+        </button>
+
+        <nav id="gym-nav" class="gym-nav" aria-label="Navegación principal">
+          <ul class="gym-nav__list">
+            {navLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="gym-nav__link"
+                  aria-current={current === link.key ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div class="gym-nav__actions">
+            <a href={routes.signIn} class="gym-nav__phone">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+              </svg>
+              Área de socios
+            </a>
+            <a href={routes.trial} class="gym-nav__cta">Prueba 7 días gratis</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="gym-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <GymFooter
+      brand={brand.name}
+      cta={{ title: 'Tu primera semana es gratis', href: routes.trial, label: 'Empezar prueba' }}
+      columns={footerColumns}
+      contact={brand}
+      copyright={`© ${new Date().getFullYear()} ${brand.legalName}`}
+    />
+
+    <script>
+      function initGymMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-gym-menu]');
+        const nav = document.getElementById('gym-nav');
+        if (!btn || !nav || btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        const setOpen = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            setOpen(false);
+            btn.focus();
+          }
+        });
+      }
+      initGymMenu();
+      document.addEventListener('astro:page-load', initGymMenu);
+    </script>
+  </body>
+</html>
+
+<style>
+  .gym-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--gym-font-body);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+  }
+
+  .gym-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .gym-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .gym-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--gym-bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--gym-border);
+  }
+
+  .gym-header__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .gym-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--gym-text);
+    text-decoration: none;
+    min-height: 44px;
+  }
+
+  .gym-logo__mark {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-md, 12px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-logo__name {
+    font-family: var(--gym-font-display);
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .gym-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    background: var(--gym-bg-raised);
+    border-bottom: 1px solid var(--gym-border);
+    color: var(--gym-text-2);
+    font-size: 0.82rem;
+  }
+
+  .gym-strip strong {
+    color: var(--gym-text);
+  }
+
+  .gym-strip__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gym-ok);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--gym-ok) 25%, transparent);
+  }
+
+  .gym-strip__phone {
+    color: var(--gym-text-2);
+  }
+
+  .gym-strip__phone:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-menu-btn {
+    display: none;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: var(--r-md, 12px);
+    border: 1px solid var(--gym-border-strong);
+    background: transparent;
+    color: var(--gym-text);
+    cursor: pointer;
+  }
+
+  .gym-nav {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .gym-nav__list {
+    display: flex;
+    gap: var(--sp-1, 0.25rem);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .gym-nav__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    color: var(--gym-text-2);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .gym-nav__link:hover,
+  .gym-nav__link[aria-current='page'] {
+    color: var(--gym-text);
+    background: var(--gym-surface);
+  }
+
+  .gym-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .gym-nav__phone {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--gym-text-2);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .gym-nav__phone:hover {
+    color: var(--gym-text);
+  }
+
+  .gym-nav__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+
+  .gym-nav__cta:hover {
+    background: var(--gym-brand-hover);
+  }
+
+  .gym-header :is(a, button):focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-main {
+    flex: 1;
+  }
+
+  .gym-main:focus {
+    outline: none;
+  }
+
+  @media (max-width: 960px) {
+    .gym-menu-btn {
+      display: grid;
+    }
+
+    .gym-nav {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      padding: var(--sp-4, 1rem);
+      background: var(--gym-bg-raised);
+      border-bottom: 1px solid var(--gym-border);
+    }
+
+    .gym-nav.is-open {
+      display: flex;
+    }
+
+    .gym-nav__list {
+      flex-direction: column;
+    }
+
+    .gym-nav__actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .gym-nav__cta {
+      justify-content: center;
+    }
+  }
+</style>

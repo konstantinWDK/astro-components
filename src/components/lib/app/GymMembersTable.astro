@@ -1,0 +1,476 @@
+---
+/**
+ * GymMembersTable — Staff table of gym members: search, status filter chips, sorting by visits,
+ * last visit and join date, a 30-day activity bar, "at risk" flags for active members who
+ * barely come, and a one-click reminder per member.
+ *
+ * @param {GymMember[]} members - Members.
+ * @param {number} riskBelow - Active members with fewer visits than this in 30 days are flagged. Default 5.
+ * @param {number} visitsMax - Value that fills the activity bar. Default 20.
+ * @param {string} title - Table heading.
+ * @param {string} density - 'comfortable' | 'compact'. Default 'comfortable'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <table> with caption and scope; sort buttons in headers set aria-sort;
+ * chips are toggle buttons; result count and reminders are announced; risk is written as text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymMembers, type GymMember } from '../templates/gym/data';
+
+interface OwnProps {
+  members?: GymMember[];
+  riskBelow?: number;
+  visitsMax?: number;
+  title?: string;
+  density?: 'comfortable' | 'compact';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  members = gymMembers,
+  riskBelow = 5,
+  visitsMax = 20,
+  title = 'Socios',
+  density = 'comfortable',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `gmt-${Math.random().toString(36).slice(2, 8)}`;
+const statuses = [...new Set(members.map((m) => m.status))];
+const dateFmt = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'UTC' });
+const rows = members.map((m) => ({
+  ...m,
+  initials: m.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase(),
+  atRisk: m.status === 'Activo' && m.visits30 < riskBelow,
+  bar: Math.min(100, Math.round((m.visits30 / visitsMax) * 100)),
+  joinedLabel: dateFmt.format(new Date(`${m.joined}T00:00:00Z`)),
+  lastLabel: dateFmt.format(new Date(`${m.lastVisit}T00:00:00Z`)),
+  statusClass: `is-${m.status.toLowerCase()}`,
+}));
+const sorts = [
+  { key: 'visits', label: 'Visitas 30 d' },
+  { key: 'last', label: 'Última visita' },
+  { key: 'joined', label: 'Alta' },
+];
+---
+
+<section
+  class:list={['gym-ui', 'gym-mtable', `gym-mtable--${density}`, classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-gym-mtable
+  {...rest}
+>
+  <p class="gym-sr" aria-live="polite" data-announce></p>
+  <div class="gym-mtable__bar">
+    <h2 id={`${uid}-title`} class="gym-mtable__title">{title} <span data-count>{members.length}</span></h2>
+    <label class="gym-mtable__search">
+      <span class="gym-sr">Buscar socios</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <input type="search" placeholder="Nombre, número o email…" data-search />
+    </label>
+  </div>
+
+  <div class="gym-mtable__chips" role="group" aria-label="Filtrar por estado">
+    <button type="button" aria-pressed="true" data-chip="">Todos</button>
+    {statuses.map((s) => <button type="button" aria-pressed="false" data-chip={s}>{s}</button>)}
+    <button type="button" aria-pressed="false" data-chip="__risk">Riesgo de baja</button>
+  </div>
+
+  <div class="gym-mtable__scroll" role="region" aria-label={`${title} (desplazable)`} tabindex="0">
+    <table>
+      <caption class="gym-sr">{title}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Socio</th>
+          <th scope="col">Tarifa</th>
+          <th scope="col">Estado</th>
+          {sorts.map((s) => (
+            <th scope="col" data-sort-col={s.key}>
+              <button type="button" data-sort={s.key}>
+                {s.label}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m7 9 5-5 5 5M7 15l5 5 5-5" /></svg>
+              </button>
+            </th>
+          ))}
+          <th scope="col"><span class="gym-sr">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody data-body>
+        {rows.map((m) => (
+          <tr
+            data-row
+            data-status={m.status}
+            data-risk={m.atRisk ? 'true' : undefined}
+            data-text={`${m.name} ${m.id} ${m.email} ${m.plan}`.toLowerCase()}
+            data-visits={m.visits30}
+            data-last={m.lastVisit.replaceAll('-', '')}
+            data-joined={m.joined.replaceAll('-', '')}
+            data-name={m.name}
+          >
+            <td>
+              <span class="gym-mtable__who">
+                <span class="gym-mtable__avatar" aria-hidden="true">{m.initials}</span>
+                <span>
+                  <strong>{m.name}</strong>
+                  <small>{m.id} · {m.email}</small>
+                </span>
+              </span>
+            </td>
+            <td>{m.plan}</td>
+            <td>
+              <span class:list={['gym-mtable__status', m.statusClass]}>{m.status}</span>
+              {m.atRisk && <span class="gym-mtable__risk">Riesgo de baja</span>}
+            </td>
+            <td>
+              <span class="gym-mtable__visits">
+                <span class="gym-mtable__bar-track" aria-hidden="true"><i style={`width:${m.bar}%`}></i></span>
+                {m.visits30}
+              </span>
+            </td>
+            <td>{m.lastLabel}</td>
+            <td>{m.joinedLabel}</td>
+            <td>
+              <button type="button" class="gym-mtable__remind" data-remind aria-label={`Enviar recordatorio a ${m.name}`}>
+                Recordar
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="gym-mtable__empty" data-empty hidden>Ningún socio coincide.</p>
+</section>
+
+<script>
+  function initMembers(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const body = root.querySelector<HTMLElement>('[data-body]')!;
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-row]'));
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-chip]'));
+    const search = root.querySelector<HTMLInputElement>('[data-search]')!;
+    const announce = root.querySelector<HTMLElement>('[data-announce]')!;
+    let chip = '';
+    let sortKey = '';
+    let dir = -1;
+
+    const apply = () => {
+      const q = search.value.trim().toLowerCase();
+      let n = 0;
+      for (const r of rows) {
+        const byChip = !chip || (chip === '__risk' ? r.dataset.risk === 'true' : r.dataset.status === chip);
+        const show = byChip && (!q || r.dataset.text!.includes(q));
+        r.hidden = !show;
+        if (show) n += 1;
+      }
+      if (sortKey) {
+        [...rows].sort((a, b) => (Number(a.dataset[sortKey]) - Number(b.dataset[sortKey])) * dir).forEach((r) => body.appendChild(r));
+      }
+      root.querySelector('[data-count]')!.textContent = String(n);
+      root.querySelector<HTMLElement>('[data-empty]')!.hidden = n > 0;
+    };
+
+    search.addEventListener('input', apply);
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        chip = c.dataset.chip || '';
+        chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+        apply();
+      }),
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-sort]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const key = b.dataset.sort!;
+        dir = sortKey === key ? -dir : -1;
+        sortKey = key;
+        root.querySelectorAll<HTMLElement>('[data-sort-col]').forEach((th) => {
+          if (th.dataset.sortCol === key) th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+          else th.removeAttribute('aria-sort');
+        });
+        apply();
+      }),
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-remind]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const name = b.closest<HTMLElement>('[data-row]')!.dataset.name;
+        b.disabled = true;
+        b.textContent = 'Enviado';
+        b.setAttribute('aria-label', `Recordatorio enviado a ${name}`);
+        announce.textContent = `Recordatorio enviado a ${name}.`;
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-gym-mtable]').forEach(initMembers);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .gym-mtable {
+    position: relative;
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-mtable__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-3, 0.75rem);
+  }
+
+  .gym-mtable__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-mtable__title span {
+    color: var(--gym-text-3);
+    font-size: 1.1rem;
+  }
+
+  .gym-mtable__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    flex: 0 1 280px;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-border-strong);
+    background: var(--gym-surface);
+    color: var(--gym-text-3);
+  }
+
+  .gym-mtable__search:focus-within {
+    border-color: var(--gym-brand);
+  }
+
+  .gym-mtable__search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--gym-text);
+    font: inherit;
+    outline: none;
+  }
+
+  .gym-mtable__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .gym-mtable__chips button {
+    min-height: 38px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-border-strong);
+    background: transparent;
+    color: var(--gym-text-2);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .gym-mtable__chips button[aria-pressed='true'] {
+    border-color: var(--gym-brand);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-mtable__scroll {
+    position: relative;
+    overflow-x: auto;
+  }
+
+  .gym-mtable :is(button, .gym-mtable__scroll):focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-mtable table {
+    width: 100%;
+    min-width: 820px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .gym-mtable th {
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border-bottom: 2px solid var(--gym-border-strong);
+    color: var(--gym-text-3);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .gym-mtable th button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .gym-mtable th[aria-sort] button {
+    color: var(--gym-brand);
+  }
+
+  .gym-mtable td {
+    padding: var(--sp-3, 0.75rem);
+    border-bottom: 1px solid var(--gym-border);
+    vertical-align: middle;
+  }
+
+  .gym-mtable--compact td {
+    padding-block: var(--sp-2, 0.5rem);
+  }
+
+  .gym-mtable tr[hidden] {
+    display: none;
+  }
+
+  .gym-mtable tbody tr:hover {
+    background: var(--gym-surface);
+  }
+
+  .gym-mtable__who {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .gym-mtable__who > span:last-child {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gym-mtable__who small {
+    color: var(--gym-text-3);
+  }
+
+  .gym-mtable__avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-surface-2);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .gym-mtable__status {
+    display: inline-flex;
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-surface-2);
+    color: var(--gym-text-2);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .gym-mtable__status.is-activo { color: var(--gym-ok); }
+  .gym-mtable__status.is-impago { color: var(--gym-full); }
+  .gym-mtable__status.is-prueba { color: var(--gym-brand); }
+
+  .gym-mtable__risk {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--gym-warn);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .gym-mtable__visits {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    font-weight: 700;
+  }
+
+  .gym-mtable__bar-track {
+    width: 70px;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--gym-surface-2);
+  }
+
+  .gym-mtable__bar-track i {
+    display: block;
+    height: 100%;
+    background: var(--gym-brand);
+  }
+
+  .gym-mtable__remind {
+    min-height: 36px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    border: 1px solid var(--gym-border-strong);
+    background: transparent;
+    color: var(--gym-text);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .gym-mtable__remind:hover:not(:disabled) {
+    border-color: var(--gym-brand);
+  }
+
+  .gym-mtable__remind:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .gym-mtable__empty {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--gym-text-3);
+    text-align: center;
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

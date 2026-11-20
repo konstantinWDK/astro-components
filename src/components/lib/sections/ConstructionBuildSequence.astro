@@ -1,0 +1,484 @@
+---
+/**
+ * ConstructionBuildSequence — Scroll-scrubbed construction sequence. A sticky section drawing
+ * builds itself as you scroll: excavation, foundations, the structure rising floor by floor,
+ * façade, services and finishes with lights and trees. A week ruler, a % readout and the current
+ * phase follow the scroll; the phase texts sit next to it.
+ *
+ * @param {string} title - Section heading.
+ * @param {Array<{name: string, text: string, weeks: string}>} phases - Six phases, in order.
+ * @param {number} floors - Floors of the drawn building (2–9). Default 6.
+ * @param {number} totalWeeks - Length of the works for the ruler. Default 70.
+ * @param {string} variant - 'split' (drawing beside text) | 'overlay' (text cards over the drawing). Default 'split'.
+ * @param {string} size - 'md' | 'lg' drawing height. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: phases are an ordered list with headings, readable without JavaScript (the
+ * drawing then shows the finished building); the drawing is role="img" with a label that names the
+ * current phase; readouts are aria-hidden duplicates of the text. prefers-reduced-motion keeps the
+ * scrub but removes transitions.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+
+interface Phase { name: string; text: string; weeks: string }
+
+interface OwnProps {
+  title?: string;
+  phases?: Phase[];
+  floors?: number;
+  totalWeeks?: number;
+  variant?: 'split' | 'overlay';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Así se levanta un edificio',
+  phases = [
+    { name: 'Vaciado', text: 'Topografía, excavación y contención del terreno con muros pantalla.', weeks: 'Sem. 1–6' },
+    { name: 'Cimentación', text: 'Losa y zapatas armadas sobre hormigón de limpieza, con ensayos de laboratorio.', weeks: 'Sem. 5–13' },
+    { name: 'Estructura', text: 'Pilares y forjados planta a planta, un forjado cada tres semanas.', weeks: 'Sem. 13–33' },
+    { name: 'Fachada', text: 'Fachada ventilada, aislamiento continuo y carpintería con rotura de puente térmico.', weeks: 'Sem. 28–44' },
+    { name: 'Instalaciones', text: 'Aerotermia, suelo radiante, ventilación con recuperador y electricidad.', weeks: 'Sem. 34–56' },
+    { name: 'Acabados y entrega', text: 'Solados, cocinas, pintura, urbanización y licencia de primera ocupación.', weeks: 'Sem. 48–70' },
+  ],
+  floors = 6,
+  totalWeeks = 70,
+  variant = 'split',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const fl = Math.max(2, Math.min(9, floors));
+const W = 320;
+const G = 300; // ground line
+const FH = 28;
+const X0 = 70;
+const BW = 180;
+const top = G - fl * FH;
+const floorRows = Array.from({ length: fl }, (_, i) => ({ i, y: G - (i + 1) * FH }));
+const cols = [0, 1, 2, 3].map((c) => X0 + 6 + c * ((BW - 12) / 3));
+const wins = floorRows.flatMap((r) => [0, 1, 2, 3, 4].map((c) => ({ r: r.i, x: X0 + 14 + c * 33, y: r.y + 7 })));
+const ruler = Array.from({ length: 8 }, (_, i) => Math.round((totalWeeks / 7) * i));
+const uid = `sk-seq-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section
+  class:list={['sk-ui', 'sk-seq', `sk-seq--${variant}`, `sk-seq--${size}`, classAttr]}
+  aria-labelledby={uid}
+  data-sk-seq
+  data-floors={fl}
+  data-weeks={totalWeeks}
+  data-names={JSON.stringify(phases.map((p) => p.name))}
+  data-phase="6"
+  style={`--fl:${fl}`}
+  {...rest}
+>
+  <div class="sk-seq__inner">
+    <div class="sk-seq__stage sk-grid-bg">
+      <div class="sk-seq__read sk-mono" aria-hidden="true">
+        <span>FASE <b data-r-phase>6/6</b></span>
+        <span>SEM. <b data-r-week>{totalWeeks}</b></span>
+        <span><b data-r-pct>100</b> %</span>
+      </div>
+      <svg viewBox={`0 0 ${W} 340`} class="sk-seq__svg" role="img" aria-label="Sección del edificio terminado" data-svg>
+        <!-- 0 · excavation -->
+        <g class="sk-seq__l sk-seq__l--0">
+          <path d={`M0 ${G}H${X0 - 10}V${G + 30}H${X0 + BW + 10}V${G}H${W}`} class="q-earth" />
+          <path d={`M0 ${G + 34}H${W}`} class="q-hatch" />
+          <path d={`M${X0 - 10} ${G}V${G + 30}M${X0 + BW + 10} ${G}V${G + 30}`} class="q-wall" />
+        </g>
+        <!-- 1 · foundations -->
+        <g class="sk-seq__l sk-seq__l--1">
+          <rect x={X0 - 6} y={G + 14} width={BW + 12} height="14" class="q-found" />
+          {cols.map((x) => <rect x={x - 8} y={G + 6} width="16" height="10" class="q-found" />)}
+        </g>
+        <!-- 2 · structure, floor by floor -->
+        <g class="sk-seq__l sk-seq__l--2">
+          {floorRows.map((r) => (
+            <g class="sk-seq__floor" data-floor={r.i}>
+              {cols.map((x) => <path d={`M${x} ${r.y + FH}V${r.y}`} class="q-col" />)}
+              <path d={`M${X0} ${r.y}H${X0 + BW}`} class="q-slab" />
+            </g>
+          ))}
+        </g>
+        <!-- 3 · façade -->
+        <g class="sk-seq__l sk-seq__l--3">
+          <path d={`M${X0} ${G}V${top}H${X0 + BW}V${G}`} class="q-facade" />
+          {wins.map((w) => <rect x={w.x} y={w.y} width="20" height="14" class="q-win" data-r={w.r} />)}
+        </g>
+        <!-- 4 · services -->
+        <g class="sk-seq__l sk-seq__l--4">
+          <path d={`M${X0 + 24} ${G + 10}V${top + 6}`} class="q-mep q-mep--a" />
+          <path d={`M${X0 + BW - 24} ${G + 10}V${top + 6}`} class="q-mep q-mep--b" />
+          <rect x={X0 + BW - 60} y={top - 18} width="40" height="18" class="q-unit" />
+          <path d={`M${X0 + BW - 40} ${top - 18}v-6`} class="q-mep q-mep--b" />
+        </g>
+        <!-- 5 · finishes -->
+        <g class="sk-seq__l sk-seq__l--5">
+          <path d={`M${X0 - 4} ${top}H${X0 + BW + 4}M${X0 - 4} ${top - 5}H${X0 + BW + 4}`} class="q-par" />
+          <g class="q-tree"><circle cx="30" cy={G - 22} r="14" /><path d={`M30 ${G - 8}V${G}`} /></g>
+          <g class="q-tree"><circle cx={W - 34} cy={G - 18} r="11" /><path d={`M${W - 34} ${G - 7}V${G}`} /></g>
+          <g class="q-people"><circle cx={X0 + BW + 30} cy={G - 16} r="3" /><path d={`M${X0 + BW + 30} ${G - 13}v9M${X0 + BW + 27} ${G}l3-4 3 4`} /></g>
+        </g>
+        <!-- crane (structure → façade) -->
+        <g class="sk-seq__crane">
+          <path d={`M${X0 + BW + 24} ${G}V40M${X0 + BW + 18} ${G}V40M${X0 + 20} 40H${W - 6}M${X0 + BW + 21} 40V26L${X0 + 20} 40M${X0 + BW + 21} 26L${W - 6} 40`} class="q-crane" />
+          <path d={`M${X0 + 60} 40V${top - 30}`} class="q-cable" />
+          <rect x={X0 + 50} y={top - 30} width="20" height="9" class="q-load" />
+        </g>
+        <path d={`M0 ${G}H${W}`} class="q-ground" />
+      </svg>
+      <div class="sk-seq__ruler" aria-hidden="true">
+        <span class="sk-seq__marker" data-marker></span>
+        {ruler.map((w) => <span class="sk-seq__tick sk-mono">{w}</span>)}
+      </div>
+    </div>
+
+    <div class="sk-seq__copy">
+      <h2 id={uid} class="sk-seq__title">{title}</h2>
+      <ol class="sk-seq__steps">
+        {phases.map((p, i) => (
+          <li class="sk-seq__step" data-step={i}>
+            <p class="sk-seq__weeks sk-mono">{String(i + 1).padStart(2, '0')} · {p.weeks}</p>
+            <h3>{p.name}</h3>
+            <p>{p.text}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initSkSeq() {
+    document.querySelectorAll<HTMLElement>('[data-sk-seq]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const floors = Number(root.dataset.floors || 6);
+      const weeks = Number(root.dataset.weeks || 70);
+      const names = JSON.parse(root.dataset.names || '[]') as string[];
+      const svg = root.querySelector<SVGSVGElement>('[data-svg]')!;
+      const floorEls = [...root.querySelectorAll<SVGGElement>('[data-floor]')];
+      const winEls = [...root.querySelectorAll<SVGRectElement>('.q-win')];
+      const steps = [...root.querySelectorAll<HTMLElement>('[data-step]')];
+      const marker = root.querySelector<HTMLElement>('[data-marker]')!;
+      const rPhase = root.querySelector<HTMLElement>('[data-r-phase]')!;
+      const rWeek = root.querySelector<HTMLElement>('[data-r-week]')!;
+      const rPct = root.querySelector<HTMLElement>('[data-r-pct]')!;
+      const n = names.length || 6;
+      let last = -1;
+
+      const update = () => {
+        const r = root.getBoundingClientRect();
+        const span = r.height - window.innerHeight * 0.6;
+        const p = span > 0 ? Math.min(1, Math.max(0, (window.innerHeight * 0.4 - r.top) / span)) : 1;
+        const ph = Math.min(n - 1, Math.floor(p * n));
+        const inPhase = p * n - ph;
+        root.style.setProperty('--p', p.toFixed(3));
+        marker.style.left = `${(p * 100).toFixed(1)}%`;
+        rWeek.textContent = String(Math.round(p * weeks));
+        rPct.textContent = String(Math.round(p * 100));
+        rPhase.textContent = `${ph + 1}/${n}`;
+        // structure rises with the scroll inside phase 2, then stays
+        const built = ph > 2 ? floors : ph === 2 ? Math.ceil(inPhase * floors) : 0;
+        floorEls.forEach((f) => f.classList.toggle('is-on', Number(f.dataset.floor) < built));
+        const lit = ph === 5 ? Math.ceil(inPhase * floors) : 0;
+        winEls.forEach((w, i) => w.classList.toggle('is-lit', Number(w.dataset.r) < lit && i % 4 !== 1));
+        if (ph !== last) {
+          last = ph;
+          root.dataset.phase = String(ph);
+          steps.forEach((s) => s.classList.toggle('is-on', Number(s.dataset.step) === ph));
+          svg.setAttribute('aria-label', `Sección del edificio en la fase ${ph + 1} de ${n}: ${names[ph] ?? ''}`);
+        }
+      };
+
+      let ticking = false;
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(() => {
+            update();
+            ticking = false;
+          });
+        },
+        { passive: true },
+      );
+      window.addEventListener('resize', update);
+      root.classList.add('is-live');
+      update();
+    });
+  }
+  initSkSeq();
+  document.addEventListener('astro:page-load', initSkSeq);
+</script>
+
+<style>
+  .sk-seq {
+    position: relative;
+    padding: clamp(3rem, 8vw, 6rem) var(--sp-4, 1rem);
+    background: var(--sk-bg-2);
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-seq__inner {
+    position: relative;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+
+  @media (min-width: 900px) {
+    .sk-seq--split .sk-seq__inner {
+      grid-template-columns: 1.15fr 1fr;
+    }
+  }
+
+  .sk-seq__stage {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    z-index: 1;
+    padding: 14px;
+    border: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-seq__read {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--sk-ink-3);
+    font-size: 0.72rem;
+  }
+
+  .sk-seq__read b {
+    color: var(--sk-accent);
+    font-weight: 600;
+  }
+
+  .sk-seq__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 56vh;
+    margin: 8px 0;
+  }
+
+  .sk-seq--lg .sk-seq__svg {
+    max-height: 70vh;
+  }
+
+  .sk-seq__svg :is(path, rect, circle) {
+    vector-effect: non-scaling-stroke;
+  }
+
+  .sk-seq__l {
+    transition: opacity 0.5s var(--sk-ease), transform 0.6s var(--sk-ease);
+  }
+
+  .sk-seq.is-live .sk-seq__l {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  .sk-seq.is-live[data-phase='0'] .sk-seq__l--0,
+  .sk-seq.is-live[data-phase='1'] :is(.sk-seq__l--0, .sk-seq__l--1),
+  .sk-seq.is-live[data-phase='2'] :is(.sk-seq__l--0, .sk-seq__l--1, .sk-seq__l--2),
+  .sk-seq.is-live[data-phase='3'] :is(.sk-seq__l--0, .sk-seq__l--1, .sk-seq__l--2, .sk-seq__l--3),
+  .sk-seq.is-live[data-phase='4'] :is(.sk-seq__l--0, .sk-seq__l--1, .sk-seq__l--2, .sk-seq__l--3, .sk-seq__l--4),
+  .sk-seq.is-live[data-phase='5'] .sk-seq__l {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sk-seq.is-live .sk-seq__floor {
+    opacity: 0;
+    transform: translateY(-14px);
+    transition: opacity 0.35s ease, transform 0.45s var(--sk-ease);
+  }
+
+  .sk-seq.is-live .sk-seq__floor.is-on {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sk-seq__crane {
+    transition: opacity 0.5s ease;
+  }
+
+  .sk-seq.is-live .sk-seq__crane {
+    opacity: 0;
+  }
+
+  .sk-seq.is-live:is([data-phase='2'], [data-phase='3']) .sk-seq__crane {
+    opacity: 1;
+  }
+
+  .sk-seq:not(.is-live) .sk-seq__crane {
+    display: none;
+  }
+
+  .q-earth { fill: var(--sk-fill); stroke: var(--sk-line-soft); stroke-width: 1; }
+  .q-hatch { stroke: var(--sk-line-soft); stroke-width: 6; stroke-dasharray: 2 6; }
+  .q-wall { stroke: var(--sk-line); stroke-width: 3; }
+  .q-found { fill: color-mix(in srgb, var(--sk-line) 35%, transparent); stroke: var(--sk-line); stroke-width: 1; }
+  .q-col { stroke: var(--sk-line); stroke-width: 3; }
+  .q-slab { stroke: var(--sk-line); stroke-width: 4; }
+  .q-facade { fill: color-mix(in srgb, var(--sk-line) 10%, transparent); stroke: var(--sk-line); stroke-width: 1.5; }
+  .q-win { fill: var(--sk-bg); stroke: var(--sk-line); stroke-width: 1; transition: fill 0.4s ease; }
+  .q-win.is-lit { fill: var(--sk-warn); }
+  .q-mep { fill: none; stroke-width: 2; stroke-dasharray: 5 3; }
+  .q-mep--a { stroke: var(--sk-accent); }
+  .q-mep--b { stroke: var(--sk-ok); }
+  .q-unit { fill: none; stroke: var(--sk-ok); stroke-width: 1.2; }
+  .q-par { stroke: var(--sk-line); stroke-width: 1.2; }
+  .q-tree circle { fill: color-mix(in srgb, var(--sk-ok) 35%, transparent); stroke: var(--sk-ok); stroke-width: 1; }
+  .q-tree path, .q-people path { stroke: var(--sk-ink-2); stroke-width: 1.4; fill: none; }
+  .q-people circle { fill: var(--sk-ink-2); }
+  .q-crane { fill: none; stroke: var(--sk-accent); stroke-width: 1.4; }
+  .q-cable { stroke: var(--sk-accent); stroke-width: 0.8; }
+  .q-load { fill: var(--sk-accent); }
+  .q-ground { stroke: var(--sk-line); stroke-width: 1.6; }
+
+  .sk-seq__ruler {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--sk-line);
+  }
+
+  .sk-seq__tick {
+    position: relative;
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+  }
+
+  .sk-seq__tick::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 1px;
+    height: 6px;
+    background: var(--sk-line);
+  }
+
+  .sk-seq__marker {
+    position: absolute;
+    top: -6px;
+    left: 100%;
+    width: 11px;
+    height: 11px;
+    margin-left: -6px;
+    background: var(--sk-accent);
+    transform: rotate(45deg);
+  }
+
+  .sk-seq__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--sk-font-display);
+    font-stretch: 125%;
+    font-size: clamp(1.8rem, 5.4vw, 3rem);
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .sk-seq__steps {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk-seq__step {
+    min-height: 62vh;
+    padding: var(--sp-5, 1.25rem) 0 var(--sp-5, 1.25rem) var(--sp-5, 1.25rem);
+    border-left: 1px solid var(--sk-line-soft);
+    transition: border-color 0.3s ease, opacity 0.3s ease;
+  }
+
+  .sk-seq.is-live .sk-seq__step {
+    opacity: 0.45;
+  }
+
+  .sk-seq.is-live .sk-seq__step.is-on {
+    opacity: 1;
+    border-color: var(--sk-accent);
+  }
+
+  .sk-seq__weeks {
+    margin: 0;
+    color: var(--sk-accent);
+    font-size: 0.76rem;
+  }
+
+  .sk-seq__step h3 {
+    margin: 6px 0 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .sk-seq__step p:last-child {
+    max-width: 30rem;
+    margin: 8px 0 0;
+    color: var(--sk-ink-2);
+    line-height: 1.6;
+  }
+
+  .sk-seq--overlay .sk-seq__copy {
+    margin-top: -40vh;
+  }
+
+  .sk-seq--overlay .sk-seq__step {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-glass);
+    min-height: 0;
+    margin-bottom: 50vh;
+  }
+
+  @media (max-width: 899px) {
+    .sk-seq__stage {
+      top: 64px;
+      background-color: var(--sk-bg);
+    }
+
+    .sk-seq__svg {
+      max-height: 36vh;
+    }
+
+    .sk-seq__copy {
+      position: relative;
+      z-index: 2;
+    }
+
+    .sk-seq__step {
+      min-height: 0;
+      margin-bottom: 40vh;
+      padding: var(--sp-4, 1rem);
+      border: 1px solid var(--sk-line-soft);
+      background: var(--sk-glass);
+      backdrop-filter: blur(6px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-seq *,
+    .sk-seq .sk-seq__floor {
+      transition: none !important;
+    }
+  }
+</style>

@@ -1,0 +1,655 @@
+---
+/**
+ * ConstructionSiteLogbook — Digital site diary (libro de órdenes) for one day: weather and
+ * temperature, crew per trade with +/− counters and a live total, a timeline of entries you can
+ * add to (progress, incident, visit, material delivery), and the daily safety checklist. Signing
+ * the day needs every safety item ticked; it then stamps the sheet with the time and locks it.
+ *
+ * @param {ConstructionDailyLog} log - The day's log.
+ * @param {Array<{id: string, name: string}>} sites - Sites for the selector.
+ * @param {string} supervisor - Name used when signing. Default 'Raúl Garrido'.
+ * @param {string} variant - 'two-col' | 'single'. Default 'two-col'.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: site and weather are labelled selects; crew counters are buttons named per trade
+ * with an <output>; the entry form has labels and an inline error; the timeline is an ordered
+ * list of <time>-stamped entries; checklist items are native checkboxes; the sign button explains
+ * why it is disabled; every change is announced in a polite live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/construction/construction-theme.css';
+import { constructionDailyLog, constructionSites, type ConstructionDailyLog } from '../templates/construction/data';
+
+interface OwnProps {
+  log?: ConstructionDailyLog;
+  sites?: Array<{ id: string; name: string }>;
+  supervisor?: string;
+  variant?: 'two-col' | 'single';
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  log = constructionDailyLog,
+  sites = constructionSites,
+  supervisor = 'Raúl Garrido',
+  variant = 'two-col',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const typeLabel = { avance: 'Avance', incidencia: 'Incidencia', visita: 'Visita', material: 'Material' };
+const total = log.crews.reduce((s, c) => s + c.workers, 0);
+const dateLabel = new Date(`${log.date}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const uid = `sk-lb-${Math.random().toString(36).slice(2, 7)}`;
+---
+
+<section
+  class:list={['sk-ui', 'sk-lb', `sk-lb--${variant}`, `sk-lb--${size}`, classAttr]}
+  aria-labelledby={`${uid}-h`}
+  data-sk-lb
+  data-supervisor={supervisor}
+  {...rest}
+>
+  <header class="sk-lb__head">
+    <div>
+      <p class="sk-lb__kicker sk-mono">Libro de órdenes · hoja diaria</p>
+      <h2 id={`${uid}-h`} class="sk-lb__title">{dateLabel}</h2>
+    </div>
+    <div class="sk-lb__meta">
+      <label>
+        <span class="sk-mono">Obra</span>
+        <select data-site>
+          {sites.map((s) => <option value={s.id} selected={s.id === log.siteId}>{s.name}</option>)}
+        </select>
+      </label>
+      <label>
+        <span class="sk-mono">Tiempo</span>
+        <select data-weather>
+          {['Despejado', 'Nublado', 'Lluvia', 'Viento'].map((w) => <option selected={w === log.weather}>{w}</option>)}
+        </select>
+      </label>
+      <label>
+        <span class="sk-mono">Temp. (°C)</span>
+        <input type="number" min="-10" max="45" value={log.tempC} data-temp />
+      </label>
+    </div>
+  </header>
+  <p class="sk-lb__warn sk-mono" data-warn hidden>Lluvia o viento: revisa grúa, andamios y trabajos en altura antes de empezar.</p>
+
+  <div class="sk-lb__grid">
+    <div class="sk-lb__col">
+      <section class="sk-lb__box" aria-labelledby={`${uid}-crew`}>
+        <h3 id={`${uid}-crew`} class="sk-lb__h">Personal en obra <output class="sk-mono" data-total>{total}</output></h3>
+        <ul class="sk-lb__crews" role="list">
+          {log.crews.map((c, i) => (
+            <li data-crew={i}>
+              <span class="sk-lb__trade"><b>{c.trade}</b><small class="sk-mono">{c.company}</small></span>
+              <span class="sk-lb__count">
+                <button type="button" data-dec aria-label={`Quitar un operario de ${c.trade}`}>−</button>
+                <output class="sk-mono" aria-label={`Operarios de ${c.trade}`} data-n>{c.workers}</output>
+                <button type="button" data-inc aria-label={`Añadir un operario a ${c.trade}`}>+</button>
+              </span>
+              <span class="sk-lb__bar" aria-hidden="true"><i style={`--w:${Math.min(100, c.workers * 6)}%`}></i></span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="sk-lb__box" aria-labelledby={`${uid}-prl`}>
+        <h3 id={`${uid}-prl`} class="sk-lb__h">Seguridad (PRL) <span class="sk-mono" data-prl-n>0/{log.checklist.length}</span></h3>
+        <ul class="sk-lb__checks" role="list">
+          {log.checklist.map((c) => (
+            <li><label><input type="checkbox" data-prl /> <span>{c}</span></label></li>
+          ))}
+        </ul>
+      </section>
+    </div>
+
+    <div class="sk-lb__col">
+      <section class="sk-lb__box" aria-labelledby={`${uid}-ent`}>
+        <h3 id={`${uid}-ent`} class="sk-lb__h">Anotaciones del día</h3>
+        <form class="sk-lb__form" novalidate data-form>
+          <div class="sk-lb__frow">
+            <label>
+              <span class="sk-mono">Tipo</span>
+              <select name="type">
+                {Object.entries(typeLabel).map(([k, v]) => <option value={k}>{v}</option>)}
+              </select>
+            </label>
+            <label>
+              <span class="sk-mono">Hora</span>
+              <input type="time" name="time" data-time />
+            </label>
+          </div>
+          <label class="sk-lb__text">
+            <span class="sk-mono">Anotación</span>
+            <textarea name="text" rows="2" placeholder="Ej.: hormigonado del forjado de planta 6 terminado" data-text aria-describedby={`${uid}-err`}></textarea>
+          </label>
+          <p class="sk-lb__err" id={`${uid}-err`} data-err hidden>Escribe la anotación.</p>
+          <button type="submit" class="sk-lb__btn">Añadir al diario</button>
+        </form>
+        <ol class="sk-lb__timeline" data-timeline>
+          {log.entries.map((e) => (
+            <li class={`sk-lb__entry sk-lb__entry--${e.type}`}>
+              <time class="sk-mono">{e.time}</time>
+              <span class="sk-lb__tag sk-mono">{typeLabel[e.type]}</span>
+              <p>{e.text}</p>
+              <small class="sk-mono">{e.author}</small>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </div>
+  </div>
+
+  <footer class="sk-lb__sign sk-crop">
+    <p class="sk-lb__sign-hint" data-sign-hint>Marca los {log.checklist.length} puntos de seguridad para firmar la hoja.</p>
+    <button type="button" class="sk-lb__btn sk-lb__btn--primary" data-sign disabled aria-describedby={`${uid}-hint`}>Firmar parte del día</button>
+    <span id={`${uid}-hint`} class="sk-sr">Requiere completar la lista de seguridad</span>
+    <div class="sk-lb__stamp sk-mono" aria-hidden="true" data-stamp hidden></div>
+  </footer>
+  <p class="sk-sr" role="status" aria-live="polite" data-live></p>
+</section>
+
+<script>
+  const typeLabel: Record<string, string> = { avance: 'Avance', incidencia: 'Incidencia', visita: 'Visita', material: 'Material' };
+
+  function initSkLb() {
+    document.querySelectorAll<HTMLElement>('[data-sk-lb]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+      const live = $('[data-live]');
+      const sign = $<HTMLButtonElement>('[data-sign]');
+      const prl = [...root.querySelectorAll<HTMLInputElement>('[data-prl]')];
+      const time = $<HTMLInputElement>('[data-time]');
+      const now = () => {
+        const d = new Date();
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      };
+      time.value = now();
+      const fromUrl = new URLSearchParams(location.search).get('obra');
+      const siteSel = $<HTMLSelectElement>('[data-site]');
+      if (fromUrl && [...siteSel.options].some((o) => o.value === fromUrl)) siteSel.value = fromUrl;
+      siteSel.addEventListener('change', () => (live.textContent = `Obra: ${siteSel.selectedOptions[0]?.textContent ?? ''}.`));
+
+      const total = () => {
+        const n = [...root.querySelectorAll<HTMLOutputElement>('[data-n]')].reduce((s, o) => s + Number(o.textContent), 0);
+        $('[data-total]').textContent = String(n);
+        return n;
+      };
+
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-inc], [data-dec]');
+        if (!b || root.classList.contains('is-signed')) return;
+        const li = b.closest<HTMLElement>('[data-crew]')!;
+        const out = li.querySelector<HTMLOutputElement>('[data-n]')!;
+        const v = Math.max(0, Number(out.textContent) + (b.hasAttribute('data-inc') ? 1 : -1));
+        out.textContent = String(v);
+        li.querySelector<HTMLElement>('.sk-lb__bar i')!.style.setProperty('--w', `${Math.min(100, v * 6)}%`);
+        const trade = li.querySelector('b')!.textContent;
+        live.textContent = `${trade}: ${v} operarios. Total en obra: ${total()}.`;
+      });
+
+      const weather = $<HTMLSelectElement>('[data-weather]');
+      const syncWeather = () => ($('[data-warn]').hidden = !['Lluvia', 'Viento'].includes(weather.value));
+      weather.addEventListener('change', () => {
+        syncWeather();
+        live.textContent = `Tiempo: ${weather.value}.`;
+      });
+      syncWeather();
+
+      const syncPrl = () => {
+        const done = prl.filter((p) => p.checked).length;
+        $('[data-prl-n]').textContent = `${done}/${prl.length}`;
+        const ready = done === prl.length;
+        sign.disabled = !ready || root.classList.contains('is-signed');
+        $('[data-sign-hint]').textContent = ready ? 'Lista de seguridad completa. Ya puedes firmar.' : `Faltan ${prl.length - done} puntos de seguridad para firmar la hoja.`;
+      };
+      prl.forEach((p) => p.addEventListener('change', syncPrl));
+
+      $<HTMLFormElement>('[data-form]').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const text = $<HTMLTextAreaElement>('[data-text]');
+        const err = $('[data-err]');
+        if (!text.value.trim()) {
+          err.hidden = false;
+          text.setAttribute('aria-invalid', 'true');
+          text.focus();
+          return;
+        }
+        err.hidden = true;
+        text.removeAttribute('aria-invalid');
+        const fd = new FormData(form);
+        const type = String(fd.get('type'));
+        const li = document.createElement('li');
+        li.className = `sk-lb__entry sk-lb__entry--${type} is-new`;
+        const t = document.createElement('time');
+        t.className = 'sk-mono';
+        t.textContent = String(fd.get('time') || now());
+        const tag = document.createElement('span');
+        tag.className = 'sk-lb__tag sk-mono';
+        tag.textContent = typeLabel[type] ?? type;
+        const p = document.createElement('p');
+        p.textContent = text.value.trim();
+        const by = document.createElement('small');
+        by.className = 'sk-mono';
+        by.textContent = root.dataset.supervisor ?? '';
+        li.append(t, tag, p, by);
+        $('[data-timeline]').append(li);
+        live.textContent = `Anotación añadida a las ${t.textContent}: ${typeLabel[type]}.`;
+        text.value = '';
+        time.value = now();
+      });
+
+      sign.addEventListener('click', () => {
+        root.classList.add('is-signed');
+        sign.disabled = true;
+        sign.textContent = 'Parte firmado';
+        root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement>('input, select, textarea, [data-inc], [data-dec], form button').forEach((el) => (el.disabled = true));
+        const stamp = $('[data-stamp]');
+        stamp.hidden = false;
+        stamp.innerHTML = `FIRMADO<br>${root.dataset.supervisor}<br>${now()} h`;
+        $('[data-sign-hint]').textContent = `Hoja firmada por ${root.dataset.supervisor} a las ${now()}.`;
+        live.textContent = `Parte del día firmado a las ${now()}. La hoja queda bloqueada.`;
+      });
+      syncPrl();
+    });
+  }
+  initSkLb();
+  document.addEventListener('astro:page-load', initSkLb);
+</script>
+
+<style>
+  .sk-lb {
+    position: relative;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-body);
+  }
+
+  .sk-lb__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--sk-line);
+  }
+
+  .sk-lb__kicker {
+    margin: 0;
+    color: var(--sk-accent);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  .sk-lb__title {
+    margin: 4px 0 0;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    text-transform: capitalize;
+  }
+
+  .sk-lb__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .sk-lb__meta label,
+  .sk-lb__frow label,
+  .sk-lb__text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .sk-lb__meta span,
+  .sk-lb__frow span,
+  .sk-lb__text span {
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+  }
+
+  .sk-lb :is(select, input[type='number'], input[type='time'], textarea) {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--sk-line-soft);
+    border-radius: var(--sk-radius);
+    background: var(--sk-panel);
+    color: var(--sk-ink);
+    font: inherit;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .sk-lb input[type='number'] {
+    width: 6rem;
+  }
+
+  .sk-lb textarea {
+    padding: 10px;
+    resize: vertical;
+  }
+
+  .sk-lb :is(select, input, textarea, button):focus-visible {
+    outline: 2px solid var(--sk-accent);
+    outline-offset: 2px;
+  }
+
+  .sk-lb__warn {
+    margin: 12px 0 0;
+    padding: 8px 12px;
+    border-left: 3px solid var(--sk-warn);
+    background: color-mix(in srgb, var(--sk-warn) 12%, transparent);
+    font-size: 0.8rem;
+  }
+
+  .sk-lb__warn[hidden] {
+    display: none;
+  }
+
+  .sk-lb__grid {
+    display: grid;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  @media (min-width: 1000px) {
+    .sk-lb--two-col .sk-lb__grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .sk-lb__col {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .sk-lb__box {
+    padding: 14px;
+    border: 1px solid var(--sk-line-soft);
+    background: var(--sk-panel);
+  }
+
+  .sk-lb__h {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 0 10px;
+    font-family: var(--sk-font-display);
+    font-stretch: 112%;
+    font-size: 1rem;
+    text-transform: uppercase;
+  }
+
+  .sk-lb__h output,
+  .sk-lb__h span {
+    color: var(--sk-accent);
+    font-size: 0.9rem;
+  }
+
+  .sk-lb__crews,
+  .sk-lb__checks,
+  .sk-lb__timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sk-lb__crews li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--sk-line-soft);
+  }
+
+  .sk-lb__trade {
+    display: grid;
+    min-width: 0;
+  }
+
+  .sk-lb__trade small {
+    color: var(--sk-ink-3);
+    font-size: 0.68rem;
+  }
+
+  .sk-lb__count {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-lb__count button {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--sk-ink);
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  .sk-lb__count button:disabled {
+    color: var(--sk-ink-3);
+    cursor: not-allowed;
+  }
+
+  .sk-lb__count output {
+    min-width: 2rem;
+    text-align: center;
+  }
+
+  .sk-lb__bar {
+    grid-column: 1 / -1;
+    height: 4px;
+    background: var(--sk-grid);
+  }
+
+  .sk-lb__bar i {
+    display: block;
+    width: var(--w);
+    height: 100%;
+    background: var(--sk-line);
+    transition: width 0.3s var(--sk-ease);
+  }
+
+  .sk-lb__checks li label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .sk-lb__checks input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--sk-ok);
+  }
+
+  .sk-lb__checks input:checked + span {
+    color: var(--sk-ink-3);
+  }
+
+  .sk-lb__form {
+    display: grid;
+    gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--sk-line-soft);
+  }
+
+  .sk-lb__frow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .sk-lb__err {
+    margin: 0;
+    color: var(--sk-danger);
+    font-size: 0.85rem;
+  }
+
+  .sk-lb__btn {
+    justify-self: start;
+    min-height: 46px;
+    padding: 0 1.1rem;
+    border: 1px solid var(--sk-line);
+    border-radius: var(--sk-radius);
+    background: transparent;
+    color: var(--sk-ink);
+    font-family: var(--sk-font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .sk-lb__btn--primary {
+    border-color: var(--sk-accent);
+    background: var(--sk-accent);
+    color: var(--sk-on-accent);
+  }
+
+  .sk-lb__btn:disabled {
+    border-color: var(--sk-line-soft);
+    background: transparent;
+    color: var(--sk-ink-3);
+    cursor: not-allowed;
+  }
+
+  .sk-lb__timeline {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+    padding-left: 18px;
+  }
+
+  .sk-lb__timeline::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--sk-line-soft);
+  }
+
+  .sk-lb__timeline :global(.sk-lb__entry) {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+  }
+
+  .sk-lb__timeline :global(.sk-lb__entry)::before {
+    content: '';
+    position: absolute;
+    left: -18px;
+    top: 5px;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--sk-line);
+    background: var(--sk-bg);
+    transform: rotate(45deg);
+  }
+
+  .sk-lb__timeline :global(.sk-lb__entry--incidencia)::before { background: var(--sk-danger); border-color: var(--sk-danger); }
+  .sk-lb__timeline :global(.sk-lb__entry--avance)::before { background: var(--sk-ok); border-color: var(--sk-ok); }
+  .sk-lb__timeline :global(.sk-lb__entry--material)::before { background: var(--sk-line); }
+
+  .sk-lb__timeline :global(.sk-lb__entry.is-new) {
+    animation: sk-lb-in 0.45s var(--sk-ease);
+  }
+
+  .sk-lb__timeline :global(time) {
+    color: var(--sk-accent);
+    font-size: 0.78rem;
+  }
+
+  .sk-lb__timeline :global(.sk-lb__tag) {
+    justify-self: start;
+    color: var(--sk-ink-3);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+  }
+
+  .sk-lb__timeline :global(p) {
+    grid-column: 1 / -1;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .sk-lb__timeline :global(small) {
+    grid-column: 1 / -1;
+    color: var(--sk-ink-3);
+    font-size: 0.7rem;
+  }
+
+  .sk-lb__sign {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border: 1px solid var(--sk-line);
+    background: var(--sk-panel);
+  }
+
+  .sk-lb__sign-hint {
+    flex: 1 1 220px;
+    margin: 0;
+    color: var(--sk-ink-2);
+  }
+
+  .sk-lb__stamp {
+    position: absolute;
+    right: 18px;
+    top: -26px;
+    padding: 6px 12px;
+    border: 2px solid var(--sk-ok);
+    color: var(--sk-ok);
+    background: var(--sk-panel);
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-align: center;
+    transform: rotate(-7deg);
+    animation: sk-lb-stamp 0.45s var(--sk-ease);
+  }
+
+  .sk-lb__stamp[hidden] {
+    display: none;
+  }
+
+  .sk-lb.is-signed .sk-lb__box {
+    opacity: 0.85;
+  }
+
+  @keyframes sk-lb-in { from { opacity: 0; transform: translateX(-10px); } }
+  @keyframes sk-lb-stamp { from { opacity: 0; transform: scale(2) rotate(-20deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-lb *,
+    .sk-lb__timeline :global(*) {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>

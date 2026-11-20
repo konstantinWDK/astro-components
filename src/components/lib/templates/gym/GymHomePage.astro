@@ -1,0 +1,48 @@
+---
+/**
+ * GymHomePage — Home page of the "Forja" gym template: hero with today's classes, disciplines,
+ * live occupancy, plans, coaches and the free-trial form.
+ *
+ * @param {GymRoutes} routes - Template route URLs.
+ * @param {typeof gymData} data - Brand, classes, plans, trainers and occupancy.
+ */
+import GymSiteLayout from './GymSiteLayout.astro';
+import GymHero from '../../sections/GymHero.astro';
+import GymDisciplines from '../../sections/GymDisciplines.astro';
+import GymMembershipPlans from '../../sections/GymMembershipPlans.astro';
+import GymTrainersGrid from '../../sections/GymTrainersGrid.astro';
+import GymTrialForm from '../../sections/GymTrialForm.astro';
+import GymOccupancyMeter from '../../app/GymOccupancyMeter.astro';
+import { gymRoutes, gymData, type GymRoutes } from './data';
+
+interface Props {
+  routes?: GymRoutes;
+  data?: typeof gymData;
+}
+
+const { routes = gymRoutes, data = gymData } = Astro.props;
+---
+
+<GymSiteLayout
+  title={`${data.brand.name} · Gimnasio y clases en Bilbao`}
+  description="Gimnasio en Bilbao con sala de fuerza, HIIT, boxeo, ciclo indoor y yoga. Sin permanencia y con 7 días de prueba gratis."
+  current="home"
+  routes={routes}
+>
+  <GymHero trialHref={routes.trial} classesHref={routes.classes} classes={data.classes} stats={data.stats} />
+  <GymDisciplines disciplines={data.disciplines} classesHref={routes.classes} />
+  <div class="gym-ui gym-home__occ">
+    <GymOccupancyMeter now={data.occupancy.now} capacity={data.occupancy.capacity} hourly={data.occupancy.hourly} />
+  </div>
+  <GymMembershipPlans plans={data.plans} ctaHref={routes.trial} />
+  <GymTrainersGrid trainers={data.trainers} disciplines={data.disciplines} variant="compact" />
+  <GymTrialForm disciplines={data.disciplines} plans={data.plans} showInfo={false} />
+</GymSiteLayout>
+
+<style>
+  .gym-home__occ {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--sp-4, 1rem);
+  }
+</style>

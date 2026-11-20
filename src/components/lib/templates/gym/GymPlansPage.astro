@@ -1,0 +1,115 @@
+---
+/**
+ * GymPlansPage — Membership plans with the monthly / yearly switch and the club's
+ * membership rules.
+ *
+ * @param {GymRoutes} routes - Template route URLs.
+ * @param {typeof gymData} data - Plans and brand.
+ */
+import GymSiteLayout from './GymSiteLayout.astro';
+import GymMembershipPlans from '../../sections/GymMembershipPlans.astro';
+import { gymRoutes, gymData, type GymRoutes } from './data';
+
+interface Props {
+  routes?: GymRoutes;
+  data?: typeof gymData;
+}
+
+const { routes = gymRoutes, data = gymData } = Astro.props;
+
+const faqs = [
+  { q: '¿Hay matrícula o permanencia?', a: 'No. Pagas mes a mes y puedes darte de baja avisando antes del día 25.' },
+  { q: '¿Puedo congelar la cuota?', a: 'Sí, hasta 2 meses al año sin coste, por ejemplo en vacaciones o por lesión.' },
+  { q: '¿Qué pasa si no voy a una clase reservada?', a: 'Puedes cancelar gratis hasta 2 horas antes. Si faltas sin avisar, no podrás reservar durante 48 horas.' },
+  { q: '¿Puedo cambiar de tarifa?', a: 'Cuando quieras desde el área de socios; el cambio se aplica en la siguiente cuota.' },
+];
+---
+
+<GymSiteLayout
+  title={`Tarifas · ${data.brand.name}`}
+  description="Tarifas del gimnasio sin matrícula ni permanencia: sala libre, clases ilimitadas o entrenador personal. Ahorra pagando al año."
+  current="plans"
+  routes={routes}
+>
+  <GymMembershipPlans plans={data.plans} ctaHref={routes.trial} title="Tarifas" headingLevel="h1" />
+  <section class="gym-ui gym-faq" aria-labelledby="gym-faq-title">
+    <h2 id="gym-faq-title" class="gym-faq__title">Preguntas frecuentes</h2>
+    <div class="gym-faq__list">
+      {faqs.map((f) => (
+        <details class="gym-faq__item">
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+</GymSiteLayout>
+
+<style>
+  .gym-faq {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    color: var(--gym-text);
+  }
+
+  .gym-faq__title {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: 2.2rem;
+    text-transform: uppercase;
+  }
+
+  .gym-faq__list {
+    border-top: 1px solid var(--gym-border);
+  }
+
+  .gym-faq__item {
+    border-bottom: 1px solid var(--gym-border);
+  }
+
+  .gym-faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 56px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .gym-faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .gym-faq__item summary::after {
+    content: '+';
+    color: var(--gym-brand);
+    font-size: 1.5rem;
+    font-weight: 400;
+    transition: transform 0.2s ease;
+  }
+
+  .gym-faq__item[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .gym-faq__item summary:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-faq__item p {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--gym-text-2);
+    line-height: 1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gym-faq__item summary::after {
+      transition: none;
+    }
+  }
+</style>

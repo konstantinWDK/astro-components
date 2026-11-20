@@ -1,448 +1,87 @@
 // src/components/lib/templates/food-delivery/data.ts
-// Domain entities, mock menu data, kitchen tickets and routing helpers for BiteFlow · Food Delivery & Kitchen OS.
+// Demo data for "BiteFlow" · food delivery storefront + kitchen OS (Madrid).
+// Replace with your own POS / API data: every page and component takes these shapes as props.
 
-export interface FoodModifierOption {
-  id: string;
-  name: string;
-  priceDelta: number;
-}
+export type FoodArt = 'burger' | 'pizza' | 'ramen' | 'taco' | 'poke' | 'salad' | 'dessert' | 'drink';
+export type FoodTag = 'vegano' | 'picante' | 'sin-gluten' | 'nuevo' | 'top';
+export type FoodOrderStatus = 'nuevo' | 'cocina' | 'listo' | 'reparto' | 'entregado' | 'cancelado';
+export type FoodStation = 'parrilla' | 'horno' | 'wok' | 'frio';
+export type FoodRiderStatus = 'libre' | 'recogiendo' | 'repartiendo' | 'descanso';
 
-export interface FoodModifierGroup {
+export interface FoodCategory {
   id: string;
-  title: string;
-  required: boolean;
-  minSelect?: number;
-  maxSelect?: number;
-  options: FoodModifierOption[];
+  label: string;
+  art: FoodArt;
 }
 
 export interface FoodDish {
   id: string;
   name: string;
-  category: 'burgers' | 'pizza' | 'bowls' | 'sides' | 'drinks' | 'desserts';
-  price: number;
   description: string;
-  calories: number;
-  dietary: ('vegan' | 'vegetarian' | 'gluten_free' | 'spicy' | 'halal')[];
+  /** Price in EUR. */
+  price: number;
+  category: string;
+  art: FoodArt;
+  kcal: number;
+  prepMin: number;
+  tags: FoodTag[];
   allergens: string[];
-  stockStatus: 'in_stock' | 'low_stock' | 'sold_out';
-  prepTimeMin: number;
-  popular?: boolean;
-  modifiers?: FoodModifierGroup[];
+  available: boolean;
+  station: FoodStation;
 }
 
-export interface FoodOrderItem {
+export interface FoodOrderLine {
   dishId: string;
-  name: string;
   qty: number;
-  unitPrice: number;
-  selectedModifiers?: string[];
 }
 
 export interface FoodOrder {
   id: string;
-  reference: string;
-  customerName: string;
-  customerPhone: string;
-  deliveryAddress: string;
-  floorDoor: string;
-  orderTime: string;
-  items: FoodOrderItem[];
-  subtotal: number;
-  deliveryFee: number;
-  tip: number;
+  customer: string;
+  phone: string;
+  address: string;
+  zone: string;
+  lines: FoodOrderLine[];
   total: number;
-  paymentMethod: 'card' | 'apple_pay' | 'cash';
-  status: 'new' | 'kitchen_prep' | 'ready_for_pickup' | 'out_for_delivery' | 'delivered';
-  courier?: {
-    name: string;
-    phone: string;
-    vehicle: 'ebike' | 'scooter';
-    etaMin: number;
-  };
-  notes?: string;
+  status: FoodOrderStatus;
+  /** HH:MM local time. */
+  placedAt: string;
+  channel: 'app' | 'web' | 'teléfono';
+  payment: 'tarjeta' | 'bizum' | 'efectivo';
+  riderId?: string;
+  etaMin: number;
+  note?: string;
 }
 
-export interface KitchenTicket {
+export interface FoodTicket {
   id: string;
-  orderRef: string;
-  channel: 'delivery' | 'takeaway';
-  placedTime: string;
-  elapsedMin: number;
-  targetMin: number;
-  status: 'new' | 'prepping' | 'ready';
-  urgent?: boolean;
-  items: {
-    name: string;
-    qty: number;
-    modifiers?: string[];
-    allergies?: string[];
-  }[];
+  orderId: string;
+  station: FoodStation;
+  items: Array<{ name: string; qty: number; mods?: string[] }>;
+  /** Seconds since the ticket was fired. */
+  elapsedSec: number;
+  /** Target prep time in seconds. */
+  targetSec: number;
+  allergy?: string;
+  channel: 'app' | 'web' | 'teléfono';
+  status: 'nuevo' | 'marcha' | 'listo';
 }
 
 export interface FoodRider {
   id: string;
   name: string;
-  vehicle: 'ebike' | 'scooter';
-  phone: string;
-  status: 'delivering' | 'waiting_pickup' | 'idle' | 'offline';
-  activeOrderRef?: string;
-  completedToday: number;
+  vehicle: 'bici' | 'moto' | 'patinete';
+  status: FoodRiderStatus;
+  battery: number;
+  deliveriesToday: number;
   rating: number;
+  /** Position on the 0–100 demo map. */
+  x: number;
+  y: number;
+  orderId?: string;
 }
 
-export const foodCategories = [
-  { id: 'all', label: 'Full Menu', icon: 'utensils' },
-  { id: 'burgers', label: 'Smash Burgers', icon: 'flame' },
-  { id: 'pizza', label: 'Artisan Pizza', icon: 'utensils' },
-  { id: 'bowls', label: 'Healthy Bowls', icon: 'utensils' },
-  { id: 'sides', label: 'Sides & Fries', icon: 'package' },
-  { id: 'drinks', label: 'Drinks & Craft', icon: 'shoppingBag' },
-  { id: 'desserts', label: 'Desserts', icon: 'sparkles' },
-];
-
-export const foodDishes: FoodDish[] = [
-  {
-    id: 'dish-01',
-    name: 'Truffle Smash Double Cheeseburger',
-    category: 'burgers',
-    price: 13.90,
-    description: 'Two 100g dry-aged beef smash patties, aged cheddar, black truffle aioli, caramelized shallots in a toasted potato brioche bun.',
-    calories: 780,
-    dietary: ['halal'],
-    allergens: ['gluten', 'dairy', 'eggs'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 10,
-    popular: true,
-    modifiers: [
-      {
-        id: 'doneness',
-        title: 'Burger Patty Style',
-        required: true,
-        options: [
-          { id: 'opt-crisp-edges', name: 'Ultra-Crispy Lacy Edges', priceDelta: 0 },
-          { id: 'opt-juicy', name: 'Juicy Medium Smash', priceDelta: 0 },
-        ],
-      },
-      {
-        id: 'extras',
-        title: 'Add Extra Toppings',
-        required: false,
-        maxSelect: 3,
-        options: [
-          { id: 'extra-bacon', name: 'Smoked Crispy Bacon', priceDelta: 1.80 },
-          { id: 'extra-cheese', name: 'Extra Melted Cheddar Slice', priceDelta: 1.20 },
-          { id: 'extra-jalapeno', name: 'Pickled Jalapeños', priceDelta: 0.80 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'dish-02',
-    name: 'Spicy Hot Honey Fried Chicken Sando',
-    category: 'burgers',
-    price: 12.50,
-    description: 'Crispy buttermilk chicken thigh tossed in habanero hot honey glaze, crunchy cabbage slaw, dill pickles on toasted brioche.',
-    calories: 820,
-    dietary: ['spicy'],
-    allergens: ['gluten', 'dairy', 'eggs'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 12,
-    popular: true,
-  },
-  {
-    id: 'dish-03',
-    name: 'Burrata & San Marzano Margherita Pizza',
-    category: 'pizza',
-    price: 14.50,
-    description: '48h slow-fermented Neapolitan dough, San Marzano D.O.P. tomato sauce, fresh creamy burrata heart, basil oil, Maldon sea salt.',
-    calories: 890,
-    dietary: ['vegetarian'],
-    allergens: ['gluten', 'dairy'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 8,
-    popular: true,
-  },
-  {
-    id: 'dish-04',
-    name: 'Diavola Nduja & Spianata Calabrese',
-    category: 'pizza',
-    price: 15.00,
-    description: 'Fiery Calabrian nduja sausage, crispy spicy salami, fior di latte mozzarella, hot chili flakes, fresh oregano.',
-    calories: 960,
-    dietary: ['spicy'],
-    allergens: ['gluten', 'dairy'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 9,
-  },
-  {
-    id: 'dish-05',
-    name: 'Pacific Salmon & Edamame Poke Bowl',
-    category: 'bowls',
-    price: 13.80,
-    description: 'Fresh sushi-grade Atlantic salmon cubes, seasoned sushi rice, creamy avocado, edamame, wakame, crispy shallots, ponzu-sesame dressing.',
-    calories: 610,
-    dietary: ['gluten_free', 'halal'],
-    allergens: ['fish', 'sesame', 'soy'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 7,
-    popular: true,
-  },
-  {
-    id: 'dish-06',
-    name: 'Roasted Sweet Potato & Miso Tofu Bowl',
-    category: 'bowls',
-    price: 11.90,
-    description: 'Glazed crispy organic tofu, charred sweet potato wedges, tri-color quinoa, pickled ginger, tender baby spinach, ginger-tahini crema.',
-    calories: 520,
-    dietary: ['vegan', 'gluten_free'],
-    allergens: ['sesame', 'soy'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 7,
-  },
-  {
-    id: 'dish-07',
-    name: 'Parmesan & Rosemary Crinkle Cut Fries',
-    category: 'sides',
-    price: 4.80,
-    description: 'Hand-cut skin-on Yukon gold potatoes fried golden, tossed with fresh rosemary, sea salt, aged grated Grana Padano and garlic aioli dip.',
-    calories: 390,
-    dietary: ['vegetarian'],
-    allergens: ['dairy', 'eggs'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 5,
-  },
-  {
-    id: 'dish-08',
-    name: 'Smoked Jalapeño Mac & Cheese Bites (6 pcs)',
-    category: 'sides',
-    price: 6.20,
-    description: 'Creamy three-cheese macaroni croquettes infused with charred jalapeños, panko crust, served with sriracha mayo.',
-    calories: 440,
-    dietary: ['vegetarian', 'spicy'],
-    allergens: ['gluten', 'dairy', 'eggs'],
-    stockStatus: 'low_stock',
-    prepTimeMin: 6,
-  },
-  {
-    id: 'dish-09',
-    name: 'Cold-Pressed Dragonfruit Citrus Refresher (400ml)',
-    category: 'drinks',
-    price: 3.90,
-    description: 'Organic pink dragonfruit, freshly squeezed Valencia oranges, crushed mint and sparkling mineral water. No added sugar.',
-    calories: 120,
-    dietary: ['vegan', 'gluten_free'],
-    allergens: [],
-    stockStatus: 'in_stock',
-    prepTimeMin: 3,
-  },
-  {
-    id: 'dish-10',
-    name: 'Warm Pistachio Lava Cookie & Vanilla Gelato',
-    category: 'desserts',
-    price: 6.50,
-    description: 'Oven-baked chocolate chip cookie with molten Bronte pistachio cream core, served with a separate cold tub of artisan Madagascar vanilla gelato.',
-    calories: 540,
-    dietary: ['vegetarian'],
-    allergens: ['gluten', 'dairy', 'eggs', 'nuts'],
-    stockStatus: 'in_stock',
-    prepTimeMin: 5,
-    popular: true,
-  },
-];
-
-export const foodOrders: FoodOrder[] = [
-  {
-    id: 'ord-01',
-    reference: 'BF-4091',
-    customerName: 'Mateo Garrido',
-    customerPhone: '+34 611 902 334',
-    deliveryAddress: 'Calle Fuencarral 84, 2º B, Madrid',
-    floorDoor: '2º B · Ring bell Garrido',
-    orderTime: '13:42',
-    items: [
-      { dishId: 'dish-01', name: 'Truffle Smash Double Cheeseburger', qty: 2, unitPrice: 13.90, selectedModifiers: ['Crispy Lacy Edges', 'Extra Bacon'] },
-      { dishId: 'dish-07', name: 'Parmesan & Rosemary Crinkle Fries', qty: 1, unitPrice: 4.80 },
-      { dishId: 'dish-09', name: 'Dragonfruit Citrus Refresher', qty: 2, unitPrice: 3.90 },
-    ],
-    subtotal: 42.20,
-    deliveryFee: 1.90,
-    tip: 2.00,
-    total: 46.10,
-    paymentMethod: 'apple_pay',
-    status: 'out_for_delivery',
-    courier: {
-      name: 'Iker Salcedo',
-      phone: '+34 670 119 203',
-      vehicle: 'ebike',
-      etaMin: 8,
-    },
-    notes: 'Please leave in hands of receptionist if not answering.',
-  },
-  {
-    id: 'ord-02',
-    reference: 'BF-4092',
-    customerName: 'Lucía Santamaría',
-    customerPhone: '+34 645 881 229',
-    deliveryAddress: 'Paseo de la Castellana 120, 7º A, Madrid',
-    floorDoor: '7º A (Elevator available)',
-    orderTime: '13:48',
-    items: [
-      { dishId: 'dish-03', name: 'Burrata & San Marzano Margherita', qty: 1, unitPrice: 14.50 },
-      { dishId: 'dish-04', name: 'Diavola Nduja & Spianata Calabrese', qty: 1, unitPrice: 15.00 },
-      { dishId: 'dish-10', name: 'Warm Pistachio Lava Cookie', qty: 1, unitPrice: 6.50 },
-    ],
-    subtotal: 36.00,
-    deliveryFee: 2.50,
-    tip: 3.00,
-    total: 41.50,
-    paymentMethod: 'card',
-    status: 'kitchen_prep',
-    courier: {
-      name: 'David Rivas',
-      phone: '+34 633 440 918',
-      vehicle: 'scooter',
-      etaMin: 18,
-    },
-    notes: 'Gluten sensitivity for guest; please bake margherita in clean section.',
-  },
-  {
-    id: 'ord-03',
-    reference: 'BF-4093',
-    customerName: 'Ignacio Montero',
-    customerPhone: '+34 689 310 442',
-    deliveryAddress: 'Calle Goya 33, Bajo Dcha, Madrid',
-    floorDoor: 'Ground Floor, direct street door',
-    orderTime: '13:54',
-    items: [
-      { dishId: 'dish-05', name: 'Pacific Salmon & Edamame Poke Bowl', qty: 2, unitPrice: 13.80 },
-      { dishId: 'dish-08', name: 'Jalapeño Mac & Cheese Bites', qty: 1, unitPrice: 6.20 },
-    ],
-    subtotal: 33.80,
-    deliveryFee: 1.90,
-    tip: 1.50,
-    total: 37.20,
-    paymentMethod: 'card',
-    status: 'new',
-    notes: 'No cutlery needed, eco packaging please.',
-  },
-  {
-    id: 'ord-04',
-    reference: 'BF-4094',
-    customerName: 'Valeria Cisneros',
-    customerPhone: '+34 622 710 885',
-    deliveryAddress: 'Calle Velázquez 62, 4º Ext, Madrid',
-    floorDoor: '4º Ext',
-    orderTime: '13:20',
-    items: [
-      { dishId: 'dish-02', name: 'Spicy Hot Honey Fried Chicken Sando', qty: 1, unitPrice: 12.50 },
-      { dishId: 'dish-07', name: 'Parmesan & Rosemary Crinkle Fries', qty: 1, unitPrice: 4.80 },
-    ],
-    subtotal: 17.30,
-    deliveryFee: 1.90,
-    tip: 2.00,
-    total: 21.20,
-    paymentMethod: 'apple_pay',
-    status: 'delivered',
-    courier: {
-      name: 'Iker Salcedo',
-      phone: '+34 670 119 203',
-      vehicle: 'ebike',
-      etaMin: 0,
-    },
-    notes: 'Delivered in 22 min total.',
-  },
-];
-
-export const kitchenTickets: KitchenTicket[] = [
-  {
-    id: 'kds-01',
-    orderRef: 'BF-4092',
-    channel: 'delivery',
-    placedTime: '13:48',
-    elapsedMin: 7,
-    targetMin: 15,
-    status: 'prepping',
-    urgent: false,
-    items: [
-      { name: 'Burrata Margherita Pizza', qty: 1, modifiers: ['Extra Basil Oil'] },
-      { name: 'Diavola Nduja Pizza', qty: 1, modifiers: ['Extra spicy flakes'] },
-      { name: 'Pistachio Lava Cookie', qty: 1, allergies: ['Nuts', 'Dairy'] },
-    ],
-  },
-  {
-    id: 'kds-02',
-    orderRef: 'BF-4093',
-    channel: 'delivery',
-    placedTime: '13:54',
-    elapsedMin: 2,
-    targetMin: 12,
-    status: 'new',
-    urgent: false,
-    items: [
-      { name: 'Salmon Poke Bowl', qty: 2, modifiers: ['No cilantro', 'Extra ponzu'] },
-      { name: 'Mac & Cheese Bites (6 pcs)', qty: 1 },
-    ],
-  },
-  {
-    id: 'kds-03',
-    orderRef: 'BF-4091',
-    channel: 'delivery',
-    placedTime: '13:42',
-    elapsedMin: 14,
-    targetMin: 12,
-    status: 'ready',
-    urgent: true,
-    items: [
-      { name: 'Truffle Smash Double', qty: 2, modifiers: ['Crispy Edges', '+Bacon'] },
-      { name: 'Parmesan Crinkle Fries', qty: 1 },
-      { name: 'Dragonfruit Refresher', qty: 2 },
-    ],
-  },
-];
-
-export const foodRiders: FoodRider[] = [
-  {
-    id: 'rider-01',
-    name: 'Iker Salcedo',
-    vehicle: 'ebike',
-    phone: '+34 670 119 203',
-    status: 'delivering',
-    activeOrderRef: 'BF-4091',
-    completedToday: 11,
-    rating: 4.95,
-  },
-  {
-    id: 'rider-02',
-    name: 'David Rivas',
-    vehicle: 'scooter',
-    phone: '+34 633 440 918',
-    status: 'waiting_pickup',
-    activeOrderRef: 'BF-4092',
-    completedToday: 9,
-    rating: 4.88,
-  },
-  {
-    id: 'rider-03',
-    name: 'Sofia Benitez',
-    vehicle: 'ebike',
-    phone: '+34 699 228 110',
-    status: 'idle',
-    completedToday: 14,
-    rating: 5.0,
-  },
-  {
-    id: 'rider-04',
-    name: 'Carlos Mendoza',
-    vehicle: 'scooter',
-    phone: '+34 612 809 331',
-    status: 'offline',
-    completedToday: 7,
-    rating: 4.82,
-  },
-];
-
-export interface FoodDeliveryRoutes {
+export interface FoodRoutes {
   home: string;
   menu: string;
   tracking: string;
@@ -456,39 +95,136 @@ export interface FoodDeliveryRoutes {
   settings: string;
 }
 
-export const foodDeliveryRoutes: FoodDeliveryRoutes = {
-  home: '/preview/food-delivery',
-  menu: '/preview/food-delivery/menu',
-  tracking: '/preview/food-delivery/track',
-  partner: '/preview/food-delivery/partner',
-  signIn: '/preview/food-delivery/sign-in',
-  dashboard: '/preview/food-delivery/app',
-  kds: '/preview/food-delivery/app/kds',
-  menuCms: '/preview/food-delivery/app/menu',
-  orders: '/preview/food-delivery/app/orders',
-  riders: '/preview/food-delivery/app/riders',
-  settings: '/preview/food-delivery/app/settings',
+export const foodRoutes: FoodRoutes = {
+  home: '/',
+  menu: '/carta',
+  tracking: '/pedido',
+  partner: '/restaurantes',
+  signIn: '/acceso',
+  dashboard: '/cocina',
+  kds: '/cocina/kds',
+  menuCms: '/cocina/carta',
+  orders: '/cocina/pedidos',
+  riders: '/cocina/riders',
+  settings: '/cocina/ajustes',
+};
+
+export const foodBrand = {
+  name: 'BiteFlow',
+  kitchen: 'Cocina Lavapiés',
+  city: 'Madrid',
+  address: 'Calle del Ave María 31, 28012 Madrid',
+  phone: '+34 910 555 214',
+  email: 'hola@biteflow.es',
+  hours: 'Todos los días · 12:30–00:00',
+  legalName: 'BiteFlow Kitchens S.L.',
+  freeDeliveryFrom: 25,
+  deliveryFee: 2.49,
+  avgMinutes: 24,
+};
+
+export const foodCategories: FoodCategory[] = [
+  { id: 'burgers', label: 'Smash burgers', art: 'burger' },
+  { id: 'pizzas', label: 'Pizzas', art: 'pizza' },
+  { id: 'ramen', label: 'Ramen y wok', art: 'ramen' },
+  { id: 'tacos', label: 'Tacos', art: 'taco' },
+  { id: 'bowls', label: 'Poke y bowls', art: 'poke' },
+  { id: 'postres', label: 'Postres', art: 'dessert' },
+  { id: 'bebidas', label: 'Bebidas', art: 'drink' },
+];
+
+export const foodDishes: FoodDish[] = [
+  { id: 'd01', name: 'Doble Smash Lavapiés', description: 'Dos smash de vaca madurada, cheddar fundido, cebolla a la plancha y salsa de la casa en pan brioche.', price: 12.9, category: 'burgers', art: 'burger', kcal: 920, prepMin: 9, tags: ['top'], allergens: ['gluten', 'lácteos', 'huevo', 'mostaza'], available: true, station: 'parrilla' },
+  { id: 'd02', name: 'Smash Chipotle', description: 'Smash simple, jalapeño encurtido, mayo de chipotle ahumado y queso pepper jack.', price: 10.5, category: 'burgers', art: 'burger', kcal: 780, prepMin: 8, tags: ['picante'], allergens: ['gluten', 'lácteos', 'huevo'], available: true, station: 'parrilla' },
+  { id: 'd03', name: 'Burger Verde', description: 'Medallón de garbanzo y remolacha, aguacate, rúcula y mayonesa vegana de lima.', price: 11.2, category: 'burgers', art: 'burger', kcal: 640, prepMin: 8, tags: ['vegano', 'nuevo'], allergens: ['gluten', 'sésamo'], available: true, station: 'parrilla' },
+  { id: 'd04', name: 'Margarita de horno', description: 'Masa de 48 h, tomate San Marzano, fior di latte y albahaca fresca.', price: 11.5, category: 'pizzas', art: 'pizza', kcal: 810, prepMin: 7, tags: [], allergens: ['gluten', 'lácteos'], available: true, station: 'horno' },
+  { id: 'd05', name: 'Diavola Picantona', description: 'Salami picante, nduja, miel de romero y guindilla en aceite.', price: 13.9, category: 'pizzas', art: 'pizza', kcal: 980, prepMin: 7, tags: ['picante', 'top'], allergens: ['gluten', 'lácteos'], available: true, station: 'horno' },
+  { id: 'd06', name: 'Tonkotsu 18 h', description: 'Caldo de cerdo de 18 horas, chashu, huevo marinado, cebolleta y nori.', price: 14.5, category: 'ramen', art: 'ramen', kcal: 870, prepMin: 6, tags: ['top'], allergens: ['gluten', 'huevo', 'soja', 'sésamo'], available: true, station: 'wok' },
+  { id: 'd07', name: 'Yakisoba de verduras', description: 'Fideos salteados al wok con col, setas shiitake, zanahoria y salsa yakisoba.', price: 11.9, category: 'ramen', art: 'ramen', kcal: 690, prepMin: 6, tags: ['vegano'], allergens: ['gluten', 'soja'], available: false, station: 'wok' },
+  { id: 'd08', name: 'Tacos al pastor (3)', description: 'Cerdo adobado al trompo, piña asada, cilantro y cebolla en tortilla de maíz.', price: 10.9, category: 'tacos', art: 'taco', kcal: 620, prepMin: 6, tags: ['sin-gluten', 'top'], allergens: [], available: true, station: 'parrilla' },
+  { id: 'd09', name: 'Tacos de coliflor (3)', description: 'Coliflor asada con achiote, pico de gallo, guacamole y salsa macha.', price: 9.9, category: 'tacos', art: 'taco', kcal: 480, prepMin: 6, tags: ['vegano', 'sin-gluten', 'picante'], allergens: ['frutos secos'], available: true, station: 'parrilla' },
+  { id: 'd10', name: 'Poke de salmón', description: 'Arroz de sushi, salmón marinado, edamame, mango, pepino y mayo de sriracha.', price: 13.5, category: 'bowls', art: 'poke', kcal: 640, prepMin: 5, tags: ['top'], allergens: ['pescado', 'soja', 'sésamo', 'huevo'], available: true, station: 'frio' },
+  { id: 'd11', name: 'Bowl de tofu crujiente', description: 'Tofu al panko, quinoa, col lombarda, zanahoria encurtida y salsa de cacahuete.', price: 11.9, category: 'bowls', art: 'poke', kcal: 590, prepMin: 5, tags: ['vegano', 'nuevo'], allergens: ['gluten', 'soja', 'cacahuete'], available: true, station: 'frio' },
+  { id: 'd12', name: 'Ensalada César', description: 'Romana, pollo a la brasa, parmesano, picatostes y aliño César de anchoa.', price: 10.2, category: 'bowls', art: 'salad', kcal: 520, prepMin: 4, tags: [], allergens: ['gluten', 'lácteos', 'huevo', 'pescado'], available: true, station: 'frio' },
+  { id: 'd13', name: 'Donut de pistacho', description: 'Brioche frito relleno de crema de pistacho y cubierto de glaseado.', price: 4.9, category: 'postres', art: 'dessert', kcal: 410, prepMin: 1, tags: ['nuevo'], allergens: ['gluten', 'lácteos', 'huevo', 'frutos secos'], available: true, station: 'frio' },
+  { id: 'd14', name: 'Tarta de queso tostada', description: 'Ración generosa de tarta de queso al horno con base de galleta.', price: 5.5, category: 'postres', art: 'dessert', kcal: 460, prepMin: 1, tags: ['top'], allergens: ['gluten', 'lácteos', 'huevo'], available: true, station: 'frio' },
+  { id: 'd15', name: 'Limonada de hierbabuena', description: 'Limón exprimido, hierbabuena y un toque de jengibre. 500 ml.', price: 3.5, category: 'bebidas', art: 'drink', kcal: 120, prepMin: 1, tags: ['vegano', 'sin-gluten'], allergens: [], available: true, station: 'frio' },
+  { id: 'd16', name: 'Kombucha de frutos rojos', description: 'Fermentada en Madrid, sin pasteurizar. 330 ml.', price: 3.9, category: 'bebidas', art: 'drink', kcal: 60, prepMin: 1, tags: ['vegano', 'sin-gluten'], allergens: [], available: true, station: 'frio' },
+];
+
+export const foodOrders: FoodOrder[] = [
+  { id: 'BF-4821', customer: 'Lucía Martín', phone: '+34 611 204 118', address: 'C/ Argumosa 14, 3.º B', zone: 'Lavapiés', lines: [{ dishId: 'd01', qty: 2 }, { dishId: 'd15', qty: 2 }], total: 32.8, status: 'cocina', placedAt: '21:02', channel: 'app', payment: 'tarjeta', etaMin: 18, note: 'Timbre roto, llamar al llegar' },
+  { id: 'BF-4822', customer: 'Diego Álvarez', phone: '+34 622 908 441', address: 'C/ Embajadores 52, 1.º A', zone: 'Embajadores', lines: [{ dishId: 'd06', qty: 1 }, { dishId: 'd13', qty: 1 }], total: 21.89, status: 'nuevo', placedAt: '21:05', channel: 'web', payment: 'bizum', etaMin: 26 },
+  { id: 'BF-4819', customer: 'Aitana Ruiz', phone: '+34 633 112 870', address: 'C/ Santa Isabel 9, 4.º', zone: 'Atocha', lines: [{ dishId: 'd10', qty: 2 }, { dishId: 'd16', qty: 2 }], total: 34.8, status: 'reparto', placedAt: '20:48', channel: 'app', payment: 'tarjeta', riderId: 'r02', etaMin: 6 },
+  { id: 'BF-4818', customer: 'Marcos Gil', phone: '+34 644 551 023', address: 'Plaza de Tirso de Molina 3', zone: 'Sol', lines: [{ dishId: 'd05', qty: 1 }, { dishId: 'd04', qty: 1 }], total: 27.89, status: 'listo', placedAt: '20:51', channel: 'teléfono', payment: 'efectivo', etaMin: 12 },
+  { id: 'BF-4817', customer: 'Nerea Campos', phone: '+34 655 330 912', address: 'C/ Mesón de Paredes 71', zone: 'Lavapiés', lines: [{ dishId: 'd08', qty: 2 }, { dishId: 'd09', qty: 1 }], total: 31.7, status: 'reparto', placedAt: '20:44', channel: 'app', payment: 'tarjeta', riderId: 'r04', etaMin: 3 },
+  { id: 'BF-4815', customer: 'Javier Soto', phone: '+34 666 801 274', address: 'C/ Atocha 88, 2.º D', zone: 'Atocha', lines: [{ dishId: 'd02', qty: 1 }, { dishId: 'd14', qty: 1 }], total: 18.49, status: 'entregado', placedAt: '20:21', channel: 'web', payment: 'bizum', riderId: 'r01', etaMin: 0 },
+  { id: 'BF-4814', customer: 'Carmen Vidal', phone: '+34 677 193 055', address: 'Ronda de Valencia 6', zone: 'Embajadores', lines: [{ dishId: 'd11', qty: 1 }, { dishId: 'd12', qty: 1 }], total: 24.59, status: 'entregado', placedAt: '20:12', channel: 'app', payment: 'tarjeta', riderId: 'r03', etaMin: 0 },
+  { id: 'BF-4813', customer: 'Óscar Prieto', phone: '+34 688 420 667', address: 'C/ Valencia 21, bajo', zone: 'Lavapiés', lines: [{ dishId: 'd03', qty: 2 }], total: 24.89, status: 'cancelado', placedAt: '20:05', channel: 'app', payment: 'tarjeta', etaMin: 0, note: 'Cliente canceló: dirección fuera de zona' },
+  { id: 'BF-4812', customer: 'Irene Lozano', phone: '+34 699 017 348', address: 'C/ Lavapiés 40, 3.º', zone: 'Lavapiés', lines: [{ dishId: 'd06', qty: 2 }, { dishId: 'd15', qty: 1 }], total: 32.5, status: 'entregado', placedAt: '19:58', channel: 'teléfono', payment: 'efectivo', riderId: 'r02', etaMin: 0 },
+];
+
+export const foodTickets: FoodTicket[] = [
+  { id: 't1', orderId: 'BF-4822', station: 'wok', items: [{ name: 'Tonkotsu 18 h', qty: 1, mods: ['Sin cebolleta', 'Huevo extra'] }, { name: 'Donut de pistacho', qty: 1 }], elapsedSec: 45, targetSec: 600, channel: 'web', status: 'nuevo' },
+  { id: 't2', orderId: 'BF-4821', station: 'parrilla', items: [{ name: 'Doble Smash Lavapiés', qty: 2, mods: ['Punto: al punto', 'Sin pepinillo'] }, { name: 'Limonada de hierbabuena', qty: 2 }], elapsedSec: 312, targetSec: 540, channel: 'app', status: 'marcha', allergy: 'Alergia a la mostaza' },
+  { id: 't3', orderId: 'BF-4823', station: 'horno', items: [{ name: 'Diavola Picantona', qty: 2 }, { name: 'Tarta de queso tostada', qty: 1 }], elapsedSec: 505, targetSec: 480, channel: 'app', status: 'marcha' },
+  { id: 't4', orderId: 'BF-4824', station: 'frio', items: [{ name: 'Poke de salmón', qty: 1, mods: ['Sin sésamo'] }, { name: 'Bowl de tofu crujiente', qty: 1 }], elapsedSec: 150, targetSec: 360, channel: 'teléfono', status: 'marcha', allergy: 'Alergia al sésamo' },
+  { id: 't5', orderId: 'BF-4825', station: 'parrilla', items: [{ name: 'Tacos al pastor (3)', qty: 2 }, { name: 'Tacos de coliflor (3)', qty: 1 }], elapsedSec: 20, targetSec: 420, channel: 'app', status: 'nuevo' },
+  { id: 't6', orderId: 'BF-4818', station: 'horno', items: [{ name: 'Margarita de horno', qty: 1 }, { name: 'Diavola Picantona', qty: 1 }], elapsedSec: 470, targetSec: 480, channel: 'teléfono', status: 'listo' },
+];
+
+export const foodRiders: FoodRider[] = [
+  { id: 'r01', name: 'Leo Fernández', vehicle: 'bici', status: 'libre', battery: 82, deliveriesToday: 11, rating: 4.9, x: 46, y: 54 },
+  { id: 'r02', name: 'Samira Benali', vehicle: 'moto', status: 'repartiendo', battery: 64, deliveriesToday: 14, rating: 4.8, x: 70, y: 66, orderId: 'BF-4819' },
+  { id: 'r03', name: 'Pablo Ortega', vehicle: 'patinete', status: 'recogiendo', battery: 38, deliveriesToday: 8, rating: 4.7, x: 40, y: 40 },
+  { id: 'r04', name: 'Inés Navarro', vehicle: 'bici', status: 'repartiendo', battery: 91, deliveriesToday: 12, rating: 5, x: 28, y: 72, orderId: 'BF-4817' },
+  { id: 'r05', name: 'Tomás Rey', vehicle: 'moto', status: 'descanso', battery: 55, deliveriesToday: 9, rating: 4.6, x: 58, y: 30 },
+];
+
+/** Orders per hour today (12 h → 23 h) and the same weekday last week. */
+export const foodHourly = {
+  hours: ['12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'],
+  today: [18, 46, 61, 34, 12, 9, 15, 38, 72, 88, 54, 0],
+  lastWeek: [15, 40, 58, 30, 14, 11, 17, 35, 64, 79, 60, 31],
+};
+
+export const foodStats = {
+  revenueToday: 3184.6,
+  ordersToday: 211,
+  avgTicket: 15.09,
+  avgDeliveryMin: 23,
+  onTimePct: 94,
+  rating: 4.8,
+};
+
+/** Demo delivery for the tracking page. Map coordinates use a 0–100 grid. */
+export const foodTracking = {
+  orderId: 'BF-4821',
+  customer: 'Lucía',
+  address: 'C/ Argumosa 14, 3.º B',
+  placedAt: '21:02',
+  etaMin: 18,
+  rider: { name: 'Samira', vehicle: 'moto' as const, rating: 4.8, phone: '+34 600 000 000' },
+  lines: [{ dishId: 'd01', qty: 2 }, { dishId: 'd15', qty: 2 }],
+  kitchen: { x: 18, y: 26, label: 'Cocina Lavapiés' },
+  home: { x: 82, y: 78, label: 'Tu casa' },
+  /** Route waypoints (street corners) from the kitchen to the door. */
+  route: [
+    [18, 26], [18, 44], [42, 44], [42, 60], [64, 60], [64, 78], [82, 78],
+  ] as Array<[number, number]>,
 };
 
 export const foodDeliveryData = {
-  restaurant: {
-    name: 'BiteFlow Artisan Kitchen',
-    tagline: 'Gourmet Smash Burgers, Artisan Neapolitan Pizzas & Poke Bowls',
-    address: 'Calle Fuencarral 102, Chamberí, Madrid',
-    phone: '+34 910 774 220',
-    prepTimeAvgMin: 14,
-    rating: 4.9,
-    reviewsCount: 2410,
-    minOrderEur: 12.00,
-    deliveryFeeEur: 1.90,
-    freeDeliveryThresholdEur: 25.00,
-    deliveryRadiusKm: 6.5,
-  },
+  brand: foodBrand,
   categories: foodCategories,
   dishes: foodDishes,
   orders: foodOrders,
-  tickets: kitchenTickets,
+  tickets: foodTickets,
   riders: foodRiders,
-  routes: foodDeliveryRoutes,
+  hourly: foodHourly,
+  stats: foodStats,
+  tracking: foodTracking,
 };
 
+export const formatEur = (n: number) =>
+  new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);

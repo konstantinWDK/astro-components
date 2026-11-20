@@ -1,0 +1,372 @@
+---
+/**
+ * GymHero — Gym landing hero: bold headline, free-trial and schedule CTAs, club figures and a
+ * "next classes today" card with spots left.
+ *
+ * @param {string} title - Headline. Wrap a word in *asterisks* to highlight it.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} trialHref - Primary CTA link (free trial).
+ * @param {string} classesHref - Secondary CTA link (schedule).
+ * @param {GymClass[]} classes - Weekly classes; the card shows the next three on `day`.
+ * @param {number} day - Weekday shown on the card (0 = Monday). Default 0.
+ * @param {Array<{value: string, label: string}>} stats - Club figures.
+ * @param {string} variant - 'split' (with classes card) | 'centered'. Default 'split'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one h1; the decorative stripes are aria-hidden; spots left are written
+ * out ("3 plazas libres", 'Completa'), not shown by colour alone.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+import { gymClasses, gymData, gymDays, getGymDiscipline, getGymTrainer, gymEndTime, type GymClass } from '../templates/gym/data';
+
+interface OwnProps {
+  title?: string;
+  subtitle?: string;
+  trialHref?: string;
+  classesHref?: string;
+  classes?: GymClass[];
+  day?: number;
+  stats?: Array<{ value: string; label: string }>;
+  variant?: 'split' | 'centered';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Entrena *fuerte*. Entrena con gente.',
+  subtitle = 'Sala de fuerza de 1.400 m², 25 clases a la semana y entrenadores que corrigen tu técnica. Sin permanencia.',
+  trialHref = '/preview/gym/prueba-gratis',
+  classesHref = '/preview/gym/clases',
+  classes = gymClasses,
+  day = 0,
+  stats = gymData.stats,
+  variant = 'split',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const [before, highlight, after] = title.split('*');
+const uid = `gh-${Math.random().toString(36).slice(2, 8)}`;
+const spotsOf = (left: number) => {
+  if (left <= 0) return { tone: 'is-full', text: 'Completa' };
+  return { tone: left <= 3 ? 'is-low' : '', text: `${left} ${left === 1 ? 'plaza libre' : 'plazas libres'}` };
+};
+const today = classes.filter((c) => c.day === day).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 3);
+---
+
+<section class:list={['gym-ui', 'gym-hero', `gym-hero--${variant}`, classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="gym-hero__stripes" aria-hidden="true"></div>
+  <div class="gym-hero__inner">
+    <div class="gym-hero__copy">
+      <p class="gym-hero__eyebrow">Training club · Bilbao</p>
+      <h1 id={`${uid}-title`} class="gym-hero__title">
+        {before}{highlight && <em>{highlight}</em>}{after}
+      </h1>
+      <p class="gym-hero__subtitle">{subtitle}</p>
+      <div class="gym-hero__ctas">
+        <a href={trialHref} class="gym-hero__btn gym-hero__btn--primary">
+          Prueba 7 días gratis
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </a>
+        <a href={classesHref} class="gym-hero__btn">Ver horario</a>
+      </div>
+      {stats.length > 0 && (
+        <dl class="gym-hero__stats">
+          {stats.map((s) => (
+            <div>
+              <dt>{s.label}</dt>
+              <dd>{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+
+    {variant === 'split' && today.length > 0 && (
+      <aside class="gym-hero__card" aria-labelledby={`${uid}-today`}>
+        <h2 id={`${uid}-today`} class="gym-hero__card-title">
+          Próximas clases · {gymDays[day]}
+        </h2>
+        <ul class="gym-hero__classes" role="list">
+          {today.map((c) => {
+            const d = getGymDiscipline(c.disciplineId);
+            const t = getGymTrainer(c.trainerId);
+            const left = c.capacity - c.booked;
+            const { tone, text: spots } = spotsOf(left);
+            return (
+              <li class="gym-hero__class" style={`--class-hue:${d?.hue ?? 74}`}>
+                <span class="gym-hero__time">
+                  <strong>{c.start}</strong>
+                  <small>{gymEndTime(c.start, c.minutes)}</small>
+                </span>
+                <span class="gym-hero__class-body">
+                  <span class="gym-hero__class-name">{d?.name}</span>
+                  <span class="gym-hero__class-meta">{t?.name} · {c.room}</span>
+                </span>
+                <span class:list={['gym-hero__spots', tone]}>{spots}</span>
+              </li>
+            );
+          })}
+        </ul>
+        <a href={classesHref} class="gym-hero__card-link">Horario de toda la semana</a>
+      </aside>
+    )}
+  </div>
+</section>
+
+<style>
+  .gym-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--gym-bg);
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-hero__stripes {
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 60%;
+    height: 140%;
+    background: repeating-linear-gradient(-60deg, rgba(var(--gym-brand-rgb), 0.07) 0 22px, transparent 22px 60px);
+    pointer-events: none;
+  }
+
+  .gym-hero__inner {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    align-items: center;
+  }
+
+  .gym-hero--centered .gym-hero__copy {
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .gym-hero__eyebrow {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--gym-brand);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .gym-hero__title {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-weight: 800;
+    font-size: clamp(3rem, 9vw, 6.4rem);
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+
+  .gym-hero__title em {
+    font-style: normal;
+    color: var(--gym-on-brand);
+    background: var(--gym-brand);
+    padding: 0 0.12em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .gym-hero__subtitle {
+    margin: var(--sp-5, 1.25rem) 0 var(--sp-8, 2rem);
+    max-width: 540px;
+    color: var(--gym-text-2);
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .gym-hero--centered .gym-hero__subtitle {
+    margin-inline: auto;
+  }
+
+  .gym-hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .gym-hero--centered .gym-hero__ctas,
+  .gym-hero--centered .gym-hero__stats {
+    justify-content: center;
+  }
+
+  .gym-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-sm, 8px);
+    border: 2px solid var(--gym-border-strong);
+    color: var(--gym-text);
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.92rem;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .gym-hero__btn:hover {
+    border-color: var(--gym-text);
+  }
+
+  .gym-hero__btn--primary {
+    border-color: var(--gym-brand);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-hero__btn--primary:hover {
+    background: var(--gym-brand-hover);
+    border-color: var(--gym-brand-hover);
+    transform: translateY(-2px);
+  }
+
+  .gym-hero__btn:focus-visible,
+  .gym-hero__card-link:focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 3px;
+  }
+
+  .gym-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8, 2rem);
+    margin: var(--sp-10, 2.5rem) 0 0;
+  }
+
+  .gym-hero__stats > div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .gym-hero__stats dt {
+    color: var(--gym-text-3);
+    font-size: 0.85rem;
+  }
+
+  .gym-hero__stats dd {
+    margin: 0;
+    font-family: var(--gym-font-display);
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gym-hero__card {
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    border: 1px solid var(--gym-border);
+    background: var(--gym-bg-raised);
+  }
+
+  .gym-hero__card-title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--gym-font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .gym-hero__classes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-hero__class {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--gym-surface);
+    border-left: 4px solid hsl(var(--class-hue) 80% 60%);
+  }
+
+  .gym-hero__time {
+    display: flex;
+    flex-direction: column;
+    min-width: 52px;
+  }
+
+  .gym-hero__time strong {
+    font-family: var(--gym-font-display);
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .gym-hero__time small {
+    color: var(--gym-text-3);
+    font-size: 0.75rem;
+  }
+
+  .gym-hero__class-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gym-hero__class-name {
+    font-weight: 700;
+  }
+
+  .gym-hero__class-meta {
+    color: var(--gym-text-3);
+    font-size: 0.82rem;
+  }
+
+  .gym-hero__spots {
+    flex-shrink: 0;
+    color: var(--gym-ok);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .gym-hero__spots.is-low { color: var(--gym-warn); }
+  .gym-hero__spots.is-full { color: var(--gym-full); }
+
+  .gym-hero__card-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--gym-brand);
+    font-weight: 700;
+  }
+
+  @media (min-width: 1024px) {
+    .gym-hero {
+      padding-block: var(--sp-16, 4rem) calc(var(--sp-16, 4rem) * 1.5);
+    }
+
+    .gym-hero--split .gym-hero__inner {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gym-hero__btn {
+      transition: none;
+    }
+
+    .gym-hero__btn--primary:hover {
+      transform: none;
+    }
+  }
+</style>

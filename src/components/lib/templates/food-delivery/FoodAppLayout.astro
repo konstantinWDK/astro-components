@@ -1,0 +1,191 @@
+---
+/**
+ * FoodAppLayout — Kitchen OS shell for the "BiteFlow" template: FoodOpsNav (sticker column on
+ * desktop, chip strip on phones) and FoodOpsTopbar (order lookup, accepting-orders switch, rush
+ * mode, alerts, crew menu). Dark "night service" theme by default.
+ *
+ * @param {string} title - Page title (suffixed with "BiteFlow Kitchen OS").
+ * @param {string} current - Active route key (dashboard | kds | menuCms | orders | riders | settings).
+ * @param {FoodRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, navigation marks the current page.
+ */
+import '../../../../styles/global.css';
+import './food-theme.css';
+import FoodOpsNav from '../../app/FoodOpsNav.astro';
+import FoodOpsTopbar from '../../app/FoodOpsTopbar.astro';
+import { foodRoutes, foodTickets, foodRiders, foodStats, type FoodRoutes } from './data';
+
+type Key = 'dashboard' | 'kds' | 'menuCms' | 'orders' | 'riders' | 'settings';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: FoodRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'BiteFlow Kitchen OS · servicio en directo, pantalla de cocina, carta, pedidos y riders.',
+  current = 'dashboard',
+  routes = foodRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const cooking = foodTickets.filter((t) => t.status !== 'listo').length;
+const freeRiders = foodRiders.filter((r) => r.status === 'libre').length;
+
+const items = [
+  { label: 'Servicio', href: routes.dashboard, icon: 'pulse' },
+  { label: 'Cocina', href: routes.kds, icon: 'flame', badge: cooking },
+  { label: 'Pedidos', href: routes.orders, icon: 'receipt' },
+  { label: 'Riders', href: routes.riders, icon: 'bike', badge: freeRiders },
+  { label: 'Carta', href: routes.menuCms, icon: 'book' },
+  { label: 'Ajustes', href: routes.settings, icon: 'cog' },
+];
+
+const notifications = [
+  { title: 'Comanda con retraso', text: 'BF-4823 lleva 8:25 en horno (objetivo 8:00)', time: 'hace 1 min', unread: true },
+  { title: 'Alergia', text: 'BF-4821: sin mostaza en las dos smash', time: 'hace 4 min', unread: true },
+  { title: 'Rider libre', text: 'Leo está en la puerta de la cocina', time: 'hace 6 min' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-food" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — BiteFlow Kitchen OS`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Sans:opsz,wght@9..40,400..700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="bf-app">
+    <a href="#main-content" class="bf-app__skip">Saltar al contenido</a>
+    <div class="bf-app__shell">
+      <FoodOpsNav
+        items={items}
+        currentHref={routes[current] ?? routes.dashboard}
+        homeHref={routes.home}
+        shift={{ label: 'Pedidos del turno', value: foodStats.ordersToday, goal: 260 }}
+      />
+      <div class="bf-app__col">
+        <FoodOpsTopbar
+          user={{ name: 'Marta Ibáñez', role: 'Jefa de cocina' }}
+          notifications={notifications}
+          searchAction={routes.orders}
+          homeHref={routes.home}
+          links={[{ label: 'Web de la tienda', href: routes.home }, { label: 'Pantalla de cocina', href: routes.kds }, { label: 'Ajustes', href: routes.settings }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="bf-app__main" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .bf-app {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bf-bg);
+    color: var(--bf-ink);
+    font-family: var(--bf-font-body);
+    overflow-x: clip;
+  }
+
+  .bf-app__skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border: 2px solid var(--bf-outline);
+    border-radius: 999px;
+    background: var(--bf-mustard);
+    color: var(--bf-on-mustard);
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .bf-app__skip:focus {
+    top: var(--sp-3, 0.75rem);
+  }
+
+  .bf-app__shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .bf-app__col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bf-app__main {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-12, 3rem);
+    box-sizing: border-box;
+  }
+
+  .bf-app__main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .bf-app__main {
+      padding: var(--sp-8, 2rem) var(--sp-8, 2rem) var(--sp-16, 4rem);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .bf-app__shell {
+      flex-direction: column;
+    }
+
+    .bf-app__shell > :global(.bf-nav) {
+      order: 2;
+    }
+
+    .bf-app__col {
+      display: contents;
+    }
+
+    .bf-app__col > :global(.bf-top) {
+      order: 1;
+    }
+
+    .bf-app__main {
+      order: 3;
+    }
+  }
+</style>

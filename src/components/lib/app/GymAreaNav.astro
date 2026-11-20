@@ -1,0 +1,335 @@
+---
+/**
+ * GymAreaNav — Navigation for the gym member area: a vertical rail with the club mark,
+ * labelled links and a monthly goal on desktop, and a fixed bottom tab bar on phones
+ * (the thumb-friendly pattern of fitness apps). No JavaScript.
+ *
+ * @param {Array<{label: string, href: string, icon: string, badge?: string|number}>} items - Links (keep 3–5 for the tab bar).
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {string} brand - Club name (rail only).
+ * @param {{label: string, value: number, max: number}} goal - Rail goal meter. Omit to hide.
+ * @param {string} homeHref - Link for the club mark.
+ * @param {string} variant - 'rail' | 'tabs' (tab bar on every size). Default 'rail'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; aria-current on the active link; each tab has
+ * a visible text label (icons aria-hidden); 56px tap targets in the tab bar; badges are read as
+ * part of the link name.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/gym/gym-theme.css';
+
+interface Item { label: string; href: string; icon: string; badge?: string | number }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  brand?: string;
+  goal?: { label: string; value: number; max: number };
+  homeHref?: string;
+  variant?: 'rail' | 'tabs';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [
+    { label: 'Progreso', href: '#', icon: 'chart' },
+    { label: 'Reservar', href: '#reservar', icon: 'calendar', badge: 3 },
+    { label: 'Staff', href: '#staff', icon: 'people' },
+  ],
+  currentHref = '#',
+  brand = 'Forja',
+  goal,
+  homeHref = '#',
+  variant = 'rail',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const icons: Record<string, string> = {
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+  dumbbell: '<path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+};
+const isCurrent = (href: string) => href.replace(/\/$/, '') === currentHref.replace(/\/$/, '');
+const pct = goal ? Math.min(100, Math.round((goal.value / goal.max) * 100)) : 0;
+---
+
+<nav class:list={['gym-ui', 'gym-area-nav', `gym-area-nav--${variant}`, classAttr]} aria-label="Área de socios" {...rest}>
+  <a href={homeHref} class="gym-area-nav__brand">
+    <span class="gym-area-nav__mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" set:html={icons.dumbbell} />
+    </span>
+    <span class="gym-area-nav__brand-name">{brand}</span>
+  </a>
+
+  <ul class="gym-area-nav__list" role="list">
+    {items.map((it) => (
+      <li>
+        <a href={it.href} class="gym-area-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+          <span class="gym-area-nav__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={icons[it.icon] ?? icons.dumbbell} />
+            {it.badge !== undefined && it.badge !== 0 && <span class="gym-area-nav__badge">{it.badge}</span>}
+          </span>
+          <span class="gym-area-nav__label">
+            {it.label}
+            {it.badge !== undefined && it.badge !== 0 && <span class="gym-sr"> ({it.badge})</span>}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {goal && (
+    <div class="gym-area-nav__goal">
+      <p><span>{goal.label}</span><strong>{goal.value}/{goal.max}</strong></p>
+      <span class="gym-area-nav__meter" role="img" aria-label={`${goal.label}: ${goal.value} de ${goal.max}`}>
+        <i style={`width:${pct}%`}></i>
+      </span>
+    </div>
+  )}
+</nav>
+
+<style>
+  .gym-area-nav {
+    color: var(--gym-text);
+    font-family: var(--gym-font-body);
+  }
+
+  .gym-area-nav__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gym-area-nav__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: var(--gym-text-2);
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .gym-area-nav__link:hover {
+    color: var(--gym-text);
+  }
+
+  .gym-area-nav__link[aria-current='page'] {
+    color: var(--gym-brand);
+  }
+
+  .gym-area-nav__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .gym-area-nav__badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 16px;
+    padding: 0 3px;
+    border-radius: 8px;
+    background: var(--gym-hot);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  .gym-area-nav :is(a):focus-visible {
+    outline: 2px solid var(--gym-brand);
+    outline-offset: 2px;
+  }
+
+  .gym-area-nav__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--gym-text);
+    text-decoration: none;
+  }
+
+  .gym-area-nav__mark {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-sm, 8px);
+    background: var(--gym-brand);
+    color: var(--gym-on-brand);
+  }
+
+  .gym-area-nav__brand-name {
+    font-family: var(--gym-font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .gym-area-nav__goal p {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--gym-text-3);
+    font-size: 0.82rem;
+  }
+
+  .gym-area-nav__goal strong {
+    color: var(--gym-text);
+  }
+
+  .gym-area-nav__meter {
+    display: block;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--gym-surface-2);
+  }
+
+  .gym-area-nav__meter i {
+    display: block;
+    height: 100%;
+    background: var(--gym-brand);
+  }
+
+  .gym-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Bottom tab bar (phones, or variant="tabs") */
+  .gym-area-nav--tabs,
+  .gym-area-nav--rail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    padding: 0 var(--sp-2, 0.5rem) env(safe-area-inset-bottom);
+    border-top: 1px solid var(--gym-border);
+    background: color-mix(in srgb, var(--gym-bg-raised) 94%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .gym-area-nav--tabs .gym-area-nav__brand,
+  .gym-area-nav--tabs .gym-area-nav__goal,
+  .gym-area-nav--rail .gym-area-nav__brand,
+  .gym-area-nav--rail .gym-area-nav__goal {
+    display: none;
+  }
+
+  .gym-area-nav--tabs .gym-area-nav__list,
+  .gym-area-nav--rail .gym-area-nav__list {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .gym-area-nav--tabs .gym-area-nav__list li,
+  .gym-area-nav--rail .gym-area-nav__list li {
+    flex: 1;
+  }
+
+  .gym-area-nav--tabs .gym-area-nav__link,
+  .gym-area-nav--rail .gym-area-nav__link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 60px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .gym-area-nav--tabs .gym-area-nav__link[aria-current='page']::before,
+  .gym-area-nav--rail .gym-area-nav__link[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 30%;
+    right: 30%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--gym-brand);
+  }
+
+  /* Desktop rail */
+  @media (min-width: 960px) {
+    .gym-area-nav--rail {
+      position: sticky;
+      top: 0;
+      bottom: auto;
+      left: auto;
+      right: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-6, 1.5rem);
+      width: 220px;
+      height: 100vh;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      padding: var(--sp-5, 1.25rem) var(--sp-3, 0.75rem);
+      border-top: 0;
+      border-right: 1px solid var(--gym-border);
+      background: var(--gym-bg-raised);
+      backdrop-filter: none;
+    }
+
+    .gym-area-nav--rail .gym-area-nav__brand,
+    .gym-area-nav--rail .gym-area-nav__goal {
+      display: flex;
+    }
+
+    .gym-area-nav--rail .gym-area-nav__brand {
+      padding: 0 var(--sp-2, 0.5rem);
+    }
+
+    .gym-area-nav--rail .gym-area-nav__goal {
+      flex-direction: column;
+      margin-top: auto;
+      padding: var(--sp-4, 1rem);
+      border-radius: var(--r-md, 12px);
+      background: var(--gym-surface);
+    }
+
+    .gym-area-nav--rail .gym-area-nav__list {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gym-area-nav--rail .gym-area-nav__link {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: var(--sp-3, 0.75rem);
+      min-height: 48px;
+      padding: 0 var(--sp-3, 0.75rem);
+      border-radius: var(--r-sm, 8px);
+      font-size: 0.95rem;
+    }
+
+    .gym-area-nav--rail .gym-area-nav__link:hover {
+      background: var(--gym-surface);
+    }
+
+    .gym-area-nav--rail .gym-area-nav__link[aria-current='page'] {
+      background: var(--gym-brand);
+      color: var(--gym-on-brand);
+    }
+
+    .gym-area-nav--rail .gym-area-nav__link[aria-current='page']::before {
+      display: none;
+    }
+  }
+</style>
