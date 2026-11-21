@@ -1753,10 +1753,16 @@ import { ConstructionProjectsPage } from 'astro-component-kit/templates/construc
         description: { en: 'Flagship development dossier: real-time site progress %, interactive apartment & commercial unit selector, and vector floor plans.', es: 'Dossier técnico: progreso de obra en tiempo real, selector interactivo de viviendas y planos acotados.', ru: 'Карточка жилого комплекса: процент готовности, интерактивный выбор квартир и поэтажные планы.' },
         file: 'src/pages/projects/[slug].astro',
         code: `---
-import { ConstructionProjectDetailPage } from 'astro-component-kit/templates/construction';
+import { ConstructionProjectDetailPage, constructionProjects } from 'astro-component-kit/templates/construction';
+
+export function getStaticPaths() {
+  return constructionProjects.map((p) => ({ params: { slug: p.slug } }));
+}
+
+const { slug } = Astro.params;
 ---
 
-<ConstructionProjectDetailPage />`,
+<ConstructionProjectDetailPage slug={slug} />`,
       },
       {
         id: 'estimator', path: 'estimator/',

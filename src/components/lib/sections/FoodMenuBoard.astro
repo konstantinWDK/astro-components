@@ -8,6 +8,7 @@
  * @param {FoodDish[]} dishes - Dishes to show.
  * @param {FoodCategory[]} categories - Category order and labels.
  * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2' for the title. Default 'h2'.
  * @param {string} subtitle - Short intro under the heading.
  * @param {string} variant - 'grid' (cards) | 'list' (compact rows). Default 'grid'.
  * @param {string} size - 'md' | 'lg' card size. Default 'md'.
@@ -32,6 +33,7 @@ interface OwnProps {
   variant?: 'grid' | 'list';
   size?: 'md' | 'lg';
   showFilters?: boolean;
+  headingLevel?: 'h1' | 'h2';
 }
 
 type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
@@ -40,6 +42,7 @@ const {
   dishes = foodDishes,
   categories = foodCategories,
   title = 'La carta',
+  headingLevel = 'h2',
   subtitle = 'Todo se cocina al pedirlo. Elige, añade y en unos minutos sale de cocina.',
   variant = 'grid',
   size = 'md',
@@ -47,6 +50,8 @@ const {
   class: classAttr,
   ...rest
 } = Astro.props;
+
+const Heading = headingLevel;
 
 const tagLabel: Record<FoodTag, string> = {
   vegano: 'Vegano',
@@ -67,7 +72,7 @@ const uid = `bf-menu-${Math.random().toString(36).slice(2, 7)}`;
 <section class:list={['bf-ui', 'bf-menu', `bf-menu--${variant}`, `bf-menu--${size}`, classAttr]} aria-labelledby={`${uid}-t`} data-bf-menu {...rest}>
   <div class="bf-menu__inner">
     <header class="bf-menu__head">
-      <h2 id={`${uid}-t`} class="bf-menu__title">{title}</h2>
+      <Heading id={`${uid}-t`} class="bf-menu__title">{title}</Heading>
       {subtitle && <p class="bf-menu__sub">{subtitle}</p>}
     </header>
 
@@ -284,6 +289,7 @@ const uid = `bf-menu-${Math.random().toString(36).slice(2, 7)}`;
     top: var(--bf-sticky-top, 72px);
     z-index: 5;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-3, 0.75rem);
     margin: var(--sp-6, 1.5rem) calc(var(--sp-4, 1rem) * -1) 0;
     padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);

@@ -21,4 +21,4 @@ export { default as ConstructionUnitsCmsPage } from './ConstructionUnitsCmsPage.
 export { default as ConstructionSettingsPage } from './ConstructionSettingsPage.astro';
 
 export * from './data';
-export { elevationSvg, blueprintDrawInit } from './construction-draw';
+export { elevation, type Elevation } from './construction-draw';
