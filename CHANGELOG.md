@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-20
+
+### ⚠ Breaking
+- **`OverlayModal`, `SideDrawerRight` and `BottomSheetMobile` are now real dialogs** built on the native `<dialog>` (`showModal()`): they need an `id`, stay closed until opened and are opened with `data-dialog-open="<id>"` on any element (close with `data-dialog-close`, Escape or the backdrop). Previously they were always-visible static mockups. Pass `open` to show one on page load. New props: `title`, `description` (modal and sheet), `variant` (`glass` | `solid` | `minimal`), `size` (`sm` | `md` | `lg`), `closeOnBackdrop`, `closeLabel`, `side` (drawer: `right` | `left`); new `footer` slot.
+
 ### Changed
 - **BiteFlow food delivery template redesigned** (`astro-component-kit/templates/food-delivery`): pop "sticker" aesthetic with cream paper, dark ink outlines and tomato/mustard accents; 16 dedicated components (`FoodHeroPlate`, `FoodMenuBoard`, `FoodScrollStory`, `FoodPartnerPitch`, `FoodFooter`, `FoodCartDrawer`, `FoodOrderMap`, `FoodKitchenBoard`, `FoodMenuManager`, `FoodRiderDispatch`, `FoodOrdersTable`, `FoodServicePulse`, `FoodOpsNav`, `FoodOpsTopbar`, `FoodOpsHeading`, `FoodCrewSignIn`) and 11 pages with Spanish preview routes (`/preview/food-delivery/carta`, `/pedido`, `/cocina/...`), zero reused generic components.
 - **Strukto construction & Site OS template redesigned** (`astro-component-kit/templates/construction`): architectural blueprint theme (navy drafting sheet with light tracing-paper variant), self-drawing elevation generator and 15 dedicated components (`ConstructionBlueprintHero`, `ConstructionProjectSheets`, `ConstructionBuildSequence`, `ConstructionTenderForm`, `ConstructionFooter`, `ConstructionCostEstimator`, `ConstructionIsoUnitPicker`, `ConstructionGanttBoard`, `ConstructionSitesBoard`, `ConstructionSiteLogbook`, `ConstructionUnitsLedger`, `ConstructionOsSidebar`, `ConstructionOsTopbar`, `ConstructionOsHeading`, `ConstructionSignIn`) across 11 pages, zero reused generic components.
 
 ### Added
+- **Copy components into your project**: `npx astro-component-kit add <component...> [--dir] [--force] [--dry-run]` copies a component plus the local files it imports and flags peer dependencies; `npx astro-component-kit list [category]` lists them.
+- **Split stylesheets**: `astro-component-kit/tokens.css` (CSS variables only, no side effects), `base.css` (reset and page styles, layer-friendly) and `fonts.css` (Google Fonts). `global.css` still bundles all three.
+- **Native attributes and `class` on buttons, forms and cards** (and the cookie drawer, feedback widget and image-compare slider): props extend `HTMLAttributes` and `...rest` is forwarded to the root element or, for form fields, to the native `<input>` / `<select>` / `<textarea>`. `className` keeps working.
+- Buttons accept `target` and `rel` when rendering a link.
+- `npm run registry:check` and a CI workflow (registry check, typecheck, build, pack) on every pull request.
 - **Real estate template "Nido"** (`astro-component-kit/templates/real-estate`): agency site with buy/rent search, filterable listings with favourites and zone map, a page per property (gallery, viewing booking, mortgage simulator or rental terms), 3-step owner valuation, contact and agents, plus an agent CRM (sign-in, overview, listings table, lead pipeline). 9 page types.
 - Sections: `EstateHero`, `EstateListingsGrid`, `EstateNeighborhoods`, `EstatePropertyGallery`, `EstateAgentsGrid`, `EstateValuationCta` (new "Real Estate Agency" section category).
 - App components: `EstateMortgageCalculator`, `EstateValuationWizard`, `EstateVisitScheduler`, `EstateLeadsPipeline`, plus its own CRM shell: `EstateCrmSidebar`, `EstateCrmTopbar`, `EstateCrmHeading`, `EstateListingsTable`, `EstateAgentSignIn` (and the `EstateFooter` section).
@@ -20,18 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - App components: `GymClassBooking`, `GymProgressTracker`, `GymOccupancyMeter`, plus its own member-area shell: `GymAreaNav` (bottom tab bar on phones), `GymAreaTopbar` (with check-in pass), `GymAreaHeading`, `GymMembersTable`, `GymSignIn` (and the `GymFooter` section).
 - Both templates are built only from their own components; nothing is shared with other templates.
 - The MCP server lists the new templates (`get_template` slugs `real-estate` and `gym`).
-
-## [0.8.0] - 2026-11-20
-
-### ⚠ Breaking
-- **`OverlayModal`, `SideDrawerRight` and `BottomSheetMobile` are now real dialogs** built on the native `<dialog>` (`showModal()`): they need an `id`, stay closed until opened and are opened with `data-dialog-open="<id>"` on any element (close with `data-dialog-close`, Escape or the backdrop). Previously they were always-visible static mockups. Pass `open` to show one on page load. New props: `title`, `description` (modal and sheet), `variant` (`glass` | `solid` | `minimal`), `size` (`sm` | `md` | `lg`), `closeOnBackdrop`, `closeLabel`, `side` (drawer: `right` | `left`); new `footer` slot.
-
-### Added
-- **Copy components into your project**: `npx astro-component-kit add <component...> [--dir] [--force] [--dry-run]` copies a component plus the local files it imports and flags peer dependencies; `npx astro-component-kit list [category]` lists them.
-- **Split stylesheets**: `astro-component-kit/tokens.css` (CSS variables only, no side effects), `base.css` (reset and page styles, layer-friendly) and `fonts.css` (Google Fonts). `global.css` still bundles all three.
-- **Native attributes and `class` on buttons, forms and cards** (and the cookie drawer, feedback widget and image-compare slider): props extend `HTMLAttributes` and `...rest` is forwarded to the root element or, for form fields, to the native `<input>` / `<select>` / `<textarea>`. `className` keeps working.
-- Buttons accept `target` and `rel` when rendering a link.
-- `npm run registry:check` and a CI workflow (registry check, typecheck, build, pack) on every pull request.
 
 ### Fixed
 - Docs and MCP code blocks for 188 components (buttons, cards, forms, navigation, overlays, feedback, data, typography, charts) were out of date copies; the registry now reads the shipped `.astro` files, so they always match.
