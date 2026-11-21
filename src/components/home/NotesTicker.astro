@@ -1,0 +1,199 @@
+---
+// src/components/home/NotesTicker.astro
+// Home section: recent notes as small cards in 3 columns that drift like a ribbon
+// (columns move in opposite directions). Pauses on hover/focus, static under reduced motion.
+import { getNotes } from '../blog/notes';
+import { getLocalizedPath } from '../../i18n/translations';
+import type { Locale } from '../../config/site';
+
+interface Props {
+  lang?: Locale;
+  limit?: number;
+}
+
+const { lang = 'en', limit = 12 } = Astro.props;
+
+const notes = (await getNotes(lang)).slice(0, limit);
+const localeCode = lang === 'es' ? 'es-ES' : lang === 'ru' ? 'ru-RU' : 'en-US';
+
+// Round-robin split into 3 columns so the newest notes lead each ribbon.
+const columns: typeof notes[] = [[], [], []];
+notes.forEach((n, i) => columns[i % 3].push(n));
+
+const copy = {
+  en: { eyebrow: 'Latest notes', title: 'What’s new', all: 'All notes', region: 'Recent notes' },
+  es: { eyebrow: 'Últimas notas', title: 'Novedades', all: 'Todas las notas', region: 'Notas recientes' },
+  ru: { eyebrow: 'Свежие заметки', title: 'Что нового', all: 'Все заметки', region: 'Свежие заметки' },
+}[lang];
+
+const fmt = (d: Date | string) =>
+  new Date(d).toLocaleDateString(localeCode, { year: 'numeric', month: 'short', day: 'numeric' });
+---
+
+{notes.length > 0 && (
+  <section class="notes-ticker" id="notes" aria-label={copy.region}>
+    <div class="container">
+      <div class="notes-ticker__head">
+        <div>
+          <span class="notes-ticker__eyebrow">{copy.eyebrow}</span>
+          <h2 class="notes-ticker__title">{copy.title}</h2>
+        </div>
+        <a class="notes-ticker__all" href={getLocalizedPath('/notes', lang)}>
+          {copy.all}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+        </a>
+      </div>
+
+      <div class="notes-ticker__grid">
+        {columns.map((col, ci) => col.length > 0 && (
+          <div class={`notes-ticker__col notes-ticker__col--${ci + 1}`}>
+            <div class="notes-ticker__track">
+              {[0, 1].map((copyIdx) => (
+                <ul class="notes-ticker__list" aria-hidden={copyIdx === 1 ? 'true' : undefined} inert={copyIdx === 1 ? true : undefined}>
+                  {col.map((n) => (
+                    <li>
+                      <a class="note-chip" href={getLocalizedPath(`/notes/${n.id}`, lang)}>
+                        <span class="note-chip__meta">
+                          <span class="note-chip__tag">{n.data.tag}</span>
+                          <time datetime={new Date(n.data.date).toISOString()}>{fmt(n.data.date)}</time>
+                        </span>
+                        <span class="note-chip__title">{n.data.title}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .notes-ticker { position: relative; z-index: 1; padding: 5rem 0; }
+  .notes-ticker__head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: var(--sp-4);
+  }
+  .notes-ticker__eyebrow {
+    display: inline-block; font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--c-primary-light);
+    padding: 0.35rem 0.8rem; border: 1px solid rgba(184,134,11,0.3);
+    border-radius: var(--r-sm); margin-bottom: var(--sp-4);
+  }
+  .notes-ticker__title {
+    font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 900; color: var(--c-text-1);
+    margin: 0; letter-spacing: -0.03em;
+  }
+  .notes-ticker__all {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 44px;
+    padding: 0 var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-full, 999px);
+    color: var(--c-text-1);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .notes-ticker__all:hover { border-color: var(--c-primary-light); color: var(--c-primary-light); }
+  .notes-ticker__all:focus-visible,
+  .note-chip:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+
+  .notes-ticker__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4);
+    height: 360px;
+    margin-top: var(--sp-6);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  }
+  .notes-ticker__col { overflow: hidden; }
+  .notes-ticker__track {
+    display: flex;
+    flex-direction: column;
+    animation: notes-up 38s linear infinite;
+  }
+  .notes-ticker__col--2 .notes-ticker__track { animation-direction: reverse; animation-duration: 46s; }
+  .notes-ticker__col--3 .notes-ticker__track { animation-duration: 42s; }
+  .notes-ticker__grid:hover .notes-ticker__track,
+  .notes-ticker__grid:focus-within .notes-ticker__track { animation-play-state: paused; }
+
+  @keyframes notes-up {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+
+  .notes-ticker__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-3); /* keeps the loop seam the same as the gap */
+  }
+
+  .note-chip {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md, 12px);
+    color: var(--c-text-1);
+    text-decoration: none;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  }
+  .note-chip:hover { border-color: var(--c-primary-light); background: var(--c-primary-glow); transform: translateY(-2px); }
+
+  .note-chip__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    font-size: 0.72rem;
+    color: var(--c-text-2);
+  }
+  .note-chip__tag {
+    padding: 2px var(--sp-2);
+    border-radius: var(--r-full, 999px);
+    background: var(--c-primary-glow);
+    color: var(--c-primary-light);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .note-chip__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  @media (max-width: 900px) {
+    .notes-ticker__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .notes-ticker__col--3 { display: none; }
+  }
+  @media (max-width: 560px) {
+    .notes-ticker__grid { grid-template-columns: minmax(0, 1fr); height: 320px; }
+    .notes-ticker__col--2 { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .notes-ticker__track { animation: none; }
+    .notes-ticker__grid { overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
+    .notes-ticker__list[aria-hidden='true'] { display: none; }
+  }
+</style>
