@@ -8,7 +8,7 @@ heroImage: '/galaxy-bg.svg'
 
 ## A release about using the kit, not just browsing it
 
-**astro-component-kit 0.8.0** is mostly about making the existing ones work the way you expect inside a real project: real dialogs, attributes that reach the DOM, CSS you can adopt piece by piece, and code samples that always match what ships. It also ships two brand-new templates, **Nido** (real estate + agent CRM) and **Forja** (gym + member area), and ground-up redesigns of **BiteFlow** and **Strukto**.
+**astro-component-kit 0.8.0** is less about new components and more about making the existing ones work the way you expect inside a real project: real dialogs, attributes that reach the DOM, CSS you can adopt piece by piece, and code samples that always match what ships.
 
 ---
 
@@ -67,21 +67,6 @@ Buttons, form fields and cards now accept `class` and any HTML attribute, such a
 - `astro-component-kit/tokens.css`: CSS variables only, safe in any existing site
 - `astro-component-kit/base.css`: reset and page styles; import it in a layer to keep your styles in control
 - `astro-component-kit/fonts.css`: Inter and JetBrains Mono
-
----
-
-### 🏗️ Two new templates and two redesigns
-
-0.8.0 also adds **Nido** (real estate agency + agent CRM, `templates/real-estate`) and **Forja** (gym + member area, `templates/gym`), and rebuilds **BiteFlow** (`templates/food-delivery`) and **Strukto** (`templates/construction`). Each one uses only its own components (`reusedComponents: []`): 62 dedicated components in total, all with docs pages and live previews.
-
-| Template | Live preview | Components |
-|---|---|---|
-| Nido · real estate + CRM | [/preview/real-estate/](/preview/real-estate/) | [`EstateHero`](/sections/estate-hero/), [`EstateListingsGrid`](/sections/estate-listings-grid/), [`EstateMortgageCalculator`](/docs/estate-mortgage-calculator/), [`EstateLeadsPipeline`](/docs/estate-leads-pipeline/) and 12 more |
-| Forja · gym + member area | [/preview/gym/](/preview/gym/) | [`GymHero`](/sections/gym-hero/), [`GymSchedule`](/sections/gym-schedule/), [`GymClassBooking`](/docs/gym-class-booking/), [`GymOccupancyMeter`](/docs/gym-occupancy-meter/) and 11 more |
-| BiteFlow · food delivery + Kitchen OS | [/preview/food-delivery/](/preview/food-delivery/) | [`FoodHeroPlate`](/sections/food-hero-plate/), [`FoodCartDrawer`](/docs/food-cart-drawer/), [`FoodOrderMap`](/docs/food-order-map/), [`FoodKitchenBoard`](/docs/food-kitchen-board/) and 12 more |
-| Strukto · construction + Site OS | [/preview/construction/](/preview/construction/) | [`ConstructionBlueprintHero`](/sections/construction-blueprint-hero/), [`ConstructionIsoUnitPicker`](/docs/construction-iso-unit-picker/), [`ConstructionGanttBoard`](/docs/construction-gantt-board/) and 12 more |
-
-The MCP server lists them too (`get_template` slugs `real-estate` and `gym`). Full component lists and live previews are in [New Templates & Redesigns](/notes/new-templates-nido-forja-biteflow-strukto/).
 
 ---
 

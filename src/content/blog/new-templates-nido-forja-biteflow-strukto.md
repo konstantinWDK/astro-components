@@ -1,14 +1,14 @@
 ---
 title: 'New Templates & Redesigns: Nido, Forja, BiteFlow & Strukto'
 description: 'Two brand-new templates (Nido real estate + CRM and Forja gym + member area) and complete ground-up redesigns of BiteFlow (food delivery) and Strukto (construction & Site OS) with zero reused generic components.'
-date: '2026-11-20'
+date: '2026-11-21'
 tag: 'Release'
 heroImage: '/galaxy-bg.svg'
 ---
 
 ## Four self-contained templates, each with its own visual language
 
-Shipped in **v0.8.0** ([release notes](/notes/v0-8-0-real-dialogs-cli-add-and-native-attributes/)). This update adds two new full-stack templates (**Nido** and **Forja**) and rebuilds **BiteFlow** and **Strukto** from scratch. Every template now ships exclusively with its own dedicated components (`reusedComponents: []`), custom theme tokens, and interactive backoffice flows.
+Shipped in **v0.8.1**. This update adds two new full-stack templates (**Nido** and **Forja**) and rebuilds **BiteFlow** and **Strukto** from scratch. Every template now ships exclusively with its own dedicated components (`reusedComponents: []`), custom theme tokens, and interactive backoffice flows.
 
 ---
 

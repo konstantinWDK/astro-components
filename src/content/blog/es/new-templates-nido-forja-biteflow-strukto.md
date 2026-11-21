@@ -1,14 +1,14 @@
 ---
 title: 'Nuevas plantillas y rediseños: Nido, Forja, BiteFlow y Strukto'
 description: 'Dos plantillas nuevas completas (Nido inmobiliaria + CRM y Forja gimnasio + área de socios) y el rediseño integral de BiteFlow (delivery y Kitchen OS) y Strukto (constructora y Site OS) sin componentes genéricos compartidos.'
-date: '2026-11-20'
+date: '2026-11-21'
 tag: 'Release'
 heroImage: '/galaxy-bg.svg'
 ---
 
 ## Cuatro plantillas autónomas, cada una con su propio lenguaje visual
 
-Incluido en la **v0.8.0** ([notas de la versión](/es/notes/v0-8-0-real-dialogs-cli-add-and-native-attributes/)). Esta actualización incorpora dos nuevas plantillas completas (**Nido** y **Forja**) y reconstruye desde cero **BiteFlow** y **Strukto**. Cada plantilla utiliza únicamente sus propios componentes (`reusedComponents: []`), tokens de diseño dedicados y flujos interactivos de backoffice.
+Incluido en la **v0.8.1**. Esta actualización incorpora dos nuevas plantillas completas (**Nido** y **Forja**) y reconstruye desde cero **BiteFlow** y **Strukto**. Cada plantilla utiliza únicamente sus propios componentes (`reusedComponents: []`), tokens de diseño dedicados y flujos interactivos de backoffice.
 
 ---
 

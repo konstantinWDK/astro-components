@@ -8,7 +8,7 @@ heroImage: '/galaxy-bg.svg'
 
 ## Una versión para usar el kit, no solo para mirarlo
 
-**astro-component-kit 0.8.0** trae sobre todo mejoras para que los existentes funcionen como esperas dentro de un proyecto real: diálogos de verdad, atributos que llegan al DOM, CSS que puedes adoptar por partes y ejemplos de código que siempre coinciden con lo que se publica. Además incluye dos plantillas nuevas, **Nido** (inmobiliaria + CRM de agentes) y **Forja** (gimnasio + área de socios), y el rediseño integral de **BiteFlow** y **Strukto**.
+**astro-component-kit 0.8.0** no trae tanto componentes nuevos como mejoras para que los existentes funcionen como esperas dentro de un proyecto real: diálogos de verdad, atributos que llegan al DOM, CSS que puedes adoptar por partes y ejemplos de código que siempre coinciden con lo que se publica.
 
 ---
 
@@ -67,21 +67,6 @@ Los botones, los campos de formulario y las cards aceptan ahora `class` y cualqu
 - `astro-component-kit/tokens.css`: solo variables CSS, seguro en cualquier sitio existente
 - `astro-component-kit/base.css`: reset y estilos de página; impórtalo en una capa para que tus estilos manden
 - `astro-component-kit/fonts.css`: Inter y JetBrains Mono
-
----
-
-### 🏗️ Dos plantillas nuevas y dos rediseños
-
-La 0.8.0 añade **Nido** (inmobiliaria + CRM de agentes, `templates/real-estate`) y **Forja** (gimnasio + área de socios, `templates/gym`), y reconstruye **BiteFlow** (`templates/food-delivery`) y **Strukto** (`templates/construction`). Cada una usa solo sus propios componentes (`reusedComponents: []`): 62 componentes dedicados en total, todos con página de documentación y vista previa en vivo.
-
-| Plantilla | Vista previa | Componentes |
-|---|---|---|
-| Nido · inmobiliaria + CRM | [/preview/real-estate/](/preview/real-estate/) | [`EstateHero`](/es/sections/estate-hero/), [`EstateListingsGrid`](/es/sections/estate-listings-grid/), [`EstateMortgageCalculator`](/es/docs/estate-mortgage-calculator/), [`EstateLeadsPipeline`](/es/docs/estate-leads-pipeline/) y 12 más |
-| Forja · gimnasio + área de socios | [/preview/gym/](/preview/gym/) | [`GymHero`](/es/sections/gym-hero/), [`GymSchedule`](/es/sections/gym-schedule/), [`GymClassBooking`](/es/docs/gym-class-booking/), [`GymOccupancyMeter`](/es/docs/gym-occupancy-meter/) y 11 más |
-| BiteFlow · delivery + Kitchen OS | [/preview/food-delivery/](/preview/food-delivery/) | [`FoodHeroPlate`](/es/sections/food-hero-plate/), [`FoodCartDrawer`](/es/docs/food-cart-drawer/), [`FoodOrderMap`](/es/docs/food-order-map/), [`FoodKitchenBoard`](/es/docs/food-kitchen-board/) y 12 más |
-| Strukto · constructora + Site OS | [/preview/construction/](/preview/construction/) | [`ConstructionBlueprintHero`](/es/sections/construction-blueprint-hero/), [`ConstructionIsoUnitPicker`](/es/docs/construction-iso-unit-picker/), [`ConstructionGanttBoard`](/es/docs/construction-gantt-board/) y 12 más |
-
-El servidor MCP también las lista (`get_template` con los slugs `real-estate` y `gym`). Las listas completas de componentes y las vistas previas están en [Nuevas plantillas y rediseños](/es/notes/new-templates-nido-forja-biteflow-strukto/).
 
 ---
 
