@@ -14,31 +14,51 @@ This update adds two new full-stack templates (**Nido** and **Forja**) and rebui
 
 ### 🏠 Nido · Real Estate Agency & Agent CRM (`templates/real-estate`)
 
+- **Live preview**: [/preview/real-estate/](/preview/real-estate/) · **Template docs**: [/templates/real-estate/](/templates/real-estate/)
 - **Public portal**: buy/rent search hero, filterable property grid with browser-saved favourites and zone map, property detail pages with gallery, viewing scheduler, mortgage simulator or rental terms, and a 3-step owner valuation wizard.
 - **Agent CRM**: sign-in portal, executive overview, listings table and drag/status lead pipeline.
-- **16 dedicated components**: `EstateHero`, `EstateListingsGrid`, `EstateNeighborhoods`, `EstatePropertyGallery`, `EstateAgentsGrid`, `EstateValuationCta`, `EstateFooter`, `EstateMortgageCalculator`, `EstateValuationWizard`, `EstateVisitScheduler`, `EstateLeadsPipeline`, `EstateCrmSidebar`, `EstateCrmTopbar`, `EstateCrmHeading`, `EstateListingsTable`, and `EstateAgentSignIn`.
+- **16 dedicated components**: [`EstateHero`](/sections/estate-hero/), [`EstateListingsGrid`](/sections/estate-listings-grid/), `EstateNeighborhoods`, `EstatePropertyGallery`, `EstateAgentsGrid`, `EstateValuationCta`, `EstateFooter`, `EstateMortgageCalculator`, `EstateValuationWizard`, `EstateVisitScheduler`, `EstateLeadsPipeline`, `EstateCrmSidebar`, `EstateCrmTopbar`, `EstateCrmHeading`, `EstateListingsTable`, and `EstateAgentSignIn`.
+
+<div style="margin:1.25rem 0 2rem;border:1px solid var(--c-border,#2a2d3a);border-radius:12px;overflow:hidden;background:#0b0d13;">
+  <iframe src="/preview/real-estate/" title="Nido live preview" loading="lazy" style="width:100%;height:380px;border:0;display:block;"></iframe>
+</div>
 
 ---
 
 ### 🏋️ Forja · Gym, Studio & Member Area (`templates/gym`)
 
+- **Live preview**: [/preview/gym/](/preview/gym/) · **Template docs**: [/templates/gym/](/templates/gym/)
 - **Club storefront**: bold hero with today's classes, discipline cards with intensity ratings, live occupancy meter, weekly timetable with day tabs and filters, monthly/yearly membership plans, coaching team and free-trial pass.
 - **Member & staff area**: member sign-in, progress tracker, class booking with waitlist, staff members table and occupancy controls.
-- **15 dedicated components**: `GymHero`, `GymDisciplines`, `GymSchedule`, `GymMembershipPlans`, `GymTrainersGrid`, `GymTrialForm`, `GymFooter`, `GymClassBooking`, `GymProgressTracker`, `GymOccupancyMeter`, `GymAreaNav`, `GymAreaTopbar`, `GymAreaHeading`, `GymMembersTable`, and `GymSignIn`.
+- **15 dedicated components**: [`GymHero`](/sections/gym-hero/), [`GymDisciplines`](/sections/gym-disciplines/), `GymSchedule`, `GymMembershipPlans`, `GymTrainersGrid`, `GymTrialForm`, `GymFooter`, `GymClassBooking`, `GymProgressTracker`, `GymOccupancyMeter`, `GymAreaNav`, `GymAreaTopbar`, `GymAreaHeading`, `GymMembersTable`, and `GymSignIn`.
+
+<div style="margin:1.25rem 0 2rem;border:1px solid var(--c-border,#2a2d3a);border-radius:12px;overflow:hidden;background:#0b0d13;">
+  <iframe src="/preview/gym/" title="Forja live preview" loading="lazy" style="width:100%;height:380px;border:0;display:block;"></iframe>
+</div>
 
 ---
 
 ### 🍔 BiteFlow · Food Delivery & Kitchen OS Redesign (`templates/food-delivery`)
 
+- **Live preview**: [/preview/food-delivery/](/preview/food-delivery/) · **Kitchen OS (KDS)**: [/preview/food-delivery/cocina/kds/](/preview/food-delivery/cocina/kds/) · **Template docs**: [/templates/food-delivery/](/templates/food-delivery/)
 - **Pop "sticker" aesthetic**: warm cream paper, bold dark ink outlines, tomato and mustard accents, and custom SVG dish illustrations.
-- **Interactive effects**: dishes fly into the cart drawer on add, live animated courier route map, scroll-driven *"From the fire to your door"* story, and a Kitchen Display System (KDS) moving tickets across columns with View Transitions.
-- **16 dedicated components & 11 pages** with Spanish preview routes (`/carta`, `/pedido`, `/restaurantes`, `/acceso`, `/cocina/...`).
+- **Interactive effects**: centered poster stage hero, dishes fly into the cart drawer on add, live animated courier route map, scroll-driven *"From the fire to your door"* story, and a Kitchen Display System (KDS) moving tickets across columns with View Transitions.
+- **16 dedicated components & 11 pages** with Spanish preview routes (`/carta`, `/pedido`, `/restaurantes`, `/acceso`, `/cocina/...`): [`FoodHeroPlate`](/sections/food-hero-plate/), [`FoodMenuBoard`](/sections/food-menu-board/), [`FoodScrollStory`](/sections/food-scroll-story/), [`FoodPartnerPitch`](/sections/food-partner-pitch/), `FoodFooter`, `FoodCartDrawer`, `FoodOrderMap`, `FoodKitchenBoard`, `FoodMenuManager`, `FoodRiderDispatch`, `FoodOrdersTable`, `FoodServicePulse`, `FoodOpsNav`, `FoodOpsTopbar`, `FoodOpsHeading`, and `FoodCrewSignIn`.
+
+<div style="margin:1.25rem 0 2rem;border:1px solid var(--c-border,#2a2d3a);border-radius:12px;overflow:hidden;background:#0b0d13;">
+  <iframe src="/preview/food-delivery/" title="BiteFlow live preview" loading="lazy" style="width:100%;height:380px;border:0;display:block;"></iframe>
+</div>
 
 ---
 
 ### 📐 Strukto · Construction & Site OS Redesign (`templates/construction`)
 
+- **Live preview**: [/preview/construction/](/preview/construction/) · **Site OS**: [/preview/construction/app/sites/](/preview/construction/app/sites/) · **Template docs**: [/templates/construction/](/templates/construction/)
 - **Architectural blueprint theme**: navy drafting sheet (with a light tracing-paper variant), `Archivo` + `IBM Plex Mono` typography and a procedural SVG elevation generator.
-- **Interactive effects**: self-drawing hero with coordinate crosshair, floor-by-floor scroll-scrubbed building sequence, rotatable/explodable 3D isometric unit picker, and a live-growing building cost estimator.
-- **15 dedicated components & 11 pages**: 6 public pages (home, projects, development sheet, estimator, contact, sign-in) + 5 Site OS views (executive dashboard with Gantt programme, active sites map, digital daily logbook, units sales ledger, and technical settings).
+- **Interactive effects**: panoramic self-drawing blueprint sheet hero with coordinate crosshair and title-block *cajetín*, floor-by-floor scroll-scrubbed building sequence, rotatable/explodable 3D isometric unit picker, and a live-growing building cost estimator.
+- **15 dedicated components & 11 pages**: [`ConstructionBlueprintHero`](/sections/construction-blueprint-hero/), [`ConstructionProjectSheets`](/sections/construction-project-sheets/), [`ConstructionBuildSequence`](/sections/construction-build-sequence/), [`ConstructionTenderForm`](/sections/construction-tender-form/), `ConstructionFooter`, `ConstructionCostEstimator`, `ConstructionIsoUnitPicker`, `ConstructionGanttBoard`, `ConstructionSitesBoard`, `ConstructionSiteLogbook`, `ConstructionUnitsLedger`, `ConstructionOsSidebar`, `ConstructionOsTopbar`, `ConstructionOsHeading`, and `ConstructionSignIn`.
+
+<div style="margin:1.25rem 0 2rem;border:1px solid var(--c-border,#2a2d3a);border-radius:12px;overflow:hidden;background:#0b0d13;">
+  <iframe src="/preview/construction/" title="Strukto live preview" loading="lazy" style="width:100%;height:380px;border:0;display:block;"></iframe>
+</div>
 
