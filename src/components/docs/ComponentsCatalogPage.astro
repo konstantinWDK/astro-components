@@ -1,0 +1,234 @@
+---
+// src/components/docs/ComponentsCatalogPage.astro
+// Browse pages for the component library.
+//  - without `category`: index of every category (/components/)
+//  - with `category`:    every component of that category as a live preview card (/components/<category>/)
+// Each card links to the component's own docs page.
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import PreviewRenderer from './PreviewRenderer.astro';
+import { categories, components } from '../../data/registry/index';
+import type { Locale } from '../../config/site';
+import { useTranslations, getLocalizedPath } from '../../i18n/translations';
+import { getLocalizedCategory, getLocalizedComponent } from '../../i18n/catalog';
+
+interface Props {
+  lang?: Locale;
+  category?: string;
+}
+
+const { lang = 'en', category: categoryId } = Astro.props;
+const t = useTranslations(lang);
+
+// Sections have their own catalog at /sections.
+const browsable = categories
+  .filter((c) => c.id !== 'sections')
+  .map((c) => ({
+    raw: c,
+    loc: getLocalizedCategory(c, lang),
+    items: components.filter((comp) => comp.category === c.id),
+  }))
+  .filter((c) => c.items.length > 0);
+
+const current = categoryId ? browsable.find((c) => c.raw.id === categoryId) : undefined;
+const total = browsable.reduce((n, c) => n + c.items.length, 0);
+
+const ui = {
+  en: { all: 'All components', components: 'components', categories: 'categories', view: 'View component', other: 'Other categories', browse: 'Browse the library by category: every component is previewed live and links to its docs page.', idxTitle: 'Components', sections: 'Sections' },
+  es: { all: 'Todos los componentes', components: 'componentes', categories: 'categorías', view: 'Ver componente', other: 'Otras categorías', browse: 'Explora la librería por categorías: cada componente se previsualiza en vivo y enlaza a su página de documentación.', idxTitle: 'Componentes', sections: 'Secciones' },
+  ru: { all: 'Все компоненты', components: 'компонентов', categories: 'категорий', view: 'Открыть компонент', other: 'Другие категории', browse: 'Библиотека по категориям: каждый компонент показан вживую и ведёт на свою страницу документации.', idxTitle: 'Компоненты', sections: 'Секции' },
+}[lang];
+
+const pageTitle = current ? `${current.loc.name} · ${ui.idxTitle}` : ui.idxTitle;
+const pageDesc = current ? current.loc.description || ui.browse : ui.browse;
+const wide = current ? ['charts', 'ecommerce', 'app', 'layout', 'navigation'].includes(current.raw.id) : false;
+---
+
+<DocsLayout title={pageTitle} description={pageDesc} lang={lang}>
+  <div class="cat-page">
+    <nav class="breadcrumb" aria-label={t('a11y.breadcrumb')}>
+      <a href={getLocalizedPath('/', lang)}>{t('nav.home')}</a>
+      <span class="breadcrumb__sep">›</span>
+      {current ? (
+        <>
+          <a href={getLocalizedPath('/components', lang)}>{ui.idxTitle}</a>
+          <span class="breadcrumb__sep">›</span>
+          <span class="breadcrumb__current">{current.loc.name}</span>
+        </>
+      ) : (
+        <span class="breadcrumb__current">{ui.idxTitle}</span>
+      )}
+    </nav>
+
+    <header class="cat-header">
+      <span class="cat-header__badge">
+        {current ? (
+          <>
+            <span class="cat-header__icon" aria-hidden="true" set:html={current.raw.icon}></span>
+            <span>{current.items.length} {ui.components}</span>
+          </>
+        ) : (
+          <span>{total} {ui.components} · {browsable.length} {ui.categories}</span>
+        )}
+      </span>
+      <h1 class="cat-header__title">{current ? current.loc.name : ui.idxTitle}</h1>
+      <p class="cat-header__desc">{pageDesc}</p>
+    </header>
+
+    {!current && (
+      <ul class="cat-index">
+        {browsable.map((c) => (
+          <li>
+            <a class="cat-index__card" href={getLocalizedPath(`/components/${c.raw.id}`, lang)}>
+              <span class="cat-index__icon" aria-hidden="true" set:html={c.raw.icon}></span>
+              <span class="cat-index__body">
+                <span class="cat-index__name">{c.loc.name}</span>
+                <span class="cat-index__desc">{c.loc.description}</span>
+                <span class="cat-index__count">{c.items.length} {ui.components}</span>
+              </span>
+            </a>
+          </li>
+        ))}
+        <li>
+          <a class="cat-index__card" href={getLocalizedPath('/sections', lang)}>
+            <span class="cat-index__icon" aria-hidden="true" set:html={categories.find((c) => c.id === 'sections')?.icon}></span>
+            <span class="cat-index__body">
+              <span class="cat-index__name">{ui.sections}</span>
+              <span class="cat-index__desc">{getLocalizedCategory('sections', lang).description || ''}</span>
+              <span class="cat-index__count">{components.filter((c) => c.category === 'sections').length} {ui.components}</span>
+            </span>
+          </a>
+        </li>
+      </ul>
+    )}
+
+    {current && (
+      <>
+        <ul class={`cat-grid ${wide ? 'cat-grid--wide' : ''}`}>
+          {current.items.map((raw) => {
+            const comp = getLocalizedComponent(raw as any, lang);
+            return (
+              <li class="cat-card">
+                <div class="cat-card__preview" inert aria-hidden="true" data-nosnippet>
+                  <PreviewRenderer slug={raw.slug} />
+                </div>
+                <div class="cat-card__body">
+                  <h2 class="cat-card__name">
+                    <a class="cat-card__link" href={getLocalizedPath(`/docs/${raw.slug}`, lang)}>{comp.name}</a>
+                  </h2>
+                  <p class="cat-card__desc">{comp.description}</p>
+                  <div class="cat-card__foot">
+                    <span class="cat-card__tags">
+                      {comp.tags.slice(0, 3).map((tag: string) => <span class="cat-card__tag">{tag}</span>)}
+                    </span>
+                    <span class="cat-card__cta" aria-hidden="true">
+                      {ui.view}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                    </span>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <nav class="cat-others" aria-label={ui.other}>
+          <h2 class="cat-others__title">{ui.other}</h2>
+          <ul>
+            {browsable.filter((c) => c.raw.id !== current.raw.id).map((c) => (
+              <li><a href={getLocalizedPath(`/components/${c.raw.id}`, lang)}>{c.loc.name} <span>{c.items.length}</span></a></li>
+            ))}
+            <li><a href={getLocalizedPath('/sections', lang)}>{ui.sections}</a></li>
+          </ul>
+        </nav>
+      </>
+    )}
+  </div>
+</DocsLayout>
+
+<style>
+  .cat-page { width: 100%; max-width: 100%; }
+
+  .breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2); font-size: 0.85rem; color: var(--c-text-3); margin-bottom: var(--sp-6); }
+  .breadcrumb a { color: var(--c-text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--c-primary-light); }
+  .breadcrumb__current { color: var(--c-text-1); font-weight: 600; }
+
+  .cat-header { margin-bottom: var(--sp-8); }
+  .cat-header__badge {
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    padding: 0.35rem 0.8rem; border: 1px solid rgba(184,134,11,0.3); border-radius: var(--r-sm);
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--c-primary-light); margin-bottom: var(--sp-4);
+  }
+  .cat-header__icon { display: inline-flex; }
+  .cat-header__title { font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 900; letter-spacing: -0.03em; color: var(--c-text-1); margin: 0 0 var(--sp-3); }
+  .cat-header__desc { max-width: 680px; color: var(--c-text-2); font-size: 1rem; line-height: 1.6; margin: 0; }
+
+  /* Index */
+  .cat-index { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-4); }
+  .cat-index__card {
+    display: flex; gap: var(--sp-4); align-items: flex-start; height: 100%;
+    padding: var(--sp-5, 1.25rem); background: var(--c-surface); border: 1px solid var(--c-border);
+    border-radius: var(--r-lg, 16px); color: var(--c-text-1); text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  }
+  .cat-index__card:hover { border-color: var(--c-primary-light); background: var(--c-primary-glow); transform: translateY(-2px); }
+  .cat-index__card:focus-visible, .cat-card__link:focus-visible, .cat-others a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+  .cat-index__icon { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-md); border: 1px solid var(--c-border); color: var(--c-primary-light); }
+  .cat-index__body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+  .cat-index__name { font-weight: 700; font-size: 1.05rem; }
+  .cat-index__desc { color: var(--c-text-2); font-size: 0.85rem; line-height: 1.5; }
+  .cat-index__count { color: var(--c-text-3); font-size: 0.78rem; margin-top: 0.25rem; }
+
+  /* Category grid */
+  .cat-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--sp-4); }
+  .cat-grid--wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); }
+
+  .cat-card {
+    position: relative; display: flex; flex-direction: column; min-width: 0;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg, 16px);
+    overflow: hidden; transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .cat-card:hover, .cat-card:focus-within { border-color: var(--c-primary-light); transform: translateY(-2px); }
+  .cat-card__preview {
+    display: grid; place-items: start center; height: 230px; padding: var(--sp-4);
+    overflow: hidden; background: var(--c-bg-1);
+    /* Keeps position:fixed previews (page loader, cookie drawer, chat widget…) inside the card */
+    contain: layout paint; isolation: isolate; border-bottom: 1px solid var(--c-border);
+  }
+  .cat-grid--wide .cat-card__preview { height: 300px; }
+  .cat-grid--wide .cat-card__preview :global(.preview-renderer) { zoom: 0.7; }
+  .cat-card__preview :global(.preview-renderer) { width: 100%; min-height: 0; zoom: 0.8; }
+  .cat-card__body { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); flex: 1; }
+  .cat-card__name { margin: 0; font-size: 1rem; font-weight: 700; color: var(--c-text-1); }
+  /* Whole card is the click target */
+  .cat-card__link { color: inherit; text-decoration: none; }
+  .cat-card__link::after { content: ''; position: absolute; inset: 0; }
+  .cat-card__desc {
+    margin: 0; color: var(--c-text-2); font-size: 0.85rem; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .cat-card__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-top: auto; padding-top: var(--sp-2); }
+  .cat-card__tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .cat-card__tag { padding: 2px 0.5rem; border: 1px solid var(--c-border); border-radius: var(--r-full); font-size: 0.7rem; color: var(--c-text-3); }
+  .cat-card__cta { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 600; color: var(--c-primary-light); white-space: nowrap; }
+
+  .cat-others { margin-top: var(--sp-10, 3rem); }
+  .cat-others__title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-text-3); margin: 0 0 var(--sp-3); }
+  .cat-others ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .cat-others a {
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 var(--sp-4);
+    border: 1px solid var(--c-border); border-radius: var(--r-full); color: var(--c-text-1); font-size: 0.85rem; text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .cat-others a:hover { border-color: var(--c-primary-light); color: var(--c-primary-light); }
+  .cat-others a span { color: var(--c-text-3); font-size: 0.75rem; }
+
+  @media (max-width: 560px) {
+    .cat-grid, .cat-grid--wide { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cat-card, .cat-index__card { transition: none; }
+    .cat-card:hover, .cat-index__card:hover { transform: none; }
+  }
+</style>

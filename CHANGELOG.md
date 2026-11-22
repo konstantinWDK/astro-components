@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Component catalog pages**: `/components/` lists every category and `/components/<category>/` (buttons, forms, cards, feedback, navigation, layout, overlays, data, typography, charts, e-commerce, app) shows all its components as live preview cards that link to their docs page, in en/es/ru. The sidebar, the home categories and the doc breadcrumbs link to them.
+
+### Added
 - **Online academy template "Lumen"** (`astro-component-kit/templates/academy`): course platform with a home (search, learning paths, featured courses, instructors, reviews, plans), a filterable catalog (`?q=` / `?cat=`), a course page (enrolment card, syllabus accordion, reviews, related courses), plans with monthly/yearly billing and FAQ, and an instructor application, plus a learner area (sign-in, dashboard with weekly goal and streak, lesson player with notes and quiz) and an instructor studio (KPIs, 12-month chart, course manager). 9 page types, ink-blue and amber theme with a serif display face and light/dark variants.
 - Sections: `AcademyHero`, `AcademyTracks`, `AcademyCourseGrid`, `AcademyCourseHero`, `AcademyCurriculum`, `AcademyPricingPlans`, `AcademyInstructors`, `AcademyReviews`, `AcademyTeachForm`, `AcademyFooter` (new "Online Academy" section category).
 - App components: `AcademyLessonPlayer`, `AcademyProgressBoard`, `AcademyQuiz`, `AcademyStudioStats`, `AcademyCoursesTable`, plus its own area shell: `AcademyAreaNav` (bottom tab bar on phones), `AcademyAreaTopbar`, `AcademyAreaHeading` and `AcademySignIn`.
