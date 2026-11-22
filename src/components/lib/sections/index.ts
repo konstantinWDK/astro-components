@@ -228,3 +228,14 @@ export { default as WineClub } from './WineClub.astro';
 export { default as WineAwards } from './WineAwards.astro';
 export { default as WineFaq } from './WineFaq.astro';
 export { default as WineFooter } from './WineFooter.astro';
+
+// Perfumery ("Umbra")
+export { default as PerfHero } from './PerfHero.astro';
+export { default as PerfSkin } from './PerfSkin.astro';
+export { default as PerfCollection } from './PerfCollection.astro';
+export { default as PerfMap } from './PerfMap.astro';
+export { default as PerfAtelier } from './PerfAtelier.astro';
+export { default as PerfQuiz } from './PerfQuiz.astro';
+export { default as PerfDiscovery } from './PerfDiscovery.astro';
+export { default as PerfFaq } from './PerfFaq.astro';
+export { default as PerfFooter } from './PerfFooter.astro';

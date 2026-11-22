@@ -1,0 +1,187 @@
+---
+/**
+ * PerfAccountNav — Navigation of the members area: wordmark plus text tabs in a header row on
+ * desktop, and a fixed bottom tab bar on phones. Text only (no icons), no JavaScript.
+ *
+ * @param {Array<{label: string, href: string, badge?: string|number}>} items - Links (keep 3–5).
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {string} brand - Perfumery name (desktop only; phones show it in the top bar).
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; aria-current on the active link; 56px tap targets
+ * on the bottom bar; badges are announced as text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+
+interface Item { label: string; href: string; badge?: string | number }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  brand?: string;
+  homeHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [
+    { label: 'Resumen', href: '#' },
+    { label: 'Mi estantería', href: '#estanteria' },
+    { label: 'Pedidos', href: '#pedidos' },
+  ],
+  currentHref = '#',
+  brand = 'Umbra',
+  homeHref = '#',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const isCurrent = (href: string) => href.replace(/\/$/, '') === currentHref.replace(/\/$/, '');
+---
+
+<nav class:list={['perf-ui', 'perf-nav', classAttr]} aria-label="Área de cliente" {...rest}>
+  <a href={homeHref} class="perf-nav__brand">{brand}<small>Club</small></a>
+  <ul class="perf-nav__list" role="list">
+    {items.map((it) => (
+      <li>
+        <a href={it.href} class="perf-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+          {it.label}
+          {it.badge !== undefined && it.badge !== 0 && <span class="perf-nav__badge">{it.badge}<span class="pf-sr"> pendientes</span></span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .perf-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8, 2rem);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-nav__brand {
+    display: none;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.7rem;
+    color: var(--pf-text);
+    text-decoration: none;
+  }
+
+  .perf-nav__brand small {
+    font: 600 0.65rem/1 var(--pf-font-body);
+    font-style: normal;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-nav__list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-nav__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: var(--pf-text-3);
+    font: 600 0.78rem/1 var(--pf-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .perf-nav__link:hover {
+    color: var(--pf-text);
+  }
+
+  .perf-nav__link[aria-current='page'] {
+    color: var(--pf-text);
+  }
+
+  .perf-nav__link:focus-visible,
+  .perf-nav__brand:focus-visible {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 2px;
+  }
+
+  .perf-nav__badge {
+    min-width: 18px;
+    padding: 0 5px;
+    background: var(--pf-brand);
+    color: var(--pf-on-brand);
+    font-size: 0.68rem;
+    line-height: 18px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  /* Phones: fixed bottom tab bar */
+  @media (max-width: 759px) {
+    .perf-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      background: var(--pf-bg-raised);
+      border-top: 1px solid var(--pf-border-strong);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .perf-nav__list {
+      flex: 1;
+    }
+
+    .perf-nav__list li {
+      flex: 1;
+    }
+
+    .perf-nav__link {
+      min-height: 60px;
+      padding: 0 var(--sp-2, 0.5rem);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      border-top: 3px solid transparent;
+    }
+
+    .perf-nav__link[aria-current='page'] {
+      border-top-color: var(--pf-brand);
+      color: var(--pf-brand);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .perf-nav__brand {
+      display: inline-flex;
+    }
+
+    .perf-nav__list {
+      gap: var(--sp-6, 1.5rem);
+    }
+
+    .perf-nav__link {
+      min-height: 48px;
+      border-bottom: 2px solid transparent;
+    }
+
+    .perf-nav__link[aria-current='page'] {
+      border-bottom-color: var(--pf-brand);
+    }
+  }
+</style>

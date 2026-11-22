@@ -1,0 +1,296 @@
+---
+/**
+ * PerfMap — Olfactory map: each fragrance is a glowing point placed between fresh and warm
+ * (horizontal) and light and dense (vertical). Pick one in the list or on the map to read its
+ * description, perfumer, sillage and longevity, and which fragrance is its nearest neighbour.
+ *
+ * @param {PerfFragrance[]} fragrances - Fragrances to place on the map.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the real control is a radio group (arrow keys); the map is a visual mirror of it and
+ * its points are clickable but not required. Without JavaScript every detail is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import { perfList, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrances?: PerfFragrance[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  fragrances = perfList,
+  title = 'Dónde cae cada una',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `pm-${Math.random().toString(36).slice(2, 8)}`;
+
+function nearest(f: PerfFragrance) {
+  return fragrances
+    .filter((o) => o.id !== f.id)
+    .map((o) => ({ o, d: Math.hypot(o.x - f.x, o.y - f.y) }))
+    .sort((a, b) => a.d - b.d)[0]?.o;
+}
+
+const dots = (n: number) => '●'.repeat(n) + '○'.repeat(5 - n);
+---
+
+<section class:list={['perf-ui', 'perf-map', classAttr]} aria-labelledby={`${uid}-title`} data-perf-map {...rest}>
+  <div class="perf-map__inner">
+    <header class="perf-map__head">
+      <p class="pf-eyebrow">Mapa olfativo</p>
+      <Heading id={`${uid}-title`} class="perf-map__title">{title}</Heading>
+      <p class="perf-map__lead">Frescas a la izquierda, cálidas a la derecha. Arriba lo ligero y abajo lo denso. Si una te gusta, mira a su vecina.</p>
+    </header>
+
+    <div class="perf-map__grid">
+      <svg class="perf-map__svg" viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          {fragrances.map((f) => (
+            <radialGradient id={`${uid}-g-${f.id}`}>
+              <stop offset="0" stop-color={f.accord[1]} stop-opacity="0.9"></stop>
+              <stop offset="1" stop-color={f.accord[0]} stop-opacity="0"></stop>
+            </radialGradient>
+          ))}
+        </defs>
+        <rect x="0.5" y="0.5" width="99" height="99" fill="none" stroke="currentColor" opacity="0.2" vector-effect="non-scaling-stroke"></rect>
+        <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" opacity="0.14" stroke-dasharray="1 2" vector-effect="non-scaling-stroke"></line>
+        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" opacity="0.14" stroke-dasharray="1 2" vector-effect="non-scaling-stroke"></line>
+        <text x="3" y="53.5" font-size="3" fill="currentColor" opacity="0.6">Fresco</text>
+        <text x="97" y="53.5" font-size="3" fill="currentColor" opacity="0.6" text-anchor="end">Cálido</text>
+        <text x="52" y="5" font-size="3" fill="currentColor" opacity="0.6">Ligero</text>
+        <text x="52" y="97" font-size="3" fill="currentColor" opacity="0.6">Denso</text>
+        {fragrances.map((f) => (
+          <g class="perf-map__pt" data-pt={f.id}>
+            <circle cx={f.x} cy={f.y} r="13" fill={`url(#${uid}-g-${f.id})`}></circle>
+            <circle class="perf-map__dot" cx={f.x} cy={f.y} r="1.9" fill={f.accord[1]}></circle>
+            <text x={f.x} y={f.y + 6} font-size="3.2" text-anchor="middle" fill="currentColor" font-style="italic">{f.name}</text>
+          </g>
+        ))}
+      </svg>
+
+      <div class="perf-map__side">
+        <fieldset class="perf-map__list">
+          <legend class="pf-sr">Elige una fragancia en el mapa</legend>
+          {fragrances.map((f, i) => (
+            <label>
+              <input type="radio" name={`${uid}-f`} value={f.id} checked={i === 0} />
+              <span><i style={`background:${f.accord[1]}`}></i>{f.number} {f.name}</span>
+            </label>
+          ))}
+        </fieldset>
+
+        {fragrances.map((f, i) => {
+          const near = nearest(f);
+          return (
+            <article class="perf-map__detail" data-detail={f.id} hidden={i !== 0 ? true : undefined}>
+              <h3>{f.name} <span>{f.family}</span></h3>
+              <p>{f.description}</p>
+              <dl>
+                <div><dt>Perfumista</dt><dd>{f.perfumer}, {f.year}</dd></div>
+                <div><dt>Estela</dt><dd><span aria-hidden="true">{dots(f.sillage)}</span><span class="pf-sr">{f.sillage} de 5</span></dd></div>
+                <div><dt>Duración</dt><dd>unas {f.longevity} horas</dd></div>
+                <div><dt>Para llevarla</dt><dd>{f.wearWhen}</dd></div>
+                {near && <div><dt>Su vecina</dt><dd>{near.number} {near.name}</dd></div>}
+              </dl>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .perf-map {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-map__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .perf-map__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 6vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .perf-map__lead {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-map__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .perf-map__svg {
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 1;
+    color: var(--pf-text);
+    background: var(--pf-bg-raised);
+    overflow: visible;
+  }
+
+  .perf-map__pt {
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.3s ease;
+  }
+
+  .perf-map__pt.is-on {
+    opacity: 1;
+  }
+
+  .perf-map__pt.is-on .perf-map__dot {
+    stroke: var(--pf-text);
+    stroke-width: 0.5;
+  }
+
+  .perf-map__list {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .perf-map__list input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .perf-map__list span {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    border-bottom: 1px solid var(--pf-border);
+    color: var(--pf-text-2);
+    cursor: pointer;
+    transition: color 0.2s ease, padding 0.2s ease;
+  }
+
+  .perf-map__list i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .perf-map__list input:checked + span {
+    padding-left: 0.5rem;
+    color: var(--pf-text);
+    border-bottom-color: var(--pf-brand);
+  }
+
+  .perf-map__list input:focus-visible + span {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 2px;
+  }
+
+  .perf-map__detail h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.2rem;
+    line-height: 1.05;
+  }
+
+  .perf-map__detail h3 span {
+    display: block;
+    margin-top: 0.3rem;
+    font: 600 0.74rem/1 var(--pf-font-body);
+    font-style: normal;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-map__detail p {
+    margin: 0 0 var(--sp-4, 1rem);
+    max-width: 52ch;
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-map__detail dl {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .perf-map__detail dl div {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--pf-border);
+    font-size: 0.92rem;
+  }
+
+  .perf-map__detail dt {
+    color: var(--pf-text-3);
+  }
+
+  .perf-map__detail dd {
+    margin: 0;
+  }
+
+  @media (min-width: 900px) {
+    .perf-map {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .perf-map__grid {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: var(--sp-12, 3rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-map]').forEach((root) => {
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.perf-map__list input')];
+    const details = [...root.querySelectorAll<HTMLElement>('[data-detail]')];
+    const points = [...root.querySelectorAll<SVGGElement>('[data-pt]')];
+
+    const show = (id?: string) => {
+      details.forEach((d) => { d.hidden = d.dataset.detail !== id; });
+      points.forEach((p) => p.classList.toggle('is-on', p.dataset.pt === id));
+    };
+
+    radios.forEach((r) => r.addEventListener('change', () => show(r.value)));
+    points.forEach((p) =>
+      p.addEventListener('click', () => {
+        const r = radios.find((x) => x.value === p.dataset.pt);
+        if (r) { r.checked = true; show(r.value); }
+      }),
+    );
+    show(radios.find((r) => r.checked)?.value);
+  });
+</script>

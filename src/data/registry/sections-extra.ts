@@ -1264,4 +1264,59 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['wine', 'winery', 'footer', 'newsletter', 'wordmark'],
     usage: `<WineFooter brand="Solera" />`,
   }),
+  // === PERFUMERY ("Umbra") ===
+  section({
+    slug: 'perf-hero', name: 'Perf Hero', file: 'PerfHero.astro', sectionCategory: 'perfumery',
+    description: 'Perfumery hero with an oversized display-serif headline over slow clouds of colour taken from the fragrance accord (they drift and follow the pointer), a large generated flacon and its notes floating around it as text.',
+    tags: ['perfume', 'perfumery', 'hero', 'editorial', 'flacon', 'animation'], featured: true,
+    usage: `<PerfHero fragrancesHref="/fragancias" discoverHref="/descubrir" />`,
+  }),
+  section({
+    slug: 'perf-skin', name: 'Perf Skin', file: 'PerfSkin.astro', sectionCategory: 'perfumery',
+    description: '"Evolution on skin": drag an hours slider (0–10 h) and watch a fragrance unfold. A layered curve shows how top, heart and base notes rise and fade, and every note has a written state that updates live.',
+    tags: ['perfume', 'perfumery', 'slider', 'chart', 'notes', 'storytelling'], featured: true,
+    usage: `<PerfSkin fragrances={perfList} />`,
+  }),
+  section({
+    slug: 'perf-collection', name: 'Perf Collection', file: 'PerfCollection.astro', sectionCategory: 'perfumery',
+    description: 'The fragrances as a horizontal scroll-snap rail of tall cards: each draws its flacon in its own colours, lists its notes by layer and lets you pick a size with the price updating before the add button.',
+    tags: ['perfume', 'perfumery', 'rail', 'cards', 'pricing', 'carousel'], featured: true,
+    usage: `<PerfCollection fragrances={perfList} />`,
+  }),
+  section({
+    slug: 'perf-map', name: 'Perf Map', file: 'PerfMap.astro', sectionCategory: 'perfumery',
+    description: 'Olfactory map: each fragrance is a glowing point between fresh and warm (horizontal) and light and dense (vertical). Pick one in the list or on the map to read its story, perfumer, sillage, longevity and nearest neighbour.',
+    tags: ['perfume', 'perfumery', 'map', 'svg', 'radio', 'scatter'], featured: true,
+    usage: `<PerfMap fragrances={perfList} />`,
+  }),
+  section({
+    slug: 'perf-atelier', name: 'Perf Atelier', file: 'PerfAtelier.astro', sectionCategory: 'perfumery',
+    description: 'Raw materials as a typographic list: name, origin and method, a huge outlined ratio of kilos of material per kilo of essence and a log-scale bar that makes it visible. No images or icons.',
+    tags: ['perfume', 'perfumery', 'materials', 'typography', 'list'],
+    usage: `<PerfAtelier materials={perfMaterials} />`,
+  }),
+  section({
+    slug: 'perf-quiz', name: 'Perf Quiz', file: 'PerfQuiz.astro', sectionCategory: 'perfumery',
+    description: 'Four-question scent profile test: one question at a time with large radio answers and a step counter; the result shows the best match with its flacon, notes and a second option, scored by a weighted vote.',
+    tags: ['perfume', 'perfumery', 'quiz', 'form', 'stepper', 'recommendation'], featured: true,
+    usage: `<PerfQuiz questions={perfQuiz} fragrances={perfList} />`,
+  }),
+  section({
+    slug: 'perf-discovery', name: 'Perf Discovery', file: 'PerfDiscovery.astro', sectionCategory: 'perfumery',
+    description: 'Discovery-set builder: pick up to six 2 ml vials from large tappable cards that draw their own flacon, see the total and the progress to free shipping update live, then send the request.',
+    tags: ['perfume', 'perfumery', 'samples', 'form', 'checkbox', 'ecommerce'], featured: true,
+    usage: `<PerfDiscovery fragrances={perfList} action="/api/set" />`,
+  }),
+  section({
+    slug: 'perf-faq', name: 'Perf FAQ', file: 'PerfFaq.astro', sectionCategory: 'perfumery',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['perfume', 'perfumery', 'faq', 'accordion'],
+    usage: `<PerfFaq faqs={perfFaqs} />`,
+  }),
+  section({
+    slug: 'perf-footer', name: 'Perf Footer', file: 'PerfFooter.astro', sectionCategory: 'perfumery',
+    description: 'Perfumery footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['perfume', 'perfumery', 'footer', 'newsletter', 'wordmark'],
+    usage: `<PerfFooter brand="Umbra" />`,
+  }),
 ];

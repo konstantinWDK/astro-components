@@ -1,0 +1,278 @@
+---
+/**
+ * PerfSignIn — Split sign-in for the customer area: a large generated flacon with a customer quote
+ * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
+ * quick-access link and a link to join the club.
+ *
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} joinHref - Link to the club page.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus rings and 48px controls; the label illustration is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from './PerfBottle.astro';
+import { perfList } from '../templates/perfumery/data';
+
+interface OwnProps {
+  dashboardHref?: string;
+  joinHref?: string;
+  homeHref?: string;
+  action?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { dashboardHref = '/cuenta', joinHref = '/fragancias', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const fragrance = perfList.find((f) => f.id === 'iris-noir') ?? perfList[0];
+const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['perf-ui', 'perf-si', classAttr]} aria-labelledby={`${uid}-title`} data-perf-si data-dashboard={dashboardHref} {...rest}>
+  <div class="perf-si__art">
+    <a href={homeHref} class="perf-si__brand">Umbra</a>
+    <div class="perf-si__label"><PerfBottle fragrance={fragrance} decorative /></div>
+    <blockquote>
+      <p>Llevo tres años con Iris Noir y todavía hay días en que alguien me pregunta qué llevo. Lo bueno es que ya sé cuánto me queda en el frasco y cuándo pedir otro.</p>
+      <footer>Marta Vidal · clienta desde 2022</footer>
+    </blockquote>
+  </div>
+
+  <div class="perf-si__panel">
+    <form class="perf-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-perf-si-form>
+      <p class="pf-eyebrow">Área de cliente</p>
+      <h1 id={`${uid}-title`}>Bienvenida de nuevo</h1>
+
+      <div class="perf-si__field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="perf-si__field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="perf-si__pass">
+          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-perf-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="perf-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+
+      <p class="perf-si__error" role="alert" data-perf-si-error></p>
+
+      <button type="submit" class="pf-btn">Entrar</button>
+      <a class="perf-si__demo pf-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
+
+      <p class="perf-si__join">¿Primera vez? <a class="pf-link" href={joinHref}>Descubre las seis fragancias</a></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .perf-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-si__art {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--pf-accent-rgb), 0.22), transparent 70%), var(--pf-surface);
+    border-right: 1px solid var(--pf-border);
+  }
+
+  .perf-si__brand {
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-size: 2rem;
+    color: var(--pf-text);
+    text-decoration: none;
+  }
+
+  .perf-si__label {
+    width: min(210px, 60%);
+    margin: 0 auto;
+        filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .perf-si__label :global(.perf-bottle) {
+    max-width: none;
+  }
+
+  .perf-si__art blockquote {
+    max-width: 38ch;
+    margin: 0;
+  }
+
+  .perf-si__art blockquote p {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .perf-si__art footer {
+    font-size: 0.85rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .perf-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .perf-si__form h1 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--pf-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .perf-si__field label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--pf-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-si__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 2px;
+    background: var(--pf-bg-raised);
+    color: var(--pf-text);
+    font: 1rem var(--pf-font-body);
+  }
+
+  .perf-si__pass {
+    position: relative;
+  }
+
+  .perf-si__pass input {
+    padding-right: 5.5rem;
+  }
+
+  .perf-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--pf-text-2);
+    font: 600 0.8rem var(--pf-font-body);
+    cursor: pointer;
+  }
+
+  .perf-si__pass button:hover {
+    color: var(--pf-brand);
+  }
+
+  .perf-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--pf-text-2);
+    cursor: pointer;
+  }
+
+  .perf-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--pf-brand);
+  }
+
+  .perf-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--pf-bad);
+  }
+
+  .perf-si__demo,
+  .perf-si__join {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 900px) {
+    .perf-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .perf-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-perf-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-perf-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-perf-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

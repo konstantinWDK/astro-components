@@ -1,0 +1,367 @@
+---
+/**
+ * PerfQuiz — Four-question scent profile test. One question at a time with large radio answers, a
+ * "question 2 of 4" counter and back/next buttons; the result shows the best match with its flacon,
+ * its notes and a second option. Scoring is a weighted vote defined in the data.
+ *
+ * @param {PerfQuizQuestion[]} questions - Questions with weighted options.
+ * @param {PerfFragrance[]} fragrances - Fragrances that can win.
+ * @param {string} discoverHref - Link of the "order the sample" button in the result.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each question is a <fieldset> with a <legend>; the step counter and the result are
+ * in aria-live regions; focus moves to the new question or result; without JavaScript all questions
+ * are shown in a single form.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from '../app/PerfBottle.astro';
+import { perfQuiz, perfList, type PerfQuizQuestion, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  questions?: PerfQuizQuestion[];
+  fragrances?: PerfFragrance[];
+  discoverHref?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  questions = perfQuiz,
+  fragrances = perfList,
+  discoverHref = '/descubrir#set',
+  title = 'Cuatro preguntas, una fragancia',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `pq-${Math.random().toString(36).slice(2, 8)}`;
+const layerName = { top: 'Salida', heart: 'Corazón', base: 'Fondo' } as const;
+---
+
+<section class:list={['perf-ui', 'perf-quiz', classAttr]} aria-labelledby={`${uid}-title`} data-perf-quiz data-total={questions.length} {...rest}>
+  <div class="perf-quiz__inner">
+    <header class="perf-quiz__head">
+      <p class="pf-eyebrow">Tu perfil</p>
+      <Heading id={`${uid}-title`} class="perf-quiz__title">{title}</Heading>
+    </header>
+
+    <form class="perf-quiz__form" data-form novalidate>
+      <p class="perf-quiz__count" aria-live="polite" data-count></p>
+
+      {questions.map((q, qi) => (
+        <fieldset class="perf-quiz__step" data-step={qi}>
+          <legend tabindex="-1">{q.question}</legend>
+          <div class="perf-quiz__opts">
+            {q.options.map((o, oi) => (
+              <label class="perf-quiz__opt">
+                <input type="radio" name={`${uid}-${q.id}`} value={oi} data-weights={JSON.stringify(o.weights)} required />
+                <span>{o.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ))}
+
+      <div class="perf-quiz__nav" data-nav hidden>
+        <button type="button" class="pf-btn pf-btn--ghost" data-back>Atrás</button>
+        <button type="button" class="pf-btn" data-next disabled>Siguiente</button>
+      </div>
+    </form>
+
+    <div class="perf-quiz__result" data-result hidden aria-live="polite">
+      {fragrances.map((f) => (
+        <article class="perf-quiz__card" data-res={f.id} hidden>
+          <div class="perf-quiz__art" style={`--c1:${f.accord[0]};--c2:${f.accord[1]}`}>
+            <PerfBottle fragrance={f} decorative />
+          </div>
+          <div>
+            <p class="pf-eyebrow">Tu fragancia</p>
+            <h3 tabindex="-1">{f.number} {f.name}</h3>
+            <p class="perf-quiz__tag">{f.tagline}</p>
+            <p class="perf-quiz__desc">{f.description}</p>
+            <dl class="perf-quiz__notes">
+              {(['top', 'heart', 'base'] as const).map((l) => (
+                <div><dt>{layerName[l]}</dt><dd>{f.notes.filter((n) => n.layer === l).map((n) => n.name).join(', ')}</dd></div>
+              ))}
+            </dl>
+            <div class="perf-quiz__actions">
+              <a class="pf-btn" href={discoverHref}>Pedir el vial de 2 ml</a>
+              <button type="button" class="pf-btn pf-btn--ghost" data-restart>Repetir el test</button>
+            </div>
+            <p class="perf-quiz__second" data-second></p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .perf-quiz {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-quiz__inner {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .perf-quiz [hidden] {
+    display: none !important;
+  }
+
+  .perf-quiz__title {
+    margin: 0 0 var(--sp-8, 2rem);
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 6vw, 4.2rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .perf-quiz__count {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--pf-text-3);
+  }
+
+  .perf-quiz__step {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .perf-quiz.is-live .perf-quiz__step:not(.is-current) {
+    display: none;
+  }
+
+  .perf-quiz__step + .perf-quiz__step {
+    margin-top: var(--sp-8, 2rem);
+  }
+
+  .perf-quiz.is-live .perf-quiz__step + .perf-quiz__step {
+    margin-top: 0;
+  }
+
+  .perf-quiz__step legend {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-size: clamp(1.7rem, 4.5vw, 2.8rem);
+    line-height: 1.1;
+  }
+
+  .perf-quiz__step legend:focus {
+    outline: none;
+  }
+
+  .perf-quiz__opts {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .perf-quiz__opt input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .perf-quiz__opt span {
+    display: flex;
+    align-items: center;
+    min-height: 60px;
+    padding: 0.9rem 1.2rem;
+    border: 1px solid var(--pf-border-strong);
+    font-size: 1.05rem;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, padding 0.2s ease;
+  }
+
+  .perf-quiz__opt span:hover {
+    border-color: var(--pf-brand);
+  }
+
+  .perf-quiz__opt input:checked + span {
+    border-color: var(--pf-brand);
+    background: rgba(var(--pf-brand-rgb), 0.16);
+    padding-left: 1.6rem;
+  }
+
+  .perf-quiz__opt input:focus-visible + span {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 2px;
+  }
+
+  .perf-quiz__nav {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .perf-quiz__card {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .perf-quiz__art {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem);
+    background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--c2) 40%, transparent), transparent 70%), var(--pf-bg-raised);
+    border: 1px solid var(--pf-border);
+  }
+
+  .perf-quiz__art :global(.perf-bottle) {
+    width: 150px;
+  }
+
+  .perf-quiz__card h3 {
+    margin: 0 0 0.3rem;
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    line-height: 1;
+  }
+
+  .perf-quiz__card h3:focus {
+    outline: none;
+  }
+
+  .perf-quiz__tag {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--pf-accent);
+  }
+
+  .perf-quiz__desc {
+    margin: 0 0 var(--sp-4, 1rem);
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-quiz__notes {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-size: 0.92rem;
+  }
+
+  .perf-quiz__notes div {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    gap: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--pf-border);
+  }
+
+  .perf-quiz__notes dt {
+    color: var(--pf-text-3);
+  }
+
+  .perf-quiz__notes dd {
+    margin: 0;
+  }
+
+  .perf-quiz__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-quiz__second {
+    margin: var(--sp-4, 1rem) 0 0;
+    font-size: 0.92rem;
+    color: var(--pf-text-3);
+  }
+
+  @media (min-width: 800px) {
+    .perf-quiz {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .perf-quiz__card {
+      grid-template-columns: 0.8fr 1.2fr;
+      align-items: center;
+      gap: var(--sp-10, 2.5rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-quiz]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    const steps = [...root.querySelectorAll<HTMLElement>('[data-step]')];
+    const nav = root.querySelector<HTMLElement>('[data-nav]');
+    const back = root.querySelector<HTMLButtonElement>('[data-back]');
+    const next = root.querySelector<HTMLButtonElement>('[data-next]');
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const result = root.querySelector<HTMLElement>('[data-result]');
+    if (!form || !steps.length || !nav || !back || !next || !result) return;
+
+    let i = 0;
+    const names: Record<string, string> = {};
+    root.querySelectorAll<HTMLElement>('[data-res]').forEach((a) => { names[a.dataset.res ?? ''] = a.querySelector('h3')?.textContent ?? ''; });
+
+    const answered = () => !!steps[i].querySelector<HTMLInputElement>('input:checked');
+
+    const render = (focus = false) => {
+      steps.forEach((s, n) => s.classList.toggle('is-current', n === i));
+      if (count) count.textContent = `Pregunta ${i + 1} de ${steps.length}`;
+      back.hidden = i === 0;
+      next.textContent = i === steps.length - 1 ? 'Ver mi resultado' : 'Siguiente';
+      next.disabled = !answered();
+      if (focus) steps[i].querySelector<HTMLElement>('legend')?.focus();
+    };
+
+    const finish = () => {
+      const score: Record<string, number> = {};
+      form.querySelectorAll<HTMLInputElement>('input:checked').forEach((r) => {
+        const w = JSON.parse(r.dataset.weights ?? '{}') as Record<string, number>;
+        for (const k in w) score[k] = (score[k] ?? 0) + w[k];
+      });
+      const ranked = Object.entries(score).sort((a, b) => b[1] - a[1]);
+      const [win, second] = [ranked[0]?.[0], ranked[1]?.[0]];
+      form.hidden = true;
+      result.hidden = false;
+      root.querySelectorAll<HTMLElement>('[data-res]').forEach((a) => { a.hidden = a.dataset.res !== win; });
+      const card = root.querySelector<HTMLElement>(`[data-res="${win}"]`);
+      const sec = card?.querySelector<HTMLElement>('[data-second]');
+      if (sec) sec.textContent = second ? `Si dudas, prueba también ${names[second]}.` : '';
+      card?.querySelector<HTMLElement>('h3')?.focus();
+    };
+
+    const restart = () => {
+      form.reset();
+      form.hidden = false;
+      result.hidden = true;
+      i = 0;
+      render(true);
+    };
+
+    root.classList.add('is-live');
+    nav.hidden = false;
+    form.addEventListener('change', () => { next.disabled = !answered(); });
+    back.addEventListener('click', () => { if (i > 0) { i -= 1; render(true); } });
+    next.addEventListener('click', () => {
+      if (!answered()) return;
+      if (i < steps.length - 1) { i += 1; render(true); } else finish();
+    });
+    root.querySelectorAll<HTMLElement>('[data-restart]').forEach((b) => b.addEventListener('click', restart));
+    render();
+  });
+</script>

@@ -1,0 +1,181 @@
+---
+/**
+ * PerfAccountLayout — Customer-area shell for the "Umbra" perfumery template.
+ * Header row with PerfAccountNav (tabs on desktop, bottom bar on phones) and PerfAccountTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Umbra").
+ * @param {string} current - Active route key (dashboard | shelf | orders).
+ * @param {PerfRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './perf-theme.css';
+import PerfAccountNav from '../../app/PerfAccountNav.astro';
+import PerfAccountTopbar from '../../app/PerfAccountTopbar.astro';
+import { perfRoutes, perfData, type PerfRoutes } from './data';
+
+type Key = 'dashboard' | 'shelf' | 'orders';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: PerfRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Umbra · Tu cuenta: tu estantería con el nivel de cada frasco, el laboratorio de capas y tus pedidos.',
+  current = 'dashboard',
+  routes = perfRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = perfData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Mi estantería', href: routes.shelf },
+  { label: 'Pedidos', href: routes.orders, badge: perfData.orders.filter((o) => o.status !== 'Entregado').length },
+];
+const notifications = [
+  { title: 'Tu pedido se ha preparado', text: 'Cuero & Higo 50 ml sale del atelier el lunes 24', time: 'hace 1 día', unread: true },
+  { title: 'Tu Té de Humo se acaba', text: 'Te queda un 18%. Recógelo con tu crédito de 18 €', time: 'hace 4 días', unread: true },
+  { title: 'Entrega confirmada', text: 'Tu Sal Marina llegó a tu domicilio', time: 'hace 3 meses' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-perf" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Umbra`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400;1,6..96,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="perf-app-body">
+    <a href="#main-content" class="perf-app-skip">Saltar al contenido</a>
+
+    <div class="perf-app-head">
+      <div class="perf-app-head__inner">
+        <PerfAccountNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Umbra" homeHref={routes.home} />
+        <PerfAccountTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Umbra', href: routes.home }, { label: 'Pedir cita en el atelier', href: routes.discover }, { label: 'Mis pedidos', href: routes.orders }]}
+          signOutHref={routes.signIn}
+          brand="Umbra"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="perf-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .perf-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--pf-brand);
+    color: var(--pf-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .perf-app-skip:focus {
+    top: 1rem;
+  }
+
+  .perf-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--pf-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--pf-border);
+  }
+
+  .perf-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .perf-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .perf-app-main:focus {
+    outline: none;
+  }
+
+  :global(.perf-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.perf-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--pf-font-display);
+    font-weight: 300;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .perf-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .perf-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .perf-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

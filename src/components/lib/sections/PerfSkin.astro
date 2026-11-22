@@ -1,0 +1,395 @@
+---
+/**
+ * PerfSkin — "Evolution on skin": drag an hours slider (0–10 h) and watch a fragrance unfold. A
+ * layered curve shows how top, heart and base notes rise and fade, and each note is listed with a
+ * plain-word state ("not yet", "at its best", "fading", "gone") that updates live.
+ *
+ * @param {PerfFragrance[]} fragrances - Fragrances to explore (picker above the chart).
+ * @param {number} hours - Initial hour. Default 0.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: a radio group picks the fragrance, a native range input moves time (arrow keys
+ * work, aria-valuetext reads the hour and the phase), the state of every note is text, not just
+ * opacity. Without JavaScript all fragrances are listed at hour 0.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import { perfList, perfNoteLevel, perfMix, type PerfFragrance, type PerfLayer } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrances?: PerfFragrance[];
+  hours?: number;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  fragrances = perfList,
+  hours = 0,
+  title = 'Un perfume no huele igual dos horas seguidas',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `psk-${Math.random().toString(36).slice(2, 8)}`;
+const W = 600;
+const H = 150;
+const MAX = 10;
+const layers: Array<{ id: PerfLayer; label: string; hint: string }> = [
+  { id: 'top', label: 'Salida', hint: 'lo primero que hueles' },
+  { id: 'heart', label: 'Corazón', hint: 'el carácter' },
+  { id: 'base', label: 'Fondo', hint: 'lo que se queda' },
+];
+
+function curve(f: PerfFragrance, layer: PerfLayer) {
+  const notes = f.notes.filter((n) => n.layer === layer);
+  const pts: string[] = [];
+  for (let t = 0; t <= MAX + 0.001; t += 0.25) {
+    const v = notes.length ? Math.max(...notes.map((n) => perfNoteLevel(n, t))) : 0;
+    pts.push(`${((t / MAX) * W).toFixed(1)},${(H - v * (H - 14)).toFixed(1)}`);
+  }
+  const line = `M${pts.join(' L')}`;
+  return { line, area: `${line} L${W},${H} L0,${H} Z` };
+}
+
+const panels = fragrances.map((f) => ({
+  f,
+  colors: { top: f.accord[1], heart: f.accord[0], base: perfMix(f.accord[2], f.accord[0], 0.55) } as Record<PerfLayer, string>,
+  curves: Object.fromEntries(layers.map((l) => [l.id, curve(f, l.id)])) as Record<PerfLayer, { line: string; area: string }>,
+}));
+---
+
+<section class:list={['perf-ui', 'perf-skin', classAttr]} aria-labelledby={`${uid}-title`} data-perf-skin data-hours={hours} {...rest}>
+  <div class="perf-skin__inner">
+    <header class="perf-skin__head">
+      <p class="pf-eyebrow">Evolución en piel</p>
+      <Heading id={`${uid}-title`} class="perf-skin__title">{title}</Heading>
+      <p class="perf-skin__lead">Mueve el reloj. Las notas de salida se van en una hora; las de fondo tardan en llegar y se quedan todo el día.</p>
+    </header>
+
+    <fieldset class="perf-skin__pick">
+      <legend class="pf-sr">Elige una fragancia</legend>
+      {panels.map(({ f }, i) => (
+        <label class="perf-skin__opt">
+          <input type="radio" name={`${uid}-f`} value={f.id} checked={i === 0} />
+          <span>{f.name}</span>
+        </label>
+      ))}
+    </fieldset>
+
+    <div class="perf-skin__panels">
+      {panels.map(({ f, colors, curves }, i) => (
+        <div class="perf-skin__panel" data-panel={f.id} hidden={i !== 0 ? true : undefined}>
+          <p class="perf-skin__meta"><strong>{f.number} {f.name}</strong> · {f.concentration} · dura unas {f.longevity} horas</p>
+
+          <svg class="perf-skin__chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+            {layers.map((l) => (
+              <g>
+                <path d={curves[l.id].area} fill={colors[l.id]} opacity="0.22"></path>
+                <path d={curves[l.id].line} fill="none" stroke={colors[l.id]} stroke-width="2" vector-effect="non-scaling-stroke"></path>
+              </g>
+            ))}
+            {[0, 2, 4, 6, 8, 10].map((t) => (
+              <line x1={(t / MAX) * W} y1="0" x2={(t / MAX) * W} y2={H} stroke="currentColor" opacity="0.1" vector-effect="non-scaling-stroke"></line>
+            ))}
+            <line class="perf-skin__cursor" x1="0" y1="0" x2="0" y2={H} stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"></line>
+          </svg>
+          <ol class="perf-skin__axis" aria-hidden="true">
+            {[0, 2, 4, 6, 8, 10].map((t) => <li>{t} h</li>)}
+          </ol>
+
+          <div class="perf-skin__layers">
+            {layers.map((l) => (
+              <section class="perf-skin__layer" style={`--lc:${colors[l.id]}`}>
+                <h3>{l.label} <span>{l.hint}</span></h3>
+                <ul>
+                  {f.notes.filter((n) => n.layer === l.id).map((n) => (
+                    <li data-from={n.from} data-peak={n.peak} data-to={n.to}>
+                      <span class="perf-skin__name">{n.name}</span>
+                      <span class="perf-skin__state" data-state>aún no</span>
+                      <span class="perf-skin__bar" aria-hidden="true"><i data-bar></i></span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div class="perf-skin__clock">
+      <label for={`${uid}-t`}>Horas sobre la piel</label>
+      <input id={`${uid}-t`} type="range" min="0" max={MAX} step="0.1" value={hours} data-time aria-valuetext={`${hours} horas`} />
+      <output for={`${uid}-t`} data-out>{hours} h</output>
+    </div>
+  </div>
+</section>
+
+<style>
+  .perf-skin {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--pf-bg-raised);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+    border-block: 1px solid var(--pf-border);
+  }
+
+  .perf-skin__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .perf-skin__title {
+    max-width: 18ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(2.2rem, 6vw, 4.2rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .perf-skin__lead {
+    max-width: 50ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-skin__pick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem) var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .perf-skin__opt input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .perf-skin__opt span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border-bottom: 1px solid transparent;
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-size: 1.35rem;
+    color: var(--pf-text-3);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .perf-skin__opt input:checked + span {
+    color: var(--pf-text);
+    border-bottom-color: var(--pf-brand);
+  }
+
+  .perf-skin__opt input:focus-visible + span {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 4px;
+  }
+
+  .perf-skin__panel + .perf-skin__panel {
+    margin-top: var(--sp-10, 2.5rem);
+  }
+
+  .perf-skin__meta {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.9rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-skin__meta strong {
+    color: var(--pf-text);
+  }
+
+  .perf-skin__chart {
+    display: block;
+    width: 100%;
+    height: clamp(120px, 24vw, 200px);
+    color: var(--pf-text);
+    overflow: visible;
+  }
+
+  .perf-skin__axis {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.4rem 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    list-style: none;
+    font-size: 0.78rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-skin__layers {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .perf-skin__layer {
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 2px solid var(--lc);
+  }
+
+  .perf-skin__layer h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--pf-font-display);
+    font-weight: 500;
+    font-size: 1.5rem;
+  }
+
+  .perf-skin__layer h3 span {
+    display: block;
+    margin-top: 0.15rem;
+    font: 400 0.82rem/1.3 var(--pf-font-body);
+    color: var(--pf-text-3);
+  }
+
+  .perf-skin__layer ul {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-skin__layer li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 0.75rem;
+    align-items: baseline;
+  }
+
+  .perf-skin__name {
+    font-size: 1.05rem;
+  }
+
+  .perf-skin__state {
+    font-size: 0.82rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-skin__bar {
+    grid-column: 1 / -1;
+    height: 3px;
+    background: var(--pf-border);
+    overflow: hidden;
+  }
+
+  .perf-skin__bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--lc);
+    transition: width 0.15s linear;
+  }
+
+  .perf-skin__clock {
+    position: sticky;
+    bottom: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.4rem 1rem;
+    margin-top: var(--sp-8, 2rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--pf-border-strong);
+    background: color-mix(in srgb, var(--pf-surface) 92%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+
+  .perf-skin__clock label {
+    font: 600 0.74rem/1.2 var(--pf-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--pf-text-2);
+  }
+
+  .perf-skin__clock output {
+    font-family: var(--pf-font-display);
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .perf-skin__clock input {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--pf-brand);
+    cursor: pointer;
+  }
+
+  @media (min-width: 800px) {
+    .perf-skin {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .perf-skin__layers {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  const level = (from: number, peak: number, to: number, t: number) => {
+    if (t <= from || t >= to) return 0;
+    if (t <= peak) return Math.sin((((t - from) / Math.max(0.0001, peak - from)) * Math.PI) / 2);
+    return Math.cos((((t - peak) / Math.max(0.0001, to - peak)) * Math.PI) / 2);
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-perf-skin]').forEach((root) => {
+    const range = root.querySelector<HTMLInputElement>('[data-time]');
+    const out = root.querySelector<HTMLOutputElement>('[data-out]');
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.perf-skin__opt input')];
+    if (!range || !panels.length) return;
+
+    const phase = (t: number) => (t < 1.5 ? 'salida' : t < 5 ? 'corazón' : 'fondo');
+
+    const paint = () => {
+      const t = Number(range.value);
+      const label = `${t.toFixed(1).replace('.0', '').replace('.', ',')} h`;
+      if (out) out.textContent = label;
+      range.setAttribute('aria-valuetext', `${label}, fase de ${phase(t)}`);
+      const x = (t / Number(range.max)) * 600;
+      panels.forEach((p) => {
+        const cursor = p.querySelector<SVGLineElement>('.perf-skin__cursor');
+        if (cursor) cursor.setAttribute('transform', `translate(${x} 0)`);
+        p.querySelectorAll<HTMLElement>('li[data-from]').forEach((li) => {
+          const v = level(Number(li.dataset.from), Number(li.dataset.peak), Number(li.dataset.to), t);
+          const peak = Number(li.dataset.peak);
+          const state = li.querySelector<HTMLElement>('[data-state]');
+          const bar = li.querySelector<HTMLElement>('[data-bar]');
+          if (bar) bar.style.width = `${Math.round(v * 100)}%`;
+          if (state) state.textContent = v < 0.04 ? (t < peak ? 'aún no' : 'ya se fue') : v > 0.85 ? 'en su punto' : t < peak ? 'asomando' : 'se apaga';
+          li.style.opacity = String(0.55 + v * 0.45);
+        });
+      });
+    };
+
+    const show = () => {
+      const id = radios.find((r) => r.checked)?.value;
+      panels.forEach((p) => { p.hidden = p.dataset.panel !== id; });
+    };
+
+    range.addEventListener('input', paint);
+    radios.forEach((r) => r.addEventListener('change', show));
+    root.classList.add('is-live');
+    show();
+    paint();
+  });
+</script>

@@ -1,0 +1,299 @@
+---
+/**
+ * PerfOrderTracker — Orders as an exclusive native accordion (<details name>): each summary shows the
+ * id, date, status and total; the body lists the flacons, a written timeline, carrier and tracking.
+ * Orders still being prepared can have their address changed or be cancelled (demo, live message).
+ *
+ * @param {PerfOrder[]} orders - Orders, newest first.
+ * @param {PerfFragrance[]} fragrances - Catalog, to resolve ids.
+ * @param {string} reorderHref - Link of the "order again" button.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native disclosure widgets (keyboard and screen-reader friendly), status is text,
+ * the timeline is an ordered list, action feedback goes to an aria-live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from './PerfBottle.astro';
+import { perfOrders, perfList, perfById, perfMoney, type PerfOrder, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  orders?: PerfOrder[];
+  fragrances?: PerfFragrance[];
+  reorderHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { orders = perfOrders, fragrances = perfList, reorderHref = '/fragancias', class: classAttr, ...rest } = Astro.props;
+
+const uid = `por-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (d: string) => (d.startsWith('20') ? new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : d);
+---
+
+<section class:list={['perf-ui', 'perf-ord', classAttr]} aria-label="Mis pedidos" data-perf-ord {...rest}>
+  <div class="perf-ord__list">
+    {orders.map((o, i) => (
+      <details class="perf-ord__item" name={`${uid}-o`} open={i === 0 ? true : undefined} data-order={o.id}>
+        <summary>
+          <span class="perf-ord__id">{o.id}</span>
+          <span class="perf-ord__date">{fmt(o.date)}</span>
+          <span class:list={['perf-ord__status', `is-${o.status === 'Preparando' ? 'prep' : o.status === 'En reparto' ? 'ship' : 'done'}`]} data-status>{o.status}</span>
+          <span class="perf-ord__total">{perfMoney(o.total)}</span>
+        </summary>
+
+        <div class="perf-ord__body">
+          <ul class="perf-ord__items">
+            {o.items.map((it) => {
+              const f = perfById(it.fragranceId, fragrances);
+              return f ? (
+                <li>
+                  <span class="perf-ord__mini"><PerfBottle fragrance={f} label={false} decorative /></span>
+                  <span><strong>{it.qty} × {f.name}</strong><small>{it.ml} ml</small></span>
+                </li>
+              ) : null;
+            })}
+          </ul>
+
+          <ol class="perf-ord__steps">
+            {o.steps.map((s) => (
+              <li class:list={{ 'is-done': s.done }}>
+                <span>{s.label}</span>
+                <small>{s.done ? 'Hecho' : 'Pendiente'} · {fmt(s.date)}</small>
+              </li>
+            ))}
+          </ol>
+
+          <p class="perf-ord__carrier"><strong>{o.carrier}</strong> · {o.tracking}</p>
+
+          <div class="perf-ord__actions">
+            {o.status === 'Preparando' ? (
+              <>
+                <button type="button" class="pf-btn pf-btn--ghost" data-act="address">Cambiar la dirección</button>
+                <button type="button" class="pf-btn pf-btn--ghost" data-act="cancel">Cancelar el pedido</button>
+              </>
+            ) : (
+              <a class="pf-btn pf-btn--ghost" href={reorderHref}>Pedir de nuevo</a>
+            )}
+          </div>
+        </div>
+      </details>
+    ))}
+  </div>
+  <p class="perf-ord__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .perf-ord {
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-ord__list {
+    border-top: 1px solid var(--pf-border-strong);
+  }
+
+  .perf-ord__item {
+    border-bottom: 1px solid var(--pf-border);
+  }
+
+  .perf-ord__item summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    align-items: center;
+    min-height: 64px;
+    padding: var(--sp-4, 1rem) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .perf-ord__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .perf-ord__id {
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+  }
+
+  .perf-ord__date {
+    grid-column: 1;
+    font-size: 0.86rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-ord__status {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font: 600 0.74rem/1 var(--pf-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .perf-ord__status.is-prep { color: var(--pf-warn); }
+  .perf-ord__status.is-ship { color: var(--pf-brand); }
+  .perf-ord__status.is-done { color: var(--pf-ok); }
+
+  .perf-ord__total {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    font-family: var(--pf-font-display);
+    font-size: 1.2rem;
+  }
+
+  .perf-ord__body {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    padding: 0 0 var(--sp-6, 1.5rem);
+  }
+
+  .perf-ord__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-ord__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-ord__items strong {
+    display: block;
+    font-family: var(--pf-font-display);
+    font-weight: 500;
+    font-size: 1.15rem;
+  }
+
+  .perf-ord__items small {
+    color: var(--pf-text-3);
+    font-size: 0.84rem;
+  }
+
+  .perf-ord__mini {
+    flex: none;
+    width: 34px;
+  }
+
+  .perf-ord__mini :global(.perf-bottle) {
+    width: 100%;
+  }
+
+  .perf-ord__steps {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    list-style: none;
+    border-left: 1px solid var(--pf-border-strong);
+  }
+
+  .perf-ord__steps li {
+    position: relative;
+    padding: 0.5rem 0;
+    color: var(--pf-text-3);
+  }
+
+  .perf-ord__steps li::before {
+    content: '';
+    position: absolute;
+    left: calc(-1.1rem - 5px);
+    top: 0.85rem;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 50%;
+    background: var(--pf-bg);
+  }
+
+  .perf-ord__steps li.is-done {
+    color: var(--pf-text);
+  }
+
+  .perf-ord__steps li.is-done::before {
+    border-color: var(--pf-brand);
+    background: var(--pf-brand);
+  }
+
+  .perf-ord__steps small {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-ord__carrier {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-ord__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-ord__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--pf-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .perf-ord__item summary {
+      grid-template-columns: 11rem 1fr auto auto;
+      gap: 1.5rem;
+    }
+
+    .perf-ord__date,
+    .perf-ord__status,
+    .perf-ord__total {
+      grid-column: auto;
+      grid-row: auto;
+      justify-self: auto;
+    }
+
+    .perf-ord__status {
+      min-width: 7rem;
+      text-align: right;
+    }
+
+    .perf-ord__body {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .perf-ord__carrier,
+    .perf-ord__actions {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-ord]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const item = b.closest<HTMLElement>('[data-order]');
+        const id = item?.dataset.order ?? '';
+        if (b.dataset.act === 'cancel') {
+          const st = item?.querySelector<HTMLElement>('[data-status]');
+          if (st) { st.textContent = 'Cancelado'; st.className = 'perf-ord__status'; }
+          item?.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((x) => { x.disabled = true; });
+          if (live) live.textContent = `Pedido ${id} cancelado. Te devolvemos el importe en 3 a 5 días (demostración).`;
+        } else if (live) {
+          live.textContent = `Te hemos escrito para confirmar la nueva dirección del pedido ${id} (demostración).`;
+        }
+      }),
+    );
+  });
+</script>

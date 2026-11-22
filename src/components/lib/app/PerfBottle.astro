@@ -1,0 +1,107 @@
+---
+/**
+ * PerfBottle — Perfume flacon drawn in SVG from a fragrance's data: thick glass base, liquid in the
+ * fragrance's own accord colours at any fill level, a metal cap and a typographic label. No images.
+ *
+ * @param {PerfFragrance} fragrance - Fragrance to draw (colours, number, name).
+ * @param {number} level - Liquid left, 0–100. Default 100.
+ * @param {boolean} label - Show the typographic label on the glass. Default true.
+ * @param {boolean} decorative - Hide from assistive tech (use when the name is next to it).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: exposed as an image with the fragrance name and fill level, or aria-hidden when
+ * decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import { perfList, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrance?: PerfFragrance;
+  level?: number;
+  label?: boolean;
+  decorative?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'figure'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { fragrance = perfList[0], level = 100, label = true, decorative = false, class: classAttr, ...rest } = Astro.props;
+
+const lv = Math.max(0, Math.min(100, level));
+const top = 74;
+const height = 112;
+const liquidY = top + height * (1 - lv / 100);
+const uid = `pb-${fragrance.id}-${Math.random().toString(36).slice(2, 7)}`;
+const [c1, c2, c3] = fragrance.accord;
+const words = fragrance.name.split(' ');
+const aria = decorative ? undefined : `${fragrance.name}, frasco al ${Math.round(lv)}%`;
+---
+
+<figure class:list={['perf-ui', 'perf-bottle', classAttr]} {...rest}>
+  <svg viewBox="0 0 120 220" data-top={top} data-h={height} role={decorative ? undefined : 'img'} aria-label={aria} aria-hidden={decorative ? 'true' : undefined} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id={`${uid}-liq`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color={c2}></stop>
+        <stop offset="0.6" stop-color={c1}></stop>
+        <stop offset="1" stop-color={c3}></stop>
+      </linearGradient>
+      <linearGradient id={`${uid}-glass`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#fff" stop-opacity="0.34"></stop>
+        <stop offset="0.18" stop-color="#fff" stop-opacity="0.06"></stop>
+        <stop offset="0.8" stop-color="#fff" stop-opacity="0.04"></stop>
+        <stop offset="1" stop-color="#fff" stop-opacity="0.22"></stop>
+      </linearGradient>
+      <linearGradient id={`${uid}-cap`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#6d6670"></stop>
+        <stop offset="0.35" stop-color="#e9e3ea"></stop>
+        <stop offset="1" stop-color="#4b454f"></stop>
+      </linearGradient>
+      <clipPath id={`${uid}-body`}><rect x="24" y={top} width="72" height={height} rx="10"></rect></clipPath>
+    </defs>
+
+    <!-- shadow -->
+    <ellipse cx="60" cy="204" rx="40" ry="5" fill="#000" opacity="0.28"></ellipse>
+
+    <!-- cap and neck -->
+    <rect x="47" y="14" width="26" height="40" rx="3" fill={`url(#${uid}-cap)`}></rect>
+    <rect x="43" y="52" width="34" height="10" rx="2" fill="#2a262d"></rect>
+    <rect x="50" y="60" width="20" height="16" fill="#fff" opacity="0.18"></rect>
+
+    <!-- body glass -->
+    <rect x="24" y={top} width="72" height={height} rx="10" fill="#fff" opacity="0.07"></rect>
+    <g clip-path={`url(#${uid}-body)`}>
+      <rect class="perf-bottle__liq" x="24" y={liquidY} width="72" height={top + height - liquidY + 2} fill={`url(#${uid}-liq)`}></rect>
+      <rect class="perf-bottle__surf" x="24" y={liquidY} width="72" height="1.6" fill="#fff" opacity={lv > 0 && lv < 100 ? 0.55 : 0}></rect>
+      <!-- thick glass base -->
+      <rect x="24" y={top + height - 14} width="72" height="14" fill="#fff" opacity="0.16"></rect>
+    </g>
+    <rect x="24" y={top} width="72" height={height} rx="10" fill={`url(#${uid}-glass)`} stroke="#fff" stroke-opacity="0.25"></rect>
+    <rect x="30" y={top + 8} width="5" height={height - 30} rx="2.5" fill="#fff" opacity="0.28"></rect>
+
+    {label && (
+      <g>
+        <rect x="36" y="108" width="48" height="52" fill="#f4eee6" opacity="0.92"></rect>
+        <text x="60" y="122" text-anchor="middle" font-size="5.2" letter-spacing="1.2" fill="#2a2330" font-family="Manrope, sans-serif" font-weight="600">{fragrance.number.toUpperCase()}</text>
+        {words.map((w, i) => (
+          <text x="60" y={138 + i * 11} text-anchor="middle" font-size="11" font-style="italic" fill="#1d1426" font-family="'Bodoni Moda', Georgia, serif">{w}</text>
+        ))}
+        <line x1="46" y1="152" x2="74" y2="152" stroke="#1d1426" stroke-width="0.4" opacity="0.5"></line>
+      </g>
+    )}
+  </svg>
+</figure>
+
+<style>
+  .perf-bottle {
+    margin: 0;
+    width: 100%;
+    max-width: 220px;
+  }
+
+  .perf-bottle svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+</style>

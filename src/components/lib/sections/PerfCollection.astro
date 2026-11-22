@@ -1,0 +1,339 @@
+---
+/**
+ * PerfCollection — The fragrances as a horizontal scroll-snap rail of tall cards. Each card draws its
+ * flacon in the fragrance's own colours, lists its notes by layer and lets you pick a size, with the
+ * price updating before an "add" button (demo message in an aria-live region).
+ *
+ * @param {PerfFragrance[]} fragrances - Fragrances to show.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} discoverHref - Link below the rail ("not sure? try the samples").
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the rail is a labelled region reachable by keyboard (arrow buttons plus native
+ * scrolling), sizes are radio groups, price is text, status messages are aria-live.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from '../app/PerfBottle.astro';
+import { perfList, perfMoney, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrances?: PerfFragrance[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+  discoverHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  fragrances = perfList,
+  title = 'Las seis',
+  headingLevel = 'h2',
+  discoverHref = '/descubrir',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `pc-${Math.random().toString(36).slice(2, 8)}`;
+const layerName = { top: 'Salida', heart: 'Corazón', base: 'Fondo' } as const;
+---
+
+<section class:list={['perf-ui', 'perf-coll', classAttr]} aria-labelledby={`${uid}-title`} data-perf-coll {...rest}>
+  <div class="perf-coll__head">
+    <div>
+      <p class="pf-eyebrow">Colección</p>
+      <Heading id={`${uid}-title`} class="perf-coll__title">{title}</Heading>
+    </div>
+    <div class="perf-coll__arrows">
+      <button type="button" class="pf-btn pf-btn--ghost" data-dir="-1" aria-label="Fragancias anteriores">Anterior</button>
+      <button type="button" class="pf-btn pf-btn--ghost" data-dir="1" aria-label="Fragancias siguientes">Siguiente</button>
+    </div>
+  </div>
+
+  <div class="perf-coll__rail" role="region" aria-label="Colección de fragancias" tabindex="0" data-rail>
+    {fragrances.map((f) => (
+      <article class="perf-card" style={`--c1:${f.accord[0]};--c2:${f.accord[1]};--c3:${f.accord[2]}`} data-card>
+        <div class="perf-card__art">
+          <div class="perf-card__glow" aria-hidden="true"></div>
+          <PerfBottle fragrance={f} decorative />
+        </div>
+        <div class="perf-card__body">
+          <p class="perf-card__no">{f.number} · {f.family}</p>
+          <h3 class="perf-card__name">{f.name}</h3>
+          <p class="perf-card__tag">{f.tagline}</p>
+
+          <dl class="perf-card__notes">
+            {(['top', 'heart', 'base'] as const).map((l) => (
+              <div>
+                <dt>{layerName[l]}</dt>
+                <dd>{f.notes.filter((n) => n.layer === l).map((n) => n.name).join(', ')}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <fieldset class="perf-card__sizes">
+            <legend class="pf-sr">Tamaño de {f.name}</legend>
+            {f.sizes.map((s, i) => (
+              <label>
+                <input type="radio" name={`${uid}-${f.id}`} value={s.price} data-ml={s.ml} checked={i === 1} />
+                <span>{s.ml} ml</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <div class="perf-card__buy">
+            <strong class="perf-card__price" data-price>{perfMoney(f.sizes[1].price)}</strong>
+            <button type="button" class="pf-btn" data-add data-name={f.name}>Añadir al carrito</button>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  <p class="perf-coll__foot">
+    ¿No sabes por cuál empezar? <a class="pf-link" href={discoverHref}>Pide los viales de 2 ml</a> y devolvemos su precio como crédito.
+  </p>
+  <p class="pf-sr" role="status" aria-live="polite" data-status></p>
+</section>
+
+<style>
+  .perf-coll {
+    padding: var(--sp-16, 4rem) 0;
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-coll__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    max-width: 1240px;
+    margin: 0 auto var(--sp-8, 2rem);
+    padding: 0 var(--sp-4, 1rem);
+  }
+
+  .perf-coll__title {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 8vw, 5.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+
+  .perf-coll__arrows {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .perf-coll__rail {
+    display: flex;
+    gap: var(--sp-4, 1rem);
+    overflow-x: auto;
+    padding: 0 var(--sp-4, 1rem) var(--sp-4, 1rem);
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--sp-4, 1rem);
+    scrollbar-width: thin;
+    scrollbar-color: var(--pf-border-strong) transparent;
+  }
+
+  .perf-card {
+    position: relative;
+    flex: 0 0 min(82vw, 340px);
+    scroll-snap-align: start;
+    border: 1px solid var(--pf-border);
+    background: var(--pf-bg-raised);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .perf-card:hover,
+  .perf-card:focus-within {
+    border-color: var(--c2);
+    transform: translateY(-4px);
+  }
+
+  .perf-card__art {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem) var(--sp-4, 1rem);
+    overflow: hidden;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c1) 26%, transparent), transparent 80%);
+  }
+
+  .perf-card__glow {
+    position: absolute;
+    left: 50%;
+    top: 55%;
+    width: 70%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 50%;
+    background: var(--c2);
+    filter: blur(60px);
+    opacity: 0.28;
+  }
+
+  .perf-card__art :global(.perf-bottle) {
+    position: relative;
+    width: 130px;
+  }
+
+  .perf-card__body {
+    padding: var(--sp-5, 1.25rem);
+  }
+
+  .perf-card__no {
+    margin: 0 0 0.35rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-card__name {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-weight: 500;
+    font-style: italic;
+    font-size: 2rem;
+    line-height: 1.05;
+  }
+
+  .perf-card__tag {
+    margin: 0.4rem 0 var(--sp-4, 1rem);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--pf-text-2);
+  }
+
+  .perf-card__notes {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: var(--sp-3, 0.75rem) 0;
+    border-block: 1px solid var(--pf-border);
+    font-size: 0.86rem;
+  }
+
+  .perf-card__notes div {
+    display: grid;
+    grid-template-columns: 4.6rem 1fr;
+    gap: 0.5rem;
+  }
+
+  .perf-card__notes dt {
+    color: var(--pf-text-3);
+  }
+
+  .perf-card__notes dd {
+    margin: 0;
+    color: var(--pf-text);
+  }
+
+  .perf-card__sizes {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .perf-card__sizes label {
+    flex: 1;
+  }
+
+  .perf-card__sizes input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .perf-card__sizes span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 999px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .perf-card__sizes input:checked + span {
+    border-color: var(--pf-brand);
+    background: rgba(var(--pf-brand-rgb), 0.16);
+  }
+
+  .perf-card__sizes input:focus-visible + span {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 2px;
+  }
+
+  .perf-card__buy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-card__price {
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: 1.8rem;
+  }
+
+  .perf-coll__foot {
+    max-width: 1240px;
+    margin: var(--sp-6, 1.5rem) auto 0;
+    padding: 0 var(--sp-4, 1rem);
+    color: var(--pf-text-2);
+  }
+
+  @media (min-width: 900px) {
+    .perf-coll__head,
+    .perf-coll__foot {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .perf-coll__rail {
+      padding-inline: max(var(--sp-8, 2rem), calc((100vw - 1240px) / 2 + var(--sp-8, 2rem)));
+      scroll-padding-inline: max(var(--sp-8, 2rem), calc((100vw - 1240px) / 2 + var(--sp-8, 2rem)));
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-coll]').forEach((root) => {
+    const rail = root.querySelector<HTMLElement>('[data-rail]');
+    const status = root.querySelector<HTMLElement>('[data-status]');
+    const money = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+    root.querySelectorAll<HTMLButtonElement>('[data-dir]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const card = rail?.querySelector<HTMLElement>('[data-card]');
+        rail?.scrollBy({ left: Number(b.dataset.dir) * ((card?.offsetWidth ?? 320) + 16), behavior: 'smooth' });
+      }),
+    );
+
+    root.querySelectorAll<HTMLElement>('[data-card]').forEach((card) => {
+      const price = card.querySelector<HTMLElement>('[data-price]');
+      card.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((r) =>
+        r.addEventListener('change', () => { if (price) price.textContent = money(Number(r.value)); }),
+      );
+      card.querySelector<HTMLButtonElement>('[data-add]')?.addEventListener('click', (e) => {
+        const name = (e.currentTarget as HTMLElement).dataset.name;
+        const ml = card.querySelector<HTMLInputElement>('input:checked')?.dataset.ml;
+        if (status) status.textContent = `${name} ${ml} ml añadido al carrito (demostración).`;
+      });
+    });
+  });
+</script>

@@ -1,0 +1,373 @@
+---
+/**
+ * PerfLayering — Layering lab: choose two fragrances and a ratio slider; a vial blends their two
+ * colours at that proportion and the notes of both are listed by layer. Name a mix and save it
+ * (stored in localStorage); saved mixes can be loaded again or deleted.
+ *
+ * @param {PerfFragrance[]} fragrances - Fragrances that can be combined.
+ * @param {PerfCombo[]} combos - Saved mixes shown on first load.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native selects and range input (aria-valuetext reads both percentages), the blend
+ * summary is an aria-live region, saved mixes are a list with labelled buttons; the vial is
+ * decorative and the text carries the meaning.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import { perfList, perfCombos, perfById, type PerfFragrance, type PerfCombo } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrances?: PerfFragrance[];
+  combos?: PerfCombo[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { fragrances = perfList, combos = perfCombos, class: classAttr, ...rest } = Astro.props;
+
+const uid = `pl-${Math.random().toString(36).slice(2, 8)}`;
+const first = combos[0];
+const a = first?.a ?? fragrances[0].id;
+const b = first?.b ?? fragrances[1].id;
+const ratio = first?.ratio ?? 60;
+const data = fragrances.map((f) => ({ id: f.id, name: f.name, number: f.number, c: f.accord, notes: f.notes.map((n) => ({ name: n.name, layer: n.layer })) }));
+const seed = combos.map((c) => ({ id: c.id, a: c.a, b: c.b, ratio: c.ratio, name: c.name }));
+const fa = perfById(a, fragrances) ?? fragrances[0];
+const fb = perfById(b, fragrances) ?? fragrances[1];
+---
+
+<section class:list={['perf-ui', 'perf-lay', classAttr]} aria-labelledby={`${uid}-title`} data-perf-lay data-frags={JSON.stringify(data)} data-seed={JSON.stringify(seed)} {...rest}>
+  <h2 id={`${uid}-title`} class="pf-sr">Laboratorio de capas</h2>
+
+  <div class="perf-lay__lab">
+    <div class="perf-lay__vial" aria-hidden="true">
+      <i data-vial style={`background:linear-gradient(90deg, ${fa.accord[1]} 0%, ${fa.accord[0]} ${ratio}%, ${fb.accord[0]} ${ratio}%, ${fb.accord[1]} 100%)`}></i>
+    </div>
+
+    <div class="perf-lay__controls">
+      <div class="perf-lay__row">
+        <div>
+          <label for={`${uid}-a`}>Primera fragancia</label>
+          <select id={`${uid}-a`} data-a>
+            {fragrances.map((f) => <option value={f.id} selected={f.id === a}>{f.number} {f.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label for={`${uid}-b`}>Segunda fragancia</label>
+          <select id={`${uid}-b`} data-b>
+            {fragrances.map((f) => <option value={f.id} selected={f.id === b}>{f.number} {f.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div class="perf-lay__ratio">
+        <label for={`${uid}-r`}>Proporción</label>
+        <input id={`${uid}-r`} type="range" min="10" max="90" step="5" value={ratio} data-ratio aria-valuetext={`${ratio}% ${fa.name}, ${100 - ratio}% ${fb.name}`} />
+      </div>
+
+      <p class="perf-lay__sum" aria-live="polite" data-sum><strong>{ratio}% {fa.name}</strong> + <strong>{100 - ratio}% {fb.name}</strong></p>
+      <p class="perf-lay__hint" data-hint></p>
+    </div>
+  </div>
+
+  <div class="perf-lay__notes" data-notes></div>
+
+  <form class="perf-lay__save" data-save novalidate>
+    <label for={`${uid}-n`}>Ponle nombre a tu mezcla</label>
+    <div>
+      <input id={`${uid}-n`} type="text" maxlength="40" placeholder="Biblioteca de invierno" data-name />
+      <button type="submit" class="pf-btn">Guardar mezcla</button>
+    </div>
+    <p class="perf-lay__err" role="alert" data-err></p>
+  </form>
+
+  <div class="perf-lay__saved">
+    <h3>Tus mezclas</h3>
+    <ul data-list></ul>
+    <p class="perf-lay__empty" data-empty hidden>Aún no has guardado ninguna.</p>
+  </div>
+</section>
+
+<style>
+  .perf-lay {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-lay [hidden] {
+    display: none !important;
+  }
+
+  .perf-lay__lab {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--pf-border-strong);
+    background: var(--pf-bg-raised);
+  }
+
+  .perf-lay__vial {
+    height: 84px;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 42px;
+    overflow: hidden;
+    background: var(--pf-surface);
+  }
+
+  .perf-lay__vial i {
+    display: block;
+    height: 100%;
+    transition: background 0.3s ease;
+  }
+
+  .perf-lay__row {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .perf-lay label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-lay select,
+  .perf-lay input[type='text'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 999px;
+    background: var(--pf-surface);
+    color: var(--pf-text);
+    font: 400 1rem var(--pf-font-body);
+  }
+
+  .perf-lay__ratio input {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--pf-brand);
+    cursor: pointer;
+  }
+
+  .perf-lay__sum {
+    margin: var(--sp-3, 0.75rem) 0 0.25rem;
+    font-family: var(--pf-font-display);
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .perf-lay__sum strong {
+    font-weight: 500;
+    font-style: italic;
+  }
+
+  .perf-lay__hint {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-lay__notes {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .perf-lay :global(.perf-lay__layer h4) {
+    margin: 0 0 0.4rem;
+    font: 600 0.72rem/1 var(--pf-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-lay :global(.perf-lay__layer ul) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    margin: 0;
+    padding: 0 0 var(--sp-3, 0.75rem);
+    list-style: none;
+    border-bottom: 1px solid var(--pf-border);
+    font-family: var(--pf-font-display);
+    font-size: 1.25rem;
+  }
+
+  .perf-lay :global(.perf-lay__layer li small) {
+    margin-left: 0.3rem;
+    font: 400 0.76rem var(--pf-font-body);
+    color: var(--pf-text-3);
+  }
+
+  .perf-lay__save > div {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-lay__err {
+    min-height: 1.2em;
+    margin: 0.4rem 0 0;
+    font-size: 0.84rem;
+    color: var(--pf-bad);
+  }
+
+  .perf-lay__saved h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--pf-font-display);
+    font-weight: 500;
+    font-size: 1.6rem;
+  }
+
+  .perf-lay__saved ul {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--pf-border);
+  }
+
+  .perf-lay__saved :global(li) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--pf-border);
+  }
+
+  .perf-lay__saved :global(li > span small) {
+    display: block;
+    color: var(--pf-text-3);
+    font-size: 0.82rem;
+  }
+
+  .perf-lay :global(.perf-lay__acts) {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .perf-lay :global(.perf-lay__acts button) {
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 999px;
+    background: none;
+    color: var(--pf-text);
+    font: 600 0.82rem var(--pf-font-body);
+    cursor: pointer;
+  }
+
+  .perf-lay :global(.perf-lay__acts button:hover) {
+    border-color: var(--pf-brand);
+  }
+
+  .perf-lay__empty {
+    color: var(--pf-text-3);
+  }
+
+  @media (min-width: 760px) {
+    .perf-lay__lab {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      align-items: center;
+      padding: var(--sp-8, 2rem);
+    }
+
+    .perf-lay__vial {
+      height: 220px;
+      border-radius: 110px;
+    }
+
+    .perf-lay__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .perf-lay__save > div {
+      grid-template-columns: 1fr auto;
+    }
+  }
+</style>
+
+<script>
+  type Frag = { id: string; name: string; number: string; c: [string, string, string]; notes: Array<{ name: string; layer: string }> };
+  type Combo = { id: string; a: string; b: string; ratio: number; name: string };
+  const KEY = 'perf-combos';
+
+  document.querySelectorAll<HTMLElement>('[data-perf-lay]').forEach((root) => {
+    const frags: Frag[] = JSON.parse(root.dataset.frags ?? '[]');
+    const byId = (id: string) => frags.find((f) => f.id === id) ?? frags[0];
+    const selA = root.querySelector<HTMLSelectElement>('[data-a]');
+    const selB = root.querySelector<HTMLSelectElement>('[data-b]');
+    const range = root.querySelector<HTMLInputElement>('[data-ratio]');
+    const vial = root.querySelector<HTMLElement>('[data-vial]');
+    const sum = root.querySelector<HTMLElement>('[data-sum]');
+    const hint = root.querySelector<HTMLElement>('[data-hint]');
+    const notes = root.querySelector<HTMLElement>('[data-notes]');
+    const form = root.querySelector<HTMLFormElement>('[data-save]');
+    const name = root.querySelector<HTMLInputElement>('[data-name]');
+    const err = root.querySelector<HTMLElement>('[data-err]');
+    const list = root.querySelector<HTMLElement>('[data-list]');
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+    if (!selA || !selB || !range || !vial || !sum || !notes || !form || !name || !list) return;
+
+    let saved: Combo[] = JSON.parse(root.dataset.seed ?? '[]');
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) saved = JSON.parse(raw);
+    } catch { /* storage unavailable: keep the seed */ }
+    const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* ignore */ } };
+    const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+
+    const paint = () => {
+      const A = byId(selA.value);
+      const B = byId(selB.value);
+      const r = Number(range.value);
+      vial.style.background = `linear-gradient(90deg, ${A.c[1]} 0%, ${A.c[0]} ${r}%, ${B.c[0]} ${r}%, ${B.c[1]} 100%)`;
+      range.setAttribute('aria-valuetext', `${r}% ${A.name}, ${100 - r}% ${B.name}`);
+      sum.innerHTML = `<strong>${r}% ${esc(A.name)}</strong> + <strong>${100 - r}% ${esc(B.name)}</strong>`;
+      if (hint) hint.textContent = A.id === B.id ? 'Has elegido la misma fragancia dos veces: prueba con otra.' : r >= 60 ? `${A.name} manda; ${B.name} aparece al fondo.` : r <= 40 ? `${B.name} manda; ${A.name} aparece al fondo.` : 'Están equilibradas: se notan las dos a la vez.';
+      const L: Record<string, string> = { top: 'Salida', heart: 'Corazón', base: 'Fondo' };
+      notes.innerHTML = (['top', 'heart', 'base'] as const).map((l) => {
+        const items = [
+          ...A.notes.filter((n) => n.layer === l).map((n) => `<li>${esc(n.name)}<small>${esc(A.name)}</small></li>`),
+          ...B.notes.filter((n) => n.layer === l).map((n) => `<li>${esc(n.name)}<small>${esc(B.name)}</small></li>`),
+        ].join('');
+        return `<div class="perf-lay__layer"><h4>${L[l]}</h4><ul>${items}</ul></div>`;
+      }).join('');
+    };
+
+    const renderList = () => {
+      list.innerHTML = saved.map((c) => `<li><span>${esc(c.name)}<small>${c.ratio}% ${esc(byId(c.a).name)} + ${100 - c.ratio}% ${esc(byId(c.b).name)}</small></span><span class="perf-lay__acts"><button type="button" data-load="${c.id}" aria-label="Cargar ${esc(c.name)}">Cargar</button><button type="button" data-del="${c.id}" aria-label="Borrar ${esc(c.name)}">Borrar</button></span></li>`).join('');
+      if (empty) empty.hidden = saved.length > 0;
+    };
+
+    [selA, selB, range].forEach((el) => el.addEventListener('input', paint));
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const n = name.value.trim();
+      if (!n) { if (err) err.textContent = 'Escribe un nombre para la mezcla.'; name.focus(); return; }
+      if (err) err.textContent = '';
+      saved = [{ id: `c${Date.now()}`, a: selA.value, b: selB.value, ratio: Number(range.value), name: n }, ...saved];
+      persist();
+      renderList();
+      name.value = '';
+    });
+    list.addEventListener('click', (e) => {
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-load],[data-del]');
+      if (!t) return;
+      if (t.dataset.del) { saved = saved.filter((c) => c.id !== t.dataset.del); persist(); renderList(); return; }
+      const c = saved.find((x) => x.id === t.dataset.load);
+      if (c) { selA.value = c.a; selB.value = c.b; range.value = String(c.ratio); paint(); }
+    });
+
+    paint();
+    renderList();
+  });
+</script>

@@ -167,6 +167,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 7a5 5 0 0 1-10 0zM12 15v6M8 21h8"/></svg>`,
   },
   {
+    id: 'perfumery',
+    name: 'Perfumery',
+    description: 'Sections for niche perfumeries: hero with drifting colour clouds, evolution-on-skin slider, fragrance rail, olfactory map, raw-materials atelier, scent profile quiz, discovery-set builder, FAQ and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9zM7 7h10v14H7z"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

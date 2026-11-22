@@ -228,6 +228,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Bodega', description: 'Secciones para bodegas y productores artesanales: hero con botella que se inclina, escena de scroll fijada de la añada, carta de vinos como índice editorial, mapa interactivo de parcelas, historia familiar, reserva de visitas, configurador del club de vino, puntuaciones de prensa, preguntas frecuentes y pie de página.' },
     ru: { name: 'Винодельня', description: 'Секции для виноделен и ремесленных производителей: главный экран с наклоняющейся бутылкой, закреплённая сцена урожая, карта вин как редакционный индекс, интерактивная карта участков, история семьи, запись на визиты, конфигуратор винного клуба, оценки прессы, FAQ и подвал.' },
   },
+  perfumery: {
+    en: { name: 'Perfumery', description: 'Sections for niche perfumeries: hero with drifting colour clouds, evolution-on-skin slider, fragrance rail, olfactory map, raw-materials atelier, scent profile quiz, discovery-set builder, FAQ and footer.' },
+    es: { name: 'Perfumería', description: 'Secciones para perfumerías de autor: hero con nubes de color, deslizador de evolución en piel, carril de fragancias, mapa olfativo, atelier de materias primas, test de perfil olfativo, constructor de set de descubrimiento, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Парфюмерия', description: 'Секции для нишевых парфюмерных домов: главный экран с облаками цвета, ползунок эволюции на коже, лента ароматов, ольфакторная карта, ателье сырья, тест аромапрофиля, конструктор набора для знакомства, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

@@ -1,0 +1,337 @@
+---
+/**
+ * PerfSiteLayout — Public layout for the "Umbra" perfumery template.
+ * Skip link, sticky header with the wordmark and primary nav (disclosure menu on mobile),
+ * members link, "book a visit" button and the PerfFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (fragrances | atelier | discover).
+ * @param {PerfRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link, the mobile menu
+ * button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './perf-theme.css';
+import PerfFooter from '../../sections/PerfFooter.astro';
+import { perfRoutes, perfBrand, type PerfRoutes } from './data';
+
+type NavKey = 'fragrances' | 'atelier' | 'discover';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: PerfRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Umbra · Perfumería de autor en Madrid. Seis fragancias de extracto al 25%, un atelier abierto con cita y un set para descubrirlas en casa.',
+  current,
+  routes = perfRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'fragrances', label: 'Fragancias', href: routes.fragrances },
+  { key: 'atelier', label: 'El atelier', href: routes.atelier },
+  { key: 'discover', label: 'Descubrir', href: routes.discover },
+];
+const footerColumns = [
+  { title: 'La casa', links: [{ label: 'Fragancias', href: routes.fragrances }, { label: 'El atelier', href: routes.atelier }, { label: 'Descubrir', href: routes.discover }] },
+  { title: 'Clientes', links: [{ label: 'Mi cuenta', href: routes.signIn }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-perf" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400;1,6..96,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="perf-body">
+    <a href="#main-content" class="perf-skip">Saltar al contenido</a>
+
+    <header class="perf-header">
+      <div class="perf-header__inner">
+        <a href={routes.home} class="perf-logo" aria-label={`${perfBrand.name} inicio`}>{perfBrand.name}</a>
+
+        <button type="button" class="perf-menu-btn" aria-expanded="false" aria-controls="perf-nav" data-perf-menu>
+          <span class="perf-menu-btn__bars" aria-hidden="true"></span>
+          <span class="perf-sr">Menú</span>
+        </button>
+
+        <nav id="perf-nav" class="perf-nav-main" aria-label="Navegación principal">
+          <ul class="perf-nav-main__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="perf-nav-main__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <div class="perf-nav-main__actions">
+            <a href={routes.signIn} class="perf-nav-main__members">Mi cuenta</a>
+            <a href={routes.discover} class="perf-nav-main__cta">Pedir cita</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="perf-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <PerfFooter brand={perfBrand.name} columns={footerColumns} cta={{ title: 'Ven a olerlo en el taller', text: 'Una hora en el atelier, seis fragancias y un perfumista que no tiene prisa. Citas de cuatro personas como máximo.', href: routes.discover, label: 'Pedir cita en el atelier' }} />
+
+    <script>
+      const btn = document.querySelector<HTMLButtonElement>('[data-perf-menu]');
+      const nav = document.getElementById('perf-nav');
+      if (btn && nav) {
+        const set = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            set(false);
+            btn.focus();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .perf-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .perf-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--pf-brand);
+    color: var(--pf-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .perf-skip:focus {
+    top: 1rem;
+  }
+
+  .perf-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--pf-bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--pf-border);
+  }
+
+  .perf-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .perf-logo {
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.9rem;
+    letter-spacing: -0.01em;
+    color: var(--pf-text);
+    text-decoration: none;
+  }
+
+  .perf-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 2px;
+    background: none;
+    color: var(--pf-text);
+    cursor: pointer;
+  }
+
+  .perf-menu-btn__bars,
+  .perf-menu-btn__bars::before {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: currentColor;
+  }
+
+  .perf-menu-btn__bars {
+    position: relative;
+    top: -3px;
+  }
+
+  .perf-menu-btn__bars::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 0;
+  }
+
+  .perf-nav-main {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--pf-bg-raised);
+    border-bottom: 1px solid var(--pf-border-strong);
+  }
+
+  .perf-nav-main.is-open {
+    display: flex;
+  }
+
+  .perf-nav-main__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-nav-main__link,
+  .perf-nav-main__members {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--pf-text-2);
+    font: 600 0.82rem/1 var(--pf-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .perf-nav-main__link:hover,
+  .perf-nav-main__members:hover {
+    color: var(--pf-text);
+  }
+
+  .perf-nav-main__link[aria-current='page'] {
+    color: var(--pf-brand);
+  }
+
+  .perf-nav-main__actions {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .perf-nav-main__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border: 1px solid var(--pf-brand);
+    border-radius: 2px;
+    background: var(--pf-brand);
+    color: var(--pf-on-brand);
+    font: 600 0.78rem/1 var(--pf-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .perf-nav-main__cta:hover {
+    background: var(--pf-brand-hover);
+  }
+
+  .perf-header a:focus-visible,
+  .perf-header button:focus-visible {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 3px;
+  }
+
+  .perf-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 900px) {
+    .perf-menu-btn {
+      display: none;
+    }
+
+    .perf-nav-main {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+
+    .perf-nav-main__list {
+      display: flex;
+      gap: 1.75rem;
+      margin-left: 2rem;
+    }
+
+    .perf-nav-main__actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+</style>

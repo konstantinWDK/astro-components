@@ -1,0 +1,356 @@
+---
+/**
+ * PerfDiscovery — Discovery set builder: pick up to six 2 ml vials from large tappable cards (each
+ * draws its own flacon), see the total and the progress to free shipping update live, then send the
+ * request with an email. The vial price is credited back when the full bottle is bought.
+ *
+ * @param {PerfFragrance[]} fragrances - Fragrances offered as vials.
+ * @param {number} perSample - Price of one vial. Default 6.
+ * @param {number} freeFrom - Order total with free shipping. Default 18.
+ * @param {string} action - Form action (POST). Empty string keeps the demo behaviour.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each vial is a checkbox with a visible name, the summary is an aria-live region,
+ * the progress to free shipping is text plus a decorative bar, the form has labelled fields and a
+ * visible error/success message.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from '../app/PerfBottle.astro';
+import { perfList, perfMoney, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrances?: PerfFragrance[];
+  perSample?: number;
+  freeFrom?: number;
+  action?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  fragrances = perfList,
+  perSample = 6,
+  freeFrom = 18,
+  action = '',
+  title = 'Pruébalas en casa antes de elegir',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `pd-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section id="set" class:list={['perf-ui', 'perf-disc', classAttr]} aria-labelledby={`${uid}-title`} data-perf-disc data-price={perSample} data-free={freeFrom} {...rest}>
+  <div class="perf-disc__inner">
+    <header class="perf-disc__head">
+      <p class="pf-eyebrow">Set de descubrimiento</p>
+      <Heading id={`${uid}-title`} class="perf-disc__title">{title}</Heading>
+      <p class="perf-disc__lead">Viales de 2 ml, unas 30 pulverizaciones cada uno. Elige hasta seis; si luego compras el frasco, te devolvemos lo que pagaste como crédito.</p>
+    </header>
+
+    <form class="perf-disc__form" method="post" action={action || undefined} data-form novalidate>
+      <fieldset class="perf-disc__grid">
+        <legend class="pf-sr">Elige tus viales</legend>
+        {fragrances.map((f) => (
+          <label class="perf-disc__card" style={`--c1:${f.accord[0]};--c2:${f.accord[1]}`}>
+            <input type="checkbox" name="vial" value={f.id} data-vial />
+            <span class="perf-disc__face">
+              <span class="perf-disc__art"><PerfBottle fragrance={f} label={false} decorative /></span>
+              <span class="perf-disc__name"><strong>{f.name}</strong><small>{f.family}</small></span>
+              <span class="perf-disc__mark" aria-hidden="true"></span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
+      <aside class="perf-disc__summary" aria-live="polite">
+        <p class="perf-disc__count" data-count>Aún no has elegido ningún vial</p>
+        <p class="perf-disc__total" data-total>{perfMoney(0)}</p>
+        <div class="perf-disc__free" aria-hidden="true"><i data-bar></i></div>
+        <p class="perf-disc__ship" data-ship>Envío gratis a partir de {perfMoney(freeFrom)}</p>
+
+        <div class="perf-disc__field">
+          <label for={`${uid}-mail`}>Tu email</label>
+          <input id={`${uid}-mail`} type="email" name="email" autocomplete="email" required aria-describedby={`${uid}-err`} />
+          <p id={`${uid}-err`} class="perf-disc__err" data-err role="alert"></p>
+        </div>
+        <button type="submit" class="pf-btn">Pedir mi set</button>
+        <p class="perf-disc__ok" data-ok role="status"></p>
+      </aside>
+    </form>
+  </div>
+</section>
+
+<style>
+  .perf-disc {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--pf-bg-raised);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+    border-block: 1px solid var(--pf-border);
+    scroll-margin-top: 80px;
+  }
+
+  .perf-disc__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .perf-disc__title {
+    max-width: 18ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 6vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .perf-disc__lead {
+    max-width: 54ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-disc__form {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .perf-disc__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .perf-disc__card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .perf-disc__face {
+    position: relative;
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    height: 100%;
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--pf-border-strong);
+    background: var(--pf-bg);
+    cursor: pointer;
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+  }
+
+  .perf-disc__face:hover {
+    border-color: var(--c2);
+  }
+
+  .perf-disc__card input:checked + .perf-disc__face {
+    border-color: var(--pf-brand);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--c1) 30%, transparent), var(--pf-bg) 75%);
+    transform: translateY(-3px);
+  }
+
+  .perf-disc__card input:focus-visible + .perf-disc__face {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 3px;
+  }
+
+  .perf-disc__art {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-2, 0.5rem) 0;
+  }
+
+  .perf-disc__art :global(.perf-bottle) {
+    width: 56px;
+  }
+
+  .perf-disc__name {
+    display: grid;
+    gap: 0.15rem;
+    text-align: center;
+  }
+
+  .perf-disc__name strong {
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.2rem;
+  }
+
+  .perf-disc__name small {
+    font-size: 0.78rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-disc__mark {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 50%;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .perf-disc__card input:checked + .perf-disc__face .perf-disc__mark {
+    border-color: var(--pf-brand);
+    background: var(--pf-brand);
+    box-shadow: inset 0 0 0 4px var(--pf-bg);
+  }
+
+  .perf-disc__summary {
+    align-self: start;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--pf-border-strong);
+    background: var(--pf-bg);
+  }
+
+  .perf-disc__count {
+    margin: 0 0 0.25rem;
+    font-size: 0.9rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-disc__total {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--pf-font-display);
+    font-size: 3.4rem;
+    line-height: 1;
+  }
+
+  .perf-disc__free {
+    height: 4px;
+    background: var(--pf-border);
+    overflow: hidden;
+  }
+
+  .perf-disc__free i {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--pf-brand);
+    transition: width 0.3s ease;
+  }
+
+  .perf-disc__ship {
+    margin: 0.5rem 0 var(--sp-5, 1.25rem);
+    font-size: 0.86rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-disc__field {
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .perf-disc__field label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.84rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-disc__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 999px;
+    background: var(--pf-surface);
+    color: var(--pf-text);
+    font: 400 1rem var(--pf-font-body);
+  }
+
+  .perf-disc__err {
+    min-height: 1.2em;
+    margin: 0.35rem 0 0;
+    font-size: 0.84rem;
+    color: var(--pf-bad);
+  }
+
+  .perf-disc__ok {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--pf-ok);
+    font-size: 0.92rem;
+  }
+
+  .perf-disc__summary .pf-btn {
+    width: 100%;
+  }
+
+  @media (min-width: 700px) {
+    .perf-disc__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .perf-disc {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .perf-disc__form {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.8fr);
+    }
+
+    .perf-disc__summary {
+      position: sticky;
+      top: 90px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-disc]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    if (!form) return;
+    const price = Number(root.dataset.price);
+    const free = Number(root.dataset.free);
+    const boxes = [...form.querySelectorAll<HTMLInputElement>('[data-vial]')];
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const total = root.querySelector<HTMLElement>('[data-total]');
+    const bar = root.querySelector<HTMLElement>('[data-bar]');
+    const ship = root.querySelector<HTMLElement>('[data-ship]');
+    const err = root.querySelector<HTMLElement>('[data-err]');
+    const ok = root.querySelector<HTMLElement>('[data-ok]');
+    const mail = form.querySelector<HTMLInputElement>('input[type="email"]');
+    const eur = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+    const paint = () => {
+      const n = boxes.filter((b) => b.checked).length;
+      const sum = n * price;
+      if (count) count.textContent = n ? `${n} ${n === 1 ? 'vial' : 'viales'} de 2 ml` : 'Aún no has elegido ningún vial';
+      if (total) total.textContent = eur(sum);
+      if (bar) bar.style.width = `${Math.min(100, (sum / free) * 100)}%`;
+      if (ship) ship.textContent = sum >= free ? 'Envío gratis' : `Te faltan ${eur(free - sum)} para el envío gratis`;
+      if (err) err.textContent = '';
+      if (ok) ok.textContent = '';
+    };
+
+    form.addEventListener('change', paint);
+    form.addEventListener('submit', (e) => {
+      const n = boxes.filter((b) => b.checked).length;
+      if (!n) { e.preventDefault(); if (err) err.textContent = 'Elige al menos un vial.'; return; }
+      if (!mail?.value || !mail.checkValidity()) { e.preventDefault(); if (err) err.textContent = 'Escribe un email válido.'; mail?.focus(); return; }
+      if (!form.getAttribute('action')) {
+        e.preventDefault();
+        if (ok) ok.textContent = `Hecho. Te enviaremos ${n} ${n === 1 ? 'vial' : 'viales'} a ${mail.value} (demostración).`;
+      }
+    });
+    paint();
+  });
+</script>

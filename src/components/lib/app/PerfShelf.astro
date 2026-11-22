@@ -1,0 +1,237 @@
+---
+/**
+ * PerfShelf — The customer's shelf: every bottle is drawn at its real liquid level. A slider sets how
+ * much is left (the flacon empties or fills on screen), the status is written in plain words, and
+ * below 25% a "reorder" link appears. Each bottle can also be rated 1–5.
+ *
+ * @param {PerfShelfItem[]} shelf - Bottles the customer owns.
+ * @param {PerfFragrance[]} fragrances - Catalog, to resolve fragrance ids.
+ * @param {string} reorderHref - Link of the "reorder" button.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the level slider is a native range input with aria-valuetext ("64% left"), the
+ * status is text in an aria-live region, ratings are a radio group, the flacon is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from './PerfBottle.astro';
+import { perfShelf, perfList, perfById, type PerfShelfItem, type PerfFragrance } from '../templates/perfumery/data';
+
+interface OwnProps {
+  shelf?: PerfShelfItem[];
+  fragrances?: PerfFragrance[];
+  reorderHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { shelf = perfShelf, fragrances = perfList, reorderHref = '/fragancias', class: classAttr, ...rest } = Astro.props;
+
+const uid = `psh-${Math.random().toString(36).slice(2, 8)}`;
+const items = shelf
+  .map((s) => ({ s, f: perfById(s.fragranceId, fragrances) }))
+  .filter((x): x is { s: PerfShelfItem; f: PerfFragrance } => !!x.f);
+const status = (n: number) => (n <= 0 ? 'Vacío' : n <= 25 ? 'Casi vacío' : n <= 60 ? 'A la mitad' : 'Casi lleno');
+const sprays = (ml: number, n: number) => Math.round((ml * 10 * n) / 100);
+---
+
+<section class:list={['perf-ui', 'perf-shelf', classAttr]} aria-label="Mi estantería" data-perf-shelf data-reorder={reorderHref} {...rest}>
+  <ul class="perf-shelf__list">
+    {items.map(({ s, f }, i) => (
+      <li class="perf-shelf__item" data-item data-ml={s.ml} style={`--c1:${f.accord[0]};--c2:${f.accord[1]}`}>
+        <div class="perf-shelf__art"><PerfBottle fragrance={f} level={s.level} decorative /></div>
+        <div class="perf-shelf__info">
+          <p class="perf-shelf__no">{f.number} · {s.ml} ml</p>
+          <h3>{f.name}</h3>
+
+          <p class="perf-shelf__status"><strong data-status>{status(s.level)}</strong> · <span data-left>{s.level}% · unas {sprays(s.ml, s.level)} pulverizaciones</span></p>
+
+          <div class="perf-shelf__ctl">
+            <label for={`${uid}-${i}`}>Cuánto te queda</label>
+            <input id={`${uid}-${i}`} type="range" min="0" max="100" step="1" value={s.level} data-level aria-valuetext={`${s.level}% restante`} />
+          </div>
+
+          <fieldset class="perf-shelf__rate">
+            <legend>Tu nota</legend>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <label>
+                <input type="radio" name={`${uid}-r-${i}`} value={n} checked={s.rating === n} />
+                <span>{n}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <a class="pf-btn pf-btn--ghost perf-shelf__reorder" href={reorderHref} data-reorder-link hidden={s.level > 25 ? true : undefined}>Reponer {f.name}</a>
+        </div>
+      </li>
+    ))}
+  </ul>
+  <p class="pf-sr" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .perf-shelf {
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-shelf__list {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-shelf__item {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: var(--sp-5, 1.25rem);
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--pf-border);
+    background: linear-gradient(120deg, color-mix(in srgb, var(--c1) 20%, transparent), transparent 55%), var(--pf-bg-raised);
+  }
+
+  .perf-shelf__art :global(.perf-bottle) {
+    width: 100%;
+  }
+
+  .perf-shelf__no {
+    margin: 0 0 0.25rem;
+    font-size: 0.76rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-shelf__info h3 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.8rem;
+    line-height: 1.05;
+  }
+
+  .perf-shelf__status {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.92rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-shelf__status strong {
+    color: var(--pf-text);
+  }
+
+  .perf-shelf__ctl label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-shelf__ctl input {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--pf-brand);
+    cursor: pointer;
+  }
+
+  .perf-shelf__rate {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .perf-shelf__rate legend {
+    float: left;
+    margin-right: 0.75rem;
+    padding: 0;
+    font-size: 0.8rem;
+    color: var(--pf-text-3);
+    line-height: 44px;
+  }
+
+  .perf-shelf__rate input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .perf-shelf__rate span {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--pf-border-strong);
+    border-radius: 50%;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .perf-shelf__rate input:checked + span {
+    border-color: var(--pf-brand);
+    background: var(--pf-brand);
+    color: var(--pf-on-brand);
+  }
+
+  .perf-shelf__rate input:focus-visible + span {
+    outline: 2px solid var(--pf-brand);
+    outline-offset: 2px;
+  }
+
+  .perf-shelf__reorder[hidden] {
+    display: none;
+  }
+
+  @media (min-width: 760px) {
+    .perf-shelf__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 420px) {
+    .perf-shelf__item {
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: var(--sp-3, 0.75rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-shelf]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.querySelectorAll<HTMLElement>('[data-item]').forEach((item) => {
+      const range = item.querySelector<HTMLInputElement>('[data-level]');
+      const svg = item.querySelector<SVGSVGElement>('svg');
+      const liq = item.querySelector<SVGRectElement>('.perf-bottle__liq');
+      const surf = item.querySelector<SVGRectElement>('.perf-bottle__surf');
+      const status = item.querySelector<HTMLElement>('[data-status]');
+      const left = item.querySelector<HTMLElement>('[data-left]');
+      const link = item.querySelector<HTMLElement>('[data-reorder-link]');
+      const ml = Number(item.dataset.ml);
+      if (!range || !svg || !liq) return;
+      const top = Number(svg.dataset.top);
+      const h = Number(svg.dataset.h);
+
+      range.addEventListener('input', () => {
+        const n = Number(range.value);
+        const y = top + h * (1 - n / 100);
+        liq.setAttribute('y', String(y));
+        liq.setAttribute('height', String(top + h - y + 2));
+        surf?.setAttribute('y', String(y));
+        surf?.setAttribute('opacity', n > 0 && n < 100 ? '0.55' : '0');
+        const word = n <= 0 ? 'Vacío' : n <= 25 ? 'Casi vacío' : n <= 60 ? 'A la mitad' : 'Casi lleno';
+        if (status) status.textContent = word;
+        if (left) left.textContent = `${n}% · unas ${Math.round((ml * 10 * n) / 100)} pulverizaciones`;
+        range.setAttribute('aria-valuetext', `${n}% restante`);
+        if (link) link.hidden = n > 25;
+        if (live) live.textContent = `${word}, ${n}%`;
+      });
+    });
+  });
+</script>

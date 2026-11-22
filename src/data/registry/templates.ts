@@ -2820,6 +2820,147 @@ const routes = { ...wineRoutes, wines: '/vinos', club: '/socios-club' };
 
 <WineHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'perfumery',
+    name: { en: 'Umbra · Niche Perfumery', es: 'Umbra · Perfumería de autor', ru: 'Umbra · Нишевая парфюмерия' },
+    tagline: { en: 'Niche perfumery with a hero of drifting colour clouds, an evolution-on-skin slider, an olfactory map, a scent profile quiz and a discovery-set builder, plus a customer area with a shelf of bottles at their real level, a layering lab and orders.', es: 'Perfumería de autor con un hero de nubes de color, un deslizador de evolución en piel, un mapa olfativo, un test de perfil y un constructor de set de descubrimiento, más un área de cliente con una estantería de frascos a su nivel real, laboratorio de capas y pedidos.', ru: 'Нишевая парфюмерия с героем из облаков цвета, ползунком эволюции на коже, ольфакторной картой, тестом профиля и конструктором набора, плюс кабинет клиента с полкой флаконов на реальном уровне, лабораторией слоёв и заказами.' },
+    description: { en: 'Complete template for a niche perfume house. 8 page types: home with drifting colour clouds, a first rail of fragrances, an evolution-on-skin slider and raw materials; the six fragrances with sizes, prices and an olfactory map; the atelier with kilos of matter per kilo of essence; discovery with a four-question profile test and a 2 ml set builder; customer sign-in; and a customer area with a home (order in progress), a shelf where every flacon is drawn at its real level plus a layering lab, and orders with tracking.', es: 'Plantilla completa para una casa de perfumería de autor. 8 tipos de página: home con nubes de color, un primer carril de fragancias, un deslizador de evolución en piel y materias primas; las seis fragancias con tamaños, precios y un mapa olfativo; el atelier con kilos de materia por kilo de esencia; descubrir con un test de perfil de cuatro preguntas y un constructor de set de 2 ml; acceso de clientes; y un área de cliente con inicio (pedido en curso), una estantería donde cada frasco se dibuja a su nivel real más un laboratorio de capas, y pedidos con seguimiento.', ru: 'Полный шаблон для нишевого парфюмерного дома. 8 типов страниц: главная с облаками цвета, первой лентой ароматов, ползунком эволюции на коже и сырьём; шесть ароматов с объёмами, ценами и ольфакторной картой; ателье с килограммами материала на килограмм эссенции; знакомство с тестом профиля из четырёх вопросов и конструктором набора по 2 мл; вход клиентов; и кабинет с главной (заказ в работе), полкой, где каждый флакон нарисован на реальном уровне, лабораторией слоёв и заказами с трекингом.' },
+    highlights: {
+      en: [
+        'Evolution on skin: a 0–10 h slider makes top, heart and base notes rise and fade over a layered curve, each with a written state',
+        'Olfactory map placing every fragrance between fresh and warm, light and dense, with its nearest neighbour',
+        'Customer shelf where each flacon is drawn at its real liquid level and empties on screen as you move the slider',
+        'Layering lab that blends two fragrances at any ratio, with saved mixes in localStorage',
+        'Flacons and labels generated in SVG from the fragrance data, with no image files',
+      ],
+      es: [
+        'Evolución en piel: un deslizador de 0 a 10 h hace subir y apagarse las notas de salida, corazón y fondo sobre una curva por capas, cada una con un estado escrito',
+        'Mapa olfativo que sitúa cada fragancia entre fresco y cálido, ligero y denso, con su vecina más cercana',
+        'Estantería de la clienta donde cada frasco se dibuja a su nivel real y se vacía en pantalla al mover el deslizador',
+        'Laboratorio de capas que mezcla dos fragancias en cualquier proporción, con mezclas guardadas en localStorage',
+        'Frascos y etiquetas generados en SVG a partir de los datos de la fragancia, sin archivos de imagen',
+      ],
+      ru: [
+        'Эволюция на коже: ползунок 0–10 ч поднимает и затихает верхние, сердечные и базовые ноты на кривой по слоям, у каждой есть текстовый статус',
+        'Ольфакторная карта размещает каждый аромат между свежим и тёплым, лёгким и плотным, с ближайшим соседом',
+        'Полка клиента, где каждый флакон нарисован на реальном уровне жидкости и опустошается на экране при движении ползунка',
+        'Лаборатория слоёв смешивает два аромата в любой пропорции, сохранённые смеси хранятся в localStorage',
+        'Флаконы и этикетки генерируются в SVG из данных аромата, без файлов изображений',
+      ],
+    },
+    tags: ['perfume', 'perfumery', 'ecommerce', 'quiz', 'storytelling', 'portal', 'dashboard', 'svg'],
+    previewBase: '/preview/perfumery/',
+    importPath: 'astro-component-kit/templates/perfumery',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with drifting colour clouds, three fragrances to start, the evolution-on-skin slider and the first raw materials.', es: 'Hero con nubes de color, tres fragancias para empezar, el deslizador de evolución en piel y las primeras materias primas.', ru: 'Главный экран с облаками цвета, три аромата для начала, ползунок эволюции на коже и первое сырьё.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { PerfHomePage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfHomePage />`,
+      },
+      {
+        id: 'fragrances', path: 'fragancias/',
+        name: { en: 'Fragrances', es: 'Fragancias', ru: 'Ароматы' },
+        description: { en: 'The six fragrances as a rail with sizes and prices, the olfactory map and FAQ.', es: 'Las seis fragancias como carril con tamaños y precios, el mapa olfativo y preguntas frecuentes.', ru: 'Шесть ароматов лентой с объёмами и ценами, ольфакторная карта и FAQ.' },
+        file: 'src/pages/fragancias.astro',
+        code: `---
+import { PerfFragrancesPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfFragrancesPage />`,
+      },
+      {
+        id: 'atelier', path: 'atelier/',
+        name: { en: 'Atelier', es: 'El atelier', ru: 'Ателье' },
+        description: { en: 'Raw materials with kilos of matter per kilo of essence, plus the evolution of each fragrance.', es: 'Materias primas con kilos de materia por kilo de esencia, más la evolución de cada fragancia.', ru: 'Сырьё с килограммами материала на килограмм эссенции и эволюция каждого аромата.' },
+        file: 'src/pages/atelier.astro',
+        code: `---
+import { PerfAtelierPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfAtelierPage />`,
+      },
+      {
+        id: 'discover', path: 'descubrir/',
+        name: { en: 'Discover', es: 'Descubrir', ru: 'Знакомство' },
+        description: { en: 'Four-question profile test and the 2 ml discovery-set builder with live total.', es: 'Test de perfil de cuatro preguntas y constructor del set de viales de 2 ml con total en vivo.', ru: 'Тест профиля из четырёх вопросов и конструктор набора флакончиков по 2 мл с итогом на лету.' },
+        file: 'src/pages/descubrir.astro',
+        code: `---
+import { PerfDiscoverPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfDiscoverPage action="/api/set" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Customer sign in', es: 'Acceso clientes', ru: 'Вход для клиентов' },
+        description: { en: 'Split sign-in with a large generated flacon and a customer quote.', es: 'Acceso a pantalla partida con un gran frasco generado y un testimonio.', ru: 'Вход на двух панелях с большим сгенерированным флаконом и отзывом.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { PerfSignInPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'cuenta/',
+        name: { en: 'Account home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'Order in progress with a written timeline, customer figures and the bottle running out.', es: 'Pedido en curso con cronología escrita, cifras de la clienta y el frasco que se acaba.', ru: 'Заказ в работе с текстовой хронологией, цифры клиента и заканчивающийся флакон.' },
+        file: 'src/pages/cuenta/index.astro',
+        code: `---
+import { PerfDashboardPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfDashboardPage />`,
+      },
+      {
+        id: 'shelf', path: 'cuenta/estanteria/',
+        name: { en: 'Shelf & layering lab', es: 'Estantería y capas', ru: 'Полка и слои' },
+        description: { en: 'Every bottle at its real liquid level, ratings, and the layering lab with saved mixes.', es: 'Cada frasco a su nivel real, notas, y el laboratorio de capas con mezclas guardadas.', ru: 'Каждый флакон на реальном уровне, оценки и лаборатория слоёв с сохранёнными смесями.' },
+        file: 'src/pages/cuenta/estanteria.astro',
+        code: `---
+import { PerfShelfPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfShelfPage />`,
+      },
+      {
+        id: 'orders', path: 'cuenta/pedidos/',
+        name: { en: 'Orders', es: 'Pedidos', ru: 'Заказы' },
+        description: { en: 'Orders with timeline, carrier and tracking, and actions for orders being prepared.', es: 'Pedidos con cronología, transportista y seguimiento, y acciones para los que se preparan.', ru: 'Заказы с хронологией, перевозчиком и трекингом и действиями для заказов в подготовке.' },
+        file: 'src/pages/cuenta/pedidos.astro',
+        code: `---
+import { PerfOrdersPage } from 'astro-component-kit/templates/perfumery';
+---
+
+<PerfOrdersPage />`,
+      },
+    ],
+    newComponents: [
+      'perf-hero', 'perf-skin', 'perf-collection', 'perf-map', 'perf-atelier', 'perf-quiz', 'perf-discovery', 'perf-faq', 'perf-footer',
+      'perf-bottle', 'perf-account-summary', 'perf-shelf', 'perf-layering', 'perf-order-tracker', 'perf-account-nav', 'perf-account-topbar', 'perf-account-heading', 'perf-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your catalog or customer system)
+import { PerfHomePage, perfData, perfRoutes } from 'astro-component-kit/templates/perfumery';
+
+const data = {
+  ...perfData,
+  brand: { ...perfData.brand, name: 'Atelier Nube', phone: '+34 900 000 000' },
+  fragrances: await fetch('https://api.example.com/fragrances').then((r) => r.json()),
+};
+
+const routes = { ...perfRoutes, fragrances: '/perfumes', discover: '/muestras' };
+---
+
+<PerfHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

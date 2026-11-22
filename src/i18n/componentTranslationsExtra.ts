@@ -1391,4 +1391,77 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con una gran etiqueta de vino generada y un testimonio de socia, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большой сгенерированной этикеткой и отзывом участницы, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── Perfumery ("Umbra") ────────────────────────
+  'perf-hero': {
+    es: 'Hero de perfumería con un titular serif enorme sobre nubes lentas de color tomadas del acorde de la fragancia (derivan y siguen al puntero), un gran frasco generado y sus notas flotando alrededor como texto.',
+    ru: 'Главный экран парфюмерии с огромным заголовком на дрейфующих облаках цвета из аккорда аромата (они следуют за курсором), большим сгенерированным флаконом и парящими вокруг нотами в виде текста.',
+  },
+  'perf-skin': {
+    es: '"Evolución en piel": mueve un deslizador de horas (0–10 h) y mira cómo se despliega una fragancia. Una curva por capas muestra cómo suben y se apagan las notas de salida, corazón y fondo, y cada nota tiene un estado escrito que se actualiza en vivo.',
+    ru: '«Эволюция на коже»: двигайте ползунок часов (0–10 ч) и смотрите, как раскрывается аромат. Кривая по слоям показывает, как поднимаются и затихают верхние, сердечные и базовые ноты, а у каждой ноты есть текстовый статус.',
+  },
+  'perf-collection': {
+    es: 'Las fragancias como carril horizontal de tarjetas altas: cada una dibuja su frasco en sus colores, lista sus notas por capas y deja elegir tamaño con el precio actualizándose antes del botón de añadir.',
+    ru: 'Ароматы в виде горизонтальной ленты высоких карточек: каждая рисует свой флакон в своих цветах, перечисляет ноты по слоям и даёт выбрать объём с ценой, меняющейся перед кнопкой добавления.',
+  },
+  'perf-map': {
+    es: 'Mapa olfativo: cada fragancia es un punto luminoso entre fresco y cálido (horizontal) y ligero y denso (vertical). Elige una en la lista o en el mapa para leer su historia, perfumista, estela, duración y vecina más cercana.',
+    ru: 'Ольфакторная карта: каждый аромат — светящаяся точка между свежим и тёплым (по горизонтали) и лёгким и плотным (по вертикали). Выберите его в списке или на карте, чтобы узнать историю, парфюмера, шлейф, стойкость и ближайшего соседа.',
+  },
+  'perf-atelier': {
+    es: 'Materias primas como lista tipográfica: nombre, origen y método, una gran proporción en contorno de kilos de materia por kilo de esencia y una barra logarítmica que la hace visible. Sin imágenes ni iconos.',
+    ru: 'Сырьё как типографский список: название, происхождение и метод, огромное контурное соотношение килограммов сырья на килограмм эссенции и логарифмическая шкала. Без картинок и иконок.',
+  },
+  'perf-quiz': {
+    es: 'Test de perfil olfativo de cuatro preguntas: una a una con grandes respuestas y contador de pasos; el resultado muestra la mejor coincidencia con su frasco, sus notas y una segunda opción, puntuada con un voto ponderado.',
+    ru: 'Тест ароматического профиля из четырёх вопросов: по одному, с крупными вариантами и счётчиком шагов; результат показывает лучший вариант с флаконом, нотами и второй вариант по взвешенному голосованию.',
+  },
+  'perf-discovery': {
+    es: 'Constructor del set de descubrimiento: elige hasta seis viales de 2 ml en tarjetas grandes que dibujan su frasco, mira cómo se actualizan el total y el avance hacia el envío gratis y envía la solicitud.',
+    ru: 'Конструктор набора для знакомства: выберите до шести флакончиков по 2 мл на крупных карточках с рисунком флакона, следите за итогом и прогрессом до бесплатной доставки и отправьте заявку.',
+  },
+  'perf-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'perf-footer': {
+    es: 'Pie de página de perfumería con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал парфюмерии с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'perf-bottle': {
+    es: 'Frasco de perfume dibujado en SVG a partir de los datos de la fragancia: base de vidrio grueso, líquido en sus colores de acorde a cualquier nivel, tapón metálico y etiqueta tipográfica. No necesita imágenes.',
+    ru: 'Флакон духов в SVG по данным аромата: толстое стеклянное дно, жидкость в цветах аккорда на любом уровне, металлический колпачок и типографская этикетка. Картинки не нужны.',
+  },
+  'perf-account-summary': {
+    es: 'Inicio del área de cliente: el pedido en curso con una cronología escrita de cuatro pasos y sus frascos, las cifras de la clienta (frascos, crédito, años, pedidos) y un aviso del frasco que se acaba.',
+    ru: 'Главная кабинета клиента: заказ в работе с текстовой хронологией из четырёх шагов и флаконами, цифры клиента (флаконы, кредит, годы, заказы) и напоминание о заканчивающемся флаконе.',
+  },
+  'perf-shelf': {
+    es: 'La estantería de la clienta: cada frasco dibujado a su nivel real. Un deslizador marca cuánto queda (el frasco se vacía en pantalla), el estado se escribe en lenguaje claro, aparece un enlace para reponer por debajo del 25% y cada frasco se valora de 1 a 5.',
+    ru: 'Полка клиента: каждый флакон нарисован на реальном уровне жидкости. Ползунок задаёт остаток (флакон опустошается на экране), статус написан простыми словами, ниже 25% появляется ссылка на повторный заказ, каждый флакон оценивается от 1 до 5.',
+  },
+  'perf-layering': {
+    es: 'Laboratorio de capas: elige dos fragancias y una proporción; un vial mezcla sus colores en esa proporción y se listan las notas de ambas por capas. Ponle nombre a una mezcla y guárdala (localStorage); las guardadas se cargan o se borran.',
+    ru: 'Лаборатория слоёв: выберите два аромата и пропорцию; флакончик смешивает их цвета в этой пропорции, ноты обоих перечислены по слоям. Назовите смесь и сохраните (localStorage); сохранённые можно загрузить или удалить.',
+  },
+  'perf-order-tracker': {
+    es: 'Pedidos como acordeón nativo exclusivo: id, fecha, estado y total; el cuerpo lista los frascos, una cronología escrita, transportista y seguimiento. Los pedidos en preparación se pueden cambiar de dirección o cancelar (demo).',
+    ru: 'Заказы в эксклюзивном нативном аккордеоне: номер, дата, статус и сумма; внутри — флаконы, текстовая хронология, перевозчик и трекинг. Заказы в подготовке можно изменить по адресу или отменить (демо).',
+  },
+  'perf-account-nav': {
+    es: 'Navegación del área de cliente: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета клиента: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'perf-account-topbar': {
+    es: 'Lado derecho de la cabecera de cliente: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú de la clienta (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню клиента (нативные popover).',
+  },
+  'perf-account-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, título serif grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, крупным засечным названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'perf-sign-in': {
+    es: 'Acceso a pantalla partida con un gran frasco generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большим сгенерированным флаконом и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

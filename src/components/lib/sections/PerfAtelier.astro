@@ -1,0 +1,191 @@
+---
+/**
+ * PerfAtelier — Raw materials as a typographic list: each row gives the name, origin and method, a
+ * huge "kilos of material per kilo of essence" ratio (outlined numerals) and a log-scale bar that
+ * makes the ratio visible. No images, no icons.
+ *
+ * @param {PerfMaterial[]} materials - Materials to list.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: an ordered list; the ratio is real text ("2.000 a 1"); the bar is decorative and
+ * the figure carries the meaning.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import { perfMaterials, type PerfMaterial } from '../templates/perfumery/data';
+
+interface OwnProps {
+  materials?: PerfMaterial[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  materials = perfMaterials,
+  title = 'Lo que cuesta un kilo de esencia',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `pa-${Math.random().toString(36).slice(2, 8)}`;
+const max = Math.max(...materials.map((m) => m.kgPerKg), 2000);
+const width = (m: PerfMaterial) => Math.max(4, Math.round((Math.log10(m.kgPerKg + 1) / Math.log10(max + 1)) * 100));
+const fmt = (n: number) => n.toLocaleString('es-ES');
+---
+
+<section class:list={['perf-ui', 'perf-atel', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="perf-atel__inner">
+    <header class="perf-atel__head">
+      <p class="pf-eyebrow">El atelier</p>
+      <Heading id={`${uid}-title`} class="perf-atel__title">{title}</Heading>
+      <p class="perf-atel__lead">Cada número es cuánta materia prima hay que reunir para obtener un kilo de esencia. Algunas tardan años; otras, una mañana de abril.</p>
+    </header>
+
+    <ol class="perf-atel__list">
+      {materials.map((m) => (
+        <li class="perf-atel__row" style={`--mc:${m.color}`}>
+          <div class="perf-atel__who">
+            <h3>{m.name}</h3>
+            <p class="perf-atel__origin">{m.origin}</p>
+          </div>
+          <p class="perf-atel__ratio"><span class="pf-sr">{fmt(m.kgPerKg)} kilos de materia por kilo de esencia</span><span aria-hidden="true">{fmt(m.kgPerKg)}<small> : 1</small></span></p>
+          <div class="perf-atel__bar" aria-hidden="true"><i style={`width:${width(m)}%`}></i></div>
+          <div class="perf-atel__text">
+            <p class="perf-atel__method">{m.method}</p>
+            <p>{m.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .perf-atel {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--pf-bg-raised);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+    border-block: 1px solid var(--pf-border);
+  }
+
+  .perf-atel__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .perf-atel__title {
+    max-width: 16ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(2.4rem, 7vw, 5rem);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+  }
+
+  .perf-atel__lead {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-10, 2.5rem);
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-atel__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--pf-border-strong);
+  }
+
+  .perf-atel__row {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    border-bottom: 1px solid var(--pf-border);
+  }
+
+  .perf-atel__who h3 {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.9rem;
+    line-height: 1.05;
+  }
+
+  .perf-atel__origin {
+    margin: 0.3rem 0 0;
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pf-text-3);
+  }
+
+  .perf-atel__ratio {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-weight: 500;
+    font-size: clamp(3.2rem, 14vw, 6.4rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1.2px var(--mc);
+  }
+
+  .perf-atel__ratio small {
+    font-size: 0.4em;
+    letter-spacing: 0;
+  }
+
+  .perf-atel__bar {
+    height: 4px;
+    background: var(--pf-border);
+  }
+
+  .perf-atel__bar i {
+    display: block;
+    height: 100%;
+    background: var(--mc);
+  }
+
+  .perf-atel__text p {
+    margin: 0;
+    max-width: 52ch;
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-atel__text .perf-atel__method {
+    margin-bottom: 0.4rem;
+    color: var(--pf-text);
+    font-weight: 600;
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 900px) {
+    .perf-atel {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .perf-atel__row {
+      grid-template-columns: 1fr 1.1fr 1.2fr;
+      grid-template-areas:
+        'who ratio text'
+        'who bar text';
+      align-items: center;
+      column-gap: var(--sp-8, 2rem);
+    }
+
+    .perf-atel__who { grid-area: who; }
+    .perf-atel__ratio { grid-area: ratio; }
+    .perf-atel__bar { grid-area: bar; }
+    .perf-atel__text { grid-area: text; }
+  }
+</style>

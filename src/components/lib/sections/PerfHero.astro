@@ -1,0 +1,341 @@
+---
+/**
+ * PerfHero — Perfumery hero: an oversized display-serif headline over slow clouds of colour taken
+ * from the fragrance's accord (they drift and follow the pointer), a large generated flacon and its
+ * notes floating around it as plain text.
+ *
+ * @param {PerfFragrance} fragrance - Fragrance shown in the hero.
+ * @param {PerfStat[]} stats - Three key figures.
+ * @param {string} title - Headline.
+ * @param {string} text - Supporting paragraph.
+ * @param {string} fragrancesHref - Link of the secondary button.
+ * @param {string} discoverHref - Link of the primary button.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the clouds and floating notes are decorative (aria-hidden) and respect
+ * prefers-reduced-motion; the flacon is announced once with its name.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from '../app/PerfBottle.astro';
+import { perfList, perfStats, type PerfFragrance, type PerfStat } from '../templates/perfumery/data';
+
+interface OwnProps {
+  fragrance?: PerfFragrance;
+  stats?: PerfStat[];
+  title?: string;
+  text?: string;
+  fragrancesHref?: string;
+  discoverHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  fragrance = perfList[0],
+  stats = perfStats,
+  title = 'Huele lo que no se ve',
+  text = 'Seis fragancias de autor, al 25% de extracto. Hechas a mano en Madrid con materias primas que tardan años en estar listas.',
+  fragrancesHref = '/fragancias',
+  discoverHref = '/descubrir',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ph-${Math.random().toString(36).slice(2, 8)}`;
+const floating = fragrance.notes.slice(0, 6);
+const spots = [
+  { x: '4%', y: '16%' },
+  { x: '78%', y: '10%' },
+  { x: '-2%', y: '52%' },
+  { x: '84%', y: '48%' },
+  { x: '8%', y: '86%' },
+  { x: '74%', y: '88%' },
+];
+const [c1, c2, c3] = fragrance.accord;
+const words = title.split(' ');
+---
+
+<section
+  class:list={['perf-ui', 'perf-hero', classAttr]}
+  aria-labelledby={`${uid}-title`}
+  style={`--ph-c1:${c1};--ph-c2:${c2};--ph-c3:${c3};`}
+  data-perf-hero
+  {...rest}
+>
+  <div class="perf-hero__clouds" aria-hidden="true">
+    <span class="perf-hero__cloud perf-hero__cloud--a"></span>
+    <span class="perf-hero__cloud perf-hero__cloud--b"></span>
+    <span class="perf-hero__cloud perf-hero__cloud--c"></span>
+  </div>
+
+  <div class="perf-hero__inner">
+    <div class="perf-hero__copy">
+      <p class="pf-eyebrow">Perfumería de autor · Madrid</p>
+      <Heading id={`${uid}-title`} class="perf-hero__title">
+        {words.map((w, i) => (<><span class="perf-hero__word" style={`--i:${i}`}>{w}</span>{' '}</>))}
+      </Heading>
+      <p class="perf-hero__text">{text}</p>
+      <div class="perf-hero__actions">
+        <a class="pf-btn" href={discoverHref}>Descubrir mi fragancia</a>
+        <a class="pf-btn pf-btn--ghost" href={fragrancesHref}>Ver las seis</a>
+      </div>
+    </div>
+
+    <div class="perf-hero__stage">
+      <div class="perf-hero__bottle">
+        <PerfBottle fragrance={fragrance} />
+      </div>
+      <ul class="perf-hero__notes" aria-hidden="true">
+        {floating.map((note, i) => (
+          <li style={`left:${spots[i].x};top:${spots[i].y};--d:${i * -1.3}s`}>{note.name}</li>
+        ))}
+      </ul>
+      <p class="perf-hero__caption"><strong>{fragrance.number} {fragrance.name}</strong> · {fragrance.family}</p>
+    </div>
+  </div>
+
+  <dl class="perf-hero__stats">
+    {stats.map((s) => (
+      <div>
+        <dt>{s.label}</dt>
+        <dd>{s.value}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .perf-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-10, 2.5rem);
+    background: var(--pf-bg);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+    --mx: 0;
+    --my: 0;
+  }
+
+  .perf-hero__clouds {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .perf-hero__cloud {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.5;
+    transform: translate3d(calc(var(--mx) * var(--k, 30px)), calc(var(--my) * var(--k, 30px)), 0);
+    transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+    animation: perf-drift 18s ease-in-out infinite alternate;
+  }
+
+  .perf-hero__cloud--a {
+    width: 46vw;
+    height: 46vw;
+    left: -10vw;
+    top: -8vw;
+    background: var(--ph-c1);
+    --k: 40px;
+  }
+
+  .perf-hero__cloud--b {
+    width: 38vw;
+    height: 38vw;
+    right: -8vw;
+    top: 10vw;
+    background: var(--ph-c2);
+    opacity: 0.38;
+    animation-duration: 23s;
+    --k: -55px;
+  }
+
+  .perf-hero__cloud--c {
+    width: 30vw;
+    height: 30vw;
+    left: 30vw;
+    bottom: -14vw;
+    background: var(--ph-c3);
+    opacity: 0.7;
+    animation-duration: 27s;
+    --k: 25px;
+  }
+
+  @keyframes perf-drift {
+    from { scale: 1; }
+    to { scale: 1.18; translate: 3vw 2vw; }
+  }
+
+  .perf-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .perf-hero__title {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--pf-font-display);
+    font-weight: 400;
+    font-size: clamp(3.2rem, 11.5vw, 8.4rem);
+    line-height: 0.9;
+    letter-spacing: -0.035em;
+  }
+
+  .perf-hero__word {
+    display: inline-block;
+    animation: perf-rise 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--i) * 0.12s);
+  }
+
+  .perf-hero__word:nth-child(even) {
+    font-style: italic;
+    color: var(--pf-brand);
+  }
+
+  @keyframes perf-rise {
+    from { opacity: 0; transform: translateY(0.35em); filter: blur(10px); }
+    to { opacity: 1; transform: none; filter: none; }
+  }
+
+  .perf-hero__text {
+    max-width: 44ch;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--pf-text-2);
+  }
+
+  .perf-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-hero__stage {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    min-height: 420px;
+  }
+
+  .perf-hero__bottle {
+    width: clamp(150px, 42vw, 250px);
+    transform: translate3d(calc(var(--mx) * -10px), calc(var(--my) * -8px), 0) rotate(calc(var(--mx) * 2deg));
+    transition: transform 0.6s ease-out;
+    filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.45));
+  }
+
+  .perf-hero__bottle :global(.perf-bottle) {
+    max-width: none;
+  }
+
+  .perf-hero__notes {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-hero__notes li {
+    position: absolute;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--pf-border-strong);
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--pf-text-2);
+    animation: perf-float 7s ease-in-out infinite;
+    animation-delay: var(--d);
+  }
+
+  @keyframes perf-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .perf-hero__caption {
+    position: relative;
+    margin: var(--sp-5, 1.25rem) 0 0;
+    font-size: 0.88rem;
+    color: var(--pf-text-3);
+    text-align: center;
+  }
+
+  .perf-hero__caption strong {
+    color: var(--pf-text);
+    font-weight: 600;
+  }
+
+  .perf-hero__stats {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    max-width: 1240px;
+    margin: var(--sp-10, 2.5rem) auto 0;
+    padding-top: var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--pf-border-strong);
+  }
+
+  .perf-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.25rem;
+  }
+
+  .perf-hero__stats dt {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--pf-text-3);
+  }
+
+  .perf-hero__stats dd {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-size: clamp(1.8rem, 6vw, 3.4rem);
+    line-height: 1;
+  }
+
+  @media (max-width: 599px) {
+    .perf-hero__notes li {
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .perf-hero {
+      padding: var(--sp-16, 4rem) var(--sp-8, 2rem) var(--sp-10, 2.5rem);
+    }
+
+    .perf-hero__inner {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+      align-items: center;
+    }
+
+    .perf-hero__stage {
+      min-height: 560px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-perf-hero]').forEach((root) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    root.addEventListener('pointermove', (e) => {
+      const r = root.getBoundingClientRect();
+      root.style.setProperty('--mx', String(((e.clientX - r.left) / r.width - 0.5) * 2));
+      root.style.setProperty('--my', String(((e.clientY - r.top) / r.height - 0.5) * 2));
+    });
+  });
+</script>

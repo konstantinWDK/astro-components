@@ -125,3 +125,14 @@ export { default as WineMemberNav } from './WineMemberNav.astro';
 export { default as WineMemberTopbar } from './WineMemberTopbar.astro';
 export { default as WineMemberHeading } from './WineMemberHeading.astro';
 export { default as WineSignIn } from './WineSignIn.astro';
+
+// Perfumery customer area ("Umbra")
+export { default as PerfBottle } from './PerfBottle.astro';
+export { default as PerfAccountSummary } from './PerfAccountSummary.astro';
+export { default as PerfShelf } from './PerfShelf.astro';
+export { default as PerfLayering } from './PerfLayering.astro';
+export { default as PerfOrderTracker } from './PerfOrderTracker.astro';
+export { default as PerfAccountNav } from './PerfAccountNav.astro';
+export { default as PerfAccountTopbar } from './PerfAccountTopbar.astro';
+export { default as PerfAccountHeading } from './PerfAccountHeading.astro';
+export { default as PerfSignIn } from './PerfSignIn.astro';

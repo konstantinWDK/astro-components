@@ -1,0 +1,292 @@
+---
+/**
+ * PerfAccountSummary — Overview of the customer area: the order in progress with a four-step
+ * written timeline and its flacons, the customer's figures (bottles, credit, years, orders) and a
+ * reminder of the bottle that is running out, with a reorder link.
+ *
+ * @param {PerfMember} member - Signed-in customer.
+ * @param {PerfOrder} order - Order in progress (or the latest one).
+ * @param {PerfShelfItem[]} shelf - Bottles on the shelf.
+ * @param {PerfFragrance[]} fragrances - Catalog, to resolve ids.
+ * @param {string} ordersHref - Link to the orders page.
+ * @param {string} shelfHref - Link to the shelf page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the timeline is an ordered list with the state written out, figures are a <dl>,
+ * flacons are decorative; targets are 48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/perfumery/perf-theme.css';
+import PerfBottle from './PerfBottle.astro';
+import {
+  perfMember,
+  perfOrders,
+  perfShelf,
+  perfList,
+  perfById,
+  perfMoney,
+  type PerfMember,
+  type PerfOrder,
+  type PerfShelfItem,
+  type PerfFragrance,
+} from '../templates/perfumery/data';
+
+interface OwnProps {
+  member?: PerfMember;
+  order?: PerfOrder;
+  shelf?: PerfShelfItem[];
+  fragrances?: PerfFragrance[];
+  ordersHref?: string;
+  shelfHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = perfMember,
+  order = perfOrders[0],
+  shelf = perfShelf,
+  fragrances = perfList,
+  ordersHref = '/cuenta/pedidos',
+  shelfHref = '/cuenta/estanteria',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `pas-${Math.random().toString(36).slice(2, 8)}`;
+const first = member.name.split(' ')[0];
+const years = Math.max(1, new Date().getFullYear() - new Date(member.since).getFullYear());
+const low = [...shelf].sort((a, b) => a.level - b.level).find((s) => s.level <= 25);
+const lowF = low ? perfById(low.fragranceId, fragrances) : undefined;
+const done = order.steps.filter((s) => s.done).length;
+const fmtDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+---
+
+<section class:list={['perf-ui', 'perf-sum', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <article class="perf-sum__order">
+    <p class="pf-eyebrow">Tu pedido {order.id}</p>
+    <h2 id={`${uid}-title`} class="perf-sum__status">{order.status}</h2>
+    <p class="perf-sum__meta">Hecho el {fmtDate(order.date)} · {perfMoney(order.total)}</p>
+
+    <ol class="perf-sum__steps">
+      {order.steps.map((s, i) => (
+        <li class:list={{ 'is-done': s.done, 'is-next': !s.done && i === done }}>
+          <span class="perf-sum__step">{s.label}</span>
+          <span class="perf-sum__when">{s.done ? 'Hecho' : 'Pendiente'} · {s.date.startsWith('20') ? fmtDate(s.date) : s.date}</span>
+        </li>
+      ))}
+    </ol>
+
+    <ul class="perf-sum__items" aria-label="Contenido del pedido">
+      {order.items.map((it) => {
+        const f = perfById(it.fragranceId, fragrances);
+        return f ? (
+          <li>
+            <span class="perf-sum__mini"><PerfBottle fragrance={f} label={false} decorative /></span>
+            <span><strong>{it.qty} × {f.name}</strong><small>{it.ml} ml</small></span>
+          </li>
+        ) : null;
+      })}
+    </ul>
+    <a class="pf-btn" href={ordersHref}>Ver el detalle del pedido</a>
+  </article>
+
+  <div class="perf-sum__side">
+    <p class="perf-sum__hello">Hola, {first}. <span>{member.tier}</span></p>
+    <dl class="perf-sum__stats">
+      <div><dt>Frascos en tu estantería</dt><dd>{shelf.length}</dd></div>
+      <div><dt>Crédito disponible</dt><dd>{perfMoney(member.credit)}</dd></div>
+      <div><dt>Años con nosotros</dt><dd>{years}</dd></div>
+      <div><dt>Pedidos hechos</dt><dd>{perfOrders.length}</dd></div>
+    </dl>
+
+    {lowF && low && (
+      <div class="perf-sum__low">
+        <p class="pf-eyebrow">Se te acaba</p>
+        <div class="perf-sum__low-body">
+          <span class="perf-sum__mini perf-sum__mini--lg"><PerfBottle fragrance={lowF} level={low.level} label={false} decorative /></span>
+          <div>
+            <strong>{lowF.name}</strong>
+            <p>Te queda un {low.level}%, unas {Math.round((low.ml * 10 * low.level) / 100)} pulverizaciones. Con tu crédito de {perfMoney(member.credit)} sale por {perfMoney(Math.max(0, lowF.sizes[0].price - member.credit))}.</p>
+            <a class="pf-link" href={shelfHref}>Ver mi estantería</a>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .perf-sum {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--pf-text);
+    font-family: var(--pf-font-body);
+  }
+
+  .perf-sum__order {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--pf-border-strong);
+    background: linear-gradient(160deg, rgba(var(--pf-brand-rgb), 0.14), transparent 60%), var(--pf-bg-raised);
+  }
+
+  .perf-sum__status {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3rem, 11vw, 5.4rem);
+    line-height: 0.95;
+    color: var(--pf-brand);
+  }
+
+  .perf-sum__meta {
+    margin: 0.6rem 0 var(--sp-5, 1.25rem);
+    font-size: 0.92rem;
+    color: var(--pf-text-2);
+  }
+
+  .perf-sum__steps {
+    display: grid;
+    gap: 0;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--pf-border);
+  }
+
+  .perf-sum__steps li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--pf-border);
+    color: var(--pf-text-3);
+  }
+
+  .perf-sum__steps li.is-done {
+    color: var(--pf-text);
+  }
+
+  .perf-sum__steps li.is-next .perf-sum__step {
+    color: var(--pf-accent);
+    font-weight: 600;
+  }
+
+  .perf-sum__when {
+    font-size: 0.86rem;
+  }
+
+  .perf-sum__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .perf-sum__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .perf-sum__items strong {
+    display: block;
+    font-family: var(--pf-font-display);
+    font-weight: 500;
+    font-size: 1.15rem;
+  }
+
+  .perf-sum__items small {
+    color: var(--pf-text-3);
+    font-size: 0.84rem;
+  }
+
+  .perf-sum__mini {
+    flex: none;
+    width: 36px;
+  }
+
+  .perf-sum__mini--lg {
+    width: 64px;
+  }
+
+  .perf-sum__mini :global(.perf-bottle) {
+    width: 100%;
+  }
+
+  .perf-sum__hello {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--pf-font-display);
+    font-size: 1.7rem;
+  }
+
+  .perf-sum__hello span {
+    display: block;
+    margin-top: 0.25rem;
+    font: 600 0.72rem/1 var(--pf-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--pf-accent);
+  }
+
+  .perf-sum__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1px solid var(--pf-border);
+  }
+
+  .perf-sum__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .perf-sum__stats dt {
+    font-size: 0.84rem;
+    color: var(--pf-text-3);
+  }
+
+  .perf-sum__stats dd {
+    margin: 0;
+    font-family: var(--pf-font-display);
+    font-size: 2.6rem;
+    line-height: 1;
+  }
+
+  .perf-sum__low-body {
+    display: flex;
+    gap: var(--sp-4, 1rem);
+    align-items: center;
+  }
+
+  .perf-sum__low-body strong {
+    font-family: var(--pf-font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.4rem;
+  }
+
+  .perf-sum__low-body p {
+    margin: 0.3rem 0 0.5rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--pf-text-2);
+  }
+
+  @media (min-width: 960px) {
+    .perf-sum {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .perf-sum__order {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>
