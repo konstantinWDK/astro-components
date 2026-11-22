@@ -1,0 +1,280 @@
+---
+/**
+ * ArchBudget — The works budget in the open. Totals on top (budget, paid, still to pay, approved
+ * changes), one row per line item with a stacked bar of what has been paid against its budget, and
+ * the change orders: pending ones can be approved or rejected and the totals update live with the
+ * approved amount added to the budget (demo).
+ *
+ * @param {ArchBudgetLine[]} lines - Budget lines.
+ * @param {ArchChangeOrder[]} changeOrders - Change orders with their status.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every figure is text, bars are decorative, approve/reject buttons name the change
+ * they act on, totals and results are announced in an aria-live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archBudgetLines, archChangeOrders, archMoney, type ArchBudgetLine, type ArchChangeOrder } from '../templates/architecture/data';
+
+interface OwnProps {
+  lines?: ArchBudgetLine[];
+  changeOrders?: ArchChangeOrder[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { lines = archBudgetLines, changeOrders = archChangeOrders, class: classAttr, ...rest } = Astro.props;
+
+const base = lines.reduce((n, l) => n + l.budget, 0);
+const spent = lines.reduce((n, l) => n + l.spent, 0);
+const approved = changeOrders.filter((c) => c.status === 'Aprobado').reduce((n, c) => n + c.amount, 0);
+---
+
+<section class:list={['arch-bud', classAttr, 'arch-ui']} aria-label="Presupuesto de obra" data-arch-bud data-base={base} data-spent={spent} data-approved={approved} {...rest}>
+  <dl class="arch-bud__tot" aria-live="polite">
+    <div><dt>Presupuesto</dt><dd data-t-budget>{archMoney(base + approved)}</dd></div>
+    <div><dt>Pagado</dt><dd data-t-spent>{archMoney(spent)}</dd></div>
+    <div><dt>Por pagar</dt><dd data-t-left>{archMoney(base + approved - spent)}</dd></div>
+    <div><dt>Modificados aprobados</dt><dd data-t-appr>+{archMoney(approved)}</dd></div>
+  </dl>
+
+  <ul class="arch-bud__lines">
+    {lines.map((l) => {
+      const pct = Math.round((l.spent / l.budget) * 100);
+      return (
+        <li>
+          <div class="arch-bud__top">
+            <span class="arch-bud__name">{l.name}</span>
+            <span class="arch-bud__fig">{archMoney(l.spent)} <small>de {archMoney(l.budget)}</small></span>
+          </div>
+          <div class="arch-bud__bar" aria-hidden="true"><i style={`width:${pct}%`}></i></div>
+          <p class="arch-bud__pct">{pct === 100 ? 'Pagada por completo' : pct === 0 ? 'Aún sin pagos' : `${pct} % pagado`}</p>
+        </li>
+      );
+    })}
+  </ul>
+
+  <section id="modificados" class="arch-bud__orders" aria-labelledby="arch-bud-orders-title">
+    <h3 id="arch-bud-orders-title">Modificados</h3>
+    <ul>
+      {changeOrders.map((c) => (
+        <li data-order={c.id} data-amount={c.amount} data-status={c.status}>
+          <div>
+            <p class="arch-bud__otext"><b>{c.id}</b> {c.text}</p>
+            <p class="arch-bud__oamt">+{archMoney(c.amount)}</p>
+          </div>
+          <div class="arch-bud__oside">
+            <span class:list={['arch-bud__status', `is-${c.status.toLowerCase()}`]} data-ostatus>{c.status}</span>
+            {c.status === 'Pendiente' && (
+              <span class="arch-bud__acts">
+                <button type="button" class="ar-btn" data-do="approve" aria-label={`Aprobar ${c.id}`}>Aprobar</button>
+                <button type="button" class="ar-btn ar-btn--ghost" data-do="reject" aria-label={`Rechazar ${c.id}`}>Rechazar</button>
+              </span>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+  <p class="arch-bud__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .arch-bud {
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-bud [hidden] {
+    display: none !important;
+  }
+
+  .arch-bud__tot {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-8, 2rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1.5px solid var(--ar-text);
+  }
+
+  .arch-bud__tot div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .arch-bud__tot dt {
+    font: 400 0.76rem/1.3 var(--ar-font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ar-text-3);
+  }
+
+  .arch-bud__tot dd {
+    margin: 0;
+    font-weight: 900;
+    font-stretch: 78%;
+    word-spacing: 0.12em;
+    font-size: clamp(1.6rem, 5.5vw, 2.6rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .arch-bud__lines {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-10, 2.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .arch-bud__top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .arch-bud__name {
+    font-weight: 700;
+  }
+
+  .arch-bud__fig {
+    font: 500 0.9rem/1.3 var(--ar-font-mono);
+  }
+
+  .arch-bud__fig small {
+    color: var(--ar-text-3);
+    font-size: 0.78rem;
+  }
+
+  .arch-bud__bar {
+    height: 12px;
+    background: var(--ar-border);
+  }
+
+  .arch-bud__bar i {
+    display: block;
+    height: 100%;
+    background: var(--ar-brand);
+  }
+
+  .arch-bud__pct {
+    margin: 0.3rem 0 0;
+    font: 400 0.76rem/1.3 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-bud__orders h3 {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-stretch: 80%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .arch-bud__orders ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-bud__orders li {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem) 0;
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-bud__otext {
+    margin: 0 0 0.2rem;
+    line-height: 1.45;
+  }
+
+  .arch-bud__otext b {
+    margin-right: 0.5rem;
+    font: 500 0.8rem/1 var(--ar-font-mono);
+    color: var(--ar-accent);
+  }
+
+  .arch-bud__oamt {
+    margin: 0;
+    font: 500 0.95rem/1 var(--ar-font-mono);
+  }
+
+  .arch-bud__oside {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .arch-bud__status {
+    font: 500 0.74rem/1 var(--ar-font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .arch-bud__status.is-pendiente { color: var(--ar-warn); }
+  .arch-bud__status.is-aprobado { color: var(--ar-ok); }
+  .arch-bud__status.is-rechazado { color: var(--ar-bad); }
+
+  .arch-bud__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .arch-bud__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--ar-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .arch-bud__tot {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .arch-bud__orders li {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch-bud]').forEach((root) => {
+    const base = Number(root.dataset.base);
+    const spent = Number(root.dataset.spent);
+    let approved = Number(root.dataset.approved);
+    const eur = (n: number) => `${Math.round(n).toLocaleString('es-ES')} €`;
+    const set = (s: string, v: string) => { const el = root.querySelector<HTMLElement>(s); if (el) el.textContent = v; };
+    const live = root.querySelector<HTMLElement>('[data-live]');
+
+    const totals = () => {
+      set('[data-t-budget]', eur(base + approved));
+      set('[data-t-left]', eur(base + approved - spent));
+      set('[data-t-appr]', `+${eur(approved)}`);
+    };
+
+    root.querySelectorAll<HTMLButtonElement>('[data-do]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const li = b.closest<HTMLElement>('[data-order]');
+        if (!li) return;
+        const ok = b.dataset.do === 'approve';
+        const st = li.querySelector<HTMLElement>('[data-ostatus]');
+        if (st) { st.textContent = ok ? 'Aprobado' : 'Rechazado'; st.className = `arch-bud__status is-${ok ? 'aprobado' : 'rechazado'}`; }
+        li.querySelector<HTMLElement>('.arch-bud__acts')?.setAttribute('hidden', '');
+        if (ok) approved += Number(li.dataset.amount);
+        totals();
+        if (live) live.textContent = ok ? `Modificado ${li.dataset.order} aprobado: +${eur(Number(li.dataset.amount))}. El presupuesto sube a ${eur(base + approved)} (demostración).` : `Modificado ${li.dataset.order} rechazado. No cambia el presupuesto (demostración).`;
+      }),
+    );
+  });
+</script>

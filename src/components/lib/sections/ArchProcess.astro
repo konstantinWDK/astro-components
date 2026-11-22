@@ -1,0 +1,199 @@
+---
+/**
+ * ArchProcess — "From the plot to the keys" as a Gantt chart that is also an exclusive accordion:
+ * every phase is a row whose bar starts where the previous one ends and has a width proportional to
+ * its weeks; open a row (native <details name>) to read what happens in it. The total in weeks and
+ * months is computed from the data.
+ *
+ * @param {ArchPhase[]} phases - Phases in order.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native disclosure widgets, the duration of each phase is written in text (weeks
+ * and start week), the bar is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archPhases, type ArchPhase } from '../templates/architecture/data';
+
+interface OwnProps {
+  phases?: ArchPhase[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  phases = archPhases,
+  title = 'Del solar a las llaves',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `apr-${Math.random().toString(36).slice(2, 8)}`;
+const total = phases.reduce((n, p) => n + p.weeks, 0);
+let acc = 0;
+const rows = phases.map((p, i) => {
+  const start = acc;
+  acc += p.weeks;
+  return { p, i, start, left: (start / total) * 100, width: (p.weeks / total) * 100 };
+});
+const months = Math.round((total / 4.345) * 10) / 10;
+---
+
+<section class:list={['arch-ui', 'arch-proc', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="arch-proc__inner">
+    <header class="arch-proc__head">
+      <p class="ar-eyebrow">Cómo trabajamos</p>
+      <Heading id={`${uid}-title`} class="arch-proc__title">{title}</Heading>
+      <p class="arch-proc__lead">{total} semanas, unos {String(months).replace('.', ',')} meses. Abre cada fase para ver qué hacemos y cuándo.</p>
+    </header>
+
+    <div class="arch-proc__list">
+      {rows.map(({ p, i, start, left, width }) => (
+        <details class="arch-proc__row" name={`${uid}-ph`} open={i === 0 ? true : undefined}>
+          <summary>
+            <span class="arch-proc__no">{String(i + 1).padStart(2, '0')}</span>
+            <span class="arch-proc__name">{p.name}</span>
+            <span class="arch-proc__when">{p.weeks} sem · desde la semana {start + 1}</span>
+            <span class="arch-proc__track" aria-hidden="true"><i style={`left:${left}%;width:${width}%`}></i></span>
+          </summary>
+          <p>{p.text}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .arch-proc {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--ar-bg-raised);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+    border-block: 1px solid var(--ar-border);
+  }
+
+  .arch-proc__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .arch-proc__title {
+    max-width: 14ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(2.8rem, 8vw, 5.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  .arch-proc__lead {
+    margin: 0 0 var(--sp-8, 2rem);
+    font: 400 0.9rem/1.5 var(--ar-font-mono);
+    color: var(--ar-text-2);
+  }
+
+  .arch-proc__list {
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-proc__row {
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-proc__row summary {
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    grid-template-areas: 'no name' 'no when' 'track track';
+    column-gap: 0.75rem;
+    row-gap: 0.15rem;
+    align-items: baseline;
+    min-height: 64px;
+    padding: var(--sp-4, 1rem) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .arch-proc__row summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .arch-proc__no {
+    grid-area: no;
+    font: 500 0.82rem/1 var(--ar-font-mono);
+    color: var(--ar-accent);
+  }
+
+  .arch-proc__name {
+    grid-area: name;
+    font-size: clamp(1.3rem, 3.4vw, 1.9rem);
+    font-weight: 800;
+    font-stretch: 80%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  .arch-proc__when {
+    grid-area: when;
+    font: 400 0.76rem/1.3 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-proc__track {
+    grid-area: track;
+    position: relative;
+    height: 10px;
+    margin-top: 0.6rem;
+    background: var(--ar-border);
+  }
+
+  .arch-proc__track i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    min-width: 4px;
+    background: var(--ar-text-3);
+    transition: background 0.3s ease;
+  }
+
+  .arch-proc__row[open] .arch-proc__track i {
+    background: var(--ar-brand);
+  }
+
+  .arch-proc__row > p {
+    max-width: 60ch;
+    margin: 0 0 var(--sp-5, 1.25rem) 3.15rem;
+    line-height: 1.65;
+    color: var(--ar-text-2);
+  }
+
+  @media (min-width: 900px) {
+    .arch-proc {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .arch-proc__row summary {
+      grid-template-columns: 2.4rem 15rem 11rem 1fr;
+      grid-template-areas: 'no name when track';
+      align-items: center;
+      column-gap: 1.25rem;
+    }
+
+    .arch-proc__track {
+      margin-top: 0;
+    }
+
+    .arch-proc__row > p {
+      margin-left: 3.65rem;
+    }
+  }
+</style>

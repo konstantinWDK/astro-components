@@ -1,0 +1,354 @@
+---
+/**
+ * ArchProjects — Built work as an index. A type filter (all, housing, cultural, refurbishment, offices)
+ * narrows a numbered list of projects; picking one (arrow keys or click) shows its generated floor
+ * plan and elevation next to the facts: area, cost per square metre, material, programme, place and
+ * year. Everything is drawn from the project data, no photographs.
+ *
+ * @param {ArchProject[]} projects - Projects to list.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: filter and list are radio groups, the detail is an aria-live region with the facts
+ * as a <dl>, drawings have text descriptions; without JavaScript every project is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import ArchPlan from '../app/ArchPlan.astro';
+import ArchElevation from '../app/ArchElevation.astro';
+import { archProjects, archMoney, type ArchProject } from '../templates/architecture/data';
+
+interface OwnProps {
+  projects?: ArchProject[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  projects = archProjects,
+  title = 'Obras',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `apj-${Math.random().toString(36).slice(2, 8)}`;
+const types = ['Todas', ...new Set(projects.map((p) => p.type))];
+const pad = (n: number) => String(n + 1).padStart(2, '0');
+---
+
+<section class:list={['arch-ui', 'arch-proj', classAttr]} aria-labelledby={`${uid}-title`} data-arch-proj {...rest}>
+  <div class="arch-proj__inner">
+    <header class="arch-proj__head">
+      <p class="ar-eyebrow">Obra construida</p>
+      <Heading id={`${uid}-title`} class="arch-proj__title">{title}</Heading>
+    </header>
+
+    <fieldset class="arch-proj__filter">
+      <legend class="ar-sr">Filtrar por tipo</legend>
+      {types.map((t, i) => (
+        <label>
+          <input type="radio" name={`${uid}-t`} value={t} checked={i === 0} />
+          <span>{t}</span>
+        </label>
+      ))}
+    </fieldset>
+    <p class="arch-proj__count" aria-live="polite" data-count>{projects.length} obras</p>
+
+    <div class="arch-proj__grid">
+      <fieldset class="arch-proj__list">
+        <legend class="ar-sr">Elige una obra</legend>
+        {projects.map((p, i) => (
+          <label data-type={p.type}>
+            <input type="radio" name={`${uid}-p`} value={p.id} checked={i === 0} />
+            <span><b>{pad(i)}</b><strong>{p.name}</strong><small>{p.type} · {p.year}</small></span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div class="arch-proj__stage" aria-live="polite">
+        {projects.map((p, i) => (
+          <article class="arch-proj__detail" data-detail={p.id} hidden={i !== 0 ? true : undefined}>
+            <div class="arch-proj__draws">
+              <ArchPlan seed={p.seed} depth={p.area > 600 ? 4 : 3} area={Math.round(p.area / p.floors)} />
+              <ArchElevation seed={p.seed} floors={p.floors} bays={p.bays} roof={p.roof} />
+            </div>
+            <div>
+              <h3>{p.name}</h3>
+              <p>{p.text}</p>
+              <dl>
+                <div><dt>Lugar</dt><dd>{p.place}</dd></div>
+                <div><dt>Superficie</dt><dd>{p.area.toLocaleString('es-ES')} m²</dd></div>
+                <div><dt>Coste de obra</dt><dd>{archMoney(p.cost)} · {archMoney(p.cost / p.area)}/m²</dd></div>
+                <div><dt>Materiales</dt><dd>{p.material}</dd></div>
+                <div><dt>Programa</dt><dd>{p.program}</dd></div>
+              </dl>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .arch-proj {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--ar-bg-raised);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+    border-block: 1px solid var(--ar-border);
+  }
+
+  .arch-proj [hidden] {
+    display: none !important;
+  }
+
+  .arch-proj__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .arch-proj__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(3rem, 10vw, 7rem);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  .arch-proj__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .arch-proj__filter input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .arch-proj__filter span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1.5px solid var(--ar-border-strong);
+    font: 500 0.78rem/1 var(--ar-font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .arch-proj__filter input:checked + span {
+    background: var(--ar-brand);
+    border-color: var(--ar-brand);
+    color: var(--ar-on-brand);
+  }
+
+  .arch-proj__filter input:focus-visible + span {
+    outline: 2px solid var(--ar-accent);
+    outline-offset: 3px;
+  }
+
+  .arch-proj__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-6, 1.5rem);
+    font: 400 0.8rem/1 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-proj__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .arch-proj__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-proj__list input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .arch-proj__list span {
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    grid-template-areas: 'n name' 'n meta';
+    column-gap: 0.75rem;
+    align-items: baseline;
+    min-height: 56px;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--ar-border);
+    color: var(--ar-text-2);
+    cursor: pointer;
+    transition: color 0.2s ease, padding 0.25s ease, background 0.2s ease;
+  }
+
+  .arch-proj__list b {
+    grid-area: n;
+    font: 500 0.8rem/1 var(--ar-font-mono);
+    color: var(--ar-accent);
+  }
+
+  .arch-proj__list strong {
+    grid-area: name;
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-stretch: 85%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  .arch-proj__list small {
+    grid-area: meta;
+    font: 400 0.76rem/1.3 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-proj__list span:hover {
+    color: var(--ar-text);
+  }
+
+  .arch-proj__list input:checked + span {
+    padding-left: 0.6rem;
+    background: rgba(var(--ar-brand-rgb), 0.1);
+    color: var(--ar-text);
+    border-bottom-color: var(--ar-brand);
+  }
+
+  .arch-proj__list input:focus-visible + span {
+    outline: 2px solid var(--ar-accent);
+    outline-offset: 2px;
+  }
+
+  .arch-proj__detail {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    animation: arch-fade 0.5s ease both;
+  }
+
+  @keyframes arch-fade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .arch-proj__draws {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ar-border-strong);
+    background: var(--ar-bg);
+  }
+
+  .arch-proj__detail h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .arch-proj__detail p {
+    max-width: 46ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    line-height: 1.6;
+    color: var(--ar-text-2);
+  }
+
+  .arch-proj__detail dl {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid var(--ar-border);
+  }
+
+  .arch-proj__detail dl div {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--ar-border);
+    font-size: 0.92rem;
+  }
+
+  .arch-proj__detail dt {
+    font: 400 0.76rem/1.5 var(--ar-font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ar-text-3);
+  }
+
+  .arch-proj__detail dd {
+    margin: 0;
+  }
+
+  @media (min-width: 980px) {
+    .arch-proj {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .arch-proj__grid {
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+
+    .arch-proj__detail {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    }
+
+    .arch-proj__list {
+      position: sticky;
+      top: 90px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch-proj]').forEach((root) => {
+    const filters = [...root.querySelectorAll<HTMLInputElement>('.arch-proj__filter input')];
+    const rows = [...root.querySelectorAll<HTMLLabelElement>('.arch-proj__list label')];
+    const radios = rows.map((r) => r.querySelector<HTMLInputElement>('input')!);
+    const details = [...root.querySelectorAll<HTMLElement>('[data-detail]')];
+    const count = root.querySelector<HTMLElement>('[data-count]');
+
+    const show = (id?: string) => details.forEach((d) => { d.hidden = d.dataset.detail !== id; });
+    const apply = () => {
+      const t = filters.find((f) => f.checked)?.value ?? 'Todas';
+      let n = 0;
+      rows.forEach((r) => { const ok = t === 'Todas' || r.dataset.type === t; r.hidden = !ok; if (ok) n += 1; });
+      if (count) count.textContent = `${n} ${n === 1 ? 'obra' : 'obras'}`;
+      const cur = radios.find((r) => r.checked);
+      if (!cur || cur.closest('label')?.hidden) {
+        const first = radios.find((r) => !r.closest('label')?.hidden);
+        if (first) { first.checked = true; show(first.value); }
+      }
+    };
+
+    filters.forEach((f) => f.addEventListener('change', apply));
+    radios.forEach((r) => r.addEventListener('change', () => show(r.value)));
+    apply();
+    show(radios.find((r) => r.checked)?.value);
+  });
+</script>

@@ -1,0 +1,283 @@
+---
+/**
+ * ArchWorkSummary — Overview of the client's building site: the project name and address, a huge
+ * progress figure beside an elevation drawing that is built floor by floor as far as the progress,
+ * the six phases as a written list with the current one marked, the team, the remaining weeks and
+ * the things waiting on the client (decisions, change orders, documents to sign) with links.
+ *
+ * @param {ArchWork} work - The client's work.
+ * @param {ArchPhase[]} phases - Phases of the process.
+ * @param {number} pendingDecisions - Decisions waiting for an answer.
+ * @param {number} pendingOrders - Change orders waiting for approval.
+ * @param {number} pendingDocs - Documents to sign or review.
+ * @param {string} budgetHref - Link to the budget page.
+ * @param {string} documentsHref - Link to the documents page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: progress is text (not only the drawing), phases are an ordered list with states
+ * written out, pending items are real links with counts.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import ArchElevation from './ArchElevation.astro';
+import { archWork, archPhases, type ArchWork, type ArchPhase } from '../templates/architecture/data';
+
+interface OwnProps {
+  work?: ArchWork;
+  phases?: ArchPhase[];
+  pendingDecisions?: number;
+  pendingOrders?: number;
+  pendingDocs?: number;
+  budgetHref?: string;
+  documentsHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  work = archWork,
+  phases = archPhases,
+  pendingDecisions = 2,
+  pendingOrders = 2,
+  pendingDocs = 2,
+  budgetHref = '/obra/presupuesto',
+  documentsHref = '/obra/documentos',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `aws-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+const weeksLeft = Math.max(0, Math.ceil((new Date(`${work.end}T12:00:00`).getTime() - Date.now()) / (7 * 86400000)));
+const pending = [
+  { n: pendingDecisions, label: 'decisiones por tomar', href: budgetHref + '#decisiones' },
+  { n: pendingOrders, label: 'modificados por aprobar', href: budgetHref + '#modificados' },
+  { n: pendingDocs, label: 'documentos por firmar o revisar', href: documentsHref },
+];
+---
+
+<section class:list={['arch-ui', 'arch-ws', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <article class="arch-ws__main">
+    <p class="ar-eyebrow">Obra {work.id}</p>
+    <h2 id={`${uid}-title`} class="arch-ws__name">{work.name}</h2>
+    <p class="arch-ws__addr">{work.address}</p>
+
+    <div class="arch-ws__prog">
+      <p class="arch-ws__pct"><span class="ar-sr">Avance de la obra: </span>{work.progress}<small>%</small></p>
+      <div class="arch-ws__draw"><ArchElevation seed={work.seed} floors={work.floors} bays={work.bays} roof={work.roof} progress={work.progress} /></div>
+    </div>
+    <p class="arch-ws__sub">Faltan unas {weeksLeft} semanas · entrega prevista el {fmt(work.end)}</p>
+  </article>
+
+  <div class="arch-ws__side">
+    <ol class="arch-ws__phases" aria-label="Fases de la obra">
+      {phases.map((p, i) => (
+        <li class:list={{ 'is-done': i < work.phaseIndex, 'is-now': i === work.phaseIndex }}>
+          <span>{String(i + 1).padStart(2, '0')}</span>
+          <strong>{p.name}</strong>
+          <em>{i < work.phaseIndex ? 'Terminada' : i === work.phaseIndex ? 'En curso' : 'Pendiente'}</em>
+        </li>
+      ))}
+    </ol>
+
+    <dl class="arch-ws__team">
+      <div><dt>Arquitecta</dt><dd>{work.architect}</dd></div>
+      <div><dt>Jefe de obra</dt><dd>{work.siteManager}</dd></div>
+      <div><dt>Inicio</dt><dd>{fmt(work.start)}</dd></div>
+    </dl>
+
+    <div class="arch-ws__todo">
+      <p class="ar-eyebrow">Espera tu respuesta</p>
+      <ul>
+        {pending.map((p) => (
+          <li><a href={p.href}><strong>{p.n}</strong> {p.label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .arch-ws {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-ws__main {
+    padding: var(--sp-6, 1.5rem);
+    border: 1.5px solid var(--ar-text);
+    background: var(--ar-bg-raised);
+  }
+
+  .arch-ws__name {
+    margin: 0;
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(2.2rem, 7vw, 3.8rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+
+  .arch-ws__addr {
+    margin: 0.4rem 0 var(--sp-5, 1.25rem);
+    font: 400 0.8rem/1.4 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-ws__prog {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    align-items: center;
+  }
+
+  .arch-ws__pct {
+    margin: 0;
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(5rem, 22vw, 9rem);
+    line-height: 0.8;
+    letter-spacing: -0.04em;
+    color: var(--ar-brand);
+  }
+
+  .arch-ws__pct small {
+    font-size: 0.4em;
+  }
+
+  .arch-ws__draw {
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--ar-border-strong);
+    background: var(--ar-bg);
+  }
+
+  .arch-ws__sub {
+    margin: var(--sp-4, 1rem) 0 0;
+    font: 400 0.82rem/1.4 var(--ar-font-mono);
+    color: var(--ar-text-2);
+  }
+
+  .arch-ws__phases {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-ws__phases li {
+    display: grid;
+    grid-template-columns: 2.2rem 1fr auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--ar-border);
+    color: var(--ar-text-3);
+  }
+
+  .arch-ws__phases span {
+    font: 500 0.78rem/1 var(--ar-font-mono);
+  }
+
+  .arch-ws__phases strong {
+    font-weight: 700;
+  }
+
+  .arch-ws__phases em {
+    font: 400 0.76rem/1 var(--ar-font-mono);
+    font-style: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .arch-ws__phases li.is-done {
+    color: var(--ar-text-2);
+  }
+
+  .arch-ws__phases li.is-now {
+    color: var(--ar-text);
+    background: rgba(var(--ar-brand-rgb), 0.12);
+    box-shadow: inset 3px 0 0 var(--ar-brand);
+    padding-left: 0.6rem;
+  }
+
+  .arch-ws__phases li.is-now em {
+    color: var(--ar-brand);
+  }
+
+  .arch-ws__team {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+  }
+
+  .arch-ws__team div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--ar-border);
+    font-size: 0.92rem;
+  }
+
+  .arch-ws__team dt {
+    color: var(--ar-text-3);
+  }
+
+  .arch-ws__team dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .arch-ws__todo ul {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .arch-ws__todo a {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    min-height: 48px;
+    padding: 0.6rem 0.9rem;
+    border: 1.5px solid var(--ar-border-strong);
+    color: var(--ar-text);
+    text-decoration: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .arch-ws__todo a:hover {
+    border-color: var(--ar-brand);
+    background: rgba(var(--ar-brand-rgb), 0.08);
+  }
+
+  .arch-ws__todo strong {
+    font-weight: 900;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--ar-brand);
+  }
+
+  @media (min-width: 960px) {
+    .arch-ws {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .arch-ws__main {
+      padding: var(--sp-8, 2rem);
+    }
+
+    .arch-ws__prog {
+      grid-template-columns: auto 1fr;
+      gap: var(--sp-6, 1.5rem);
+    }
+  }
+</style>

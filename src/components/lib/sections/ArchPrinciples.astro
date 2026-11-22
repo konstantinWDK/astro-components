@@ -1,0 +1,139 @@
+---
+/**
+ * ArchPrinciples — How the studio works as four numbered principles in a heavy typographic grid:
+ * huge outlined figures, a bold condensed title and a short paragraph each. No icons.
+ *
+ * @param {ArchPrinciple[]} principles - Principles (title and text).
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: an ordered list; the outlined numerals are decorative (the list order carries the
+ * meaning) and the title is real text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archPrinciples, type ArchPrinciple } from '../templates/architecture/data';
+
+interface OwnProps {
+  principles?: ArchPrinciple[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  principles = archPrinciples,
+  title = 'Cuatro reglas que no negociamos',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `apc-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['arch-ui', 'arch-prin', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="arch-prin__inner">
+    <header>
+      <p class="ar-eyebrow">El estudio</p>
+      <Heading id={`${uid}-title`} class="arch-prin__title">{title}</Heading>
+    </header>
+
+    <ol class="arch-prin__list">
+      {principles.map((p, i) => (
+        <li>
+          <span class="arch-prin__no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <h3>{p.title}</h3>
+          <p>{p.text}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .arch-prin {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-prin__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .arch-prin__title {
+    max-width: 16ch;
+    margin: 0 0 var(--sp-10, 2.5rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(2.8rem, 8vw, 5.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  .arch-prin__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-prin__list li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 'no title' 'no text';
+    column-gap: var(--sp-5, 1.25rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-prin__no {
+    grid-area: no;
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(4rem, 14vw, 7rem);
+    line-height: 0.8;
+    color: transparent;
+    -webkit-text-stroke: 1.4px var(--ar-brand);
+  }
+
+  .arch-prin__list h3 {
+    grid-area: title;
+    margin: 0 0 0.4rem;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 800;
+    font-stretch: 80%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  .arch-prin__list p {
+    grid-area: text;
+    max-width: 48ch;
+    margin: 0;
+    line-height: 1.6;
+    color: var(--ar-text-2);
+  }
+
+  @media (min-width: 900px) {
+    .arch-prin {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .arch-prin__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--sp-10, 2.5rem);
+    }
+  }
+</style>

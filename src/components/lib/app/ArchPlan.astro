@@ -1,0 +1,119 @@
+---
+/**
+ * ArchPlan — Floor plan drawn in SVG by binary space partition: a rectangle is split into rooms from a
+ * seed, each room is named by size (living room, kitchen, bedrooms…), labelled with its area in square
+ * metres, given a door with its swing arc and drawn with thick outer and thin inner walls, a north arrow
+ * and dimension lines. Every project gets its own repeatable plan. No images needed.
+ *
+ * @param {number} seed - Seeds the layout.
+ * @param {number} width - Plan width in decimetres of drawing units (1 unit = 10 cm). Default 120.
+ * @param {number} height - Plan height in the same units. Default 80.
+ * @param {number} depth - How many times the plan is split (2–4). Default 3.
+ * @param {number} area - Real floor area in square metres used for the labels. Default width × height / 100.
+ * @param {boolean} labels - Show room names and areas. Default true.
+ * @param {boolean} decorative - Hide from assistive tech.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: exposed as an image with a text summary (room count and total area), or aria-hidden
+ * when decorative; the room list is not repeated, so pair it with the project facts in text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archPlan, archRng } from '../templates/architecture/data';
+
+interface OwnProps {
+  seed?: number;
+  width?: number;
+  height?: number;
+  depth?: number;
+  area?: number;
+  labels?: boolean;
+  decorative?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'figure'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { seed = 17, width = 120, height = 80, depth = 3, area: areaProp, labels = true, decorative = false, class: classAttr, ...rest } = Astro.props;
+
+const pad = 18;
+const rooms = archPlan(seed, width, height, depth);
+const rnd = archRng(seed + 7);
+const area = Math.round(areaProp ?? (width * height) / 100);
+const k = area / (width * height);
+const widthM = Math.sqrt(area * (width / height));
+const f1 = (n: number) => Math.round(n * 10) / 10;
+const doors = rooms.map((r) => {
+  const side = Math.floor(rnd() * 4);
+  const len = Math.min(10, (side % 2 === 0 ? r.w : r.h) * 0.3);
+  const t = 0.25 + rnd() * 0.4;
+  return { r, side, len, t };
+});
+const shapes = doors.map(({ r, side, len, t }) => {
+  const top = side === 0, bottom = side === 2, right = side === 1;
+  if (top || bottom) {
+    const px = r.x + r.w * t;
+    const py = top ? r.y : r.y + r.h;
+    const ey = top ? py + len : py - len;
+    return { gap: [px, py, px + len, py], leaf: [px, py, px, ey], arc: `M${f1(px + len)} ${f1(py)} A${f1(len)} ${f1(len)} 0 0 ${top ? 1 : 0} ${f1(px)} ${f1(ey)}` };
+  }
+  const px = right ? r.x + r.w : r.x;
+  const py = r.y + r.h * t;
+  const ex = right ? px - len : px + len;
+  return { gap: [px, py, px, py + len], leaf: [px, py, ex, py], arc: `M${f1(px)} ${f1(py + len)} A${f1(len)} ${f1(len)} 0 0 ${right ? 1 : 0} ${f1(ex)} ${f1(py)}` };
+});
+const fmt = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+const desc = `Planta de ${rooms.length} estancias y ${area} metros cuadrados: ${[...new Set(rooms.map((r) => r.label))].join(', ')}`;
+---
+
+<figure class:list={['arch-ui', 'arch-plan', classAttr]} {...rest}>
+  <svg viewBox={`0 0 ${width + pad * 2} ${height + pad * 2 + 12}`} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : desc} aria-hidden={decorative ? 'true' : undefined} xmlns="http://www.w3.org/2000/svg">
+    <g transform={`translate(${pad} ${pad})`}>
+      <rect x="0" y="0" width={width} height={height} fill="currentColor" fill-opacity="0.04"></rect>
+      {rooms.map((r) => (
+        <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="none" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.75"></rect>
+      ))}
+      {shapes.map((d) => (
+        <g>
+          <line x1={f1(d.gap[0])} y1={f1(d.gap[1])} x2={f1(d.gap[2])} y2={f1(d.gap[3])} stroke="var(--ar-bg)" stroke-width="2.4"></line>
+          <line x1={f1(d.leaf[0])} y1={f1(d.leaf[1])} x2={f1(d.leaf[2])} y2={f1(d.leaf[3])} stroke="var(--ar-accent)" stroke-width="0.8"></line>
+          <path d={d.arc} fill="none" stroke="var(--ar-accent)" stroke-width="0.6" stroke-dasharray="1.2 1"></path>
+        </g>
+      ))}
+      <rect x="0" y="0" width={width} height={height} fill="none" stroke="currentColor" stroke-width="3"></rect>
+      {labels && rooms.map((r) => {
+        const m = Math.min(r.w, r.h);
+        const fs = Math.max(3, Math.min(5.4, m / 5.2));
+        const tiny = m < 16;
+        return (
+          <text x={f1(r.x + r.w / 2)} y={f1(r.y + r.h / 2 + (tiny ? fs * 0.35 : 0))} text-anchor="middle" font-size={f1(fs)} fill="currentColor" font-family="Archivo, sans-serif" font-weight="600">
+            <tspan x={f1(r.x + r.w / 2)}>{r.label}</tspan>
+            {!tiny && <tspan x={f1(r.x + r.w / 2)} dy={f1(fs * 1.25)} font-size={f1(fs * 0.82)} fill="var(--ar-accent)" font-family="IBM Plex Mono, monospace">{fmt(r.w * r.h * k)} m²</tspan>}
+          </text>
+        );
+      })}
+
+      <g stroke="var(--ar-accent)" fill="var(--ar-accent)" stroke-width="0.7">
+        <line x1="0" y1={height + 8} x2={width} y2={height + 8}></line>
+        <line x1="0" y1={height + 5} x2="0" y2={height + 11}></line>
+        <line x1={width} y1={height + 5} x2={width} y2={height + 11}></line>
+        <text x={width / 2} y={height + 19} font-size="4.6" text-anchor="middle" stroke="none" font-family="IBM Plex Mono, monospace">{widthM.toFixed(1).replace('.', ',')} m</text>
+        <text x={width - 6} y="-6" font-size="5" text-anchor="middle" stroke="none" font-family="IBM Plex Mono, monospace">N ↑</text>
+      </g>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .arch-plan {
+    margin: 0;
+    width: 100%;
+    color: var(--ar-text);
+  }
+
+  .arch-plan svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+</style>

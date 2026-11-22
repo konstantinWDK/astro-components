@@ -1,0 +1,438 @@
+---
+/**
+ * ArchEstimate — Construction-cost calculator. Set the built area (slider and number), new build or
+ * refurbishment, the quality level and the number of floors; the section shows a price range with the
+ * breakdown (works, fees, permits), the cost per square metre and a Gantt-style calendar of design,
+ * permit and works weeks. A short request form (name, email, address) sends it to the studio. All
+ * rules come from data, and the result is always labelled as orientative.
+ *
+ * @param {ArchEstimateRules} rules - Cost per m², multipliers, fees, permits and spread.
+ * @param {ArchPhase[]} phases - Phases used to draw the calendar (the works phase is recalculated).
+ * @param {string} action - Form action (POST). Empty runs a demo confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native radio groups, number and range inputs, the result is an aria-live region
+ * with every figure as text, the calendar bar is decorative, errors are in role="alert".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archEstimateRules, archPhases, archEstimate, archMoney, type ArchEstimateRules, type ArchPhase } from '../templates/architecture/data';
+
+interface OwnProps {
+  rules?: ArchEstimateRules;
+  phases?: ArchPhase[];
+  action?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  rules = archEstimateRules,
+  phases = archPhases,
+  action = '',
+  title = '¿Cuánto cuesta y cuánto tarda?',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `aes-${Math.random().toString(36).slice(2, 8)}`;
+const init = { area: 180, quality: 'media' as const, kind: 'nueva' as const, floors: 2 };
+const first = archEstimate(rules, init);
+const design = phases.filter((p) => p.id !== 'obra' && p.id !== 'entrega').reduce((n, p) => n + p.weeks, 0);
+const labels = { basica: 'Básica', media: 'Media', alta: 'Alta' } as const;
+---
+
+<section id="presupuesto" class:list={['arch-ui', 'arch-est', classAttr]} aria-labelledby={`${uid}-title`} data-arch-est data-rules={JSON.stringify(rules)} data-design={design} {...rest}>
+  <div class="arch-est__inner">
+    <header class="arch-est__head">
+      <p class="ar-eyebrow">Presupuesto orientativo</p>
+      <Heading id={`${uid}-title`} class="arch-est__title">{title}</Heading>
+      <p class="arch-est__lead">Ajusta tu proyecto y te damos un rango. No es una oferta: el definitivo sale del estudio previo, con precios cerrados de tres constructoras.</p>
+    </header>
+
+    <form class="arch-est__form" method="post" action={action || undefined} data-form novalidate>
+      <div class="arch-est__controls">
+        <div class="arch-est__field">
+          <label for={`${uid}-a`}>Superficie construida <output data-out-a>{init.area} m²</output></label>
+          <input id={`${uid}-a`} type="range" name="area" min="40" max="600" step="5" value={init.area} data-area />
+        </div>
+
+        <fieldset>
+          <legend>Tipo de obra</legend>
+          <div class="arch-est__seg">
+            <label><input type="radio" name="kind" value="nueva" checked data-kind /><span>Obra nueva</span></label>
+            <label><input type="radio" name="kind" value="reforma" data-kind /><span>Reforma</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Nivel de calidad</legend>
+          <div class="arch-est__seg">
+            {(['basica', 'media', 'alta'] as const).map((q) => (
+              <label><input type="radio" name="quality" value={q} checked={q === 'media'} data-quality /><span>{labels[q]}</span></label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div class="arch-est__field">
+          <label for={`${uid}-f`}>Plantas</label>
+          <select id={`${uid}-f`} name="floors" data-floors>
+            {[1, 2, 3, 4].map((n) => <option value={n} selected={n === 2}>{n} {n === 1 ? 'planta' : 'plantas'}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div class="arch-est__result" aria-live="polite">
+        <p class="arch-est__label">Coste total estimado</p>
+        <p class="arch-est__total" data-total>{archMoney(first.low)} – {archMoney(first.high)}</p>
+        <dl class="arch-est__break">
+          <div><dt>Obra</dt><dd data-build>{archMoney(first.build)}</dd></div>
+          <div><dt>Honorarios del estudio</dt><dd data-fees>{archMoney(first.fees)}</dd></div>
+          <div><dt>Licencias y tasas</dt><dd data-permits>{archMoney(first.permits)}</dd></div>
+          <div><dt>Por metro cuadrado</dt><dd data-m2>{archMoney(first.total / init.area)}</dd></div>
+        </dl>
+
+        <p class="arch-est__label">Calendario</p>
+        <div class="arch-est__gantt" aria-hidden="true">
+          <i data-g-design style={`width:${(design / (design + first.weeksBuild)) * 100}%`}></i>
+          <i data-g-build style={`width:${(first.weeksBuild / (design + first.weeksBuild)) * 100}%`}></i>
+        </div>
+        <p class="arch-est__cal" data-cal>{design} semanas de proyecto y licencia + {first.weeksBuild} de obra</p>
+      </div>
+
+      <div class="arch-est__req">
+        <h3>Pídenos el estudio previo</h3>
+        <div class="arch-est__row">
+          <div class="arch-est__field"><label for={`${uid}-n`}>Nombre</label><input id={`${uid}-n`} type="text" name="name" autocomplete="name" required /></div>
+          <div class="arch-est__field"><label for={`${uid}-m`}>Email</label><input id={`${uid}-m`} type="email" name="email" autocomplete="email" required /></div>
+        </div>
+        <div class="arch-est__field"><label for={`${uid}-s`}>Dirección del solar</label><input id={`${uid}-s`} type="text" name="site" autocomplete="street-address" /></div>
+        <p class="arch-est__err" role="alert" data-err></p>
+        <button type="submit" class="ar-btn">Pedir estudio previo</button>
+        <p class="arch-est__ok" role="status" data-ok></p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .arch-est {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+    scroll-margin-top: 80px;
+  }
+
+  .arch-est__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .arch-est__title {
+    max-width: 16ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(2.8rem, 8vw, 5.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  .arch-est__lead {
+    max-width: 54ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--ar-text-2);
+  }
+
+  .arch-est__form {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .arch-est__controls {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+  }
+
+  .arch-est fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .arch-est legend,
+  .arch-est__field label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+    padding: 0;
+    font: 500 0.78rem/1.2 var(--ar-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ar-text-2);
+  }
+
+  .arch-est output {
+    color: var(--ar-brand);
+  }
+
+  .arch-est input[type='range'] {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--ar-brand);
+    cursor: pointer;
+  }
+
+  .arch-est select,
+  .arch-est input[type='text'],
+  .arch-est input[type='email'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--ar-border-strong);
+    background: var(--ar-surface);
+    color: var(--ar-text);
+    font: 400 1rem var(--ar-font-body);
+  }
+
+  .arch-est__seg {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  .arch-est__seg input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .arch-est__seg span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border: 1.5px solid var(--ar-border-strong);
+    margin-left: -1.5px;
+    font: 500 0.82rem/1 var(--ar-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .arch-est__seg input:checked + span {
+    background: var(--ar-brand);
+    border-color: var(--ar-brand);
+    color: var(--ar-on-brand);
+    position: relative;
+  }
+
+  .arch-est__seg input:focus-visible + span {
+    outline: 2px solid var(--ar-accent);
+    outline-offset: 2px;
+    position: relative;
+  }
+
+  .arch-est__result {
+    padding: var(--sp-6, 1.5rem);
+    border: 1.5px solid var(--ar-text);
+    background: var(--ar-bg-raised);
+  }
+
+  .arch-est__label {
+    margin: 0 0 0.4rem;
+    font: 500 0.74rem/1.2 var(--ar-font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ar-accent);
+  }
+
+  .arch-est__total {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-weight: 900;
+    font-stretch: 78%;
+    word-spacing: 0.12em;
+    font-size: clamp(2.2rem, 6.6vw, 3.6rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .arch-est__break {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--ar-border);
+  }
+
+  .arch-est__break div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--ar-border);
+    font-size: 0.92rem;
+  }
+
+  .arch-est__break dt {
+    color: var(--ar-text-3);
+  }
+
+  .arch-est__break dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .arch-est__gantt {
+    display: flex;
+    height: 14px;
+    margin-bottom: 0.5rem;
+    background: var(--ar-border);
+  }
+
+  .arch-est__gantt i {
+    display: block;
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  .arch-est__gantt i:first-child {
+    background: var(--ar-accent);
+  }
+
+  .arch-est__gantt i:last-child {
+    background: var(--ar-brand);
+  }
+
+  .arch-est__cal {
+    margin: 0;
+    font: 400 0.8rem/1.5 var(--ar-font-mono);
+    color: var(--ar-text-2);
+  }
+
+  .arch-est__req {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding-top: var(--sp-6, 1.5rem);
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-est__req h3 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-stretch: 80%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .arch-est__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .arch-est__err {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--ar-bad);
+  }
+
+  .arch-est__ok {
+    margin: 0;
+    color: var(--ar-ok);
+  }
+
+  .arch-est__req .ar-btn {
+    justify-self: start;
+  }
+
+  @media (min-width: 700px) {
+    .arch-est__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 980px) {
+    .arch-est {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .arch-est__form {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  type Rules = { perM2: Record<string, number>; kind: Record<string, number>; floorSurcharge: number; fees: number; permits: number; spread: number };
+  const eur = (n: number) => `${Math.round(n).toLocaleString('es-ES')} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-arch-est]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    if (!form) return;
+    const rules: Rules = JSON.parse(root.dataset.rules ?? '{}');
+    const design = Number(root.dataset.design);
+    const q = (s: string) => root.querySelector<HTMLElement>(s);
+    const area = form.querySelector<HTMLInputElement>('[data-area]');
+    const floors = form.querySelector<HTMLSelectElement>('[data-floors]');
+    if (!area || !floors) return;
+
+    const paint = () => {
+      const a = Number(area.value);
+      const quality = form.querySelector<HTMLInputElement>('[data-quality]:checked')?.value ?? 'media';
+      const kind = form.querySelector<HTMLInputElement>('[data-kind]:checked')?.value ?? 'nueva';
+      const fl = Number(floors.value);
+      const base = a * rules.perM2[quality] * rules.kind[kind] * (1 + rules.floorSurcharge * Math.max(0, fl - 1));
+      const fees = base * rules.fees * (kind === 'reforma' ? 1.22 : 1);
+      const permits = base * rules.permits;
+      const total = base + fees + permits;
+      const wb = Math.round(10 + a * 0.11 * (kind === 'reforma' ? 0.85 : 1));
+      q('[data-out-a]')!.textContent = `${a} m²`;
+      q('[data-total]')!.textContent = `${eur(total * (1 - rules.spread))} – ${eur(total * (1 + rules.spread))}`;
+      q('[data-build]')!.textContent = eur(base);
+      q('[data-fees]')!.textContent = eur(fees);
+      q('[data-permits]')!.textContent = eur(permits);
+      q('[data-m2]')!.textContent = eur(total / a);
+      const sum = design + wb;
+      (q('[data-g-design]') as HTMLElement).style.width = `${(design / sum) * 100}%`;
+      (q('[data-g-build]') as HTMLElement).style.width = `${(wb / sum) * 100}%`;
+      q('[data-cal]')!.textContent = `${design} semanas de proyecto y licencia + ${wb} de obra · unos ${(sum / 4.345).toFixed(0)} meses en total`;
+    };
+
+    form.addEventListener('input', paint);
+    form.addEventListener('change', paint);
+    form.addEventListener('submit', (e) => {
+      const name = form.querySelector<HTMLInputElement>('input[name="name"]');
+      const mail = form.querySelector<HTMLInputElement>('input[name="email"]');
+      const err = q('[data-err]');
+      const ok = q('[data-ok]');
+      let msg = '';
+      if (!name?.value.trim()) msg = 'Escribe tu nombre.';
+      else if (!mail?.value || !mail.checkValidity()) msg = 'Escribe un email válido.';
+      if (msg) { e.preventDefault(); if (err) err.textContent = msg; return; }
+      if (err) err.textContent = '';
+      if (!form.getAttribute('action')) {
+        e.preventDefault();
+        if (ok) ok.textContent = `Gracias, ${name?.value}. Te escribiremos a ${mail?.value} para concertar la visita al solar (demostración).`;
+      }
+    });
+    paint();
+  });
+</script>

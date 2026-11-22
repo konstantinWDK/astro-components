@@ -147,3 +147,16 @@ export { default as RestAccountNav } from './RestAccountNav.astro';
 export { default as RestAccountTopbar } from './RestAccountTopbar.astro';
 export { default as RestAccountHeading } from './RestAccountHeading.astro';
 export { default as RestSignIn } from './RestSignIn.astro';
+
+// Architecture client area ("Cota")
+export { default as ArchElevation } from './ArchElevation.astro';
+export { default as ArchPlan } from './ArchPlan.astro';
+export { default as ArchWorkSummary } from './ArchWorkSummary.astro';
+export { default as ArchBudget } from './ArchBudget.astro';
+export { default as ArchDecisions } from './ArchDecisions.astro';
+export { default as ArchDiary } from './ArchDiary.astro';
+export { default as ArchDocuments } from './ArchDocuments.astro';
+export { default as ArchAccountNav } from './ArchAccountNav.astro';
+export { default as ArchAccountTopbar } from './ArchAccountTopbar.astro';
+export { default as ArchAccountHeading } from './ArchAccountHeading.astro';
+export { default as ArchSignIn } from './ArchSignIn.astro';

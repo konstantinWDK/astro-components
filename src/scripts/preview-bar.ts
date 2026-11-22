@@ -59,6 +59,7 @@
     'winery': isEs ? 'Solera · Bodega y club de vino' : isRu ? 'Solera · Винодельня и клуб' : 'Solera · Winery & Wine Club',
     'perfumery': isEs ? 'Umbra · Perfumería de autor' : isRu ? 'Umbra · Нишевая парфюмерия' : 'Umbra · Niche Perfumery',
     'restaurant': isEs ? 'Lumbre · Restaurante a la brasa' : isRu ? 'Lumbre · Ресторан на углях' : 'Lumbre · Fire-cooking Restaurant',
+    'architecture': isEs ? 'Cota · Estudio de arquitectura' : isRu ? 'Cota · Архитектурное бюро' : 'Cota · Architecture Studio',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

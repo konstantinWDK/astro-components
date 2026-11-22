@@ -1529,4 +1529,81 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con un gran plato generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большой сгенерированной тарелкой и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── Architecture ("Cota") ────────────────────────
+  'arch-hero': {
+    es: 'Hero de estudio de arquitectura: un titular condensado y pesado sobre una cuadrícula de delineante y un gran alzado que se dibuja solo línea a línea al cargar, con cotas de plano, tres cifras clave y dos botones. No necesita fotografía.',
+    ru: 'Главный экран архитектурного бюро: тяжёлый узкий заголовок на чертёжной сетке и большой фасад, который сам прорисовывается линия за линией, с размерными линиями, тремя цифрами и двумя кнопками. Фото не нужны.',
+  },
+  'arch-projects': {
+    es: 'Obra construida como índice: un filtro por tipo reduce una lista numerada; al elegir un proyecto aparecen su planta y alzado generados junto a superficie, coste por metro cuadrado, material, programa, lugar y año. Todo se dibuja a partir de los datos.',
+    ru: 'Построенные объекты как указатель: фильтр по типу сужает нумерованный список; выбранный проект показывает сгенерированные план и фасад рядом с площадью, стоимостью за м², материалом, программой, местом и годом. Всё рисуется по данным.',
+  },
+  'arch-sun': {
+    es: 'Estudio solar interactivo: una casa y un edificio vecino al sur en sección; deslizadores de hora y altura del vecino y un selector de mes mueven el sol (altura y azimut reales para la latitud), proyectan sombras e iluminan u oscurecen la fachada sur, con las horas de sol directo en texto.',
+    ru: 'Интерактивный расчёт инсоляции: дом и соседнее здание с юга в разрезе; ползунки времени и высоты соседа и выбор месяца двигают солнце (реальные высота и азимут для широты), отбрасывают тени и освещают или затеняют южный фасад; часы прямого солнца — текстом.',
+  },
+  'arch-process': {
+    es: '"Del solar a las llaves" como diagrama de Gantt que también es un acordeón exclusivo: cada fase es una fila cuya barra empieza donde acaba la anterior y es proporcional a sus semanas; abre una fila para leer qué ocurre en ella.',
+    ru: '«От участка до ключей» как диаграмма Ганта и одновременно эксклюзивный аккордеон: у каждой фазы полоса начинается там, где кончается предыдущая, и пропорциональна неделям; откройте строку, чтобы прочитать, что в ней происходит.',
+  },
+  'arch-estimate': {
+    es: 'Calculadora de coste de obra: ajusta superficie, obra nueva o reforma, calidad y plantas para obtener un rango de precio con desglose (obra, honorarios, licencias), coste por metro cuadrado y una barra de calendario de proyecto, licencia y obra; más un formulario breve de solicitud.',
+    ru: 'Калькулятор стоимости строительства: задайте площадь, новое строительство или реконструкцию, качество и этажность — получите диапазон цены с разбивкой (работы, гонорары, разрешения), стоимость за м² и календарную полосу проекта, разрешений и работ; плюс короткая форма заявки.',
+  },
+  'arch-principles': {
+    es: 'Cómo trabaja el estudio como cuatro principios numerados en una rejilla tipográfica pesada: cifras enormes en contorno, un título condensado en negrita y un párrafo breve cada uno. Sin iconos.',
+    ru: 'Как работает бюро — четыре нумерованных принципа в тяжёлой типографской сетке: огромные контурные цифры, жирный узкий заголовок и короткий абзац. Без иконок.',
+  },
+  'arch-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'arch-footer': {
+    es: 'Pie de página de estudio de arquitectura con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал архитектурного бюро с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'arch-elevation': {
+    es: 'Alzado de edificio dibujado en SVG a partir de una semilla: plantas, módulos, ventanas, balcones, una puerta y una de tres cubiertas, con cotas de plano. `progress` lo construye planta a planta (lo demás sale punteado y tenue) y `draw` hace que las líneas se dibujen solas al cargar.',
+    ru: 'Фасад здания в SVG по зерну: этажи, модули, окна, балконы, дверь и одна из трёх крыш, с размерными линиями. `progress` строит его этаж за этажом (остальное пунктиром и бледно), `draw` заставляет линии прорисовываться при загрузке.',
+  },
+  'arch-plan': {
+    es: 'Planta dibujada en SVG por partición binaria del espacio: un rectángulo se divide en estancias a partir de una semilla, nombradas por tamaño, con su superficie en metros cuadrados, apertura de puertas, muros exteriores gruesos, flecha de norte y cotas. Cada proyecto tiene su propia planta repetible.',
+    ru: 'План этажа в SVG методом бинарного разбиения: прямоугольник делится на помещения по зерну, называется по размеру, подписывается площадью в м², с дверьми и дугами открывания, толстыми наружными стенами, стрелкой севера и размерами. У каждого проекта свой повторяемый план.',
+  },
+  'arch-work-summary': {
+    es: 'Resumen de la obra del cliente: nombre y dirección, una cifra enorme de avance junto a un alzado construido planta a planta hasta ese avance, las fases como lista escrita con la actual marcada, el equipo y lo que espera respuesta del cliente con enlaces.',
+    ru: 'Обзор стройки клиента: название и адрес, огромная цифра прогресса рядом с фасадом, построенным этаж за этажом до этого прогресса, фазы текстовым списком с отметкой текущей, команда и то, что ждёт ответа клиента, со ссылками.',
+  },
+  'arch-budget': {
+    es: 'El presupuesto de obra a la vista: totales, una fila por partida con una barra de lo pagado frente a su presupuesto, y los modificados; los pendientes se pueden aprobar o rechazar y los totales se actualizan en vivo (demo).',
+    ru: 'Бюджет стройки как на ладони: итоги, строка на статью со шкалой оплаченного относительно бюджета и изменения; ожидающие можно утвердить или отклонить, итоги обновляются на лету (демо).',
+  },
+  'arch-decisions': {
+    es: 'Decisiones que debe tomar el cliente (pavimento, color de carpintería…): cada tarjeta tiene su fecha límite y opciones pulsables que explican sus pros y contras con palabras y el coste extra; elegir y confirmar la bloquea (demo).',
+    ru: 'Решения, которые должен принять клиент (покрытие пола, цвет столярки…): у каждой карточки срок и нажимаемые варианты с описанием плюсов и минусов словами и доплатой; выбор и подтверждение фиксируют его (демо).',
+  },
+  'arch-diary': {
+    es: 'El diario de obra: una cronología vertical de entradas semanales, de más reciente a más antigua, cada una con fecha, fase, título y lo que se vio; un buscador filtra las entradas al escribir y un contador en vivo dice cuántas se muestran. `limit` muestra solo las últimas.',
+    ru: 'Журнал стройки: вертикальная хронология еженедельных записей от новых к старым с датой, фазой, заголовком и увиденным; поиск фильтрует записи при вводе, живой счётчик показывает количество. `limit` показывает только последние.',
+  },
+  'arch-documents': {
+    es: 'Documentos del proyecto como lista con filtro de estado (todos, por firmar, firmados); cada fila muestra nombre, tipo, fecha, tamaño y un estado en palabras; los pendientes se firman con una segunda confirmación explícita y cada fila tiene botón de descarga (demo).',
+    ru: 'Документы проекта списком с фильтром по статусу (все, на подпись, подписанные); в строке название, вид, дата, размер и статус словами; ожидающие подписываются с явным вторым подтверждением, у каждой строки есть кнопка скачивания (демо).',
+  },
+  'arch-account-nav': {
+    es: 'Navegación del área de cliente: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета клиента: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'arch-account-topbar': {
+    es: 'Lado derecho de la cabecera de cliente: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú del cliente (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню клиента (нативные popover).',
+  },
+  'arch-account-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, título condensado grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, крупным узким названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'arch-sign-in': {
+    es: 'Acceso a pantalla partida con un gran alzado generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большим сгенерированным фасадом и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

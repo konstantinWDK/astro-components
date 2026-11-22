@@ -1,0 +1,168 @@
+---
+/**
+ * ArchDiary — The site diary: a vertical timeline of weekly entries, newest first, each with date,
+ * phase, title and what was seen on site. A search box filters entries as you type and a counter in
+ * a live region says how many are shown. `limit` shows only the latest entries (for the dashboard).
+ *
+ * @param {ArchDiaryEntry[]} entries - Diary entries.
+ * @param {number} limit - Show only this many entries (0 = all). Default 0.
+ * @param {boolean} search - Show the search box. Default true.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: an ordered list with <time> elements, the search field is labelled, the counter is
+ * aria-live; without JavaScript every entry is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archDiary, type ArchDiaryEntry } from '../templates/architecture/data';
+
+interface OwnProps {
+  entries?: ArchDiaryEntry[];
+  limit?: number;
+  search?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { entries = archDiary, limit = 0, search = true, class: classAttr, ...rest } = Astro.props;
+
+const uid = `adi-${Math.random().toString(36).slice(2, 8)}`;
+const list = [...entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit || entries.length);
+const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<section class:list={['arch-ui', 'arch-diary', classAttr]} aria-label="Diario de obra" data-arch-diary {...rest}>
+  {search && (
+    <div class="arch-diary__tools">
+      <label for={`${uid}-q`}>Buscar en el diario</label>
+      <input id={`${uid}-q`} type="search" placeholder="forjado, ventanas, instalaciones…" data-q />
+      <p class="arch-diary__count" aria-live="polite" data-count>{list.length} {list.length === 1 ? 'entrada' : 'entradas'}</p>
+    </div>
+  )}
+
+  <ol class="arch-diary__list">
+    {list.map((e) => (
+      <li data-text={`${e.title} ${e.text}`.toLowerCase()}>
+        <time datetime={e.date}>{fmt(e.date)}</time>
+        <span class="arch-diary__phase">{e.phase}</span>
+        <h3>{e.title}</h3>
+        <p>{e.text}</p>
+      </li>
+    ))}
+  </ol>
+  <p class="arch-diary__none" data-none hidden>Ninguna entrada coincide con tu búsqueda.</p>
+</section>
+
+<style>
+  .arch-diary {
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-diary [hidden] {
+    display: none !important;
+  }
+
+  .arch-diary__tools {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .arch-diary__tools label {
+    font: 500 0.78rem/1.2 var(--ar-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ar-text-2);
+  }
+
+  .arch-diary__tools input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--ar-border-strong);
+    background: var(--ar-surface);
+    color: var(--ar-text);
+    font: 400 1rem var(--ar-font-body);
+  }
+
+  .arch-diary__count {
+    margin: 0;
+    font: 400 0.78rem/1.2 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-diary__list {
+    position: relative;
+    margin: 0;
+    padding: 0 0 0 1.4rem;
+    list-style: none;
+    border-left: 1.5px solid var(--ar-border-strong);
+  }
+
+  .arch-diary__list li {
+    position: relative;
+    padding: 0 0 var(--sp-6, 1.5rem);
+  }
+
+  .arch-diary__list li::before {
+    content: '';
+    position: absolute;
+    left: calc(-1.4rem - 5px);
+    top: 0.35rem;
+    width: 9px;
+    height: 9px;
+    background: var(--ar-brand);
+  }
+
+  .arch-diary__list time {
+    font: 500 0.8rem/1 var(--ar-font-mono);
+    color: var(--ar-accent);
+  }
+
+  .arch-diary__phase {
+    margin-left: 0.75rem;
+    font: 400 0.72rem/1 var(--ar-font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ar-text-3);
+  }
+
+  .arch-diary__list h3 {
+    margin: 0.4rem 0 0.3rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    font-stretch: 85%;
+    word-spacing: 0.12em;
+    line-height: 1.15;
+  }
+
+  .arch-diary__list p {
+    max-width: 62ch;
+    margin: 0;
+    line-height: 1.6;
+    color: var(--ar-text-2);
+  }
+
+  .arch-diary__none {
+    color: var(--ar-text-3);
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch-diary]').forEach((root) => {
+    const q = root.querySelector<HTMLInputElement>('[data-q]');
+    const items = [...root.querySelectorAll<HTMLElement>('.arch-diary__list li')];
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const none = root.querySelector<HTMLElement>('[data-none]');
+    if (!q) return;
+    q.addEventListener('input', () => {
+      const v = q.value.trim().toLowerCase();
+      let n = 0;
+      items.forEach((li) => { const ok = !v || (li.dataset.text ?? '').includes(v); li.hidden = !ok; if (ok) n += 1; });
+      if (count) count.textContent = `${n} ${n === 1 ? 'entrada' : 'entradas'}`;
+      if (none) none.hidden = n > 0;
+    });
+  });
+</script>

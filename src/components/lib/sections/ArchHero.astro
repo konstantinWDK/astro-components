@@ -1,0 +1,193 @@
+---
+/**
+ * ArchHero — Architecture-studio hero: a heavy condensed headline over a drafting grid, and a large
+ * building elevation that draws itself line by line on load, with its dimension lines. Three key
+ * figures and two buttons. No photography needed.
+ *
+ * @param {string} title - Headline.
+ * @param {string} text - Supporting paragraph.
+ * @param {ArchStat[]} stats - Three key figures.
+ * @param {ArchProject} project - Project whose elevation is drawn.
+ * @param {string} estimateHref - Link of the primary button.
+ * @param {string} projectsHref - Link of the secondary button.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the drawing is described in text and stops animating under prefers-reduced-motion;
+ * the headline is real text; the grid background is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import ArchElevation from '../app/ArchElevation.astro';
+import { archProjects, archStats, type ArchProject, type ArchStat } from '../templates/architecture/data';
+
+interface OwnProps {
+  title?: string;
+  text?: string;
+  stats?: ArchStat[];
+  project?: ArchProject;
+  estimateHref?: string;
+  projectsHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Construimos lo que el suelo ya sabe',
+  text = 'Casas, rehabilitaciones y edificios públicos en Madrid. Empezamos en el solar, cerramos el presupuesto antes de la obra y te dejamos seguirla semana a semana.',
+  stats = archStats,
+  project = archProjects[0],
+  estimateHref = '/presupuesto',
+  projectsHref = '/obras',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ah-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['arch-ui', 'arch-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="arch-hero__grid" aria-hidden="true"></div>
+
+  <div class="arch-hero__inner">
+    <div class="arch-hero__copy">
+      <p class="ar-eyebrow">Estudio de arquitectura · Madrid · desde 2009</p>
+      <Heading id={`${uid}-title`} class="arch-hero__title">{title}</Heading>
+      <p class="arch-hero__text">{text}</p>
+      <div class="arch-hero__actions">
+        <a class="ar-btn" href={estimateHref}>Pedir presupuesto</a>
+        <a class="ar-btn ar-btn--ghost" href={projectsHref}>Ver obras</a>
+      </div>
+    </div>
+
+    <div class="arch-hero__draw">
+      <ArchElevation seed={project.seed} floors={project.floors} bays={project.bays} roof={project.roof} draw />
+      <p class="arch-hero__cap">{project.name} · {project.place} · {project.year}</p>
+    </div>
+  </div>
+
+  <dl class="arch-hero__stats">
+    {stats.map((s) => (
+      <div>
+        <dt>{s.label}</dt>
+        <dd>{s.value}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .arch-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-8, 2rem);
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-hero__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--ar-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--ar-border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(180deg, #000 20%, transparent 95%);
+    -webkit-mask-image: linear-gradient(180deg, #000 20%, transparent 95%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .arch-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .arch-hero__title {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--ar-font-display);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(3.2rem, 11vw, 8rem);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  .arch-hero__text {
+    max-width: 46ch;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ar-text-2);
+  }
+
+  .arch-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .arch-hero__draw {
+    align-self: end;
+  }
+
+  .arch-hero__cap {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    font: 400 0.76rem/1.3 var(--ar-font-mono);
+    letter-spacing: 0.06em;
+    color: var(--ar-text-3);
+  }
+
+  .arch-hero__stats {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    max-width: 1280px;
+    margin: var(--sp-10, 2.5rem) auto 0;
+    padding-top: var(--sp-5, 1.25rem);
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .arch-hero__stats dt {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--ar-text-2);
+  }
+
+  .arch-hero__stats dd {
+    margin: 0;
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(2rem, 7vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  @media (min-width: 900px) {
+    .arch-hero {
+      padding: var(--sp-16, 4rem) var(--sp-8, 2rem) var(--sp-8, 2rem);
+    }
+
+    .arch-hero__inner {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      align-items: end;
+    }
+  }
+</style>

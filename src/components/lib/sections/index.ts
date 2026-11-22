@@ -248,3 +248,13 @@ export { default as RestOrigin } from './RestOrigin.astro';
 export { default as RestBooking } from './RestBooking.astro';
 export { default as RestFaq } from './RestFaq.astro';
 export { default as RestFooter } from './RestFooter.astro';
+
+// Architecture ("Cota")
+export { default as ArchHero } from './ArchHero.astro';
+export { default as ArchProjects } from './ArchProjects.astro';
+export { default as ArchSun } from './ArchSun.astro';
+export { default as ArchProcess } from './ArchProcess.astro';
+export { default as ArchEstimate } from './ArchEstimate.astro';
+export { default as ArchPrinciples } from './ArchPrinciples.astro';
+export { default as ArchFaq } from './ArchFaq.astro';
+export { default as ArchFooter } from './ArchFooter.astro';

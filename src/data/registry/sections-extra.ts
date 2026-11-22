@@ -1362,4 +1362,53 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['restaurant', 'footer', 'newsletter', 'wordmark'],
     usage: `<RestFooter brand="Lumbre" />`,
   }),
+  // === ARCHITECTURE ("Cota") ===
+  section({
+    slug: 'arch-hero', name: 'Arch Hero', file: 'ArchHero.astro', sectionCategory: 'architecture',
+    description: 'Architecture-studio hero: a heavy condensed headline over a drafting grid and a large building elevation that draws itself line by line on load, with blueprint dimension lines, three key figures and two buttons. No photography needed.',
+    tags: ['architecture', 'hero', 'drawing', 'svg', 'animation', 'typography'], featured: true,
+    usage: `<ArchHero project={archProjects[0]} stats={archStats} />`,
+  }),
+  section({
+    slug: 'arch-projects', name: 'Arch Projects', file: 'ArchProjects.astro', sectionCategory: 'architecture',
+    description: 'Built work as an index: a type filter narrows a numbered list; picking a project shows its generated floor plan and elevation next to area, cost per square metre, material, programme, place and year. Everything is drawn from the data.',
+    tags: ['architecture', 'portfolio', 'filter', 'plan', 'svg', 'radio'], featured: true,
+    usage: `<ArchProjects projects={archProjects} />`,
+  }),
+  section({
+    slug: 'arch-sun', name: 'Arch Sun', file: 'ArchSun.astro', sectionCategory: 'architecture',
+    description: 'Interactive solar study: a house and a neighbouring building to the south cut in section; sliders for the hour and the neighbour\'s height and a month selector move the sun (real altitude and azimuth for the latitude), cast shadows and light or shade the south facade, with hours of direct sun in text.',
+    tags: ['architecture', 'solar', 'interactive', 'range', 'svg', 'calculation'], featured: true,
+    usage: `<ArchSun latitude={40.4} />`,
+  }),
+  section({
+    slug: 'arch-process', name: 'Arch Process', file: 'ArchProcess.astro', sectionCategory: 'architecture',
+    description: '"From the plot to the keys" as a Gantt chart that is also an exclusive accordion: each phase is a row whose bar starts where the previous one ends and is proportional to its weeks; open a row to read what happens in it.',
+    tags: ['architecture', 'process', 'gantt', 'accordion', 'timeline'],
+    usage: `<ArchProcess phases={archPhases} />`,
+  }),
+  section({
+    slug: 'arch-estimate', name: 'Arch Estimate', file: 'ArchEstimate.astro', sectionCategory: 'architecture',
+    description: 'Construction-cost calculator: set area, new build or refurbishment, quality and floors to get a price range with breakdown (works, fees, permits), cost per square metre and a calendar bar of design, permit and works weeks; plus a short request form.',
+    tags: ['architecture', 'calculator', 'estimate', 'form', 'range', 'pricing'], featured: true,
+    usage: `<ArchEstimate rules={archEstimateRules} phases={archPhases} action="/api/estudio" />`,
+  }),
+  section({
+    slug: 'arch-principles', name: 'Arch Principles', file: 'ArchPrinciples.astro', sectionCategory: 'architecture',
+    description: 'How the studio works as four numbered principles in a heavy typographic grid: huge outlined figures, a bold condensed title and a short paragraph each. No icons.',
+    tags: ['architecture', 'principles', 'typography', 'list'],
+    usage: `<ArchPrinciples principles={archPrinciples} />`,
+  }),
+  section({
+    slug: 'arch-faq', name: 'Arch FAQ', file: 'ArchFaq.astro', sectionCategory: 'architecture',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['architecture', 'faq', 'accordion'],
+    usage: `<ArchFaq faqs={archFaqs} />`,
+  }),
+  section({
+    slug: 'arch-footer', name: 'Arch Footer', file: 'ArchFooter.astro', sectionCategory: 'architecture',
+    description: 'Architecture-studio footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['architecture', 'footer', 'newsletter', 'wordmark'],
+    usage: `<ArchFooter brand="Cota" />`,
+  }),
 ];

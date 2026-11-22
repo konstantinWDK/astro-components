@@ -1,0 +1,208 @@
+---
+/**
+ * ArchDecisions — Decisions the client has to take before the site can move on (floor finish, joinery
+ * colour…). Each decision is a card with its due date and tappable option cards that state their
+ * trade-off in words and the extra cost; choosing one and confirming locks it, and the running total
+ * of extras is shown (demo).
+ *
+ * @param {ArchDecision[]} decisions - Decisions with their options.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each decision is a <fieldset> with a <legend>, options are radio inputs inside
+ * labels with the extra cost in text, confirmations are in an aria-live region, targets are 48px+.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archDecisions, archMoney, type ArchDecision } from '../templates/architecture/data';
+
+interface OwnProps {
+  decisions?: ArchDecision[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { decisions = archDecisions, class: classAttr, ...rest } = Astro.props;
+
+const uid = `ade-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+---
+
+<section class:list={['arch-ui', 'arch-dec', classAttr]} aria-label="Decisiones pendientes" data-arch-dec {...rest}>
+  <div class="arch-dec__list">
+    {decisions.map((d) => {
+      const done = d.options.find((o) => o.id === d.chosen);
+      return (
+        <form class="arch-dec__card" data-card data-id={d.id} novalidate>
+          <fieldset disabled={done ? true : undefined}>
+            <legend><b>{d.id}</b>{d.title}<small data-due>{done ? 'Decidido' : `Responde antes del ${fmt(d.due)}`}</small></legend>
+            <div class="arch-dec__opts">
+              {d.options.map((o) => (
+                <label>
+                  <input type="radio" name={`${uid}-${d.id}`} value={o.id} data-extra={o.extra} checked={o.id === d.chosen} />
+                  <span>
+                    <strong>{o.label}</strong>
+                    <small>{o.note}</small>
+                    <em>{o.extra ? `+${archMoney(o.extra)}` : 'Sin coste extra'}</em>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <button type="submit" class="ar-btn" hidden={done ? true : undefined}>Confirmar elección</button>
+          <p class="arch-dec__err" role="alert" data-err></p>
+        </form>
+      );
+    })}
+  </div>
+  <p class="arch-dec__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .arch-dec {
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-dec [hidden] {
+    display: none !important;
+  }
+
+  .arch-dec__list {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .arch-dec__card {
+    padding: var(--sp-5, 1.25rem);
+    border: 1.5px solid var(--ar-border-strong);
+    background: var(--ar-bg-raised);
+  }
+
+  .arch-dec fieldset {
+    min-width: 0;
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .arch-dec legend {
+    display: block;
+    width: 100%;
+    margin-bottom: var(--sp-4, 1rem);
+    padding: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-stretch: 80%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  .arch-dec legend b {
+    margin-right: 0.6rem;
+    font: 500 0.8rem/1 var(--ar-font-mono);
+    color: var(--ar-accent);
+  }
+
+  .arch-dec legend small {
+    display: block;
+    margin-top: 0.3rem;
+    font: 400 0.78rem/1.3 var(--ar-font-mono);
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--ar-warn);
+  }
+
+  .arch-dec__opts {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .arch-dec__opts input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .arch-dec__opts span {
+    display: grid;
+    gap: 0.2rem;
+    min-height: 64px;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid var(--ar-border-strong);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .arch-dec__opts strong {
+    font-size: 1.05rem;
+  }
+
+  .arch-dec__opts small {
+    font-size: 0.86rem;
+    color: var(--ar-text-2);
+  }
+
+  .arch-dec__opts em {
+    font: 500 0.8rem/1 var(--ar-font-mono);
+    font-style: normal;
+    color: var(--ar-accent);
+  }
+
+  .arch-dec__opts input:checked + span {
+    border-color: var(--ar-brand);
+    background: rgba(var(--ar-brand-rgb), 0.12);
+  }
+
+  .arch-dec__opts input:focus-visible + span {
+    outline: 2px solid var(--ar-accent);
+    outline-offset: 2px;
+  }
+
+  .arch-dec__opts input:disabled + span {
+    cursor: default;
+  }
+
+  .arch-dec__err {
+    min-height: 1.2em;
+    margin: 0.4rem 0 0;
+    font-size: 0.86rem;
+    color: var(--ar-bad);
+  }
+
+  .arch-dec__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--ar-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .arch-dec__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch-dec]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.querySelectorAll<HTMLFormElement>('[data-card]').forEach((form) => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sel = form.querySelector<HTMLInputElement>('input:checked');
+        const err = form.querySelector<HTMLElement>('[data-err]');
+        if (!sel) { if (err) err.textContent = 'Elige una opción antes de confirmar.'; return; }
+        if (err) err.textContent = '';
+        form.querySelector('fieldset')?.setAttribute('disabled', '');
+        form.querySelector('button')?.setAttribute('hidden', '');
+        const due = form.querySelector<HTMLElement>('[data-due]');
+        if (due) { due.textContent = 'Decidido'; due.style.color = 'var(--ar-ok)'; }
+        const label = sel.closest('label')?.querySelector('strong')?.textContent ?? '';
+        const extra = Number(sel.dataset.extra);
+        if (live) live.textContent = `${form.dataset.id}: has elegido ${label}${extra ? `, con un coste extra de ${extra.toLocaleString('es-ES')} €` : ', sin coste extra'} (demostración).`;
+      });
+    });
+  });
+</script>

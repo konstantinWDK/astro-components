@@ -1,0 +1,216 @@
+---
+/**
+ * ArchDocuments — Project documents as a list with a status filter (all, to sign, signed). Each row
+ * shows the name, kind, date, size and a status written in words; documents waiting for a signature
+ * or review can be signed with a confirmation step, and every row has a download button (demo).
+ *
+ * @param {ArchDocument[]} documents - Documents of the work.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the filter is a radio group, statuses are text, buttons name the document they act
+ * on, signing needs an explicit second confirmation and results go to an aria-live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archDocuments, type ArchDocument } from '../templates/architecture/data';
+
+interface OwnProps {
+  documents?: ArchDocument[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { documents = archDocuments, class: classAttr, ...rest } = Astro.props;
+
+const uid = `ado-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+const filters = [
+  { value: 'all', label: 'Todos' },
+  { value: 'todo', label: 'Por firmar' },
+  { value: 'done', label: 'Firmados' },
+];
+---
+
+<section class:list={['arch-ui', 'arch-docs', classAttr]} aria-label="Documentos de la obra" data-arch-docs {...rest}>
+  <fieldset class="arch-docs__filter">
+    <legend class="ar-sr">Filtrar documentos</legend>
+    {filters.map((f, i) => (
+      <label>
+        <input type="radio" name={`${uid}-f`} value={f.value} checked={i === 0} />
+        <span>{f.label}</span>
+      </label>
+    ))}
+  </fieldset>
+
+  <ul class="arch-docs__list">
+    {documents.map((d) => (
+      <li data-doc={d.id} data-signed={d.status === 'Firmado' ? 'done' : 'todo'}>
+        <div class="arch-docs__main">
+          <p class="arch-docs__name">{d.name}</p>
+          <p class="arch-docs__meta">{d.kind} · {fmt(d.date)} · {d.size}</p>
+        </div>
+        <div class="arch-docs__side">
+          <span class:list={['arch-docs__status', d.status === 'Firmado' ? 'is-ok' : d.status === 'Para revisar' ? 'is-warn' : 'is-todo']} data-status>{d.status}</span>
+          <span class="arch-docs__acts">
+            {d.status !== 'Firmado' && <button type="button" class="ar-btn" data-sign aria-label={`Firmar ${d.name}`}>{d.status === 'Para revisar' ? 'Revisar y firmar' : 'Firmar'}</button>}
+            <button type="button" class="ar-btn ar-btn--ghost" data-download aria-label={`Descargar ${d.name}`}>Descargar</button>
+          </span>
+        </div>
+      </li>
+    ))}
+  </ul>
+  <p class="arch-docs__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .arch-docs {
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-docs [hidden] {
+    display: none !important;
+  }
+
+  .arch-docs__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .arch-docs__filter input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .arch-docs__filter span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1.5px solid var(--ar-border-strong);
+    font: 500 0.78rem/1 var(--ar-font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .arch-docs__filter input:checked + span {
+    background: var(--ar-brand);
+    border-color: var(--ar-brand);
+    color: var(--ar-on-brand);
+  }
+
+  .arch-docs__filter input:focus-visible + span {
+    outline: 2px solid var(--ar-accent);
+    outline-offset: 3px;
+  }
+
+  .arch-docs__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-docs__list li {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem) 0;
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-docs__name {
+    margin: 0 0 0.2rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+
+  .arch-docs__meta {
+    margin: 0;
+    font: 400 0.78rem/1.3 var(--ar-font-mono);
+    color: var(--ar-text-3);
+  }
+
+  .arch-docs__side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .arch-docs__status {
+    font: 500 0.74rem/1 var(--ar-font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .arch-docs__status.is-ok { color: var(--ar-ok); }
+  .arch-docs__status.is-warn { color: var(--ar-warn); }
+  .arch-docs__status.is-todo { color: var(--ar-bad); }
+
+  .arch-docs__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .arch-docs__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--ar-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .arch-docs__list li {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch-docs]').forEach((root) => {
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.arch-docs__filter input')];
+    const items = [...root.querySelectorAll<HTMLElement>('[data-doc]')];
+    const live = root.querySelector<HTMLElement>('[data-live]');
+
+    const apply = () => {
+      const v = radios.find((r) => r.checked)?.value ?? 'all';
+      items.forEach((li) => { li.hidden = v !== 'all' && li.dataset.signed !== v; });
+    };
+    radios.forEach((r) => r.addEventListener('change', apply));
+
+    root.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const li = t.closest<HTMLElement>('[data-doc]');
+      if (!li) return;
+      const name = li.querySelector('.arch-docs__name')?.textContent ?? '';
+      if (t.closest('[data-download]')) {
+        if (live) live.textContent = `Descargando «${name}» (demostración).`;
+      } else if (t.closest('[data-sign]')) {
+        const btn = t.closest<HTMLButtonElement>('[data-sign]')!;
+        if (btn.dataset.armed !== '1') {
+          btn.dataset.armed = '1';
+          btn.textContent = 'Confirmar firma';
+          if (live) live.textContent = `Pulsa otra vez para confirmar la firma de «${name}».`;
+          return;
+        }
+        li.dataset.signed = 'done';
+        const st = li.querySelector<HTMLElement>('[data-status]');
+        if (st) { st.textContent = 'Firmado'; st.className = 'arch-docs__status is-ok'; }
+        btn.remove();
+        apply();
+        if (live) live.textContent = `«${name}» firmado correctamente (demostración).`;
+      }
+    });
+    apply();
+  });
+</script>

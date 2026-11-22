@@ -238,6 +238,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Restaurante', description: 'Secciones para restaurantes: hero de brasas con chispas, menú degustación plato a plato con platos generados, carta con filtro de dieta, radar de productores, reserva de mesa sobre un plano de sala, preguntas frecuentes y pie de página.' },
     ru: { name: 'Ресторан', description: 'Секции для ресторанов: главный экран с углями и искрами, дегустационное меню блюдо за блюдом со сгенерированными тарелками, меню à la carte с фильтром по диете, радар производителей, бронирование стола на плане зала, FAQ и подвал.' },
   },
+  architecture: {
+    en: { name: 'Architecture', description: 'Sections for architecture studios: hero with a self-drawing elevation, built work with generated plans, interactive solar study, process as a Gantt accordion, cost calculator, principles, FAQ and footer.' },
+    es: { name: 'Arquitectura', description: 'Secciones para estudios de arquitectura: hero con un alzado que se dibuja solo, obra construida con plantas generadas, estudio solar interactivo, proceso como acordeón Gantt, calculadora de coste, principios, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Архитектура', description: 'Секции для архитектурных бюро: главный экран с самопрорисовывающимся фасадом, объекты со сгенерированными планами, интерактивный расчёт инсоляции, процесс как аккордеон Ганта, калькулятор стоимости, принципы, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

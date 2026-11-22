@@ -1,0 +1,282 @@
+---
+/**
+ * ArchSignIn — Split sign-in for the client area: a large generated elevation drawing with a client quote
+ * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
+ * quick-access link and a link to join the club.
+ *
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} joinHref - Link to the club page.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus rings and 48px controls; the label illustration is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import ArchElevation from './ArchElevation.astro';
+import { archWork } from '../templates/architecture/data';
+
+interface OwnProps {
+  dashboardHref?: string;
+  joinHref?: string;
+  homeHref?: string;
+  action?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { dashboardHref = '/obra', joinHref = '/presupuesto', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const work = archWork;
+const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['arch-ui', 'arch-si', classAttr]} aria-labelledby={`${uid}-title`} data-arch-si data-dashboard={dashboardHref} {...rest}>
+  <div class="arch-si__art">
+    <a href={homeHref} class="arch-si__brand">Cota</a>
+    <div class="arch-si__label"><ArchElevation seed={work.seed} floors={work.floors} bays={work.bays} roof={work.roof} decorative /></div>
+    <blockquote>
+      <p>Cada viernes leemos el diario de obra antes de que nadie nos llame. Sabemos qué se ha hecho, qué se ha pagado y qué toca decidir.</p>
+      <footer>Inés Roldán · promotora de Casa en el Pinar</footer>
+    </blockquote>
+  </div>
+
+  <div class="arch-si__panel">
+    <form class="arch-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-arch-si-form>
+      <p class="ar-eyebrow">Mi obra</p>
+      <h1 id={`${uid}-title`}>Bienvenidos de nuevo</h1>
+
+      <div class="arch-si__field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="arch-si__field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="arch-si__pass">
+          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-arch-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="arch-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+
+      <p class="arch-si__error" role="alert" data-arch-si-error></p>
+
+      <button type="submit" class="ar-btn">Entrar</button>
+      <a class="arch-si__demo ar-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
+
+      <p class="arch-si__join">¿Quieres construir? <a class="ar-link" href={joinHref}>Pide un estudio previo</a></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .arch-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-si__art {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--ar-accent-rgb), 0.22), transparent 70%), var(--ar-surface);
+    border-right: 1px solid var(--ar-border);
+  }
+
+  .arch-si__brand {
+    font-family: var(--ar-font-display);
+    font-style: normal;
+    font-weight: 900;
+    font-stretch: 75%;
+    text-transform: uppercase;
+    font-size: 2rem;
+    color: var(--ar-text);
+    text-decoration: none;
+  }
+
+  .arch-si__label {
+    width: min(380px, 82%);
+    margin: 0 auto;
+        filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .arch-si__label :global(.arch-elev) {
+    max-width: none;
+  }
+
+  .arch-si__art blockquote {
+    max-width: 38ch;
+    margin: 0;
+  }
+
+  .arch-si__art blockquote p {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--ar-font-display);
+    font-style: normal;
+    font-weight: 600;
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .arch-si__art footer {
+    font-size: 0.85rem;
+    color: var(--ar-text-3);
+  }
+
+  .arch-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .arch-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .arch-si__form h1 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--ar-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .arch-si__field label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--ar-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ar-accent);
+  }
+
+  .arch-si__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--ar-border-strong);
+    border-radius: 2px;
+    background: var(--ar-bg-raised);
+    color: var(--ar-text);
+    font: 1rem var(--ar-font-body);
+  }
+
+  .arch-si__pass {
+    position: relative;
+  }
+
+  .arch-si__pass input {
+    padding-right: 5.5rem;
+  }
+
+  .arch-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--ar-text-2);
+    font: 600 0.8rem var(--ar-font-body);
+    cursor: pointer;
+  }
+
+  .arch-si__pass button:hover {
+    color: var(--ar-brand);
+  }
+
+  .arch-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--ar-text-2);
+    cursor: pointer;
+  }
+
+  .arch-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ar-brand);
+  }
+
+  .arch-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ar-bad);
+  }
+
+  .arch-si__demo,
+  .arch-si__join {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--ar-text-2);
+  }
+
+  .arch-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 900px) {
+    .arch-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .arch-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arch-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-arch-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-arch-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-arch-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

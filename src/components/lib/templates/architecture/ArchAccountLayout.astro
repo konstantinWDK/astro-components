@@ -1,0 +1,184 @@
+---
+/**
+ * ArchAccountLayout — Customer-area shell for the "Cota" architecture template.
+ * Header row with ArchAccountNav (tabs on desktop, bottom bar on phones) and ArchAccountTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Cota").
+ * @param {string} current - Active route key (dashboard | budget | documents).
+ * @param {ArchRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './arch-theme.css';
+import ArchAccountNav from '../../app/ArchAccountNav.astro';
+import ArchAccountTopbar from '../../app/ArchAccountTopbar.astro';
+import { archRoutes, archData, type ArchRoutes } from './data';
+
+type Key = 'dashboard' | 'budget' | 'documents';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: ArchRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Cota · Tu obra: cómo avanza, el presupuesto con sus modificados, las decisiones pendientes, el diario de obra y los documentos.',
+  current = 'dashboard',
+  routes = archRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = archData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Presupuesto', href: routes.budget, badge: archData.changeOrders.filter((c) => c.status === 'Pendiente').length + archData.decisions.filter((d) => !d.chosen).length },
+  { label: 'Documentos', href: routes.documents, badge: archData.documents.filter((d) => d.status !== 'Firmado').length },
+];
+const notifications = [
+  { title: 'Certificación nº 5 pendiente de firma', text: 'Importe 61.400 €. Revísala antes del viernes', time: 'hace 2 días', unread: true },
+  { title: 'Dos decisiones esperan tu respuesta', text: 'Pavimento del salón y color de la carpintería', time: 'hace 4 días', unread: true },
+  { title: 'Nueva entrada en el diario', text: 'Se cierra el forjado de la planta alta', time: 'hace 5 días' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Cota`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="arch-app-body">
+    <a href="#main-content" class="arch-app-skip">Saltar al contenido</a>
+
+    <div class="arch-app-head">
+      <div class="arch-app-head__inner">
+        <ArchAccountNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Cota" homeHref={routes.home} />
+        <ArchAccountTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Cota', href: routes.home }, { label: 'Pedir un presupuesto', href: routes.estimate }, { label: 'Mis documentos', href: routes.documents }]}
+          signOutHref={routes.signIn}
+          brand="Cota"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="arch-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .arch-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--ar-brand);
+    color: var(--ar-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .arch-app-skip:focus {
+    top: 1rem;
+  }
+
+  .arch-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--ar-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .arch-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .arch-app-main:focus {
+    outline: none;
+  }
+
+  :global(.arch-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.arch-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--ar-font-display);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .arch-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .arch-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .arch-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

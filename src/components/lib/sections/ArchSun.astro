@@ -1,0 +1,362 @@
+---
+/**
+ * ArchSun — Solar study as an interactive section drawing. A house and a neighbouring building to
+ * the south are cut in section; sliders for the hour and the neighbour's height and a month selector
+ * move the sun (real altitude and azimuth for the studio's latitude), cast the shadows and light or
+ * shade the house's south facade. Text reports the altitude, the shadow length and the hours of
+ * direct sun at 3 m of height on that facade.
+ *
+ * @param {number} latitude - Site latitude in degrees. Default 40.4 (Madrid).
+ * @param {number} houseHeight - Height of the house in metres. Default 7.2.
+ * @param {number} distance - Gap between the neighbour and the house in metres. Default 12.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native range and select controls with live text results (aria-live), the drawing is
+ * decorative and every number it shows is also written; without JavaScript the text explains the
+ * idea and the controls are hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archBrand } from '../templates/architecture/data';
+
+interface OwnProps {
+  latitude?: number;
+  houseHeight?: number;
+  distance?: number;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  latitude = archBrand.latitude,
+  houseHeight = 7.2,
+  distance = 12,
+  title = 'Antes de dibujar, miramos el sol',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `asn-${Math.random().toString(36).slice(2, 8)}`;
+const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+---
+
+<section class:list={['arch-ui', 'arch-sun', classAttr]} aria-labelledby={`${uid}-title`} data-arch-sun data-lat={latitude} data-house={houseHeight} data-dist={distance} {...rest}>
+  <div class="arch-sun__inner">
+    <header class="arch-sun__head">
+      <p class="ar-eyebrow">Estudio solar</p>
+      <Heading id={`${uid}-title`} class="arch-sun__title">{title}</Heading>
+      <p class="arch-sun__lead">Un edificio al sur puede quitarle la luz a una fachada en invierno y no en verano. Mueve el reloj, cambia el mes y sube el edificio vecino para verlo.</p>
+    </header>
+
+    <div class="arch-sun__grid">
+      <svg class="arch-sun__svg" viewBox="0 0 560 280" aria-hidden="true">
+        <defs>
+          <pattern id={`${uid}-hatch`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-opacity="0.4" stroke-width="1"></line>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="560" height="230" fill="var(--ar-sun-sky, transparent)" data-sky></rect>
+        <polygon data-shadow fill="currentColor" fill-opacity="0.16" points=""></polygon>
+        <rect data-nb x="40" y="140" width="66" height="90" fill="var(--ar-surface-2)" stroke="currentColor" stroke-width="1.6"></rect>
+        <rect data-hs x="178" y="188" width="84" height="42" fill="var(--ar-surface)" stroke="currentColor" stroke-width="1.6"></rect>
+        <rect data-lit x="174" y="188" width="4" height="42" fill="var(--ar-brand)"></rect>
+        <rect data-dark x="174" y="188" width="4" height="0" fill={`url(#${uid}-hatch)`}></rect>
+        <line x1="0" y1="230" x2="560" y2="230" stroke="currentColor" stroke-width="2"></line>
+        <g data-sunwrap>
+          <line data-ray x1="0" y1="0" x2="0" y2="0" stroke="var(--ar-brand)" stroke-width="1.4" stroke-dasharray="5 4"></line>
+          <circle data-sun r="13" cx="280" cy="40" fill="var(--ar-brand)"></circle>
+        </g>
+        <g fill="currentColor" font-family="IBM Plex Mono, monospace" font-size="9" opacity="0.7">
+          <text x="73" y="248" text-anchor="middle">Vecino (sur)</text>
+          <text x="220" y="248" text-anchor="middle">Tu casa</text>
+          <text x="10" y="274">Sur ←</text>
+          <text x="550" y="274" text-anchor="end">→ Norte</text>
+        </g>
+      </svg>
+
+      <div class="arch-sun__side" data-controls hidden>
+        <div class="arch-sun__field">
+          <label for={`${uid}-h`}>Hora solar <output data-out-h>12:00</output></label>
+          <input id={`${uid}-h`} type="range" min="5" max="21" step="0.25" value="12" data-hour />
+        </div>
+        <div class="arch-sun__field">
+          <label for={`${uid}-m`}>Mes</label>
+          <select id={`${uid}-m`} data-month>
+            {months.map((m, i) => <option value={i} selected={i === 11}>{m}</option>)}
+          </select>
+        </div>
+        <div class="arch-sun__field">
+          <label for={`${uid}-n`}>Altura del edificio vecino <output data-out-n>9 m</output></label>
+          <input id={`${uid}-n`} type="range" min="0" max="20" step="1" value="9" data-nb-h />
+        </div>
+
+        <dl class="arch-sun__read" aria-live="polite">
+          <div><dt>Altura del sol</dt><dd data-alt>–</dd></div>
+          <div><dt>Sombra del vecino</dt><dd data-shadow-len>–</dd></div>
+          <div><dt>Fachada sur iluminada</dt><dd data-lit-pct>–</dd></div>
+          <div><dt>Sol directo a 3 m de altura</dt><dd data-hours>–</dd></div>
+        </dl>
+        <p class="arch-sun__note" data-note></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .arch-sun {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-sun [hidden] {
+    display: none !important;
+  }
+
+  .arch-sun__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .arch-sun__title {
+    max-width: 16ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-weight: 900;
+    font-stretch: 75%;
+    word-spacing: 0.12em;
+    font-size: clamp(2.8rem, 8vw, 5.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  .arch-sun__lead {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--ar-text-2);
+  }
+
+  .arch-sun__grid {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .arch-sun__svg {
+    width: 100%;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 23px, var(--ar-border) 23px 24px),
+      repeating-linear-gradient(90deg, transparent 0 23px, var(--ar-border) 23px 24px),
+      var(--ar-bg-raised);
+    border: 1px solid var(--ar-border-strong);
+    color: var(--ar-text);
+  }
+
+  .arch-sun__field {
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .arch-sun__field label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+    font: 500 0.78rem/1.2 var(--ar-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ar-text-2);
+  }
+
+  .arch-sun__field output {
+    color: var(--ar-brand);
+  }
+
+  .arch-sun__field input[type='range'] {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--ar-brand);
+    cursor: pointer;
+  }
+
+  .arch-sun__field select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--ar-border-strong);
+    background: var(--ar-surface);
+    color: var(--ar-text);
+    font: 400 1rem var(--ar-font-body);
+  }
+
+  .arch-sun__read {
+    display: grid;
+    margin: var(--sp-5, 1.25rem) 0 0;
+    border-top: 1.5px solid var(--ar-text);
+  }
+
+  .arch-sun__read div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-sun__read dt {
+    font: 400 0.78rem/1.4 var(--ar-font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ar-text-3);
+  }
+
+  .arch-sun__read dd {
+    margin: 0;
+    font-weight: 800;
+    font-size: 1.2rem;
+    text-align: right;
+  }
+
+  .arch-sun__note {
+    min-height: 3em;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ar-accent);
+  }
+
+  @media (min-width: 980px) {
+    .arch-sun {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .arch-sun__grid {
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr);
+      gap: var(--sp-8, 2rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  /** Same solar formula as `archSun` in the template data (altitude and azimuth in degrees). */
+  const sunAt = (lat: number, doy: number, hour: number) => {
+    const rad = Math.PI / 180;
+    const decl = 23.44 * Math.sin(((360 / 365) * (284 + doy)) * rad);
+    const ha = 15 * (hour - 12);
+    const sinAlt = Math.sin(lat * rad) * Math.sin(decl * rad) + Math.cos(lat * rad) * Math.cos(decl * rad) * Math.cos(ha * rad);
+    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) / rad;
+    const cosAz = (Math.sin(alt * rad) * Math.sin(lat * rad) - Math.sin(decl * rad)) / (Math.cos(alt * rad) * Math.cos(lat * rad) || 1);
+    return { alt, cosAz: Math.max(-1, Math.min(1, cosAz)) };
+  };
+  const MID = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349];
+  const S = 6; // px per metre
+  const GY = 230;
+
+  document.querySelectorAll<HTMLElement>('[data-arch-sun]').forEach((root) => {
+    const q = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const hour = q<HTMLInputElement>('[data-hour]');
+    const month = q<HTMLSelectElement>('[data-month]');
+    const nbh = q<HTMLInputElement>('[data-nb-h]');
+    if (!hour || !month || !nbh) return;
+    const lat = Number(root.dataset.lat);
+    const H = Number(root.dataset.house);
+    const D = Number(root.dataset.dist);
+    const nbX = 40, nbW = 66, hsX = nbX + nbW + D * S, hsW = 84;
+    const fmt = (n: number, d = 1) => n.toFixed(d).replace('.', ',');
+    const clock = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+
+    const hs = q<SVGRectElement>('[data-hs]');
+    const nb = q<SVGRectElement>('[data-nb]');
+    const lit = q<SVGRectElement>('[data-lit]');
+    const dark = q<SVGRectElement>('[data-dark]');
+    const shadow = q<SVGPolygonElement>('[data-shadow]');
+    const sun = q<SVGCircleElement>('[data-sun]');
+    const ray = q<SVGLineElement>('[data-ray]');
+    hs.setAttribute('x', String(hsX));
+    hs.setAttribute('y', String(GY - H * S));
+    hs.setAttribute('height', String(H * S));
+    lit.setAttribute('x', String(hsX - 4));
+    dark.setAttribute('x', String(hsX - 4));
+
+    const paint = () => {
+      const h = Number(hour.value);
+      const Hn = Number(nbh.value);
+      const doy = MID[Number(month.value)];
+      const { alt, cosAz } = sunAt(lat, doy, h);
+      const up = alt > 0.5;
+      const ap = up ? Math.atan(Math.tan((alt * Math.PI) / 180) / Math.max(0.12, Math.abs(cosAz))) : 0;
+      const south = cosAz >= 0;
+      q<HTMLElement>('[data-out-h]').textContent = clock(h);
+      q<HTMLElement>('[data-out-n]').textContent = `${Hn} m`;
+
+      nb.setAttribute('y', String(GY - Hn * S));
+      nb.setAttribute('height', String(Math.max(0.1, Hn * S)));
+
+      // sun and ray
+      const cx = 280, R = 210;
+      const sx = cx + (south ? -1 : 1) * R * Math.cos(ap);
+      const sy = GY - R * Math.sin(ap) - (up ? 0 : -999);
+      sun.setAttribute('cx', String(sx));
+      sun.setAttribute('cy', String(up ? sy : -50));
+      ray.setAttribute('x1', String(sx));
+      ray.setAttribute('y1', String(up ? sy : -50));
+      ray.setAttribute('x2', String(hsX + hsW / 2));
+      ray.setAttribute('y2', String(GY - H * S));
+      ray.style.display = up ? '' : 'none';
+
+      // shadows on the ground and facade light
+      let litTop = 0, litFrac = 0, shLen = 0;
+      if (up && south) {
+        const t = Math.tan(ap);
+        shLen = Hn > 0 ? Hn / t : 0;
+        const hsShadow = H / t;
+        const pts = [`${nbX + nbW},${GY}`, `${nbX + nbW},${GY - Hn * S}`, `${nbX + nbW + shLen * S},${GY}`];
+        const hx = hsX + hsW;
+        pts.push(`${hx},${GY}`, `${hx},${GY - H * S}`, `${hx + hsShadow * S},${GY}`);
+        shadow.setAttribute('points', pts.join(' '));
+        const blockedTo = Math.max(0, Math.min(H, Hn - D * t));
+        litTop = blockedTo;
+        litFrac = (H - blockedTo) / H;
+      } else if (up) {
+        const hsShadow = H / Math.tan(ap);
+        shadow.setAttribute('points', `${hsX},${GY} ${hsX},${GY - H * S} ${hsX - hsShadow * S},${GY}`);
+        litFrac = 0;
+      } else {
+        shadow.setAttribute('points', '');
+      }
+      const facadeSun = up && south;
+      lit.setAttribute('y', String(GY - H * S));
+      lit.setAttribute('height', String(facadeSun ? (H - litTop) * S : 0));
+      dark.setAttribute('y', String(GY - litTop * S));
+      dark.setAttribute('height', String(facadeSun ? litTop * S : H * S));
+
+      // hours of direct sun at 3 m
+      let hours = 0;
+      for (let x = 0; x < 24; x += 0.25) {
+        const r = sunAt(lat, doy, x);
+        if (r.alt <= 0.5 || r.cosAz <= 0) continue;
+        const a = Math.atan(Math.tan((r.alt * Math.PI) / 180) / Math.max(0.12, r.cosAz));
+        if (Hn - D * Math.tan(a) < 3) hours += 0.25;
+      }
+
+      q<HTMLElement>('[data-alt]').textContent = up ? `${fmt(alt, 0)}°` : 'Es de noche';
+      q<HTMLElement>('[data-shadow-len]').textContent = up && south ? `${fmt(shLen)} m` : up ? 'Cae al sur' : '–';
+      q<HTMLElement>('[data-lit-pct]').textContent = facadeSun ? `${Math.round(litFrac * 100)} %` : up ? 'Sol por detrás' : '0 %';
+      q<HTMLElement>('[data-hours]').textContent = `${fmt(hours)} h`;
+      const note = q<HTMLElement>('[data-note]');
+      note.textContent = hours < 2 ? 'Con esta altura de vecino, esta fachada casi no ve el sol en esta época. Moveríamos las estancias principales a otra orientación.' : hours < 5 ? 'Sol justo. Conviene abrir huecos grandes en la parte alta de la fachada.' : 'Buen soleamiento: la fachada sur puede ser la principal sin protecciones.';
+    };
+
+    root.querySelector<HTMLElement>('[data-controls]')!.hidden = false;
+    [hour, month, nbh].forEach((el) => el.addEventListener('input', paint));
+    paint();
+  });
+</script>

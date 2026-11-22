@@ -1,0 +1,160 @@
+---
+/**
+ * ArchElevation — Building elevation drawn in SVG from a seed: floors, bays, windows, balconies, a
+ * door and one of three roofs (flat, gable, saw), with blueprint dimension lines whose figures come
+ * from the data. `progress` builds it floor by floor (what is not built yet is dashed and faint) and
+ * `draw` makes the lines draw themselves on load. No images needed.
+ *
+ * @param {number} seed - Seeds the arrangement of openings.
+ * @param {number} floors - Number of floors (1–5).
+ * @param {number} bays - Number of facade bays (3–8).
+ * @param {string} roof - 'flat' | 'gable' | 'saw'.
+ * @param {number} progress - Built share 0–100. Default 100.
+ * @param {boolean} draw - Animate the line drawing on load. Default false.
+ * @param {string} label - Accessible description. Defaults to a generated one.
+ * @param {boolean} decorative - Hide from assistive tech.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: exposed as an image with a text description (floors, bays, roof and built
+ * percentage) or aria-hidden when decorative; the draw animation stops under prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/architecture/arch-theme.css';
+import { archFacade, type ArchRoof } from '../templates/architecture/data';
+
+interface OwnProps {
+  seed?: number;
+  floors?: number;
+  bays?: number;
+  roof?: ArchRoof;
+  progress?: number;
+  draw?: boolean;
+  label?: string;
+  decorative?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'figure'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { seed = 17, floors = 2, bays = 5, roof = 'flat', progress = 100, draw = false, label, decorative = false, class: classAttr, ...rest } = Astro.props;
+
+const F = Math.max(1, Math.min(5, Math.round(floors)));
+const B = Math.max(3, Math.min(8, Math.round(bays)));
+const grid = archFacade(seed, F, B);
+const x0 = 64;
+const W = 280;
+const ground = 214;
+const fh = Math.min(48, 156 / F);
+const bw = W / B;
+const built = (Math.max(0, Math.min(100, progress)) / 100) * F;
+const heightM = (F * 3.1 + (roof === 'flat' ? 0.6 : roof === 'gable' ? 2.1 : 1.4)).toFixed(1).replace('.', ',');
+const widthM = (B * 3).toFixed(1).replace('.', ',');
+const f1 = (n: number) => Math.round(n * 10) / 10;
+const uid = `ael-${seed}-${Math.random().toString(36).slice(2, 6)}`;
+const desc = label ?? `Alzado de un edificio de ${F} ${F === 1 ? 'planta' : 'plantas'} y ${B} módulos con cubierta ${roof === 'flat' ? 'plana' : roof === 'gable' ? 'a dos aguas' : 'en diente de sierra'}, construido al ${Math.round(progress)} %`;
+
+const state = (g: number) => (built >= g + 1 ? 'full' : built <= g ? 'ghost' : 'part');
+const part = (g: number) => Math.max(0, Math.min(1, built - g));
+const top = ground - F * fh;
+const roofBuilt = progress >= 96;
+---
+
+<figure class:list={['arch-ui', 'arch-elev', { 'is-draw': draw }, classAttr]} {...rest}>
+  <svg viewBox="0 0 400 270" role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : desc} aria-hidden={decorative ? 'true' : undefined} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id={`${uid}-h`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="5" stroke="currentColor" stroke-opacity="0.12" stroke-width="1"></line>
+      </pattern>
+      {Array.from({ length: F }, (_, g) => (
+        <clipPath id={`${uid}-c${g}`}><rect x={x0 - 2} y={f1(ground - (g + part(g)) * fh)} width={W + 4} height={f1(part(g) * fh)}></rect></clipPath>
+      ))}
+    </defs>
+
+    <!-- ground -->
+    <line class="arch-elev__line" pathLength="1" style="--i:0" x1="20" y1={ground} x2="380" y2={ground} stroke="currentColor" stroke-width="2"></line>
+
+    {Array.from({ length: F }, (_, g) => {
+      const f = F - 1 - g;
+      const y = ground - (g + 1) * fh;
+      const st = state(g);
+      const cls = `arch-elev__floor is-${st}`;
+      const body = (
+        <g class={cls}>
+          <rect x={x0} y={f1(y)} width={W} height={f1(fh)} fill={`url(#${uid}-h)`} stroke="currentColor" stroke-width="1.6" pathLength="1" class="arch-elev__line" style={`--i:${g + 1}`}></rect>
+          {grid[f].map((o, b) => {
+            const bx = x0 + b * bw;
+            if (o === 'blank') return null;
+            if (o === 'door') {
+              return <rect x={f1(bx + bw * 0.25)} y={f1(y + fh * 0.2)} width={f1(bw * 0.5)} height={f1(fh * 0.8)} fill="none" stroke="currentColor" stroke-width="1.4" pathLength="1" class="arch-elev__line" style={`--i:${g + 2}`}></rect>;
+            }
+            return (
+              <g>
+                <rect x={f1(bx + bw * 0.18)} y={f1(y + fh * 0.2)} width={f1(bw * 0.64)} height={f1(fh * 0.55)} fill="var(--ar-bg)" stroke="currentColor" stroke-width="1.3" pathLength="1" class="arch-elev__line" style={`--i:${g + 2}`}></rect>
+                <line x1={f1(bx + bw * 0.5)} y1={f1(y + fh * 0.2)} x2={f1(bx + bw * 0.5)} y2={f1(y + fh * 0.75)} stroke="currentColor" stroke-width="0.8" opacity="0.6"></line>
+                {o === 'balcony' && <line x1={f1(bx + bw * 0.1)} y1={f1(y + fh * 0.88)} x2={f1(bx + bw * 0.9)} y2={f1(y + fh * 0.88)} stroke="var(--ar-accent)" stroke-width="2.2"></line>}
+              </g>
+            );
+          })}
+        </g>
+      );
+      return st === 'part' ? (
+        <g>
+          <g class="arch-elev__floor is-ghost"><rect x={x0} y={f1(y)} width={W} height={f1(fh)} fill="none" stroke="currentColor" stroke-width="1.2"></rect></g>
+          <g clip-path={`url(#${uid}-c${g})`}>{body}</g>
+        </g>
+      ) : body;
+    })}
+
+    <!-- roof -->
+    <g class:list={['arch-elev__floor', roofBuilt ? 'is-full' : 'is-ghost']}>
+      {roof === 'flat' && <rect x={x0 - 4} y={f1(top - 6)} width={W + 8} height="6" fill="currentColor" opacity="0.85" class="arch-elev__line" pathLength="1" style={`--i:${F + 2}`}></rect>}
+      {roof === 'gable' && <polygon points={`${x0 - 6},${top} ${x0 + W / 2},${f1(top - 34)} ${x0 + W + 6},${top}`} fill="none" stroke="currentColor" stroke-width="1.8" pathLength="1" class="arch-elev__line" style={`--i:${F + 2}`}></polygon>}
+      {roof === 'saw' && (
+        <polyline points={Array.from({ length: B }, (_, i) => `${f1(x0 + i * bw)},${top} ${f1(x0 + i * bw)},${f1(top - 20)} ${f1(x0 + (i + 1) * bw)},${top}`).join(' ') + ` ${x0 + W},${top}`} fill="none" stroke="currentColor" stroke-width="1.8" pathLength="1" class="arch-elev__line" style={`--i:${F + 2}`}></polyline>
+      )}
+    </g>
+
+    <!-- dimension lines -->
+    <g class="arch-elev__dim" stroke="var(--ar-accent)" fill="var(--ar-accent)">
+      <line x1="34" y1={top - (roof === 'gable' ? 34 : roof === 'saw' ? 20 : 6)} x2="34" y2={ground} stroke-width="1"></line>
+      <line x1="29" y1={ground} x2="39" y2={ground} stroke-width="1"></line>
+      <line x1="29" y1={top - (roof === 'gable' ? 34 : roof === 'saw' ? 20 : 6)} x2="39" y2={top - (roof === 'gable' ? 34 : roof === 'saw' ? 20 : 6)} stroke-width="1"></line>
+      <text x="26" y={f1((top + ground) / 2)} font-size="9" text-anchor="middle" stroke="none" transform={`rotate(-90 26 ${f1((top + ground) / 2)})`} font-family="IBM Plex Mono, monospace">{heightM} m</text>
+      <line x1={x0} y1="244" x2={x0 + W} y2="244" stroke-width="1"></line>
+      <line x1={x0} y1="239" x2={x0} y2="249" stroke-width="1"></line>
+      <line x1={x0 + W} y1="239" x2={x0 + W} y2="249" stroke-width="1"></line>
+      <text x={x0 + W / 2} y="260" font-size="9" text-anchor="middle" stroke="none" font-family="IBM Plex Mono, monospace">{widthM} m</text>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .arch-elev {
+    margin: 0;
+    width: 100%;
+    max-width: 560px;
+    color: var(--ar-text);
+  }
+
+  .arch-elev svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .arch-elev :global(.arch-elev__floor.is-ghost) {
+    opacity: 0.32;
+    stroke-dasharray: 3 3;
+  }
+
+  .arch-elev.is-draw :global(.arch-elev__line) {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: arch-draw 1.8s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+    animation-delay: calc(var(--i, 0) * 0.28s);
+  }
+
+  @keyframes arch-draw {
+    to { stroke-dashoffset: 0; }
+  }
+</style>

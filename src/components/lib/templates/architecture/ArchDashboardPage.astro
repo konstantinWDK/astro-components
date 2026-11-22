@@ -1,0 +1,29 @@
+---
+/**
+ * ArchDashboardPage — Client work home: progress with a building drawn floor by floor, the phases, the team, what waits for an answer and the latest diary entries.
+ *
+ * @param {ArchRoutes} routes - Template route URLs.
+ * @param {typeof archData} data - Client work, phases, budget, change orders, decisions, diary and documents.
+ */
+import ArchAccountLayout from './ArchAccountLayout.astro';
+import ArchAccountHeading from '../../app/ArchAccountHeading.astro';
+import ArchWorkSummary from '../../app/ArchWorkSummary.astro';
+import ArchDiary from '../../app/ArchDiary.astro';
+import { archRoutes, archData, type ArchRoutes } from './data';
+
+interface Props {
+  routes?: ArchRoutes;
+  data?: typeof archData;
+}
+
+const { routes = archRoutes, data = archData } = Astro.props;
+---
+
+<ArchAccountLayout title="Resumen" current="dashboard" routes={routes}>
+  <ArchAccountHeading kicker="Mi obra" title="Cómo va tu casa" description="El avance, las fases y lo que espera tu respuesta." />
+  <ArchWorkSummary work={data.work} phases={data.phases} pendingDecisions={data.decisions.filter((d) => !d.chosen).length} pendingOrders={data.changeOrders.filter((c) => c.status === 'Pendiente').length} pendingDocs={data.documents.filter((d) => d.status !== 'Firmado').length} budgetHref={routes.budget} documentsHref={routes.documents} />
+  <section class="arch-app-section" aria-labelledby="ultimo-title">
+    <h2 id="ultimo-title">Lo último en la obra</h2>
+    <ArchDiary entries={data.diary} limit={2} search={false} />
+  </section>
+</ArchAccountLayout>

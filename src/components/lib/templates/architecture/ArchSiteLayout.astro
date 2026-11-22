@@ -1,0 +1,340 @@
+---
+/**
+ * ArchSiteLayout — Public layout for the "Cota" architecture template.
+ * Skip link, sticky header with the wordmark and primary nav (disclosure menu on mobile),
+ * members link, "book a visit" button and the ArchFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (projects | studio | estimate).
+ * @param {ArchRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link, the mobile menu
+ * button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './arch-theme.css';
+import ArchFooter from '../../sections/ArchFooter.astro';
+import { archRoutes, archBrand, type ArchRoutes } from './data';
+
+type NavKey = 'projects' | 'studio' | 'estimate';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: ArchRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Cota · Estudio de arquitectura en Madrid. Casas, rehabilitaciones y edificios públicos con presupuesto cerrado, y un área donde sigues tu obra semana a semana.',
+  current,
+  routes = archRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'projects', label: 'Obras', href: routes.projects },
+  { key: 'studio', label: 'Estudio', href: routes.studio },
+  { key: 'estimate', label: 'Presupuesto', href: routes.estimate },
+];
+const footerColumns = [
+  { title: 'El estudio', links: [{ label: 'Obras', href: routes.projects }, { label: 'Cómo trabajamos', href: routes.studio }, { label: 'Presupuesto', href: routes.estimate }] },
+  { title: 'Clientes', links: [{ label: 'Mi obra', href: routes.signIn }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="arch-body">
+    <a href="#main-content" class="arch-skip">Saltar al contenido</a>
+
+    <header class="arch-header">
+      <div class="arch-header__inner">
+        <a href={routes.home} class="arch-logo" aria-label={`${archBrand.name} inicio`}>{archBrand.name}</a>
+
+        <button type="button" class="arch-menu-btn" aria-expanded="false" aria-controls="arch-nav" data-arch-menu>
+          <span class="arch-menu-btn__bars" aria-hidden="true"></span>
+          <span class="arch-sr">Menú</span>
+        </button>
+
+        <nav id="arch-nav" class="arch-nav-main" aria-label="Navegación principal">
+          <ul class="arch-nav-main__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="arch-nav-main__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <div class="arch-nav-main__actions">
+            <a href={routes.signIn} class="arch-nav-main__members">Mi obra</a>
+            <a href={routes.estimate} class="arch-nav-main__cta">Pedir presupuesto</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="arch-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <ArchFooter brand={archBrand.name} columns={footerColumns} cta={{ title: 'Cuéntanos tu solar', text: 'Un día en el terreno y un informe de lo que se puede construir y cuánto costaría. Sin compromiso.', href: routes.estimate, label: 'Pedir estudio previo' }} />
+
+    <script>
+      const btn = document.querySelector<HTMLButtonElement>('[data-arch-menu]');
+      const nav = document.getElementById('arch-nav');
+      if (btn && nav) {
+        const set = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            set(false);
+            btn.focus();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .arch-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ar-bg);
+    color: var(--ar-text);
+    font-family: var(--ar-font-body);
+  }
+
+  .arch-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .arch-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--ar-brand);
+    color: var(--ar-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .arch-skip:focus {
+    top: 1rem;
+  }
+
+  .arch-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--ar-bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--ar-border);
+  }
+
+  .arch-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .arch-logo {
+    font-family: var(--ar-font-display);
+    font-style: normal;
+    font-weight: 900;
+    font-stretch: 75%;
+    text-transform: uppercase;
+    
+    font-size: 1.7rem;
+    letter-spacing: -0.01em;
+    color: var(--ar-text);
+    text-decoration: none;
+  }
+
+  .arch-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--ar-border-strong);
+    border-radius: 2px;
+    background: none;
+    color: var(--ar-text);
+    cursor: pointer;
+  }
+
+  .arch-menu-btn__bars,
+  .arch-menu-btn__bars::before {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: currentColor;
+  }
+
+  .arch-menu-btn__bars {
+    position: relative;
+    top: -3px;
+  }
+
+  .arch-menu-btn__bars::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 0;
+  }
+
+  .arch-nav-main {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--ar-bg-raised);
+    border-bottom: 1px solid var(--ar-border-strong);
+  }
+
+  .arch-nav-main.is-open {
+    display: flex;
+  }
+
+  .arch-nav-main__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .arch-nav-main__link,
+  .arch-nav-main__members {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--ar-text-2);
+    font: 600 0.82rem/1 var(--ar-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .arch-nav-main__link:hover,
+  .arch-nav-main__members:hover {
+    color: var(--ar-text);
+  }
+
+  .arch-nav-main__link[aria-current='page'] {
+    color: var(--ar-brand);
+  }
+
+  .arch-nav-main__actions {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .arch-nav-main__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border: 1px solid var(--ar-brand);
+    border-radius: 2px;
+    background: var(--ar-brand);
+    color: var(--ar-on-brand);
+    font: 600 0.78rem/1 var(--ar-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .arch-nav-main__cta:hover {
+    background: var(--ar-brand-hover);
+  }
+
+  .arch-header a:focus-visible,
+  .arch-header button:focus-visible {
+    outline: 2px solid var(--ar-brand);
+    outline-offset: 3px;
+  }
+
+  .arch-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 900px) {
+    .arch-menu-btn {
+      display: none;
+    }
+
+    .arch-nav-main {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+
+    .arch-nav-main__list {
+      display: flex;
+      gap: 1.75rem;
+      margin-left: 2rem;
+    }
+
+    .arch-nav-main__actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+</style>
