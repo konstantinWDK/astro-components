@@ -1,0 +1,435 @@
+---
+/**
+ * LawCaseExplorer — Case browser for the client portal: a list of cases with status filter chips
+ * on the left; selecting one shows its detail on the right — responsible lawyer, status, progress
+ * bar, a highlighted "next step" and a vertical timeline of milestones (done and upcoming).
+ *
+ * @param {LawCase[]} cases - Cases to list.
+ * @param {LawLawyer[]} lawyers - Used to name the lawyer of each case.
+ * @param {LawArea[]} areas - Used to name each case's area.
+ * @param {string} messagesHref - "Message my lawyer" link.
+ * @param {string} title - Heading of the list.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the case list is a set of buttons with aria-pressed and a polite status line;
+ * each detail panel is a labelled region shown one at a time; the timeline is an ordered list
+ * where each milestone says "Completado" or "Próximo" in text; progress has role="progressbar".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawCases, lawLawyers, lawAreas, formatLawDate, getLawArea, getLawLawyer, type LawCase, type LawLawyer, type LawArea } from '../templates/law-firm/data';
+
+interface OwnProps {
+  cases?: LawCase[];
+  lawyers?: LawLawyer[];
+  areas?: LawArea[];
+  messagesHref?: string;
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  cases = lawCases,
+  lawyers = lawLawyers,
+  areas = lawAreas,
+  messagesHref = '#',
+  title = 'Tus expedientes',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `lce-${Math.random().toString(36).slice(2, 8)}`;
+const statuses = ['En curso', 'Pendiente de cliente', 'Señalado', 'Cerrado'] as const;
+const tone = (s: string) => (s === 'Cerrado' ? 'closed' : s === 'Pendiente de cliente' ? 'wait' : s === 'Señalado' ? 'hearing' : 'live');
+---
+
+<section class:list={['law-ui', 'law-cases', classAttr]} aria-labelledby={`${uid}-title`} data-law-cases {...rest}>
+  <div class="law-cases__list-col">
+    <h2 id={`${uid}-title`} class="law-cases__title">{title}</h2>
+    <div class="law-cases__chips" role="group" aria-label="Estado del expediente">
+      <button type="button" aria-pressed="true" data-case-status="">Todos</button>
+      {statuses.map((s) => <button type="button" aria-pressed="false" data-case-status={s}>{s}</button>)}
+    </div>
+    <p class="law-cases__count" role="status" aria-live="polite" data-case-count>{cases.length} expedientes</p>
+    <ul class="law-cases__list" role="list">
+      {cases.map((c, i) => (
+        <li data-case-item data-status={c.status}>
+          <button type="button" class="law-case-btn" aria-pressed={i === 0 ? 'true' : 'false'} data-case-pick={c.id}>
+            <span class="law-case-btn__ref">{c.ref}</span>
+            <strong>{c.title}</strong>
+            <span class="law-case-btn__meta"><span class={`law-status is-${tone(c.status)}`}>{c.status}</span> · {getLawArea(c.areaId, areas)?.name}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="law-cases__detail">
+    {cases.map((c, i) => {
+      const lawyer = getLawLawyer(c.lawyerId, lawyers);
+      return (
+        <article class="law-case" id={`${uid}-${c.id}`} aria-labelledby={`${uid}-h-${c.id}`} hidden={i !== 0} data-case-panel={c.id}>
+          <header class="law-case__head">
+            <p class="law-case__ref">{c.ref} · abierto el {formatLawDate(c.opened)}</p>
+            <h3 id={`${uid}-h-${c.id}`} class="law-case__title">{c.title}</h3>
+            <p class="law-case__lawyer">{lawyer?.name} · {getLawArea(c.areaId, areas)?.name} · <span class={`law-status is-${tone(c.status)}`}>{c.status}</span></p>
+          </header>
+
+          <div class="law-case__progress">
+            <div class="law-case__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={c.progress} aria-label={`Progreso de ${c.title}`}><i style={`width:${c.progress}%`}></i></div>
+            <span>{c.progress} %</span>
+          </div>
+
+          <p class="law-case__next"><b>Siguiente paso</b>{c.nextStep}</p>
+
+          <h4 class="law-case__tl-title">Cronología</h4>
+          <ol class="law-case__timeline">
+            {c.timeline.map((e) => (
+              <li class:list={[e.done && 'is-done']}>
+                <span class="law-case__dot" aria-hidden="true"></span>
+                <div>
+                  <p class="law-case__date"><time datetime={e.date}>{formatLawDate(e.date)}</time> · {e.done ? 'Completado' : 'Próximo'}</p>
+                  <p class="law-case__ev-title">{e.title}</p>
+                  <p class="law-case__ev-text">{e.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <a class="law-case__msg" href={messagesHref}>Escribir a {lawyer?.name.split(' ')[0]}</a>
+        </article>
+      );
+    })}
+  </div>
+</section>
+
+<script>
+  function initCases(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-case-status]'));
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-case-item]'));
+    const picks = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-case-pick]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-case-panel]'));
+    const count = root.querySelector<HTMLElement>('[data-case-count]')!;
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        const st = c.dataset.caseStatus ?? '';
+        chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+        let n = 0;
+        items.forEach((it) => {
+          const ok = !st || it.dataset.status === st;
+          it.hidden = !ok;
+          if (ok) n++;
+        });
+        count.textContent = `${n} ${n === 1 ? 'expediente' : 'expedientes'}`;
+      }),
+    );
+    picks.forEach((p) =>
+      p.addEventListener('click', () => {
+        picks.forEach((x) => x.setAttribute('aria-pressed', String(x === p)));
+        panels.forEach((panel) => (panel.hidden = panel.dataset.casePanel !== p.dataset.casePick));
+        if (matchMedia('(max-width: 899px)').matches) root.querySelector('.law-cases__detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-cases]').forEach(initCases);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-cases {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-cases__list-col,
+  .law-cases__detail {
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+  }
+
+  .law-cases__title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .law-cases__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .law-cases__chips button {
+    min-height: 40px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--lw-text-2);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .law-cases__chips button[aria-pressed='true'] {
+    border-color: var(--lw-brand);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-cases__count {
+    margin: var(--sp-3, 0.75rem) 0;
+    color: var(--lw-text-3);
+    font-size: 0.85rem;
+  }
+
+  .law-cases__list {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-cases__list li[hidden] {
+    display: none;
+  }
+
+  .law-case-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-bg);
+    color: var(--lw-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .law-case-btn:hover {
+    border-color: var(--lw-border-strong);
+  }
+
+  .law-case-btn[aria-pressed='true'] {
+    border-color: var(--lw-brand);
+    background: rgba(var(--lw-brand-rgb), 0.1);
+  }
+
+  .law-case-btn__ref {
+    color: var(--lw-text-3);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  .law-case-btn strong {
+    font-size: 0.98rem;
+    line-height: 1.3;
+  }
+
+  .law-case-btn__meta {
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+  }
+
+  .law-cases button:focus-visible,
+  .law-case__msg:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-status {
+    font-weight: 700;
+  }
+
+  .law-status.is-live { color: var(--lw-ok); }
+  .law-status.is-wait { color: var(--lw-warn); }
+  .law-status.is-hearing { color: var(--lw-brand); }
+  .law-status.is-closed { color: var(--lw-text-3); }
+
+  .law-case[hidden] {
+    display: none;
+  }
+
+  .law-case__ref {
+    margin: 0;
+    color: var(--lw-gold);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .law-case__title {
+    margin: 4px 0;
+    font-family: var(--lw-font-display);
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.05;
+  }
+
+  .law-case__lawyer {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--lw-text-2);
+    font-size: 0.92rem;
+  }
+
+  .law-case__progress {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+    font-weight: 700;
+  }
+
+  .law-case__bar {
+    flex: 1;
+    height: 10px;
+    overflow: hidden;
+    border-radius: var(--r-full, 999px);
+    background: var(--lw-surface-2);
+  }
+
+  .law-case__bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--lw-brand), var(--lw-gold));
+  }
+
+  .law-case__next {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-left: 3px solid var(--lw-brand);
+    border-radius: 0 var(--r-md, 12px) var(--r-md, 12px) 0;
+    background: rgba(var(--lw-brand-rgb), 0.1);
+  }
+
+  .law-case__next b {
+    color: var(--lw-brand);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .law-case__tl-title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--lw-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .law-case__timeline {
+    position: relative;
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-case__timeline::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 7px;
+    width: 1px;
+    background: var(--lw-border-strong);
+  }
+
+  .law-case__timeline li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 15px 1fr;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .law-case__dot {
+    z-index: 1;
+    width: 15px;
+    height: 15px;
+    margin-top: 3px;
+    border: 2px solid var(--lw-border-strong);
+    border-radius: 50%;
+    background: var(--lw-bg-raised);
+  }
+
+  .law-case__timeline li.is-done .law-case__dot {
+    border-color: var(--lw-ok);
+    background: var(--lw-ok);
+  }
+
+  .law-case__date {
+    margin: 0;
+    color: var(--lw-text-3);
+    font-size: 0.78rem;
+  }
+
+  .law-case__ev-title {
+    margin: 2px 0;
+    font-weight: 700;
+  }
+
+  .law-case__ev-text {
+    margin: 0;
+    color: var(--lw-text-2);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .law-case__msg {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-case__msg:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  @media (min-width: 900px) {
+    .law-cases {
+      grid-template-columns: 360px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .law-cases__detail {
+      padding: var(--sp-6, 1.5rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .law-case-btn {
+      transition: none;
+    }
+  }
+</style>

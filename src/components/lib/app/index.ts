@@ -101,3 +101,15 @@ export { default as BankAppNav } from './BankAppNav.astro';
 export { default as BankAppTopbar } from './BankAppTopbar.astro';
 export { default as BankAppHeading } from './BankAppHeading.astro';
 export { default as BankSignIn } from './BankSignIn.astro';
+
+// Law firm client portal ("Fuero")
+export { default as LawCaseSummary } from './LawCaseSummary.astro';
+export { default as LawCaseExplorer } from './LawCaseExplorer.astro';
+export { default as LawDocumentVault } from './LawDocumentVault.astro';
+export { default as LawMessageThread } from './LawMessageThread.astro';
+export { default as LawAppointments } from './LawAppointments.astro';
+export { default as LawInvoices } from './LawInvoices.astro';
+export { default as LawPortalNav } from './LawPortalNav.astro';
+export { default as LawPortalTopbar } from './LawPortalTopbar.astro';
+export { default as LawPortalHeading } from './LawPortalHeading.astro';
+export { default as LawSignIn } from './LawSignIn.astro';

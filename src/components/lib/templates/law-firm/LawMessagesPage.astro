@@ -1,0 +1,49 @@
+---
+/**
+ * LawMessagesPage — Secure messaging with the lawyer plus the next appointments.
+ *
+ * @param {LawRoutes} routes - Template route URLs.
+ * @param {typeof lawData} data - Messages, appointments and lawyers.
+ */
+import LawPortalLayout from './LawPortalLayout.astro';
+import LawPortalHeading from '../../app/LawPortalHeading.astro';
+import LawMessageThread from '../../app/LawMessageThread.astro';
+import LawAppointments from '../../app/LawAppointments.astro';
+import { lawRoutes, lawData, type LawRoutes } from './data';
+
+interface Props {
+  routes?: LawRoutes;
+  data?: typeof lawData;
+}
+
+const { routes = lawRoutes, data = lawData } = Astro.props;
+---
+
+<LawPortalLayout title="Mensajes" current="messages" routes={routes}>
+  <LawPortalHeading
+    kicker="Mi portal"
+    title="Mensajes"
+    description="Habla con tu abogada con total confidencialidad."
+    back={{ label: 'Resumen', href: routes.dashboard }}
+  />
+  <div class="law-msgs">
+    <LawMessageThread messages={data.messages} lawyer="Carmen Arbós" caseRef="EXP-2026-0412" />
+    <LawAppointments appointments={data.appointments} lawyers={data.lawyers} bookHref={routes.consult} />
+  </div>
+</LawPortalLayout>
+
+<style>
+  .law-msgs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+    margin-top: var(--sp-4, 1rem);
+    align-items: start;
+  }
+
+  @media (min-width: 1100px) {
+    .law-msgs {
+      grid-template-columns: 1.4fr 1fr;
+    }
+  }
+</style>

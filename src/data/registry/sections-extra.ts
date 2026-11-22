@@ -1142,4 +1142,65 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['bank', 'fintech', 'footer', 'legal', 'contact'],
     usage: `<BankFooter cta={{ title: 'Abre tu cuenta hoy', href: '/abrir-cuenta', label: 'Abrir cuenta gratis' }} />`,
   }),
+  // === LAW FIRM ("Fuero") ===
+  section({
+    slug: 'law-hero', name: 'Law Hero', file: 'LawHero.astro', sectionCategory: 'law',
+    description: 'Law firm hero with a serif headline, free-consultation and areas CTAs, direct phone line, key figures and a "case file" card that shows how clients follow their case.',
+    tags: ['law', 'legal', 'hero', 'cta', 'portal'], featured: true,
+    usage: `<LawHero consultHref="/consulta" areasHref="/areas" />`,
+  }),
+  section({
+    slug: 'law-practice-areas', name: 'Law Practice Areas', file: 'LawPracticeAreas.astro', sectionCategory: 'law',
+    description: 'Practice areas as accessible tabs: pick an area and read its summary, typical matters and a consultation link. Opens the area from ?area=.',
+    tags: ['law', 'legal', 'areas', 'tabs', 'services'], featured: true,
+    usage: `<LawPracticeAreas areas={lawAreas} consultHref="/consulta" />`,
+  }),
+  section({
+    slug: 'law-team', name: 'Law Team', file: 'LawTeam.astro', sectionCategory: 'law',
+    description: 'Lawyers team with initials portraits, role, years of practice, languages and bio, with an optional filter by practice area.',
+    tags: ['law', 'legal', 'team', 'lawyers', 'filter'],
+    usage: `<LawTeam lawyers={lawLawyers} areas={lawAreas} filter />`,
+  }),
+  section({
+    slug: 'law-process', name: 'Law Process', file: 'LawProcess.astro', sectionCategory: 'law',
+    description: '"How we work" in numbered steps along a vertical line with large serif numerals.',
+    tags: ['law', 'legal', 'process', 'steps', 'timeline'],
+    usage: `<LawProcess steps={lawProcess} />`,
+  }),
+  section({
+    slug: 'law-results', name: 'Law Results', file: 'LawResults.astro', sectionCategory: 'law',
+    description: 'Track record: a row of result figures and client testimonials with the matter type and outcome as a chip.',
+    tags: ['law', 'legal', 'results', 'testimonials', 'stats'],
+    usage: `<LawResults />`,
+  }),
+  section({
+    slug: 'law-fees', name: 'Law Fees', file: 'LawFees.astro', sectionCategory: 'law',
+    description: 'Transparent fee models side by side (fixed fee, success fee, monthly retainer) with price, explanation and the matters each suits best.',
+    tags: ['law', 'legal', 'pricing', 'fees', 'plans'], featured: true,
+    usage: `<LawFees options={lawFees} consultHref="/consulta" />`,
+  }),
+  section({
+    slug: 'law-consultation', name: 'Law Consultation', file: 'LawConsultation.astro', sectionCategory: 'law',
+    description: 'Free consultation booking: choose area, one of the next business days, a time slot and format, then leave your details. Includes a confirmation summary.',
+    tags: ['law', 'legal', 'booking', 'form', 'calendar', 'appointment'], featured: true,
+    usage: `<LawConsultation areas={lawAreas} action="/api/consulta" />`,
+  }),
+  section({
+    slug: 'law-insights', name: 'Law Insights', file: 'LawInsights.astro', sectionCategory: 'law',
+    description: 'Legal articles as three cards with area, date, reading time, title and excerpt; the first one is featured.',
+    tags: ['law', 'legal', 'blog', 'articles', 'cards'],
+    usage: `<LawInsights insights={lawInsights} href="/blog" />`,
+  }),
+  section({
+    slug: 'law-faq', name: 'Law FAQ', file: 'LawFaq.astro', sectionCategory: 'law',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['law', 'legal', 'faq', 'accordion'],
+    usage: `<LawFaq faqs={lawFaqs} />`,
+  }),
+  section({
+    slug: 'law-footer', name: 'Law Footer', file: 'LawFooter.astro', sectionCategory: 'law',
+    description: 'Law firm footer with a consultation call-to-action band, link columns, contact and the bar-association and professional-secrecy legal block.',
+    tags: ['law', 'legal', 'footer', 'contact', 'cta'],
+    usage: `<LawFooter cta={{ title: 'Cuéntanos tu caso', href: '/consulta', label: 'Reservar consulta' }} />`,
+  }),
 ];

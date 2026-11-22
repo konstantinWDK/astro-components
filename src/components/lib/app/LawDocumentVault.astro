@@ -1,0 +1,374 @@
+---
+/**
+ * LawDocumentVault — Client document vault: search, type and case filters, a table of files with
+ * type, case, date and size, a "Firmar" action for documents awaiting your signature, and an
+ * upload area (click or drop) that adds the file to the list. Demo: nothing leaves the browser.
+ *
+ * @param {LawDocument[]} documents - Documents to list.
+ * @param {LawCase[]} cases - Used to name each document's case and for the case filter.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <table> with <caption>; the dropzone is a labelled file input (keyboard
+ * operable) and also accepts drag & drop; the count and actions are announced in aria-live
+ * regions; pending signature is text ("Pendiente de firma"), not only colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawDocuments, lawCases, formatLawDate, formatLawSize, type LawDocument, type LawCase } from '../templates/law-firm/data';
+
+interface OwnProps {
+  documents?: LawDocument[];
+  cases?: LawCase[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { documents = lawDocuments, cases = lawCases, title = 'Tus documentos', class: classAttr, ...rest } = Astro.props;
+
+const uid = `ldv-${Math.random().toString(36).slice(2, 8)}`;
+const types = ['Contrato', 'Escrito', 'Resolución', 'Prueba', 'Factura'];
+const rows = [...documents].sort((a, b) => b.date.localeCompare(a.date));
+const caseRef = (id: string) => cases.find((c) => c.id === id)?.ref ?? id;
+---
+
+<section class:list={['law-ui', 'law-vault', classAttr]} aria-labelledby={`${uid}-title`} data-law-vault {...rest}>
+  <header class="law-vault__head">
+    <h2 id={`${uid}-title`} class="law-vault__title">{title}</h2>
+    <p class="law-vault__secure">🔒 Cifrados · solo tú y tu equipo jurídico</p>
+  </header>
+
+  <label class="law-vault__drop" data-vault-drop>
+    <input type="file" multiple class="lw-sr" data-vault-file aria-describedby={`${uid}-hint`} />
+    <span class="law-vault__drop-icon" aria-hidden="true">↑</span>
+    <span><strong>Sube un documento</strong> o arrástralo aquí<small id={`${uid}-hint`}>PDF, Word o imágenes · hasta 25 MB</small></span>
+  </label>
+
+  <div class="law-vault__tools">
+    <div class="law-vault__field law-vault__field--grow"><label for={`${uid}-q`}>Buscar</label><input id={`${uid}-q`} type="search" placeholder="Nombre del documento…" autocomplete="off" data-vault-q /></div>
+    <div class="law-vault__field"><label for={`${uid}-type`}>Tipo</label><select id={`${uid}-type`} data-vault-type><option value="">Todos</option>{types.map((t) => <option>{t}</option>)}</select></div>
+    <div class="law-vault__field"><label for={`${uid}-case`}>Expediente</label><select id={`${uid}-case`} data-vault-case><option value="">Todos</option>{cases.map((c) => <option value={c.id}>{c.ref}</option>)}</select></div>
+  </div>
+  <p class="law-vault__count" role="status" aria-live="polite" data-vault-count></p>
+
+  <div class="law-vault__scroll" tabindex="0" role="region" aria-label="Tabla de documentos, desplazable">
+    <table>
+      <caption class="lw-sr">Documentos de tus expedientes</caption>
+      <thead><tr><th scope="col">Documento</th><th scope="col">Tipo</th><th scope="col">Expediente</th><th scope="col">Fecha</th><th scope="col">Tamaño</th><th scope="col"><span class="lw-sr">Acciones</span></th></tr></thead>
+      <tbody data-vault-body>
+        {rows.map((d) => (
+          <tr data-row data-name={d.name.toLowerCase()} data-type={d.type} data-case={d.caseId}>
+            <th scope="row"><span class="law-vault__name">{d.name}</span><span class="law-vault__by">Subido por {d.by}</span></th>
+            <td>{d.type}</td>
+            <td>{caseRef(d.caseId)}</td>
+            <td>{formatLawDate(d.date)}</td>
+            <td>{formatLawSize(d.sizeKb)}</td>
+            <td class="law-vault__act">
+              {d.needsSignature
+                ? <button type="button" class="law-vault__sign" data-sign aria-label={`Firmar ${d.name}`}>Pendiente de firma · Firmar</button>
+                : <span class="law-vault__ok">Disponible</span>}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="law-vault__empty" hidden data-vault-empty>Ningún documento coincide con los filtros.</p>
+  <p class="law-vault__live lw-sr" role="status" aria-live="polite" data-vault-live></p>
+</section>
+
+<script>
+  function initVault(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const search = q<HTMLInputElement>('[data-vault-q]');
+    const type = q<HTMLSelectElement>('[data-vault-type]');
+    const kase = q<HTMLSelectElement>('[data-vault-case]');
+    const body = q('[data-vault-body]');
+    const count = q('[data-vault-count]');
+    const empty = q('[data-vault-empty]');
+    const live = q('[data-vault-live]');
+    const drop = q('[data-vault-drop]');
+    const file = q<HTMLInputElement>('[data-vault-file]');
+
+    const apply = () => {
+      const term = search.value.trim().toLowerCase();
+      let n = 0;
+      body.querySelectorAll<HTMLElement>('[data-row]').forEach((r) => {
+        const ok = (!term || (r.dataset.name ?? '').includes(term)) && (!type.value || r.dataset.type === type.value) && (!kase.value || r.dataset.case === kase.value);
+        r.hidden = !ok;
+        if (ok) n++;
+      });
+      count.textContent = `${n} ${n === 1 ? 'documento' : 'documentos'}`;
+      empty.hidden = n > 0;
+    };
+    [search, type, kase].forEach((el) => el.addEventListener(el === search ? 'input' : 'change', apply));
+
+    body.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sign]');
+      if (!btn) return;
+      const cell = btn.parentElement!;
+      const name = btn.closest('tr')?.querySelector('.law-vault__name')?.textContent ?? 'documento';
+      cell.innerHTML = '<span class="law-vault__ok is-signed">✓ Firmado electrónicamente</span>';
+      live.textContent = `${name} firmado correctamente.`;
+    });
+
+    const fmtSize = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+    const add = (files: FileList | null) => {
+      if (!files?.length) return;
+      Array.from(files).forEach((f) => {
+        const tr = document.createElement('tr');
+        tr.dataset.row = '';
+        tr.dataset.name = f.name.toLowerCase();
+        tr.dataset.type = 'Prueba';
+        tr.dataset.case = kase.value || 'e1';
+        const th = document.createElement('th');
+        th.scope = 'row';
+        th.innerHTML = '<span class="law-vault__name"></span><span class="law-vault__by">Subido por Tú · ahora</span>';
+        th.querySelector('.law-vault__name')!.textContent = f.name;
+        const cells = ['Prueba', kase.selectedOptions[0]?.value ? kase.selectedOptions[0].textContent ?? '' : 'EXP-2026-0412', 'Hoy', fmtSize(f.size)].map((t) => Object.assign(document.createElement('td'), { textContent: t }));
+        const act = document.createElement('td');
+        act.className = 'law-vault__act';
+        act.innerHTML = '<span class="law-vault__ok">Subido</span>';
+        tr.append(th, ...cells, act);
+        body.prepend(tr);
+      });
+      live.textContent = `${files.length} ${files.length === 1 ? 'documento subido' : 'documentos subidos'}.`;
+      file.value = '';
+      apply();
+    };
+    file.addEventListener('change', () => add(file.files));
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('is-over'); }));
+    drop.addEventListener('drop', (e) => add((e as DragEvent).dataTransfer?.files ?? null));
+    apply();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-vault]').forEach(initVault);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style is:global>
+  .law-vault .law-vault__ok {
+    color: var(--lw-text-3);
+    font-size: 0.85rem;
+  }
+
+  .law-vault .law-vault__ok.is-signed {
+    color: var(--lw-ok);
+    font-weight: 700;
+  }
+
+  .law-vault .law-vault__name {
+    display: block;
+    font-weight: 700;
+  }
+
+  .law-vault .law-vault__by {
+    display: block;
+    color: var(--lw-text-3);
+    font-size: 0.78rem;
+    font-weight: 400;
+  }
+</style>
+
+<style>
+  .law-vault {
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-vault__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .law-vault__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .law-vault__secure {
+    margin: 0;
+    color: var(--lw-text-3);
+    font-size: 0.82rem;
+  }
+
+  .law-vault__drop {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-4, 1rem);
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border: 1.5px dashed var(--lw-border-strong);
+    border-radius: var(--r-lg, 20px);
+    background: var(--lw-bg);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .law-vault__drop:hover,
+  .law-vault__drop.is-over,
+  .law-vault__drop:focus-within {
+    border-color: var(--lw-brand);
+    background: rgba(var(--lw-brand-rgb), 0.08);
+  }
+
+  .law-vault__drop small {
+    display: block;
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+  }
+
+  .law-vault__drop-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(var(--lw-brand-rgb), 0.16);
+    color: var(--lw-brand);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .law-vault__tools {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .law-vault__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .law-vault__field label {
+    color: var(--lw-text-3);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .law-vault__field input,
+  .law-vault__field select {
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-surface);
+    color: var(--lw-text);
+    font: inherit;
+  }
+
+  .law-vault__field input:focus-visible,
+  .law-vault__field select:focus-visible,
+  .law-vault__scroll:focus-visible,
+  .law-vault__sign:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-vault__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-2, 0.5rem);
+    color: var(--lw-text-3);
+    font-size: 0.85rem;
+  }
+
+  .law-vault__scroll {
+    position: relative;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+
+  th,
+  td {
+    padding: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--lw-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  thead th {
+    border-top: 0;
+    color: var(--lw-text-3);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+
+  tbody tr[hidden] {
+    display: none;
+  }
+
+  td {
+    color: var(--lw-text-2);
+    white-space: nowrap;
+  }
+
+  .law-vault__sign {
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--lw-brand);
+    border-radius: var(--r-sm, 8px);
+    background: rgba(var(--lw-brand-rgb), 0.12);
+    color: var(--lw-brand);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .law-vault__sign:hover {
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-vault__empty {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--lw-text-2);
+    text-align: center;
+  }
+
+  @media (min-width: 760px) {
+    .law-vault__tools {
+      grid-template-columns: 1fr 180px 200px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .law-vault__drop {
+      transition: none;
+    }
+  }
+</style>

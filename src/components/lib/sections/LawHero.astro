@@ -1,0 +1,358 @@
+---
+/**
+ * LawHero — Law firm landing hero: serif headline with an italic highlight, free-consultation
+ * and areas CTAs, direct phone line, key figures and a "case file" card showing how a client
+ * follows a case in the portal.
+ *
+ * @param {string} title - Headline. Wrap a word in *asterisks* to highlight it.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} consultHref - Primary CTA link.
+ * @param {string} areasHref - Secondary CTA link.
+ * @param {string} phone - Direct phone line shown under the CTAs.
+ * @param {Array<{value: string, label: string}>} stats - Key figures.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one h1; the case-file card is decorative (aria-hidden) and its message is
+ * repeated in the copy; CTAs are links with 52px targets; the phone is a tel: link.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawData } from '../templates/law-firm/data';
+
+interface OwnProps {
+  title?: string;
+  subtitle?: string;
+  consultHref?: string;
+  areasHref?: string;
+  phone?: string;
+  stats?: Array<{ value: string; label: string }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Defendemos lo que *importa*, con claridad',
+  subtitle = 'Un despacho que te explica cada paso, te cuenta cuánto costará y te deja seguir tu caso en tiempo real desde tu portal privado.',
+  consultHref = '/consulta',
+  areasHref = '/areas',
+  phone = lawData.brand.phone,
+  stats = lawData.stats,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const [before, highlight, after] = title.split('*');
+const uid = `lh-${Math.random().toString(36).slice(2, 8)}`;
+const steps = [
+  { t: 'Apertura del expediente', d: '14 sep', done: true },
+  { t: 'Borrador del convenio', d: '28 sep', done: true },
+  { t: 'Acuerdo con la otra parte', d: '19 oct', done: true },
+  { t: 'Firma ante notario', d: '26 nov', done: false },
+];
+---
+
+<section class:list={['law-ui', 'law-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="law-hero__glow" aria-hidden="true"></div>
+  <div class="law-hero__inner">
+    <div class="law-hero__copy">
+      <p class="law-hero__kicker">Abogados en Madrid · Desde 2002</p>
+      <h1 id={`${uid}-title`} class="law-hero__title">{before}{highlight && <em>{highlight}</em>}{after}</h1>
+      <p class="law-hero__subtitle">{subtitle}</p>
+      <div class="law-hero__cta">
+        <a class="law-hero__btn law-hero__btn--primary" href={consultHref}>Reserva tu consulta gratuita</a>
+        <a class="law-hero__btn" href={areasHref}>Áreas de práctica</a>
+      </div>
+      <p class="law-hero__phone">O llámanos ahora: <a href={`tel:${phone.replace(/\s+/g, '')}`}>{phone}</a></p>
+      <dl class="law-hero__stats">
+        {stats.map((s) => (
+          <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+        ))}
+      </dl>
+    </div>
+
+    <div class="law-hero__file" aria-hidden="true">
+      <div class="law-hero__tab">EXP-2026-0412</div>
+      <div class="law-hero__sheet">
+        <p class="law-hero__case">Divorcio de mutuo acuerdo</p>
+        <p class="law-hero__lawyer">Carmen Arbós · Derecho de familia</p>
+        <div class="law-hero__progress"><i style="width:70%"></i></div>
+        <p class="law-hero__pct">70 % completado</p>
+        <ol class="law-hero__steps">
+          {steps.map((s) => (
+            <li class:list={[s.done && 'is-done']}><span></span><b>{s.t}</b><small>{s.d}</small></li>
+          ))}
+        </ol>
+        <p class="law-hero__note">Siguiente paso: firma del convenio en la notaría.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .law-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--lw-bg);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-hero__glow {
+    position: absolute;
+    top: -260px;
+    right: -160px;
+    width: 720px;
+    height: 720px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--lw-brand-rgb), 0.24), rgba(var(--lw-gold-rgb), 0.08) 45%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .law-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .law-hero__kicker {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--lw-gold);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .law-hero__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: clamp(2.8rem, 7vw, 5.2rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+  }
+
+  .law-hero__title em {
+    color: var(--lw-brand);
+    font-style: italic;
+  }
+
+  .law-hero__subtitle {
+    max-width: 540px;
+    margin: var(--sp-5, 1.25rem) 0 var(--sp-6, 1.5rem);
+    color: var(--lw-text-2);
+    font-size: 1.1rem;
+    line-height: 1.65;
+  }
+
+  .law-hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .law-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-sm, 8px);
+    color: var(--lw-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .law-hero__btn:hover {
+    border-color: var(--lw-brand);
+  }
+
+  .law-hero__btn--primary {
+    border-color: var(--lw-brand);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-hero__btn--primary:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-hero__btn:focus-visible,
+  .law-hero__phone a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 3px;
+  }
+
+  .law-hero__phone {
+    margin: var(--sp-4, 1rem) 0 var(--sp-8, 2rem);
+    color: var(--lw-text-3);
+  }
+
+  .law-hero__phone a {
+    color: var(--lw-text);
+    font-weight: 700;
+  }
+
+  .law-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-5, 1.25rem) var(--sp-8, 2rem);
+    margin: 0;
+    padding-top: var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--lw-border);
+  }
+
+  .law-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .law-hero__stats dt {
+    color: var(--lw-text-3);
+    font-size: 0.85rem;
+  }
+
+  .law-hero__stats dd {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 2.3rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .law-hero__file {
+    position: relative;
+    max-width: 440px;
+    margin: 0 auto;
+    padding-top: 34px;
+    width: 100%;
+  }
+
+  .law-hero__tab {
+    position: absolute;
+    top: 0;
+    left: 24px;
+    padding: 6px 16px 10px;
+    border-radius: 12px 12px 0 0;
+    background: var(--lw-gold);
+    color: #1a1208;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
+  [data-theme='light'] .law-hero__tab {
+    color: #fff;
+  }
+
+  .law-hero__sheet {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: 0 var(--r-xl, 24px) var(--r-xl, 24px) var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.7);
+    transform: rotate(1.2deg);
+  }
+
+  .law-hero__case {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.7rem;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .law-hero__lawyer {
+    margin: 4px 0 var(--sp-4, 1rem);
+    color: var(--lw-text-3);
+    font-size: 0.88rem;
+  }
+
+  .law-hero__progress {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: var(--lw-surface-2);
+  }
+
+  .law-hero__progress i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--lw-brand), var(--lw-gold));
+  }
+
+  .law-hero__pct {
+    margin: 6px 0 var(--sp-4, 1rem);
+    color: var(--lw-text-2);
+    font-size: 0.82rem;
+  }
+
+  .law-hero__steps {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-hero__steps li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    color: var(--lw-text-3);
+    font-size: 0.9rem;
+  }
+
+  .law-hero__steps li span {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--lw-border-strong);
+    border-radius: 50%;
+  }
+
+  .law-hero__steps li.is-done {
+    color: var(--lw-text);
+  }
+
+  .law-hero__steps li.is-done span {
+    border-color: var(--lw-ok);
+    background: var(--lw-ok);
+  }
+
+  .law-hero__steps b {
+    font-weight: 600;
+  }
+
+  .law-hero__steps small {
+    color: var(--lw-text-3);
+  }
+
+  .law-hero__note {
+    margin: var(--sp-4, 1rem) 0 0;
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: rgba(var(--lw-brand-rgb), 0.12);
+    color: var(--lw-text);
+    font-size: 0.86rem;
+  }
+
+  @media (min-width: 960px) {
+    .law-hero__inner {
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: var(--sp-12, 3rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .law-hero__btn {
+      transition: none;
+    }
+  }
+</style>

@@ -1,0 +1,353 @@
+---
+/**
+ * LawPortalTopbar — Top bar for the client portal: today's date, a status chip (e.g. security
+ * check), a theme toggle, notifications and a user menu (native popovers).
+ *
+ * @param {{name: string, plan: string, id: string}} user - Signed-in user.
+ * @param {string} chip - Short status chip text (hidden when empty).
+ * @param {Array<{title: string, text: string, time: string, unread?: boolean}>} notifications - Notification list.
+ * @param {Array<{label: string, href: string}>} links - Entries of the user menu.
+ * @param {string} signOutHref - Sign-out link.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: popovers close with Escape and outside click (native); the bell button
+ * announces the unread count; the theme toggle reports aria-pressed; targets are 44px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+
+interface Note { title: string; text: string; time: string; unread?: boolean }
+
+interface OwnProps {
+  user?: { name: string; plan: string; id: string };
+  chip?: string;
+  notifications?: Note[];
+  links?: Array<{ label: string; href: string }>;
+  signOutHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  user = { name: 'Elena Marqués', plan: 'Cliente', id: 'CL-5521' },
+  chip = '',
+  notifications = [],
+  links = [],
+  signOutHref = '#',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `aat-${Math.random().toString(36).slice(2, 8)}`;
+const unread = notifications.filter((n) => n.unread).length;
+const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+---
+
+<header class:list={['law-ui', 'law-top', classAttr]} data-law-top {...rest}>
+  <div class="law-top__left">
+    <time class="law-top__date" data-today></time>
+    {chip && (
+      <span class="law-top__chip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+        {chip}
+      </span>
+    )}
+  </div>
+
+  <div class="law-top__actions">
+    <button type="button" class="law-top__icon" aria-pressed="false" aria-label="Cambiar tema claro u oscuro" data-theme-toggle>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.800 9.800Z" /></svg>
+    </button>
+
+    <button type="button" class="law-top__icon" popovertarget={`${uid}-notes`} aria-label={unread ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0" /></svg>
+      {unread > 0 && <span class="law-top__dot" aria-hidden="true"></span>}
+    </button>
+    <div id={`${uid}-notes`} popover class="law-pop" data-law-pop>
+      <p class="law-pop__title">Notificaciones</p>
+      {notifications.length ? (
+        <ul role="list">
+          {notifications.map((n) => (
+            <li class:list={[n.unread && 'is-unread']}>
+              <strong>{n.title}</strong>
+              <span>{n.text}</span>
+              <small>{n.time}</small>
+            </li>
+          ))}
+        </ul>
+      ) : <p class="law-pop__empty">Todo al día.</p>}
+    </div>
+
+    <button type="button" class="law-top__me" popovertarget={`${uid}-me`} aria-label={`Menú de ${user.name}`}>
+      <span class="law-top__avatar" aria-hidden="true">{initials}</span>
+      <span class="law-top__who"><strong>{user.name}</strong><small>{user.plan}</small></span>
+    </button>
+    <div id={`${uid}-me`} popover class="law-pop" data-law-pop>
+      <p class="law-pop__title">{user.name}<small>Nº {user.id}</small></p>
+      <ul role="list" class="law-pop__menu">
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><a href={signOutHref}>Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  function initTop(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const time = root.querySelector<HTMLTimeElement>('[data-today]');
+    if (time) {
+      const now = new Date();
+      time.dateTime = now.toISOString().slice(0, 10);
+      time.textContent = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+    }
+    const toggle = root.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    const sync = () => toggle?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
+    sync();
+    toggle?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('ack-theme', next); } catch (e) { /* storage unavailable */ }
+      sync();
+    });
+    root.querySelectorAll<HTMLElement>('[data-law-pop]').forEach((pop) => {
+      pop.addEventListener('toggle', (e) => {
+        if ((e as Event & { newState?: string }).newState !== 'open') return;
+        const btn = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        pop.style.top = `${r.bottom + 8}px`;
+        pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth))}px`;
+      });
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-top]').forEach(initTop);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-top {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 64px;
+    padding: 0 var(--sp-4, 1rem);
+    border-bottom: 1px solid var(--lw-border);
+    background: color-mix(in srgb, var(--lw-bg) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-top__left,
+  .law-top__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+  }
+
+  .law-top__actions {
+    flex: none;
+  }
+
+  .law-top__icon,
+  .law-top__me {
+    flex: none;
+  }
+
+  .law-top__date {
+    display: block;
+    overflow: hidden;
+    font-family: var(--lw-font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .law-top__date::first-letter {
+    text-transform: uppercase;
+  }
+
+  .law-top__chip {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(var(--lw-brand-rgb), 0.16);
+    color: var(--lw-brand);
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .law-top__icon,
+  .law-top__me {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .law-top__icon:hover,
+  .law-top__me:hover {
+    border-color: var(--lw-border-strong);
+  }
+
+  .law-top__icon:focus-visible,
+  .law-top__me:focus-visible,
+  .law-pop a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-top__me {
+    padding: 0 var(--sp-2, 0.5rem);
+  }
+
+  .law-top__dot {
+    position: absolute;
+    top: 9px;
+    right: 10px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--lw-brand);
+    box-shadow: 0 0 0 2px var(--lw-bg-raised);
+  }
+
+  .law-top__avatar {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--lw-brand), var(--lw-gold));
+    color: var(--lw-on-brand);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .law-top__who {
+    display: none;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.2;
+  }
+
+  .law-top__who small {
+    color: var(--lw-text-3);
+  }
+
+  .law-pop {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: min(320px, calc(100vw - 16px));
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  }
+
+  .law-pop__title {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-weight: 700;
+  }
+
+  .law-pop__title small {
+    color: var(--lw-text-3);
+    font-weight: 400;
+  }
+
+  .law-pop ul {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-pop li:not(.is-unread) {
+    padding-left: 0;
+  }
+
+  .law-pop ul:not(.law-pop__menu) li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-surface);
+    font-size: 0.88rem;
+  }
+
+  .law-pop li.is-unread {
+    box-shadow: inset 3px 0 var(--lw-brand);
+  }
+
+  .law-pop li span {
+    color: var(--lw-text-2);
+  }
+
+  .law-pop li small,
+  .law-pop__empty {
+    color: var(--lw-text-3);
+  }
+
+  .law-pop__menu a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    color: var(--lw-text);
+    text-decoration: none;
+  }
+
+  .law-pop__menu a:hover {
+    background: var(--lw-surface);
+  }
+
+  @media (min-width: 640px) {
+    .law-top {
+      padding: 0 var(--sp-8, 2rem);
+    }
+
+    .law-top__chip,
+    .law-top__who {
+      display: inline-flex;
+    }
+
+    .law-top__who {
+      display: flex;
+    }
+  }
+</style>

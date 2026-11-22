@@ -2516,6 +2516,158 @@ const routes = { ...bankRoutes, pricing: '/plans', open: '/open-account' };
 
 <BankHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'law-firm',
+    name: { en: 'Fuero · Law Firm & Client Portal', es: 'Fuero · Despacho de abogados & Portal del cliente', ru: 'Fuero · Юридическая фирма & Кабинет клиента' },
+    tagline: { en: 'Law firm site with practice areas, team, fee models and consultation booking, plus a client portal with cases and timelines, documents with e-signature, secure messages, appointments and invoices.', es: 'Web de despacho de abogados con áreas de práctica, equipo, honorarios y reserva de consulta, más un portal del cliente con expedientes y cronologías, documentos con firma electrónica, mensajes seguros, citas y facturas.', ru: 'Сайт юридической фирмы с направлениями, командой, гонорарами и записью на консультацию, плюс кабинет клиента с делами и хронологиями, документами с электронной подписью, защищёнными сообщениями, встречами и счетами.' },
+    description: { en: 'Complete template for a law firm or professional services practice. 9 page types: home with a case-file hero, practice areas, process, results, fee models, team, articles and FAQ; interactive practice areas; team with area filter; free-consultation booking; plus client sign-in, a portal home (what needs your attention, appointments, invoices), a case explorer with timeline, a document vault with upload and e-signature, and secure messaging.', es: 'Plantilla completa para un despacho de abogados o servicios profesionales. 9 tipos de página: home con hero de expediente, áreas de práctica, proceso, resultados, honorarios, equipo, artículos y preguntas frecuentes; áreas de práctica interactivas; equipo con filtro por área; reserva de consulta gratuita; y además acceso de clientes, inicio del portal (lo que necesita tu atención, citas, facturas), explorador de expedientes con cronología, caja de documentos con subida y firma electrónica y mensajería segura.', ru: 'Полный шаблон для юридической фирмы или профессиональных услуг. 9 типов страниц: главная с героем-«делом», направлениями, процессом, результатами, гонорарами, командой, статьями и FAQ; интерактивные направления; команда с фильтром; запись на бесплатную консультацию; а также вход клиентов, главная кабинета (что требует внимания, встречи, счета), обзор дел с хронологией, хранилище документов с загрузкой и электронной подписью и защищённые сообщения.' },
+    highlights: {
+      en: [
+        'Practice areas as accessible tabs that open from ?area= links',
+        'Consultation booking with day, time slot and format and a confirmation summary',
+        'Case explorer with status filter, progress, next step and a vertical timeline',
+        'Document vault with upload by click or drag & drop and e-signature action',
+        'Secure messaging log, .ics calendar download and invoice payment flow',
+      ],
+      es: [
+        'Áreas de práctica como pestañas accesibles que se abren desde enlaces ?area=',
+        'Reserva de consulta con día, franja horaria y formato y resumen de confirmación',
+        'Explorador de expedientes con filtro de estado, progreso, siguiente paso y cronología vertical',
+        'Caja de documentos con subida por clic o arrastrando y acción de firma electrónica',
+        'Mensajería segura, descarga .ics de citas y flujo de pago de facturas',
+      ],
+      ru: [
+        'Направления в виде доступных вкладок, открываются по ссылкам ?area=',
+        'Запись на консультацию: день, время, формат и итоговое подтверждение',
+        'Обзор дел с фильтром статуса, прогрессом, следующим шагом и вертикальной хронологией',
+        'Хранилище документов: загрузка кликом или перетаскиванием и электронная подпись',
+        'Защищённые сообщения, загрузка .ics для встреч и оплата счетов',
+      ],
+    },
+    tags: ['law', 'legal', 'lawyers', 'professional-services', 'portal', 'booking', 'dashboard', 'documents'],
+    previewBase: '/preview/law-firm/',
+    importPath: 'astro-component-kit/templates/law-firm',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero, practice areas, process, results, fee models, team, articles and FAQ.', es: 'Hero, áreas de práctica, proceso, resultados, modelos de honorarios, equipo, artículos y preguntas frecuentes.', ru: 'Главный экран, направления, процесс, результаты, модели гонораров, команда, статьи и FAQ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { LawHomePage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawHomePage />`,
+      },
+      {
+        id: 'areas', path: 'areas/',
+        name: { en: 'Practice areas', es: 'Áreas', ru: 'Направления' },
+        description: { en: 'Interactive practice areas (?area= opens one), fee models and FAQ.', es: 'Áreas de práctica interactivas (?area= abre una), modelos de honorarios y preguntas frecuentes.', ru: 'Интерактивные направления (?area= открывает одно), модели гонораров и FAQ.' },
+        file: 'src/pages/areas.astro',
+        code: `---
+import { LawAreasPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawAreasPage />`,
+      },
+      {
+        id: 'team', path: 'equipo/',
+        name: { en: 'Team', es: 'Equipo', ru: 'Команда' },
+        description: { en: 'Lawyers with a filter by area, how we work and results.', es: 'Abogados con filtro por área, cómo trabajamos y resultados.', ru: 'Юристы с фильтром по направлению, как мы работаем и результаты.' },
+        file: 'src/pages/equipo.astro',
+        code: `---
+import { LawTeamPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawTeamPage />`,
+      },
+      {
+        id: 'consult', path: 'consulta/',
+        name: { en: 'Free consultation', es: 'Consulta gratuita', ru: 'Бесплатная консультация' },
+        description: { en: 'Book area, day, time and format, then confirm; pre-selects the area from ?area=.', es: 'Reserva área, día, hora y formato y confirma; preselecciona el área desde ?area=.', ru: 'Запись: направление, день, время и формат, затем подтверждение; предвыбирает направление из ?area=.' },
+        file: 'src/pages/consulta.astro',
+        code: `---
+import { LawConsultPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawConsultPage action="/api/consulta" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Client sign in', es: 'Acceso clientes', ru: 'Вход для клиентов' },
+        description: { en: 'Split sign-in with scales illustration, testimonial and figures.', es: 'Acceso a pantalla partida con ilustración de la balanza, testimonio y cifras.', ru: 'Вход на двух панелях с иллюстрацией весов, отзывом и цифрами.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { LawSignInPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'portal/',
+        name: { en: 'Portal home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'Overview, what needs your attention, appointments and invoices.', es: 'Resumen, lo que necesita tu atención, citas y facturas.', ru: 'Обзор, что требует внимания, встречи и счета.' },
+        file: 'src/pages/portal/index.astro',
+        code: `---
+import { LawDashboardPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawDashboardPage />`,
+      },
+      {
+        id: 'cases', path: 'portal/expedientes/',
+        name: { en: 'Cases', es: 'Expedientes', ru: 'Дела' },
+        description: { en: 'Cases with status filter, progress, next step and timeline.', es: 'Expedientes con filtro de estado, progreso, siguiente paso y cronología.', ru: 'Дела с фильтром статуса, прогрессом, следующим шагом и хронологией.' },
+        file: 'src/pages/portal/expedientes.astro',
+        code: `---
+import { LawCasesPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawCasesPage />`,
+      },
+      {
+        id: 'documents', path: 'portal/documentos/',
+        name: { en: 'Documents', es: 'Documentos', ru: 'Документы' },
+        description: { en: 'Vault with search, filters, upload and e-signature.', es: 'Caja de documentos con búsqueda, filtros, subida y firma electrónica.', ru: 'Хранилище с поиском, фильтрами, загрузкой и электронной подписью.' },
+        file: 'src/pages/portal/documentos.astro',
+        code: `---
+import { LawDocumentsPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawDocumentsPage />`,
+      },
+      {
+        id: 'messages', path: 'portal/mensajes/',
+        name: { en: 'Messages', es: 'Mensajes', ru: 'Сообщения' },
+        description: { en: 'Secure chat with your lawyer and upcoming appointments.', es: 'Chat seguro con tu abogado y próximas citas.', ru: 'Защищённый чат с юристом и ближайшие встречи.' },
+        file: 'src/pages/portal/mensajes.astro',
+        code: `---
+import { LawMessagesPage } from 'astro-component-kit/templates/law-firm';
+---
+
+<LawMessagesPage />`,
+      },
+    ],
+    newComponents: [
+      'law-hero', 'law-practice-areas', 'law-team', 'law-process', 'law-results', 'law-fees', 'law-consultation', 'law-insights', 'law-faq', 'law-footer',
+      'law-case-summary', 'law-case-explorer', 'law-document-vault', 'law-message-thread', 'law-appointments', 'law-invoices', 'law-portal-nav', 'law-portal-topbar', 'law-portal-heading', 'law-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your case-management system)
+import { LawHomePage, lawData, lawRoutes } from 'astro-component-kit/templates/law-firm';
+
+const data = {
+  ...lawData,
+  brand: { ...lawData.brand, name: 'Mora Abogados', phone: '+34 900 000 000' },
+  cases: await fetch('https://api.example.com/cases').then((r) => r.json()),
+};
+
+const routes = { ...lawRoutes, areas: '/practice', consult: '/book' };
+---
+
+<LawHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

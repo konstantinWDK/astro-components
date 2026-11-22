@@ -1,0 +1,201 @@
+---
+/**
+ * LawInvoices — Fees and invoices: the pending balance, a list of invoices with concept, due date,
+ * amount and status, and a "Pagar" button on pending or overdue ones that marks them as paid
+ * (demo) and updates the balance.
+ *
+ * @param {LawInvoice[]} invoices - Invoices to list.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: status is a text badge (Pagada / Pendiente / Vencida); pay buttons name the
+ * invoice; the balance and payment confirmations are announced in aria-live regions.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawInvoices, formatLawDate, formatLawMoney, type LawInvoice } from '../templates/law-firm/data';
+
+interface OwnProps {
+  invoices?: LawInvoice[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { invoices = lawInvoices, title = 'Honorarios y facturas', class: classAttr, ...rest } = Astro.props;
+
+const uid = `lin-${Math.random().toString(36).slice(2, 8)}`;
+const owed = invoices.filter((i) => i.status !== 'Pagada').reduce((n, i) => n + i.amount, 0);
+const tone = (s: string) => (s === 'Pagada' ? 'ok' : s === 'Vencida' ? 'bad' : 'wait');
+---
+
+<section class:list={['law-ui', 'law-inv', classAttr]} aria-labelledby={`${uid}-title`} data-law-inv {...rest}>
+  <header class="law-inv__head">
+    <h2 id={`${uid}-title`} class="law-inv__title">{title}</h2>
+    <p class="law-inv__balance">Pendiente <strong data-inv-total>{formatLawMoney(owed)}</strong></p>
+  </header>
+
+  <ul class="law-inv__list" role="list">
+    {invoices.map((i) => (
+      <li class="law-inv__item" data-invoice data-amount={i.amount}>
+        <div class="law-inv__main">
+          <p class="law-inv__concept">{i.concept}</p>
+          <p class="law-inv__due">Vence el <time datetime={i.due}>{formatLawDate(i.due)}</time></p>
+        </div>
+        <p class="law-inv__amount">{formatLawMoney(i.amount)}</p>
+        <span class={`law-inv__status is-${tone(i.status)}`} data-status>{i.status}</span>
+        {i.status !== 'Pagada' ? <button type="button" class="law-inv__pay" data-pay aria-label={`Pagar ${i.concept}`}>Pagar</button> : <span class="law-inv__pay-ph" aria-hidden="true"></span>}
+      </li>
+    ))}
+  </ul>
+  <p class="law-inv__live lw-sr" role="status" aria-live="polite" data-inv-live></p>
+</section>
+
+<script>
+  function initInv(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const total = root.querySelector<HTMLElement>('[data-inv-total]')!;
+    const live = root.querySelector<HTMLElement>('[data-inv-live]')!;
+    const fmt = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+    const recalc = () => {
+      let owed = 0;
+      root.querySelectorAll<HTMLElement>('[data-invoice]').forEach((li) => {
+        if (li.querySelector('[data-status]')?.textContent !== 'Pagada') owed += Number(li.dataset.amount);
+      });
+      total.textContent = fmt.format(owed);
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-pay]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const li = btn.closest<HTMLElement>('[data-invoice]')!;
+        const st = li.querySelector<HTMLElement>('[data-status]')!;
+        st.textContent = 'Pagada';
+        st.className = 'law-inv__status is-ok';
+        btn.replaceWith(Object.assign(document.createElement('span'), { className: 'law-inv__pay-ph' }));
+        recalc();
+        live.textContent = `Pago registrado: ${li.querySelector('.law-inv__concept')?.textContent}.`;
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-inv]').forEach(initInv);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-inv {
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-inv__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .law-inv__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .law-inv__balance {
+    margin: 0;
+    color: var(--lw-text-3);
+    font-size: 0.9rem;
+  }
+
+  .law-inv__balance strong {
+    color: var(--lw-brand);
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .law-inv__list {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-inv__item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem) var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--lw-bg);
+  }
+
+  .law-inv__concept {
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .law-inv__due {
+    margin: 2px 0 0;
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+  }
+
+  .law-inv__amount {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .law-inv__status {
+    justify-self: start;
+    padding: 0.1rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--lw-surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .law-inv__status.is-ok { color: var(--lw-ok); }
+  .law-inv__status.is-wait { color: var(--lw-warn); }
+  .law-inv__status.is-bad { color: var(--lw-bad); }
+
+  .law-inv__pay {
+    justify-self: end;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .law-inv__pay:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-inv__pay:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+</style>

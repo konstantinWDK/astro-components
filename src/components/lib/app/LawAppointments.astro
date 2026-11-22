@@ -1,0 +1,268 @@
+---
+/**
+ * LawAppointments — Upcoming appointments: a date block, title, place or video link and the
+ * lawyer for each, a small month calendar with the appointment days marked, and an
+ * "add to calendar" button that downloads an .ics file for the event.
+ *
+ * @param {LawAppointment[]} appointments - Appointments to list.
+ * @param {LawLawyer[]} lawyers - Used to name each appointment's lawyer.
+ * @param {string} bookHref - "Book a new appointment" link.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: appointments are an ordered list with <time datetime>; the calendar is a
+ * table with a caption and marked days carry a text label ("con cita"); the mark is not only
+ * colour; the .ics buttons name the event.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawAppointments, lawLawyers, formatLawTime, getLawLawyer, type LawAppointment, type LawLawyer } from '../templates/law-firm/data';
+
+interface OwnProps {
+  appointments?: LawAppointment[];
+  lawyers?: LawLawyer[];
+  bookHref?: string;
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { appointments = lawAppointments, lawyers = lawLawyers, bookHref = '#', title = 'Próximas citas', class: classAttr, ...rest } = Astro.props;
+
+const uid = `lap-${Math.random().toString(36).slice(2, 8)}`;
+const list = [...appointments].sort((a, b) => a.at.localeCompare(b.at));
+const first = new Date(list[0]?.at ?? '2026-11-26T12:00:00');
+const year = first.getFullYear();
+const month = first.getMonth();
+const monthName = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(first);
+const startOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+const daysIn = new Date(year, month + 1, 0).getDate();
+const marked = new Set(list.filter((a) => new Date(a.at).getMonth() === month).map((a) => new Date(a.at).getDate()));
+const cells: Array<number | null> = [...Array(startOffset).fill(null), ...Array.from({ length: daysIn }, (_, i) => i + 1)];
+while (cells.length % 7) cells.push(null);
+const weeks = Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
+const dow = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+---
+
+<section class:list={['law-ui', 'law-appt', classAttr]} aria-labelledby={`${uid}-title`} data-law-appt {...rest}>
+  <header class="law-appt__head">
+    <h2 id={`${uid}-title`} class="law-appt__title">{title}</h2>
+    <a class="law-appt__book" href={bookHref}>Nueva cita</a>
+  </header>
+
+  <ol class="law-appt__list">
+    {list.map((a) => {
+      const d = new Date(a.at);
+      const lawyer = getLawLawyer(a.lawyerId, lawyers);
+      return (
+        <li class="law-appt__item">
+          <time class="law-appt__date" datetime={a.at}>
+            <b>{d.getDate()}</b>
+            <span>{new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(d).replace('.', '')}</span>
+          </time>
+          <div class="law-appt__body">
+            <p class="law-appt__name">{a.title}</p>
+            <p class="law-appt__meta">{formatLawTime(a.at)} · {a.online ? 'Videollamada' : a.where} · {lawyer?.name}</p>
+            <button type="button" class="law-appt__ics" data-ics data-title={a.title} data-at={a.at} data-where={a.where} aria-label={`Añadir al calendario: ${a.title}`}>Añadir al calendario</button>
+          </div>
+        </li>
+      );
+    })}
+  </ol>
+
+  <table class="law-appt__cal">
+    <caption>{monthName}</caption>
+    <thead><tr>{dow.map((d) => <th scope="col">{d}</th>)}</tr></thead>
+    <tbody>
+      {weeks.map((w) => (
+        <tr>
+          {w.map((day) => (
+            <td class:list={[day && marked.has(day) && 'is-marked']}>
+              {day && (marked.has(day) ? <><span aria-hidden="true">{day}</span><span class="lw-sr">{day}, con cita</span></> : day)}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <p class="law-appt__live lw-sr" role="status" aria-live="polite" data-appt-live></p>
+</section>
+
+<script>
+  function initAppt(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const live = root.querySelector<HTMLElement>('[data-appt-live]')!;
+    root.querySelectorAll<HTMLButtonElement>('[data-ics]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const start = new Date(btn.dataset.at ?? '');
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        const f = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+        const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Fuero//Portal//ES', 'BEGIN:VEVENT', `UID:${f(start)}@fuero.example`, `DTSTAMP:${f(new Date())}`, `DTSTART:${f(start)}`, `DTEND:${f(end)}`, `SUMMARY:${btn.dataset.title}`, `LOCATION:${btn.dataset.where}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+        const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+        Object.assign(document.createElement('a'), { href: url, download: 'cita-fuero.ics' }).click();
+        URL.revokeObjectURL(url);
+        live.textContent = `Evento «${btn.dataset.title}» descargado.`;
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-appt]').forEach(initAppt);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-appt {
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-appt__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .law-appt__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .law-appt__book {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--lw-brand);
+    border-radius: var(--r-sm, 8px);
+    color: var(--lw-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-appt__book:hover {
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-appt__book:focus-visible,
+  .law-appt__ics:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-appt__list {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-appt__item {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--lw-bg);
+  }
+
+  .law-appt__date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-md, 12px);
+    background: rgba(var(--lw-brand-rgb), 0.14);
+    color: var(--lw-brand);
+  }
+
+  .law-appt__date b {
+    font-family: var(--lw-font-display);
+    font-size: 1.9rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .law-appt__date span {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .law-appt__name {
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .law-appt__meta {
+    margin: 2px 0 var(--sp-1, 0.25rem);
+    color: var(--lw-text-3);
+    font-size: 0.84rem;
+  }
+
+  .law-appt__ics {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--lw-brand);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .law-appt__cal {
+    width: 100%;
+    max-width: 320px;
+    border-collapse: separate;
+    border-spacing: 3px;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .law-appt__cal caption {
+    margin-bottom: var(--sp-2, 0.5rem);
+    color: var(--lw-text-2);
+    font-weight: 700;
+    text-align: left;
+    text-transform: capitalize;
+  }
+
+  .law-appt__cal th {
+    color: var(--lw-text-3);
+    font-size: 0.72rem;
+  }
+
+  .law-appt__cal td {
+    height: 34px;
+    border-radius: 8px;
+    color: var(--lw-text-2);
+  }
+
+  .law-appt__cal td.is-marked {
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font-weight: 800;
+  }
+</style>

@@ -204,3 +204,15 @@ export { default as BankSecurity } from './BankSecurity.astro';
 export { default as BankFaq } from './BankFaq.astro';
 export { default as BankOnboarding } from './BankOnboarding.astro';
 export { default as BankFooter } from './BankFooter.astro';
+
+// Law firm ("Fuero")
+export { default as LawHero } from './LawHero.astro';
+export { default as LawPracticeAreas } from './LawPracticeAreas.astro';
+export { default as LawTeam } from './LawTeam.astro';
+export { default as LawProcess } from './LawProcess.astro';
+export { default as LawResults } from './LawResults.astro';
+export { default as LawFees } from './LawFees.astro';
+export { default as LawConsultation } from './LawConsultation.astro';
+export { default as LawInsights } from './LawInsights.astro';
+export { default as LawFaq } from './LawFaq.astro';
+export { default as LawFooter } from './LawFooter.astro';

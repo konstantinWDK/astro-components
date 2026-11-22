@@ -1,0 +1,345 @@
+---
+/**
+ * LawSignIn — Split sign-in screen: brand panel with a scales illustration, a
+ * testimonial and key figures, and a form with email, password (show/hide), a "remember me"
+ * option and a demo quick-access link. Without an `action` it redirects to `dashboardHref`.
+ *
+ * @param {string} dashboardHref - Destination after signing in.
+ * @param {string} backHref - Link back to the public site.
+ * @param {string} openHref - "Request a consultation" link.
+ * @param {string} action - Backend endpoint. Empty = demo redirect.
+ * @param {string} brand - Law name.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields with autocomplete tokens; the password toggle is a button with
+ * aria-pressed; errors are announced in role="alert"; the brand illustration is aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+
+interface OwnProps {
+  dashboardHref?: string;
+  backHref?: string;
+  openHref?: string;
+  action?: string;
+  brand?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  dashboardHref = '/portal',
+  backHref = '/',
+  openHref = '/consulta',
+  action = '',
+  brand = 'Fuero',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['law-ui', 'law-signin', classAttr]} aria-labelledby={`${uid}-title`} data-law-signin data-dashboard={dashboardHref} {...rest}>
+  <aside class="law-signin__brand">
+    <a class="law-signin__back" href={backHref}><span aria-hidden="true">←</span> Volver a {brand}</a>
+    <svg class="law-signin__art" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="100" cy="100" r="92" stroke-width="1" opacity=".35" />
+      <path d="M100 38v118M70 160h60M52 62h96" />
+      <path d="M52 62 34 106a18 18 0 0 0 36 0zM148 62l-18 44a18 18 0 0 0 36 0z" />
+      <circle cx="100" cy="38" r="5" fill="currentColor" />
+    </svg>
+    <figure class="law-signin__quote">
+      <blockquote>“Pude seguir mi divorcio paso a paso desde el móvil. Nunca tuve que llamar para preguntar cómo iba.”</blockquote>
+      <figcaption>Elena M. · clienta desde 2026</figcaption>
+    </figure>
+    <dl class="law-signin__stats">
+      <div><dt>casos resueltos</dt><dd>1.800+</dd></div>
+      <div><dt>respuesta garantizada</dt><dd>24 h</dd></div>
+    </dl>
+  </aside>
+
+  <div class="law-signin__panel">
+    <div class="law-signin__box">
+      <h1 id={`${uid}-title`} class="law-signin__title">Portal del cliente</h1>
+      <p class="law-signin__lead">Tus expedientes, documentos y mensajes en un solo lugar.</p>
+
+      <form class="law-signin__form" action={action || undefined} method={action ? 'post' : undefined} novalidate={!action} data-signin-form>
+        <div class="law-signin__field"><label for={`${uid}-email`}>Email</label><input id={`${uid}-email`} name="email" type="email" required autocomplete="username" placeholder="tu@email.com" /></div>
+        <div class="law-signin__field">
+          <label for={`${uid}-pw`}>Contraseña</label>
+          <div class="law-signin__pw">
+            <input id={`${uid}-pw`} name="password" type="password" required minlength="4" autocomplete="current-password" />
+            <button type="button" aria-pressed="false" aria-controls={`${uid}-pw`} data-pw-toggle>Mostrar</button>
+          </div>
+        </div>
+        <label class="law-signin__remember"><input type="checkbox" name="remember" checked /> Recordar este dispositivo</label>
+        <p class="law-signin__error" role="alert" hidden data-signin-error></p>
+        <button type="submit" class="law-signin__submit">Entrar</button>
+      </form>
+
+      <p class="law-signin__demo">Demo rápida: <a href={dashboardHref}>Entrar al portal</a></p>
+      <p class="law-signin__alt">¿Aún no eres cliente? <a href={openHref}>Reserva una consulta</a></p>
+      <p class="law-signin__sec">🔒 Conexión cifrada · Secreto profesional garantizado</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initSignIn(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-signin-form]')!;
+    const err = root.querySelector<HTMLElement>('[data-signin-error]')!;
+    const toggle = root.querySelector<HTMLButtonElement>('[data-pw-toggle]')!;
+    const pw = form.elements.namedItem('password') as HTMLInputElement;
+    toggle.addEventListener('click', () => {
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    if (form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        err.hidden = false;
+        err.textContent = 'Escribe un email válido y una contraseña de al menos 4 caracteres.';
+        form.querySelector<HTMLElement>(':invalid')?.focus();
+        return;
+      }
+      location.href = root.dataset.dashboard ?? '/';
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-signin]').forEach(initSignIn);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-signin {
+    display: grid;
+    min-height: 100vh;
+    background: var(--lw-bg);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-signin__brand {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-8, 2rem);
+    overflow: hidden;
+    border-right: 1px solid var(--lw-border);
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(var(--lw-brand-rgb), 0.2), transparent 55%),
+      linear-gradient(180deg, var(--lw-surface), var(--lw-bg-raised));
+  }
+
+  .law-signin__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--lw-text-2);
+    text-decoration: none;
+  }
+
+  .law-signin__back:hover {
+    color: var(--lw-brand);
+  }
+
+  .law-signin__art {
+    align-self: center;
+    width: min(260px, 60%);
+    color: var(--lw-gold);
+  }
+
+  .law-signin__quote {
+    margin: 0;
+  }
+
+  .law-signin__quote blockquote {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.8rem;
+    line-height: 1.25;
+  }
+
+  .law-signin__quote figcaption {
+    margin-top: var(--sp-3, 0.75rem);
+    color: var(--lw-text-3);
+    font-size: 0.9rem;
+  }
+
+  .law-signin__stats {
+    display: flex;
+    gap: var(--sp-8, 2rem);
+    margin: 0;
+  }
+
+  .law-signin__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .law-signin__stats dt {
+    color: var(--lw-text-3);
+    font-size: 0.82rem;
+  }
+
+  .law-signin__stats dd {
+    margin: 0;
+    font-family: var(--lw-font-mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+  }
+
+  .law-signin__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+  }
+
+  .law-signin__box {
+    width: min(100%, 420px);
+  }
+
+  .law-signin__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: 2.8rem;
+  }
+
+  .law-signin__lead {
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-6, 1.5rem);
+    color: var(--lw-text-2);
+  }
+
+  .law-signin__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .law-signin__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .law-signin__field label {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .law-signin__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-surface);
+    color: var(--lw-text);
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .law-signin__pw {
+    position: relative;
+  }
+
+  .law-signin__pw input {
+    padding-right: 92px;
+  }
+
+  .law-signin__pw button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 84px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--lw-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .law-signin__field input:focus-visible,
+  .law-signin__pw button:focus-visible,
+  .law-signin__submit:focus-visible,
+  .law-signin a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-signin__remember {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 32px;
+    color: var(--lw-text-2);
+    font-size: 0.92rem;
+  }
+
+  .law-signin__remember input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--lw-brand);
+  }
+
+  .law-signin__error {
+    margin: 0;
+    color: var(--lw-bad);
+    font-size: 0.9rem;
+  }
+
+  .law-signin__submit {
+    min-height: 52px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .law-signin__submit:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-signin__demo,
+  .law-signin__alt,
+  .law-signin__sec {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--lw-text-3);
+    font-size: 0.9rem;
+  }
+
+  .law-signin a {
+    color: var(--lw-brand);
+    font-weight: 700;
+  }
+
+  @media (min-width: 900px) {
+    .law-signin {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .law-signin__brand {
+      display: flex;
+    }
+  }
+</style>

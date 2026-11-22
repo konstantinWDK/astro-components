@@ -1,0 +1,208 @@
+---
+/**
+ * LawInsights — Legal articles: three cards with area, date, reading time, title and excerpt;
+ * the first one is featured and larger on desktop.
+ *
+ * @param {LawInsight[]} insights - Articles to show.
+ * @param {string} href - Base URL of the article pages; each links to `${href}#<id>`.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each card is an <article> with a heading link that stretches over the card;
+ * dates use <time datetime>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawInsights, type LawInsight } from '../templates/law-firm/data';
+
+interface OwnProps {
+  insights?: LawInsight[];
+  href?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  insights = lawInsights,
+  href = '#',
+  title = 'Cuestiones legales, sin jerga',
+  subtitle = 'Guías breves escritas por nuestros abogados para que decidas con información.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const uid = `li-${Math.random().toString(36).slice(2, 8)}`;
+const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${iso}T12:00:00`));
+---
+
+<section class:list={['law-ui', 'law-insights', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="law-insights__inner">
+    <header class="law-insights__head">
+      <Heading id={`${uid}-title`} class="law-insights__title">{title}</Heading>
+      {subtitle && <p class="law-insights__subtitle">{subtitle}</p>}
+    </header>
+    <ul class="law-insights__grid" role="list">
+      {insights.map((a, i) => (
+        <li class:list={[i === 0 && 'is-first']}>
+          <article class="law-post">
+            <p class="law-post__meta"><span>{a.area}</span><time datetime={a.date}>{date(a.date)}</time><span>{a.minutes} min</span></p>
+            <Sub class="law-post__title"><a href={`${href}#${a.id}`}>{a.title}</a></Sub>
+            <p class="law-post__excerpt">{a.excerpt}</p>
+            <span class="law-post__more" aria-hidden="true">Leer artículo →</span>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .law-insights {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-insights__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .law-insights__head {
+    max-width: 620px;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .law-insights__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1;
+  }
+
+  .law-insights__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--lw-text-2);
+    line-height: 1.6;
+  }
+
+  .law-insights__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-post {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    height: 100%;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .law-post:hover,
+  .law-post:focus-within {
+    border-color: rgba(var(--lw-brand-rgb), 0.55);
+    transform: translateY(-3px);
+  }
+
+  .law-post__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    margin: 0;
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+  }
+
+  .law-post__meta span:first-child {
+    color: var(--lw-gold);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .law-post__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .is-first .law-post__title {
+    font-size: 2.2rem;
+  }
+
+  .law-post__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .law-post__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .law-post__title a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 4px;
+  }
+
+  .law-post__excerpt {
+    margin: 0;
+    color: var(--lw-text-2);
+    line-height: 1.6;
+  }
+
+  .law-post__more {
+    margin-top: auto;
+    color: var(--lw-brand);
+    font-weight: 700;
+  }
+
+  @media (min-width: 900px) {
+    .law-insights__grid {
+      grid-template-columns: 1.4fr 1fr;
+      grid-auto-rows: auto;
+    }
+
+    .law-insights__grid .is-first {
+      grid-row: span 2;
+    }
+
+    .is-first .law-post__title {
+      font-size: 2.4rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .law-post {
+      transition: none;
+    }
+
+    .law-post:hover,
+    .law-post:focus-within {
+      transform: none;
+    }
+  }
+</style>

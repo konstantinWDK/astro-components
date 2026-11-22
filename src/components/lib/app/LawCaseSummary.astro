@@ -1,0 +1,232 @@
+---
+/**
+ * LawCaseSummary — Portal home overview: four figures (active cases, next appointment, documents
+ * awaiting your signature, pending balance) and an "Needs your attention" list built from the
+ * data, each item linking to where you can act on it.
+ *
+ * @param {LawCase[]} cases - Client's cases.
+ * @param {LawDocument[]} documents - Client's documents.
+ * @param {LawAppointment[]} appointments - Upcoming appointments.
+ * @param {LawInvoice[]} invoices - Invoices.
+ * @param {{cases: string, documents: string, invoices: string, messages: string}} hrefs - Portal links.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: figures are a description list; attention items are links with text that says
+ * what to do; urgency uses a text tag in addition to colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawCases, lawDocuments, lawAppointments, lawInvoices, formatLawDate, formatLawTime, formatLawMoney, type LawCase, type LawDocument, type LawAppointment, type LawInvoice } from '../templates/law-firm/data';
+
+interface OwnProps {
+  cases?: LawCase[];
+  documents?: LawDocument[];
+  appointments?: LawAppointment[];
+  invoices?: LawInvoice[];
+  hrefs?: { cases: string; documents: string; invoices: string; messages: string };
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  cases = lawCases,
+  documents = lawDocuments,
+  appointments = lawAppointments,
+  invoices = lawInvoices,
+  hrefs = { cases: '#', documents: '#', invoices: '#', messages: '#' },
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `lcs-${Math.random().toString(36).slice(2, 8)}`;
+const active = cases.filter((c) => c.status !== 'Cerrado');
+const next = [...appointments].sort((a, b) => a.at.localeCompare(b.at))[0];
+const toSign = documents.filter((d) => d.needsSignature);
+const owed = invoices.filter((i) => i.status !== 'Pagada').reduce((n, i) => n + i.amount, 0);
+const overdue = invoices.filter((i) => i.status === 'Vencida');
+const waiting = cases.filter((c) => c.status === 'Pendiente de cliente');
+
+const attention = [
+  ...waiting.map((c) => ({ tag: 'Acción tuya', tone: 'warn', text: `${c.title}: ${c.nextStep}`, href: hrefs.cases, label: 'Ver expediente' })),
+  ...toSign.map((d) => ({ tag: 'Firma', tone: 'brand', text: `Pendiente de tu firma: ${d.name}`, href: hrefs.documents, label: 'Firmar' })),
+  ...overdue.map((i) => ({ tag: 'Vencida', tone: 'bad', text: `${i.concept} · ${formatLawMoney(i.amount)}`, href: hrefs.invoices, label: 'Pagar' })),
+];
+---
+
+<section class:list={['law-ui', 'law-summary', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <h2 id={`${uid}-title`} class="lw-sr">Resumen de tu situación</h2>
+  <dl class="law-summary__figures">
+    <div><dt>Expedientes activos</dt><dd>{active.length}</dd><small>{cases.length - active.length} cerrado{cases.length - active.length === 1 ? '' : 's'}</small></div>
+    <div><dt>Próxima cita</dt><dd class="is-text">{next ? formatLawDate(next.at, false) : '—'}</dd><small>{next ? `${formatLawTime(next.at)} · ${next.title}` : 'Sin citas'}</small></div>
+    <div><dt>Pendiente de firma</dt><dd>{toSign.length}</dd><small>documento{toSign.length === 1 ? '' : 's'}</small></div>
+    <div><dt>Saldo pendiente</dt><dd class="is-text">{formatLawMoney(owed)}</dd><small>{overdue.length ? `${overdue.length} vencida${overdue.length === 1 ? '' : 's'}` : 'Al corriente'}</small></div>
+  </dl>
+
+  <div class="law-summary__attention">
+    <h3>Necesita tu atención</h3>
+    {attention.length ? (
+      <ul role="list">
+        {attention.map((a) => (
+          <li>
+            <span class={`law-summary__tag is-${a.tone}`}>{a.tag}</span>
+            <span class="law-summary__text">{a.text}</span>
+            <a href={a.href}>{a.label} →</a>
+          </li>
+        ))}
+      </ul>
+    ) : <p class="law-summary__empty">Todo al día: no tienes nada pendiente.</p>}
+    <a class="law-summary__msg" href={hrefs.messages}>Escribir a mi abogado</a>
+  </div>
+</section>
+
+<style>
+  .law-summary {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-summary__figures {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+  }
+
+  .law-summary__figures div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--lw-bg-raised);
+  }
+
+  .law-summary__figures dt {
+    color: var(--lw-text-3);
+    font-size: 0.82rem;
+  }
+
+  .law-summary__figures dd {
+    order: -1;
+    margin: 0;
+    color: var(--lw-brand);
+    font-family: var(--lw-font-display);
+    font-size: 2.4rem;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .law-summary__figures dd.is-text {
+    font-size: 1.7rem;
+  }
+
+  .law-summary__figures small {
+    color: var(--lw-text-2);
+    font-size: 0.82rem;
+  }
+
+  .law-summary__attention {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+  }
+
+  .law-summary__attention h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--lw-font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .law-summary__attention ul {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-summary__attention li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-bg);
+  }
+
+  .law-summary__tag {
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--lw-surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .law-summary__tag.is-warn { color: var(--lw-warn); }
+  .law-summary__tag.is-brand { color: var(--lw-brand); }
+  .law-summary__tag.is-bad { color: var(--lw-bad); }
+
+  .law-summary__text {
+    color: var(--lw-text-2);
+    font-size: 0.92rem;
+    line-height: 1.4;
+  }
+
+  .law-summary__attention li a {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--lw-brand);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .law-summary__empty {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--lw-text-2);
+  }
+
+  .law-summary__msg {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-sm, 8px);
+    color: var(--lw-text);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-summary__msg:hover {
+    border-color: var(--lw-brand);
+  }
+
+  .law-summary a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 800px) {
+    .law-summary__figures {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .law-summary__attention li {
+      grid-template-columns: auto 1fr auto;
+    }
+
+    .law-summary__attention li a {
+      grid-column: auto;
+    }
+  }
+</style>

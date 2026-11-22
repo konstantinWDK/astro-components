@@ -1,0 +1,285 @@
+---
+/**
+ * LawPracticeAreas — Practice areas as an interactive list: pick an area on the left (tabs) and
+ * read its summary, typical matters and a consultation link on the right. Stacks as an
+ * accordion-style list on phones.
+ *
+ * @param {LawArea[]} areas - Practice areas (icon keys: heart | building | briefcase | home | scale | globe).
+ * @param {string} consultHref - CTA link; the area is added as `?area=<id>`.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: WAI-ARIA tabs (role=tablist/tab/tabpanel) with arrow-key navigation, Home/End
+ * and roving tabindex; panels are labelled by their tab; icons are decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawAreas, type LawArea } from '../templates/law-firm/data';
+
+interface OwnProps {
+  areas?: LawArea[];
+  consultHref?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  areas = lawAreas,
+  consultHref = '/consulta',
+  title = 'Áreas de práctica',
+  subtitle = 'Seis especialidades, un mismo estilo de trabajo: claridad, plazos y trato directo.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `lpa-${Math.random().toString(36).slice(2, 8)}`;
+const icons: Record<string, string> = {
+  heart: '<path d="M12 21s-8-5.200-8-11a4.500 4.500 0 0 1 8-2.800A4.500 4.500 0 0 1 20 10c0 5.800-8 11-8 11z"/>',
+  building: '<rect x="4" y="3" width="10" height="18" rx="1"/><path d="M14 9h6v12h-6M8 7h2M8 11h2M8 15h2"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+  home: '<path d="M3 11.500 12 4l9 7.500M5.500 10v9.500h13V10"/>',
+  scale: '<path d="M12 3v18M6 21h12M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+};
+---
+
+<section class:list={['law-ui', 'law-areas', classAttr]} aria-labelledby={`${uid}-title`} data-law-areas data-consult={consultHref} {...rest}>
+  <div class="law-areas__inner">
+    <header class="law-areas__head">
+      <Heading id={`${uid}-title`} class="law-areas__title">{title}</Heading>
+      {subtitle && <p class="law-areas__subtitle">{subtitle}</p>}
+    </header>
+
+    <div class="law-areas__layout">
+      <div class="law-areas__tabs" role="tablist" aria-label="Áreas de práctica" aria-orientation="vertical">
+        {areas.map((a, i) => (
+          <button type="button" role="tab" class="law-areas__tab" id={`${uid}-t-${a.id}`} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`${uid}-p-${a.id}`} tabindex={i === 0 ? 0 : -1} data-area-tab>
+            <span class="law-areas__icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={icons[a.icon] ?? icons.scale} /></span>
+            <span>{a.name}</span>
+          </button>
+        ))}
+      </div>
+
+      <div class="law-areas__panels">
+        {areas.map((a, i) => (
+          <div role="tabpanel" class="law-areas__panel" id={`${uid}-p-${a.id}`} aria-labelledby={`${uid}-t-${a.id}`} hidden={i !== 0} tabindex="0" data-area-panel>
+            <h3 class="law-areas__name">{a.name}</h3>
+            <p class="law-areas__summary">{a.summary}</p>
+            <p class="law-areas__label">Asuntos habituales</p>
+            <ul class="law-areas__list" role="list">
+              {a.examples.map((e) => <li>{e}</li>)}
+            </ul>
+            <a class="law-areas__cta" href={`${consultHref}?area=${a.id}`}>Consultar sobre {a.name.toLowerCase()} →</a>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initAreas(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-area-tab]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-area-panel]'));
+    const select = (i: number, focus = false) => {
+      tabs.forEach((t, k) => {
+        t.setAttribute('aria-selected', String(k === i));
+        t.tabIndex = k === i ? 0 : -1;
+        panels[k].hidden = k !== i;
+      });
+      if (focus) tabs[i].focus();
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => select(i));
+      t.addEventListener('keydown', (e) => {
+        const k = (e as KeyboardEvent).key;
+        const next = k === 'ArrowDown' || k === 'ArrowRight' ? (i + 1) % tabs.length : k === 'ArrowUp' || k === 'ArrowLeft' ? (i - 1 + tabs.length) % tabs.length : k === 'Home' ? 0 : k === 'End' ? tabs.length - 1 : -1;
+        if (next >= 0) { e.preventDefault(); select(next, true); }
+      });
+    });
+    const wanted = new URLSearchParams(location.search).get('area');
+    const idx = tabs.findIndex((t) => t.id.endsWith(`-t-${wanted}`));
+    if (idx > 0) select(idx);
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-areas]').forEach(initAreas);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-areas {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-areas__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .law-areas__head {
+    max-width: 620px;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .law-areas__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1;
+  }
+
+  .law-areas__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--lw-text-2);
+    line-height: 1.6;
+  }
+
+  .law-areas__layout {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .law-areas__tabs {
+    display: grid;
+    gap: var(--sp-1, 0.25rem);
+    align-content: start;
+  }
+
+  .law-areas__tab {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 56px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid transparent;
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--lw-text-2);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .law-areas__tab:hover {
+    background: var(--lw-surface);
+    color: var(--lw-text);
+  }
+
+  .law-areas__tab[aria-selected='true'] {
+    border-color: rgba(var(--lw-brand-rgb), 0.5);
+    background: rgba(var(--lw-brand-rgb), 0.1);
+    color: var(--lw-text);
+  }
+
+  .law-areas__tab:focus-visible,
+  .law-areas__panel:focus-visible,
+  .law-areas__cta:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-areas__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--lw-surface);
+    color: var(--lw-brand);
+  }
+
+  .law-areas__panel {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg);
+  }
+
+  .law-areas__panel[hidden] {
+    display: none;
+  }
+
+  .law-areas__name {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.05;
+  }
+
+  .law-areas__summary {
+    max-width: 560px;
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--lw-text-2);
+    line-height: 1.65;
+  }
+
+  .law-areas__label {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--lw-gold);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .law-areas__list {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-areas__list li {
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-bg-raised);
+  }
+
+  .law-areas__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--lw-brand);
+    font-weight: 700;
+  }
+
+  @media (min-width: 880px) {
+    .law-areas__layout {
+      grid-template-columns: 320px 1fr;
+      gap: var(--sp-8, 2rem);
+    }
+
+    .law-areas__list {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .law-areas__tab {
+      transition: none;
+    }
+  }
+</style>

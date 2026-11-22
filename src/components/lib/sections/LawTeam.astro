@@ -1,0 +1,288 @@
+---
+/**
+ * LawTeam — Lawyers' team: initials portrait, role, areas, years of practice, languages and a
+ * short bio, with an optional filter by practice area.
+ *
+ * @param {LawLawyer[]} lawyers - Team members.
+ * @param {LawArea[]} areas - Used to name areas and build the filter.
+ * @param {boolean} filter - Show the area filter. Default false.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each lawyer is an <article> named by its heading; the filter is a toggle
+ * button group with aria-pressed and a polite result count; portraits are decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawLawyers, lawAreas, type LawLawyer, type LawArea } from '../templates/law-firm/data';
+
+interface OwnProps {
+  lawyers?: LawLawyer[];
+  areas?: LawArea[];
+  filter?: boolean;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  lawyers = lawLawyers,
+  areas = lawAreas,
+  filter = false,
+  title = 'Las personas detrás de tu caso',
+  subtitle = 'Abogados colegiados, con años de sala y un compromiso: que siempre sepas en qué punto estás.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const uid = `lt-${Math.random().toString(36).slice(2, 8)}`;
+const initialsOf = (n: string) => n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+const areaName = (id: string) => areas.find((a) => a.id === id)?.name ?? id;
+---
+
+<section class:list={['law-ui', 'law-team', classAttr]} aria-labelledby={`${uid}-title`} data-law-team {...rest}>
+  <div class="law-team__inner">
+    <header class="law-team__head">
+      <Heading id={`${uid}-title`} class="law-team__title">{title}</Heading>
+      {subtitle && <p class="law-team__subtitle">{subtitle}</p>}
+    </header>
+
+    {filter && (
+      <>
+        <div class="law-team__chips" role="group" aria-label="Filtrar por área">
+          <button type="button" aria-pressed="true" data-team-area="">Todas</button>
+          {areas.map((a) => <button type="button" aria-pressed="false" data-team-area={a.id}>{a.name}</button>)}
+        </div>
+        <p class="law-team__count" role="status" aria-live="polite" data-team-count>{lawyers.length} abogados</p>
+      </>
+    )}
+
+    <ul class="law-team__grid" role="list">
+      {lawyers.map((l) => (
+        <li data-lawyer data-areas={l.areas.join(' ')}>
+          <article class="law-lawyer" aria-labelledby={`${uid}-${l.id}`} style={`--lawyer-hue:${l.hue}`}>
+            <div class="law-lawyer__portrait" aria-hidden="true"><span>{initialsOf(l.name)}</span></div>
+            <div class="law-lawyer__body">
+              <Sub id={`${uid}-${l.id}`} class="law-lawyer__name">{l.name}</Sub>
+              <p class="law-lawyer__role">{l.role} · {l.years} años</p>
+              <p class="law-lawyer__bio">{l.bio}</p>
+              <ul class="law-lawyer__tags" role="list" aria-label="Áreas">
+                {l.areas.map((a) => <li>{areaName(a)}</li>)}
+              </ul>
+              <p class="law-lawyer__lang">{l.languages.join(' · ')}</p>
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  function initTeam(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-team-area]'));
+    if (!chips.length) return;
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-lawyer]'));
+    const count = root.querySelector<HTMLElement>('[data-team-count]')!;
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        const area = c.dataset.teamArea ?? '';
+        chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+        let n = 0;
+        items.forEach((it) => {
+          const ok = !area || (it.dataset.areas ?? '').split(' ').includes(area);
+          it.hidden = !ok;
+          if (ok) n++;
+        });
+        count.textContent = `${n} ${n === 1 ? 'abogado' : 'abogados'}`;
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-team]').forEach(initTeam);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-team {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--lw-bg);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-team__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .law-team__head {
+    max-width: 640px;
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .law-team__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1;
+  }
+
+  .law-team__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--lw-text-2);
+    line-height: 1.6;
+  }
+
+  .law-team__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .law-team__chips button {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--lw-text-2);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .law-team__chips button:hover {
+    border-color: var(--lw-brand);
+    color: var(--lw-text);
+  }
+
+  .law-team__chips button[aria-pressed='true'] {
+    border-color: var(--lw-brand);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-team__chips button:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-team__count {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--lw-text-3);
+    font-size: 0.88rem;
+  }
+
+  .law-team__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: var(--sp-5, 1.25rem);
+    margin: var(--sp-6, 1.5rem) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-team__grid > li[hidden] {
+    display: none;
+  }
+
+  .law-lawyer {
+    display: flex;
+    gap: var(--sp-4, 1rem);
+    height: 100%;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+    box-sizing: border-box;
+  }
+
+  .law-lawyer__portrait {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 84px;
+    height: 104px;
+    border-radius: 42px 42px 14px 14px;
+    background: linear-gradient(160deg, hsl(var(--lawyer-hue) 45% 42%), hsl(calc(var(--lawyer-hue) + 30) 40% 16%));
+    color: rgba(255, 255, 255, 0.92);
+    font-family: var(--lw-font-display);
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  .law-lawyer__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    min-width: 0;
+  }
+
+  .law-lawyer__name {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.05;
+  }
+
+  .law-lawyer__role {
+    margin: 0;
+    color: var(--lw-gold);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .law-lawyer__bio {
+    margin: 0;
+    color: var(--lw-text-2);
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+
+  .law-lawyer__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-lawyer__tags li {
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--lw-surface);
+    color: var(--lw-text-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .law-lawyer__lang {
+    margin: 0;
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 420px) {
+    .law-lawyer {
+      flex-direction: column;
+    }
+  }
+</style>

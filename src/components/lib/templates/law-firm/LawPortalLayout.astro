@@ -1,0 +1,166 @@
+---
+/**
+ * LawPortalLayout — Client-portal shell for the "Fuero" law firm template.
+ * Uses LawPortalNav (rail on desktop, bottom tab bar on phones) and LawPortalTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Fuero").
+ * @param {string} current - Active route key (dashboard | cases | documents | messages).
+ * @param {LawRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './law-theme.css';
+import LawPortalNav from '../../app/LawPortalNav.astro';
+import LawPortalTopbar from '../../app/LawPortalTopbar.astro';
+import { lawRoutes, lawData, type LawRoutes } from './data';
+
+type Key = 'dashboard' | 'cases' | 'documents' | 'messages';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: LawRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Fuero · Portal del cliente: expedientes, documentos, mensajes, citas y facturas.',
+  current = 'dashboard',
+  routes = lawRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const client = lawData.client;
+const avg = Math.round(lawData.cases.filter((c) => c.status !== 'Cerrado').reduce((n, c) => n + c.progress, 0) / Math.max(1, lawData.cases.filter((c) => c.status !== 'Cerrado').length));
+const navItems = [
+  { label: 'Resumen', href: routes.dashboard, icon: 'home' },
+  { label: 'Expedientes', href: routes.cases, icon: 'folder' },
+  { label: 'Documentos', href: routes.documents, icon: 'doc', badge: lawData.documents.filter((d) => d.needsSignature).length },
+  { label: 'Mensajes', href: routes.messages, icon: 'chat' },
+];
+const notifications = [
+  { title: 'Nuevo documento', text: 'Carmen ha subido el borrador final del convenio', time: 'hace 20 min', unread: true },
+  { title: 'Cita confirmada', text: 'Firma en la notaría el jueves 26 a las 12:00', time: 'hoy', unread: true },
+  { title: 'Factura emitida', text: 'Provisión de fondos de noviembre', time: 'hace 3 días' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-law" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Fuero`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="law-app-body">
+    <a href="#main-content" class="law-app-skip">Saltar al contenido</a>
+    <div class="law-app-shell">
+      <LawPortalNav
+        items={navItems}
+        currentHref={routes[current] ?? routes.dashboard}
+        brand="Fuero"
+        homeHref={routes.home}
+        goal={{ label: 'Progreso medio', value: avg, max: 100 }}
+      />
+      <div class="law-app-column">
+        <LawPortalTopbar
+          user={{ name: client.name, plan: 'Clienta', id: client.id }}
+          chip="Conexión segura"
+          notifications={notifications}
+          links={[{ label: 'Web de Fuero', href: routes.home }, { label: 'Reservar una cita', href: routes.consult }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="law-app-main" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .law-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--lw-bg);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-app-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-app-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .law-app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .law-app-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .law-app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-12, 3rem);
+    box-sizing: border-box;
+  }
+
+  .law-app-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .law-app-main {
+      padding: var(--sp-8, 2rem) var(--sp-8, 2rem) var(--sp-16, 4rem);
+    }
+  }
+
+  /* Room for the bottom tab bar on phones and tablets */
+  @media (max-width: 959px) {
+    .law-app-main {
+      padding-bottom: calc(var(--sp-16, 4rem) + 64px);
+    }
+  }
+</style>

@@ -1,0 +1,189 @@
+---
+/**
+ * LawResults — Track record: a row of result figures and client testimonials with the matter
+ * type and outcome as a chip.
+ *
+ * @param {Array<{value: string, label: string}>} figures - Result figures.
+ * @param {Array<{quote: string, name: string, matter: string, outcome: string}>} testimonials - Client quotes.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: figures are a description list; each testimonial is a <figure> with a
+ * <blockquote> and <figcaption>; outcomes are text chips, not only colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+
+interface Testimonial { quote: string; name: string; matter: string; outcome: string }
+
+interface OwnProps {
+  figures?: Array<{ value: string; label: string }>;
+  testimonials?: Testimonial[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  figures = [
+    { value: '1.800+', label: 'casos resueltos desde 2002' },
+    { value: '92 %', label: 'con resultado favorable' },
+    { value: '4,9/5', label: 'valoración de clientes' },
+    { value: '38 M€', label: 'recuperados para clientes' },
+  ],
+  testimonials = [
+    { quote: 'Me explicaron cada paso sin tecnicismos. Siempre supe qué iba a pasar y cuándo. En mi divorcio eso lo cambió todo.', name: 'Laura G.', matter: 'Divorcio', outcome: 'Acuerdo en 5 semanas' },
+    { quote: 'Despido improcedente con indemnización completa. Marta me preparó el juicio con una calma que yo no tenía.', name: 'Pablo R.', matter: 'Laboral', outcome: 'Indemnización íntegra' },
+    { quote: 'Para mi startup, Julián es como tener un socio jurídico. Respuestas en horas y un pacto de socios que nos evitó un conflicto.', name: 'Irene V.', matter: 'Mercantil', outcome: 'Pacto de socios cerrado' },
+  ],
+  title = 'Resultados que puedes verificar',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `lre-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['law-ui', 'law-results', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="law-results__inner">
+    <Heading id={`${uid}-title`} class="law-results__title">{title}</Heading>
+    <dl class="law-results__figures">
+      {figures.map((f) => (
+        <div><dt>{f.label}</dt><dd>{f.value}</dd></div>
+      ))}
+    </dl>
+    <ul class="law-results__grid" role="list">
+      {testimonials.map((t) => (
+        <li>
+          <figure class="law-quote">
+            <blockquote>“{t.quote}”</blockquote>
+            <figcaption>
+              <strong>{t.name}</strong>
+              <span>{t.matter}</span>
+              <em>{t.outcome}</em>
+            </figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .law-results {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-results__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .law-results__title {
+    max-width: 640px;
+    margin: 0 0 var(--sp-8, 2rem);
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1;
+  }
+
+  .law-results__figures {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-8, 2rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    border-block: 1px solid var(--lw-border);
+  }
+
+  .law-results__figures div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .law-results__figures dt {
+    color: var(--lw-text-3);
+    font-size: 0.85rem;
+  }
+
+  .law-results__figures dd {
+    margin: 0;
+    color: var(--lw-brand);
+    font-family: var(--lw-font-display);
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .law-results__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-quote {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    height: 100%;
+    margin: 0;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg);
+    box-sizing: border-box;
+  }
+
+  .law-quote blockquote {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.3rem;
+    line-height: 1.4;
+  }
+
+  .law-quote figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    margin-top: auto;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--lw-border);
+    color: var(--lw-text-3);
+    font-size: 0.85rem;
+  }
+
+  .law-quote figcaption strong {
+    color: var(--lw-text);
+  }
+
+  .law-quote figcaption em {
+    margin-left: auto;
+    padding: 0.15rem 0.65rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(var(--lw-brand-rgb), 0.14);
+    color: var(--lw-brand);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  @media (min-width: 800px) {
+    .law-results__figures {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .law-results__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

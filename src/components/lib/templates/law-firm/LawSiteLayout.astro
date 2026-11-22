@@ -1,0 +1,376 @@
+---
+/**
+ * LawSiteLayout — Public layout for the "Fuero" law firm template.
+ * Skip link, announcement strip, sticky header with primary nav (disclosure menu on mobile),
+ * portal link + consultation CTA, and the LawFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (areas | team | consult).
+ * @param {LawRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link, the mobile menu
+ * button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './law-theme.css';
+import LawFooter from '../../sections/LawFooter.astro';
+import { lawRoutes, lawData, type LawRoutes } from './data';
+
+type NavKey = 'areas' | 'team' | 'consult';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: LawRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Fuero · Despacho de abogados en Madrid: familia, mercantil, laboral, inmobiliario, penal y extranjería. Primera consulta gratuita.',
+  current,
+  routes = lawRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const { brand } = lawData;
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'areas', label: 'Áreas', href: routes.areas },
+  { key: 'team', label: 'Equipo', href: routes.team },
+  { key: 'consult', label: 'Consulta', href: routes.consult },
+];
+const footerColumns = [
+  { title: 'El despacho', links: [{ label: 'Áreas de práctica', href: routes.areas }, { label: 'Equipo', href: routes.team }, { label: 'Consulta gratuita', href: routes.consult }] },
+  { title: 'Clientes', links: [{ label: 'Portal del cliente', href: routes.signIn }, { label: 'Mis expedientes', href: routes.dashboard }, { label: 'Contacto', href: routes.consult }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-law" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="law-body">
+    <a href="#main-content" class="law-skip">Saltar al contenido</a>
+
+    <p class="law-strip">
+      <strong>Primera consulta gratuita</strong> · respondemos en menos de 24 horas.
+      <a href={routes.consult}>Reservar</a>
+    </p>
+
+    <header class="law-header">
+      <div class="law-header__inner">
+        <a href={routes.home} class="law-logo" aria-label={`${brand.name} inicio`}>
+          <span class="law-logo__mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 21h12M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z" /></svg>
+          </span>
+          <span class="law-logo__name">{brand.name}</span>
+        </a>
+
+        <button type="button" class="law-menu-btn" aria-expanded="false" aria-controls="law-nav" data-law-menu>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <span class="law-sr">Menú</span>
+        </button>
+
+        <nav id="law-nav" class="law-nav" aria-label="Navegación principal">
+          <ul class="law-nav__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="law-nav__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <div class="law-nav__actions">
+            <a href={routes.signIn} class="law-nav__signin">Portal cliente</a>
+            <a href={routes.consult} class="law-nav__cta">Consulta gratis</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="law-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <LawFooter
+      brand={brand.name}
+      cta={{ title: 'Cuéntanos tu caso', text: 'La primera consulta de 30 minutos es gratuita y confidencial.', href: routes.consult, label: 'Reservar consulta' }}
+      columns={footerColumns}
+      contact={brand}
+    />
+
+    <script>
+      function initLawMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-law-menu]');
+        const nav = document.getElementById('law-nav');
+        if (!btn || !nav || btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        const setOpen = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            setOpen(false);
+            btn.focus();
+          }
+        });
+      }
+      initLawMenu();
+      document.addEventListener('astro:page-load', initLawMenu);
+    </script>
+  </body>
+</html>
+
+<style>
+  .law-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--lw-bg);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-main {
+    flex: 1;
+  }
+
+  .law-main:focus {
+    outline: none;
+  }
+
+  .law-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .law-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .law-strip {
+    margin: 0;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    background: linear-gradient(90deg, rgba(var(--lw-brand-rgb), 0.2), rgba(var(--lw-violet-rgb), 0.2));
+    color: var(--lw-text);
+    font-size: 0.88rem;
+    text-align: center;
+  }
+
+  .law-strip a {
+    margin-left: var(--sp-2, 0.5rem);
+    color: var(--lw-brand);
+    font-weight: 700;
+  }
+
+  .law-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    border-bottom: 1px solid var(--lw-border);
+    background: color-mix(in srgb, var(--lw-bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .law-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    max-width: 1280px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 var(--sp-4, 1rem);
+  }
+
+  .law-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--lw-text);
+    text-decoration: none;
+  }
+
+  .law-logo__mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-logo__name {
+    font-family: var(--lw-font-display);
+    font-size: 1.9rem;
+    font-weight: 600;
+  }
+
+  .law-menu-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--lw-text);
+    cursor: pointer;
+  }
+
+  .law-nav {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem);
+    border-bottom: 1px solid var(--lw-border);
+    background: var(--lw-bg-raised);
+  }
+
+  .law-nav.is-open {
+    display: flex;
+  }
+
+  .law-nav__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-nav__link {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--lw-text-2);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .law-nav__link:hover,
+  .law-nav__link[aria-current='page'] {
+    color: var(--lw-brand);
+  }
+
+  .law-nav__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .law-nav__signin,
+  .law-nav__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-sm, 8px);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-nav__signin {
+    border: 1px solid var(--lw-border-strong);
+    color: var(--lw-text);
+  }
+
+  .law-nav__signin:hover {
+    border-color: var(--lw-brand);
+  }
+
+  .law-nav__cta {
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-nav__cta:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-logo:focus-visible,
+  .law-menu-btn:focus-visible,
+  .law-nav a:focus-visible,
+  .law-strip a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 900px) {
+    .law-header__inner {
+      padding: 0 var(--sp-8, 2rem);
+    }
+
+    .law-menu-btn {
+      display: none;
+    }
+
+    .law-nav {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0 0 var(--sp-8, 2rem);
+      border: 0;
+      background: transparent;
+    }
+
+    .law-nav__list {
+      display: flex;
+      gap: var(--sp-5, 1.25rem);
+    }
+  }
+</style>

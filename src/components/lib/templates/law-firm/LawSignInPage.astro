@@ -1,0 +1,53 @@
+---
+/**
+ * LawSignInPage — Client-portal sign-in for Fuero, built on LawSignIn.
+ * In the demo any email and a password of 4+ characters open the portal.
+ *
+ * @param {LawRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import '../../../../styles/global.css';
+import './law-theme.css';
+import LawSignIn from '../../app/LawSignIn.astro';
+import { lawRoutes, type LawRoutes } from './data';
+
+interface Props {
+  routes?: LawRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = lawRoutes, theme = 'dark', noindex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es" class="theme-law" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portal del cliente — Fuero</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="law-signin-page">
+    <LawSignIn brand="Fuero" dashboardHref={routes.dashboard} backHref={routes.home} openHref={routes.consult} />
+  </body>
+</html>
+
+<style>
+  .law-signin-page {
+    margin: 0;
+    background: var(--lw-bg);
+  }
+</style>

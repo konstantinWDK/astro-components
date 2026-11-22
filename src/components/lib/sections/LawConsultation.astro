@@ -1,0 +1,483 @@
+---
+/**
+ * LawConsultation — Book a free first consultation: choose the area, a day among the next
+ * business days, a time slot and the format (in person or video), then leave your contact
+ * details. Days are generated in the browser from today. Pre-selects `?area=`. Without an
+ * `action` it validates and shows a confirmation summary on the page.
+ *
+ * @param {LawArea[]} areas - Areas offered in the select.
+ * @param {string} action - Backend endpoint. Empty = demo confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: day and time pickers are native radio groups inside fieldsets with legends;
+ * unavailable slots are disabled and written as "no disponible"; errors use role="alert" and
+ * focus moves to the first invalid control; the confirmation receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawAreas, lawData, type LawArea } from '../templates/law-firm/data';
+
+interface OwnProps {
+  areas?: LawArea[];
+  action?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  areas = lawAreas,
+  action = '',
+  title = 'Reserva tu primera consulta gratuita',
+  subtitle = '30 minutos para contarnos tu caso y que te digamos, con franqueza, qué opciones tienes.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `lc-${Math.random().toString(36).slice(2, 8)}`;
+const slots = ['09:30', '10:30', '12:00', '16:00', '17:30', '18:30'];
+---
+
+<section class:list={['law-ui', 'law-consult', classAttr]} aria-labelledby={`${uid}-title`} data-law-consult {...rest}>
+  <div class="law-consult__inner">
+    <div class="law-consult__copy">
+      <Heading id={`${uid}-title`} class="law-consult__title">{title}</Heading>
+      <p class="law-consult__subtitle">{subtitle}</p>
+      <ul class="law-consult__points" role="list">
+        <li>Sin compromiso y confidencial desde el primer minuto</li>
+        <li>En nuestro despacho o por videollamada</li>
+        <li>Te enviamos un resumen por escrito tras la reunión</li>
+      </ul>
+      <address class="law-consult__contact">
+        <span>{lawData.brand.address}</span>
+        <span>{lawData.brand.hours}</span>
+        <a href={`tel:${lawData.brand.phone.replace(/\s+/g, '')}`}>{lawData.brand.phone}</a>
+      </address>
+    </div>
+
+    <div class="law-consult__panel">
+      <form class="law-consult__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-consult-form>
+        <div class="law-consult__field">
+          <label for={`${uid}-area`}>¿Sobre qué es tu consulta?</label>
+          <select id={`${uid}-area`} name="area" required data-consult-area>
+            <option value="">Elige un área</option>
+            {areas.map((a) => <option value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+
+        <fieldset class="law-consult__picker">
+          <legend>Día</legend>
+          <div class="law-consult__days" data-consult-days></div>
+        </fieldset>
+
+        <fieldset class="law-consult__picker">
+          <legend>Hora</legend>
+          <div class="law-consult__slots" data-consult-slots>
+            {slots.map((s) => (
+              <label><input type="radio" name="time" value={s} required /><span>{s}</span></label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset class="law-consult__picker">
+          <legend>Formato</legend>
+          <div class="law-consult__slots">
+            <label><input type="radio" name="mode" value="Presencial" checked /><span>Presencial</span></label>
+            <label><input type="radio" name="mode" value="Videollamada" /><span>Videollamada</span></label>
+          </div>
+        </fieldset>
+
+        <div class="law-consult__row">
+          <div class="law-consult__field"><label for={`${uid}-name`}>Nombre</label><input id={`${uid}-name`} name="name" required autocomplete="name" /></div>
+          <div class="law-consult__field"><label for={`${uid}-phone`}>Teléfono</label><input id={`${uid}-phone`} name="phone" type="tel" required autocomplete="tel" inputmode="tel" /></div>
+        </div>
+        <div class="law-consult__field"><label for={`${uid}-email`}>Email</label><input id={`${uid}-email`} name="email" type="email" required autocomplete="email" /></div>
+        <div class="law-consult__field"><label for={`${uid}-msg`}>Cuéntanos brevemente tu caso <span>(opcional)</span></label><textarea id={`${uid}-msg`} name="message" rows="3"></textarea></div>
+
+        <label class="law-consult__consent"><input type="checkbox" name="privacy" required /> Acepto la política de privacidad y el tratamiento confidencial de mis datos.</label>
+        <p class="law-consult__error" role="alert" hidden data-consult-error></p>
+        <button type="submit" class="law-consult__submit">Confirmar la cita</button>
+      </form>
+
+      <div class="law-consult__done" role="status" tabindex="-1" hidden data-consult-done>
+        <span class="law-consult__check" aria-hidden="true">✓</span>
+        <h3>Cita reservada</h3>
+        <p data-done-summary></p>
+        <p class="law-consult__small">Te hemos enviado la confirmación por email. Si necesitas cambiarla, responde a ese mensaje.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initConsult(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const form = q<HTMLFormElement>('[data-consult-form]');
+    const days = q('[data-consult-days]');
+    const err = q('[data-consult-error]');
+    const done = q('[data-consult-done]');
+    const fmtDay = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+    const fmtLong = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    // Next 8 business days (Monday to Friday), starting tomorrow
+    const list: Date[] = [];
+    const d = new Date();
+    while (list.length < 8) {
+      d.setDate(d.getDate() + 1);
+      if (d.getDay() !== 0 && d.getDay() !== 6) list.push(new Date(d));
+    }
+    list.forEach((date, i) => {
+      const iso = date.toISOString().slice(0, 10);
+      const label = document.createElement('label');
+      const input = Object.assign(document.createElement('input'), { type: 'radio', name: 'day', value: iso, required: true });
+      input.dataset.long = fmtLong.format(date);
+      const span = document.createElement('span');
+      span.textContent = fmtDay.format(date).replace('.', '');
+      label.append(input, span);
+      days.appendChild(label);
+      // Demo availability: every third day has its early slots taken
+      if (i % 3 === 2) label.dataset.busy = 'true';
+    });
+
+    // Some slots are not available on "busy" days
+    const slotInputs = Array.from(root.querySelectorAll<HTMLInputElement>('[data-consult-slots] input'));
+    const refreshSlots = () => {
+      const day = form.querySelector<HTMLInputElement>('input[name=day]:checked');
+      const busy = day?.closest('label')?.dataset.busy === 'true';
+      slotInputs.forEach((s, i) => {
+        const off = busy && i < 3;
+        s.disabled = off;
+        if (off && s.checked) s.checked = false;
+        const span = s.nextElementSibling as HTMLElement;
+        span.textContent = off ? `${s.value} · no disponible` : s.value;
+      });
+    };
+    days.addEventListener('change', refreshSlots);
+
+    const area = new URLSearchParams(location.search).get('area');
+    if (area) q<HTMLSelectElement>('[data-consult-area]').value = area;
+
+    if (form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const bad = Array.from(form.querySelectorAll<HTMLInputElement>('input,select')).find((el) => !el.disabled && !el.checkValidity());
+      if (bad) {
+        err.hidden = false;
+        err.textContent = 'Revisa los datos: falta elegir área, día, hora o completar tus datos de contacto.';
+        bad.focus();
+        return;
+      }
+      err.hidden = true;
+      const day = form.querySelector<HTMLInputElement>('input[name=day]:checked')!;
+      const time = (form.elements.namedItem('time') as RadioNodeList).value;
+      const mode = (form.elements.namedItem('mode') as RadioNodeList).value;
+      const areaEl = q<HTMLSelectElement>('[data-consult-area]');
+      const name = (form.elements.namedItem('name') as HTMLInputElement).value.split(' ')[0];
+      q('[data-done-summary]').textContent = `${name}, te esperamos el ${day.dataset.long} a las ${time} (${mode.toLowerCase()}) para tu consulta de ${areaEl.selectedOptions[0].textContent?.toLowerCase()}.`;
+      form.hidden = true;
+      done.hidden = false;
+      done.focus();
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-consult]').forEach(initConsult);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .law-consult {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background:
+      radial-gradient(ellipse at 0% 0%, rgba(var(--lw-brand-rgb), 0.14), transparent 55%),
+      var(--lw-bg);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-consult__inner {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .law-consult__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    line-height: 1;
+  }
+
+  .law-consult__subtitle {
+    max-width: 460px;
+    margin: var(--sp-4, 1rem) 0 var(--sp-5, 1.25rem);
+    color: var(--lw-text-2);
+    line-height: 1.65;
+  }
+
+  .law-consult__points {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-consult__points li::before {
+    content: '§';
+    margin-right: 0.7rem;
+    color: var(--lw-brand);
+    font-family: var(--lw-font-display);
+    font-weight: 700;
+  }
+
+  .law-consult__contact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--lw-text-2);
+    font-style: normal;
+  }
+
+  .law-consult__contact a {
+    color: var(--lw-text);
+    font-weight: 700;
+  }
+
+  .law-consult__panel {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+  }
+
+  .law-consult__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .law-consult__form[hidden],
+  .law-consult__done[hidden] {
+    display: none;
+  }
+
+  .law-consult__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .law-consult__field label,
+  .law-consult__picker legend {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .law-consult__field label span {
+    color: var(--lw-text-3);
+    font-weight: 400;
+  }
+
+  .law-consult__field input,
+  .law-consult__field select,
+  .law-consult__field textarea {
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-surface);
+    color: var(--lw-text);
+    font: inherit;
+  }
+
+  .law-consult__field textarea {
+    padding: var(--sp-3, 0.75rem);
+    resize: vertical;
+  }
+
+  .law-consult__picker {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .law-consult__picker legend {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+
+  .law-consult__days,
+  .law-consult__slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .law-consult__days label,
+  .law-consult__slots label {
+    position: relative;
+  }
+
+  .law-consult__days input,
+  .law-consult__slots input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .law-consult__days span,
+  .law-consult__slots span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-surface);
+    color: var(--lw-text-2);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .law-consult__days input:checked + span,
+  .law-consult__slots input:checked + span {
+    border-color: var(--lw-brand);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-consult__slots input:disabled + span {
+    opacity: 0.45;
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
+  .law-consult__slots input:disabled {
+    cursor: not-allowed;
+  }
+
+  .law-consult__days input:focus-visible + span,
+  .law-consult__slots input:focus-visible + span,
+  .law-consult__field input:focus-visible,
+  .law-consult__field select:focus-visible,
+  .law-consult__field textarea:focus-visible,
+  .law-consult__submit:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-consult__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .law-consult__consent {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--lw-text-2);
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+
+  .law-consult__consent input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    accent-color: var(--lw-brand);
+  }
+
+  .law-consult__error {
+    margin: 0;
+    color: var(--lw-bad);
+    font-size: 0.9rem;
+  }
+
+  .law-consult__submit {
+    min-height: 52px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .law-consult__submit:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-consult__done {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    text-align: center;
+    outline: none;
+  }
+
+  .law-consult__done h3 {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 2rem;
+  }
+
+  .law-consult__done p {
+    max-width: 420px;
+    margin: 0;
+    color: var(--lw-text-2);
+    line-height: 1.6;
+  }
+
+  .law-consult__small {
+    font-size: 0.85rem;
+    color: var(--lw-text-3);
+  }
+
+  .law-consult__check {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(var(--lw-brand-rgb), 0.18);
+    color: var(--lw-brand);
+    font-size: 1.8rem;
+  }
+
+  @media (min-width: 640px) {
+    .law-consult__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .law-consult__panel {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .law-consult__inner {
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: var(--sp-12, 3rem);
+      align-items: start;
+    }
+  }
+</style>

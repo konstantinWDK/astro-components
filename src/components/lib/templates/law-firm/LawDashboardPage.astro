@@ -1,0 +1,67 @@
+---
+/**
+ * LawDashboardPage — Portal home: overview figures, what needs your attention, the next
+ * appointments and your fees and invoices.
+ *
+ * @param {LawRoutes} routes - Template route URLs.
+ * @param {typeof lawData} data - Cases, documents, appointments, invoices and client.
+ */
+import LawPortalLayout from './LawPortalLayout.astro';
+import LawPortalHeading from '../../app/LawPortalHeading.astro';
+import LawCaseSummary from '../../app/LawCaseSummary.astro';
+import LawAppointments from '../../app/LawAppointments.astro';
+import LawInvoices from '../../app/LawInvoices.astro';
+import { lawRoutes, lawData, type LawRoutes } from './data';
+
+interface Props {
+  routes?: LawRoutes;
+  data?: typeof lawData;
+}
+
+const { routes = lawRoutes, data = lawData } = Astro.props;
+const firstName = data.client.name.split(' ')[0];
+---
+
+<LawPortalLayout title="Resumen" current="dashboard" routes={routes}>
+  <LawPortalHeading
+    kicker="Mi portal"
+    title={`Hola, ${firstName}`}
+    description={`Clienta desde ${data.client.since} · ${data.client.id}`}
+    actions={[{ label: 'Mensaje a mi abogada', href: routes.messages, primary: true }, { label: 'Ver expedientes', href: routes.cases }]}
+  />
+  <div class="law-dash">
+    <LawCaseSummary
+      cases={data.cases}
+      documents={data.documents}
+      appointments={data.appointments}
+      invoices={data.invoices}
+      hrefs={{ cases: routes.cases, documents: routes.documents, invoices: routes.dashboard, messages: routes.messages }}
+    />
+    <div class="law-dash__row">
+      <LawAppointments appointments={data.appointments} lawyers={data.lawyers} bookHref={routes.consult} />
+      <LawInvoices invoices={data.invoices} />
+    </div>
+  </div>
+</LawPortalLayout>
+
+<style>
+  .law-dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .law-dash__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+    align-items: start;
+  }
+
+  @media (min-width: 1100px) {
+    .law-dash__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

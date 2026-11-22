@@ -155,6 +155,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg>`,
   },
   {
+    id: 'law',
+    name: 'Law Firm',
+    description: 'Sections for law firms and professional services: hero with case-file card, practice areas as tabs, team with area filter, process steps, results and testimonials, fee models, consultation booking, legal articles, FAQ and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 21h12M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

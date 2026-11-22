@@ -218,6 +218,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Fintech y banca', description: 'Secciones para neobancos y productos fintech: hero con mock del producto, ventajas en cuadrícula bento, selector de tarjetas, planes, comparativa de comisiones, calculadora de ahorro, seguridad y confianza, asistente de apertura de cuenta, preguntas frecuentes y pie de página.' },
     ru: { name: 'Финтех и банкинг', description: 'Секции для необанков и финтех-продуктов: главный экран с макетом продукта, бенто-преимущества, выбор карты, тарифы, сравнение комиссий, калькулятор накоплений, безопасность и доверие, мастер открытия счёта, FAQ и подвал.' },
   },
+  law: {
+    en: { name: 'Law Firm', description: 'Sections for law firms and professional services: hero with case-file card, practice areas as tabs, team with area filter, process steps, results and testimonials, fee models, consultation booking, legal articles, FAQ and footer.' },
+    es: { name: 'Despacho de abogados', description: 'Secciones para despachos de abogados y servicios profesionales: hero con tarjeta de expediente, áreas de práctica en pestañas, equipo con filtro por área, pasos del proceso, resultados y testimonios, modelos de honorarios, reserva de consulta, artículos jurídicos, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Юридическая фирма', description: 'Секции для юридических фирм и профессиональных услуг: главный экран с карточкой дела, направления практики во вкладках, команда с фильтром, шаги процесса, результаты и отзывы, модели гонораров, запись на консультацию, юридические статьи, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

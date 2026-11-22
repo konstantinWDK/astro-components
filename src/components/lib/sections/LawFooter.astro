@@ -1,0 +1,225 @@
+---
+/**
+ * LawFooter — Neolaw footer: call-to-action band, link columns, contact, and the legal block
+ * with the entity's regulatory notice and deposit-guarantee text.
+ *
+ * @param {string} brand - Law name.
+ * @param {string} description - Short pitch under the brand.
+ * @param {{title: string, text?: string, href: string, label: string}} cta - Top call-to-action band.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {{email: string, phone: string, address: string, hours: string, legalName: string, legal: string}} contact - Contact and legal data.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark; each column is a <nav> labelled by its heading;
+ * contact is an <address>; links have 44px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawData } from '../templates/law-firm/data';
+
+interface Column { title: string; links: Array<{ label: string; href: string }> }
+
+interface OwnProps {
+  brand?: string;
+  description?: string;
+  cta?: { title: string; text?: string; href: string; label: string };
+  columns?: Column[];
+  contact?: { email: string; phone: string; address: string; hours: string; legalName: string; legal: string };
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = lawData.brand.name,
+  description = 'Despacho de abogados en Madrid: trato cercano, honorarios claros y un portal para que sigas tu caso en tiempo real.',
+  cta = { title: 'Cuéntanos tu caso', text: 'La primera consulta de 30 minutos es gratuita y confidencial.', href: '/consulta', label: 'Reservar consulta' },
+  columns = [
+    { title: 'El despacho', links: [{ label: 'Áreas de práctica', href: '/areas' }, { label: 'Equipo', href: '/equipo' }, { label: 'Consulta gratuita', href: '/consulta' }] },
+    { title: 'Clientes', links: [{ label: 'Portal del cliente', href: '/acceso' }, { label: 'Mis expedientes', href: '/portal' }, { label: 'Contacto', href: '/consulta' }] },
+  ],
+  contact = lawData.brand,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bfo-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<footer class:list={['law-ui', 'law-footer', classAttr]} {...rest}>
+  <div class="law-footer__inner">
+    <div class="law-footer__cta">
+      <div>
+        <p class="law-footer__cta-title">{cta.title}</p>
+        {cta.text && <p class="law-footer__cta-text">{cta.text}</p>}
+      </div>
+      <a class="law-footer__cta-btn" href={cta.href}>{cta.label}</a>
+    </div>
+
+    <div class="law-footer__grid">
+      <div>
+        <p class="law-footer__brand"><span aria-hidden="true">§</span> {brand}</p>
+        <p class="law-footer__desc">{description}</p>
+      </div>
+      {columns.map((col, i) => (
+        <nav aria-labelledby={`${uid}-c${i}`}>
+          <h2 id={`${uid}-c${i}`} class="law-footer__col-title">{col.title}</h2>
+          <ul role="list">{col.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+        </nav>
+      ))}
+      <address class="law-footer__contact">
+        <h2 class="law-footer__col-title">Contacto</h2>
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+        <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+        <span>{contact.address}</span>
+        <span>{contact.hours}</span>
+      </address>
+    </div>
+
+    <p class="law-footer__legal">
+      © {new Date().getFullYear()} {contact.legalName}. {contact.legal} La información de esta web es orientativa y no constituye asesoramiento jurídico. Secreto profesional garantizado.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .law-footer {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--lw-border);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text-2);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-footer__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .law-footer__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-10, 2.5rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid rgba(var(--lw-brand-rgb), 0.5);
+    border-radius: var(--r-xl, 24px);
+    background: linear-gradient(120deg, rgba(var(--lw-brand-rgb), 0.18), rgba(var(--lw-gold-rgb), 0.1));
+  }
+
+  .law-footer__cta-title {
+    margin: 0;
+    color: var(--lw-text);
+    font-family: var(--lw-font-display);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 600;
+  }
+
+  .law-footer__cta-text {
+    margin: var(--sp-1, 0.25rem) 0 0;
+  }
+
+  .law-footer__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 50px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .law-footer__cta-btn:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-footer a:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-footer__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .law-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--lw-text);
+    font-family: var(--lw-font-display);
+    font-size: 1.9rem;
+    font-weight: 600;
+  }
+
+  .law-footer__brand span {
+    color: var(--lw-brand);
+  }
+
+  .law-footer__desc {
+    max-width: 340px;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .law-footer__col-title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--lw-text);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .law-footer ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-footer nav a,
+  .law-footer__contact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--lw-text-2);
+    text-decoration: none;
+  }
+
+  .law-footer nav a:hover,
+  .law-footer__contact a:hover {
+    color: var(--lw-brand);
+  }
+
+  .law-footer__contact {
+    display: flex;
+    flex-direction: column;
+    font-style: normal;
+  }
+
+  .law-footer__contact span {
+    padding: 4px 0;
+    font-size: 0.92rem;
+  }
+
+  .law-footer__legal {
+    max-width: 900px;
+    margin: var(--sp-8, 2rem) 0 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--lw-border);
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 900px) {
+    .law-footer__grid {
+      grid-template-columns: 1.6fr 1fr 1fr 1.3fr;
+    }
+  }
+</style>

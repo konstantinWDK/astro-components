@@ -1,0 +1,296 @@
+---
+/**
+ * LawPortalNav — Navigation for the client portal: a vertical rail with the brand and a case-progress
+ * meter on desktop, and a fixed bottom tab bar on phones. No JavaScript.
+ *
+ * @param {Array<{label: string, href: string, icon: string, badge?: string|number}>} items - Links (keep 3–5 for the tab bar).
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {string} brand - Law name (rail only).
+ * @param {string} homeHref - Link for the brand.
+ * @param {{label: string, value: number, max: number}} goal - Rail meter, e.g. overall case progress (percent). Omit to hide.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; aria-current on the active link; every tab
+ * has a visible text label (icons aria-hidden); 56px tap targets on the tab bar; the goal
+ * meter has a text alternative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+
+interface Item { label: string; href: string; icon: string; badge?: string | number }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  brand?: string;
+  homeHref?: string;
+  goal?: { label: string; value: number; max: number };
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [
+    { label: 'Resumen', href: '#', icon: 'home' },
+    { label: 'Expedientes', href: '#expedientes', icon: 'folder' },
+    { label: 'Documentos', href: '#documentos', icon: 'doc' },
+  ],
+  currentHref = '#',
+  brand = 'Fuero',
+  homeHref = '#',
+  goal,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const icons: Record<string, string> = {
+  home: '<path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  chat: '<path d="M21 12a8 8 0 0 1-11.500 7.200L4 20l1-4.500A8 8 0 1 1 21 12z"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  mark: '<path d="M12 3v18M6 21h12M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',
+};
+const isCurrent = (href: string) => href.replace(/\/$/, '') === currentHref.replace(/\/$/, '');
+const pct = goal ? Math.min(100, Math.round((goal.value / goal.max) * 100)) : 0;
+---
+
+<nav class:list={['law-ui', 'law-nav', classAttr]} aria-label="Portal del cliente" {...rest}>
+  <a href={homeHref} class="law-nav__brand">
+    <span class="law-nav__mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" set:html={icons.mark} />
+    </span>
+    <span class="law-nav__brand-name">{brand}</span>
+  </a>
+
+  <ul class="law-nav__list" role="list">
+    {items.map((it) => (
+      <li>
+        <a href={it.href} class="law-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+          <span class="law-nav__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={icons[it.icon] ?? icons.list} />
+            {it.badge !== undefined && it.badge !== 0 && <span class="law-nav__badge">{it.badge}</span>}
+          </span>
+          <span class="law-nav__label">
+            {it.label}
+            {it.badge !== undefined && it.badge !== 0 && <span class="lw-sr"> ({it.badge})</span>}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {goal && (
+    <div class="law-nav__goal">
+      <p><span>{goal.label}</span><strong>{goal.value} %</strong></p>
+      <span class="law-nav__meter" role="img" aria-label={`${goal.label}: ${goal.value} %`}><i style={`width:${pct}%`}></i></span>
+    </div>
+  )}
+</nav>
+
+<style>
+  .law-nav {
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+  }
+
+  .law-nav__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .law-nav__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: var(--lw-text-2);
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .law-nav__link:hover {
+    color: var(--lw-text);
+  }
+
+  .law-nav__link:focus-visible,
+  .law-nav__brand:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: 2px;
+  }
+
+  .law-nav__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .law-nav__badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: var(--r-full, 999px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .law-nav__brand {
+    display: none;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--lw-text);
+    text-decoration: none;
+  }
+
+  .law-nav__mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+  }
+
+  .law-nav__brand-name {
+    font-family: var(--lw-font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .law-nav__goal {
+    display: none;
+  }
+
+  /* Phones & tablets: bottom tab bar */
+  .law-nav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 50;
+    border-top: 1px solid var(--lw-border-strong);
+    background: color-mix(in srgb, var(--lw-bg-raised) 94%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .law-nav__list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  .law-nav__link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 60px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .law-nav__link[aria-current='page'] {
+    color: var(--lw-brand);
+  }
+
+  /* Desktop: vertical rail */
+  @media (min-width: 960px) {
+    .law-nav {
+      position: sticky;
+      top: 0;
+      inset: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-6, 1.5rem);
+      flex: none;
+      width: 248px;
+      height: 100vh;
+      padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem);
+      border-top: 0;
+      border-right: 1px solid var(--lw-border);
+      background: var(--lw-bg-raised);
+      backdrop-filter: none;
+      box-sizing: border-box;
+    }
+
+    .law-nav__brand {
+      display: flex;
+    }
+
+    .law-nav__list {
+      display: grid;
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+      gap: var(--sp-1, 0.25rem);
+    }
+
+    .law-nav__link {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: var(--sp-3, 0.75rem);
+      min-height: 48px;
+      padding: 0 var(--sp-3, 0.75rem);
+      border-radius: var(--r-md, 12px);
+      font-size: 0.95rem;
+    }
+
+    .law-nav__link:hover {
+      background: var(--lw-surface);
+    }
+
+    .law-nav__link[aria-current='page'] {
+      background: rgba(var(--lw-brand-rgb), 0.14);
+      color: var(--lw-brand);
+    }
+
+    .law-nav__goal {
+      display: block;
+      margin-top: auto;
+      padding: var(--sp-4, 1rem);
+      border: 1px solid var(--lw-border);
+      border-radius: var(--r-lg, 20px);
+      background: var(--lw-surface);
+    }
+
+    .law-nav__goal p {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--sp-2, 0.5rem);
+      margin: 0 0 var(--sp-2, 0.5rem);
+      color: var(--lw-text-2);
+      font-size: 0.82rem;
+    }
+
+    .law-nav__goal strong {
+      color: var(--lw-text);
+    }
+
+    .law-nav__meter {
+      display: block;
+      height: 8px;
+      overflow: hidden;
+      border-radius: var(--r-full, 999px);
+      background: var(--lw-surface-2);
+    }
+
+    .law-nav__meter i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--lw-brand), var(--lw-gold));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .law-nav__link {
+      transition: none;
+    }
+  }
+</style>

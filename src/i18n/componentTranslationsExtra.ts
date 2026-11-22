@@ -1229,4 +1229,85 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con ilustración de tarjetas flotantes, testimonio, cifras, mostrar contraseña y acceso de demostración.',
     ru: 'Вход на двух панелях с иллюстрацией парящих карт, отзывом, цифрами, показом пароля и демо-ссылкой.',
   },
+  // ── Law firm ("Fuero") ────────────────────────
+  'law-hero': {
+    es: 'Hero de despacho de abogados con titular serif, llamadas a la consulta gratuita y a las áreas, teléfono directo, cifras clave y una tarjeta "expediente" que muestra cómo el cliente sigue su caso.',
+    ru: 'Главный экран юридической фирмы с засечным заголовком, кнопками бесплатной консультации и направлений, прямым телефоном, цифрами и карточкой «дело», показывающей, как клиент следит за делом.',
+  },
+  'law-practice-areas': {
+    es: 'Áreas de práctica como pestañas accesibles: elige un área y lee su resumen, asuntos habituales y enlace a la consulta. Abre el área desde ?area=.',
+    ru: 'Направления практики в виде доступных вкладок: выберите направление и прочитайте описание, типичные дела и ссылку на консультацию. Открывает направление из ?area=.',
+  },
+  'law-team': {
+    es: 'Equipo de abogados con retratos de iniciales, cargo, años de ejercicio, idiomas y biografía, con filtro opcional por área de práctica.',
+    ru: 'Команда юристов с портретами-инициалами, должностью, стажем, языками и биографией, с необязательным фильтром по направлению.',
+  },
+  'law-process': {
+    es: '"Cómo trabajamos" en pasos numerados a lo largo de una línea vertical con grandes numerales serif.',
+    ru: '«Как мы работаем» — пронумерованные шаги вдоль вертикальной линии с крупными засечными цифрами.',
+  },
+  'law-results': {
+    es: 'Trayectoria: una fila de cifras de resultados y testimonios de clientes con el tipo de asunto y el resultado como etiqueta.',
+    ru: 'Результаты: ряд цифр и отзывы клиентов с типом дела и итогом в виде метки.',
+  },
+  'law-fees': {
+    es: 'Modelos de honorarios transparentes lado a lado (fijos, a resultado, iguala mensual) con precio, explicación y los asuntos a los que mejor encajan.',
+    ru: 'Прозрачные модели гонораров рядом (фиксированный, за результат, месячная подписка) с ценой, описанием и подходящими делами.',
+  },
+  'law-consultation': {
+    es: 'Reserva de consulta gratuita: elige área, uno de los próximos días laborables, hora y formato, y deja tus datos. Incluye un resumen de confirmación.',
+    ru: 'Запись на бесплатную консультацию: направление, один из ближайших рабочих дней, время и формат, затем контактные данные. Есть итоговое подтверждение.',
+  },
+  'law-insights': {
+    es: 'Artículos jurídicos en tres tarjetas con área, fecha, tiempo de lectura, título y extracto; la primera es destacada.',
+    ru: 'Юридические статьи тремя карточками с направлением, датой, временем чтения, заголовком и анонсом; первая — крупная.',
+  },
+  'law-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'law-footer': {
+    es: 'Pie de página de despacho con banda de llamada a la consulta, columnas de enlaces, contacto y el bloque legal de colegiación y secreto profesional.',
+    ru: 'Подвал юридической фирмы с призывом к консультации, колонками ссылок, контактами и юридическим блоком о членстве в коллегии и адвокатской тайне.',
+  },
+  'law-case-summary': {
+    es: 'Resumen del portal: expedientes activos, próxima cita, documentos pendientes de firma y saldo pendiente, con una lista "necesita tu atención" con enlaces para actuar.',
+    ru: 'Обзор кабинета: активные дела, ближайшая встреча, документы на подпись и задолженность, плюс список «требует внимания» со ссылками.',
+  },
+  'law-case-explorer': {
+    es: 'Explorador de expedientes: lista con filtros de estado y, para el seleccionado, abogado, barra de progreso, siguiente paso destacado y cronología vertical de hitos hechos y próximos.',
+    ru: 'Обзор дел: список с фильтрами по статусу и для выбранного дела — юрист, прогресс, выделенный следующий шаг и вертикальная хронология выполненных и предстоящих этапов.',
+  },
+  'law-document-vault': {
+    es: 'Caja de documentos del cliente con búsqueda, filtros por tipo y expediente, tabla de archivos, acción de firma electrónica y zona de subida por clic o arrastrando.',
+    ru: 'Хранилище документов клиента с поиском, фильтрами по типу и делу, таблицей файлов, электронной подписью и зоной загрузки кликом или перетаскиванием.',
+  },
+  'law-message-thread': {
+    es: 'Mensajería segura con tu abogado: conversación agrupada por día con burbujas del despacho y del cliente y un editor (Enter envía, Shift+Enter añade línea).',
+    ru: 'Защищённая переписка с юристом: диалог по дням с пузырями фирмы и клиента и поле ввода (Enter отправляет, Shift+Enter — новая строка).',
+  },
+  'law-appointments': {
+    es: 'Próximas citas con bloque de fecha, lugar o enlace de vídeo y abogado, calendario mensual con días marcados y descarga .ics para añadir al calendario.',
+    ru: 'Ближайшие встречи с блоком даты, местом или видеоссылкой и юристом, календарь месяца с отмеченными днями и загрузка .ics.',
+  },
+  'law-invoices': {
+    es: 'Honorarios y facturas: saldo pendiente, lista con concepto, vencimiento, importe y estado, y botón de pago que marca como pagada y actualiza el saldo (demo).',
+    ru: 'Гонорары и счета: задолженность, список с назначением, сроком, суммой и статусом и кнопка оплаты, которая отмечает счёт оплаченным и обновляет сумму (демо).',
+  },
+  'law-portal-nav': {
+    es: 'Navegación del portal del cliente: barra lateral con marca y medidor de progreso de casos en escritorio y barra de pestañas fija abajo en móvil. Sin JavaScript.',
+    ru: 'Навигация кабинета клиента: боковая панель с логотипом и индикатором прогресса дел на десктопе и нижняя панель вкладок на телефоне. Без JavaScript.',
+  },
+  'law-portal-topbar': {
+    es: 'Barra superior del portal del cliente con fecha de hoy, indicador de conexión segura, cambio de tema, avisos y menú de usuario (popovers nativos).',
+    ru: 'Верхняя панель кабинета клиента: сегодняшняя дата, чип защищённого соединения, смена темы, уведомления и меню пользователя (нативные popover).',
+  },
+  'law-portal-heading': {
+    es: 'Encabezado de página del portal del cliente con antetítulo, descripción, enlace de vuelta y botones de acción.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, описанием, ссылкой назад и кнопками.',
+  },
+  'law-sign-in': {
+    es: 'Acceso a pantalla partida con ilustración de la balanza, testimonio, cifras, mostrar contraseña y acceso de demostración.',
+    ru: 'Вход на двух панелях с иллюстрацией весов, отзывом, цифрами, показом пароля и демо-ссылкой.',
+  },
 };

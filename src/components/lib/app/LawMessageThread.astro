@@ -1,0 +1,284 @@
+---
+/**
+ * LawMessageThread — Secure messaging with your lawyer: a conversation log grouped by day with
+ * firm and client bubbles, the lawyer's name and a response-time note, and a composer that
+ * appends your message (Enter sends, Shift+Enter adds a line). Demo: messages stay in the page.
+ *
+ * @param {LawMessage[]} messages - Conversation messages.
+ * @param {string} lawyer - Lawyer's name shown in the header.
+ * @param {string} caseRef - Case reference shown in the header.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the conversation is role="log" (polite) so new messages are announced; the
+ * composer has a visible label and a clear "Enviar" button; each bubble includes author and time
+ * as text; focus returns to the composer after sending.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/law-firm/law-theme.css';
+import { lawMessages, formatLawDate, formatLawTime, type LawMessage } from '../templates/law-firm/data';
+
+interface OwnProps {
+  messages?: LawMessage[];
+  lawyer?: string;
+  caseRef?: string;
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  messages = lawMessages,
+  lawyer = 'Carmen Arbós',
+  caseRef = 'EXP-2026-0412',
+  title = 'Mensajes',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `lmt-${Math.random().toString(36).slice(2, 8)}`;
+const initials = lawyer.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+let lastDay = '';
+const items = messages.map((m) => {
+  const day = m.at.slice(0, 10);
+  const showDay = day !== lastDay;
+  lastDay = day;
+  return { m, day, showDay };
+});
+---
+
+<section class:list={['law-ui', 'law-thread', classAttr]} aria-labelledby={`${uid}-title`} data-law-thread {...rest}>
+  <header class="law-thread__head">
+    <span class="law-thread__avatar" aria-hidden="true">{initials}</span>
+    <div>
+      <h2 id={`${uid}-title`} class="law-thread__title">{title} · {lawyer}</h2>
+      <p class="law-thread__sub">{caseRef} · responde en menos de 24 h laborables</p>
+    </div>
+  </header>
+
+  <div class="law-thread__log" role="log" aria-live="polite" aria-label="Conversación" tabindex="0" data-thread-log>
+    {items.map(({ m, day, showDay }) => (
+      <>
+        {showDay && <p class="law-thread__day"><time datetime={day}>{formatLawDate(day)}</time></p>}
+        <div class:list={['law-msg', `is-${m.from}`]}>
+          <p class="law-msg__meta"><strong>{m.author}</strong> · <time datetime={m.at}>{formatLawTime(m.at)}</time></p>
+          <p class="law-msg__text">{m.text}</p>
+        </div>
+      </>
+    ))}
+  </div>
+
+  <form class="law-thread__form" data-thread-form>
+    <label for={`${uid}-msg`}>Escribe un mensaje</label>
+    <div class="law-thread__row">
+      <textarea id={`${uid}-msg`} rows="2" placeholder="Escribe aquí… (Enter para enviar)" data-thread-input></textarea>
+      <button type="submit" class="law-thread__send">Enviar</button>
+    </div>
+    <p class="law-thread__note">🔒 Los mensajes son confidenciales y quedan en tu expediente.</p>
+  </form>
+</section>
+
+<script>
+  function initThread(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const log = root.querySelector<HTMLElement>('[data-thread-log]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-thread-form]')!;
+    const input = root.querySelector<HTMLTextAreaElement>('[data-thread-input]')!;
+    const time = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' });
+    log.scrollTop = log.scrollHeight;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) { input.focus(); return; }
+      const wrap = document.createElement('div');
+      wrap.className = 'law-msg is-client';
+      const meta = document.createElement('p');
+      meta.className = 'law-msg__meta';
+      meta.innerHTML = '<strong>Tú</strong> · <span></span> · Enviado';
+      meta.querySelector('span')!.textContent = time.format(new Date());
+      const body = document.createElement('p');
+      body.className = 'law-msg__text';
+      body.textContent = text;
+      wrap.append(meta, body);
+      log.appendChild(wrap);
+      input.value = '';
+      log.scrollTop = log.scrollHeight;
+      input.focus();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-law-thread]').forEach(initThread);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style is:global>
+  .law-thread .law-msg {
+    max-width: min(560px, 86%);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-radius: 18px;
+  }
+
+  .law-thread .law-msg.is-firm {
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    background: var(--lw-surface);
+  }
+
+  .law-thread .law-msg.is-client {
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    background: rgba(var(--lw-brand-rgb), 0.2);
+    border: 1px solid rgba(var(--lw-brand-rgb), 0.4);
+  }
+
+  .law-thread .law-msg__meta {
+    margin: 0 0 4px;
+    color: var(--lw-text-3);
+    font-size: 0.75rem;
+  }
+
+  .law-thread .law-msg__meta strong {
+    color: var(--lw-text-2);
+  }
+
+  .law-thread .law-msg__text {
+    margin: 0;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+</style>
+
+<style>
+  .law-thread {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--lw-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--lw-bg-raised);
+    color: var(--lw-text);
+    font-family: var(--lw-font-body);
+    overflow: hidden;
+  }
+
+  .law-thread__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border-bottom: 1px solid var(--lw-border);
+  }
+
+  .law-thread__avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, hsl(350 45% 46%), hsl(20 40% 20%));
+    color: #fff;
+    font-family: var(--lw-font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .law-thread__title {
+    margin: 0;
+    font-family: var(--lw-font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+  }
+
+  .law-thread__sub {
+    margin: 2px 0 0;
+    color: var(--lw-text-3);
+    font-size: 0.8rem;
+  }
+
+  .law-thread__log {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    height: 420px;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    overflow-y: auto;
+    background: var(--lw-bg);
+  }
+
+  .law-thread__log:focus-visible,
+  .law-thread__form textarea:focus-visible,
+  .law-thread__send:focus-visible {
+    outline: 2px solid var(--lw-brand);
+    outline-offset: -2px;
+  }
+
+  .law-thread__day {
+    align-self: center;
+    margin: var(--sp-2, 0.5rem) 0 0;
+    padding: 0.15rem 0.8rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--lw-surface);
+    color: var(--lw-text-3);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .law-thread__form {
+    display: grid;
+    gap: 6px;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--lw-border);
+  }
+
+  .law-thread__form label {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .law-thread__row {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .law-thread__row textarea {
+    flex: 1;
+    min-width: 0;
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--lw-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-surface);
+    color: var(--lw-text);
+    font: inherit;
+    resize: none;
+  }
+
+  .law-thread__send {
+    min-width: 88px;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--lw-brand);
+    color: var(--lw-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .law-thread__send:hover {
+    background: var(--lw-brand-hover);
+  }
+
+  .law-thread__note {
+    margin: 0;
+    color: var(--lw-text-3);
+    font-size: 0.78rem;
+  }
+</style>
