@@ -5,7 +5,8 @@ import SisterSiteLink from '../components/layout/SisterSiteLink.astro';
 import Sidebar from '../components/docs/Sidebar.astro';
 import LanguagePicker from '../components/layout/LanguagePicker.astro';
 import DocsFooter from '../components/layout/DocsFooter.astro';
-import { categories } from '../data/registry/index';
+import { categories, components } from '../data/registry/index';
+import { getLocalizedCategory } from '../i18n/catalog';
 import type { Locale } from '../config/site';
 import { getLangFromUrl, useTranslations, getLocalizedPath, cleanPath } from '../i18n/translations';
 
@@ -20,6 +21,18 @@ const { title, description, lang = detectedLang } = Astro.props;
 const currentPath = Astro.url.pathname;
 const normalizedPath = cleanPath(currentPath).replace(/\/$/, '') || '/';
 const t = useTranslations(lang);
+
+// Categories shown in the "Components" hover menu (sections have their own catalog).
+const menuCategories = categories
+  .filter((c) => c.id !== 'sections')
+  .map((c) => ({
+    id: c.id,
+    icon: c.icon,
+    name: getLocalizedCategory(c, lang).name,
+    count: components.filter((comp) => comp.category === c.id).length,
+  }))
+  .filter((c) => c.count > 0);
+const componentsActive = normalizedPath.startsWith('/docs') || normalizedPath.startsWith('/components');
 ---
 
 <BaseLayout title={title} description={description} lang={lang}>
@@ -37,7 +50,26 @@ const t = useTranslations(lang);
           <a href={getLocalizedPath('/', lang)} class:list={{ active: normalizedPath === '/' }}>{t('nav.home')}</a>
           <a href={getLocalizedPath('/install', lang)} class:list={{ active: normalizedPath.startsWith('/install') }}>{t('nav.install')}</a>
           <a href={getLocalizedPath('/mcp', lang)} class:list={{ active: normalizedPath.startsWith('/mcp') }}>{t('nav.mcp')}</a>
-          <a href={getLocalizedPath('/install', lang)} class:list={{ active: normalizedPath.startsWith('/docs') }}>{t('nav.components')}</a>
+          <div class="nav-menu" data-nav-menu>
+            <a href={getLocalizedPath('/components', lang)} class:list={['nav-menu__link', { active: componentsActive }]}>{t('nav.components')}</a>
+            <button type="button" class="nav-menu__toggle" aria-expanded="false" aria-controls="components-menu" aria-label={`${t('nav.components')}: ${t('sidebar.viewAll')}`}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="nav-menu__panel" id="components-menu">
+              <ul class="nav-menu__grid" role="list">
+                {menuCategories.map((c) => (
+                  <li>
+                    <a class="nav-menu__item" href={getLocalizedPath(`/components/${c.id}`, lang)}>
+                      <span class="nav-menu__icon" aria-hidden="true" set:html={c.icon}></span>
+                      <span class="nav-menu__name">{c.name}</span>
+                      <span class="nav-menu__count">{c.count}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <a class="nav-menu__all" href={getLocalizedPath('/components', lang)}>{t('sidebar.viewAll')} →</a>
+            </div>
+          </div>
           <a href={getLocalizedPath('/sections', lang)} class:list={{ active: normalizedPath.startsWith('/sections') }}>{t('nav.sections')}</a>
           <a href={getLocalizedPath('/templates', lang)} class:list={{ active: normalizedPath.startsWith('/templates') }}>{t('nav.templates')}</a>
           <a href={getLocalizedPath('/notes', lang)} class:list={{ active: normalizedPath.startsWith('/notes') }}>{t('nav.notes')}</a>
@@ -73,6 +105,15 @@ const t = useTranslations(lang);
     </div>
   </div>
   <script is:inline>
+    // Components menu: hover/focus open it with CSS; the button toggles it for touch and keyboard
+    document.querySelectorAll('[data-nav-menu]').forEach((menu) => {
+      const btn = menu.querySelector('.nav-menu__toggle');
+      if (!btn) return;
+      const set = (open) => { menu.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', String(open)); };
+      btn.addEventListener('click', () => set(!menu.classList.contains('is-open')));
+      menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { set(false); btn.focus(); } });
+      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) set(false); });
+    });
     // Mobile menu toggle
     const siteToggle = document.getElementById('site-menu-toggle');
     const siteNav = document.getElementById('site-nav');
@@ -196,6 +237,152 @@ const t = useTranslations(lang);
     background: rgba(234, 179, 8, 0.12);
     border: 1px solid rgba(234, 179, 8, 0.3);
     font-weight: 700;
+  }
+
+
+  /* Components hover menu */
+  .nav-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-menu__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: -6px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--c-text-3, var(--c-text-2));
+    cursor: pointer;
+    transition: transform 0.2s, color 0.2s;
+  }
+
+  .nav-menu__toggle:hover,
+  .nav-menu__toggle:focus-visible {
+    color: var(--c-text-1);
+  }
+
+  .nav-menu__toggle:focus-visible {
+    outline: 2px solid var(--c-primary-light, #818cf8);
+    outline-offset: 1px;
+  }
+
+  .nav-menu.is-open .nav-menu__toggle,
+  .nav-menu:hover .nav-menu__toggle {
+    transform: rotate(180deg);
+  }
+
+  .nav-menu__panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 60;
+    width: min(560px, 92vw);
+    margin-top: 6px;
+    padding: var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg, 16px);
+    background: rgba(10, 13, 24, 0.97);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0s 0.15s;
+  }
+
+  /* Invisible bridge so the pointer can travel from the link to the panel */
+  .nav-menu__panel::before {
+    content: '';
+    position: absolute;
+    inset: -12px 0 auto 0;
+    height: 12px;
+  }
+
+  .nav-menu:hover .nav-menu__panel,
+  .nav-menu:focus-within .nav-menu__panel,
+  .nav-menu.is-open .nav-menu__panel {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+
+  .nav-menu__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+  }
+
+  .docs-header__nav .nav-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 40px;
+    padding: 0.4rem 0.6rem;
+    border: 0;
+    text-align: left;
+  }
+
+  .nav-menu__icon {
+    display: inline-flex;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-primary-light, #818cf8);
+  }
+
+  .nav-menu__icon :global(svg) {
+    width: 16px;
+    height: 16px;
+  }
+
+  .nav-menu__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-menu__count {
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--c-text-3, var(--c-text-2));
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .docs-header__nav .nav-menu__all {
+    display: block;
+    margin-top: var(--sp-2);
+    padding: 0.6rem;
+    border-top: 1px solid var(--c-border);
+    border-radius: 0 0 var(--r-sm) var(--r-sm);
+    color: #facc15;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-menu__panel,
+    .nav-menu__toggle {
+      transition: none;
+    }
   }
 
   .gh-link {
@@ -369,5 +556,17 @@ const t = useTranslations(lang);
     }
     .docs-header__nav.is-open { display: flex; }
     .docs-header__nav a { text-align: center; padding: 0.8rem; font-size: 1.1rem; }
+    .nav-menu { flex-wrap: wrap; justify-content: center; }
+    .nav-menu__link { flex: 1; }
+    .nav-menu__toggle { width: 44px; height: 44px; margin-left: 0; }
+    .nav-menu__panel {
+      position: static; width: 100%; margin-top: var(--sp-2);
+      display: none; opacity: 1; visibility: visible; transform: none; box-shadow: none;
+    }
+    .nav-menu__panel::before { display: none; }
+    .nav-menu:hover .nav-menu__panel, .nav-menu:focus-within .nav-menu__panel { display: none; }
+    .nav-menu.is-open .nav-menu__panel { display: block; }
+    .nav-menu__grid { grid-template-columns: 1fr; max-height: 50vh; }
+    .docs-header__nav .nav-menu__item { text-align: left; font-size: 1rem; padding: 0.7rem; }
   }
 </style>

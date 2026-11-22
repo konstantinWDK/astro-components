@@ -96,6 +96,25 @@ const depText = comp.category === 'charts'
       <span class="breadcrumb__current">{comp.name}</span>
     </nav>
 
+    <!-- Category quick-switch: every component of this category, one click away -->
+    {rawCategory && comp.category !== 'sections' && (
+      <nav class="cat-rail" aria-label={`${category?.name}: ${nav.all}`}>
+        <div class="cat-rail__head">
+          <span class="cat-rail__icon" aria-hidden="true" set:html={rawCategory.icon}></span>
+          <span class="cat-rail__name">{category?.name}</span>
+          <span class="cat-rail__count">{siblings.length}</span>
+          <a class="cat-rail__all" href={getLocalizedPath(`/components/${comp.category}`, lang)}>{nav.all} →</a>
+        </div>
+        <ul class="cat-rail__list" role="list">
+          {siblings.map((c) => (
+            <li>
+              <a href={getLocalizedPath(`/docs/${c.slug}`, lang)} class:list={['cat-rail__chip', { 'is-current': c.slug === slug }]} aria-current={c.slug === slug ? 'page' : undefined}>{c.name}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
     <!-- Component header -->
     <header class="doc-header">
       <div class="doc-header__meta">
@@ -193,6 +212,7 @@ const depText = comp.category === 'charts'
 </DocsLayout>
 
 <script is:inline>
+  document.querySelector('.cat-rail__chip.is-current')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   const copyBtns = document.querySelectorAll('.copy-btn');
   copyBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -346,6 +366,20 @@ const depText = comp.category === 'charts'
   .doc-jump a:focus-visible, .doc-more a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
   .doc-section { scroll-margin-top: 90px; }
 
+  /* Category quick-switch */
+  .cat-rail { margin: 0 0 var(--sp-6); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--c-border); border-radius: var(--r-lg, 16px); background: var(--c-surface, rgba(255,255,255,0.03)); }
+  .cat-rail__head { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+  .cat-rail__icon { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; color: var(--c-primary-light); }
+  .cat-rail__icon :global(svg) { width: 16px; height: 16px; }
+  .cat-rail__name { font-weight: 700; color: var(--c-text-1); }
+  .cat-rail__count { padding: 0 0.5rem; border-radius: 999px; background: rgba(255,255,255,0.07); color: var(--c-text-3); font-size: 0.75rem; font-weight: 600; }
+  .cat-rail__all { margin-left: auto; display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--sp-3); border-radius: var(--r-sm); background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.3); color: #facc15; font-size: 0.85rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .cat-rail__all:hover { background: rgba(234,179,8,0.2); }
+  .cat-rail__list { list-style: none; margin: 0; padding: 0 0 4px; display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: thin; }
+  .cat-rail__chip { display: inline-flex; align-items: center; min-height: 36px; padding: 0 0.8rem; border: 1px solid var(--c-border); border-radius: 999px; color: var(--c-text-2); font-size: 0.85rem; text-decoration: none; white-space: nowrap; transition: border-color 0.2s, color 0.2s, background 0.2s; }
+  .cat-rail__chip:hover { border-color: var(--c-primary-light); color: var(--c-text-1); }
+  .cat-rail__chip.is-current { border-color: var(--c-primary-light); background: var(--c-primary-glow); color: var(--c-text-1); font-weight: 700; }
+  .cat-rail a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
   .doc-more { margin-top: var(--sp-10, 3rem); padding-top: var(--sp-6); border-top: 1px solid var(--c-border); }
   .doc-more__head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-4); }
   .doc-more__title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--c-text-1); }
