@@ -171,3 +171,13 @@ export { default as TheaAccountNav } from './TheaAccountNav.astro';
 export { default as TheaAccountTopbar } from './TheaAccountTopbar.astro';
 export { default as TheaAccountHeading } from './TheaAccountHeading.astro';
 export { default as TheaSignIn } from './TheaSignIn.astro';
+
+// Fishing customer area ("Corcho")
+export { default as FishArt } from './FishArt.astro';
+export { default as FishAccountSummary } from './FishAccountSummary.astro';
+export { default as FishOrders } from './FishOrders.astro';
+export { default as FishWishlist } from './FishWishlist.astro';
+export { default as FishAccountNav } from './FishAccountNav.astro';
+export { default as FishAccountTopbar } from './FishAccountTopbar.astro';
+export { default as FishAccountHeading } from './FishAccountHeading.astro';
+export { default as FishSignIn } from './FishSignIn.astro';

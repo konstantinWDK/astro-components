@@ -1,0 +1,308 @@
+---
+/**
+ * FishOrders — Orders as an exclusive native accordion (<details name>): id, date, status and total in
+ * the summary; the body lists each item with its illustration and options, a written timeline,
+ * carrier and tracking, and the actions available (return within 30 days once delivered; demo).
+ * Orders paid in this browser's cart (localStorage) are added on top.
+ *
+ * @param {FishOrder[]} orders - Orders, newest first.
+ * @param {FishProduct[]} products - Catalog, to resolve products and art.
+ * @param {string} shopHref - Link of the "buy again" action.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native disclosure widgets, status is text with a marker, the timeline is an
+ * ordered list, action results are in an aria-live region, buttons name the order they act on.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fishing/fish-theme.css';
+import FishArt from './FishArt.astro';
+import { fishOrders, fishProducts, fishById, fishMoney, type FishOrder, type FishProduct } from '../templates/fishing/data';
+
+interface OwnProps {
+  orders?: FishOrder[];
+  products?: FishProduct[];
+  shopHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { orders = fishOrders, products = fishProducts, shopHref = '/tienda', class: classAttr, ...rest } = Astro.props;
+
+const uid = `for-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (d: string) => (d.startsWith('20') ? new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : d);
+const names = Object.fromEntries(products.map((p) => [p.id, p.name]));
+---
+
+<section class:list={['fish-ui', 'fish-ord', classAttr]} aria-label="Mis pedidos" data-fish-ord data-names={JSON.stringify(names)} {...rest}>
+  <div class="fish-ord__list" data-list>
+    {orders.map((o, i) => (
+      <details class="fish-ord__item" name={`${uid}-o`} open={i === 0 ? true : undefined} data-order={o.id}>
+        <summary>
+          <span class="fish-ord__id">{o.id}</span>
+          <span class="fish-ord__date">{fmt(o.date)}</span>
+          <span class:list={['fish-ord__status', `is-${o.status === 'Entregado' ? 'ok' : o.status === 'Devuelto' ? 'off' : 'go'}`]} data-status>{o.status}</span>
+          <span class="fish-ord__total">{fishMoney(o.total)}</span>
+        </summary>
+        <div class="fish-ord__body">
+          <ul class="fish-ord__items">
+            {o.lines.map((l) => {
+              const p = fishById(l.productId, products);
+              return p ? (
+                <li>
+                  <span class="fish-ord__mini"><FishArt item={p} decorative /></span>
+                  <span><strong>{l.qty} × {p.name}</strong><small>{Object.entries(l.options).map(([k, v]) => `${k}: ${v}`).join(' · ') || p.brand}</small></span>
+                </li>
+              ) : null;
+            })}
+          </ul>
+          <ol class="fish-ord__steps">
+            {o.steps.map((s) => (
+              <li class:list={{ 'is-done': s.done }}><span>{s.label}</span><small>{s.done ? 'Hecho' : 'Pendiente'} · {fmt(s.date)}</small></li>
+            ))}
+          </ol>
+          <p class="fish-ord__carrier"><strong>{o.carrier}</strong> · {o.tracking}</p>
+          <div class="fish-ord__acts">
+            {o.status === 'Entregado' ? (
+              <>
+                <button type="button" class="fs-btn fs-btn--ghost" data-act="return" aria-label={`Devolver el pedido ${o.id}`}>Devolver</button>
+                <a class="fs-btn fs-btn--ghost" href={shopHref}>Comprar de nuevo</a>
+              </>
+            ) : o.status === 'Devuelto' ? (
+              <a class="fs-btn fs-btn--ghost" href={shopHref}>Volver a la tienda</a>
+            ) : (
+              <button type="button" class="fs-btn fs-btn--ghost" data-act="track" aria-label={`Seguir el envío del pedido ${o.id}`}>Seguir el envío</button>
+            )}
+          </div>
+        </div>
+      </details>
+    ))}
+  </div>
+  <p class="fish-ord__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .fish-ord {
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-ord :global(.fish-ord__list) {
+    border-top: 1.5px solid var(--fs-border-strong);
+  }
+
+  .fish-ord :global(.fish-ord__item) {
+    border-bottom: 1px solid var(--fs-border);
+  }
+
+  .fish-ord :global(.fish-ord__item summary) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    align-items: center;
+    min-height: 64px;
+    padding: var(--sp-4, 1rem) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .fish-ord :global(.fish-ord__item summary::-webkit-details-marker) {
+    display: none;
+  }
+
+  .fish-ord :global(.fish-ord__id) {
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: 1.35rem;
+  }
+
+  .fish-ord :global(.fish-ord__date) {
+    grid-column: 1;
+    font-size: 0.86rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-ord :global(.fish-ord__status) {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font: 700 0.72rem/1 var(--fs-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .fish-ord :global(.fish-ord__status.is-ok) { color: var(--fs-ok); }
+  .fish-ord :global(.fish-ord__status.is-go) { color: var(--fs-brand); }
+  .fish-ord :global(.fish-ord__status.is-off) { color: var(--fs-bad); }
+
+  .fish-ord :global(.fish-ord__total) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .fish-ord :global(.fish-ord__body) {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    padding: 0 0 var(--sp-6, 1.5rem);
+  }
+
+  .fish-ord__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fish-ord__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fish-ord__mini {
+    flex: none;
+    width: 56px;
+    border-radius: 10px;
+    background: var(--fs-surface);
+    overflow: hidden;
+  }
+
+  .fish-ord__items strong {
+    display: block;
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .fish-ord__items small {
+    font-size: 0.82rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-ord :global(.fish-ord__steps) {
+    display: grid;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    list-style: none;
+    border-left: 1.5px solid var(--fs-border-strong);
+  }
+
+  .fish-ord :global(.fish-ord__steps li) {
+    position: relative;
+    padding: 0.5rem 0;
+    color: var(--fs-text-3);
+  }
+
+  .fish-ord :global(.fish-ord__steps li::before) {
+    content: '';
+    position: absolute;
+    left: calc(-1.1rem - 5px);
+    top: 0.85rem;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid var(--fs-border-strong);
+    border-radius: 50%;
+    background: var(--fs-bg);
+  }
+
+  .fish-ord :global(.fish-ord__steps li.is-done) {
+    color: var(--fs-text);
+  }
+
+  .fish-ord :global(.fish-ord__steps li.is-done::before) {
+    border-color: var(--fs-brand);
+    background: var(--fs-brand);
+  }
+
+  .fish-ord :global(.fish-ord__steps small) {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-ord__carrier {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--fs-text-2);
+  }
+
+  .fish-ord__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fish-ord__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--fs-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .fish-ord :global(.fish-ord__item summary) {
+      grid-template-columns: 9rem 1fr auto auto;
+      gap: 1.5rem;
+    }
+
+    .fish-ord :global(.fish-ord__date),
+    .fish-ord :global(.fish-ord__status),
+    .fish-ord :global(.fish-ord__total) {
+      grid-column: auto;
+      grid-row: auto;
+      justify-self: auto;
+    }
+
+    .fish-ord :global(.fish-ord__status) {
+      min-width: 7rem;
+      text-align: right;
+    }
+
+    .fish-ord :global(.fish-ord__body) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .fish-ord__carrier,
+    .fish-ord__acts {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-fish-ord]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act]');
+      if (!b) return;
+      const item = b.closest<HTMLElement>('[data-order]');
+      const id = item?.dataset.order ?? '';
+      if (b.dataset.act === 'return') {
+        const st = item?.querySelector<HTMLElement>('[data-status]');
+        if (st) { st.textContent = 'Devuelto'; st.className = 'fish-ord__status is-off'; }
+        b.disabled = true;
+        if (live) live.textContent = `Devolución del pedido ${id} iniciada. Te enviamos la etiqueta por email (demostración).`;
+      } else if (live) {
+        live.textContent = `Seguimiento del pedido ${id}: en reparto, entrega prevista el próximo día laborable (demostración).`;
+      }
+    });
+
+    try {
+      const mine = JSON.parse(localStorage.getItem('fish-orders') ?? '[]') as Array<{ id: string; date: string; lines: Array<{ productId: string; qty: number; options: Record<string, string> }>; total: number }>;
+      const names = JSON.parse(root.dataset.names ?? '{}') as Record<string, string>;
+      const list = root.querySelector<HTMLElement>('[data-list]');
+      if (list && mine.length) {
+        const html = mine.map((o) => {
+          const lines = o.lines.map((l) => `<li><span><strong>${l.qty} × ${names[l.productId] ?? l.productId}</strong></span></li>`).join('');
+          return `<details class="fish-ord__item" data-order="${o.id}"><summary><span class="fish-ord__id">${o.id}</span><span class="fish-ord__date">${new Date(`${o.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span class="fish-ord__status is-go">Preparando</span><span class="fish-ord__total">${o.total.toLocaleString('es-ES')} €</span></summary><div class="fish-ord__body"><ul class="fish-ord__items">${lines}</ul></div></details>`;
+        }).join('');
+        list.insertAdjacentHTML('afterbegin', html);
+      }
+    } catch { /* storage unavailable */ }
+  });
+</script>

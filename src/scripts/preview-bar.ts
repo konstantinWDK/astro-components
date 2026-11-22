@@ -61,6 +61,7 @@
     'restaurant': isEs ? 'Lumbre · Restaurante a la brasa' : isRu ? 'Lumbre · Ресторан на углях' : 'Lumbre · Fire-cooking Restaurant',
     'architecture': isEs ? 'Cota · Estudio de arquitectura' : isRu ? 'Cota · Архитектурное бюро' : 'Cota · Architecture Studio',
     'theater': isEs ? 'Telón · Entradas de teatro' : isRu ? 'Telón · Театральные билеты' : 'Telón · Theatre Tickets',
+    'fishing': isEs ? 'Corcho · Tienda de pesca' : isRu ? 'Corcho · Рыболовный магазин' : 'Corcho · Fishing Shop',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

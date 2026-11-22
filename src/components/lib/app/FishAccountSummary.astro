@@ -1,0 +1,276 @@
+---
+/**
+ * FishAccountSummary — Overview of the customer area: the order on its way with a four-step written
+ * timeline and its items drawn as small illustrations, the customer's figures (points, orders, saved
+ * items), and "what bites this month": the species at their best right now, computed from the data,
+ * with a link to the kit builder.
+ *
+ * @param {FishMember} member - Signed-in customer.
+ * @param {FishOrder[]} orders - Orders (the first one not delivered is shown, or the latest).
+ * @param {string[]} wishlist - Saved product ids.
+ * @param {FishProduct[]} products - Catalog.
+ * @param {FishSpecies[]} species - Species with seasons.
+ * @param {string} ordersHref - Link to the orders page.
+ * @param {string} kitHref - Link to the kit builder (the species is added as ?sp=).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the status is text, the timeline is an ordered list with states written out,
+ * figures are a <dl>, illustrations are decorative, targets are 48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fishing/fish-theme.css';
+import FishArt from './FishArt.astro';
+import { fishMember, fishOrders, fishWishlist, fishProducts, fishSpecies, fishById, fishMoney, type FishMember, type FishOrder, type FishProduct, type FishSpecies } from '../templates/fishing/data';
+
+interface OwnProps {
+  member?: FishMember;
+  orders?: FishOrder[];
+  wishlist?: string[];
+  products?: FishProduct[];
+  species?: FishSpecies[];
+  ordersHref?: string;
+  kitHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = fishMember,
+  orders = fishOrders,
+  wishlist = fishWishlist,
+  products = fishProducts,
+  species = fishSpecies,
+  ordersHref = '/cuenta/pedidos',
+  kitHref = '/equipo',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `fas-${Math.random().toString(36).slice(2, 8)}`;
+const first = member.name.split(' ')[0];
+const order = orders.find((o) => o.status === 'Preparando' || o.status === 'En reparto') ?? orders[0];
+const month = new Date().getMonth();
+const bites = species.filter((s) => s.season[month] === 3);
+const fmt = (d: string) => (d.startsWith('20') ? new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : d);
+---
+
+<section class:list={['fish-ui', 'fish-sum', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <article class="fish-sum__order">
+    <p class="fs-eyebrow">Tu pedido {order.id}</p>
+    <h2 id={`${uid}-title`} class="fish-sum__status">{order.status}</h2>
+    <p class="fish-sum__meta">{order.carrier} · {order.tracking} · {fishMoney(order.total)}</p>
+
+    <ol class="fish-sum__steps">
+      {order.steps.map((s) => (
+        <li class:list={{ 'is-done': s.done }}>
+          <span>{s.label}</span>
+          <small>{s.done ? 'Hecho' : 'Pendiente'} · {fmt(s.date)}</small>
+        </li>
+      ))}
+    </ol>
+
+    <ul class="fish-sum__items" aria-label="Contenido del pedido">
+      {order.lines.map((l) => {
+        const p = fishById(l.productId, products);
+        return p ? (
+          <li>
+            <span class="fish-sum__mini"><FishArt item={p} decorative /></span>
+            <span><strong>{l.qty} × {p.name}</strong><small>{Object.values(l.options).join(' · ') || p.brand}</small></span>
+          </li>
+        ) : null;
+      })}
+    </ul>
+    <a class="fs-btn" href={ordersHref}>Ver el detalle</a>
+  </article>
+
+  <div class="fish-sum__side">
+    <p class="fish-sum__hello">Hola, {first}. <span>{member.tier}</span></p>
+    <dl class="fish-sum__stats">
+      <div><dt>Puntos acumulados</dt><dd>{member.points}</dd></div>
+      <div><dt>Pedidos hechos</dt><dd>{orders.length}</dd></div>
+      <div><dt>En tu lista de deseos</dt><dd>{wishlist.length}</dd></div>
+    </dl>
+
+    <div class="fish-sum__bite">
+      <p class="fs-eyebrow">Este mes pica</p>
+      {bites.length ? (
+        <ul>
+          {bites.map((s) => (<li><a class="fs-link" href={`${kitHref}?sp=${s.id}`}>{s.name}</a> <small>{s.water}</small></li>))}
+        </ul>
+      ) : (
+        <p>Es época de poca pesca. Buen momento para preparar el equipo de la próxima temporada.</p>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .fish-sum {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-sum__order {
+    padding: var(--sp-6, 1.5rem);
+    border: 1.5px solid var(--fs-border-strong);
+    border-radius: 20px;
+    background: linear-gradient(160deg, rgba(var(--fs-brand-rgb), 0.16), transparent 60%), var(--fs-bg-raised);
+  }
+
+  .fish-sum__status {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: clamp(2.8rem, 10vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--fs-brand);
+  }
+
+  .fish-sum__meta {
+    margin: 0.5rem 0 var(--sp-5, 1.25rem);
+    font: 500 0.82rem/1.4 var(--fs-font-mono);
+    color: var(--fs-text-2);
+  }
+
+  .fish-sum__steps {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--fs-border);
+  }
+
+  .fish-sum__steps li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.2rem 1rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--fs-border);
+    color: var(--fs-text-3);
+  }
+
+  .fish-sum__steps li.is-done {
+    color: var(--fs-text);
+  }
+
+  .fish-sum__steps small {
+    font-size: 0.84rem;
+  }
+
+  .fish-sum__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .fish-sum__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fish-sum__mini {
+    flex: none;
+    width: 56px;
+    border-radius: 10px;
+    background: var(--fs-surface);
+    overflow: hidden;
+  }
+
+  .fish-sum__items strong {
+    display: block;
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .fish-sum__items small {
+    color: var(--fs-text-3);
+    font-size: 0.82rem;
+  }
+
+  .fish-sum__hello {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    font-size: 1.9rem;
+  }
+
+  .fish-sum__hello span {
+    display: block;
+    margin-top: 0.25rem;
+    font: 600 0.72rem/1 var(--fs-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--fs-accent);
+  }
+
+  .fish-sum__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1px solid var(--fs-border);
+  }
+
+  .fish-sum__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .fish-sum__stats dt {
+    font-size: 0.8rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-sum__stats dd {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .fish-sum__bite ul {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+
+  .fish-sum__bite small {
+    margin-left: 0.4rem;
+    font: 500 0.74rem/1 var(--fs-font-mono);
+    color: var(--fs-text-3);
+  }
+
+  .fish-sum__bite p:not(.fs-eyebrow) {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--fs-text-2);
+  }
+
+  @media (min-width: 960px) {
+    .fish-sum {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .fish-sum__order {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>

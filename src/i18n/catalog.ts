@@ -248,6 +248,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Teatro', description: 'Secciones para tiendas de entradas de teatro: hero con telón guiado por el scroll, cinta de títulos, cartelera con filtros, ficha con plano de butacas interactivo, carrito con reserva de diez minutos, preguntas frecuentes y pie de página.' },
     ru: { name: 'Театр', description: 'Секции для театральных касс: главный экран с занавесом, управляемым прокруткой, бегущая строка, афиша с фильтрами, страница спектакля с интерактивным планом мест, корзина с удержанием десять минут, FAQ и подвал.' },
   },
+  fishing: {
+    en: { name: 'Fishing', description: 'Sections for fishing-tackle shops: ripples hero with a category list, a scroll-driven casting scene, shop grid with filters, product page with options, species kit builder, cart with free-shipping progress, FAQ and footer.' },
+    es: { name: 'Pesca', description: 'Secciones para tiendas de pesca: hero con ondas y lista de categorías, una escena de lanzado guiada por el scroll, cuadrícula de tienda con filtros, ficha de producto con opciones, configurador de equipo por especies, carrito con progreso de envío gratis, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Рыбалка', description: 'Секции для рыболовных магазинов: главный экран с кругами на воде и списком категорий, сцена заброса, управляемая прокруткой, сетка магазина с фильтрами, страница товара с опциями, конфигуратор снаряжения по видам рыбы, корзина с прогрессом бесплатной доставки, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

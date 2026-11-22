@@ -1671,4 +1671,69 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con un gran cartel generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большой сгенерированной афишей и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── Fishing ("Corcho") ────────────────────────
+  'fish-hero': {
+    es: 'Hero de tienda de pesca: un titular enorme sobre ondas CSS que se expanden despacio, dos botones, tres cifras de promesa y las categorías como una gran lista tipográfica de enlaces con el número de productos de cada una. Sin fotografía ni iconos.',
+    ru: 'Главный экран рыболовного магазина: огромный заголовок на медленно расходящихся CSS-кругах, две кнопки, три цифры-обещания и категории как большой типографский список ссылок с числом товаров. Без фото и иконок.',
+  },
+  'fish-cast': {
+    es: 'Una escena guiada por el scroll que funciona como un corto: un escenario fijo muestra un río al amanecer; al hacer scroll el cielo pasa de primera luz a pleno día, la caña se balancea, la línea vuela en arco y se dibuja sola, el corcho cae, se expanden las ondas y un pez pica. Cuatro leyendas se encienden por turnos.',
+    ru: 'Сцена, управляемая прокруткой, как короткий фильм: закреплённая сцена показывает реку на рассвете; при скролле небо меняется от первого света до полного дня, удилище взмахивает, леска летит дугой и сама прорисовывается, поплавок падает, расходятся круги и рыба берёт наживку. По очереди загораются четыре подписи.',
+  },
+  'fish-shop': {
+    es: 'El catálogo como cuadrícula de tienda con filtrado real: búsqueda, filtro por categoría, precio máximo, interruptor "solo con stock" y orden; las tarjetas dibujan su propia ilustración generada con marca, valoración, precio (precio anterior tachado en oferta), un botón de guardar y añadir rápido.',
+    ru: 'Каталог как сетка магазина с настоящей фильтрацией: поиск, категория, максимальная цена, переключатель «только в наличии» и сортировка; карточки рисуют свою сгенерированную иллюстрацию с брендом, рейтингом, ценой (старая цена зачёркнута), кнопкой «сохранить» и быстрым добавлением.',
+  },
+  'fish-product': {
+    es: 'La ficha de producto: un selector (también con ?p=id), ilustración generada, valoración y stock, selectores de opciones cuyos extras cambian el precio en vivo, un selector de cantidad, añadir al carrito y guardar, una tabla de especificaciones y las especies para las que sirve.',
+    ru: 'Страница товара: выбор (также через ?p=id), сгенерированная иллюстрация, рейтинг и наличие, селекторы опций, доплаты которых меняют цену на лету, количество, добавить в корзину и сохранить, таблица характеристик и виды рыбы, для которых подходит.',
+  },
+  'fish-kit': {
+    es: '"Monta tu equipo" por especies: elige el pez y mira cuándo pica mejor en un gráfico de barras de doce meses (marcando el mes actual), el tipo de agua, un consejo y el material recomendado como tarjetas marcables con un total del equipo en vivo y un botón que lo añade al carrito.',
+    ru: '«Соберите снаряжение» по видам рыбы: выберите рыбу и посмотрите, когда она клюёт лучше всего, на диаграмме из двенадцати месяцев (с отметкой текущего), тип воды, совет и рекомендованное снаряжение карточками с флажками, итогом комплекта на лету и кнопкой добавления в корзину.',
+  },
+  'fish-cart': {
+    es: 'Carrito y pago en uno: líneas con ilustración, opciones y selector de cantidad, una barra de progreso del envío gratis, un código promocional, totales en vivo y un formulario de pago que confirma el pedido con un mensaje de demostración. El carrito vive en localStorage.',
+    ru: 'Корзина и оплата в одном: строки с иллюстрацией, опциями и счётчиком, полоса прогресса бесплатной доставки, промокод, итоги на лету и форма оформления с демо-подтверждением. Корзина хранится в localStorage.',
+  },
+  'fish-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'fish-footer': {
+    es: 'Pie de página de tienda de pesca con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал рыболовного магазина с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'fish-art': {
+    es: 'Ilustración de producto dibujada en SVG a partir de los datos del artículo: una caña con empuñadura de corcho y anillas, un carrete con bobina y manivela, un señuelo (cuchara, shad o minnow según la semilla), una bobina de línea o una sacadera / cubo de cebo, coloreados con su paleta. No necesita imágenes.',
+    ru: 'Иллюстрация товара в SVG по данным: удилище с пробковой ручкой и кольцами, катушка со шпулей и ручкой, приманка (колеблющаяся блесна, шэд или миннов по зерну), шпуля лески или подсак / ведро для наживки, раскрашенные по палитре. Картинки не нужны.',
+  },
+  'fish-account-summary': {
+    es: 'Inicio del área de cliente: el pedido en camino con una cronología escrita de cuatro pasos y sus artículos dibujados como pequeñas ilustraciones, las cifras del cliente (puntos, pedidos, guardados) y "qué pica este mes", calculado con las épocas de cada especie.',
+    ru: 'Главная кабинета клиента: заказ в пути с текстовой хронологией из четырёх шагов и товарами в виде мини-иллюстраций, цифры клиента (баллы, заказы, сохранённое) и «что клюёт в этом месяце» по сезонам видов.',
+  },
+  'fish-orders': {
+    es: 'Pedidos como acordeón nativo exclusivo: id, fecha, estado y total; el cuerpo lista cada artículo con su ilustración, una cronología escrita, transportista y seguimiento, y las acciones (devolver en 30 días una vez entregado; demo). Los pedidos pagados en este navegador se añaden arriba.',
+    ru: 'Заказы в эксклюзивном нативном аккордеоне: номер, дата, статус и сумма; внутри — каждый товар с иллюстрацией, текстовая хронология, перевозчик и трекинг, действия (возврат в течение 30 дней после доставки; демо). Заказы, оплаченные в этом браузере, добавляются сверху.',
+  },
+  'fish-wishlist': {
+    es: 'La lista de deseos como tarjetas con ilustración, nombre, precio y stock; cada tarjeta se puede mover al carrito (o enlaza a su ficha si tiene opciones) o quitar, y un contador dice cuántos hay guardados. Se incluyen los guardados en la tienda.',
+    ru: 'Список желаний карточками с иллюстрацией, названием, ценой и наличием; каждую можно переместить в корзину (или перейти на страницу, если есть опции) или удалить, счётчик показывает количество. Сохранённое в магазине учитывается.',
+  },
+  'fish-account-nav': {
+    es: 'Navegación del área de cliente: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета клиента: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'fish-account-topbar': {
+    es: 'Lado derecho de la cabecera de cliente: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú del cliente (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню клиента (нативные popover).',
+  },
+  'fish-account-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, título grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, крупным названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'fish-sign-in': {
+    es: 'Acceso a pantalla partida con una gran ilustración de caña generada y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большой сгенерированной иллюстрацией удилища и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

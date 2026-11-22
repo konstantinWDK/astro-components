@@ -1,0 +1,280 @@
+---
+/**
+ * FishSignIn — Split sign-in for the customer area: a large generated rod illustration with a customer quote
+ * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
+ * quick-access link and a link to join the club.
+ *
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} joinHref - Link to the club page.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus rings and 48px controls; the label illustration is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fishing/fish-theme.css';
+import FishArt from './FishArt.astro';
+import { fishProducts } from '../templates/fishing/data';
+
+interface OwnProps {
+  dashboardHref?: string;
+  joinHref?: string;
+  homeHref?: string;
+  action?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { dashboardHref = '/cuenta', joinHref = '/tienda', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const item = fishProducts[0];
+const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['fish-ui', 'fish-si', classAttr]} aria-labelledby={`${uid}-title`} data-fish-si data-dashboard={dashboardHref} {...rest}>
+  <div class="fish-si__art">
+    <a href={homeHref} class="fish-si__brand">Corcho</a>
+    <div class="fish-si__label"><FishArt item={item} decorative /></div>
+    <blockquote>
+      <p>Pido el jueves y el sábado estoy en el embalse. Sigo el envío desde mi cuenta y la caña llega siempre en su tubo, sin un rasguño.</p>
+      <footer>Mario Lasa · socio desde 2023</footer>
+    </blockquote>
+  </div>
+
+  <div class="fish-si__panel">
+    <form class="fish-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-fish-si-form>
+      <p class="fs-eyebrow">Mis pedidos</p>
+      <h1 id={`${uid}-title`}>Bienvenido de nuevo</h1>
+
+      <div class="fish-si__field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="fish-si__field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="fish-si__pass">
+          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-fish-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="fish-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+
+      <p class="fish-si__error" role="alert" data-fish-si-error></p>
+
+      <button type="submit" class="fs-btn">Entrar</button>
+      <a class="fish-si__demo fs-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
+
+      <p class="fish-si__join">¿Primera vez? <a class="fs-link" href={joinHref}>Ve a la tienda</a></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .fish-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-si__art {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--fs-accent-rgb), 0.22), transparent 70%), var(--fs-surface);
+    border-right: 1px solid var(--fs-border);
+  }
+
+  .fish-si__brand {
+    font-family: var(--fs-font-display);
+    font-style: normal;
+    font-weight: 700;
+    font-size: 2rem;
+    color: var(--fs-text);
+    text-decoration: none;
+  }
+
+  .fish-si__label {
+    width: min(380px, 82%);
+    margin: 0 auto;
+        filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .fish-si__label :global(.fish-art) {
+    max-width: none;
+  }
+
+  .fish-si__art blockquote {
+    max-width: 38ch;
+    margin: 0;
+  }
+
+  .fish-si__art blockquote p {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--fs-font-display);
+    font-style: normal;
+    font-weight: 600;
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .fish-si__art footer {
+    font-size: 0.85rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .fish-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .fish-si__form h1 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--fs-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .fish-si__field label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--fs-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--fs-accent);
+  }
+
+  .fish-si__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: 2px;
+    background: var(--fs-bg-raised);
+    color: var(--fs-text);
+    font: 1rem var(--fs-font-body);
+  }
+
+  .fish-si__pass {
+    position: relative;
+  }
+
+  .fish-si__pass input {
+    padding-right: 5.5rem;
+  }
+
+  .fish-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--fs-text-2);
+    font: 600 0.8rem var(--fs-font-body);
+    cursor: pointer;
+  }
+
+  .fish-si__pass button:hover {
+    color: var(--fs-brand);
+  }
+
+  .fish-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--fs-text-2);
+    cursor: pointer;
+  }
+
+  .fish-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--fs-brand);
+  }
+
+  .fish-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--fs-bad);
+  }
+
+  .fish-si__demo,
+  .fish-si__join {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--fs-text-2);
+  }
+
+  .fish-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 900px) {
+    .fish-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .fish-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-fish-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-fish-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-fish-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-fish-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

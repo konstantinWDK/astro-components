@@ -1,0 +1,183 @@
+---
+/**
+ * FishAccountLayout — Customer-area shell for the "Corcho" fishing template.
+ * Header row with FishAccountNav (tabs on desktop, bottom bar on phones) and FishAccountTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Corcho").
+ * @param {string} current - Active route key (dashboard | orders | wishlist).
+ * @param {FishRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './fish-theme.css';
+import FishAccountNav from '../../app/FishAccountNav.astro';
+import FishAccountTopbar from '../../app/FishAccountTopbar.astro';
+import { fishRoutes, fishData, type FishRoutes } from './data';
+
+type Key = 'dashboard' | 'orders' | 'wishlist';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: FishRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Corcho · Tu cuenta: el seguimiento de tus pedidos, tu lista de deseos y tus puntos.',
+  current = 'dashboard',
+  routes = fishRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = fishData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Pedidos', href: routes.orders, badge: fishData.orders.filter((o) => o.status !== 'Entregado' && o.status !== 'Devuelto').length },
+  { label: 'Deseos', href: routes.wishlist, badge: fishData.wishlist.length },
+];
+const notifications = [
+  { title: 'Tu pedido C-8412 va en camino', text: 'SEUR lo entrega el lunes 23. Seguimiento SE88123091', time: 'hace 2 días', unread: true },
+  { title: 'Baja de precio en tu lista', text: 'La caña de trucha Alba ya cuesta 98 €', time: 'hace 5 días', unread: true },
+  { title: 'Gracias por tu reseña', text: 'Has sumado 20 puntos con tu opinión del carrete Brisa', time: 'hace 6 semanas' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Corcho`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="fish-app-body">
+    <a href="#main-content" class="fish-app-skip">Saltar al contenido</a>
+
+    <div class="fish-app-head">
+      <div class="fish-app-head__inner">
+        <FishAccountNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Corcho" homeHref={routes.home} />
+        <FishAccountTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Corcho', href: routes.home }, { label: 'Ver la tienda', href: routes.shop }, { label: 'Mis pedidos', href: routes.orders }]}
+          signOutHref={routes.signIn}
+          brand="Corcho"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="fish-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .fish-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .fish-app-skip:focus {
+    top: 1rem;
+  }
+
+  .fish-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--fs-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--fs-border);
+  }
+
+  .fish-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .fish-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .fish-app-main:focus {
+    outline: none;
+  }
+
+  :global(.fish-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.fish-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--fs-font-display);
+    font-style: normal;
+    font-weight: 900;
+    text-transform: none;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .fish-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .fish-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .fish-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

@@ -1,0 +1,445 @@
+---
+/**
+ * FishKit — "Build your kit" by species. Pick the fish (radio list, also by `?sp=id`) and see, in text
+ * and a twelve-month bar chart, when it bites best, the type of water, a tip and the recommended
+ * tackle as cards with their illustration and price; each recommended item can be ticked, the kit
+ * total updates live and one button adds the ticked items to the cart. The month bars mark the
+ * current month. Everything is demo data.
+ *
+ * @param {FishSpecies[]} species - Species with seasons and recommended product ids.
+ * @param {FishProduct[]} products - Catalog, to resolve the recommended products.
+ * @param {string} cartHref - Link to the cart.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the species list is a radio group, the month chart has a text alternative (best
+ * months written out), kit items are checkboxes with price text, totals and results are aria-live;
+ * without JavaScript every species is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fishing/fish-theme.css';
+import FishArt from '../app/FishArt.astro';
+import { fishSpecies, fishProducts, fishMoney, fishMonths, type FishSpecies, type FishProduct } from '../templates/fishing/data';
+
+interface OwnProps {
+  species?: FishSpecies[];
+  products?: FishProduct[];
+  cartHref?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  species = fishSpecies,
+  products = fishProducts,
+  cartHref = '/carrito',
+  title = 'Dime qué pescas y te monto el equipo',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fk-${Math.random().toString(36).slice(2, 8)}`;
+const names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const best = (s: FishSpecies) => names.filter((_, i) => s.season[i] === 3).join(', ');
+const prices = Object.fromEntries(products.map((p) => [p.id, { price: p.price, name: p.name, stock: p.stock, hasOptions: p.options.length > 0 }]));
+---
+
+<section class:list={['fish-ui', 'fish-kit', classAttr]} aria-labelledby={`${uid}-title`} data-fish-kit data-products={JSON.stringify(prices)} {...rest}>
+  <div class="fish-kit__inner">
+    <header class="fish-kit__head">
+      <p class="fs-eyebrow">Monta tu equipo</p>
+      <Heading id={`${uid}-title`} class="fish-kit__title">{title}</Heading>
+    </header>
+
+    <div class="fish-kit__grid">
+      <fieldset class="fish-kit__list">
+        <legend class="fs-sr">Elige una especie</legend>
+        {species.map((s, i) => (
+          <label>
+            <input type="radio" name={`${uid}-s`} value={s.id} checked={i === 0} />
+            <span><strong>{s.name}</strong><small>{s.water}</small></span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div class="fish-kit__stage">
+        {species.map((s, i) => (
+          <article class="fish-kit__sp" data-sp={s.id} hidden={i !== 0 ? true : undefined}>
+            <h3>{s.name} <span>{s.water}</span></h3>
+            <p>{s.text}</p>
+
+            <figure class="fish-kit__chart">
+              <figcaption>Cuándo pica mejor: <strong>{best(s) || 'todo el año, con calma'}</strong></figcaption>
+              <ol aria-hidden="true">
+                {s.season.map((v, m) => (
+                  <li data-month={m} class={`is-${v}`}><i style={`height:${12 + v * 28}%`}></i><span>{fishMonths[m]}</span></li>
+                ))}
+              </ol>
+            </figure>
+
+            <p class="fish-kit__tip"><b>Consejo:</b> {s.tips}</p>
+
+            <ul class="fish-kit__items">
+              {s.recommended.map((id) => {
+                const p = products.find((x) => x.id === id);
+                return p ? (
+                  <li>
+                    <label>
+                      <input type="checkbox" value={p.id} data-item checked />
+                      <span class="fish-kit__card">
+                        <span class="fish-kit__art"><FishArt item={p} decorative /></span>
+                        <span><strong>{p.name}</strong><small>{p.brand}</small><b>{fishMoney(p.price)}</b></span>
+                      </span>
+                    </label>
+                  </li>
+                ) : null;
+              })}
+            </ul>
+          </article>
+        ))}
+
+        <div class="fish-kit__sum" aria-live="polite">
+          <p data-sum></p>
+          <div class="fish-kit__acts">
+            <button type="button" class="fs-btn" data-add>Añadir el equipo al carrito</button>
+            <a class="fs-btn fs-btn--ghost" href={cartHref} data-go hidden>Ir al carrito</a>
+          </div>
+          <p class="fish-kit__note">Las cañas y carretes con opciones se añaden con la medida estándar; puedes cambiarla en el carrito o en su ficha.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .fish-kit {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--fs-bg-raised);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+    border-block: 1px solid var(--fs-border);
+  }
+
+  .fish-kit [hidden] {
+    display: none !important;
+  }
+
+  .fish-kit__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .fish-kit__title {
+    max-width: 18ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .fish-kit__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .fish-kit__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-top: 1.5px solid var(--fs-text);
+  }
+
+  .fish-kit__list input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .fish-kit__list span {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 52px;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--fs-border);
+    color: var(--fs-text-2);
+    cursor: pointer;
+    transition: color 0.2s ease, padding 0.25s ease;
+  }
+
+  .fish-kit__list strong {
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+
+  .fish-kit__list small {
+    font: 500 0.78rem/1 var(--fs-font-mono);
+    color: var(--fs-text-3);
+  }
+
+  .fish-kit__list input:checked + span {
+    padding-left: 0.6rem;
+    color: var(--fs-text);
+    border-bottom-color: var(--fs-brand);
+  }
+
+  .fish-kit__list input:checked + span strong {
+    color: var(--fs-brand);
+  }
+
+  .fish-kit__list input:focus-visible + span {
+    outline: 2px solid var(--fs-accent);
+    outline-offset: 2px;
+  }
+
+  .fish-kit__sp h3 {
+    margin: 0 0 0.4rem;
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: 2.4rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .fish-kit__sp h3 span {
+    margin-left: 0.5rem;
+    font: 600 0.76rem/1 var(--fs-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fs-accent);
+  }
+
+  .fish-kit__sp > p {
+    max-width: 56ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    line-height: 1.6;
+    color: var(--fs-text-2);
+  }
+
+  .fish-kit__chart {
+    margin: var(--sp-5, 1.25rem) 0;
+  }
+
+  .fish-kit__chart figcaption {
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--fs-text-2);
+  }
+
+  .fish-kit__chart ol {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 4px;
+    align-items: end;
+    height: 120px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fish-kit__chart li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+  }
+
+  .fish-kit__chart li i {
+    display: block;
+    border-radius: 6px 6px 2px 2px;
+    background: var(--fs-surface-2);
+    transition: height 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .fish-kit__chart li.is-3 i { background: var(--fs-brand); }
+  .fish-kit__chart li.is-2 i { background: color-mix(in srgb, var(--fs-brand) 55%, var(--fs-surface-2)); }
+  .fish-kit__chart li.is-0 i { height: 6% !important; opacity: 0.5; }
+
+  .fish-kit__chart li span {
+    margin-top: 0.3rem;
+    text-align: center;
+    font: 500 0.7rem/1 var(--fs-font-mono);
+    color: var(--fs-text-3);
+  }
+
+  .fish-kit__chart li.is-now span {
+    color: var(--fs-accent);
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  .fish-kit__tip {
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border-left: 3px solid var(--fs-accent);
+    background: rgba(var(--fs-accent-rgb), 0.08);
+  }
+
+  .fish-kit__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-5, 1.25rem) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fish-kit__items input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .fish-kit__card {
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    gap: var(--sp-4, 1rem);
+    align-items: center;
+    padding: var(--sp-3, 0.75rem);
+    border: 1.5px solid var(--fs-border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    opacity: 0.55;
+  }
+
+  .fish-kit__card > span:last-child {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .fish-kit__card strong {
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .fish-kit__card small {
+    color: var(--fs-text-3);
+  }
+
+  .fish-kit__card b {
+    font-family: var(--fs-font-display);
+    font-size: 1.1rem;
+    color: var(--fs-accent);
+  }
+
+  .fish-kit__items input:checked + .fish-kit__card {
+    border-color: var(--fs-brand);
+    background: rgba(var(--fs-brand-rgb), 0.08);
+    opacity: 1;
+  }
+
+  .fish-kit__items input:focus-visible + .fish-kit__card {
+    outline: 2px solid var(--fs-accent);
+    outline-offset: 2px;
+  }
+
+  .fish-kit__sum {
+    margin-top: var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem);
+    border: 1.5px solid var(--fs-border-strong);
+    border-radius: 20px;
+    background: var(--fs-bg);
+  }
+
+  .fish-kit__sum > p:first-child {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: 1.9rem;
+    color: var(--fs-brand);
+  }
+
+  .fish-kit__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fish-kit__note {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    font-size: 0.8rem;
+    color: var(--fs-text-3);
+  }
+
+  @media (min-width: 900px) {
+    .fish-kit {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .fish-kit__grid {
+      grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+
+    .fish-kit__list {
+      position: sticky;
+      top: 90px;
+    }
+
+    .fish-kit__items {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<script>
+  const CART = 'fish-cart';
+  const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-fish-kit]').forEach((root) => {
+    const prods: Record<string, { price: number; name: string; stock: number; hasOptions: boolean }> = JSON.parse(root.dataset.products ?? '{}');
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.fish-kit__list input')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-sp]')];
+    const sum = root.querySelector<HTMLElement>('[data-sum]');
+    const go = root.querySelector<HTMLAnchorElement>('[data-go]');
+    const month = new Date().getMonth();
+    if (!radios.length) return;
+
+    const panel = () => panels.find((p) => !p.hidden);
+    const ticked = () => [...(panel()?.querySelectorAll<HTMLInputElement>('[data-item]:checked') ?? [])].map((i) => i.value);
+    const refresh = () => {
+      const ids = ticked();
+      const total = ids.reduce((n, id) => n + (prods[id]?.price ?? 0), 0);
+      if (sum) sum.textContent = ids.length ? `${ids.length} ${ids.length === 1 ? 'artículo' : 'artículos'} · ${eur(total)}` : 'No has marcado ningún artículo.';
+      if (go) go.hidden = true;
+    };
+    const show = (id?: string) => {
+      panels.forEach((p) => { p.hidden = p.dataset.sp !== id; });
+      panels.forEach((p) => p.querySelectorAll<HTMLElement>('[data-month]').forEach((li) => li.classList.toggle('is-now', Number(li.dataset.month) === month)));
+      refresh();
+    };
+
+    const wanted = new URLSearchParams(location.search).get('sp');
+    const w = radios.find((r) => r.value === wanted);
+    if (w) w.checked = true;
+    radios.forEach((r) => r.addEventListener('change', () => show(r.value)));
+    root.addEventListener('change', (e) => { if ((e.target as HTMLElement).matches('[data-item]')) refresh(); });
+    root.querySelector('[data-add]')?.addEventListener('click', () => {
+      const ids = ticked();
+      if (!ids.length) { if (sum) sum.textContent = 'Marca al menos un artículo para añadirlo.'; return; }
+      let lines: Array<{ productId: string; qty: number; options: Record<string, string> }> = [];
+      try { lines = JSON.parse(localStorage.getItem(CART) ?? '[]'); } catch { lines = []; }
+      ids.forEach((id) => {
+        const ex = lines.find((l) => l.productId === id && !Object.keys(l.options).length);
+        if (ex) ex.qty += 1; else lines.push({ productId: id, qty: 1, options: {} });
+      });
+      try { localStorage.setItem(CART, JSON.stringify(lines)); } catch { /* ignore */ }
+      document.querySelectorAll('[data-cart-count]').forEach((c) => { c.textContent = String(lines.reduce((s, l) => s + l.qty, 0)); });
+      if (sum) sum.textContent = `Añadidos ${ids.length} artículos al carrito.`;
+      if (go) go.hidden = false;
+    });
+    show(radios.find((r) => r.checked)?.value);
+  });
+</script>

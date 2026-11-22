@@ -1,0 +1,242 @@
+---
+/**
+ * FishHero — Fishing-shop hero: a huge headline over slowly spreading ripples (pure CSS rings that
+ * expand from three points), two buttons, the free-shipping and return promises as three figures, and
+ * the categories as a big typographic list of links with the number of products in each. No
+ * photography, no icons.
+ *
+ * @param {FishProduct[]} products - Catalog, to count products per category.
+ * @param {FishStat[]} stats - Three key figures.
+ * @param {string} title - Headline.
+ * @param {string} text - Supporting paragraph.
+ * @param {string} shopHref - Base link of the shop (the category is added as ?cat=).
+ * @param {string} kitHref - Link of the secondary button.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the ripples are decorative (aria-hidden) and stop under prefers-reduced-motion;
+ * the headline and category links are real text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fishing/fish-theme.css';
+import { fishProducts, fishStats, type FishProduct, type FishStat } from '../templates/fishing/data';
+
+interface OwnProps {
+  products?: FishProduct[];
+  stats?: FishStat[];
+  title?: string;
+  text?: string;
+  shopHref?: string;
+  kitHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  products = fishProducts,
+  stats = fishStats,
+  title = 'Todo para que pique',
+  text = 'Cañas, carretes y señuelos que hemos probado en el río antes de ponerlos en la tienda. Sin relleno y con consejo de quien pesca.',
+  shopHref = '/tienda',
+  kitHref = '/equipo',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fh-${Math.random().toString(36).slice(2, 8)}`;
+const cats = [...new Set(products.map((p) => p.category))].map((c) => ({ name: c, n: products.filter((p) => p.category === c).length }));
+---
+
+<section class:list={['fish-ui', 'fish-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="fish-hero__rings" aria-hidden="true">
+    <span style="left:18%;top:30%"></span><span style="left:74%;top:22%;animation-delay:-2.4s"></span><span style="left:52%;top:70%;animation-delay:-4.6s"></span>
+  </div>
+
+  <div class="fish-hero__inner">
+    <div>
+      <p class="fs-eyebrow">Tienda de pesca · Madrid</p>
+      <Heading id={`${uid}-title`} class="fish-hero__title">{title}</Heading>
+      <p class="fish-hero__text">{text}</p>
+      <div class="fish-hero__actions">
+        <a class="fs-btn" href={shopHref}>Ver la tienda</a>
+        <a class="fs-btn fs-btn--ghost" href={kitHref}>Monta tu equipo</a>
+      </div>
+    </div>
+
+    <nav aria-label="Categorías" class="fish-hero__cats">
+      <ul>
+        {cats.map((c) => (
+          <li><a href={`${shopHref}?cat=${encodeURIComponent(c.name)}`}><span>{c.name}</span><small>{c.n}</small></a></li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+
+  <dl class="fish-hero__stats">
+    {stats.map((s) => (
+      <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .fish-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-8, 2rem);
+    background: radial-gradient(120% 80% at 50% 110%, rgba(var(--fs-brand-rgb), 0.16), transparent 60%), var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-hero__rings {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .fish-hero__rings span {
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    margin: -130px 0 0 -130px;
+    border: 1.5px solid rgba(var(--fs-brand-rgb), 0.5);
+    border-radius: 50%;
+    animation: fish-ring 7s ease-out infinite;
+  }
+
+  .fish-hero__rings span::before,
+  .fish-hero__rings span::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: inherit;
+    border-radius: 50%;
+    animation: inherit;
+    animation-delay: calc(var(--d, 0s) - 2.3s);
+  }
+
+  .fish-hero__rings span::after {
+    animation-delay: calc(var(--d, 0s) - 4.6s);
+  }
+
+  @keyframes fish-ring {
+    from { transform: scale(0.1); opacity: 0.9; }
+    to { transform: scale(2.4); opacity: 0; }
+  }
+
+  .fish-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .fish-hero__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: clamp(3rem, 10vw, 7.4rem);
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+  }
+
+  .fish-hero__text {
+    max-width: 44ch;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--fs-text-2);
+  }
+
+  .fish-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fish-hero__cats ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1.5px solid var(--fs-text);
+  }
+
+  .fish-hero__cats a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 56px;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--fs-border);
+    color: var(--fs-text);
+    text-decoration: none;
+    transition: padding 0.25s ease, color 0.2s ease;
+  }
+
+  .fish-hero__cats a span {
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    letter-spacing: -0.02em;
+  }
+
+  .fish-hero__cats a small {
+    font: 500 0.9rem/1 var(--fs-font-mono);
+    color: var(--fs-text-3);
+  }
+
+  .fish-hero__cats a:hover,
+  .fish-hero__cats a:focus-visible {
+    padding-left: 0.75rem;
+    color: var(--fs-brand);
+  }
+
+  .fish-hero__stats {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    max-width: 1280px;
+    margin: var(--sp-10, 2.5rem) auto 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--fs-border-strong);
+  }
+
+  .fish-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.25rem;
+  }
+
+  .fish-hero__stats dt {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--fs-text-2);
+  }
+
+  .fish-hero__stats dd {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-weight: 800;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  @media (min-width: 900px) {
+    .fish-hero {
+      padding: var(--sp-16, 4rem) var(--sp-8, 2rem) var(--sp-8, 2rem);
+    }
+
+    .fish-hero__inner {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      align-items: end;
+    }
+  }
+</style>

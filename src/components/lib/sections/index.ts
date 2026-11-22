@@ -267,3 +267,13 @@ export { default as TheaShowDetail } from './TheaShowDetail.astro';
 export { default as TheaCart } from './TheaCart.astro';
 export { default as TheaFaq } from './TheaFaq.astro';
 export { default as TheaFooter } from './TheaFooter.astro';
+
+// Fishing ("Corcho")
+export { default as FishHero } from './FishHero.astro';
+export { default as FishCast } from './FishCast.astro';
+export { default as FishShop } from './FishShop.astro';
+export { default as FishProduct } from './FishProduct.astro';
+export { default as FishKit } from './FishKit.astro';
+export { default as FishCart } from './FishCart.astro';
+export { default as FishFaq } from './FishFaq.astro';
+export { default as FishFooter } from './FishFooter.astro';

@@ -191,6 +191,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v3c0 5-4 9-9 9S3 12 3 7zM8 21h8"/></svg>`,
   },
   {
+    id: 'fishing',
+    name: 'Fishing',
+    description: 'Sections for fishing-tackle shops: ripples hero with a category list, a scroll-driven casting scene, shop grid with filters, product page with options, species kit builder, cart with free-shipping progress, FAQ and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L16 4M16 4c3 0 5 2 5 5M21 9v6a3 3 0 1 1-3-3"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

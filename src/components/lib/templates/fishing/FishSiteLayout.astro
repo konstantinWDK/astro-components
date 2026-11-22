@@ -1,0 +1,357 @@
+---
+/**
+ * FishSiteLayout — Public layout for the "Corcho" fishing template.
+ * Skip link, sticky header with the wordmark and primary nav (disclosure menu on mobile),
+ * members link, "book a visit" button and the FishFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (shop | kit).
+ * @param {FishRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link, the mobile menu
+ * button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './fish-theme.css';
+import FishFooter from '../../sections/FishFooter.astro';
+import { fishRoutes, fishBrand, type FishRoutes } from './data';
+
+type NavKey = 'shop' | 'kit';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: FishRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Corcho · Material de pesca con criterio. Cañas, carretes y señuelos probados en el río, con guía por especies y envío en 24 horas.',
+  current,
+  routes = fishRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'shop', label: 'Tienda', href: routes.shop },
+  { key: 'kit', label: 'Monta tu equipo', href: routes.kit },
+];
+const footerColumns = [
+  { title: 'Corcho', links: [{ label: 'Tienda', href: routes.shop }, { label: 'Monta tu equipo', href: routes.kit }, { label: 'Mi carrito', href: routes.cart }] },
+  { title: 'Clientes', links: [{ label: 'Mis pedidos', href: routes.signIn }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="fish-body">
+    <a href="#main-content" class="fish-skip">Saltar al contenido</a>
+
+    <header class="fish-header">
+      <div class="fish-header__inner">
+        <a href={routes.home} class="fish-logo" aria-label={`${fishBrand.name} inicio`}>{fishBrand.name}</a>
+
+        <button type="button" class="fish-menu-btn" aria-expanded="false" aria-controls="fish-nav" data-fish-menu>
+          <span class="fish-menu-btn__bars" aria-hidden="true"></span>
+          <span class="fish-sr">Menú</span>
+        </button>
+
+        <nav id="fish-nav" class="fish-nav-main" aria-label="Navegación principal">
+          <ul class="fish-nav-main__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="fish-nav-main__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <div class="fish-nav-main__actions">
+            <a href={routes.signIn} class="fish-nav-main__members">Mis pedidos</a>
+            <a href={routes.cart} class="fish-nav-main__cta" aria-label="Carrito">Carrito <span class="fish-cart-count" data-cart-count>0</span></a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="fish-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <FishFooter brand={fishBrand.name} columns={footerColumns} cta={{ title: 'Este fin de semana, al agua', text: 'Pide antes de las 15:00 y sale hoy. Devolución de 30 días, aunque hayas mojado el cebo.', href: routes.shop, label: 'Ver la tienda' }} />
+
+    <script>
+      const btn = document.querySelector<HTMLButtonElement>('[data-fish-menu]');
+      const nav = document.getElementById('fish-nav');
+      if (btn && nav) {
+        const set = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            set(false);
+            btn.focus();
+          }
+        });
+      }
+    </script>
+      <script>
+      try {
+        const raw = localStorage.getItem('fish-cart');
+        const lines = raw ? JSON.parse(raw) : [];
+        const n = lines.reduce((t: number, l: { qty: number }) => t + l.qty, 0);
+        document.querySelectorAll('[data-cart-count]').forEach((e) => { e.textContent = String(n); });
+      } catch { /* cart unavailable */ }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .fish-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .fish-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .fish-skip:focus {
+    top: 1rem;
+  }
+
+  .fish-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--fs-bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--fs-border);
+  }
+
+  .fish-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .fish-logo {
+    font-family: var(--fs-font-display);
+    font-style: normal;
+    font-weight: 700;
+    
+    font-size: 1.7rem;
+    letter-spacing: -0.01em;
+    color: var(--fs-text);
+    text-decoration: none;
+  }
+
+  .fish-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: 2px;
+    background: none;
+    color: var(--fs-text);
+    cursor: pointer;
+  }
+
+  .fish-menu-btn__bars,
+  .fish-menu-btn__bars::before {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: currentColor;
+  }
+
+  .fish-menu-btn__bars {
+    position: relative;
+    top: -3px;
+  }
+
+  .fish-menu-btn__bars::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 0;
+  }
+
+  .fish-nav-main {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--fs-bg-raised);
+    border-bottom: 1px solid var(--fs-border-strong);
+  }
+
+  .fish-nav-main.is-open {
+    display: flex;
+  }
+
+  .fish-nav-main__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fish-nav-main__link,
+  .fish-nav-main__members {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--fs-text-2);
+    font: 600 0.82rem/1 var(--fs-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .fish-nav-main__link:hover,
+  .fish-nav-main__members:hover {
+    color: var(--fs-text);
+  }
+
+  .fish-nav-main__link[aria-current='page'] {
+    color: var(--fs-brand);
+  }
+
+  .fish-nav-main__actions {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .fish-nav-main__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border: 1px solid var(--fs-brand);
+    border-radius: 2px;
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+    font: 600 0.78rem/1 var(--fs-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .fish-nav-main__cta:hover {
+    background: var(--fs-brand-hover);
+  }
+
+  .fish-header a:focus-visible,
+  .fish-header button:focus-visible {
+    outline: 2px solid var(--fs-brand);
+    outline-offset: 3px;
+  }
+
+  .fish-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 900px) {
+    .fish-menu-btn {
+      display: none;
+    }
+
+    .fish-nav-main {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+
+    .fish-nav-main__list {
+      display: flex;
+      gap: 1.75rem;
+      margin-left: 2rem;
+    }
+
+    .fish-nav-main__actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+.fish-cart-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4em;
+    height: 1.4em;
+    margin-left: 0.4rem;
+    padding: 0 0.3em;
+    border-radius: 999px;
+    background: var(--fs-on-brand);
+    color: var(--fs-brand);
+    font-size: 0.8em;
+  }
+</style>

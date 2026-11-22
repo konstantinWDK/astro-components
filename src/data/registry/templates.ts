@@ -3384,6 +3384,158 @@ const routes = { ...theaRoutes, shows: '/programacion', show: '/butacas' };
 
 <TheaHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'fishing',
+    name: { en: 'Corcho · Fishing Shop', es: 'Corcho · Tienda de pesca', ru: 'Corcho · Рыболовный магазин' },
+    tagline: { en: 'Fishing-tackle shop with a ripples hero, a scroll-driven casting scene that plays like a short film, product illustrations generated in SVG, a catalog with real filters, a species kit builder with seasons and a cart with free-shipping progress, plus an orders and wishlist area.', es: 'Tienda de pesca con un hero de ondas, una escena de lanzado guiada por el scroll que funciona como un corto, ilustraciones de producto generadas en SVG, un catálogo con filtros reales, un configurador de equipo por especies con épocas y un carrito con progreso de envío gratis, más un área de pedidos y deseos.', ru: 'Рыболовный магазин с главным экраном из кругов на воде, сценой заброса, управляемой прокруткой как короткий фильм, иллюстрациями товаров, сгенерированными в SVG, каталогом с настоящими фильтрами, конфигуратором снаряжения по видам рыбы с сезонами и корзиной с прогрессом бесплатной доставки, плюс кабинет заказов и желаний.' },
+    description: { en: 'Complete e-commerce template for a fishing-tackle shop. 9 page types: home with a ripples hero and category list, the scroll-driven casting scene, the most requested products and FAQ; the shop with search, category filter, maximum-price slider, stock switch and sorting; the product page with options that change the price live; the kit builder by species with a twelve-month bite chart and tickable recommended tackle; cart and checkout with free-shipping progress, promo code and demo payment; customer sign-in; and a customer area with a home (order on its way, what bites this month), orders with tracking and returns, and a wish list.', es: 'Plantilla e-commerce completa para una tienda de pesca. 9 tipos de página: home con un hero de ondas y lista de categorías, la escena de lanzado guiada por el scroll, lo más pedido y preguntas frecuentes; la tienda con búsqueda, filtro por categoría, precio máximo, interruptor de stock y orden; la ficha de producto con opciones que cambian el precio en vivo; el configurador de equipo por especies con un gráfico de doce meses de cuándo pica y material recomendado marcable; carrito y pago con progreso de envío gratis, código promocional y pago de demostración; acceso de clientes; y un área de cliente con inicio (pedido en camino, qué pica este mes), pedidos con seguimiento y devoluciones, y una lista de deseos.', ru: 'Полный e-commerce шаблон для рыболовного магазина. 9 типов страниц: главная с кругами на воде и списком категорий, сцена заброса, управляемая прокруткой, самые популярные товары и FAQ; магазин с поиском, категориями, максимальной ценой, наличием и сортировкой; страница товара с опциями, меняющими цену на лету; конфигуратор снаряжения по видам рыбы с диаграммой клёва за двенадцать месяцев и отмечаемым рекомендованным снаряжением; корзина и оплата с прогрессом бесплатной доставки, промокодом и демо-оплатой; вход клиентов; и кабинет с главной (заказ в пути, что клюёт в этом месяце), заказами с трекингом и возвратами и списком желаний.' },
+    highlights: {
+      en: [
+        'Scroll-driven casting scene: sky from dawn to day, the rod swings, the line flies and draws itself, the float lands and a fish bites',
+        'Product illustrations (rods, reels, lures, line, nets) generated in SVG from each item\'s palette and seed, with no image files',
+        'Catalog with real filtering: search, category, maximum price, in-stock switch and sorting, all live',
+        'Species kit builder with a twelve-month bar chart of when each fish bites best, marking the current month',
+        'Cart with free-shipping progress, promo code and a quantity stepper, plus orders with tracking and a wish list',
+      ],
+      es: [
+        'Escena de lanzado guiada por el scroll: cielo de amanecer a día, la caña se balancea, la línea vuela y se dibuja sola, el corcho cae y un pez pica',
+        'Ilustraciones de producto (cañas, carretes, señuelos, línea, sacaderas) generadas en SVG a partir de la paleta y la semilla de cada artículo, sin archivos de imagen',
+        'Catálogo con filtrado real: búsqueda, categoría, precio máximo, interruptor de stock y orden, todo en vivo',
+        'Configurador de equipo por especies con un gráfico de barras de doce meses de cuándo pica mejor cada pez, marcando el mes actual',
+        'Carrito con progreso de envío gratis, código promocional y selector de cantidad, más pedidos con seguimiento y lista de deseos',
+      ],
+      ru: [
+        'Сцена заброса, управляемая прокруткой: небо от рассвета до дня, удилище взмахивает, леска летит и сама прорисовывается, поплавок падает и рыба клюёт',
+        'Иллюстрации товаров (удилища, катушки, приманки, леска, подсаки), сгенерированные в SVG из палитры и зерна, без файлов изображений',
+        'Каталог с настоящей фильтрацией: поиск, категория, максимальная цена, наличие и сортировка — всё на лету',
+        'Конфигуратор снаряжения по видам рыбы с диаграммой клёва за двенадцать месяцев и отметкой текущего',
+        'Корзина с прогрессом бесплатной доставки, промокодом и счётчиком количества, плюс заказы с трекингом и список желаний',
+      ],
+    },
+    tags: ['fishing', 'ecommerce', 'shop', 'catalog', 'cart', 'checkout', 'portal', 'storytelling'],
+    previewBase: '/preview/fishing/',
+    importPath: 'astro-component-kit/templates/fishing',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Ripples hero with categories, the scroll-driven casting scene, the most requested products and FAQ.', es: 'Hero con ondas y categorías, la escena de lanzado guiada por el scroll, lo más pedido y preguntas frecuentes.', ru: 'Главный экран с кругами на воде и категориями, сцена заброса, управляемая прокруткой, самые популярные товары и FAQ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { FishHomePage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishHomePage />`,
+      },
+      {
+        id: 'shop', path: 'tienda/',
+        name: { en: 'Shop', es: 'Tienda', ru: 'Магазин' },
+        description: { en: 'The catalog with search, category filter, price slider, stock switch and sorting.', es: 'El catálogo con búsqueda, filtro por categoría, precio, stock y orden.', ru: 'Каталог с поиском, категориями, ценой, наличием и сортировкой.' },
+        file: 'src/pages/tienda.astro',
+        code: `---
+import { FishShopPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishShopPage />`,
+      },
+      {
+        id: 'product', path: 'producto/',
+        name: { en: 'Product', es: 'Producto', ru: 'Товар' },
+        description: { en: 'Product page with options and live price; reads ?p=id.', es: 'Ficha de producto con opciones y precio en vivo; lee ?p=id.', ru: 'Страница товара с опциями и ценой на лету; читает ?p=id.' },
+        file: 'src/pages/producto.astro',
+        code: `---
+import { FishProductPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishProductPage />`,
+      },
+      {
+        id: 'kit', path: 'equipo/',
+        name: { en: 'Build your kit', es: 'Monta tu equipo', ru: 'Соберите снаряжение' },
+        description: { en: 'Species seasons, tips and recommended tackle with a live kit total.', es: 'Épocas por especie, consejos y material recomendado con total del equipo en vivo.', ru: 'Сезоны по видам, советы и рекомендованное снаряжение с итогом комплекта.' },
+        file: 'src/pages/equipo.astro',
+        code: `---
+import { FishKitPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishKitPage />`,
+      },
+      {
+        id: 'cart', path: 'carrito/',
+        name: { en: 'Cart', es: 'Carrito', ru: 'Корзина' },
+        description: { en: 'Cart and checkout with free-shipping progress, promo code and demo payment.', es: 'Carrito y pago con progreso de envío gratis, código promocional y pago de demostración.', ru: 'Корзина и оплата с прогрессом бесплатной доставки, промокодом и демо-оплатой.' },
+        file: 'src/pages/carrito.astro',
+        code: `---
+import { FishCartPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishCartPage />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Customer sign in', es: 'Acceso clientes', ru: 'Вход для клиентов' },
+        description: { en: 'Split sign-in with a large generated rod illustration and a customer quote.', es: 'Acceso a pantalla partida con una gran ilustración de caña generada y un testimonio.', ru: 'Вход на двух панелях с большой сгенерированной иллюстрацией удилища и отзывом.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { FishSignInPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'cuenta/',
+        name: { en: 'Account home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'The order on its way, customer figures and what bites this month.', es: 'El pedido en camino, cifras del cliente y qué pica este mes.', ru: 'Заказ в пути, цифры клиента и что клюёт в этом месяце.' },
+        file: 'src/pages/cuenta/index.astro',
+        code: `---
+import { FishDashboardPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishDashboardPage />`,
+      },
+      {
+        id: 'orders', path: 'cuenta/pedidos/',
+        name: { en: 'Orders', es: 'Pedidos', ru: 'Заказы' },
+        description: { en: 'Orders with items, timeline, tracking and returns.', es: 'Pedidos con artículos, cronología, seguimiento y devoluciones.', ru: 'Заказы с товарами, хронологией, трекингом и возвратами.' },
+        file: 'src/pages/cuenta/pedidos.astro',
+        code: `---
+import { FishOrdersPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishOrdersPage />`,
+      },
+      {
+        id: 'wishlist', path: 'cuenta/deseos/',
+        name: { en: 'Wish list', es: 'Lista de deseos', ru: 'Список желаний' },
+        description: { en: 'Saved products with move-to-cart and remove actions.', es: 'Productos guardados con acciones de mover al carrito y quitar.', ru: 'Сохранённые товары с действиями «в корзину» и «удалить».' },
+        file: 'src/pages/cuenta/deseos.astro',
+        code: `---
+import { FishWishlistPage } from 'astro-component-kit/templates/fishing';
+---
+
+<FishWishlistPage />`,
+      },
+    ],
+    newComponents: [
+      'fish-hero', 'fish-cast', 'fish-shop', 'fish-product', 'fish-kit', 'fish-cart', 'fish-faq', 'fish-footer',
+      'fish-art', 'fish-account-summary', 'fish-orders', 'fish-wishlist', 'fish-account-nav', 'fish-account-topbar', 'fish-account-heading', 'fish-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your store backend)
+import { FishHomePage, fishData, fishRoutes } from 'astro-component-kit/templates/fishing';
+
+const data = {
+  ...fishData,
+  brand: { ...fishData.brand, name: 'Anzuelo Norte', freeFrom: 80 },
+  products: await fetch('https://api.example.com/products').then((r) => r.json()),
+};
+
+const routes = { ...fishRoutes, shop: '/catalogo', kit: '/que-pescas' };
+---
+
+<FishHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

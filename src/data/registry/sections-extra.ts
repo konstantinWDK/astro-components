@@ -1454,4 +1454,53 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['theater', 'tickets', 'footer', 'newsletter', 'wordmark'],
     usage: `<TheaFooter brand="Telón" />`,
   }),
+  // === FISHING ("Corcho") ===
+  section({
+    slug: 'fish-hero', name: 'Fish Hero', file: 'FishHero.astro', sectionCategory: 'fishing',
+    description: 'Fishing-shop hero: a huge headline over slowly spreading CSS ripples, two buttons, three promise figures and the categories as a big typographic list of links with the product count of each. No photography, no icons.',
+    tags: ['fishing', 'hero', 'ripples', 'typography', 'ecommerce'], featured: true,
+    usage: `<FishHero products={fishProducts} stats={fishStats} />`,
+  }),
+  section({
+    slug: 'fish-cast', name: 'Fish Cast', file: 'FishCast.astro', sectionCategory: 'fishing',
+    description: 'A scroll-driven scene that plays like a short film: a pinned stage shows a river at dawn; as you scroll the sky changes from first light to full day, the rod swings, the line flies in an arc and draws itself, the float lands, ripples spread and a fish takes the bait. Four captions light up in turn.',
+    tags: ['fishing', 'scroll', 'animation', 'svg', 'storytelling', 'video'], featured: true,
+    usage: `<FishCast />`,
+  }),
+  section({
+    slug: 'fish-shop', name: 'Fish Shop', file: 'FishShop.astro', sectionCategory: 'fishing',
+    description: 'The catalog as a shop grid with real filtering: text search, category filter, maximum-price slider, "in stock only" switch and sorting; cards draw their own generated illustration with brand, rating, price (old price struck through on offer), a save toggle and a quick add.',
+    tags: ['fishing', 'catalog', 'filter', 'search', 'ecommerce', 'wishlist'], featured: true,
+    usage: `<FishShop products={fishProducts} />`,
+  }),
+  section({
+    slug: 'fish-product', name: 'Fish Product', file: 'FishProduct.astro', sectionCategory: 'fishing',
+    description: 'The product page: a picker (also by ?p=id), generated illustration, rating and stock, option selectors whose extras change the price live, a quantity stepper, add to cart and save, a specifications table and the species it is good for.',
+    tags: ['fishing', 'product', 'options', 'form', 'ecommerce', 'cart'], featured: true,
+    usage: `<FishProduct products={fishProducts} species={fishSpecies} />`,
+  }),
+  section({
+    slug: 'fish-kit', name: 'Fish Kit', file: 'FishKit.astro', sectionCategory: 'fishing',
+    description: '"Build your kit" by species: pick the fish and see when it bites best in a twelve-month bar chart (marking the current month), the water type, a tip and the recommended tackle as tickable cards with a live kit total and one button that adds them to the cart.',
+    tags: ['fishing', 'configurator', 'chart', 'species', 'ecommerce', 'form'], featured: true,
+    usage: `<FishKit species={fishSpecies} products={fishProducts} />`,
+  }),
+  section({
+    slug: 'fish-cart', name: 'Fish Cart', file: 'FishCart.astro', sectionCategory: 'fishing',
+    description: 'Cart and checkout in one: lines with illustration, options and quantity stepper, a free-shipping progress bar, a promo code, live totals and a checkout form that confirms the order with a demo message. The cart lives in localStorage.',
+    tags: ['fishing', 'cart', 'checkout', 'shipping', 'ecommerce', 'form'], featured: true,
+    usage: `<FishCart products={fishProducts} />`,
+  }),
+  section({
+    slug: 'fish-faq', name: 'Fish FAQ', file: 'FishFaq.astro', sectionCategory: 'fishing',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['fishing', 'faq', 'accordion'],
+    usage: `<FishFaq faqs={fishFaqs} />`,
+  }),
+  section({
+    slug: 'fish-footer', name: 'Fish Footer', file: 'FishFooter.astro', sectionCategory: 'fishing',
+    description: 'Fishing-shop footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['fishing', 'footer', 'newsletter', 'wordmark'],
+    usage: `<FishFooter brand="Corcho" />`,
+  }),
 ];

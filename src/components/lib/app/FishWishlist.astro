@@ -1,0 +1,231 @@
+---
+/**
+ * FishWishlist — The customer's wish list as cards with the product illustration, name, price and
+ * stock; each card can be moved to the cart (adds one unit, or links to the product page when it has
+ * options) or removed, and a counter says how many are saved. Items saved in the shop with the
+ * "Save" button (localStorage) are included on top of the initial list.
+ *
+ * @param {string[]} wishlist - Initial saved product ids.
+ * @param {FishProduct[]} products - Catalog, to resolve products and art.
+ * @param {string} productHref - Base link of a product (the id is added as ?p=).
+ * @param {string} shopHref - Link of the empty state.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each card is a list item, buttons name the product they act on, results and the
+ * counter are in an aria-live region; illustrations are decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fishing/fish-theme.css';
+import FishArt from './FishArt.astro';
+import { fishWishlist, fishProducts, fishMoney, type FishProduct } from '../templates/fishing/data';
+
+interface OwnProps {
+  wishlist?: string[];
+  products?: FishProduct[];
+  productHref?: string;
+  shopHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { wishlist = fishWishlist, products = fishProducts, productHref = '/producto', shopHref = '/tienda', class: classAttr, ...rest } = Astro.props;
+
+const uid = `fwl-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['fish-ui', 'fish-wl', classAttr]} aria-label="Lista de deseos" data-fish-wl data-initial={JSON.stringify(wishlist)} {...rest}>
+  <p class="fish-wl__count" aria-live="polite" data-count></p>
+
+  <ul class="fish-wl__grid">
+    {products.map((p) => (
+      <li data-id={p.id} data-has-options={p.options.length ? '1' : '0'} hidden>
+        <span class="fish-wl__art"><FishArt item={p} decorative /></span>
+        <span class="fish-wl__body">
+          <small>{p.brand}</small>
+          <a href={`${productHref}?p=${p.id}`}>{p.name}</a>
+          <span class="fish-wl__price"><b>{fishMoney(p.price)}</b>{p.oldPrice && <s>{fishMoney(p.oldPrice)}</s>}</span>
+          <span class="fish-wl__stock">{p.stock > 10 ? 'En stock' : p.stock > 0 ? `Quedan ${p.stock}` : 'Agotado'}</span>
+          <span class="fish-wl__acts">
+            {p.options.length ? (
+              <a class="fs-btn" href={`${productHref}?p=${p.id}`} aria-label={`Elegir opciones de ${p.name}`}>Elegir opciones</a>
+            ) : (
+              <button type="button" class="fs-btn" data-move aria-label={`Mover ${p.name} al carrito`}>Al carrito</button>
+            )}
+            <button type="button" class="fs-btn fs-btn--ghost" data-remove aria-label={`Quitar ${p.name} de deseos`}>Quitar</button>
+          </span>
+        </span>
+      </li>
+    ))}
+  </ul>
+
+  <div class="fish-wl__empty" data-empty hidden>
+    <p>Aún no has guardado nada.</p>
+    <a class="fs-btn" href={shopHref}>Ver la tienda</a>
+  </div>
+  <p class="fish-wl__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .fish-wl {
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fish-wl [hidden] {
+    display: none !important;
+  }
+
+  .fish-wl__count {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-size: 0.88rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-wl__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fish-wl__grid > li {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border);
+    border-radius: 16px;
+    background: var(--fs-bg-raised);
+  }
+
+  .fish-wl__art {
+    display: block;
+    align-self: start;
+    border-radius: 12px;
+    background: var(--fs-surface);
+    overflow: hidden;
+  }
+
+  .fish-wl__body {
+    display: grid;
+    gap: 0.3rem;
+    align-content: start;
+  }
+
+  .fish-wl__body small {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fs-accent);
+  }
+
+  .fish-wl__body > a {
+    font-family: var(--fs-font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    line-height: 1.2;
+    color: var(--fs-text);
+    text-decoration: none;
+  }
+
+  .fish-wl__price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .fish-wl__price b {
+    font-family: var(--fs-font-display);
+    font-size: 1.3rem;
+  }
+
+  .fish-wl__price s {
+    color: var(--fs-text-3);
+    font-size: 0.85rem;
+  }
+
+  .fish-wl__stock {
+    font-size: 0.82rem;
+    color: var(--fs-text-3);
+  }
+
+  .fish-wl__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin-top: 0.3rem;
+  }
+
+  .fish-wl__acts .fs-btn {
+    min-height: 44px;
+    padding: 0 1rem;
+    font-size: 0.88rem;
+  }
+
+  .fish-wl__empty {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+    color: var(--fs-text-2);
+  }
+
+  .fish-wl__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--fs-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .fish-wl__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<script>
+  const CART = 'fish-cart';
+  const WISH = 'fish-wish';
+
+  document.querySelectorAll<HTMLElement>('[data-fish-wl]').forEach((root) => {
+    const items = [...root.querySelectorAll<HTMLElement>('.fish-wl__grid > li')];
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    let ids: string[] = JSON.parse(root.dataset.initial ?? '[]');
+    try {
+      const mine = JSON.parse(localStorage.getItem(WISH) ?? 'null') as string[] | null;
+      if (mine) ids = [...new Set([...ids, ...mine])];
+    } catch { /* ignore */ }
+
+    const paint = () => {
+      items.forEach((li) => { li.hidden = !ids.includes(li.dataset.id ?? ''); });
+      if (count) count.textContent = `${ids.length} ${ids.length === 1 ? 'producto guardado' : 'productos guardados'}`;
+      if (empty) empty.hidden = ids.length > 0;
+    };
+
+    root.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const li = t.closest<HTMLElement>('li[data-id]');
+      if (!li) return;
+      const id = li.dataset.id ?? '';
+      const name = li.querySelector('.fish-wl__body > a')?.textContent ?? '';
+      if (t.closest('[data-remove]')) {
+        ids = ids.filter((x) => x !== id);
+        try { localStorage.setItem(WISH, JSON.stringify(ids)); } catch { /* ignore */ }
+        paint();
+        if (live) live.textContent = `${name} quitado de tu lista.`;
+      } else if (t.closest('[data-move]')) {
+        let lines: Array<{ productId: string; qty: number; options: Record<string, string> }> = [];
+        try { lines = JSON.parse(localStorage.getItem(CART) ?? '[]'); } catch { lines = []; }
+        const ex = lines.find((l) => l.productId === id && !Object.keys(l.options).length);
+        if (ex) ex.qty += 1; else lines.push({ productId: id, qty: 1, options: {} });
+        try { localStorage.setItem(CART, JSON.stringify(lines)); } catch { /* ignore */ }
+        document.querySelectorAll('[data-cart-count]').forEach((c) => { c.textContent = String(lines.reduce((s, l) => s + l.qty, 0)); });
+        if (live) live.textContent = `${name} añadido al carrito.`;
+      }
+    });
+    paint();
+  });
+</script>
