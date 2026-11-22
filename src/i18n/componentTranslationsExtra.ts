@@ -1606,4 +1606,69 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con un gran alzado generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большим сгенерированным фасадом и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── Theater ("Telón") ────────────────────────
+  'thea-hero': {
+    es: 'Hero de teatro guiado por el scroll: dos telones de terciopelo cubren el escenario y se abren al hacer scroll, revelando el titular, tres carteles destacados en abanico y un foco que sigue al puntero. Sin JavaScript o con movimiento reducido el telón ya está abierto.',
+    ru: 'Главный экран театра, управляемый прокруткой: два бархатных занавеса закрывают сцену и раздвигаются при скролле, открывая заголовок, три афиши веером и прожектор, следующий за курсором. Без JavaScript или при сниженной анимации занавес уже открыт.',
+  },
+  'thea-marquee': {
+    es: 'Cinta de marquesina de teatro: los títulos de los espectáculos corren en una línea continua de grandes versales cursivas separadas por estrellas, en dos filas en sentidos opuestos; se pausa al pasar el ratón y se detiene con prefers-reduced-motion.',
+    ru: 'Бегущая строка театральной афиши: названия спектаклей идут непрерывной линией крупного курсива, разделённого звёздами, в двух рядах в противоположных направлениях; пауза при наведении и остановка при prefers-reduced-motion.',
+  },
+  'thea-shows': {
+    es: 'La cartelera como cuadrícula de tienda: búsqueda, filtro por género y orden (próxima función, precio, valoración) filtran y reordenan tarjetas con cartel generado; cada tarjeta muestra género, teatro, duración, próxima función y precio "desde".',
+    ru: 'Афиша как сетка магазина: поиск, фильтр по жанру и сортировка (ближайший сеанс, цена, рейтинг) на лету фильтруют и переупорядочивают карточки со сгенерированными афишами; жанр, театр, длительность, ближайший сеанс и цена «от».',
+  },
+  'thea-show-detail': {
+    es: 'Ficha del espectáculo y tienda de butacas en uno: selector de espectáculo (también con ?show=id), cartel, sinopsis, reparto y funciones; al elegir función se marcan las butacas ocupadas en el plano, se muestran precios por zona, se eligen hasta seis butacas (o "mejores butacas juntas") y se añaden al carrito con reserva de diez minutos.',
+    ru: 'Страница спектакля и магазин мест в одном: выбор спектакля (также через ?show=id), афиша, описание, актёры и сеансы; выбор сеанса отмечает занятые места на плане зала, показывает цены зон, позволяет выбрать до шести мест (или «лучшие места рядом») и добавить в корзину с удержанием десять минут.',
+  },
+  'thea-cart': {
+    es: 'Carrito y pago en uno: entradas por espectáculo y función con butacas y precios, una reserva de diez minutos que libera las butacas al llegar a cero, código promocional, totales en vivo y formulario de pago (nombre, email, método, condiciones) que confirma con un mensaje de demostración. El carrito vive en localStorage.',
+    ru: 'Корзина и оплата в одном: билеты по спектаклям и сеансам с местами и ценами, удержание десять минут, освобождающее места по истечении, промокод, итоги на лету и форма оплаты (имя, email, способ, условия) с демо-подтверждением. Корзина хранится в localStorage.',
+  },
+  'thea-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'thea-footer': {
+    es: 'Pie de página de tienda de teatro con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал театральной кассы с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'thea-poster': {
+    es: 'Cartel de espectáculo dibujado en SVG a partir de sus datos: cuatro estilos (telón, foco, máscara, escenario) construidos con una paleta de tres colores y una semilla, con el título en serif de display, el género y el teatro. Cada espectáculo tiene su propio cartel repetible. No necesita imágenes.',
+    ru: 'Афиша спектакля в SVG по данным: четыре стиля (занавес, прожектор, маска, сцена) из палитры трёх цветов и зерна, с заголовком дисплейной антиквой, жанром и театром. У каждого спектакля своя повторяемая афиша. Картинки не нужны.',
+  },
+  'thea-seat-map': {
+    es: 'Plano de sala de teatro con butacas reales y seleccionables: patio curvo, anfiteatro y cuatro palcos bajo un escenario. Cada butaca es una casilla nativa dentro de una etiqueta, así que funciona con teclado y lector de pantalla; el plano se desplaza en horizontal en móvil para mantener un tamaño táctil cómodo.',
+    ru: 'План театрального зала с настоящими выбираемыми местами: изогнутый партер, амфитеатр и четыре ложи под сценой. Каждое место — нативный чекбокс в метке, работает с клавиатурой и скринридером; на телефоне план прокручивается горизонтально для удобного размера касания.',
+  },
+  'thea-tickets': {
+    es: 'La cartera de entradas: cada entrada se dibuja como un billete clásico con talón perforado (espectáculo, fecha, teatro, apertura de sala, butaca) y un código generado; "mostrar código" lo abre a pantalla completa en un diálogo nativo para escanearlo en la puerta; "transferir" es una acción de demostración. Los códigos son patrones de demostración.',
+    ru: 'Кошелёк билетов: каждый билет нарисован как классический билет с перфорированным корешком (спектакль, дата, театр, открытие зала, место) и сгенерированным кодом; «показать код» открывает его на весь экран в нативном диалоге для сканирования у входа; «передать» — демо-действие. Коды — демонстрационные узоры.',
+  },
+  'thea-account-summary': {
+    es: 'Inicio del área de cliente: la próxima función como una fecha enorme con cuenta atrás en vivo, su título, butacas, teatro y apertura de sala junto a su cartel generado; las cifras de la clienta y dos sugerencias del género del último pedido.',
+    ru: 'Главная кабинета клиента: ближайший спектакль с огромной датой и обратным отсчётом, название, места, театр и открытие зала рядом со сгенерированной афишей; цифры клиента и два предложения в жанре последнего заказа.',
+  },
+  'thea-orders': {
+    es: 'Pedidos como acordeón nativo exclusivo: id, fecha, estado y total; el cuerpo lista espectáculo, función y butacas de cada línea y las acciones (cambiar de sesión o devolver, gratis hasta 48 horas antes; demo). Los pedidos pagados en el carrito de este navegador se añaden arriba.',
+    ru: 'Заказы в эксклюзивном нативном аккордеоне: номер, дата, статус и сумма; внутри — спектакль, сеанс и места каждой строки и действия (сменить сеанс или вернуть, бесплатно за 48 часов; демо). Заказы, оплаченные в корзине этого браузера, добавляются сверху.',
+  },
+  'thea-account-nav': {
+    es: 'Navegación del área de cliente: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета клиента: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'thea-account-topbar': {
+    es: 'Lado derecho de la cabecera de cliente: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú de la clienta (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню клиента (нативные popover).',
+  },
+  'thea-account-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, título serif cursivo grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, крупным курсивным названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'thea-sign-in': {
+    es: 'Acceso a pantalla partida con un gran cartel generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большой сгенерированной афишей и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

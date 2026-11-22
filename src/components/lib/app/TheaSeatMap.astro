@@ -1,0 +1,195 @@
+---
+/**
+ * TheaSeatMap — Plan of a theatre hall with real, selectable seats: curved stalls, a balcony and four
+ * boxes below a stage. Every seat is a native checkbox inside a label, so the plan works with a
+ * keyboard and a screen reader; the parent script (see TheaShowDetail) marks seats as taken, sets their
+ * labels with row, number, zone and price, and handles the selection. The plan scrolls sideways on
+ * phones so seats keep a comfortable touch size.
+ *
+ * @param {TheaSeat[]} seats - Seats with their position on the plan.
+ * @param {string} name - Name of the checkbox group. Default 'seat'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: seats are checkboxes with aria-labels set by script, the scrolling region is
+ * focusable and labelled, taken seats are disabled, state is never colour alone (taken seats are
+ * struck, selected seats show a tick).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import { theaSeats, type TheaSeat } from '../templates/theater/data';
+
+interface OwnProps {
+  seats?: TheaSeat[];
+  name?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { seats = theaSeats(), name = 'seat', class: classAttr, ...rest } = Astro.props;
+
+const W = 80;
+const H = 104;
+const rowLabels = [...new Set(seats.filter((s) => s.zone !== 'Palco').map((s) => s.row))].map((row) => {
+  const first = seats.find((s) => s.row === row)!;
+  return { row, y: first.y, zone: first.zone };
+});
+---
+
+<div class:list={['thea-ui', 'thea-map', classAttr]} role="region" aria-label="Plano de la sala (se desplaza en horizontal)" tabindex="0" {...rest}>
+  <div class="thea-map__plan">
+    <div class="thea-map__stage" aria-hidden="true"><span>Escenario</span></div>
+
+    {rowLabels.map((r) => (
+      <span class="thea-map__row" style={`top:${(r.y / H) * 100}%`} aria-hidden="true">{r.row}</span>
+    ))}
+    <span class="thea-map__zone" style="top:27%;left:50%" aria-hidden="true">Patio de butacas</span>
+    <span class="thea-map__zone" style="top:76%;left:50%" aria-hidden="true">Anfiteatro</span>
+    <span class="thea-map__zone" style="top:24%;left:5%" aria-hidden="true">Palcos</span>
+    <span class="thea-map__zone" style="top:24%;left:90%" aria-hidden="true">Palcos</span>
+
+    {seats.map((s) => (
+      <label class={`thea-seat is-${s.zone.toLowerCase()}`} style={`left:${(s.x / W) * 100}%;top:${(s.y / H) * 100}%`} data-seat={s.id}>
+        <input type="checkbox" name={name} value={s.id} data-zone={s.zone} data-x={s.x} data-row={s.row} data-num={s.num} />
+        <span aria-hidden="true">{s.num}</span>
+      </label>
+    ))}
+  </div>
+</div>
+
+<style>
+  .thea-map {
+    overflow-x: auto;
+    padding-bottom: var(--sp-2, 0.5rem);
+    scrollbar-width: thin;
+    scrollbar-color: var(--th-border-strong) transparent;
+  }
+
+  .thea-map__plan {
+    position: relative;
+    width: 100%;
+    min-width: 600px;
+    aspect-ratio: 80 / 104;
+    max-height: 760px;
+    background:
+      radial-gradient(70% 40% at 50% 0%, rgba(var(--th-accent-rgb), 0.16), transparent 70%),
+      var(--th-bg-raised);
+    border: 1px solid var(--th-border-strong);
+  }
+
+  .thea-map__stage {
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    top: 2%;
+    height: 11%;
+    display: grid;
+    place-items: center;
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
+    background: linear-gradient(180deg, var(--th-surface-2), var(--th-surface));
+    border: 1px solid var(--th-border-strong);
+    border-top: 0;
+  }
+
+  .thea-map__stage span {
+    font: 700 0.72rem/1 var(--th-font-body);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--th-text-3);
+  }
+
+  .thea-map__row {
+    position: absolute;
+    left: 0.4%;
+    translate: 0 -50%;
+    font: 600 0.7rem/1 var(--th-font-body);
+    color: var(--th-text-3);
+  }
+
+  .thea-map__zone {
+    position: absolute;
+    translate: -50% 0;
+    font: 700 0.6rem/1 var(--th-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--th-text-3);
+    white-space: nowrap;
+  }
+
+  .thea-seat {
+    position: absolute;
+    translate: -50% -50%;
+  }
+
+  .thea-seat input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .thea-seat span {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 24px;
+    border: 1.5px solid var(--seat, var(--th-accent));
+    border-radius: 7px 7px 3px 3px;
+    background: transparent;
+    font: 600 0.58rem/1 var(--th-font-body);
+    color: var(--th-text-2);
+    transition: background 0.15s ease, transform 0.15s ease, color 0.15s ease;
+  }
+
+  .thea-seat.is-patio { --seat: var(--th-accent); }
+  .thea-seat.is-palco { --seat: var(--th-brand); }
+  .thea-seat.is-anfiteatro { --seat: #8fb8ff; }
+
+  [data-theme='light'] .thea-seat.is-anfiteatro { --seat: #2c5db8; }
+
+  .thea-seat:hover span {
+    background: color-mix(in srgb, var(--seat) 28%, transparent);
+  }
+
+  .thea-seat input:checked + span {
+    background: var(--seat);
+    border-color: var(--seat);
+    color: #140a0a;
+    font-weight: 800;
+    transform: scale(1.18);
+  }
+
+  .thea-seat input:checked + span::after {
+    content: '✓';
+    position: absolute;
+    top: -9px;
+    right: -6px;
+    font-size: 0.7rem;
+    color: var(--th-text);
+  }
+
+  .thea-seat input:disabled {
+    cursor: not-allowed;
+  }
+
+  .thea-seat input:disabled + span {
+    border-style: dashed;
+    border-color: var(--th-border-strong);
+    background: repeating-linear-gradient(135deg, transparent 0 3px, var(--th-border) 3px 4px);
+    color: transparent;
+    opacity: 0.55;
+  }
+
+  .thea-seat input:focus-visible + span {
+    outline: 2px solid var(--th-text);
+    outline-offset: 2px;
+  }
+
+  .thea-map:focus-visible {
+    outline: 2px solid var(--th-accent);
+    outline-offset: 3px;
+  }
+</style>

@@ -185,6 +185,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg>`,
   },
   {
+    id: 'theater',
+    name: 'Theater',
+    description: 'Sections for theatre-ticket shops: hero with scroll-driven curtains, title marquee, billboard grid with filters, show page with an interactive seat map, cart with a ten-minute hold, FAQ and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v3c0 5-4 9-9 9S3 12 3 7zM8 21h8"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

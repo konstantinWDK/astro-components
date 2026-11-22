@@ -1,0 +1,114 @@
+---
+/**
+ * TheaMarquee — A theatre-marquee ticker: the show titles run in a continuous line of large italic
+ * serif type separated by stars, in two rows that move in opposite directions. The motion pauses on
+ * hover and focus and stops entirely under prefers-reduced-motion, where the titles wrap as plain text.
+ *
+ * @param {TheaShow[]} shows - Shows whose titles run.
+ * @param {string} showHref - Base link of a title (the show id is added as ?show=).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the visible ticker is aria-hidden duplicates plus one real list of links
+ * (screen-reader only), so assistive tech reads each title once.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import { theaShows, type TheaShow } from '../templates/theater/data';
+
+interface OwnProps {
+  shows?: TheaShow[];
+  showHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { shows = theaShows, showHref = '/espectaculo', class: classAttr, ...rest } = Astro.props;
+
+const half = Math.ceil(shows.length / 2);
+const rows = [shows.slice(0, half), shows.slice(half)];
+---
+
+<section class:list={['thea-ui', 'thea-mq', classAttr]} aria-label="Espectáculos en cartel" {...rest}>
+  <ul class="th-sr">
+    {shows.map((s) => <li><a href={`${showHref}?show=${s.id}`}>{s.title}</a></li>)}
+  </ul>
+  {rows.map((row, ri) => (
+    <div class:list={['thea-mq__row', { 'is-rev': ri === 1 }]} aria-hidden="true">
+      <div class="thea-mq__track">
+        {[0, 1].map(() => row.map((s) => (
+          <a href={`${showHref}?show=${s.id}`} tabindex="-1">{s.title}<i>✦</i></a>
+        )))}
+      </div>
+    </div>
+  ))}
+</section>
+
+<style>
+  .thea-mq {
+    overflow: hidden;
+    padding: var(--sp-6, 1.5rem) 0;
+    background: var(--th-brand);
+    color: var(--th-on-brand);
+    border-block: 3px solid var(--th-accent);
+    font-family: var(--th-font-display);
+  }
+
+  .thea-mq__row {
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .thea-mq__row + .thea-mq__row {
+    margin-top: 0.4rem;
+  }
+
+  .thea-mq__track {
+    display: inline-flex;
+    gap: 1.5rem;
+    padding-right: 1.5rem;
+    animation: thea-run 38s linear infinite;
+  }
+
+  .thea-mq__row.is-rev .thea-mq__track {
+    animation-direction: reverse;
+    animation-duration: 46s;
+  }
+
+  .thea-mq:hover .thea-mq__track {
+    animation-play-state: paused;
+  }
+
+  @keyframes thea-run {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .thea-mq a {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.1;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .thea-mq a i {
+    font-style: normal;
+    font-size: 0.6em;
+    color: var(--th-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thea-mq__row {
+      white-space: normal;
+    }
+
+    .thea-mq__track {
+      flex-wrap: wrap;
+      animation: none;
+    }
+  }
+</style>

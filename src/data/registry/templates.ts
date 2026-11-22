@@ -3243,6 +3243,147 @@ const routes = { ...archRoutes, projects: '/proyectos', estimate: '/calcula-tu-o
 
 <ArchHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'theater',
+    name: { en: 'Telón · Theatre Tickets', es: 'Telón · Entradas de teatro', ru: 'Telón · Театральные билеты' },
+    tagline: { en: 'Theatre-ticket shop with a hero whose curtains part as you scroll, generated posters, a billboard with filters, an interactive seat map, a cart with a ten-minute hold and a ticket wallet with codes shown full screen.', es: 'Tienda de entradas de teatro con un hero cuyo telón se abre con el scroll, carteles generados, cartelera con filtros, plano de butacas interactivo, carrito con reserva de diez minutos y cartera de entradas con códigos a pantalla completa.', ru: 'Театральная касса с главным экраном, где занавес раздвигается при скролле, сгенерированными афишами, афишей с фильтрами, интерактивным планом мест, корзиной с удержанием десять минут и кошельком билетов с кодами на весь экран.' },
+    description: { en: 'Complete e-commerce template for selling theatre tickets. 8 page types: home with a curtain hero driven by scroll, a title marquee, this week\'s billboard and FAQ; the billboard with search, genre filter and sorting; the show page with sessions and an interactive hall plan where taken seats are disabled, prices vary by zone and "best seats together" picks a row; cart and checkout with a ten-minute hold, promo code and demo payment; customer sign-in; and a customer area with a home (next performance with a countdown), a ticket wallet with perforated stubs and full-screen codes, and orders with change and return actions.', es: 'Plantilla e-commerce completa para vender entradas de teatro. 8 tipos de página: home con un hero de telón guiado por el scroll, una cinta de títulos, la cartelera de la semana y preguntas frecuentes; la cartelera con búsqueda, filtro por género y orden; la ficha del espectáculo con funciones y un plano de sala interactivo donde las butacas ocupadas se desactivan, los precios varían por zona y "mejores butacas juntas" elige una fila; carrito y pago con reserva de diez minutos, código promocional y pago de demostración; acceso de clientes; y un área de cliente con inicio (próxima función con cuenta atrás), una cartera de entradas con talones perforados y códigos a pantalla completa, y pedidos con acciones de cambiar y devolver.', ru: 'Полный e-commerce шаблон для продажи театральных билетов. 8 типов страниц: главная с занавесом, управляемым прокруткой, бегущей строкой, афишей недели и FAQ; афиша с поиском, фильтром по жанру и сортировкой; страница спектакля с сеансами и интерактивным планом зала, где занятые места отключены, цены зависят от зоны, а «лучшие места рядом» выбирают ряд; корзина и оплата с удержанием десять минут, промокодом и демо-оплатой; вход клиентов; и кабинет с главной (ближайший спектакль с отсчётом), кошельком билетов с перфорированными корешками и кодами на весь экран и заказами с действиями замены и возврата.' },
+    highlights: {
+      en: [
+        'Hero whose velvet curtains part as you scroll, driven by scroll progress with a spotlight that follows the pointer',
+        'Interactive hall plan with real checkbox seats: taken seats disabled, prices by zone, up to six seats and "best seats together"',
+        'Cart with a ten-minute hold that releases the seats, promo code, live totals and a demo checkout',
+        'Ticket wallet with classic perforated tickets and codes shown full screen in a native dialog',
+        'Posters generated in SVG from each show\'s palette and seed, with no image files',
+      ],
+      es: [
+        'Hero cuyo telón de terciopelo se abre con el scroll, guiado por el progreso de scroll con un foco que sigue al puntero',
+        'Plano de sala interactivo con butacas reales como casillas: ocupadas desactivadas, precios por zona, hasta seis butacas y "mejores butacas juntas"',
+        'Carrito con reserva de diez minutos que libera las butacas, código promocional, totales en vivo y pago de demostración',
+        'Cartera de entradas con billetes clásicos perforados y códigos a pantalla completa en un diálogo nativo',
+        'Carteles generados en SVG a partir de la paleta y la semilla de cada espectáculo, sin archivos de imagen',
+      ],
+      ru: [
+        'Главный экран, где бархатный занавес раздвигается при скролле, с прожектором, следующим за курсором',
+        'Интерактивный план зала с настоящими местами-чекбоксами: занятые отключены, цены по зонам, до шести мест и «лучшие места рядом»',
+        'Корзина с удержанием десять минут, освобождающим места, промокодом, итогами на лету и демо-оплатой',
+        'Кошелёк билетов с классическими перфорированными билетами и кодами на весь экран в нативном диалоге',
+        'Афиши генерируются в SVG из палитры и зерна каждого спектакля, без файлов изображений',
+      ],
+    },
+    tags: ['theater', 'tickets', 'ecommerce', 'booking', 'cart', 'checkout', 'portal', 'dashboard'],
+    previewBase: '/preview/theater/',
+    importPath: 'astro-component-kit/templates/theater',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Curtain hero opened by scroll, title marquee, this week\'s billboard and FAQ.', es: 'Hero con telón que se abre con el scroll, cinta de títulos, cartelera de la semana y preguntas frecuentes.', ru: 'Главный экран с занавесом, открывающимся при скролле, бегущая строка, афиша недели и FAQ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { TheaHomePage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaHomePage />`,
+      },
+      {
+        id: 'shows', path: 'cartelera/',
+        name: { en: 'Billboard', es: 'Cartelera', ru: 'Афиша' },
+        description: { en: 'All shows with search, genre filter and sorting over generated posters.', es: 'Todos los espectáculos con búsqueda, filtro por género y orden sobre carteles generados.', ru: 'Все спектакли с поиском, фильтром по жанру и сортировкой на сгенерированных афишах.' },
+        file: 'src/pages/cartelera.astro',
+        code: `---
+import { TheaShowsPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaShowsPage />`,
+      },
+      {
+        id: 'show', path: 'espectaculo/',
+        name: { en: 'Show & seats', es: 'Espectáculo y butacas', ru: 'Спектакль и места' },
+        description: { en: 'Show page with sessions and the interactive hall plan; reads ?show=id.', es: 'Ficha con funciones y el plano de sala interactivo; lee ?show=id.', ru: 'Страница спектакля с сеансами и интерактивным планом зала; читает ?show=id.' },
+        file: 'src/pages/espectaculo.astro',
+        code: `---
+import { TheaShowPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaShowPage />`,
+      },
+      {
+        id: 'cart', path: 'carrito/',
+        name: { en: 'Cart', es: 'Carrito', ru: 'Корзина' },
+        description: { en: 'Cart and checkout with a ten-minute seat hold, promo code and demo payment.', es: 'Carrito y pago con reserva de butacas de diez minutos, código promocional y pago de demostración.', ru: 'Корзина и оплата с удержанием мест десять минут, промокод и демо-оплата.' },
+        file: 'src/pages/carrito.astro',
+        code: `---
+import { TheaCartPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaCartPage />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Customer sign in', es: 'Acceso clientes', ru: 'Вход для клиентов' },
+        description: { en: 'Split sign-in with a large generated show poster and a customer quote.', es: 'Acceso a pantalla partida con un gran cartel generado y un testimonio.', ru: 'Вход на двух панелях с большой сгенерированной афишей и отзывом.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { TheaSignInPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'cuenta/',
+        name: { en: 'Account home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'Next performance with a countdown, customer figures and suggestions.', es: 'Próxima función con cuenta atrás, cifras de la clienta y sugerencias.', ru: 'Ближайший спектакль с отсчётом, цифры клиента и предложения.' },
+        file: 'src/pages/cuenta/index.astro',
+        code: `---
+import { TheaDashboardPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaDashboardPage />`,
+      },
+      {
+        id: 'tickets', path: 'cuenta/entradas/',
+        name: { en: 'Tickets', es: 'Mis entradas', ru: 'Билеты' },
+        description: { en: 'The ticket wallet with perforated stubs and a code shown full screen.', es: 'La cartera de entradas con talones perforados y un código a pantalla completa.', ru: 'Кошелёк билетов с перфорированными корешками и кодом на весь экран.' },
+        file: 'src/pages/cuenta/entradas.astro',
+        code: `---
+import { TheaTicketsPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaTicketsPage />`,
+      },
+      {
+        id: 'orders', path: 'cuenta/pedidos/',
+        name: { en: 'Orders', es: 'Pedidos', ru: 'Заказы' },
+        description: { en: 'Orders with return and change actions, including those paid in this browser.', es: 'Pedidos con acciones de devolver y cambiar, incluidos los pagados en este navegador.', ru: 'Заказы с действиями возврата и замены, включая оплаченные в этом браузере.' },
+        file: 'src/pages/cuenta/pedidos.astro',
+        code: `---
+import { TheaOrdersPage } from 'astro-component-kit/templates/theater';
+---
+
+<TheaOrdersPage />`,
+      },
+    ],
+    newComponents: [
+      'thea-hero', 'thea-marquee', 'thea-shows', 'thea-show-detail', 'thea-cart', 'thea-faq', 'thea-footer',
+      'thea-poster', 'thea-seat-map', 'thea-tickets', 'thea-account-summary', 'thea-orders', 'thea-account-nav', 'thea-account-topbar', 'thea-account-heading', 'thea-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your ticketing system)
+import { TheaHomePage, theaData, theaRoutes } from 'astro-component-kit/templates/theater';
+
+const data = {
+  ...theaData,
+  brand: { ...theaData.brand, name: 'Entradas Norte', fee: 2 },
+  shows: await fetch('https://api.example.com/shows').then((r) => r.json()),
+};
+
+const routes = { ...theaRoutes, shows: '/programacion', show: '/butacas' };
+---
+
+<TheaHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

@@ -1411,4 +1411,47 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['architecture', 'footer', 'newsletter', 'wordmark'],
     usage: `<ArchFooter brand="Cota" />`,
   }),
+  // === THEATER ("Telón") ===
+  section({
+    slug: 'thea-hero', name: 'Thea Hero', file: 'TheaHero.astro', sectionCategory: 'theater',
+    description: 'Theatre hero driven by scroll: two velvet curtains cover the stage and part as you scroll, revealing the headline, three featured posters fanned out and a spotlight that follows the pointer. Without JavaScript or with reduced motion the curtains are already open.',
+    tags: ['theater', 'tickets', 'hero', 'scroll', 'animation', 'ecommerce'], featured: true,
+    usage: `<TheaHero shows={theaShows} stats={theaStats} />`,
+  }),
+  section({
+    slug: 'thea-marquee', name: 'Thea Marquee', file: 'TheaMarquee.astro', sectionCategory: 'theater',
+    description: 'Theatre-marquee ticker: show titles run in a continuous line of large italic serif type separated by stars, in two rows moving in opposite directions; it pauses on hover and stops under prefers-reduced-motion.',
+    tags: ['theater', 'tickets', 'marquee', 'ticker', 'animation'],
+    usage: `<TheaMarquee shows={theaShows} />`,
+  }),
+  section({
+    slug: 'thea-shows', name: 'Thea Shows', file: 'TheaShows.astro', sectionCategory: 'theater',
+    description: 'The billboard as a shop grid: text search, genre filter and sort selector (soonest, price, rating) filter and reorder poster cards live; each card draws its own generated poster with genre, venue, duration, next session and the "from" price.',
+    tags: ['theater', 'tickets', 'catalog', 'filter', 'search', 'ecommerce'], featured: true,
+    usage: `<TheaShows shows={theaShows} />`,
+  }),
+  section({
+    slug: 'thea-show-detail', name: 'Thea Show Detail', file: 'TheaShowDetail.astro', sectionCategory: 'theater',
+    description: 'Show page and seat shop in one: a show picker (also by ?show=id), poster, synopsis, cast and sessions; choosing a session marks the taken seats on the hall plan, zone prices are shown, up to six seats can be picked (or "best seats together") and added to the cart with a ten-minute hold.',
+    tags: ['theater', 'tickets', 'seat-map', 'booking', 'ecommerce', 'form'], featured: true,
+    usage: `<TheaShowDetail shows={theaShows} cartHref="/carrito" />`,
+  }),
+  section({
+    slug: 'thea-cart', name: 'Thea Cart', file: 'TheaCart.astro', sectionCategory: 'theater',
+    description: 'Cart and checkout in one: tickets listed by show and function with seats and prices, a ten-minute hold that releases the seats at zero, a promo code, live totals and a payment form (name, email, method, terms) that confirms with a demo message. The cart lives in localStorage.',
+    tags: ['theater', 'tickets', 'cart', 'checkout', 'timer', 'ecommerce'], featured: true,
+    usage: `<TheaCart shows={theaShows} />`,
+  }),
+  section({
+    slug: 'thea-faq', name: 'Thea FAQ', file: 'TheaFaq.astro', sectionCategory: 'theater',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['theater', 'tickets', 'faq', 'accordion'],
+    usage: `<TheaFaq faqs={theaFaqs} />`,
+  }),
+  section({
+    slug: 'thea-footer', name: 'Thea Footer', file: 'TheaFooter.astro', sectionCategory: 'theater',
+    description: 'Theatre-shop footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['theater', 'tickets', 'footer', 'newsletter', 'wordmark'],
+    usage: `<TheaFooter brand="Telón" />`,
+  }),
 ];

@@ -243,6 +243,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Arquitectura', description: 'Secciones para estudios de arquitectura: hero con un alzado que se dibuja solo, obra construida con plantas generadas, estudio solar interactivo, proceso como acordeón Gantt, calculadora de coste, principios, preguntas frecuentes y pie de página.' },
     ru: { name: 'Архитектура', description: 'Секции для архитектурных бюро: главный экран с самопрорисовывающимся фасадом, объекты со сгенерированными планами, интерактивный расчёт инсоляции, процесс как аккордеон Ганта, калькулятор стоимости, принципы, FAQ и подвал.' },
   },
+  theater: {
+    en: { name: 'Theater', description: 'Sections for theatre-ticket shops: hero with scroll-driven curtains, title marquee, billboard grid with filters, show page with an interactive seat map, cart with a ten-minute hold, FAQ and footer.' },
+    es: { name: 'Teatro', description: 'Secciones para tiendas de entradas de teatro: hero con telón guiado por el scroll, cinta de títulos, cartelera con filtros, ficha con plano de butacas interactivo, carrito con reserva de diez minutos, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Театр', description: 'Секции для театральных касс: главный экран с занавесом, управляемым прокруткой, бегущая строка, афиша с фильтрами, страница спектакля с интерактивным планом мест, корзина с удержанием десять минут, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

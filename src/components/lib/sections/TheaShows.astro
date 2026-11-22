@@ -1,0 +1,318 @@
+---
+/**
+ * TheaShows — The billboard as a shop grid. A text search, a genre filter (radio group) and a sort
+ * selector (soonest, price, rating) filter and reorder poster cards live; each card draws its own
+ * generated poster, shows genre, venue, duration, next session and the "from" price, and links to the
+ * show page. A counter in a live region says how many shows match.
+ *
+ * @param {TheaShow[]} shows - Shows to list.
+ * @param {string} showHref - Base link of a show (the id is added as ?show=).
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native search, radio and select controls with labels, results counter is aria-live,
+ * each card is a single link with a full text name; without JavaScript every show is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import TheaPoster from '../app/TheaPoster.astro';
+import { theaShows, theaMoney, theaDate, type TheaShow } from '../templates/theater/data';
+
+interface OwnProps {
+  shows?: TheaShow[];
+  showHref?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  shows = theaShows,
+  showHref = '/espectaculo',
+  title = 'Cartelera',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ths-${Math.random().toString(36).slice(2, 8)}`;
+const genres = ['Todos', ...new Set(shows.map((s) => s.genre))];
+---
+
+<section class:list={['thea-ui', 'thea-shows', classAttr]} aria-labelledby={`${uid}-title`} data-thea-shows {...rest}>
+  <div class="thea-shows__inner">
+    <header class="thea-shows__head">
+      <p class="th-eyebrow">En cartel</p>
+      <Heading id={`${uid}-title`} class="thea-shows__title">{title}</Heading>
+    </header>
+
+    <div class="thea-shows__tools">
+      <div class="thea-shows__field">
+        <label for={`${uid}-q`}>Buscar</label>
+        <input id={`${uid}-q`} type="search" placeholder="título, teatro, actor…" data-q />
+      </div>
+      <div class="thea-shows__field">
+        <label for={`${uid}-s`}>Ordenar por</label>
+        <select id={`${uid}-s`} data-sort>
+          <option value="date">Próxima función</option>
+          <option value="price">Precio, de menor a mayor</option>
+          <option value="rating">Mejor valoradas</option>
+        </select>
+      </div>
+    </div>
+
+    <fieldset class="thea-shows__genres">
+      <legend class="th-sr">Género</legend>
+      {genres.map((g, i) => (
+        <label>
+          <input type="radio" name={`${uid}-g`} value={g} checked={i === 0} />
+          <span>{g}</span>
+        </label>
+      ))}
+    </fieldset>
+    <p class="thea-shows__count" aria-live="polite" data-count>{shows.length} espectáculos</p>
+
+    <ul class="thea-shows__grid" data-grid>
+      {shows.map((s) => (
+        <li data-genre={s.genre} data-price={s.price} data-rating={s.rating} data-date={s.sessions[0].date} data-text={`${s.title} ${s.venue} ${s.cast.join(' ')} ${s.director}`.toLowerCase()}>
+          <a href={`${showHref}?show=${s.id}`} class="thea-card">
+            <span class="thea-card__art"><TheaPoster show={s} decorative /></span>
+            <span class="thea-card__body">
+              <span class="thea-card__meta">{s.genre} · {s.minutes} min · +{s.minAge}</span>
+              <strong>{s.title}</strong>
+              <span class="thea-card__venue">{s.venue}</span>
+              <span class="thea-card__next">Próxima: {theaDate(s.sessions[0].date, { weekday: 'short', day: 'numeric', month: 'short' })}, {s.sessions[0].time}</span>
+              <span class="thea-card__price">Desde <b>{theaMoney(s.price)}</b></span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <p class="thea-shows__none" data-none hidden>Ningún espectáculo coincide con tu búsqueda.</p>
+  </div>
+</section>
+
+<style>
+  .thea-shows {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--th-bg);
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-shows [hidden] {
+    display: none !important;
+  }
+
+  .thea-shows__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .thea-shows__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(2.8rem, 8vw, 5.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .thea-shows__tools {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .thea-shows__field label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font: 700 0.74rem/1.2 var(--th-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--th-text-2);
+  }
+
+  .thea-shows__field input,
+  .thea-shows__field select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 4px;
+    background: var(--th-surface);
+    color: var(--th-text);
+    font: 400 1rem var(--th-font-body);
+  }
+
+  .thea-shows__genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .thea-shows__genres input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .thea-shows__genres span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .thea-shows__genres input:checked + span {
+    background: var(--th-brand);
+    border-color: var(--th-brand);
+    color: var(--th-on-brand);
+  }
+
+  .thea-shows__genres input:focus-visible + span {
+    outline: 2px solid var(--th-accent);
+    outline-offset: 3px;
+  }
+
+  .thea-shows__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-6, 1.5rem);
+    font-size: 0.86rem;
+    color: var(--th-text-3);
+  }
+
+  .thea-shows__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .thea-card {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .thea-card__art {
+    display: block;
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+
+  .thea-card:hover .thea-card__art,
+  .thea-card:focus-visible .thea-card__art {
+    transform: translateY(-6px) rotate(-1.2deg);
+    filter: drop-shadow(0 16px 20px rgba(0, 0, 0, 0.5));
+  }
+
+  .thea-card__body {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .thea-card__meta {
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--th-accent);
+  }
+
+  .thea-card__body strong {
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.3rem;
+    line-height: 1.15;
+  }
+
+  .thea-card__venue,
+  .thea-card__next {
+    font-size: 0.86rem;
+    color: var(--th-text-2);
+  }
+
+  .thea-card__price {
+    margin-top: 0.2rem;
+    font-size: 0.9rem;
+    color: var(--th-text-2);
+  }
+
+  .thea-card__price b {
+    font-size: 1.15rem;
+    color: var(--th-text);
+  }
+
+  .thea-shows__none {
+    color: var(--th-text-3);
+  }
+
+  @media (min-width: 640px) {
+    .thea-shows__tools {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .thea-shows {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .thea-shows__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--sp-6, 1.5rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-thea-shows]').forEach((root) => {
+    const q = root.querySelector<HTMLInputElement>('[data-q]');
+    const sort = root.querySelector<HTMLSelectElement>('[data-sort]');
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.thea-shows__genres input')];
+    const grid = root.querySelector<HTMLElement>('[data-grid]');
+    const items = grid ? [...grid.children] as HTMLElement[] : [];
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const none = root.querySelector<HTMLElement>('[data-none]');
+    if (!q || !sort || !grid) return;
+
+    const apply = () => {
+      const g = radios.find((r) => r.checked)?.value ?? 'Todos';
+      const term = q.value.trim().toLowerCase();
+      let n = 0;
+      items.forEach((li) => {
+        const ok = (g === 'Todos' || li.dataset.genre === g) && (!term || (li.dataset.text ?? '').includes(term));
+        li.hidden = !ok;
+        if (ok) n += 1;
+      });
+      const key = sort.value;
+      [...items].sort((a, b) =>
+        key === 'price' ? Number(a.dataset.price) - Number(b.dataset.price)
+        : key === 'rating' ? Number(b.dataset.rating) - Number(a.dataset.rating)
+        : (a.dataset.date ?? '').localeCompare(b.dataset.date ?? ''),
+      ).forEach((li) => grid.append(li));
+      if (count) count.textContent = `${n} ${n === 1 ? 'espectáculo' : 'espectáculos'}`;
+      if (none) none.hidden = n > 0;
+    };
+
+    [q, sort].forEach((el) => el.addEventListener('input', apply));
+    radios.forEach((r) => r.addEventListener('change', apply));
+  });
+</script>

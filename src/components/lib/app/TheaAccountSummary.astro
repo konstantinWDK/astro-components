@@ -1,0 +1,312 @@
+---
+/**
+ * TheaAccountSummary — Overview of the customer area: the next performance as a huge date with a live
+ * countdown, its title, seats, venue and door-opening time beside its generated poster; the customer's
+ * figures (active tickets, shows seen, years as a member) and two suggestions in the genre of the last
+ * order, linking to the show page.
+ *
+ * @param {TheaMember} member - Signed-in customer.
+ * @param {TheaTicket[]} tickets - Active tickets.
+ * @param {TheaOrder[]} orders - Past and current orders.
+ * @param {TheaShow[]} shows - Catalog, to resolve ids and suggestions.
+ * @param {string} ticketsHref - Link to the tickets page.
+ * @param {string} showHref - Base link of a show (the id is added as ?show=).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the date has a full-text equivalent, the countdown is text, figures are a <dl>, the
+ * poster is decorative, targets are 48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import TheaPoster from './TheaPoster.astro';
+import { theaMember, theaTickets, theaOrders, theaShows, theaById, theaMoney, theaDate, type TheaMember, type TheaTicket, type TheaOrder, type TheaShow } from '../templates/theater/data';
+
+interface OwnProps {
+  member?: TheaMember;
+  tickets?: TheaTicket[];
+  orders?: TheaOrder[];
+  shows?: TheaShow[];
+  ticketsHref?: string;
+  showHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = theaMember,
+  tickets = theaTickets,
+  orders = theaOrders,
+  shows = theaShows,
+  ticketsHref = '/cuenta/entradas',
+  showHref = '/espectaculo',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `tas-${Math.random().toString(36).slice(2, 8)}`;
+const first = member.name.split(' ')[0];
+const upcoming = tickets
+  .map((t) => ({ t, show: theaById(t.showId, shows), ses: theaById(t.showId, shows)?.sessions.find((s) => s.id === t.sessionId) }))
+  .filter((x) => x.show && x.ses)
+  .sort((a, b) => a.ses!.date.localeCompare(b.ses!.date));
+const next = upcoming[0];
+const nextSeats = next ? upcoming.filter((x) => x.show!.id === next.show!.id && x.ses!.id === next.ses!.id).map((x) => x.t.seat) : [];
+const date = next ? new Date(`${next.ses!.date}T12:00:00`) : undefined;
+const years = Math.max(1, new Date().getFullYear() - new Date(member.since).getFullYear());
+const seen = orders.filter((o) => o.status === 'Confirmado').length;
+const lastGenre = orders.find((o) => o.status === 'Confirmado') ? theaById(orders.find((o) => o.status === 'Confirmado')!.lines[0].showId, shows)?.genre : undefined;
+const suggestions = shows.filter((s) => s.id !== next?.show!.id && (!lastGenre || s.genre === lastGenre || s.rating >= 4.7)).slice(0, 2);
+const doors = (time: string) => { const [h, m] = time.split(':').map(Number); const mm = h * 60 + m - 45; return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`; };
+---
+
+<section class:list={['thea-ui', 'thea-sum', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <article class="thea-sum__next">
+    <p class="th-eyebrow">Tu próxima función</p>
+    <h2 id={`${uid}-title`} class="th-sr">Próxima función</h2>
+    {next && date ? (
+      <div class="thea-sum__grid">
+        <div>
+          <div class="thea-sum__date">
+            <span class="thea-sum__day" aria-hidden="true">{date.getDate()}</span>
+            <span class="thea-sum__month" aria-hidden="true">{date.toLocaleDateString('es-ES', { month: 'long' })}</span>
+            <time datetime={next.ses!.date} class="th-sr">{theaDate(next.ses!.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</time>
+          </div>
+          <p class="thea-sum__count" data-count data-date={next.ses!.date}>{theaDate(next.ses!.date, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h3>{next.show!.title}</h3>
+          <dl>
+            <div><dt>Teatro</dt><dd>{next.show!.venue}</dd></div>
+            <div><dt>Función</dt><dd>{next.ses!.time}</dd></div>
+            <div><dt>Abren la sala</dt><dd>{doors(next.ses!.time)}</dd></div>
+            <div><dt>Butacas</dt><dd>{nextSeats.join(', ')}</dd></div>
+          </dl>
+          <a class="th-btn" href={ticketsHref}>Ver mis entradas</a>
+        </div>
+        <div class="thea-sum__poster"><TheaPoster show={next.show!} decorative /></div>
+      </div>
+    ) : (
+      <p class="thea-sum__empty">No tienes funciones próximas. <a class="th-link" href="/cartelera">Mira la cartelera</a>.</p>
+    )}
+  </article>
+
+  <div class="thea-sum__side">
+    <p class="thea-sum__hello">Hola, {first}. <span>{member.tier}</span></p>
+    <dl class="thea-sum__stats">
+      <div><dt>Entradas activas</dt><dd>{tickets.length}</dd></div>
+      <div><dt>Pedidos confirmados</dt><dd>{seen}</dd></div>
+      <div><dt>Años con nosotros</dt><dd>{years}</dd></div>
+    </dl>
+
+    <div class="thea-sum__sug">
+      <p class="th-eyebrow">Para ti</p>
+      <ul>
+        {suggestions.map((s) => (
+          <li>
+            <span class="thea-sum__mini"><TheaPoster show={s} decorative /></span>
+            <span>
+              <strong>{s.title}</strong>
+              <small>{s.genre} · desde {theaMoney(s.price)}</small>
+              <a class="th-link" href={`${showHref}?show=${s.id}`}>Elegir butacas</a>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .thea-sum {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-sum__next {
+    padding: var(--sp-6, 1.5rem);
+    border: 1.5px solid var(--th-border-strong);
+    background: linear-gradient(160deg, rgba(var(--th-brand-rgb), 0.2), transparent 60%), var(--th-bg-raised);
+  }
+
+  .thea-sum__grid {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    align-items: center;
+  }
+
+  .thea-sum__date {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .thea-sum__day {
+    font-family: var(--th-font-display);
+    font-weight: 900;
+    font-size: clamp(5.5rem, 20vw, 9rem);
+    line-height: 0.85;
+    color: var(--th-brand);
+  }
+
+  .thea-sum__month {
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    text-transform: capitalize;
+  }
+
+  .thea-sum__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-3, 0.75rem);
+    font-size: 0.92rem;
+    color: var(--th-text-2);
+  }
+
+  .thea-sum__grid h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+  }
+
+  .thea-sum__grid dl {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--th-border);
+  }
+
+  .thea-sum__grid dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--th-border);
+    font-size: 0.92rem;
+  }
+
+  .thea-sum__grid dt {
+    color: var(--th-text-3);
+  }
+
+  .thea-sum__grid dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .thea-sum__poster {
+    width: min(70%, 240px);
+    margin: 0 auto;
+    transform: rotate(3deg);
+    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.5));
+  }
+
+  .thea-sum__empty {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--th-text-2);
+  }
+
+  .thea-sum__hello {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--th-font-display);
+    font-size: 2rem;
+  }
+
+  .thea-sum__hello span {
+    display: block;
+    margin-top: 0.25rem;
+    font: 700 0.72rem/1 var(--th-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--th-accent);
+  }
+
+  .thea-sum__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1px solid var(--th-border);
+  }
+
+  .thea-sum__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .thea-sum__stats dt {
+    font-size: 0.8rem;
+    color: var(--th-text-3);
+  }
+
+  .thea-sum__stats dd {
+    margin: 0;
+    font-family: var(--th-font-display);
+    font-weight: 700;
+    font-size: 2.6rem;
+    line-height: 1;
+  }
+
+  .thea-sum__sug ul {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .thea-sum__sug li {
+    display: flex;
+    gap: var(--sp-4, 1rem);
+    align-items: center;
+  }
+
+  .thea-sum__mini {
+    flex: none;
+    width: 64px;
+  }
+
+  .thea-sum__sug strong {
+    display: block;
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-size: 1.2rem;
+  }
+
+  .thea-sum__sug small {
+    display: block;
+    margin: 0.15rem 0 0.35rem;
+    color: var(--th-text-3);
+  }
+
+  @media (min-width: 640px) {
+    .thea-sum__grid {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    }
+  }
+
+  @media (min-width: 980px) {
+    .thea-sum {
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .thea-sum__next {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-thea-sum] [data-count], .thea-sum [data-count]').forEach((el) => {
+    const date = el.dataset.date;
+    if (!date) return;
+    const days = Math.ceil((new Date(`${date}T12:00:00`).getTime() - Date.now()) / 86400000);
+    const full = el.textContent ?? '';
+    if (days > 1) el.textContent = `Faltan ${days} días · ${full}`;
+    else if (days === 1) el.textContent = `Es mañana · ${full}`;
+    else if (days === 0) el.textContent = `Es hoy · ${full}`;
+  });
+</script>

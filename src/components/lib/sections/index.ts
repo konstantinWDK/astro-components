@@ -258,3 +258,12 @@ export { default as ArchEstimate } from './ArchEstimate.astro';
 export { default as ArchPrinciples } from './ArchPrinciples.astro';
 export { default as ArchFaq } from './ArchFaq.astro';
 export { default as ArchFooter } from './ArchFooter.astro';
+
+// Theater ("Telón")
+export { default as TheaHero } from './TheaHero.astro';
+export { default as TheaMarquee } from './TheaMarquee.astro';
+export { default as TheaShows } from './TheaShows.astro';
+export { default as TheaShowDetail } from './TheaShowDetail.astro';
+export { default as TheaCart } from './TheaCart.astro';
+export { default as TheaFaq } from './TheaFaq.astro';
+export { default as TheaFooter } from './TheaFooter.astro';

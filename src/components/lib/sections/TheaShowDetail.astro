@@ -1,0 +1,554 @@
+---
+/**
+ * TheaShowDetail — The show page and the seat shop in one section. A picker switches between shows
+ * (also by `?show=id` in the address), each with its generated poster, synopsis, director, cast and
+ * session list; choosing a session marks the seats already taken on the hall plan, the plan shows
+ * the price of every zone, up to six seats can be chosen (or "best seats together" picks a row for
+ * the party), and the summary adds the tickets to the cart with a ten-minute hold. Everything is
+ * demo data and the cart lives in localStorage.
+ *
+ * @param {TheaShow[]} shows - Shows that can be sold.
+ * @param {TheaSeat[]} seats - Hall plan.
+ * @param {string} showId - Initially selected show (overridden by ?show=).
+ * @param {string} cartHref - Link to the cart.
+ * @param {number} fee - Service fee per ticket in euros. Default 1.5.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: show picker and sessions are native controls, seats are checkboxes with labels set
+ * by script (row, number, zone, price, state), the summary and limits are announced in an aria-live
+ * region, the plan region is keyboard scrollable; without JavaScript the first show is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import TheaPoster from '../app/TheaPoster.astro';
+import TheaSeatMap from '../app/TheaSeatMap.astro';
+import { theaShows, theaSeats, theaZoneFactor, theaMoney, theaDate, theaBrand, type TheaShow, type TheaSeat } from '../templates/theater/data';
+
+interface OwnProps {
+  shows?: TheaShow[];
+  seats?: TheaSeat[];
+  showId?: string;
+  cartHref?: string;
+  fee?: number;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  shows = theaShows,
+  seats = theaSeats(),
+  showId = shows[0].id,
+  cartHref = '/carrito',
+  fee = theaBrand.fee,
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `tsd-${Math.random().toString(36).slice(2, 8)}`;
+const data = Object.fromEntries(shows.map((s) => [s.id, { title: s.title, price: s.price, sessions: s.sessions.map((x) => ({ id: x.id, date: x.date, time: x.time })) }]));
+const zoneMin = (z: TheaSeat['zone'], s: TheaShow) => Math.round(s.price * theaZoneFactor[z]);
+---
+
+<section class:list={['thea-ui', 'thea-sd', classAttr]} aria-labelledby={`${uid}-title`} data-thea-sd data-first={showId} data-cart={cartHref} data-fee={fee} data-shows={JSON.stringify(data)} data-zones={JSON.stringify(theaZoneFactor)} {...rest}>
+  <div class="thea-sd__inner">
+    <div class="thea-sd__pick">
+      <label for={`${uid}-pick`}>Espectáculo</label>
+      <select id={`${uid}-pick`} data-pick>
+        {shows.map((s) => <option value={s.id} selected={s.id === showId}>{s.title} · {s.venue}</option>)}
+      </select>
+    </div>
+
+    {shows.map((s) => (
+      <article class="thea-sd__show" data-show={s.id} hidden={s.id !== showId ? true : undefined}>
+        <div class="thea-sd__poster"><TheaPoster show={s} decorative /></div>
+        <div class="thea-sd__info">
+          <p class="th-eyebrow">{s.genre} · {s.venue}, {s.city}</p>
+          <Heading id={s.id === showId ? `${uid}-title` : undefined} class="thea-sd__title">{s.title}</Heading>
+          <p class="thea-sd__text">{s.text}</p>
+          <dl class="thea-sd__facts">
+            <div><dt>Dirección</dt><dd>{s.director}</dd></div>
+            <div><dt>Reparto</dt><dd>{s.cast.join(', ')}</dd></div>
+            <div><dt>Duración</dt><dd>{s.minutes} minutos · recomendado a partir de {s.minAge} años</dd></div>
+            <div><dt>Valoración</dt><dd>{s.rating.toLocaleString('es-ES')} de 5</dd></div>
+          </dl>
+
+          <fieldset class="thea-sd__sessions">
+            <legend>Elige función</legend>
+            {s.sessions.map((x, i) => (
+              <label>
+                <input type="radio" name={`${uid}-s-${s.id}`} value={x.id} checked={i === 0} data-session />
+                <span><b>{theaDate(x.date, { weekday: 'short', day: 'numeric', month: 'short' })}</b>{x.time}</span>
+              </label>
+            ))}
+          </fieldset>
+          <p class="thea-sd__zones">Patio desde {theaMoney(zoneMin('Patio', s))} · Palcos {theaMoney(zoneMin('Palco', s))} · Anfiteatro {theaMoney(zoneMin('Anfiteatro', s))}</p>
+        </div>
+      </article>
+    ))}
+
+    <div class="thea-sd__shop">
+      <div class="thea-sd__tools">
+        <p class="thea-sd__avail" aria-live="polite" data-avail></p>
+        <div class="thea-sd__best">
+          <label for={`${uid}-n`}>Somos</label>
+          <select id={`${uid}-n`} data-n>
+            {[1, 2, 3, 4, 5, 6].map((n) => <option value={n} selected={n === 2}>{n}</option>)}
+          </select>
+          <button type="button" class="th-btn th-btn--ghost" data-best>Mejores butacas juntas</button>
+        </div>
+      </div>
+
+      <TheaSeatMap seats={seats} name={`${uid}-seat`} />
+
+      <ul class="thea-sd__legend" aria-hidden="true">
+        <li><i class="is-patio"></i>Patio</li>
+        <li><i class="is-palco"></i>Palco</li>
+        <li><i class="is-anfiteatro"></i>Anfiteatro</li>
+        <li><i class="is-off"></i>Ocupada</li>
+      </ul>
+
+      <aside class="thea-sd__sum" aria-live="polite">
+        <p class="thea-sd__line" data-sum>Aún no has elegido butacas. Puedes elegir hasta seis.</p>
+        <ul class="thea-sd__seats" data-seats></ul>
+        <p class="thea-sd__total" data-total></p>
+        <p class="thea-sd__err" role="alert" data-err></p>
+        <div class="thea-sd__actions">
+          <button type="button" class="th-btn" data-add disabled>Añadir al carrito</button>
+          <a class="th-btn th-btn--ghost" href={cartHref} data-go hidden>Ir al carrito</a>
+        </div>
+        <p class="thea-sd__hold">Tus butacas se reservan diez minutos al añadirlas al carrito.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<style>
+  .thea-sd {
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--th-bg);
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-sd [hidden] {
+    display: none !important;
+  }
+
+  .thea-sd__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .thea-sd__pick {
+    max-width: 30rem;
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .thea-sd__pick label,
+  .thea-sd__best label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font: 700 0.74rem/1.2 var(--th-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--th-text-2);
+  }
+
+  .thea-sd select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 4px;
+    background: var(--th-surface);
+    color: var(--th-text);
+    font: 400 1rem var(--th-font-body);
+  }
+
+  .thea-sd__show {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .thea-sd__poster {
+    width: min(100%, 320px);
+    filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.5));
+  }
+
+  .thea-sd__title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(2.4rem, 7vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .thea-sd__text {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    line-height: 1.65;
+    color: var(--th-text-2);
+  }
+
+  .thea-sd__facts {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--th-border);
+  }
+
+  .thea-sd__facts div {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--th-border);
+    font-size: 0.92rem;
+  }
+
+  .thea-sd__facts dt {
+    color: var(--th-text-3);
+  }
+
+  .thea-sd__facts dd {
+    margin: 0;
+  }
+
+  .thea-sd fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .thea-sd__sessions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .thea-sd__sessions legend {
+    width: 100%;
+    margin-bottom: 0.4rem;
+    padding: 0;
+    font: 700 0.74rem/1.2 var(--th-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--th-text-2);
+  }
+
+  .thea-sd input[type='radio'] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .thea-sd__sessions span {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 6rem;
+    min-height: 56px;
+    padding: 0.5rem 0.9rem;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .thea-sd__sessions b {
+    font-size: 0.82rem;
+    text-transform: capitalize;
+  }
+
+  .thea-sd__sessions input:checked + span {
+    border-color: var(--th-brand);
+    background: rgba(var(--th-brand-rgb), 0.16);
+  }
+
+  .thea-sd__sessions input:focus-visible + span {
+    outline: 2px solid var(--th-accent);
+    outline-offset: 2px;
+  }
+
+  .thea-sd__zones {
+    margin: var(--sp-4, 1rem) 0 0;
+    font-size: 0.88rem;
+    color: var(--th-text-3);
+  }
+
+  .thea-sd__shop {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding-top: var(--sp-6, 1.5rem);
+    border-top: 1.5px solid var(--th-border-strong);
+  }
+
+  .thea-sd__tools {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .thea-sd__avail {
+    min-height: 1.4em;
+    margin: 0;
+    color: var(--th-accent);
+  }
+
+  .thea-sd__best {
+    display: grid;
+    grid-template-columns: auto 5rem 1fr;
+    gap: var(--sp-3, 0.75rem);
+    align-items: end;
+  }
+
+  .thea-sd__best label {
+    margin: 0 0 0.9rem;
+  }
+
+  .thea-sd__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: var(--th-text-3);
+  }
+
+  .thea-sd__legend i {
+    display: inline-block;
+    width: 14px;
+    height: 12px;
+    margin-right: 0.4rem;
+    border: 1.5px solid var(--th-accent);
+    border-radius: 4px 4px 2px 2px;
+    vertical-align: -1px;
+  }
+
+  .thea-sd__legend i.is-palco { border-color: var(--th-brand); }
+  .thea-sd__legend i.is-anfiteatro { border-color: #8fb8ff; }
+  .thea-sd__legend i.is-off { border-style: dashed; border-color: var(--th-border-strong); opacity: 0.6; }
+
+  .thea-sd__sum {
+    padding: var(--sp-5, 1.25rem);
+    border: 1.5px solid var(--th-border-strong);
+    background: var(--th-bg-raised);
+  }
+
+  .thea-sd__line {
+    margin: 0 0 0.5rem;
+    line-height: 1.5;
+  }
+
+  .thea-sd__seats {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    list-style: none;
+    font-size: 0.92rem;
+    color: var(--th-text-2);
+  }
+
+  .thea-sd__seats :global(li) {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .thea-sd__total {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--th-font-display);
+    font-weight: 700;
+    font-size: 2rem;
+    color: var(--th-accent);
+  }
+
+  .thea-sd__err {
+    min-height: 1.2em;
+    margin: 0 0 0.5rem;
+    font-size: 0.88rem;
+    color: var(--th-bad);
+  }
+
+  .thea-sd__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .thea-sd__hold {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    font-size: 0.8rem;
+    color: var(--th-text-3);
+  }
+
+  @media (min-width: 900px) {
+    .thea-sd {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .thea-sd__show {
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+
+    .thea-sd__shop {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      align-items: start;
+    }
+
+    .thea-sd__tools,
+    .thea-sd__legend {
+      grid-column: 1;
+    }
+
+    .thea-sd__sum {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+      position: sticky;
+      top: 90px;
+    }
+  }
+</style>
+
+<script>
+  const hash = (s: string) => {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) % 100;
+  };
+  type Show = { title: string; price: number; sessions: Array<{ id: string; date: string; time: string }> };
+  const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+  const CART = 'thea-cart';
+  const HOLD = 'thea-hold';
+
+  document.querySelectorAll<HTMLElement>('[data-thea-sd]').forEach((root) => {
+    const shows: Record<string, Show> = JSON.parse(root.dataset.shows ?? '{}');
+    const zones: Record<string, number> = JSON.parse(root.dataset.zones ?? '{}');
+    const fee = Number(root.dataset.fee);
+    const pick = root.querySelector<HTMLSelectElement>('[data-pick]');
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-show]')];
+    const inputs = [...root.querySelectorAll<HTMLInputElement>('.thea-seat input')];
+    const avail = root.querySelector<HTMLElement>('[data-avail]');
+    const sum = root.querySelector<HTMLElement>('[data-sum]');
+    const list = root.querySelector<HTMLElement>('[data-seats]');
+    const total = root.querySelector<HTMLElement>('[data-total]');
+    const err = root.querySelector<HTMLElement>('[data-err]');
+    const add = root.querySelector<HTMLButtonElement>('[data-add]');
+    const go = root.querySelector<HTMLAnchorElement>('[data-go]');
+    const nSel = root.querySelector<HTMLSelectElement>('[data-n]');
+    if (!pick || !add) return;
+
+    let current = new URLSearchParams(location.search).get('show') ?? root.dataset.first ?? '';
+    if (!shows[current]) current = root.dataset.first ?? Object.keys(shows)[0];
+    const sessionId = () => panels.find((p) => !p.hidden)?.querySelector<HTMLInputElement>('[data-session]:checked')?.value ?? '';
+    const seatPrice = (inp: HTMLInputElement) => {
+      const centre = inp.dataset.zone === 'Patio' && Math.abs(Number(inp.dataset.x) - 40) < 12 ? 1.12 : 1;
+      return Math.round(shows[current].price * (zones[inp.dataset.zone ?? 'Patio'] ?? 1) * centre);
+    };
+
+    const refresh = () => {
+      const sid = sessionId();
+      let free = 0;
+      inputs.forEach((inp) => {
+        const taken = hash(`${current}|${sid}|${inp.value}`) < 38;
+        inp.disabled = taken;
+        if (taken && inp.checked) inp.checked = false;
+        if (!taken) free += 1;
+        inp.setAttribute('aria-label', `Fila ${inp.dataset.row}, butaca ${inp.dataset.num}, ${inp.dataset.zone}, ${eur(seatPrice(inp))}, ${taken ? 'ocupada' : 'libre'}`);
+        inp.title = `${inp.dataset.row}${inp.dataset.num} · ${eur(seatPrice(inp))}`;
+      });
+      if (avail) avail.textContent = `Quedan ${free} butacas libres en esta función.`;
+      summary();
+    };
+
+    const chosen = () => inputs.filter((i) => i.checked);
+
+    const summary = () => {
+      const sel = chosen();
+      if (err) err.textContent = '';
+      if (go) go.hidden = true;
+      add.disabled = sel.length === 0;
+      const s = shows[current];
+      const ses = s.sessions.find((x) => x.id === sessionId());
+      if (!sel.length) {
+        if (sum) sum.textContent = 'Aún no has elegido butacas. Puedes elegir hasta seis.';
+        if (list) list.innerHTML = '';
+        if (total) total.textContent = '';
+        return;
+      }
+      const sub = sel.reduce((n, i) => n + seatPrice(i), 0);
+      if (sum) sum.textContent = `${s.title} · ${ses ? new Date(`${ses.date}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + ses.time : ''}`;
+      if (list) list.innerHTML = sel.map((i) => `<li><span>Fila ${i.dataset.row}, butaca ${i.dataset.num} · ${i.dataset.zone}</span><span>${eur(seatPrice(i))}</span></li>`).join('');
+      if (total) total.textContent = `${eur(sub + fee * sel.length)}`;
+    };
+
+    const show = (id: string, push = true) => {
+      current = id;
+      pick.value = id;
+      panels.forEach((p) => { p.hidden = p.dataset.show !== id; });
+      inputs.forEach((i) => { i.checked = false; });
+      if (push) { try { history.replaceState(null, '', `?show=${id}`); } catch { /* ignore */ } }
+      refresh();
+    };
+
+    pick.addEventListener('change', () => show(pick.value));
+    root.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.matches('[data-session]')) { inputs.forEach((i) => { i.checked = false; }); refresh(); return; }
+      if (t.matches('.thea-seat input')) {
+        if (chosen().length > 6) { t.checked = false; if (err) err.textContent = 'Puedes elegir hasta seis butacas por pedido.'; return; }
+        summary();
+      }
+    });
+
+    root.querySelector('[data-best]')?.addEventListener('click', () => {
+      const n = Number(nSel?.value ?? 2);
+      inputs.forEach((i) => { i.checked = false; });
+      const rows = [...new Set(inputs.map((i) => i.dataset.row ?? ''))];
+      let best: { seats: HTMLInputElement[]; score: number } | null = null;
+      rows.forEach((row) => {
+        const rs = inputs.filter((i) => i.dataset.row === row && i.dataset.zone !== 'Palco').sort((a, b) => Number(a.dataset.num) - Number(b.dataset.num));
+        for (let k = 0; k + n <= rs.length; k++) {
+          const run = rs.slice(k, k + n);
+          const contiguous = run.every((s, j) => !s.disabled && (j === 0 || Number(s.dataset.num) === Number(run[j - 1].dataset.num) + 1));
+          if (!contiguous) continue;
+          const cx = run.reduce((t, s) => t + Number(s.dataset.x), 0) / n;
+          const zone = run[0].dataset.zone;
+          const rowIdx = rows.indexOf(row);
+          const score = Math.abs(cx - 40) + (zone === 'Patio' ? Math.abs(rowIdx - 3) * 4 : 40 + rowIdx);
+          if (!best || score < best.score) best = { seats: run, score };
+        }
+      });
+      if (best) { (best as { seats: HTMLInputElement[] }).seats.forEach((s) => { s.checked = true; }); summary(); if (avail) avail.textContent = `Hemos elegido ${n} ${n === 1 ? 'butaca' : 'butacas'} juntas. Puedes cambiarlas en el plano.`; }
+      else if (avail) avail.textContent = `No hay ${n} butacas libres juntas en esta función. Prueba con menos personas u otra función.`;
+    });
+
+    add.addEventListener('click', () => {
+      const sel = chosen();
+      if (!sel.length) return;
+      let lines: Array<{ showId: string; sessionId: string; seats: string[] }> = [];
+      try { lines = JSON.parse(localStorage.getItem(CART) ?? '[]'); } catch { lines = []; }
+      const sid = sessionId();
+      lines = lines.filter((l) => !(l.showId === current && l.sessionId === sid));
+      lines.push({ showId: current, sessionId: sid, seats: sel.map((i) => i.value) });
+      try { localStorage.setItem(CART, JSON.stringify(lines)); if (!localStorage.getItem(HOLD)) localStorage.setItem(HOLD, String(Date.now())); } catch { /* storage unavailable */ }
+      document.querySelectorAll('[data-cart-count]').forEach((e) => { e.textContent = String(lines.reduce((t, l) => t + l.seats.length, 0)); });
+      if (err) err.textContent = '';
+      if (sum) sum.textContent = `Añadidas ${sel.length} ${sel.length === 1 ? 'entrada' : 'entradas'} al carrito. Tienes diez minutos para pagarlas.`;
+      if (go) go.hidden = false;
+    });
+
+    show(current, false);
+  });
+</script>

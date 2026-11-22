@@ -160,3 +160,14 @@ export { default as ArchAccountNav } from './ArchAccountNav.astro';
 export { default as ArchAccountTopbar } from './ArchAccountTopbar.astro';
 export { default as ArchAccountHeading } from './ArchAccountHeading.astro';
 export { default as ArchSignIn } from './ArchSignIn.astro';
+
+// Theater customer area ("Telón")
+export { default as TheaPoster } from './TheaPoster.astro';
+export { default as TheaSeatMap } from './TheaSeatMap.astro';
+export { default as TheaTickets } from './TheaTickets.astro';
+export { default as TheaAccountSummary } from './TheaAccountSummary.astro';
+export { default as TheaOrders } from './TheaOrders.astro';
+export { default as TheaAccountNav } from './TheaAccountNav.astro';
+export { default as TheaAccountTopbar } from './TheaAccountTopbar.astro';
+export { default as TheaAccountHeading } from './TheaAccountHeading.astro';
+export { default as TheaSignIn } from './TheaSignIn.astro';

@@ -1,0 +1,307 @@
+---
+/**
+ * TheaTickets — The ticket wallet: every ticket is drawn as a classic ticket with a perforated stub
+ * (show, date, venue, door-opening time, seat) and a generated code on the stub. "Show code" opens it
+ * full screen in a native <dialog> so it can be scanned at the door; "Transfer" is a demo action. The
+ * codes are demonstration patterns drawn from a seed (not real QR codes).
+ *
+ * @param {TheaTicket[]} tickets - Tickets of the customer.
+ * @param {TheaShow[]} shows - Shows, to resolve titles, venues and sessions.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each ticket is a list item with all data as text, the code has a text alternative
+ * (ticket id), the dialog is native (focus trap, Escape closes) and has a visible close button,
+ * actions report in an aria-live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import { theaTickets, theaShows, theaById, theaRng, theaDate, type TheaTicket, type TheaShow } from '../templates/theater/data';
+
+interface OwnProps {
+  tickets?: TheaTicket[];
+  shows?: TheaShow[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { tickets = theaTickets, shows = theaShows, class: classAttr, ...rest } = Astro.props;
+
+const N = 25;
+function qr(seed: number): string {
+  const rnd = theaRng(seed);
+  const cells: boolean[][] = Array.from({ length: N }, () => Array.from({ length: N }, () => rnd() > 0.52));
+  const finder = (ox: number, oy: number) => {
+    for (let y = -1; y <= 7; y++) for (let x = -1; x <= 7; x++) {
+      const gx = ox + x, gy = oy + y;
+      if (gx < 0 || gy < 0 || gx >= N || gy >= N) continue;
+      const edge = x === 0 || x === 6 || y === 0 || y === 6;
+      const core = x >= 2 && x <= 4 && y >= 2 && y <= 4;
+      cells[gy][gx] = x >= 0 && x <= 6 && y >= 0 && y <= 6 && (edge || core);
+    }
+  };
+  finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+  let d = '';
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (cells[y][x]) d += `M${x} ${y}h1v1h-1z`;
+  return d;
+}
+const items = tickets.map((t) => {
+  const show = theaById(t.showId, shows);
+  const ses = show?.sessions.find((s) => s.id === t.sessionId);
+  return { t, show, ses, path: qr(t.seed) };
+}).filter((x) => x.show && x.ses);
+const doors = (time: string) => {
+  const [h, m] = time.split(':').map(Number);
+  const mins = h * 60 + m - 45;
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+};
+---
+
+<section class:list={['thea-ui', 'thea-tk', classAttr]} aria-label="Mis entradas" data-thea-tk {...rest}>
+  <ul class="thea-tk__list">
+    {items.map(({ t, show, ses, path }) => (
+      <li class="thea-tk__ticket" style={`--c1:${show!.palette[0]};--c2:${show!.palette[1]}`} data-ticket={t.id}>
+        <div class="thea-tk__main">
+          <p class="thea-tk__genre">{show!.genre}</p>
+          <h3>{show!.title}</h3>
+          <p class="thea-tk__when">{theaDate(ses!.date, { weekday: 'long', day: 'numeric', month: 'long' })} · {ses!.time}</p>
+          <p class="thea-tk__venue">{show!.venue}, {show!.city}</p>
+          <dl>
+            <div><dt>Butaca</dt><dd>{t.seat}</dd></div>
+            <div><dt>Abren la sala</dt><dd>{doors(ses!.time)}</dd></div>
+            <div><dt>Pedido</dt><dd>{t.order}</dd></div>
+          </dl>
+        </div>
+        <div class="thea-tk__stub">
+          <svg viewBox={`-1 -1 ${N + 2} ${N + 2}`} role="img" aria-label={`Código de la entrada ${t.id}`} data-qr>
+            <rect x="-1" y="-1" width={N + 2} height={N + 2} fill="#fff"></rect>
+            <path d={path} fill="#111"></path>
+          </svg>
+          <p class="thea-tk__id">{t.id}</p>
+          <div class="thea-tk__acts">
+            <button type="button" class="th-btn" data-show aria-label={`Mostrar el código de ${show!.title}, butaca ${t.seat}`}>Mostrar código</button>
+            <button type="button" class="th-btn th-btn--ghost" data-transfer aria-label={`Transferir la entrada ${t.id}`}>Transferir</button>
+          </div>
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  <dialog class="thea-tk__dialog" data-dialog aria-labelledby="thea-tk-dlg-title">
+    <h2 id="thea-tk-dlg-title" data-dlg-title>Entrada</h2>
+    <div class="thea-tk__big" data-dlg-qr></div>
+    <p data-dlg-text></p>
+    <form method="dialog"><button class="th-btn">Cerrar</button></form>
+  </dialog>
+  <p class="thea-tk__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .thea-tk {
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-tk__list {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .thea-tk__ticket {
+    position: relative;
+    display: grid;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 0 100%, transparent 14px, transparent 0),
+      linear-gradient(135deg, color-mix(in srgb, var(--c1) 70%, #000), color-mix(in srgb, var(--c1) 35%, var(--th-bg-raised)));
+    border: 1px solid var(--th-border-strong);
+    overflow: hidden;
+  }
+
+  .thea-tk__main {
+    padding: var(--sp-5, 1.25rem);
+  }
+
+  .thea-tk__genre {
+    margin: 0 0 0.3rem;
+    font: 700 0.7rem/1 var(--th-font-body);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--c2);
+  }
+
+  .thea-tk__main h3 {
+    margin: 0 0 0.4rem;
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(1.7rem, 5vw, 2.4rem);
+    line-height: 1.05;
+    color: #fff7ea;
+  }
+
+  .thea-tk__when {
+    margin: 0;
+    font-weight: 700;
+    color: #fff7ea;
+  }
+
+  .thea-tk__venue {
+    margin: 0.15rem 0 var(--sp-4, 1rem);
+    font-size: 0.9rem;
+    color: #e9dccb;
+  }
+
+  .thea-tk__main dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    margin: 0;
+  }
+
+  .thea-tk__main dt {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c2);
+  }
+
+  .thea-tk__main dd {
+    margin: 0.15rem 0 0;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #fff7ea;
+  }
+
+  .thea-tk__stub {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+    padding: var(--sp-5, 1.25rem);
+    border-top: 2px dashed rgba(255, 247, 234, 0.45);
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  .thea-tk__stub::before,
+  .thea-tk__stub::after {
+    content: '';
+    position: absolute;
+    top: -11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--th-bg);
+  }
+
+  .thea-tk__stub::before { left: -10px; }
+  .thea-tk__stub::after { right: -10px; }
+
+  .thea-tk__stub svg {
+    width: 130px;
+    height: 130px;
+    border-radius: 4px;
+  }
+
+  .thea-tk__id {
+    margin: 0;
+    font: 500 0.78rem/1 var(--th-font-mono);
+    letter-spacing: 0.1em;
+    color: #e9dccb;
+  }
+
+  .thea-tk__acts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .thea-tk__dialog {
+    margin: auto;
+    inset: 0;
+    width: min(92vw, 420px);
+    padding: var(--sp-6, 1.5rem);
+    border: 1.5px solid var(--th-accent);
+    border-radius: 8px;
+    background: var(--th-bg-raised);
+    color: var(--th-text);
+    text-align: center;
+  }
+
+  .thea-tk__dialog::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+  }
+
+  .thea-tk__dialog h2 {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-size: 1.6rem;
+  }
+
+  .thea-tk__big :global(svg) {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    border-radius: 6px;
+  }
+
+  .thea-tk__dialog p {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-4, 1rem);
+    color: var(--th-text-2);
+  }
+
+  .thea-tk__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--th-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .thea-tk__ticket {
+      grid-template-columns: minmax(0, 1fr) 15rem;
+    }
+
+    .thea-tk__stub {
+      border-top: 0;
+      border-left: 2px dashed rgba(255, 247, 234, 0.45);
+    }
+
+    .thea-tk__stub::before,
+    .thea-tk__stub::after {
+      left: -11px;
+      right: auto;
+    }
+
+    .thea-tk__stub::before { top: -10px; }
+    .thea-tk__stub::after { top: auto; bottom: -10px; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-thea-tk]').forEach((root) => {
+    const dlg = root.querySelector<HTMLDialogElement>('[data-dialog]');
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const li = t.closest<HTMLElement>('[data-ticket]');
+      if (!li) return;
+      const title = li.querySelector('h3')?.textContent ?? '';
+      if (t.closest('[data-show]') && dlg) {
+        const svg = li.querySelector('[data-qr]')?.cloneNode(true) as SVGElement | undefined;
+        const qrBox = dlg.querySelector('[data-dlg-qr]');
+        if (qrBox && svg) { qrBox.replaceChildren(svg); }
+        const set = (s: string, v: string) => { const el = dlg.querySelector(s); if (el) el.textContent = v; };
+        set('[data-dlg-title]', title);
+        set('[data-dlg-text]', `Butaca ${li.querySelector('dd')?.textContent ?? ''} · ${li.querySelector('.thea-tk__when')?.textContent ?? ''}. Sube el brillo de la pantalla y acércala al lector.`);
+        dlg.showModal();
+      } else if (t.closest('[data-transfer]')) {
+        if (live) live.textContent = `Te hemos enviado un enlace para transferir «${title}» a quien tú elijas (demostración).`;
+      }
+    });
+  });
+</script>

@@ -1,0 +1,555 @@
+---
+/**
+ * TheaCart — Cart and checkout in one section. Tickets chosen on the seat plan are listed by show and
+ * function with their seats and prices; a ten-minute hold counts down (when it reaches zero the seats
+ * are released and the cart is emptied), a promo code can lower the price, service fees and totals
+ * update live, and a payment form (name, email, method, terms) confirms the order with a demo
+ * message. The cart is read from localStorage; `demo` seeds a sample cart when it is empty.
+ *
+ * @param {TheaShow[]} shows - Shows, to resolve titles, venues and sessions.
+ * @param {TheaSeat[]} seats - Hall plan, to price each seat.
+ * @param {boolean} demo - Seed a sample cart when empty (for previews). Default true.
+ * @param {string} showsHref - Link of the empty state.
+ * @param {string} ticketsHref - Link to the tickets page after paying.
+ * @param {number} fee - Service fee per ticket in euros. Default 1.5.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: totals and the hold timer are text in aria-live regions (the timer announces only
+ * the minutes to avoid noise), remove buttons name the line, fields are labelled, errors are in
+ * role="alert", targets are 44–48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import { theaShows, theaSeats, theaZoneFactor, theaBrand, type TheaShow, type TheaSeat } from '../templates/theater/data';
+
+interface OwnProps {
+  shows?: TheaShow[];
+  seats?: TheaSeat[];
+  demo?: boolean;
+  showsHref?: string;
+  ticketsHref?: string;
+  fee?: number;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  shows = theaShows,
+  seats = theaSeats(),
+  demo = true,
+  showsHref = '/cartelera',
+  ticketsHref = '/cuenta/entradas',
+  fee = theaBrand.fee,
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `tc-${Math.random().toString(36).slice(2, 8)}`;
+const showData = Object.fromEntries(shows.map((s) => [s.id, { title: s.title, venue: s.venue, price: s.price, sessions: s.sessions }]));
+const seatData = Object.fromEntries(seats.map((s) => [s.id, { zone: s.zone, x: s.x, row: s.row, num: s.num }]));
+---
+
+<section class:list={['thea-ui', 'thea-cart', classAttr]} aria-labelledby={`${uid}-title`} data-thea-cart data-demo={demo ? '1' : '0'} data-fee={fee} data-shows={JSON.stringify(showData)} data-seats={JSON.stringify(seatData)} data-zones={JSON.stringify(theaZoneFactor)} data-tickets={ticketsHref} {...rest}>
+  <div class="thea-cart__inner">
+    <header class="thea-cart__head">
+      <p class="th-eyebrow">Tu carrito</p>
+      <Heading id={`${uid}-title`} class="thea-cart__title">Casi estás dentro</Heading>
+      <p class="thea-cart__hold" aria-live="polite" data-hold hidden></p>
+    </header>
+
+    <div class="thea-cart__empty" data-empty hidden>
+      <p>No tienes entradas en el carrito.</p>
+      <a class="th-btn" href={showsHref}>Ver la cartelera</a>
+    </div>
+
+    <div class="thea-cart__grid" data-full hidden>
+      <ul class="thea-cart__lines" data-lines></ul>
+
+      <form class="thea-cart__pay" data-form novalidate>
+        <div class="thea-cart__promo">
+          <label for={`${uid}-promo`}>Código promocional</label>
+          <div>
+            <input id={`${uid}-promo`} type="text" autocomplete="off" placeholder="TELON10" data-promo />
+            <button type="button" class="th-btn th-btn--ghost" data-apply>Aplicar</button>
+          </div>
+          <p class="thea-cart__note" role="status" data-promo-msg></p>
+        </div>
+
+        <dl class="thea-cart__tot" aria-live="polite">
+          <div><dt>Entradas</dt><dd data-t-sub>–</dd></div>
+          <div><dt>Gastos de gestión</dt><dd data-t-fee>–</dd></div>
+          <div data-disc-row hidden><dt>Descuento</dt><dd data-t-disc>–</dd></div>
+          <div class="is-total"><dt>Total</dt><dd data-t-total>–</dd></div>
+        </dl>
+
+        <div class="thea-cart__row">
+          <div class="thea-cart__field"><label for={`${uid}-n`}>Nombre y apellidos</label><input id={`${uid}-n`} type="text" name="name" autocomplete="name" required /></div>
+          <div class="thea-cart__field"><label for={`${uid}-m`}>Email para recibir las entradas</label><input id={`${uid}-m`} type="email" name="email" autocomplete="email" required /></div>
+        </div>
+
+        <fieldset class="thea-cart__methods">
+          <legend>Cómo quieres pagar</legend>
+          <label><input type="radio" name="method" value="Tarjeta" checked /><span>Tarjeta</span></label>
+          <label><input type="radio" name="method" value="Bizum" /><span>Bizum</span></label>
+          <label><input type="radio" name="method" value="Transferencia" /><span>Transferencia</span></label>
+        </fieldset>
+        <p class="thea-cart__note">Esta es una demostración: no se pide ni se guarda ningún dato de pago.</p>
+
+        <label class="thea-cart__terms"><input type="checkbox" name="terms" /> <span>Acepto las condiciones de compra y la política de devoluciones.</span></label>
+
+        <p class="thea-cart__err" role="alert" data-err></p>
+        <button type="submit" class="th-btn" data-pay>Pagar</button>
+      </form>
+    </div>
+
+    <div class="thea-cart__done" data-done role="status" hidden>
+      <p class="th-eyebrow">Compra confirmada</p>
+      <h2 data-done-title>¡Disfruta de la función!</h2>
+      <p data-done-text></p>
+      <a class="th-btn" href={ticketsHref}>Ver mis entradas</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .thea-cart {
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--th-bg);
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-cart [hidden] {
+    display: none !important;
+  }
+
+  .thea-cart__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .thea-cart__title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(2.6rem, 7vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .thea-cart__hold {
+    display: inline-block;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0.5rem 0.9rem;
+    border: 1.5px solid var(--th-accent);
+    border-radius: 4px;
+    font-weight: 700;
+    color: var(--th-accent);
+  }
+
+  .thea-cart__hold.is-low {
+    border-color: var(--th-bad);
+    color: var(--th-bad);
+  }
+
+  .thea-cart__empty {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    justify-items: start;
+    padding: var(--sp-8, 2rem) 0;
+    color: var(--th-text-2);
+  }
+
+  .thea-cart__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .thea-cart__lines {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    align-content: start;
+  }
+
+  .thea-cart__lines :global(li) {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--th-border-strong);
+    background: var(--th-bg-raised);
+  }
+
+  .thea-cart__lines :global(h3) {
+    margin: 0 0 0.2rem;
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 1.15;
+  }
+
+  .thea-cart__lines :global(.meta) {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.88rem;
+    color: var(--th-text-2);
+  }
+
+  .thea-cart__lines :global(.seats) {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    padding: 0;
+    list-style: none;
+    font-size: 0.92rem;
+  }
+
+  .thea-cart__lines :global(.seats li) {
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .thea-cart__lines :global(button) {
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 4px;
+    background: none;
+    color: var(--th-text);
+    font: 600 0.85rem var(--th-font-body);
+    cursor: pointer;
+  }
+
+  .thea-cart__pay {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    align-content: start;
+    padding: var(--sp-5, 1.25rem);
+    border: 1.5px solid var(--th-border-strong);
+    background: var(--th-bg-raised);
+  }
+
+  .thea-cart label,
+  .thea-cart legend {
+    display: block;
+    margin-bottom: 0.35rem;
+    padding: 0;
+    font: 700 0.74rem/1.2 var(--th-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--th-text-2);
+  }
+
+  .thea-cart input[type='text'],
+  .thea-cart input[type='email'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 4px;
+    background: var(--th-surface);
+    color: var(--th-text);
+    font: 400 1rem var(--th-font-body);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .thea-cart__promo > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .thea-cart__note {
+    min-height: 1.2em;
+    margin: 0.35rem 0 0;
+    font-size: 0.82rem;
+    color: var(--th-text-3);
+  }
+
+  .thea-cart__tot {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid var(--th-border);
+  }
+
+  .thea-cart__tot div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--th-border);
+  }
+
+  .thea-cart__tot dt {
+    color: var(--th-text-2);
+  }
+
+  .thea-cart__tot dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .thea-cart__tot .is-total dd {
+    font-family: var(--th-font-display);
+    font-size: 1.9rem;
+    color: var(--th-accent);
+  }
+
+  .thea-cart__row {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .thea-cart fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .thea-cart__methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .thea-cart__methods legend {
+    width: 100%;
+  }
+
+  .thea-cart__methods input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .thea-cart__methods span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1.5px solid var(--th-border-strong);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+  }
+
+  .thea-cart__methods input:checked + span {
+    border-color: var(--th-brand);
+    background: rgba(var(--th-brand-rgb), 0.16);
+  }
+
+  .thea-cart__methods input:focus-visible + span {
+    outline: 2px solid var(--th-accent);
+    outline-offset: 2px;
+  }
+
+  .thea-cart__terms {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    text-transform: none;
+    letter-spacing: 0;
+    font: 400 0.88rem/1.4 var(--th-font-body);
+    color: var(--th-text-2);
+  }
+
+  .thea-cart__terms input {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.1rem;
+    accent-color: var(--th-brand);
+  }
+
+  .thea-cart__err {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--th-bad);
+  }
+
+  .thea-cart__done {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+    padding: var(--sp-8, 2rem);
+    border: 1.5px solid var(--th-ok);
+    background: var(--th-bg-raised);
+  }
+
+  .thea-cart__done h2 {
+    margin: 0;
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+  }
+
+  .thea-cart__done p {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--th-text-2);
+  }
+
+  @media (min-width: 760px) {
+    .thea-cart__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 980px) {
+    .thea-cart {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .thea-cart__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  type Line = { showId: string; sessionId: string; seats: string[] };
+  const CART = 'thea-cart';
+  const HOLD = 'thea-hold';
+  const ORDERS = 'thea-orders';
+  const HOLD_MS = 10 * 60 * 1000;
+  const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-thea-cart]').forEach((root) => {
+    const shows: Record<string, { title: string; venue: string; price: number; sessions: Array<{ id: string; date: string; time: string }> }> = JSON.parse(root.dataset.shows ?? '{}');
+    const seats: Record<string, { zone: string; x: number; row: string; num: number }> = JSON.parse(root.dataset.seats ?? '{}');
+    const zones: Record<string, number> = JSON.parse(root.dataset.zones ?? '{}');
+    const fee = Number(root.dataset.fee);
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const empty = q('[data-empty]'), full = q('[data-full]'), done = q('[data-done]');
+    const linesEl = q('[data-lines]'), holdEl = q('[data-hold]'), err = q('[data-err]');
+    const form = q<HTMLFormElement>('[data-form]');
+    let promo = false;
+    let timer = 0;
+
+    const read = (): Line[] => { try { return JSON.parse(localStorage.getItem(CART) ?? '[]'); } catch { return []; } };
+    const write = (l: Line[]) => { try { localStorage.setItem(CART, JSON.stringify(l)); } catch { /* ignore */ } };
+    const price = (showId: string, seatId: string) => {
+      const s = seats[seatId]; const sh = shows[showId];
+      if (!s || !sh) return 0;
+      return Math.round(sh.price * (zones[s.zone] ?? 1) * (s.zone === 'Patio' && Math.abs(s.x - 40) < 12 ? 1.12 : 1));
+    };
+    const count = (l: Line[]) => l.reduce((n, x) => n + x.seats.length, 0);
+    const badge = (l: Line[]) => document.querySelectorAll('[data-cart-count]').forEach((e) => { e.textContent = String(count(l)); });
+
+    let lines = read();
+    if (!lines.length && root.dataset.demo === '1') {
+      lines = [{ showId: 'la-casa-de-bernarda', sessionId: 's2', seats: ['D6', 'D7'] }];
+      write(lines);
+      try { localStorage.setItem(HOLD, String(Date.now())); } catch { /* ignore */ }
+    }
+
+    const render = () => {
+      lines = read();
+      badge(lines);
+      const n = count(lines);
+      empty.hidden = n > 0;
+      full.hidden = n === 0;
+      if (!n) { holdEl.hidden = true; return; }
+      let sub = 0;
+      linesEl.innerHTML = lines.map((l, i) => {
+        const sh = shows[l.showId]; if (!sh) return '';
+        const ses = sh.sessions.find((x) => x.id === l.sessionId);
+        const when = ses ? new Date(`${ses.date}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) + ', ' + ses.time : '';
+        const rows = l.seats.map((s) => { const p = price(l.showId, s); sub += p; const m = seats[s]; return `<li><span>Fila ${m?.row}, butaca ${m?.num} · ${m?.zone}</span><span>${eur(p)}</span></li>`; }).join('');
+        return `<li><h3>${sh.title}</h3><p class="meta">${when} · ${sh.venue}</p><ul class="seats">${rows}</ul><button type="button" data-remove="${i}" aria-label="Quitar las entradas de ${sh.title}">Quitar</button></li>`;
+      }).join('');
+      const fees = fee * n;
+      const disc = promo ? Math.round(sub * 0.1 * 100) / 100 : 0;
+      q('[data-t-sub]').textContent = eur(sub);
+      q('[data-t-fee]').textContent = eur(fees);
+      q('[data-disc-row]').hidden = !promo;
+      q('[data-t-disc]').textContent = `−${eur(disc)}`;
+      const total = sub + fees - disc;
+      q('[data-t-total]').textContent = eur(total);
+      q('[data-pay]').textContent = `Pagar ${eur(total)}`;
+      form.dataset.total = String(total);
+    };
+
+    const tick = () => {
+      let start = 0;
+      try { start = Number(localStorage.getItem(HOLD) ?? 0); } catch { start = 0; }
+      if (!start || !count(read())) { holdEl.hidden = true; return; }
+      const left = HOLD_MS - (Date.now() - start);
+      if (left <= 0) {
+        write([]);
+        try { localStorage.removeItem(HOLD); } catch { /* ignore */ }
+        clearInterval(timer);
+        render();
+        err.textContent = 'Se acabó el tiempo: hemos liberado tus butacas. Puedes volver a elegirlas.';
+        return;
+      }
+      const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+      holdEl.hidden = false;
+      holdEl.classList.toggle('is-low', left < 120000);
+      holdEl.textContent = `Tus butacas están reservadas: ${m}:${String(s).padStart(2, '0')}`;
+    };
+
+    linesEl.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-remove]');
+      if (!b) return;
+      const l = read(); l.splice(Number(b.dataset.remove), 1); write(l);
+      if (!l.length) { try { localStorage.removeItem(HOLD); } catch { /* ignore */ } }
+      render(); tick();
+    });
+
+    q('[data-apply]').addEventListener('click', () => {
+      const v = q<HTMLInputElement>('[data-promo]').value.trim().toUpperCase();
+      const msg = q('[data-promo-msg]');
+      promo = v === 'TELON10';
+      msg.textContent = promo ? 'Código aplicado: 10 % en las entradas.' : v ? 'Ese código no es válido.' : '';
+      render();
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = form.querySelector<HTMLInputElement>('input[name="name"]');
+      const mail = form.querySelector<HTMLInputElement>('input[name="email"]');
+      const terms = form.querySelector<HTMLInputElement>('input[name="terms"]');
+      let msg = '';
+      if (!name?.value.trim()) msg = 'Escribe tu nombre.';
+      else if (!mail?.value || !mail.checkValidity()) msg = 'Escribe un email válido.';
+      else if (!terms?.checked) msg = 'Acepta las condiciones para continuar.';
+      if (msg) { err.textContent = msg; return; }
+      err.textContent = '';
+      const current = read();
+      const id = `P-${Math.floor(6000 + Math.random() * 3000)}`;
+      try {
+        const prev = JSON.parse(localStorage.getItem(ORDERS) ?? '[]');
+        localStorage.setItem(ORDERS, JSON.stringify([{ id, date: new Date().toISOString().slice(0, 10), lines: current, total: Number(form.dataset.total ?? 0) }, ...prev]));
+      } catch { /* ignore */ }
+      write([]);
+      try { localStorage.removeItem(HOLD); } catch { /* ignore */ }
+      clearInterval(timer);
+      badge([]);
+      full.hidden = true; empty.hidden = true; holdEl.hidden = true; done.hidden = false;
+      q('[data-done-title]').textContent = `Pedido ${id} confirmado`;
+      q('[data-done-text]').textContent = `Hemos enviado ${count(current)} ${count(current) === 1 ? 'entrada' : 'entradas'} a ${mail?.value} (demostración). También las tienes en tu cuenta con su código QR.`;
+    });
+
+    render();
+    tick();
+    timer = window.setInterval(tick, 1000);
+  });
+</script>

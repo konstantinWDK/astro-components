@@ -1,0 +1,183 @@
+---
+/**
+ * TheaAccountLayout — Customer-area shell for the "Telón" theater template.
+ * Header row with TheaAccountNav (tabs on desktop, bottom bar on phones) and TheaAccountTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Telón").
+ * @param {string} current - Active route key (dashboard | tickets | orders).
+ * @param {TheaRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './thea-theme.css';
+import TheaAccountNav from '../../app/TheaAccountNav.astro';
+import TheaAccountTopbar from '../../app/TheaAccountTopbar.astro';
+import { theaRoutes, theaData, type TheaRoutes } from './data';
+
+type Key = 'dashboard' | 'tickets' | 'orders';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: TheaRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Telón · Tu cuenta: tus entradas con su código QR, tus pedidos y tus próximas funciones.',
+  current = 'dashboard',
+  routes = theaRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = theaData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Mis entradas', href: routes.tickets, badge: theaData.tickets.length },
+  { label: 'Pedidos', href: routes.orders },
+];
+const notifications = [
+  { title: 'Mañana hay función', text: 'La casa de Bernarda Alba, 20:00, Teatro Español. Abren la sala a las 19:15', time: 'hace 3 horas', unread: true },
+  { title: 'Tus entradas están listas', text: 'Butacas C5 y C6 con su código QR', time: 'hace 5 días', unread: true },
+  { title: 'Pedido cancelado', text: 'Giselle: te hemos devuelto el importe', time: 'hace 3 meses' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Telón`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,500;1,700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="thea-app-body">
+    <a href="#main-content" class="thea-app-skip">Saltar al contenido</a>
+
+    <div class="thea-app-head">
+      <div class="thea-app-head__inner">
+        <TheaAccountNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Telón" homeHref={routes.home} />
+        <TheaAccountTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Telón', href: routes.home }, { label: 'Ver la cartelera', href: routes.shows }, { label: 'Mis pedidos', href: routes.orders }]}
+          signOutHref={routes.signIn}
+          brand="Telón"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="thea-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .thea-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--th-bg);
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--th-brand);
+    color: var(--th-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .thea-app-skip:focus {
+    top: 1rem;
+  }
+
+  .thea-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--th-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--th-border);
+  }
+
+  .thea-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .thea-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .thea-app-main:focus {
+    outline: none;
+  }
+
+  :global(.thea-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.thea-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 900;
+    text-transform: none;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .thea-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .thea-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .thea-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

@@ -1,0 +1,361 @@
+---
+/**
+ * TheaHero — Theatre hero driven by scroll: two velvet curtains cover the stage and part as you scroll
+ * (progress 0→1 is written to a CSS variable on every animation frame), revealing the headline, the
+ * three featured posters fanned out and a spotlight that follows the pointer. Without JavaScript, or
+ * with reduced motion, the curtains are already open and the section is a normal height.
+ *
+ * @param {TheaShow[]} shows - Featured shows (first three are drawn).
+ * @param {TheaStat[]} stats - Three key figures.
+ * @param {string} title - Headline.
+ * @param {string} text - Supporting paragraph.
+ * @param {string} showsHref - Link of the primary button.
+ * @param {string} showHref - Base link of a poster (the show id is added as ?show=).
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the curtains and spotlight are decorative (aria-hidden), the headline and posters
+ * are real content visible from the start of the page for screen readers, motion respects
+ * prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import TheaPoster from '../app/TheaPoster.astro';
+import { theaShows, theaStats, type TheaShow, type TheaStat } from '../templates/theater/data';
+
+interface OwnProps {
+  shows?: TheaShow[];
+  stats?: TheaStat[];
+  title?: string;
+  text?: string;
+  showsHref?: string;
+  showHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  shows = theaShows,
+  stats = theaStats,
+  title = 'Esta noche el telón sube para ti',
+  text = 'Elige el espectáculo, elige tu butaca en el plano de la sala y paga en diez minutos. La entrada te llega al móvil.',
+  showsHref = '/cartelera',
+  showHref = '/espectaculo',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `thh-${Math.random().toString(36).slice(2, 8)}`;
+const featured = shows.slice(0, 3);
+---
+
+<section class:list={['thea-ui', 'thea-hero', classAttr]} aria-labelledby={`${uid}-title`} data-thea-hero {...rest}>
+  <div class="thea-hero__sticky">
+    <div class="thea-hero__spot" aria-hidden="true"></div>
+
+    <div class="thea-hero__inner">
+      <div class="thea-hero__copy">
+        <p class="th-eyebrow">Entradas de teatro · Madrid</p>
+        <Heading id={`${uid}-title`} class="thea-hero__title">{title}</Heading>
+        <p class="thea-hero__text">{text}</p>
+        <div class="thea-hero__actions">
+          <a class="th-btn" href={showsHref}>Ver la cartelera</a>
+          <a class="th-btn th-btn--ghost" href={showHref}>Elegir butacas</a>
+        </div>
+      </div>
+
+      <ul class="thea-hero__posters">
+        {featured.map((s, i) => (
+          <li style={`--i:${i}`}>
+            <a href={`${showHref}?show=${s.id}`} aria-label={`${s.title}, desde ${s.price} euros`}>
+              <TheaPoster show={s} decorative />
+              <span class="thea-hero__from">Desde {s.price} €</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <dl class="thea-hero__stats">
+      {stats.map((s) => (
+        <div>
+          <dt>{s.label}</dt>
+          <dd>{s.value}</dd>
+        </div>
+      ))}
+    </dl>
+
+    <div class="thea-hero__curtain thea-hero__curtain--l" aria-hidden="true"></div>
+    <div class="thea-hero__curtain thea-hero__curtain--r" aria-hidden="true"></div>
+    <div class="thea-hero__valance" aria-hidden="true"></div>
+    <p class="thea-hero__cue" aria-hidden="true">Desliza para abrir el telón</p>
+  </div>
+</section>
+
+<style>
+  .thea-hero {
+    --p: 1;
+    position: relative;
+    background: var(--th-bg);
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-hero.is-live {
+    height: 190vh;
+  }
+
+  .thea-hero__sticky {
+    position: relative;
+    display: grid;
+    align-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem) var(--sp-8, 2rem);
+  }
+
+  .thea-hero.is-live .thea-hero__sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .thea-hero__spot {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(420px circle at var(--sx, 70%) var(--sy, 35%), rgba(var(--th-accent-rgb), 0.22), transparent 70%);
+    pointer-events: none;
+  }
+
+  .thea-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1240px;
+    width: 100%;
+    margin: 0 auto;
+    opacity: calc(0.25 + var(--p) * 0.75);
+    transform: scale(calc(0.94 + var(--p) * 0.06));
+  }
+
+  .thea-hero__title {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--th-font-display);
+    font-weight: 900;
+    font-style: italic;
+    font-size: clamp(2.6rem, 6.4vw, 5.2rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+  }
+
+  .thea-hero__text {
+    max-width: 46ch;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--th-text-2);
+  }
+
+  .thea-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .thea-hero__posters {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .thea-hero__posters li {
+    flex: 0 0 min(34vw, 190px);
+    margin-left: -3.5rem;
+    transform: rotate(calc((var(--i) - 1) * 6deg)) translateY(calc(var(--i) * 0.4rem));
+    transition: transform 0.35s ease;
+  }
+
+  .thea-hero__posters li:first-child {
+    margin-left: 0;
+  }
+
+  .thea-hero__posters li:hover {
+    transform: rotate(0) translateY(-10px) scale(1.04);
+    z-index: 2;
+  }
+
+  .thea-hero__posters a {
+    display: block;
+    position: relative;
+    color: inherit;
+    text-decoration: none;
+    filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.55));
+  }
+
+  .thea-hero__from {
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 3px;
+    background: var(--th-accent);
+    color: #1a1204;
+    font: 700 0.72rem/1 var(--th-font-body);
+    letter-spacing: 0.04em;
+  }
+
+  .thea-hero__stats {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    max-width: 1240px;
+    width: 100%;
+    margin: var(--sp-8, 2rem) auto 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--th-border-strong);
+  }
+
+  .thea-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.25rem;
+  }
+
+  .thea-hero__stats dt {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--th-text-2);
+  }
+
+  .thea-hero__stats dd {
+    margin: 0;
+    font-family: var(--th-font-display);
+    font-weight: 700;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    line-height: 1;
+  }
+
+  /* curtains */
+  .thea-hero__curtain {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 52%;
+    z-index: 3;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0 3%, rgba(255, 255, 255, 0.07) 5%, rgba(0, 0, 0, 0.38) 9%),
+      linear-gradient(180deg, var(--th-brand), color-mix(in srgb, var(--th-brand) 55%, #000));
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+    transition: transform 0.05s linear;
+  }
+
+  .thea-hero__curtain--l {
+    left: 0;
+    transform: translateX(calc(var(--p) * -100%));
+    border-right: 2px solid var(--th-accent);
+  }
+
+  .thea-hero__curtain--r {
+    right: 0;
+    transform: translateX(calc(var(--p) * 100%));
+    border-left: 2px solid var(--th-accent);
+  }
+
+  .thea-hero__valance {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 4.2rem;
+    z-index: 4;
+    pointer-events: none;
+    background:
+      radial-gradient(60px 34px at 50% 100%, transparent 98%, var(--th-brand) 100%) 0 0 / 120px 100% repeat-x,
+      var(--th-brand);
+    border-bottom: 3px solid var(--th-accent);
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.5));
+  }
+
+  .thea-hero__cue {
+    position: absolute;
+    left: 50%;
+    bottom: 12vh;
+    z-index: 5;
+    margin: 0;
+    padding: 0.6rem 1.1rem;
+    translate: -50% 0;
+    border: 1.5px solid var(--th-accent);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff7ea;
+    font: 700 0.78rem/1 var(--th-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    opacity: calc(1 - var(--p) * 4);
+    pointer-events: none;
+    animation: thea-bob 1.6s ease-in-out infinite;
+  }
+
+  @keyframes thea-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
+  }
+
+  .thea-hero:not(.is-live) .thea-hero__cue {
+    display: none;
+  }
+
+  .thea-hero:not(.is-live) .thea-hero__curtain {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .thea-hero__sticky {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .thea-hero__inner {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      align-items: center;
+    }
+
+    .thea-hero__posters li {
+      flex-basis: 210px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-thea-hero]').forEach((root) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    root.classList.add('is-live');
+    root.style.setProperty('--p', '0');
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const r = root.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      const p = total > 0 ? Math.min(1, Math.max(0, -r.top / (total * 0.6))) : 1;
+      root.style.setProperty('--p', p.toFixed(3));
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    root.addEventListener('pointermove', (e) => {
+      const r = root.getBoundingClientRect();
+      root.style.setProperty('--sx', `${((e.clientX - r.left) / r.width) * 100}%`);
+      root.style.setProperty('--sy', `${Math.min(100, ((e.clientY - r.top) / window.innerHeight) * 100)}%`);
+    });
+    update();
+  });
+</script>

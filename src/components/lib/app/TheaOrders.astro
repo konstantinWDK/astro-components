@@ -1,0 +1,227 @@
+---
+/**
+ * TheaOrders — Orders as an exclusive native accordion (<details name>): id, date, status and total in
+ * the summary; the body lists the show, function and seats of each line and the actions available
+ * (change session or return, free until 48 hours before; demo). Orders paid in the cart of this
+ * browser (saved in localStorage) are added on top.
+ *
+ * @param {TheaOrder[]} orders - Orders, newest first.
+ * @param {TheaShow[]} shows - Shows, to resolve titles, venues and sessions.
+ * @param {string} showsHref - Link of the "buy again" action.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native disclosure widgets, status is text with a marker, action results are in an
+ * aria-live region, buttons name the order they act on.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/theater/thea-theme.css';
+import { theaOrders, theaShows, theaById, theaMoney, theaDate, type TheaOrder, type TheaShow } from '../templates/theater/data';
+
+interface OwnProps {
+  orders?: TheaOrder[];
+  shows?: TheaShow[];
+  showsHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { orders = theaOrders, shows = theaShows, showsHref = '/cartelera', class: classAttr, ...rest } = Astro.props;
+
+const uid = `tor-${Math.random().toString(36).slice(2, 8)}`;
+const showMap = Object.fromEntries(shows.map((s) => [s.id, { title: s.title, venue: s.venue, sessions: s.sessions }]));
+---
+
+<section class:list={['thea-ui', 'thea-ord', classAttr]} aria-label="Mis pedidos" data-thea-ord data-shows={JSON.stringify(showMap)} {...rest}>
+  <div class="thea-ord__list" data-list>
+    {orders.map((o, i) => (
+      <details class="thea-ord__item" name={`${uid}-o`} open={i === 0 ? true : undefined} data-order={o.id}>
+        <summary>
+          <span class="thea-ord__id">{o.id}</span>
+          <span class="thea-ord__date">{theaDate(o.date, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span class:list={['thea-ord__status', `is-${o.status === 'Confirmado' ? 'ok' : o.status === 'Cancelado' ? 'off' : 'wait'}`]} data-status>{o.status}</span>
+          <span class="thea-ord__total">{o.status === 'Cancelado' ? 'Devuelto' : theaMoney(o.total)}</span>
+        </summary>
+        <div class="thea-ord__body">
+          {o.lines.map((l) => {
+            const s = theaById(l.showId, shows);
+            const ses = s?.sessions.find((x) => x.id === l.sessionId);
+            return (
+              <p class="thea-ord__line">
+                <strong>{s?.title}</strong>
+                <span>{ses ? `${theaDate(ses.date, { weekday: 'long', day: 'numeric', month: 'long' })}, ${ses.time}` : ''} · {s?.venue}</span>
+                <span>Butacas: {l.seats.join(', ')}</span>
+              </p>
+            );
+          })}
+          <div class="thea-ord__acts">
+            {o.status === 'Confirmado' ? (
+              <>
+                <button type="button" class="th-btn th-btn--ghost" data-act="change" aria-label={`Cambiar de sesión el pedido ${o.id}`}>Cambiar de sesión</button>
+                <button type="button" class="th-btn th-btn--ghost" data-act="return" aria-label={`Devolver el pedido ${o.id}`}>Devolver</button>
+              </>
+            ) : (
+              <a class="th-btn th-btn--ghost" href={showsHref}>Volver a la cartelera</a>
+            )}
+          </div>
+        </div>
+      </details>
+    ))}
+  </div>
+  <p class="thea-ord__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .thea-ord {
+    color: var(--th-text);
+    font-family: var(--th-font-body);
+  }
+
+  .thea-ord :global(.thea-ord__list) {
+    border-top: 1.5px solid var(--th-border-strong);
+  }
+
+  .thea-ord :global(.thea-ord__item) {
+    border-bottom: 1px solid var(--th-border);
+  }
+
+  .thea-ord__item summary,
+  .thea-ord :global(.thea-ord__item summary) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    align-items: center;
+    min-height: 64px;
+    padding: var(--sp-4, 1rem) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .thea-ord :global(.thea-ord__item summary::-webkit-details-marker) {
+    display: none;
+  }
+
+  .thea-ord :global(.thea-ord__id) {
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+
+  .thea-ord :global(.thea-ord__date) {
+    grid-column: 1;
+    font-size: 0.86rem;
+    color: var(--th-text-3);
+  }
+
+  .thea-ord :global(.thea-ord__status) {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font: 700 0.72rem/1 var(--th-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .thea-ord :global(.thea-ord__status.is-ok) { color: var(--th-ok); }
+  .thea-ord :global(.thea-ord__status.is-wait) { color: var(--th-warn); }
+  .thea-ord :global(.thea-ord__status.is-off) { color: var(--th-bad); }
+
+  .thea-ord :global(.thea-ord__total) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    font-family: var(--th-font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .thea-ord :global(.thea-ord__body) {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding: 0 0 var(--sp-6, 1.5rem);
+  }
+
+  .thea-ord :global(.thea-ord__line) {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+  }
+
+  .thea-ord :global(.thea-ord__line strong) {
+    font-family: var(--th-font-display);
+    font-style: italic;
+    font-size: 1.25rem;
+  }
+
+  .thea-ord :global(.thea-ord__line span) {
+    font-size: 0.9rem;
+    color: var(--th-text-2);
+  }
+
+  .thea-ord :global(.thea-ord__acts) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .thea-ord :global(.thea-ord__live) {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--th-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .thea-ord :global(.thea-ord__item summary) {
+      grid-template-columns: 9rem 1fr auto auto;
+      gap: 1.5rem;
+    }
+
+    .thea-ord :global(.thea-ord__date),
+.thea-ord :global(.thea-ord__status),
+.thea-ord :global(.thea-ord__total) {
+      grid-column: auto;
+      grid-row: auto;
+      justify-self: auto;
+    }
+
+    .thea-ord :global(.thea-ord__status) {
+      min-width: 7rem;
+      text-align: right;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-thea-ord]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act]');
+      if (!b) return;
+      const item = b.closest<HTMLElement>('[data-order]');
+      const id = item?.dataset.order ?? '';
+      if (b.dataset.act === 'return') {
+        const st = item?.querySelector<HTMLElement>('[data-status]');
+        if (st) { st.textContent = 'Cancelado'; st.className = 'thea-ord__status is-off'; }
+        item?.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((x) => { x.disabled = true; });
+        if (live) live.textContent = `Pedido ${id} devuelto. Te reembolsamos el importe en 3 a 5 días (demostración).`;
+      } else if (live) {
+        live.textContent = `Te hemos enviado las sesiones disponibles para cambiar el pedido ${id} (demostración).`;
+      }
+    });
+
+    // Orders paid in this browser's cart
+    try {
+      const mine = JSON.parse(localStorage.getItem('thea-orders') ?? '[]') as Array<{ id: string; date: string; lines: Array<{ showId: string; sessionId: string; seats: string[] }>; total: number }>;
+      const shows = JSON.parse(root.dataset.shows ?? '{}') as Record<string, { title: string; venue: string; sessions: Array<{ id: string; date: string; time: string }> }>;
+      const list = root.querySelector<HTMLElement>('[data-list]');
+      if (list && mine.length) {
+        const html = mine.map((o) => {
+          const lines = o.lines.map((l) => { const s = shows[l.showId]; const ses = s?.sessions.find((x) => x.id === l.sessionId); return `<p class="thea-ord__line"><strong>${s?.title ?? ''}</strong><span>${ses ? `${new Date(`${ses.date}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}, ${ses.time}` : ''} · ${s?.venue ?? ''}</span><span>Butacas: ${l.seats.join(', ')}</span></p>`; }).join('');
+          return `<details class="thea-ord__item" data-order="${o.id}"><summary><span class="thea-ord__id">${o.id}</span><span class="thea-ord__date">${new Date(`${o.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span class="thea-ord__status is-ok">Confirmado</span><span class="thea-ord__total">${o.total.toLocaleString('es-ES')} €</span></summary><div class="thea-ord__body">${lines}</div></details>`;
+        }).join('');
+        list.insertAdjacentHTML('afterbegin', html);
+      }
+    } catch { /* storage unavailable */ }
+  });
+</script>
