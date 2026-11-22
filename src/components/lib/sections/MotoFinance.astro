@@ -1,0 +1,389 @@
+---
+/**
+ * MotoFinance — Financing simulator. Choose a bike, a down payment (slider, 10–50 %) and a term (12–60
+ * months); the monthly payment is computed with French amortisation at the shop's nominal rate, and the
+ * section shows the amount financed, the total interest, the total cost and a bar chart of principal
+ * versus interest for each year of the loan. A short request form (name, email, phone) sends the
+ * application with a demo message. The result is always labelled as orientative.
+ *
+ * @param {MotoProduct[]} bikes - Products with a price to finance.
+ * @param {number} rate - Nominal yearly rate in percent. Default 7.9.
+ * @param {string} action - Form action (POST). Empty runs a demo confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled native controls, every figure is text in an aria-live region, the yearly
+ * bars are decorative with a text table behind them (sr-only), errors are in role="alert".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import { motoProducts, motoBrand, motoMonthly, motoMoney, type MotoProduct } from '../templates/motocross/data';
+
+interface OwnProps {
+  bikes?: MotoProduct[];
+  rate?: number;
+  action?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  bikes = motoProducts.filter((p) => p.bike),
+  rate = motoBrand.rate,
+  action = '',
+  title = '¿Y si la pagas en cómodo?',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `mfn-${Math.random().toString(36).slice(2, 8)}`;
+const first = bikes[1] ?? bikes[0];
+const init = { down: 20, months: 36 };
+const principal = first.price * (1 - init.down / 100);
+const monthly = motoMonthly(principal, init.months, rate);
+const prices = Object.fromEntries(bikes.map((b) => [b.id, b.price]));
+---
+
+<section class:list={['moto-ui', 'moto-fin', classAttr]} aria-labelledby={`${uid}-title`} data-moto-fin data-rate={rate} data-prices={JSON.stringify(prices)} {...rest}>
+  <div class="moto-fin__inner">
+    <header>
+      <p class="mt-eyebrow">Financiación</p>
+      <Heading id={`${uid}-title`} class="moto-fin__title">{title}</Heading>
+      <p class="moto-fin__lead">Hasta 60 meses al {String(rate).replace('.', ',')} % TIN, sin comisión de apertura. Esto es un cálculo orientativo: la cuota definitiva te la confirmamos el mismo día.</p>
+    </header>
+
+    <form class="moto-fin__form" method="post" action={action || undefined} data-form novalidate>
+      <div class="moto-fin__controls">
+        <div class="moto-fin__field">
+          <label for={`${uid}-b`}>Moto</label>
+          <select id={`${uid}-b`} name="bike" data-bike>
+            {bikes.map((b) => <option value={b.id} selected={b.id === first.id}>{b.name} · {motoMoney(b.price)}</option>)}
+          </select>
+        </div>
+        <div class="moto-fin__field">
+          <label for={`${uid}-d`}>Entrada <output data-out-d>{init.down} % · {motoMoney(first.price * init.down / 100)}</output></label>
+          <input id={`${uid}-d`} type="range" min="10" max="50" step="5" value={init.down} data-down />
+        </div>
+        <div class="moto-fin__field">
+          <label for={`${uid}-m`}>Plazo</label>
+          <select id={`${uid}-m`} name="months" data-months>
+            {[12, 24, 36, 48, 60].map((m) => <option value={m} selected={m === init.months}>{m} meses</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div class="moto-fin__result" aria-live="polite">
+        <p class="moto-fin__label">Tu cuota</p>
+        <p class="moto-fin__monthly"><span data-monthly>{motoMoney(Math.round(monthly * 100) / 100)}</span><small>/mes</small></p>
+        <dl class="moto-fin__break">
+          <div><dt>Importe financiado</dt><dd data-financed>{motoMoney(principal)}</dd></div>
+          <div><dt>Intereses totales</dt><dd data-interest>{motoMoney(monthly * init.months - principal)}</dd></div>
+          <div><dt>Coste total (con entrada)</dt><dd data-total>{motoMoney(first.price + monthly * init.months - principal)}</dd></div>
+        </dl>
+
+        <p class="moto-fin__label">Cuánto de cada año es capital y cuánto interés</p>
+        <div class="moto-fin__chart" data-chart aria-hidden="true"></div>
+        <p class="mt-sr" data-chart-text></p>
+      </div>
+
+      <div class="moto-fin__req">
+        <h3>Solicita tu respuesta en el día</h3>
+        <div class="moto-fin__row">
+          <div class="moto-fin__field"><label for={`${uid}-n`}>Nombre</label><input id={`${uid}-n`} type="text" name="name" autocomplete="name" required /></div>
+          <div class="moto-fin__field"><label for={`${uid}-e`}>Email</label><input id={`${uid}-e`} type="email" name="email" autocomplete="email" required /></div>
+        </div>
+        <div class="moto-fin__field"><label for={`${uid}-t`}>Teléfono</label><input id={`${uid}-t`} type="tel" name="phone" autocomplete="tel" /></div>
+        <p class="moto-fin__err" role="alert" data-err></p>
+        <button type="submit" class="mt-btn">Solicitar financiación</button>
+        <p class="moto-fin__ok" role="status" data-ok></p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .moto-fin {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--mt-bg);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+  }
+
+  .moto-fin__inner {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+
+  .moto-fin__title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2.8rem, 8vw, 6rem);
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .moto-fin__lead {
+    max-width: 56ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--mt-text-2);
+  }
+
+  .moto-fin__form {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .moto-fin__controls {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+  }
+
+  .moto-fin label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+    font: 700 0.82rem/1.2 var(--mt-font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mt-text-2);
+  }
+
+  .moto-fin output {
+    color: var(--mt-brand);
+  }
+
+  .moto-fin select,
+  .moto-fin input[type='text'],
+  .moto-fin input[type='email'],
+  .moto-fin input[type='tel'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 2px solid var(--mt-border-strong);
+    border-radius: 0;
+    background: var(--mt-surface);
+    color: var(--mt-text);
+    font: 500 1rem var(--mt-font-body);
+  }
+
+  .moto-fin input[type='range'] {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--mt-brand);
+    cursor: pointer;
+  }
+
+  .moto-fin__result {
+    padding: var(--sp-6, 1.5rem);
+    border: 2px solid var(--mt-text);
+    background: var(--mt-bg-raised);
+  }
+
+  .moto-fin__label {
+    margin: 0 0 0.4rem;
+    font: 700 0.8rem/1.2 var(--mt-font-display);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mt-accent);
+  }
+
+  .moto-fin__monthly {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(3.4rem, 10vw, 5.6rem);
+    line-height: 0.9;
+    color: var(--mt-brand);
+  }
+
+  .moto-fin__monthly small {
+    font-size: 1.4rem;
+    color: var(--mt-text-2);
+  }
+
+  .moto-fin__break {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--mt-border);
+  }
+
+  .moto-fin__break div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--mt-border);
+  }
+
+  .moto-fin__break dt {
+    color: var(--mt-text-3);
+  }
+
+  .moto-fin__break dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .moto-fin__result :global(.moto-fin__chart) {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 120px;
+  }
+
+  .moto-fin__result :global(.moto-fin__chart > div) {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column-reverse;
+    height: 100%;
+    background: var(--mt-border);
+  }
+
+  .moto-fin__result :global(.moto-fin__chart .p) {
+    display: block;
+    background: var(--mt-brand);
+  }
+
+  .moto-fin__result :global(.moto-fin__chart .i) {
+    display: block;
+    background: var(--mt-accent);
+  }
+
+  .moto-fin__result :global(.moto-fin__chart span) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1.5rem;
+    text-align: center;
+    font: 600 0.72rem/1 var(--mt-font-mono);
+    color: var(--mt-text-3);
+  }
+
+  .moto-fin__req {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding-top: var(--sp-6, 1.5rem);
+    border-top: 2px solid var(--mt-text);
+  }
+
+  .moto-fin__req h3 {
+    margin: 0;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.9rem;
+    text-transform: uppercase;
+  }
+
+  .moto-fin__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .moto-fin__err {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--mt-bad);
+  }
+
+  .moto-fin__ok {
+    margin: 0;
+    color: var(--mt-ok);
+  }
+
+  .moto-fin__req .mt-btn {
+    justify-self: start;
+  }
+
+  @media (min-width: 700px) {
+    .moto-fin__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 980px) {
+    .moto-fin {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .moto-fin__form {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  const eur = (n: number) => `${(Math.round(n * 100) / 100).toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-moto-fin]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    if (!form) return;
+    const rate = Number(root.dataset.rate);
+    const prices: Record<string, number> = JSON.parse(root.dataset.prices ?? '{}');
+    const bike = form.querySelector<HTMLSelectElement>('[data-bike]')!;
+    const down = form.querySelector<HTMLInputElement>('[data-down]')!;
+    const months = form.querySelector<HTMLSelectElement>('[data-months]')!;
+    const q = (s: string) => root.querySelector<HTMLElement>(s)!;
+
+    const paint = () => {
+      const price = prices[bike.value];
+      const d = Number(down.value);
+      const n = Number(months.value);
+      const principal = price * (1 - d / 100);
+      const r = rate / 100 / 12;
+      const monthly = r === 0 ? principal / n : (principal * r) / (1 - Math.pow(1 + r, -n));
+      q('[data-out-d]').textContent = `${d} % · ${eur((price * d) / 100)}`;
+      q('[data-monthly]').textContent = eur(monthly);
+      q('[data-financed]').textContent = eur(principal);
+      q('[data-interest]').textContent = eur(monthly * n - principal);
+      q('[data-total]').textContent = eur(price + monthly * n - principal);
+
+      // yearly principal vs interest
+      let bal = principal;
+      const years: Array<{ p: number; i: number }> = [];
+      for (let y = 0; y < Math.ceil(n / 12); y++) {
+        let p = 0, i = 0;
+        for (let m = 0; m < 12 && y * 12 + m < n; m++) { const int = bal * r; const pr = monthly - int; i += int; p += pr; bal -= pr; }
+        years.push({ p, i });
+      }
+      const max = Math.max(...years.map((y) => y.p + y.i));
+      q('[data-chart]').innerHTML = years.map((y, k) => `<div><i class="p" style="height:${(y.p / max) * 100}%"></i><i class="i" style="height:${(y.i / max) * 100}%"></i><span>${k + 1}</span></div>`).join('');
+      q('[data-chart-text]').textContent = years.map((y, k) => `Año ${k + 1}: ${eur(y.p)} de capital y ${eur(y.i)} de intereses.`).join(' ');
+      q('[data-err]').textContent = '';
+      q('[data-ok]').textContent = '';
+    };
+
+    form.addEventListener('input', paint);
+    form.addEventListener('change', paint);
+    form.addEventListener('submit', (e) => {
+      const name = form.querySelector<HTMLInputElement>('input[name="name"]');
+      const mail = form.querySelector<HTMLInputElement>('input[name="email"]');
+      let msg = '';
+      if (!name?.value.trim()) msg = 'Escribe tu nombre.';
+      else if (!mail?.value || !mail.checkValidity()) msg = 'Escribe un email válido.';
+      if (msg) { e.preventDefault(); q('[data-err]').textContent = msg; return; }
+      if (!form.getAttribute('action')) {
+        e.preventDefault();
+        q('[data-ok]').textContent = `Recibido, ${name?.value}. Te escribimos a ${mail?.value} en el día con la cuota confirmada (demostración).`;
+      }
+    });
+    paint();
+  });
+</script>

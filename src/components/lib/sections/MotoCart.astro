@@ -1,0 +1,584 @@
+---
+/**
+ * MotoCart — Cart and checkout in one section. Lines read from localStorage show the product's
+ * illustration, options, a quantity stepper and a remove button; a free-shipping progress bar says how
+ * much is missing, a promo code lowers the price, shipping and totals update live and a checkout form
+ * (name, email, address, method, terms) confirms the order with a demo message. `demo` seeds a sample
+ * cart when it is empty so previews are never blank.
+ *
+ * @param {MotoProduct[]} products - Catalog, to resolve products, prices and art.
+ * @param {boolean} demo - Seed a sample cart when empty. Default true.
+ * @param {number} freeFrom - Subtotal with free shipping. Default 60.
+ * @param {number} shipping - Shipping cost below that. Default 4.9.
+ * @param {string} shopHref - Link of the empty state.
+ * @param {string} ordersHref - Link to the orders page after paying.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: quantity steppers and remove buttons name the product, totals and the free-shipping
+ * progress are text in aria-live regions, fields are labelled, errors are in role="alert", targets
+ * are 44–48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import MotoArt from '../app/MotoArt.astro';
+import { motoProducts, motoBrand, type MotoProduct } from '../templates/motocross/data';
+
+interface OwnProps {
+  products?: MotoProduct[];
+  demo?: boolean;
+  freeFrom?: number;
+  shipping?: number;
+  shopHref?: string;
+  ordersHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  products = motoProducts,
+  demo = true,
+  freeFrom = motoBrand.freeFrom,
+  shipping = motoBrand.shipping,
+  shopHref = '/tienda',
+  ordersHref = '/cuenta/pedidos',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fc-${Math.random().toString(36).slice(2, 8)}`;
+const data = Object.fromEntries(products.map((p) => [p.id, { name: p.name, brand: p.brand, price: p.price, stock: p.stock, options: p.options }]));
+---
+
+<section class:list={['moto-ui', 'moto-cart', classAttr]} aria-labelledby={`${uid}-title`} data-moto-cart data-demo={demo ? '1' : '0'} data-free={freeFrom} data-ship={shipping} data-products={JSON.stringify(data)} data-orders={ordersHref} {...rest}>
+  <div class="moto-cart__inner">
+    <header>
+      <p class="mt-eyebrow">Tu carrito</p>
+      <Heading id={`${uid}-title`} class="moto-cart__title">Casi listo para el agua</Heading>
+    </header>
+
+    <div class="moto-cart__empty" data-empty hidden>
+      <p>Tu carrito está vacío.</p>
+      <a class="mt-btn" href={shopHref}>Ver la tienda</a>
+    </div>
+
+    <div class="moto-cart__grid" data-full hidden>
+      <ul class="moto-cart__lines" data-lines></ul>
+
+      <form class="moto-cart__pay" data-form novalidate>
+        <div class="moto-cart__free" aria-live="polite">
+          <p data-free-text></p>
+          <div class="moto-cart__bar" aria-hidden="true"><i data-free-bar></i></div>
+        </div>
+
+        <div class="moto-cart__promo">
+          <label for={`${uid}-promo`}>Código promocional</label>
+          <div>
+            <input id={`${uid}-promo`} type="text" autocomplete="off" placeholder="CORCHO10" data-promo />
+            <button type="button" class="mt-btn mt-btn--ghost" data-apply>Aplicar</button>
+          </div>
+          <p class="moto-cart__note" role="status" data-promo-msg></p>
+        </div>
+
+        <dl class="moto-cart__tot" aria-live="polite">
+          <div><dt>Productos</dt><dd data-t-sub>–</dd></div>
+          <div data-disc-row hidden><dt>Descuento</dt><dd data-t-disc>–</dd></div>
+          <div><dt>Envío</dt><dd data-t-ship>–</dd></div>
+          <div class="is-total"><dt>Total</dt><dd data-t-total>–</dd></div>
+        </dl>
+
+        <div class="moto-cart__row">
+          <div class="moto-cart__field"><label for={`${uid}-n`}>Nombre y apellidos</label><input id={`${uid}-n`} type="text" name="name" autocomplete="name" required /></div>
+          <div class="moto-cart__field"><label for={`${uid}-m`}>Email</label><input id={`${uid}-m`} type="email" name="email" autocomplete="email" required /></div>
+        </div>
+        <div class="moto-cart__field"><label for={`${uid}-a`}>Dirección de envío</label><input id={`${uid}-a`} type="text" name="address" autocomplete="street-address" required /></div>
+
+        <fieldset class="moto-cart__methods">
+          <legend>Cómo quieres pagar</legend>
+          <label><input type="radio" name="method" value="Tarjeta" checked /><span>Tarjeta</span></label>
+          <label><input type="radio" name="method" value="Bizum" /><span>Bizum</span></label>
+          <label><input type="radio" name="method" value="Contra reembolso" /><span>Contra reembolso</span></label>
+        </fieldset>
+        <p class="moto-cart__note">Esto es una demostración: no se pide ni se guarda ningún dato de pago.</p>
+
+        <label class="moto-cart__terms"><input type="checkbox" name="terms" /> <span>Acepto las condiciones de compra y la política de devoluciones.</span></label>
+        <p class="moto-cart__err" role="alert" data-err></p>
+        <button type="submit" class="mt-btn" data-pay>Pagar</button>
+      </form>
+    </div>
+
+    {products.map((p) => (<template data-art={p.id}><MotoArt item={p} decorative /></template>))}
+
+    <div class="moto-cart__done" data-done role="status" hidden>
+      <p class="mt-eyebrow">Pedido confirmado</p>
+      <h2 data-done-title>¡A pescar!</h2>
+      <p data-done-text></p>
+      <a class="mt-btn" href={ordersHref}>Ver mis pedidos</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .moto-cart {
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--mt-bg);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+  }
+
+  .moto-cart [hidden] {
+    display: none !important;
+  }
+
+  .moto-cart__inner {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+
+  .moto-cart__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 7vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .moto-cart__empty {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    justify-items: start;
+    padding: var(--sp-8, 2rem) 0;
+    color: var(--mt-text-2);
+  }
+
+  .moto-cart__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .moto-cart__lines {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    align-content: start;
+  }
+
+  .moto-cart__lines :global(li) {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--mt-border);
+    border-radius: 16px;
+    background: var(--mt-bg-raised);
+  }
+
+  .moto-cart__lines :global(.thumb) {
+    border-radius: 12px;
+    background: var(--mt-surface);
+    overflow: hidden;
+  }
+
+  .moto-cart__lines :global(.thumb svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .moto-cart__lines :global(h3) {
+    margin: 0 0 0.15rem;
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.2;
+  }
+
+  .moto-cart__lines :global(.meta) {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.82rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-cart__lines :global(.row) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+
+  .moto-cart__lines :global(.qty) {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid var(--mt-border-strong);
+    border-radius: 12px;
+  }
+
+  .moto-cart__lines :global(.qty button) {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    color: var(--mt-text);
+    font: 700 1.2rem var(--mt-font-body);
+    cursor: pointer;
+  }
+
+  .moto-cart__lines :global(.qty output) {
+    min-width: 2ch;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .moto-cart__lines :global(.price) {
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.2rem;
+  }
+
+  .moto-cart__lines :global(.rm) {
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 0;
+    background: none;
+    color: var(--mt-text-3);
+    font: 600 0.84rem var(--mt-font-body);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .moto-cart__pay {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    align-content: start;
+    padding: var(--sp-5, 1.25rem);
+    border: 1.5px solid var(--mt-border-strong);
+    border-radius: 20px;
+    background: var(--mt-bg-raised);
+  }
+
+  .moto-cart label,
+  .moto-cart legend {
+    display: block;
+    margin-bottom: 0.35rem;
+    padding: 0;
+    font: 600 0.74rem/1.2 var(--mt-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mt-text-2);
+  }
+
+  .moto-cart input[type='text'],
+  .moto-cart input[type='email'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--mt-border-strong);
+    border-radius: 12px;
+    background: var(--mt-surface);
+    color: var(--mt-text);
+    font: 400 1rem var(--mt-font-body);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .moto-cart__free p {
+    margin: 0 0 0.4rem;
+    font-size: 0.9rem;
+    color: var(--mt-text-2);
+  }
+
+  .moto-cart__bar {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--mt-border);
+    overflow: hidden;
+  }
+
+  .moto-cart__bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: var(--mt-brand);
+    transition: width 0.3s ease;
+  }
+
+  .moto-cart__promo > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .moto-cart__note {
+    min-height: 1.2em;
+    margin: 0.3rem 0 0;
+    font-size: 0.82rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-cart__tot {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid var(--mt-border);
+  }
+
+  .moto-cart__tot div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--mt-border);
+  }
+
+  .moto-cart__tot dt {
+    color: var(--mt-text-2);
+  }
+
+  .moto-cart__tot dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .moto-cart__tot .is-total dd {
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.9rem;
+    color: var(--mt-brand);
+  }
+
+  .moto-cart__row {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .moto-cart fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .moto-cart__methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .moto-cart__methods legend {
+    width: 100%;
+  }
+
+  .moto-cart__methods input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .moto-cart__methods span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1.5px solid var(--mt-border-strong);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+  }
+
+  .moto-cart__methods input:checked + span {
+    border-color: var(--mt-brand);
+    background: rgba(var(--mt-brand-rgb), 0.16);
+  }
+
+  .moto-cart__methods input:focus-visible + span {
+    outline: 2px solid var(--mt-accent);
+    outline-offset: 2px;
+  }
+
+  .moto-cart__terms {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    text-transform: none;
+    letter-spacing: 0;
+    font: 400 0.88rem/1.4 var(--mt-font-body);
+    color: var(--mt-text-2);
+  }
+
+  .moto-cart__terms input {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.1rem;
+    accent-color: var(--mt-brand);
+  }
+
+  .moto-cart__err {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--mt-bad);
+  }
+
+  .moto-cart__done {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+    padding: var(--sp-8, 2rem);
+    border: 1.5px solid var(--mt-ok);
+    border-radius: 20px;
+    background: var(--mt-bg-raised);
+  }
+
+  .moto-cart__done h2 {
+    margin: 0;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    letter-spacing: -0.03em;
+  }
+
+  .moto-cart__done p {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--mt-text-2);
+  }
+
+  @media (min-width: 760px) {
+    .moto-cart__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 980px) {
+    .moto-cart {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .moto-cart__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  type Line = { productId: string; qty: number; options: Record<string, string> };
+  type Prod = { name: string; brand: string; price: number; stock: number; options: Array<{ label: string; values: Array<{ value: string; extra?: number }> }> };
+  const CART = 'moto-cart';
+  const ORDERS = 'moto-orders';
+  const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-moto-cart]').forEach((root) => {
+    const prods: Record<string, Prod> = JSON.parse(root.dataset.products ?? '{}');
+    const freeFrom = Number(root.dataset.free);
+    const shipCost = Number(root.dataset.ship);
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const empty = q('[data-empty]'), full = q('[data-full]'), done = q('[data-done]');
+    const linesEl = q('[data-lines]'), err = q('[data-err]');
+    const form = q<HTMLFormElement>('[data-form]');
+    let promo = false;
+
+    const read = (): Line[] => { try { return JSON.parse(localStorage.getItem(CART) ?? '[]'); } catch { return []; } };
+    const write = (l: Line[]) => { try { localStorage.setItem(CART, JSON.stringify(l)); } catch { /* ignore */ } };
+    const unit = (l: Line) => {
+      const p = prods[l.productId]; if (!p) return 0;
+      let extra = 0;
+      for (const o of p.options) { const v = o.values.find((x) => x.value === l.options[o.label]); if (v?.extra) extra += v.extra; }
+      return p.price + extra;
+    };
+    const badge = (l: Line[]) => document.querySelectorAll('[data-cart-count]').forEach((e) => { e.textContent = String(l.reduce((s, x) => s + x.qty, 0)); });
+
+    let lines = read();
+    if (!lines.length && root.dataset.demo === '1') {
+      lines = [{ productId: 'casco-pro', qty: 1, options: { Talla: 'L', Color: 'Naranja' } }, { productId: 'guantes-grip', qty: 2, options: { Talla: 'L', Color: 'Negro' } }];
+      write(lines);
+    }
+
+    const render = () => {
+      lines = read();
+      badge(lines);
+      const n = lines.reduce((s, l) => s + l.qty, 0);
+      empty.hidden = n > 0;
+      full.hidden = n === 0;
+      if (!n) return;
+      let sub = 0;
+      linesEl.innerHTML = lines.map((l, i) => {
+        const p = prods[l.productId]; if (!p) return '';
+        const u = unit(l); sub += u * l.qty;
+        const opts = Object.entries(l.options).map(([k, v]) => `${k}: ${v}`).join(' · ');
+        return `<li><div class="thumb" data-thumb="${l.productId}"></div><div><h3>${p.name}</h3><p class="meta">${p.brand}${opts ? ' · ' + opts : ''}</p><div class="row"><span class="qty"><button type="button" data-dec="${i}" aria-label="Quitar una unidad de ${p.name}">−</button><output aria-label="Cantidad">${l.qty}</output><button type="button" data-inc="${i}" aria-label="Añadir una unidad de ${p.name}">+</button></span><span class="price">${eur(u * l.qty)}</span><button type="button" class="rm" data-rm="${i}" aria-label="Quitar ${p.name} del carrito">Quitar</button></div></div></li>`;
+      }).join('');
+      linesEl.querySelectorAll<HTMLElement>('[data-thumb]').forEach((t) => {
+        const tpl = root.querySelector<HTMLTemplateElement>(`template[data-art="${t.dataset.thumb}"]`);
+        if (tpl) t.replaceChildren(tpl.content.cloneNode(true));
+      });
+      const disc = promo ? Math.round(sub * 0.1 * 100) / 100 : 0;
+      const after = sub - disc;
+      const ship = after >= freeFrom ? 0 : shipCost;
+      q('[data-t-sub]').textContent = eur(sub);
+      q('[data-disc-row]').hidden = !promo;
+      q('[data-t-disc]').textContent = `−${eur(disc)}`;
+      q('[data-t-ship]').textContent = ship ? eur(ship) : 'Gratis';
+      const total = after + ship;
+      q('[data-t-total]').textContent = eur(total);
+      q('[data-pay]').textContent = `Pagar ${eur(total)}`;
+      form.dataset.total = String(total);
+      q('[data-free-text]').textContent = ship ? `Te faltan ${eur(freeFrom - after)} para el envío gratis.` : 'Tienes el envío gratis.';
+      (q('[data-free-bar]') as HTMLElement).style.width = `${Math.min(100, (after / freeFrom) * 100)}%`;
+    };
+
+    linesEl.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const l = read();
+      const inc = t.closest<HTMLElement>('[data-inc]'), dec = t.closest<HTMLElement>('[data-dec]'), rm = t.closest<HTMLElement>('[data-rm]');
+      if (inc) { const i = Number(inc.dataset.inc); l[i].qty = Math.min(prods[l[i].productId]?.stock ?? 99, l[i].qty + 1); }
+      else if (dec) { const i = Number(dec.dataset.dec); l[i].qty = Math.max(1, l[i].qty - 1); }
+      else if (rm) { l.splice(Number(rm.dataset.rm), 1); }
+      else return;
+      write(l); render();
+    });
+
+    q('[data-apply]').addEventListener('click', () => {
+      const v = q<HTMLInputElement>('[data-promo]').value.trim().toUpperCase();
+      promo = v === 'CORCHO10';
+      q('[data-promo-msg]').textContent = promo ? 'Código aplicado: 10 % en los productos.' : v ? 'Ese código no es válido.' : '';
+      render();
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const f = (n: string) => form.querySelector<HTMLInputElement>(`input[name="${n}"]`);
+      let msg = '';
+      if (!f('name')?.value.trim()) msg = 'Escribe tu nombre.';
+      else if (!f('email')?.value || !f('email')!.checkValidity()) msg = 'Escribe un email válido.';
+      else if (!f('address')?.value.trim()) msg = 'Escribe la dirección de envío.';
+      else if (!f('terms')?.checked) msg = 'Acepta las condiciones para continuar.';
+      if (msg) { err.textContent = msg; return; }
+      err.textContent = '';
+      const current = read();
+      const id = `C-${Math.floor(9000 + Math.random() * 900)}`;
+      try {
+        const prev = JSON.parse(localStorage.getItem(ORDERS) ?? '[]');
+        localStorage.setItem(ORDERS, JSON.stringify([{ id, date: new Date().toISOString().slice(0, 10), lines: current, total: Number(form.dataset.total ?? 0) }, ...prev]));
+      } catch { /* ignore */ }
+      write([]); badge([]);
+      full.hidden = true; empty.hidden = true; done.hidden = false;
+      q('[data-done-title]').textContent = `Pedido ${id} confirmado`;
+      q('[data-done-text]').textContent = `Lo preparamos en el taller y te escribiremos a ${f('email')?.value} con el seguimiento (demostración).`;
+    });
+
+    render();
+  });
+</script>

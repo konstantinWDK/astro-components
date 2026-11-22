@@ -1,0 +1,35 @@
+---
+/**
+ * MotoBikesPage — Your bike: the bike comparison, the financing simulator and the gear size guide.
+ *
+ * @param {MotoRoutes} routes - Template route URLs.
+ * @param {typeof motoData} data - Products, sizes, FAQs, customer, orders, wish list and garage.
+ * @param {string} action - Backend endpoint for the finance form. Empty shows a demo confirmation.
+ */
+import MotoSiteLayout from './MotoSiteLayout.astro';
+import MotoCompare from '../../sections/MotoCompare.astro';
+import MotoFinance from '../../sections/MotoFinance.astro';
+import MotoSizeGuide from '../../sections/MotoSizeGuide.astro';
+import MotoFaq from '../../sections/MotoFaq.astro';
+import { motoRoutes, motoData, type MotoRoutes } from './data';
+
+interface Props {
+  routes?: MotoRoutes;
+  data?: typeof motoData;
+  action?: string;
+}
+
+const { routes = motoRoutes, data = motoData, action = '' } = Astro.props;
+---
+
+<MotoSiteLayout
+  title={`Tu moto · ${data.brand.name}`}
+  description="Compara hasta tres motos, calcula tu cuota de financiación y descubre tu talla de equipación."
+  current="kit"
+  routes={routes}
+>
+  <MotoCompare bikes={data.products.filter((p) => p.bike)} productHref={routes.product} headingLevel="h1" />
+  <MotoFinance bikes={data.products.filter((p) => p.bike)} rate={data.brand.rate} action={action} />
+  <MotoSizeGuide sizes={data.sizes} />
+  <MotoFaq faqs={data.faqs} />
+</MotoSiteLayout>

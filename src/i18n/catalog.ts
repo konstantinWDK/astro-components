@@ -253,6 +253,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Pesca', description: 'Secciones para tiendas de pesca: hero con ondas y lista de categorías, una escena de lanzado guiada por el scroll, cuadrícula de tienda con filtros, ficha de producto con opciones, configurador de equipo por especies, carrito con progreso de envío gratis, preguntas frecuentes y pie de página.' },
     ru: { name: 'Рыбалка', description: 'Секции для рыболовных магазинов: главный экран с кругами на воде и списком категорий, сцена заброса, управляемая прокруткой, сетка магазина с фильтрами, страница товара с опциями, конфигуратор снаряжения по видам рыбы, корзина с прогрессом бесплатной доставки, FAQ и подвал.' },
   },
+  motocross: {
+    en: { name: 'Motocross', description: 'Sections for motocross shops: speed-stripes hero, a scroll-driven ride-and-jump scene, shop grid with filters, product page with options, bike comparison, financing simulator, gear size guide, cart with free-shipping progress, FAQ and footer.' },
+    es: { name: 'Motocross', description: 'Secciones para tiendas de motos de cross: hero con rayas de velocidad, una escena de rodar y saltar guiada por el scroll, cuadrícula de tienda con filtros, ficha de producto con opciones, comparador de motos, simulador de financiación, guía de tallas, carrito con progreso de envío gratis, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Мотокросс', description: 'Секции для магазинов кроссовых мотоциклов: главный экран с полосами скорости, сцена езды и прыжка, управляемая прокруткой, сетка магазина с фильтрами, страница товара с опциями, сравнение мотоциклов, симулятор финансирования, таблица размеров, корзина с прогрессом бесплатной доставки, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

@@ -1,0 +1,297 @@
+---
+/**
+ * MotoCompare — Compare up to three bikes side by side. Tick the bikes (checkboxes), and a table with
+ * a row per figure (engine size, power, weight, seat height, suspension travel, stroke) appears with
+ * horizontal bars scaled to the best value of each row; the best figure in each row is marked in
+ * words ("best") and bikes can be added to the cart from their column. Everything is computed from the
+ * bike data.
+ *
+ * @param {MotoProduct[]} bikes - Products that have `bike` figures.
+ * @param {string} productHref - Base link of a product (the id is added as ?p=).
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: checkboxes with labels (at most three), a real <table> with row and column headers,
+ * the best value is written as text and not only coloured, bars are decorative, the selection count
+ * and limit message are in an aria-live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import MotoArt from '../app/MotoArt.astro';
+import { motoProducts, motoMoney, type MotoProduct } from '../templates/motocross/data';
+
+interface OwnProps {
+  bikes?: MotoProduct[];
+  productHref?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  bikes = motoProducts.filter((p) => p.bike),
+  productHref = '/producto',
+  title = 'Compara tu próxima moto',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `mcp-${Math.random().toString(36).slice(2, 8)}`;
+const rows = [
+  { key: 'cc', label: 'Cilindrada', unit: 'cc', best: 'max' },
+  { key: 'hp', label: 'Potencia', unit: 'CV', best: 'max' },
+  { key: 'kg', label: 'Peso', unit: 'kg', best: 'min' },
+  { key: 'seat', label: 'Altura del asiento', unit: 'mm', best: 'min' },
+  { key: 'travel', label: 'Recorrido de suspensión', unit: 'mm', best: 'max' },
+] as const;
+const data = Object.fromEntries(bikes.map((b) => [b.id, { name: b.name, price: b.price, ...b.bike!, stroke: b.bike!.stroke }]));
+---
+
+<section class:list={['moto-ui', 'moto-cmp', classAttr]} aria-labelledby={`${uid}-title`} data-moto-cmp data-rows={JSON.stringify(rows)} data-bikes={JSON.stringify(data)} data-href={productHref} {...rest}>
+  <div class="moto-cmp__inner">
+    <header>
+      <p class="mt-eyebrow">Comparador</p>
+      <Heading id={`${uid}-title`} class="moto-cmp__title">{title}</Heading>
+      <p class="moto-cmp__lead">Marca hasta tres motos y mira cuál gana en cada cifra.</p>
+    </header>
+
+    <fieldset class="moto-cmp__pick">
+      <legend class="mt-sr">Elige hasta tres motos</legend>
+      {bikes.map((b, i) => (
+        <label>
+          <input type="checkbox" value={b.id} checked={i < 2} data-bike />
+          <span class="moto-cmp__card">
+            <span class="moto-cmp__art"><MotoArt item={b} decorative /></span>
+            <strong>{b.name}</strong>
+            <small>{b.bike!.cc} cc · {b.bike!.stroke}T · {motoMoney(b.price)}</small>
+          </span>
+        </label>
+      ))}
+    </fieldset>
+    <p class="moto-cmp__msg" aria-live="polite" data-msg></p>
+
+    <div class="moto-cmp__table" data-table></div>
+  </div>
+</section>
+
+<style>
+  .moto-cmp {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--mt-bg-raised);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+    border-block: 1px solid var(--mt-border);
+  }
+
+  .moto-cmp__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .moto-cmp__title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2.8rem, 8vw, 6rem);
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .moto-cmp__lead {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    color: var(--mt-text-2);
+  }
+
+  .moto-cmp__pick {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .moto-cmp__pick input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .moto-cmp__card {
+    display: grid;
+    gap: 0.2rem;
+    height: 100%;
+    padding: var(--sp-3, 0.75rem);
+    border: 2px solid var(--mt-border);
+    background: var(--mt-bg);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .moto-cmp__card strong {
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+  }
+
+  .moto-cmp__card small {
+    color: var(--mt-text-3);
+  }
+
+  .moto-cmp__pick input:checked + .moto-cmp__card {
+    border-color: var(--mt-brand);
+    background: rgba(var(--mt-brand-rgb), 0.1);
+  }
+
+  .moto-cmp__pick input:focus-visible + .moto-cmp__card {
+    outline: 2px solid var(--mt-accent);
+    outline-offset: 2px;
+  }
+
+  .moto-cmp__msg {
+    min-height: 1.4em;
+    margin: var(--sp-3, 0.75rem) 0;
+    font-size: 0.9rem;
+    color: var(--mt-warn);
+  }
+
+  .moto-cmp__table {
+    overflow-x: auto;
+  }
+
+  .moto-cmp__table :global(table) {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+  }
+
+  .moto-cmp__table :global(th),
+  .moto-cmp__table :global(td) {
+    padding: 0.9rem 0.75rem;
+    border-bottom: 1px solid var(--mt-border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .moto-cmp__table :global(thead th) {
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--mt-text);
+  }
+
+  .moto-cmp__table :global(tbody th) {
+    width: 11rem;
+    font: 600 0.78rem/1.3 var(--mt-font-body);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mt-text-3);
+  }
+
+  .moto-cmp__table :global(.v) {
+    display: block;
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .moto-cmp__table :global(.bar) {
+    display: block;
+    height: 8px;
+    margin-top: 0.4rem;
+    background: var(--mt-border);
+  }
+
+  .moto-cmp__table :global(.bar i) {
+    display: block;
+    height: 100%;
+    background: var(--mt-text-3);
+    transition: width 0.4s ease;
+  }
+
+  .moto-cmp__table :global(.is-best .bar i) {
+    background: var(--mt-brand);
+  }
+
+  .moto-cmp__table :global(.is-best .v) {
+    color: var(--mt-brand);
+  }
+
+  .moto-cmp__table :global(.tag) {
+    display: block;
+    margin-top: 0.3rem;
+    font: 700 0.7rem/1 var(--mt-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mt-accent);
+  }
+
+  .moto-cmp__table :global(tfoot td) {
+    padding-top: 1.2rem;
+    border-bottom: 0;
+  }
+
+  @media (min-width: 760px) {
+    .moto-cmp__pick {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 900px) {
+    .moto-cmp {
+      padding-inline: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  type Row = { key: string; label: string; unit: string; best: 'max' | 'min' };
+  document.querySelectorAll<HTMLElement>('[data-moto-cmp]').forEach((root) => {
+    const rows: Row[] = JSON.parse(root.dataset.rows ?? '[]');
+    const bikes: Record<string, Record<string, number | string>> = JSON.parse(root.dataset.bikes ?? '{}');
+    const href = root.dataset.href ?? '/producto';
+    const boxes = [...root.querySelectorAll<HTMLInputElement>('[data-bike]')];
+    const table = root.querySelector<HTMLElement>('[data-table]');
+    const msg = root.querySelector<HTMLElement>('[data-msg]');
+    if (!table) return;
+    const eur = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+    const render = () => {
+      const ids = boxes.filter((b) => b.checked).map((b) => b.value);
+      if (!ids.length) { table.innerHTML = '<p>Marca al menos una moto para ver sus cifras.</p>'; return; }
+      const head = ids.map((id) => `<th scope="col">${bikes[id].name}</th>`).join('');
+      const body = rows.map((r) => {
+        const vals = ids.map((id) => Number(bikes[id][r.key]));
+        const best = r.best === 'max' ? Math.max(...vals) : Math.min(...vals);
+        const hi = Math.max(...vals);
+        const cells = ids.map((id, i) => {
+          const v = vals[i];
+          const w = r.best === 'max' ? (v / hi) * 100 : (best / v) * 100;
+          const isBest = v === best && ids.length > 1;
+          return `<td class="${isBest ? 'is-best' : ''}"><span class="v">${v.toLocaleString('es-ES')} <small>${r.unit}</small></span><span class="bar" aria-hidden="true"><i style="width:${w}%"></i></span>${isBest ? `<span class="tag">${r.best === 'max' ? 'Mayor' : 'Menor'} de las elegidas</span>` : ''}</td>`;
+        }).join('');
+        return `<tr><th scope="row">${r.label}</th>${cells}</tr>`;
+      }).join('');
+      const stroke = `<tr><th scope="row">Motor</th>${ids.map((id) => `<td><span class="v">${bikes[id].stroke} tiempos</span></td>`).join('')}</tr>`;
+      const foot = `<tr><th scope="row">Precio</th>${ids.map((id) => `<td><span class="v">${eur(Number(bikes[id].price))}</span></td>`).join('')}</tr><tr><td></td>${ids.map((id) => `<td><a class="mt-btn" href="${href}?p=${id}">Ver la moto</a></td>`).join('')}</tr>`;
+      table.innerHTML = `<table><caption class="mt-sr">Comparativa de motos</caption><thead><tr><th scope="col"><span class="mt-sr">Cifra</span></th>${head}</tr></thead><tbody>${body}${stroke}</tbody><tfoot>${foot}</tfoot></table>`;
+      if (msg) msg.textContent = ids.length === 3 ? 'Has llegado al máximo de tres motos.' : `${ids.length} ${ids.length === 1 ? 'moto elegida' : 'motos elegidas'}.`;
+    };
+
+    root.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (!t.matches('[data-bike]')) return;
+      if (boxes.filter((b) => b.checked).length > 3) { t.checked = false; if (msg) msg.textContent = 'Puedes comparar hasta tres motos.'; return; }
+      render();
+    });
+    render();
+  });
+</script>

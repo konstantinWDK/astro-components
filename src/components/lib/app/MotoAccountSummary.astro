@@ -1,0 +1,395 @@
+---
+/**
+ * MotoAccountSummary — Overview of the customer area: the order on its way with a four-step written
+ * timeline and its items drawn as small illustrations, the rider's figures (points, orders, saved
+ * items) and "your garage": for each bike, the hours on the engine and every maintenance item as a bar
+ * of hours since the last service against its interval, with a word status (ok, soon, due) so you know
+ * what to change before it breaks. A button logs a ride of two hours (demo) and the bars move.
+ *
+ * @param {MotoMember} member - Signed-in customer.
+ * @param {MotoOrder[]} orders - Orders (the first one not delivered is shown, or the latest).
+ * @param {string[]} wishlist - Saved product ids.
+ * @param {MotoProduct[]} products - Catalog.
+ * @param {MotoGarageBike[]} garage - Bikes the rider owns, with their maintenance plan.
+ * @param {string} ordersHref - Link to the orders page.
+ * @param {string} shopHref - Link to the shop (for the "order the part" link).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: statuses are words (not only colour), bars are decorative and the numbers are text,
+ * the timeline is an ordered list, results are in an aria-live region, targets are 44–48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import MotoArt from './MotoArt.astro';
+import { motoMember, motoOrders, motoWishlist, motoProducts, motoGarage, motoById, motoMoney, type MotoMember, type MotoOrder, type MotoProduct, type MotoGarageBike } from '../templates/motocross/data';
+
+interface OwnProps {
+  member?: MotoMember;
+  orders?: MotoOrder[];
+  wishlist?: string[];
+  products?: MotoProduct[];
+  garage?: MotoGarageBike[];
+  ordersHref?: string;
+  shopHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = motoMember,
+  orders = motoOrders,
+  wishlist = motoWishlist,
+  products = motoProducts,
+  garage = motoGarage,
+  ordersHref = '/cuenta/pedidos',
+  shopHref = '/tienda',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `mas-${Math.random().toString(36).slice(2, 8)}`;
+const first = member.name.split(' ')[0];
+const order = orders.find((o) => o.status === 'Preparando' || o.status === 'En reparto') ?? orders[0];
+const fmt = (d: string) => (d.startsWith('20') ? new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : d);
+const state = (every: number, used: number) => (used >= every ? 'due' : used >= every * 0.8 ? 'soon' : 'ok');
+const label = { ok: 'Al día', soon: 'Pronto', due: 'Toca ya' } as const;
+---
+
+<section class:list={['moto-ui', 'moto-sum', classAttr]} aria-labelledby={`${uid}-title`} data-moto-sum {...rest}>
+  <article class="moto-sum__order">
+    <p class="mt-eyebrow">Tu pedido {order.id}</p>
+    <h2 id={`${uid}-title`} class="moto-sum__status">{order.status}</h2>
+    <p class="moto-sum__meta">{order.carrier} · {order.tracking} · {motoMoney(order.total)}</p>
+
+    <ol class="moto-sum__steps">
+      {order.steps.map((s) => (
+        <li class:list={{ 'is-done': s.done }}>
+          <span>{s.label}</span>
+          <small>{s.done ? 'Hecho' : 'Pendiente'} · {fmt(s.date)}</small>
+        </li>
+      ))}
+    </ol>
+
+    <ul class="moto-sum__items" aria-label="Contenido del pedido">
+      {order.lines.map((l) => {
+        const p = motoById(l.productId, products);
+        return p ? (
+          <li>
+            <span class="moto-sum__mini"><MotoArt item={p} decorative /></span>
+            <span><strong>{l.qty} × {p.name}</strong><small>{Object.values(l.options).join(' · ') || p.brand}</small></span>
+          </li>
+        ) : null;
+      })}
+    </ul>
+    <a class="mt-btn" href={ordersHref}>Ver el detalle</a>
+  </article>
+
+  <div class="moto-sum__side">
+    <p class="moto-sum__hello">Hola, {first}. <span>{member.tier}</span></p>
+    <dl class="moto-sum__stats">
+      <div><dt>Puntos acumulados</dt><dd>{member.points}</dd></div>
+      <div><dt>Pedidos hechos</dt><dd>{orders.length}</dd></div>
+      <div><dt>En tu lista de deseos</dt><dd>{wishlist.length}</dd></div>
+    </dl>
+
+    <div class="moto-sum__garage">
+      <p class="mt-eyebrow">Tu garaje</p>
+      {garage.map((g) => {
+        const bike = motoById(g.productId, products);
+        return (
+          <article class="moto-sum__bike" data-bike data-hours={g.hours}>
+            <header>
+              <span class="moto-sum__art">{bike && <MotoArt item={bike} decorative />}</span>
+              <div>
+                <h3>{g.nickname}</h3>
+                <p>{bike?.name} · {g.year} · <b data-hours-text>{g.hours} h</b> de motor</p>
+              </div>
+            </header>
+            <ul>
+              {g.service.map((sv) => {
+                const used = g.hours - sv.last;
+                const st = state(sv.every, used);
+                return (
+                  <li data-every={sv.every} data-last={sv.last} class={`is-${st}`}>
+                    <span>{sv.what}</span>
+                    <span class="moto-sum__bar" aria-hidden="true"><i style={`width:${Math.min(100, (used / sv.every) * 100)}%`}></i></span>
+                    <small data-text>{label[st]} · {used} de {sv.every} h</small>
+                  </li>
+                );
+              })}
+            </ul>
+            <div class="moto-sum__acts">
+              <button type="button" class="mt-btn mt-btn--ghost" data-ride aria-label={`Anotar dos horas de motor en ${g.nickname}`}>Anotar 2 h de pista</button>
+              <a class="mt-link" href={`${shopHref}?cat=Recambios`}>Pedir recambios</a>
+            </div>
+          </article>
+        );
+      })}
+      <p class="moto-sum__live" role="status" aria-live="polite" data-live></p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .moto-sum {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+  }
+
+  .moto-sum__order {
+    padding: var(--sp-6, 1.5rem);
+    border: 1.5px solid var(--mt-border-strong);
+    background: linear-gradient(160deg, rgba(var(--mt-brand-rgb), 0.18), transparent 60%), var(--mt-bg-raised);
+  }
+
+  .moto-sum__status {
+    margin: 0;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(3.2rem, 11vw, 5.6rem);
+    line-height: 0.9;
+    text-transform: uppercase;
+    color: var(--mt-brand);
+  }
+
+  .moto-sum__meta {
+    margin: 0.5rem 0 var(--sp-5, 1.25rem);
+    font: 500 0.82rem/1.4 var(--mt-font-mono);
+    color: var(--mt-text-2);
+  }
+
+  .moto-sum__steps {
+    display: grid;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--mt-border);
+  }
+
+  .moto-sum__steps li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.2rem 1rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--mt-border);
+    color: var(--mt-text-3);
+  }
+
+  .moto-sum__steps li.is-done {
+    color: var(--mt-text);
+  }
+
+  .moto-sum__steps small {
+    font-size: 0.84rem;
+  }
+
+  .moto-sum__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .moto-sum__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .moto-sum__mini {
+    flex: none;
+    width: 60px;
+    background: var(--mt-surface);
+  }
+
+  .moto-sum__items strong {
+    display: block;
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    line-height: 1.15;
+    text-transform: uppercase;
+  }
+
+  .moto-sum__items small {
+    color: var(--mt-text-3);
+    font-size: 0.82rem;
+  }
+
+  .moto-sum__hello {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 2.2rem;
+    text-transform: uppercase;
+  }
+
+  .moto-sum__hello span {
+    display: block;
+    margin-top: 0.25rem;
+    font: 700 0.8rem/1 var(--mt-font-display);
+    letter-spacing: 0.22em;
+    color: var(--mt-accent);
+  }
+
+  .moto-sum__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1px solid var(--mt-border);
+  }
+
+  .moto-sum__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .moto-sum__stats dt {
+    font-size: 0.8rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-sum__stats dd {
+    margin: 0;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 2.8rem;
+    line-height: 1;
+  }
+
+  .moto-sum__bike {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--mt-border-strong);
+    background: var(--mt-bg-raised);
+  }
+
+  .moto-sum__bike header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .moto-sum__art {
+    flex: none;
+    width: 84px;
+    background: var(--mt-surface);
+  }
+
+  .moto-sum__bike h3 {
+    margin: 0;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.7rem;
+    text-transform: uppercase;
+  }
+
+  .moto-sum__bike header p {
+    margin: 0.15rem 0 0;
+    font-size: 0.86rem;
+    color: var(--mt-text-2);
+  }
+
+  .moto-sum__bike ul {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .moto-sum__bike li {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .moto-sum__bike li > span:first-child {
+    font-weight: 600;
+  }
+
+  .moto-sum__bar {
+    display: block;
+    height: 10px;
+    background: var(--mt-border);
+  }
+
+  .moto-sum__bar i {
+    display: block;
+    height: 100%;
+    background: var(--mt-ok);
+    transition: width 0.4s ease, background 0.3s ease;
+  }
+
+  .moto-sum__bike li.is-soon .moto-sum__bar i { background: var(--mt-warn); }
+  .moto-sum__bike li.is-due .moto-sum__bar i { background: var(--mt-bad); }
+
+  .moto-sum__bike li small {
+    font: 500 0.78rem/1.2 var(--mt-font-mono);
+    color: var(--mt-text-3);
+  }
+
+  .moto-sum__bike li.is-due small {
+    color: var(--mt-bad);
+    font-weight: 700;
+  }
+
+  .moto-sum__acts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .moto-sum__live {
+    min-height: 1.4em;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--mt-ok);
+    font-size: 0.9rem;
+  }
+
+  @media (min-width: 960px) {
+    .moto-sum {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .moto-sum__order {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-moto-sum]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    const word = { ok: 'Al día', soon: 'Pronto', due: 'Toca ya' };
+    root.querySelectorAll<HTMLElement>('[data-bike]').forEach((bike) => {
+      let hours = Number(bike.dataset.hours);
+      const paint = () => {
+        const htxt = bike.querySelector<HTMLElement>('[data-hours-text]');
+        if (htxt) htxt.textContent = `${hours} h`;
+        const due: string[] = [];
+        bike.querySelectorAll<HTMLElement>('li[data-every]').forEach((li) => {
+          const every = Number(li.dataset.every);
+          const used = hours - Number(li.dataset.last);
+          const st = used >= every ? 'due' : used >= every * 0.8 ? 'soon' : 'ok';
+          li.className = `is-${st}`;
+          const bar = li.querySelector<HTMLElement>('.moto-sum__bar i');
+          if (bar) bar.style.width = `${Math.min(100, (used / every) * 100)}%`;
+          const t = li.querySelector<HTMLElement>('[data-text]');
+          if (t) t.textContent = `${word[st]} · ${used} de ${every} h`;
+          if (st === 'due') due.push(li.querySelector('span')?.textContent ?? '');
+        });
+        if (live) live.textContent = due.length ? `${bike.querySelector('h3')?.textContent}: ${hours} horas. Toca ya: ${due.join(', ')}.` : `${bike.querySelector('h3')?.textContent}: ${hours} horas. Todo al día.`;
+      };
+      bike.querySelector('[data-ride]')?.addEventListener('click', () => { hours += 2; paint(); });
+    });
+  });
+</script>

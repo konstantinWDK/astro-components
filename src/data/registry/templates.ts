@@ -3536,6 +3536,158 @@ const routes = { ...fishRoutes, shop: '/catalogo', kit: '/que-pescas' };
 
 <FishHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'motocross',
+    name: { en: 'Barro · Motocross Shop', es: 'Barro · Motos y equipo de cross', ru: 'Barro · Кросс: мотоциклы и экипировка' },
+    tagline: { en: 'Motocross shop with a speed-stripes hero, a scroll-driven ride-and-jump scene that plays like a short film, bikes and gear illustrated in SVG, a catalog with real filters, a bike comparison, a financing simulator and a size guide, plus a garage area with maintenance tracking and orders.', es: 'Tienda de motos de cross con un hero de rayas de velocidad, una escena de rodar y saltar guiada por el scroll que funciona como un corto, motos y equipación ilustradas en SVG, un catálogo con filtros reales, un comparador de motos, un simulador de financiación y una guía de tallas, más un área de garaje con seguimiento del mantenimiento y pedidos.', ru: 'Магазин кроссовых мотоциклов с главным экраном из полос скорости, сценой езды и прыжка, управляемой прокруткой как короткий фильм, мотоциклами и экипировкой, нарисованными в SVG, каталогом с настоящими фильтрами, сравнением мотоциклов, симулятором финансирования и таблицей размеров, плюс кабинет-гараж с учётом обслуживания и заказами.' },
+    description: { en: 'Complete e-commerce template for a motocross shop. 9 page types: home with a speed-stripes hero and category list, the scroll-driven ride scene (a bike rides along a dirt track and takes a jump as you scroll), the most requested products and FAQ; the shop with search, category filter, maximum-price slider, stock switch and sorting; the product page with options that change the price live; your bike, with a comparison of up to three bikes with bars scaled to the best value, a financing simulator with a principal-versus-interest chart and a gear size guide; cart and checkout with free-shipping progress, promo code and demo payment; rider sign-in; and a customer area with a home (the order on its way and the garage with a maintenance plan per bike), orders with tracking and returns, and a wish list.', es: 'Plantilla e-commerce completa para una tienda de motos de cross. 9 tipos de página: home con un hero de rayas de velocidad y lista de categorías, la escena de rodar guiada por el scroll (una moto avanza por una pista de tierra y salta al hacer scroll), lo más pedido y preguntas frecuentes; la tienda con búsqueda, filtro por categoría, precio máximo, interruptor de stock y orden; la ficha de producto con opciones que cambian el precio en vivo; tu moto, con un comparador de hasta tres motos con barras a escala del mejor valor, un simulador de financiación con gráfico de capital frente a interés y una guía de tallas de equipación; carrito y pago con progreso de envío gratis, código promocional y pago de demostración; acceso de pilotos; y un área de cliente con inicio (el pedido en camino y el garaje con un plan de mantenimiento por moto), pedidos con seguimiento y devoluciones, y una lista de deseos.', ru: 'Полный e-commerce шаблон для магазина кроссовых мотоциклов. 9 типов страниц: главная с полосами скорости и списком категорий, сцена езды, управляемая прокруткой (мотоцикл едет по грунту и прыгает при скролле), популярные товары и FAQ; магазин с поиском, категориями, максимальной ценой, наличием и сортировкой; страница товара с опциями, меняющими цену на лету; ваш мотоцикл — сравнение до трёх моделей со шкалами относительно лучшего значения, симулятор финансирования с диаграммой основного долга и процентов и таблица размеров экипировки; корзина и оплата с прогрессом бесплатной доставки, промокодом и демо-оплатой; вход гонщиков; и кабинет с главной (заказ в пути и гараж с планом обслуживания по каждому мотоциклу), заказами с трекингом и возвратами и списком желаний.' },
+    highlights: {
+      en: [
+        'Scroll-driven ride scene: mountains slide past at two speeds, wheels spin, a ramp arrives and the bike jumps, tilts and lands in dust',
+        'Bikes, helmets, boots, gloves, jerseys and parts illustrated in SVG from each item\'s palette and seed, with no image files',
+        'Bike comparison of up to three models with bars scaled to the best value and the winner of each row written out',
+        'Financing simulator with French amortisation and a principal-versus-interest bar chart per year',
+        'Garage with a maintenance plan per bike: bars of hours since each service against its interval, with word statuses',
+      ],
+      es: [
+        'Escena de rodar guiada por el scroll: las montañas pasan a dos velocidades, las ruedas giran, llega una rampa y la moto salta, se inclina y aterriza entre polvo',
+        'Motos, cascos, botas, guantes, camisetas y recambios ilustrados en SVG a partir de la paleta y la semilla de cada artículo, sin archivos de imagen',
+        'Comparador de hasta tres motos con barras a escala del mejor valor y el ganador de cada fila escrito con palabras',
+        'Simulador de financiación con amortización francesa y un gráfico de barras de capital frente a interés por año',
+        'Garaje con un plan de mantenimiento por moto: barras de horas desde cada servicio frente a su intervalo, con estados en palabras',
+      ],
+      ru: [
+        'Сцена езды, управляемая прокруткой: горы проплывают с двумя скоростями, колёса вращаются, появляется трамплин, и мотоцикл прыгает, наклоняется и приземляется в пыли',
+        'Мотоциклы, шлемы, ботинки, перчатки, джерси и запчасти нарисованы в SVG из палитры и зерна, без файлов изображений',
+        'Сравнение до трёх мотоциклов со шкалами относительно лучшего значения и победителем каждой строки словами',
+        'Симулятор финансирования с аннуитетной схемой и диаграммой основного долга и процентов по годам',
+        'Гараж с планом обслуживания по каждому мотоциклу: шкалы часов с последнего ТО относительно интервала со статусами словами',
+      ],
+    },
+    tags: ['motocross', 'motorcycles', 'ecommerce', 'shop', 'finance', 'cart', 'portal', 'storytelling'],
+    previewBase: '/preview/motocross/',
+    importPath: 'astro-component-kit/templates/motocross',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Speed-stripes hero with categories, the scroll-driven ride scene, the most requested products and FAQ.', es: 'Hero con rayas de velocidad y categorías, la escena de moto guiada por el scroll, lo más pedido y preguntas frecuentes.', ru: 'Главный экран с полосами скорости и категориями, сцена с мотоциклом, управляемая прокруткой, популярные товары и FAQ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { MotoHomePage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoHomePage />`,
+      },
+      {
+        id: 'shop', path: 'tienda/',
+        name: { en: 'Shop', es: 'Tienda', ru: 'Магазин' },
+        description: { en: 'The catalog with search, category filter, price slider, stock switch and sorting.', es: 'El catálogo con búsqueda, filtro por categoría, precio, stock y orden.', ru: 'Каталог с поиском, категориями, ценой, наличием и сортировкой.' },
+        file: 'src/pages/tienda.astro',
+        code: `---
+import { MotoShopPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoShopPage />`,
+      },
+      {
+        id: 'product', path: 'producto/',
+        name: { en: 'Product', es: 'Producto', ru: 'Товар' },
+        description: { en: 'Product page with options and live price; reads ?p=id.', es: 'Ficha de producto con opciones y precio en vivo; lee ?p=id.', ru: 'Страница товара с опциями и ценой на лету; читает ?p=id.' },
+        file: 'src/pages/producto.astro',
+        code: `---
+import { MotoProductPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoProductPage />`,
+      },
+      {
+        id: 'bikes', path: 'tu-moto/',
+        name: { en: 'Your bike', es: 'Tu moto', ru: 'Ваш мотоцикл' },
+        description: { en: 'Bike comparison, financing simulator and the gear size guide.', es: 'Comparador de motos, simulador de financiación y guía de tallas de equipación.', ru: 'Сравнение мотоциклов, симулятор финансирования и таблица размеров экипировки.' },
+        file: 'src/pages/tu-moto.astro',
+        code: `---
+import { MotoBikesPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoBikesPage />`,
+      },
+      {
+        id: 'cart', path: 'carrito/',
+        name: { en: 'Cart', es: 'Carrito', ru: 'Корзина' },
+        description: { en: 'Cart and checkout with free-shipping progress, promo code and demo payment.', es: 'Carrito y pago con progreso de envío gratis, código promocional y pago de demostración.', ru: 'Корзина и оплата с прогрессом бесплатной доставки, промокодом и демо-оплатой.' },
+        file: 'src/pages/carrito.astro',
+        code: `---
+import { MotoCartPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoCartPage />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Customer sign in', es: 'Acceso clientes', ru: 'Вход для клиентов' },
+        description: { en: 'Split sign-in with a large generated bike and a rider quote.', es: 'Acceso a pantalla partida con una gran moto generada y un testimonio de piloto.', ru: 'Вход на двух панелях с большим сгенерированным мотоциклом и отзывом гонщика.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { MotoSignInPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'cuenta/',
+        name: { en: 'Account home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'The order on its way, rider figures and the garage with its maintenance plan.', es: 'El pedido en camino, cifras del piloto y el garaje con su plan de mantenimiento.', ru: 'Заказ в пути, цифры гонщика и гараж с планом обслуживания.' },
+        file: 'src/pages/cuenta/index.astro',
+        code: `---
+import { MotoDashboardPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoDashboardPage />`,
+      },
+      {
+        id: 'orders', path: 'cuenta/pedidos/',
+        name: { en: 'Orders', es: 'Pedidos', ru: 'Заказы' },
+        description: { en: 'Orders with items, timeline, tracking and returns.', es: 'Pedidos con artículos, cronología, seguimiento y devoluciones.', ru: 'Заказы с товарами, хронологией, трекингом и возвратами.' },
+        file: 'src/pages/cuenta/pedidos.astro',
+        code: `---
+import { MotoOrdersPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoOrdersPage />`,
+      },
+      {
+        id: 'wishlist', path: 'cuenta/deseos/',
+        name: { en: 'Wish list', es: 'Lista de deseos', ru: 'Список желаний' },
+        description: { en: 'Saved products with move-to-cart and remove actions.', es: 'Productos guardados con acciones de mover al carrito y quitar.', ru: 'Сохранённые товары с действиями «в корзину» и «удалить».' },
+        file: 'src/pages/cuenta/deseos.astro',
+        code: `---
+import { MotoWishlistPage } from 'astro-component-kit/templates/motocross';
+---
+
+<MotoWishlistPage />`,
+      },
+    ],
+    newComponents: [
+      'moto-hero', 'moto-ride', 'moto-shop', 'moto-product', 'moto-compare', 'moto-finance', 'moto-size-guide', 'moto-cart', 'moto-faq', 'moto-footer',
+      'moto-art', 'moto-account-summary', 'moto-orders', 'moto-wishlist', 'moto-account-nav', 'moto-account-topbar', 'moto-account-heading', 'moto-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your dealer backend)
+import { MotoHomePage, motoData, motoRoutes } from 'astro-component-kit/templates/motocross';
+
+const data = {
+  ...motoData,
+  brand: { ...motoData.brand, name: 'Pista Norte', rate: 6.9 },
+  products: await fetch('https://api.example.com/products').then((r) => r.json()),
+};
+
+const routes = { ...motoRoutes, shop: '/catalogo', kit: '/comparador' };
+---
+
+<MotoHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

@@ -1736,4 +1736,77 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con una gran ilustración de caña generada y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большой сгенерированной иллюстрацией удилища и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── Motocross ("Barro") ────────────────────────
+  'moto-hero': {
+    es: 'Hero de tienda de motos de cross: un titular enorme condensado sobre rayas de velocidad diagonales (solo CSS), dos botones, tres cifras de promesa y las categorías como una gran lista tipográfica de enlaces con el número de productos de cada una. Sin fotografía ni iconos.',
+    ru: 'Главный экран магазина кроссовых мотоциклов: огромный узкий заголовок на быстрых диагональных полосах скорости (чистый CSS), две кнопки, три цифры-обещания и категории как большой типографский список ссылок с числом товаров. Без фото и иконок.',
+  },
+  'moto-ride': {
+    es: 'Una escena guiada por el scroll que funciona como un corto: un escenario fijo muestra una moto rodando por una pista de tierra al atardecer; al hacer scroll las montañas pasan a dos velocidades, las ruedas giran, llega una rampa y la moto salta, se inclina en el aire y aterriza con polvo. Cuatro leyendas se encienden por turnos.',
+    ru: 'Сцена, управляемая прокруткой, как короткий фильм: закреплённая сцена показывает мотоцикл на грунтовой трассе на закате; при скролле горы проплывают с двумя скоростями, колёса вращаются, появляется трамплин, и мотоцикл прыгает, наклоняется в воздухе и приземляется в пыли. По очереди загораются четыре подписи.',
+  },
+  'moto-shop': {
+    es: 'El catálogo como cuadrícula de tienda con filtrado real: búsqueda, filtro por categoría, precio máximo, interruptor "solo con stock" y orden; las tarjetas dibujan su propia ilustración generada con marca, valoración, precio (precio anterior tachado en oferta), un botón de guardar y añadir rápido.',
+    ru: 'Каталог как сетка магазина с настоящей фильтрацией: поиск, категория, максимальная цена, переключатель «только в наличии» и сортировка; карточки рисуют свою сгенерированную иллюстрацию с брендом, рейтингом, ценой (старая цена зачёркнута), кнопкой «сохранить» и быстрым добавлением.',
+  },
+  'moto-product': {
+    es: 'La ficha de producto: un selector (también con ?p=id), ilustración generada, valoración y stock, selectores de opciones (color, talla, pack de taller) cuyos extras cambian el precio en vivo, un selector de cantidad, añadir al carrito y guardar, una tabla de especificaciones y, en las motos, un enlace al comparador.',
+    ru: 'Страница товара: выбор (также через ?p=id), сгенерированная иллюстрация, рейтинг и наличие, селекторы опций (цвет, размер, пакет мастерской), доплаты которых меняют цену на лету, количество, добавить в корзину и сохранить, таблица характеристик и для мотоциклов — ссылка на сравнение.',
+  },
+  'moto-compare': {
+    es: 'Compara hasta tres motos lado a lado: marca las motos y aparece una tabla con una fila por cifra (cilindrada, potencia, peso, altura del asiento, recorrido de suspensión, tiempos) con barras horizontales a escala del mejor valor, la mejor cifra de cada fila marcada con palabras y un enlace a cada moto.',
+    ru: 'Сравните до трёх мотоциклов бок о бок: отметьте модели — появится таблица со строкой на показатель (объём, мощность, масса, высота сиденья, ход подвески, тактность) с горизонтальными шкалами относительно лучшего значения, лучшее в строке отмечено словами, и ссылка на каждую модель.',
+  },
+  'moto-finance': {
+    es: 'Simulador de financiación: elige una moto, una entrada (10–50 %) y un plazo (12–60 meses); la cuota se calcula con amortización francesa y la sección muestra el importe financiado, los intereses totales, el coste total y un gráfico de barras de capital frente a interés por año, más un formulario breve de solicitud.',
+    ru: 'Симулятор финансирования: выберите мотоцикл, первый взнос (10–50 %) и срок (12–60 месяцев); платёж считается по аннуитетной схеме, секция показывает сумму кредита, проценты, полную стоимость и диаграмму основного долга и процентов по годам, плюс короткую форму заявки.',
+  },
+  'moto-size-guide': {
+    es: 'Guía de tallas de equipación: tres deslizadores de altura, pecho y cintura recomiendan una talla, resaltan su fila en una tabla de tallas real y explican con palabras lo cerca que está cada medida.',
+    ru: 'Таблица размеров экипировки: три ползунка — рост, грудь и талия — рекомендуют размер, подсвечивают его строку в настоящей таблице и словами объясняют, насколько близка каждая мерка.',
+  },
+  'moto-cart': {
+    es: 'Carrito y pago en uno: líneas con ilustración, opciones y selector de cantidad, una barra de progreso del envío gratis, un código promocional, totales en vivo y un formulario de pago que confirma el pedido con un mensaje de demostración. El carrito vive en localStorage.',
+    ru: 'Корзина и оплата в одном: строки с иллюстрацией, опциями и счётчиком, полоса прогресса бесплатной доставки, промокод, итоги на лету и форма оформления с демо-подтверждением. Корзина хранится в localStorage.',
+  },
+  'moto-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'moto-footer': {
+    es: 'Pie de página de tienda de motos con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал магазина мотоциклов с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'moto-art': {
+    es: 'Ilustración de producto dibujada en SVG a partir de los datos del artículo: una moto de cross de perfil (ruedas de tacos con radios, chasis, horquilla, depósito, placa de número, escape), un casco, una bota, un guante, una camiseta o un recambio, coloreados con su paleta y con el número de su semilla. No necesita imágenes.',
+    ru: 'Иллюстрация товара в SVG по данным: кроссовый мотоцикл сбоку (колёса с шипами и спицами, рама, вилка, бак, номерная табличка, глушитель), шлем, ботинок, перчатка, джерси или запчасть, раскрашенные по палитре с номером из зерна. Картинки не нужны.',
+  },
+  'moto-account-summary': {
+    es: 'Inicio del área de cliente: el pedido en camino con una cronología escrita de cuatro pasos y sus artículos dibujados como pequeñas ilustraciones, las cifras del piloto y "tu garaje": para cada moto, las horas de motor y cada tarea de mantenimiento como una barra de horas desde el último servicio frente a su intervalo, con un estado en palabras; un botón anota dos horas y las barras se mueven.',
+    ru: 'Главная кабинета клиента: заказ в пути с текстовой хронологией из четырёх шагов и товарами в виде мини-иллюстраций, цифры гонщика и «ваш гараж»: для каждого мотоцикла моточасы и каждая работа по обслуживанию в виде шкалы часов с последнего ТО относительно интервала, со статусом словами; кнопка добавляет два часа, шкалы двигаются.',
+  },
+  'moto-orders': {
+    es: 'Pedidos como acordeón nativo exclusivo: id, fecha, estado y total; el cuerpo lista cada artículo con su ilustración, una cronología escrita, transportista y seguimiento, y las acciones (devolver en 30 días una vez entregado; demo). Los pedidos pagados en este navegador se añaden arriba.',
+    ru: 'Заказы в эксклюзивном нативном аккордеоне: номер, дата, статус и сумма; внутри — каждый товар с иллюстрацией, текстовая хронология, перевозчик и трекинг, действия (возврат в течение 30 дней после доставки; демо). Заказы, оплаченные в этом браузере, добавляются сверху.',
+  },
+  'moto-wishlist': {
+    es: 'La lista de deseos como tarjetas con ilustración, nombre, precio y stock; cada tarjeta se puede mover al carrito (o enlaza a su ficha si tiene opciones) o quitar, y un contador dice cuántos hay guardados. Se incluyen los guardados en la tienda.',
+    ru: 'Список желаний карточками с иллюстрацией, названием, ценой и наличием; каждую можно переместить в корзину (или перейти на страницу, если есть опции) или удалить, счётчик показывает количество. Сохранённое в магазине учитывается.',
+  },
+  'moto-account-nav': {
+    es: 'Navegación del área de cliente: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета клиента: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'moto-account-topbar': {
+    es: 'Lado derecho de la cabecera de cliente: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú del cliente (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню клиента (нативные popover).',
+  },
+  'moto-account-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, título grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, крупным названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'moto-sign-in': {
+    es: 'Acceso a pantalla partida con una gran moto generada y un testimonio de piloto, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большим сгенерированным мотоциклом и отзывом гонщика, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

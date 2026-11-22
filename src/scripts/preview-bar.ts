@@ -62,6 +62,7 @@
     'architecture': isEs ? 'Cota · Estudio de arquitectura' : isRu ? 'Cota · Архитектурное бюро' : 'Cota · Architecture Studio',
     'theater': isEs ? 'Telón · Entradas de teatro' : isRu ? 'Telón · Театральные билеты' : 'Telón · Theatre Tickets',
     'fishing': isEs ? 'Corcho · Tienda de pesca' : isRu ? 'Corcho · Рыболовный магазин' : 'Corcho · Fishing Shop',
+    'motocross': isEs ? 'Barro · Motos y equipo de cross' : isRu ? 'Barro · Кросс: мотоциклы и экипировка' : 'Barro · Motocross Shop',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

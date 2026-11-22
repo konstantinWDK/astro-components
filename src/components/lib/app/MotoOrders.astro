@@ -1,0 +1,308 @@
+---
+/**
+ * MotoOrders — Orders as an exclusive native accordion (<details name>): id, date, status and total in
+ * the summary; the body lists each item with its illustration and options, a written timeline,
+ * carrier and tracking, and the actions available (return within 30 days once delivered; demo).
+ * Orders paid in this browser's cart (localStorage) are added on top.
+ *
+ * @param {MotoOrder[]} orders - Orders, newest first.
+ * @param {MotoProduct[]} products - Catalog, to resolve products and art.
+ * @param {string} shopHref - Link of the "buy again" action.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native disclosure widgets, status is text with a marker, the timeline is an
+ * ordered list, action results are in an aria-live region, buttons name the order they act on.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import MotoArt from './MotoArt.astro';
+import { motoOrders, motoProducts, motoById, motoMoney, type MotoOrder, type MotoProduct } from '../templates/motocross/data';
+
+interface OwnProps {
+  orders?: MotoOrder[];
+  products?: MotoProduct[];
+  shopHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { orders = motoOrders, products = motoProducts, shopHref = '/tienda', class: classAttr, ...rest } = Astro.props;
+
+const uid = `for-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (d: string) => (d.startsWith('20') ? new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : d);
+const names = Object.fromEntries(products.map((p) => [p.id, p.name]));
+---
+
+<section class:list={['moto-ui', 'moto-ord', classAttr]} aria-label="Mis pedidos" data-moto-ord data-names={JSON.stringify(names)} {...rest}>
+  <div class="moto-ord__list" data-list>
+    {orders.map((o, i) => (
+      <details class="moto-ord__item" name={`${uid}-o`} open={i === 0 ? true : undefined} data-order={o.id}>
+        <summary>
+          <span class="moto-ord__id">{o.id}</span>
+          <span class="moto-ord__date">{fmt(o.date)}</span>
+          <span class:list={['moto-ord__status', `is-${o.status === 'Entregado' ? 'ok' : o.status === 'Devuelto' ? 'off' : 'go'}`]} data-status>{o.status}</span>
+          <span class="moto-ord__total">{motoMoney(o.total)}</span>
+        </summary>
+        <div class="moto-ord__body">
+          <ul class="moto-ord__items">
+            {o.lines.map((l) => {
+              const p = motoById(l.productId, products);
+              return p ? (
+                <li>
+                  <span class="moto-ord__mini"><MotoArt item={p} decorative /></span>
+                  <span><strong>{l.qty} × {p.name}</strong><small>{Object.entries(l.options).map(([k, v]) => `${k}: ${v}`).join(' · ') || p.brand}</small></span>
+                </li>
+              ) : null;
+            })}
+          </ul>
+          <ol class="moto-ord__steps">
+            {o.steps.map((s) => (
+              <li class:list={{ 'is-done': s.done }}><span>{s.label}</span><small>{s.done ? 'Hecho' : 'Pendiente'} · {fmt(s.date)}</small></li>
+            ))}
+          </ol>
+          <p class="moto-ord__carrier"><strong>{o.carrier}</strong> · {o.tracking}</p>
+          <div class="moto-ord__acts">
+            {o.status === 'Entregado' ? (
+              <>
+                <button type="button" class="mt-btn mt-btn--ghost" data-act="return" aria-label={`Devolver el pedido ${o.id}`}>Devolver</button>
+                <a class="mt-btn mt-btn--ghost" href={shopHref}>Comprar de nuevo</a>
+              </>
+            ) : o.status === 'Devuelto' ? (
+              <a class="mt-btn mt-btn--ghost" href={shopHref}>Volver a la tienda</a>
+            ) : (
+              <button type="button" class="mt-btn mt-btn--ghost" data-act="track" aria-label={`Seguir el envío del pedido ${o.id}`}>Seguir el envío</button>
+            )}
+          </div>
+        </div>
+      </details>
+    ))}
+  </div>
+  <p class="moto-ord__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .moto-ord {
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+  }
+
+  .moto-ord :global(.moto-ord__list) {
+    border-top: 1.5px solid var(--mt-border-strong);
+  }
+
+  .moto-ord :global(.moto-ord__item) {
+    border-bottom: 1px solid var(--mt-border);
+  }
+
+  .moto-ord :global(.moto-ord__item summary) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    align-items: center;
+    min-height: 64px;
+    padding: var(--sp-4, 1rem) 0;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .moto-ord :global(.moto-ord__item summary::-webkit-details-marker) {
+    display: none;
+  }
+
+  .moto-ord :global(.moto-ord__id) {
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.35rem;
+  }
+
+  .moto-ord :global(.moto-ord__date) {
+    grid-column: 1;
+    font-size: 0.86rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-ord :global(.moto-ord__status) {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font: 700 0.72rem/1 var(--mt-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .moto-ord :global(.moto-ord__status.is-ok) { color: var(--mt-ok); }
+  .moto-ord :global(.moto-ord__status.is-go) { color: var(--mt-brand); }
+  .moto-ord :global(.moto-ord__status.is-off) { color: var(--mt-bad); }
+
+  .moto-ord :global(.moto-ord__total) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .moto-ord :global(.moto-ord__body) {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    padding: 0 0 var(--sp-6, 1.5rem);
+  }
+
+  .moto-ord__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .moto-ord__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .moto-ord__mini {
+    flex: none;
+    width: 56px;
+    border-radius: 10px;
+    background: var(--mt-surface);
+    overflow: hidden;
+  }
+
+  .moto-ord__items strong {
+    display: block;
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .moto-ord__items small {
+    font-size: 0.82rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-ord :global(.moto-ord__steps) {
+    display: grid;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    list-style: none;
+    border-left: 1.5px solid var(--mt-border-strong);
+  }
+
+  .moto-ord :global(.moto-ord__steps li) {
+    position: relative;
+    padding: 0.5rem 0;
+    color: var(--mt-text-3);
+  }
+
+  .moto-ord :global(.moto-ord__steps li::before) {
+    content: '';
+    position: absolute;
+    left: calc(-1.1rem - 5px);
+    top: 0.85rem;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid var(--mt-border-strong);
+    border-radius: 50%;
+    background: var(--mt-bg);
+  }
+
+  .moto-ord :global(.moto-ord__steps li.is-done) {
+    color: var(--mt-text);
+  }
+
+  .moto-ord :global(.moto-ord__steps li.is-done::before) {
+    border-color: var(--mt-brand);
+    background: var(--mt-brand);
+  }
+
+  .moto-ord :global(.moto-ord__steps small) {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-ord__carrier {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--mt-text-2);
+  }
+
+  .moto-ord__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .moto-ord__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--mt-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .moto-ord :global(.moto-ord__item summary) {
+      grid-template-columns: 9rem 1fr auto auto;
+      gap: 1.5rem;
+    }
+
+    .moto-ord :global(.moto-ord__date),
+    .moto-ord :global(.moto-ord__status),
+    .moto-ord :global(.moto-ord__total) {
+      grid-column: auto;
+      grid-row: auto;
+      justify-self: auto;
+    }
+
+    .moto-ord :global(.moto-ord__status) {
+      min-width: 7rem;
+      text-align: right;
+    }
+
+    .moto-ord :global(.moto-ord__body) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .moto-ord__carrier,
+    .moto-ord__acts {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-moto-ord]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-act]');
+      if (!b) return;
+      const item = b.closest<HTMLElement>('[data-order]');
+      const id = item?.dataset.order ?? '';
+      if (b.dataset.act === 'return') {
+        const st = item?.querySelector<HTMLElement>('[data-status]');
+        if (st) { st.textContent = 'Devuelto'; st.className = 'moto-ord__status is-off'; }
+        b.disabled = true;
+        if (live) live.textContent = `Devolución del pedido ${id} iniciada. Te enviamos la etiqueta por email (demostración).`;
+      } else if (live) {
+        live.textContent = `Seguimiento del pedido ${id}: en reparto, entrega prevista el próximo día laborable (demostración).`;
+      }
+    });
+
+    try {
+      const mine = JSON.parse(localStorage.getItem('moto-orders') ?? '[]') as Array<{ id: string; date: string; lines: Array<{ productId: string; qty: number; options: Record<string, string> }>; total: number }>;
+      const names = JSON.parse(root.dataset.names ?? '{}') as Record<string, string>;
+      const list = root.querySelector<HTMLElement>('[data-list]');
+      if (list && mine.length) {
+        const html = mine.map((o) => {
+          const lines = o.lines.map((l) => `<li><span><strong>${l.qty} × ${names[l.productId] ?? l.productId}</strong></span></li>`).join('');
+          return `<details class="moto-ord__item" data-order="${o.id}"><summary><span class="moto-ord__id">${o.id}</span><span class="moto-ord__date">${new Date(`${o.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span class="moto-ord__status is-go">Preparando</span><span class="moto-ord__total">${o.total.toLocaleString('es-ES')} €</span></summary><div class="moto-ord__body"><ul class="moto-ord__items">${lines}</ul></div></details>`;
+        }).join('');
+        list.insertAdjacentHTML('afterbegin', html);
+      }
+    } catch { /* storage unavailable */ }
+  });
+</script>

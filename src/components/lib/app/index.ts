@@ -181,3 +181,13 @@ export { default as FishAccountNav } from './FishAccountNav.astro';
 export { default as FishAccountTopbar } from './FishAccountTopbar.astro';
 export { default as FishAccountHeading } from './FishAccountHeading.astro';
 export { default as FishSignIn } from './FishSignIn.astro';
+
+// Motocross customer area ("Barro")
+export { default as MotoArt } from './MotoArt.astro';
+export { default as MotoAccountSummary } from './MotoAccountSummary.astro';
+export { default as MotoOrders } from './MotoOrders.astro';
+export { default as MotoWishlist } from './MotoWishlist.astro';
+export { default as MotoAccountNav } from './MotoAccountNav.astro';
+export { default as MotoAccountTopbar } from './MotoAccountTopbar.astro';
+export { default as MotoAccountHeading } from './MotoAccountHeading.astro';
+export { default as MotoSignIn } from './MotoSignIn.astro';

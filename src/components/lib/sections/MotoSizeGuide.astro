@@ -1,0 +1,241 @@
+---
+/**
+ * MotoSizeGuide — Size guide for riding gear. Type your height, chest and waist (number fields with
+ * ranges) and the section recommends a size, highlights its row in the size table and explains in words
+ * how close each measure is; the table stays readable on its own without JavaScript. The recommendation
+ * minimises the distance of the three measures to each size's range, weighting the chest a bit more.
+ *
+ * @param {MotoSizeRow[]} sizes - Size table (height, chest and waist ranges in centimetres).
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled number inputs with units and valid ranges, a real <table>, the recommended
+ * row is marked with text ("your size") and not only colour, the result is aria-live.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import { motoSizes, type MotoSizeRow } from '../templates/motocross/data';
+
+interface OwnProps {
+  sizes?: MotoSizeRow[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  sizes = motoSizes,
+  title = '¿Qué talla soy?',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `msz-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['moto-ui', 'moto-size', classAttr]} aria-labelledby={`${uid}-title`} data-moto-size data-sizes={JSON.stringify(sizes)} {...rest}>
+  <div class="moto-size__inner">
+    <header>
+      <p class="mt-eyebrow">Guía de tallas</p>
+      <Heading id={`${uid}-title`} class="moto-size__title">{title}</Heading>
+    </header>
+
+    <div class="moto-size__grid">
+      <form class="moto-size__form" onsubmit="return false">
+        <div class="moto-size__field">
+          <label for={`${uid}-h`}>Altura <output data-out-h>176 cm</output></label>
+          <input id={`${uid}-h`} type="range" min="150" max="205" value="176" data-h />
+        </div>
+        <div class="moto-size__field">
+          <label for={`${uid}-c`}>Pecho <output data-out-c>98 cm</output></label>
+          <input id={`${uid}-c`} type="range" min="80" max="130" value="98" data-c />
+        </div>
+        <div class="moto-size__field">
+          <label for={`${uid}-w`}>Cintura <output data-out-w>84 cm</output></label>
+          <input id={`${uid}-w`} type="range" min="66" max="118" value="84" data-w />
+        </div>
+        <p class="moto-size__result" aria-live="polite" data-result>Tu talla: <strong>M</strong></p>
+        <p class="moto-size__note" data-note></p>
+      </form>
+
+      <table class="moto-size__table">
+        <caption class="mt-sr">Tabla de tallas en centímetros</caption>
+        <thead><tr><th scope="col">Talla</th><th scope="col">Altura</th><th scope="col">Pecho</th><th scope="col">Cintura</th></tr></thead>
+        <tbody>
+          {sizes.map((r) => (
+            <tr data-row={r.size}>
+              <th scope="row">{r.size}<span class="moto-size__you"> · tu talla</span></th>
+              <td>{r.height[0]}–{r.height[1]}</td>
+              <td>{r.chest[0]}–{r.chest[1]}</td>
+              <td>{r.waist[0]}–{r.waist[1]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<style>
+  .moto-size {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--mt-bg-raised);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+    border-top: 1px solid var(--mt-border);
+  }
+
+  .moto-size__inner {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+
+  .moto-size__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 7vw, 5rem);
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .moto-size__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .moto-size__field {
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .moto-size__field label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+    font: 700 0.82rem/1.2 var(--mt-font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mt-text-2);
+  }
+
+  .moto-size__field output {
+    color: var(--mt-brand);
+  }
+
+  .moto-size__field input {
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    accent-color: var(--mt-brand);
+    cursor: pointer;
+  }
+
+  .moto-size__result {
+    margin: var(--sp-5, 1.25rem) 0 0.3rem;
+    font-family: var(--mt-font-display);
+    font-weight: 700;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+  }
+
+  .moto-size__result strong {
+    font-size: 4.4rem;
+    line-height: 0.9;
+    color: var(--mt-brand);
+  }
+
+  .moto-size__note {
+    min-height: 3em;
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--mt-text-2);
+  }
+
+  .moto-size__table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .moto-size__table th,
+  .moto-size__table td {
+    padding: 0.8rem 0.75rem;
+    border-bottom: 1px solid var(--mt-border);
+    text-align: left;
+  }
+
+  .moto-size__table thead th {
+    font: 700 0.78rem/1 var(--mt-font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mt-text-3);
+    border-bottom: 2px solid var(--mt-text);
+  }
+
+  .moto-size__table tbody th {
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.4rem;
+  }
+
+  .moto-size__you {
+    display: none;
+    font: 700 0.7rem/1 var(--mt-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mt-accent);
+  }
+
+  .moto-size__table tr.is-you {
+    background: rgba(var(--mt-brand-rgb), 0.16);
+    box-shadow: inset 4px 0 0 var(--mt-brand);
+  }
+
+  .moto-size__table tr.is-you .moto-size__you {
+    display: inline;
+  }
+
+  @media (min-width: 900px) {
+    .moto-size {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .moto-size__grid {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  type Row = { size: string; height: [number, number]; chest: [number, number]; waist: [number, number] };
+  document.querySelectorAll<HTMLElement>('[data-moto-size]').forEach((root) => {
+    const sizes: Row[] = JSON.parse(root.dataset.sizes ?? '[]');
+    const h = root.querySelector<HTMLInputElement>('[data-h]')!;
+    const c = root.querySelector<HTMLInputElement>('[data-c]')!;
+    const w = root.querySelector<HTMLInputElement>('[data-w]')!;
+    const result = root.querySelector<HTMLElement>('[data-result]')!;
+    const note = root.querySelector<HTMLElement>('[data-note]')!;
+    const dist = (v: number, [a, b]: [number, number]) => (v < a ? a - v : v > b ? v - b : 0);
+
+    const paint = () => {
+      const [hv, cv, wv] = [Number(h.value), Number(c.value), Number(w.value)];
+      root.querySelector('[data-out-h]')!.textContent = `${hv} cm`;
+      root.querySelector('[data-out-c]')!.textContent = `${cv} cm`;
+      root.querySelector('[data-out-w]')!.textContent = `${wv} cm`;
+      const ranked = [...sizes].sort((a, b) => (dist(hv, a.height) + dist(cv, a.chest) * 1.2 + dist(wv, a.waist)) - (dist(hv, b.height) + dist(cv, b.chest) * 1.2 + dist(wv, b.waist)));
+      const best = ranked[0];
+      result.innerHTML = `Tu talla: <strong>${best.size}</strong>`;
+      root.querySelectorAll<HTMLElement>('[data-row]').forEach((tr) => tr.classList.toggle('is-you', tr.dataset.row === best.size));
+      const off = [dist(hv, best.height) && 'la altura', dist(cv, best.chest) && 'el pecho', dist(wv, best.waist) && 'la cintura'].filter(Boolean);
+      note.textContent = off.length ? `Estás fuera del rango de la ${best.size} en ${off.join(' y ')}. Si dudas, elige la talla mayor para llevar protecciones debajo.` : `Tus tres medidas caben en la ${best.size}. Si llevas protecciones gruesas debajo, plantéate la siguiente talla.`;
+    };
+    [h, c, w].forEach((el) => el.addEventListener('input', paint));
+    paint();
+  });
+</script>

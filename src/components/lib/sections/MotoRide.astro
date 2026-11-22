@@ -1,0 +1,318 @@
+---
+/**
+ * MotoRide — A scroll-driven scene that plays like a short film. A pinned stage shows a bike riding
+ * along a dirt track at sunset: as you scroll the mountains slide past at two speeds, the track lines
+ * run backwards, the wheels spin, a ramp arrives and the bike takes a jump, tilting in the air and
+ * landing with a puff of dust. Four captions light up in turn (frame, suspension, engine, brakes). All
+ * SVG, driven by the scroll progress written on every animation frame. Without JavaScript or with
+ * reduced motion the scene shows a still frame mid-jump and the captions are a plain list.
+ *
+ * @param {Array<{title: string, text: string}>} steps - Four captions, in order.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the SVG is decorative (aria-hidden), the four steps are a real ordered list that is
+ * always readable, motion respects prefers-reduced-motion and the scene never traps scrolling.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+
+interface OwnProps {
+  steps?: Array<{ title: string; text: string }>;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  steps = [
+    { title: 'Chasis ligero', text: 'Aluminio y acero cromo-molibdeno. Cien kilos que cambian de dirección cuando tú lo pides.' },
+    { title: 'Suspensión larga', text: 'Más de 300 mm de recorrido: el salto se aterriza sin que te enteres de la altura.' },
+    { title: 'Motor que empuja', text: 'La potencia llega pronto y sube sin saltos. Mapas seleccionables desde el manillar.' },
+    { title: 'Frenos que muerden', text: 'Discos grandes y latiguillos trenzados para frenar tarde, incluso con barro en las pinzas.' },
+  ],
+  title = 'Del taller a la rampa',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `mr-${Math.random().toString(36).slice(2, 8)}`;
+const spokes = Array.from({ length: 12 }, (_, i) => (i / 12) * 360);
+const knobs = Array.from({ length: 20 }, (_, i) => (i / 20) * Math.PI * 2);
+---
+
+<section class:list={['moto-ui', 'moto-ride', classAttr]} aria-labelledby={`${uid}-title`} data-moto-ride {...rest}>
+  <div class="moto-ride__sticky">
+    <div class="moto-ride__head">
+      <p class="mt-eyebrow">Así rueda</p>
+      <Heading id={`${uid}-title`} class="moto-ride__title">{title}</Heading>
+    </div>
+
+    <svg class="moto-ride__svg" viewBox="0 0 800 450" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id={`${uid}-sky`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2a1738"></stop>
+          <stop offset="0.55" stop-color="#d4462a"></stop>
+          <stop offset="1" stop-color="#ffb347"></stop>
+        </linearGradient>
+      </defs>
+      <rect width="800" height="360" fill={`url(#${uid}-sky)`}></rect>
+      <circle cx="610" cy="250" r="54" fill="#ffd77a" opacity="0.92"></circle>
+
+      <g data-far>
+        <polygon points="0,300 90,210 170,280 260,190 360,290 450,220 540,300 640,200 760,290 900,230 1000,300 1000,350 0,350" fill="#3a1f33" opacity="0.9"></polygon>
+        <polygon points="1000,300 1090,210 1170,280 1260,190 1360,290 1450,220 1540,300 1640,200 1760,290 1900,230 2000,300 2000,350 1000,350" fill="#3a1f33" opacity="0.9"></polygon>
+      </g>
+      <g data-near>
+        <polygon points="0,330 120,262 240,318 380,250 520,326 660,268 800,328 940,262 1000,330 1000,370 0,370" fill="#20121e"></polygon>
+        <polygon points="1000,330 1120,262 1240,318 1380,250 1520,326 1660,268 1800,328 1940,262 2000,330 2000,370 1000,370" fill="#20121e"></polygon>
+      </g>
+
+      <rect y="350" width="800" height="100" fill="#3a2418"></rect>
+      <rect y="350" width="800" height="6" fill="#5a3a24"></rect>
+      <g data-lines stroke="#8a5a36" stroke-width="5" stroke-linecap="round" opacity="0.7">
+        {Array.from({ length: 12 }, (_, i) => (<line x1={i * 90} y1="395" x2={i * 90 + 46} y2="395"></line>))}
+        {Array.from({ length: 12 }, (_, i) => (<line x1={i * 90 + 40} y1="425" x2={i * 90 + 70} y2="425"></line>))}
+      </g>
+      <polygon data-ramp points="0,350 190,350 190,300 0,350" fill="#6a4328" transform="translate(900 0)"></polygon>
+      <polygon data-ramp2 points="0,350 190,350 190,300" fill="#4a2e1b" transform="translate(900 0)"></polygon>
+
+      <g data-dust fill="#c89a6a">
+        <circle r="9"></circle><circle r="7"></circle><circle r="11"></circle><circle r="6"></circle><circle r="8"></circle>
+      </g>
+
+      <g data-bike transform="translate(250 288)">
+        <g transform="scale(0.9)">
+          <g data-wheel-r transform="translate(-80 56)">
+            <g data-spin>
+              <circle r="46" fill="none" stroke="#111" stroke-width="9"></circle>
+              {knobs.map((a) => (<line x1={Math.round(Math.cos(a) * 48 * 10) / 10} y1={Math.round(Math.sin(a) * 48 * 10) / 10} x2={Math.round(Math.cos(a) * 55 * 10) / 10} y2={Math.round(Math.sin(a) * 55 * 10) / 10} stroke="#111" stroke-width="4.5" stroke-linecap="round"></line>))}
+              <circle r="38" fill="none" stroke="#c9c4b6" stroke-width="3"></circle>
+              {spokes.map((a) => (<line x1="0" y1="0" x2="0" y2="-38" stroke="#8e8a80" stroke-width="1" transform={`rotate(${a})`}></line>))}
+              <circle r="6" fill="#ffd23f"></circle>
+            </g>
+          </g>
+          <g data-wheel-f transform="translate(86 56)">
+            <g data-spin>
+              <circle r="46" fill="none" stroke="#111" stroke-width="9"></circle>
+              {knobs.map((a) => (<line x1={Math.round(Math.cos(a) * 48 * 10) / 10} y1={Math.round(Math.sin(a) * 48 * 10) / 10} x2={Math.round(Math.cos(a) * 55 * 10) / 10} y2={Math.round(Math.sin(a) * 55 * 10) / 10} stroke="#111" stroke-width="4.5" stroke-linecap="round"></line>))}
+              <circle r="38" fill="none" stroke="#c9c4b6" stroke-width="3"></circle>
+              {spokes.map((a) => (<line x1="0" y1="0" x2="0" y2="-38" stroke="#8e8a80" stroke-width="1" transform={`rotate(${a})`}></line>))}
+              <circle r="6" fill="#ffd23f"></circle>
+            </g>
+          </g>
+          <path d="M-80 56 L -22 46 L 0 20" fill="none" stroke="#2a2a2a" stroke-width="9" stroke-linecap="round"></path>
+          <path d="M-60 6 L -6 -26 L 40 -20 L 18 32 L -22 46 Z" fill="#2b2b2b" stroke="#161616" stroke-width="2"></path>
+          <rect x="-26" y="2" width="50" height="38" rx="8" fill="#3c3c3c"></rect>
+          <path d="M42 -34 L 82 54" fill="none" stroke="#c9c4b6" stroke-width="7" stroke-linecap="round"></path>
+          <path d="M34 -42 L 66 -50" stroke="#161616" stroke-width="7" stroke-linecap="round"></path>
+          <path d="M-30 -26 Q 2 -54 44 -34 L 36 -6 Q 2 -16 -26 -4 Z" fill="#ff5a1f"></path>
+          <path d="M-56 -8 Q -34 -18 -2 -14 L -6 0 L -60 4 Z" fill="#161616"></path>
+          <path d="M58 -4 Q 88 -16 112 4 L 106 14 Q 82 4 62 10 Z" fill="#ff5a1f"></path>
+          <ellipse cx="58" cy="-6" rx="15" ry="18" fill="#f4efe4" stroke="#161616" stroke-width="2.4" transform="rotate(-18 58 -6)"></ellipse>
+          <path d="M-4 40 Q -40 40 -62 8 L -96 0" fill="none" stroke="#d9d2c0" stroke-width="9" stroke-linecap="round"></path>
+          <!-- rider -->
+          <path d="M-18 -30 Q -4 -78 28 -84 L 40 -66 Q 12 -60 8 -28 Z" fill="#1d1d1d"></path>
+          <circle cx="42" cy="-96" r="17" fill="#ff5a1f"></circle>
+          <path d="M44 -100 L 62 -96 L 62 -86 L 42 -86 Z" fill="#161616"></path>
+          <path d="M26 -72 Q 50 -60 66 -34" fill="none" stroke="#1d1d1d" stroke-width="8" stroke-linecap="round"></path>
+          <path d="M-4 -26 Q 12 4 32 18" fill="none" stroke="#1d1d1d" stroke-width="10" stroke-linecap="round"></path>
+        </g>
+      </g>
+    </svg>
+
+    <ol class="moto-ride__steps">
+      {steps.map((s, i) => (
+        <li data-step={i}>
+          <span class="moto-ride__no">{String(i + 1).padStart(2, '0')}</span>
+          <div><h3>{s.title}</h3><p>{s.text}</p></div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .moto-ride {
+    position: relative;
+    background: var(--mt-bg);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+    border-block: 1px solid var(--mt-border);
+  }
+
+  .moto-ride.is-live {
+    height: 340vh;
+  }
+
+  .moto-ride__sticky {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .moto-ride.is-live .moto-ride__sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    align-content: center;
+  }
+
+  .moto-ride__title {
+    margin: 0;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 6vw, 4.6rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .moto-ride__svg {
+    width: 100%;
+    height: min(46vh, 520px);
+    border: 1px solid var(--mt-border-strong);
+    background: #2a1738;
+  }
+
+  .moto-ride__steps {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .moto-ride__steps li {
+    display: grid;
+    grid-template-columns: 2.8rem 1fr;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-left: 4px solid var(--mt-border-strong);
+    transition: border-color 0.3s ease, background 0.3s ease, opacity 0.3s ease;
+  }
+
+  .moto-ride.is-live .moto-ride__steps li {
+    opacity: 0.45;
+  }
+
+  .moto-ride__steps li.is-on {
+    border-left-color: var(--mt-brand);
+    background: rgba(var(--mt-brand-rgb), 0.12);
+    opacity: 1;
+  }
+
+  .moto-ride__no {
+    font: 800 1.4rem/1 var(--mt-font-display);
+    color: var(--mt-accent);
+  }
+
+  .moto-ride__steps h3 {
+    margin: 0 0 0.2rem;
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+  }
+
+  .moto-ride__steps p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: var(--mt-text-2);
+  }
+
+  @media (max-width: 899px) {
+    .moto-ride.is-live .moto-ride__steps li:not(.is-on) {
+      display: none;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .moto-ride__sticky {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .moto-ride__steps {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--sp-4, 1rem);
+    }
+
+    .moto-ride__steps li {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+  }
+</style>
+
+<script>
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+
+  document.querySelectorAll<HTMLElement>('[data-moto-ride]').forEach((root) => {
+    const q = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const far = q<SVGGElement>('[data-far]');
+    const near = q<SVGGElement>('[data-near]');
+    const lines = q<SVGGElement>('[data-lines]');
+    const ramp = q<SVGPolygonElement>('[data-ramp]');
+    const ramp2 = q<SVGPolygonElement>('[data-ramp2]');
+    const bike = q<SVGGElement>('[data-bike]');
+    const dust = q<SVGGElement>('[data-dust]');
+    const spins = [...root.querySelectorAll<SVGGElement>('[data-spin]')];
+    const steps = [...root.querySelectorAll<HTMLElement>('[data-step]')];
+    if (!bike) return;
+    const puffs = [...dust.querySelectorAll<SVGCircleElement>('circle')];
+
+    const paint = (p: number) => {
+      const W = p * 2400;
+      far.setAttribute('transform', `translate(${-((p * 420) % 1000)} 0)`);
+      near.setAttribute('transform', `translate(${-((p * 900) % 1000)} 0)`);
+      lines.setAttribute('transform', `translate(${-((W * 0.9) % 90)} 0)`);
+
+      // the ramp crosses the screen between p 0.45 and 0.62; the bike jumps from 0.56 to 0.78
+      const rx = 1000 - W * 0.62;
+      ramp.setAttribute('transform', `translate(${rx} 0)`);
+      ramp2.setAttribute('transform', `translate(${rx + 190} 0)`);
+      const air = clamp((p - 0.56) / 0.22);
+      const arc = Math.sin(air * Math.PI);
+      const y = 288 - arc * 118;
+      const tilt = air > 0 && air < 1 ? -14 * Math.sin(air * Math.PI * 1.1) + (air > 0.6 ? 10 * (air - 0.6) : 0) : 0;
+      const shake = p > 0.1 && (air <= 0 || air >= 1) ? Math.sin(p * 600) * 1.4 : 0;
+      bike.setAttribute('transform', `translate(250 ${y + shake}) rotate(${tilt} 0 56)`);
+      spins.forEach((s) => s.setAttribute('transform', `rotate(${(W * 0.9) % 360})`));
+
+      const speed = clamp(p * 6);
+      const landed = p > 0.78 && p < 0.92;
+      puffs.forEach((c, i) => {
+        const age = ((W * 0.6 + i * 26) % 130) / 130;
+        const x = 165 - age * 110 - i * 6;
+        const r = 4 + age * 16;
+        c.setAttribute('cx', String(x));
+        c.setAttribute('cy', String(344 - age * 20 - (landed ? i * 4 : 0)));
+        c.setAttribute('r', String(r));
+        c.setAttribute('opacity', String((1 - age) * 0.55 * (air > 0 && air < 1 ? 0.1 : speed) * (landed ? 1.6 : 1)));
+      });
+
+      const active = Math.min(steps.length - 1, Math.floor(p * steps.length * 0.999));
+      steps.forEach((s, i) => s.classList.toggle('is-on', i === active));
+    };
+
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { paint(0.68); steps.forEach((s) => s.classList.add('is-on')); return; }
+    root.classList.add('is-live');
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const r = root.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      paint(total > 0 ? clamp(-r.top / total) : 0.68);
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  });
+</script>

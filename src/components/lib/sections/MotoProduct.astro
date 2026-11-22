@@ -1,0 +1,343 @@
+---
+/**
+ * MotoProduct — The product page. A picker switches between products (also by `?p=id` in the address);
+ * each shows its generated illustration, brand, rating, stock, description, option selectors (length,
+ * size, colour…) whose extras change the price live, a quantity stepper, "add to cart" and "save", a
+ * specifications table and, for bikes, a link to the comparison and finance page.
+ *
+ * @param {MotoProduct[]} products - Products that can be shown.
+ * @param {string} productId - Initially shown product (overridden by ?p=).
+ * @param {string} cartHref - Link to the cart.
+ * @param {string} kitHref - Link to the kit builder (the species is added as ?sp=).
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native selects and number controls with labels, the live price and add-to-cart
+ * result are in aria-live regions, specifications are a <dl>; without JavaScript the first product
+ * is listed with its default price.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/motocross/moto-theme.css';
+import MotoArt from '../app/MotoArt.astro';
+import { motoProducts, motoMoney, type MotoProduct } from '../templates/motocross/data';
+
+interface OwnProps {
+  products?: MotoProduct[];
+  productId?: string;
+  cartHref?: string;
+  kitHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  products = motoProducts,
+  productId = products[0].id,
+  cartHref = '/carrito',
+  kitHref = '/equipo',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fpr-${Math.random().toString(36).slice(2, 8)}`;
+const data = Object.fromEntries(products.map((p) => [p.id, { name: p.name, price: p.price, stock: p.stock, options: p.options }]));
+const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+---
+
+<section class:list={['moto-ui', 'moto-pr', classAttr]} aria-labelledby={`${uid}-title`} data-moto-pr data-first={productId} data-cart={cartHref} data-products={JSON.stringify(data)} {...rest}>
+  <div class="moto-pr__inner">
+    <div class="moto-pr__pick">
+      <label for={`${uid}-pick`}>Producto</label>
+      <select id={`${uid}-pick`} data-pick>
+        {products.map((p) => <option value={p.id} selected={p.id === productId}>{p.name}</option>)}
+      </select>
+    </div>
+
+    {products.map((p) => (
+      <article class="moto-pr__item" data-item={p.id} hidden={p.id !== productId ? true : undefined}>
+        <div class="moto-pr__art"><MotoArt item={p} /></div>
+
+        <div class="moto-pr__info">
+          <p class="mt-eyebrow">{p.brand} · {p.category}</p>
+          <Heading id={p.id === productId ? `${uid}-title` : undefined} class="moto-pr__title">{p.name}</Heading>
+          <p class="moto-pr__rate">{fmt(p.rating)} de 5 · {p.reviews} opiniones · {p.stock > 10 ? 'En stock' : p.stock > 0 ? `Quedan ${p.stock}` : 'Agotado'}</p>
+          <p class="moto-pr__text">{p.text}</p>
+
+          <form class="moto-pr__form" data-form novalidate>
+            {p.options.map((o) => (
+              <div class="moto-pr__field">
+                <label for={`${uid}-${p.id}-${o.label}`}>{o.label}</label>
+                <select id={`${uid}-${p.id}-${o.label}`} data-opt={o.label}>
+                  {o.values.map((v) => <option value={v.value} data-extra={v.extra ?? 0}>{v.value}{v.extra ? ` (${v.extra > 0 ? '+' : '−'}${Math.abs(v.extra)} €)` : ''}</option>)}
+                </select>
+              </div>
+            ))}
+            <div class="moto-pr__field moto-pr__qty">
+              <label for={`${uid}-${p.id}-q`}>Cantidad</label>
+              <input id={`${uid}-${p.id}-q`} type="number" min="1" max={Math.max(1, p.stock)} value="1" data-qty />
+            </div>
+
+            <p class="moto-pr__price" aria-live="polite"><b data-price>{motoMoney(p.price)}</b>{p.oldPrice && <s>{motoMoney(p.oldPrice)}</s>}</p>
+            <p class="moto-pr__ship">Envío gratis a partir de 60 €. Sale hoy si pides antes de las 15:00.</p>
+
+            <div class="moto-pr__acts">
+              <button type="submit" class="mt-btn" disabled={p.stock === 0 ? true : undefined}>Añadir al carrito</button>
+              <button type="button" class="mt-btn mt-btn--ghost" data-wish aria-pressed="false">Guardar</button>
+              <a class="mt-btn mt-btn--ghost" href={cartHref} data-go hidden>Ir al carrito</a>
+            </div>
+          </form>
+
+          <dl class="moto-pr__specs">
+            {p.specs.map((s) => <div><dt>{s.k}</dt><dd>{s.v}</dd></div>)}
+          </dl>
+
+          {p.bike && (
+            <p class="moto-pr__for">
+              ¿Dudas entre varias motos? <a class="mt-link" href={kitHref}>Compáralas y calcula tu cuota</a>.
+            </p>
+          )}
+        </div>
+      </article>
+    ))}
+    <p class="moto-pr__live" role="status" aria-live="polite" data-live></p>
+  </div>
+</section>
+
+<style>
+  .moto-pr {
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--mt-bg);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+  }
+
+  .moto-pr [hidden] {
+    display: none !important;
+  }
+
+  .moto-pr__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .moto-pr__pick {
+    max-width: 32rem;
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .moto-pr label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font: 600 0.74rem/1.2 var(--mt-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mt-text-2);
+  }
+
+  .moto-pr select,
+  .moto-pr input[type='number'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1.5px solid var(--mt-border-strong);
+    border-radius: 12px;
+    background: var(--mt-surface);
+    color: var(--mt-text);
+    font: 400 1rem var(--mt-font-body);
+  }
+
+  .moto-pr__item {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .moto-pr__art {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--mt-border);
+    border-radius: 20px;
+    background: var(--mt-bg-raised);
+  }
+
+  .moto-pr__title {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 5.5vw, 3.8rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .moto-pr__rate {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.88rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-pr__text {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    line-height: 1.65;
+    color: var(--mt-text-2);
+  }
+
+  .moto-pr__form {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    max-width: 30rem;
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .moto-pr__price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin: var(--sp-2, 0.5rem) 0 0;
+  }
+
+  .moto-pr__price b {
+    font-family: var(--mt-font-display);
+    font-weight: 800;
+    font-size: 2.4rem;
+    letter-spacing: -0.02em;
+  }
+
+  .moto-pr__price s {
+    color: var(--mt-text-3);
+  }
+
+  .moto-pr__ship {
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--mt-text-3);
+  }
+
+  .moto-pr__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .moto-pr__specs {
+    display: grid;
+    margin: 0 0 var(--sp-4, 1rem);
+    border-top: 1px solid var(--mt-border);
+  }
+
+  .moto-pr__specs div {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--mt-border);
+    font-size: 0.92rem;
+  }
+
+  .moto-pr__specs dt {
+    color: var(--mt-text-3);
+  }
+
+  .moto-pr__specs dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .moto-pr__for {
+    margin: 0;
+    color: var(--mt-text-2);
+  }
+
+  .moto-pr__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--mt-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 900px) {
+    .moto-pr {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .moto-pr__item {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: var(--sp-10, 2.5rem);
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  const CART = 'moto-cart';
+  const WISH = 'moto-wish';
+  const read = (k: string): any[] => { try { return JSON.parse(localStorage.getItem(k) ?? '[]'); } catch { return []; } };
+  const write = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } };
+  const eur = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-moto-pr]').forEach((root) => {
+    const products: Record<string, { name: string; price: number; stock: number }> = JSON.parse(root.dataset.products ?? '{}');
+    const pick = root.querySelector<HTMLSelectElement>('[data-pick]');
+    const items = [...root.querySelectorAll<HTMLElement>('[data-item]')];
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    if (!pick) return;
+    let current = new URLSearchParams(location.search).get('p') ?? root.dataset.first ?? '';
+    if (!products[current]) current = root.dataset.first ?? Object.keys(products)[0];
+
+    const price = (el: HTMLElement) => {
+      let extra = 0;
+      el.querySelectorAll<HTMLSelectElement>('[data-opt]').forEach((s) => { extra += Number(s.selectedOptions[0]?.dataset.extra ?? 0); });
+      const qty = Math.max(1, Number(el.querySelector<HTMLInputElement>('[data-qty]')?.value ?? 1));
+      const unit = products[el.dataset.item ?? current].price + extra;
+      const p = el.querySelector<HTMLElement>('[data-price]');
+      if (p) p.textContent = qty > 1 ? `${eur(unit * qty)} (${qty} × ${eur(unit)})` : eur(unit);
+      return { unit, qty };
+    };
+
+    const show = (id: string, push = true) => {
+      current = id;
+      pick.value = id;
+      items.forEach((it) => { it.hidden = it.dataset.item !== id; });
+      if (push) { try { history.replaceState(null, '', `?p=${id}`); } catch { /* ignore */ } }
+      const el = items.find((x) => !x.hidden);
+      if (el) {
+        price(el);
+        const wish = read(WISH) as string[];
+        const b = el.querySelector<HTMLButtonElement>('[data-wish]');
+        if (b) { b.setAttribute('aria-pressed', String(wish.includes(id))); b.textContent = wish.includes(id) ? 'Guardado' : 'Guardar'; }
+      }
+    };
+
+    pick.addEventListener('change', () => show(pick.value));
+    items.forEach((el) => {
+      el.addEventListener('input', () => price(el));
+      el.querySelector<HTMLFormElement>('[data-form]')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const { qty } = price(el);
+        const opts: Record<string, string> = {};
+        el.querySelectorAll<HTMLSelectElement>('[data-opt]').forEach((s) => { opts[s.dataset.opt ?? ''] = s.value; });
+        const lines = read(CART) as Array<{ productId: string; qty: number; options: Record<string, string> }>;
+        const key = JSON.stringify(opts);
+        const ex = lines.find((l) => l.productId === current && JSON.stringify(l.options) === key);
+        if (ex) ex.qty = Math.min(products[current].stock, ex.qty + qty); else lines.push({ productId: current, qty, options: opts });
+        write(CART, lines);
+        document.querySelectorAll('[data-cart-count]').forEach((c) => { c.textContent = String(lines.reduce((s, l) => s + l.qty, 0)); });
+        el.querySelector<HTMLElement>('[data-go]')!.hidden = false;
+        if (live) live.textContent = `${qty} × ${products[current].name} añadido al carrito.`;
+      });
+      el.querySelector<HTMLButtonElement>('[data-wish]')?.addEventListener('click', (e) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        let list = read(WISH) as string[];
+        const on = list.includes(current);
+        list = on ? list.filter((x) => x !== current) : [...list, current];
+        write(WISH, list);
+        b.setAttribute('aria-pressed', String(!on));
+        b.textContent = on ? 'Guardar' : 'Guardado';
+        if (live) live.textContent = on ? 'Quitado de tu lista de deseos.' : 'Guardado en tu lista de deseos.';
+      });
+    });
+    show(current, false);
+  });
+</script>

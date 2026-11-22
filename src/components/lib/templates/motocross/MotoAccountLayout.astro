@@ -1,0 +1,183 @@
+---
+/**
+ * MotoAccountLayout — Customer-area shell for the "Barro" motocross template.
+ * Header row with MotoAccountNav (tabs on desktop, bottom bar on phones) and MotoAccountTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Barro").
+ * @param {string} current - Active route key (dashboard | orders | wishlist).
+ * @param {MotoRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './moto-theme.css';
+import MotoAccountNav from '../../app/MotoAccountNav.astro';
+import MotoAccountTopbar from '../../app/MotoAccountTopbar.astro';
+import { motoRoutes, motoData, type MotoRoutes } from './data';
+
+type Key = 'dashboard' | 'orders' | 'wishlist';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: MotoRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Barro · Tu garaje: el mantenimiento de tu moto, el seguimiento de tus pedidos y tu lista de deseos.',
+  current = 'dashboard',
+  routes = motoRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = motoData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Pedidos', href: routes.orders, badge: motoData.orders.filter((o) => o.status !== 'Entregado' && o.status !== 'Devuelto').length },
+  { label: 'Deseos', href: routes.wishlist, badge: motoData.wishlist.length },
+];
+const notifications = [
+  { title: 'Tu pedido B-4410 va en camino', text: 'DHL lo entrega el lunes 24. Seguimiento DH7731200', time: 'hace 2 días', unread: true },
+  { title: 'Toca cambiar el filtro de aire', text: 'La Azul lleva 3 horas desde el último cambio y el intervalo es de 5', time: 'hace 4 días', unread: true },
+  { title: 'Gracias por tu reseña', text: 'Has sumado 20 puntos con tu opinión de las botas Race Pro', time: 'hace 6 semanas' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Barro`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="moto-app-body">
+    <a href="#main-content" class="moto-app-skip">Saltar al contenido</a>
+
+    <div class="moto-app-head">
+      <div class="moto-app-head__inner">
+        <MotoAccountNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Barro" homeHref={routes.home} />
+        <MotoAccountTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Barro', href: routes.home }, { label: 'Ver la tienda', href: routes.shop }, { label: 'Mis pedidos', href: routes.orders }]}
+          signOutHref={routes.signIn}
+          brand="Barro"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="moto-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .moto-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--mt-bg);
+    color: var(--mt-text);
+    font-family: var(--mt-font-body);
+  }
+
+  .moto-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--mt-brand);
+    color: var(--mt-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .moto-app-skip:focus {
+    top: 1rem;
+  }
+
+  .moto-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--mt-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--mt-border);
+  }
+
+  .moto-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .moto-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .moto-app-main:focus {
+    outline: none;
+  }
+
+  :global(.moto-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.moto-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--mt-font-display);
+    font-style: normal;
+    font-weight: 900;
+    text-transform: none;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .moto-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .moto-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .moto-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

@@ -1503,4 +1503,65 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['fishing', 'footer', 'newsletter', 'wordmark'],
     usage: `<FishFooter brand="Corcho" />`,
   }),
+  // === MOTOCROSS ("Barro") ===
+  section({
+    slug: 'moto-hero', name: 'Moto Hero', file: 'MotoHero.astro', sectionCategory: 'motocross',
+    description: 'Motocross-shop hero: a huge condensed headline over fast diagonal speed stripes (pure CSS), two buttons, three promise figures and the categories as a big typographic list of links with the product count of each. No photography, no icons.',
+    tags: ['motocross', 'hero', 'speed', 'typography', 'ecommerce'], featured: true,
+    usage: `<MotoHero products={motoProducts} stats={motoStats} />`,
+  }),
+  section({
+    slug: 'moto-ride', name: 'Moto Ride', file: 'MotoRide.astro', sectionCategory: 'motocross',
+    description: 'A scroll-driven scene that plays like a short film: a pinned stage shows a bike riding along a dirt track at sunset; as you scroll the mountains slide past at two speeds, the wheels spin, a ramp arrives and the bike jumps, tilting in the air and landing with dust. Four captions light up in turn.',
+    tags: ['motocross', 'scroll', 'animation', 'svg', 'storytelling', 'video'], featured: true,
+    usage: `<MotoRide />`,
+  }),
+  section({
+    slug: 'moto-shop', name: 'Moto Shop', file: 'MotoShop.astro', sectionCategory: 'motocross',
+    description: 'The catalog as a shop grid with real filtering: text search, category filter, maximum-price slider, "in stock only" switch and sorting; cards draw their own generated illustration with brand, rating, price (old price struck through on offer), a save toggle and a quick add.',
+    tags: ['motocross', 'catalog', 'filter', 'search', 'ecommerce', 'wishlist'], featured: true,
+    usage: `<MotoShop products={motoProducts} />`,
+  }),
+  section({
+    slug: 'moto-product', name: 'Moto Product', file: 'MotoProduct.astro', sectionCategory: 'motocross',
+    description: 'The product page: a picker (also by ?p=id), generated illustration, rating and stock, option selectors (colour, size, workshop pack) whose extras change the price live, a quantity stepper, add to cart and save, a specifications table and, for bikes, a link to the comparison page.',
+    tags: ['motocross', 'product', 'options', 'form', 'ecommerce', 'cart'], featured: true,
+    usage: `<MotoProduct products={motoProducts} />`,
+  }),
+  section({
+    slug: 'moto-compare', name: 'Moto Compare', file: 'MotoCompare.astro', sectionCategory: 'motocross',
+    description: 'Compare up to three bikes side by side: tick the bikes and a table with a row per figure (engine size, power, weight, seat height, suspension travel, stroke) appears with horizontal bars scaled to the best value, the best figure of each row marked in words, and a link to each bike.',
+    tags: ['motocross', 'compare', 'table', 'checkbox', 'ecommerce'], featured: true,
+    usage: `<MotoCompare bikes={motoProducts.filter((p) => p.bike)} />`,
+  }),
+  section({
+    slug: 'moto-finance', name: 'Moto Finance', file: 'MotoFinance.astro', sectionCategory: 'motocross',
+    description: 'Financing simulator: choose a bike, a down payment (10–50 %) and a term (12–60 months); the monthly payment is computed with French amortisation, and the section shows the amount financed, total interest, total cost and a bar chart of principal vs interest per year, plus a short request form.',
+    tags: ['motocross', 'finance', 'calculator', 'chart', 'form', 'ecommerce'], featured: true,
+    usage: `<MotoFinance bikes={motoProducts.filter((p) => p.bike)} rate={7.9} />`,
+  }),
+  section({
+    slug: 'moto-size-guide', name: 'Moto Size Guide', file: 'MotoSizeGuide.astro', sectionCategory: 'motocross',
+    description: 'Size guide for riding gear: three sliders for height, chest and waist recommend a size, highlight its row in a real size table and explain in words how close each measure is.',
+    tags: ['motocross', 'size-guide', 'range', 'table', 'ecommerce'],
+    usage: `<MotoSizeGuide sizes={motoSizes} />`,
+  }),
+  section({
+    slug: 'moto-cart', name: 'Moto Cart', file: 'MotoCart.astro', sectionCategory: 'motocross',
+    description: 'Cart and checkout in one: lines with illustration, options and quantity stepper, a free-shipping progress bar, a promo code, live totals and a checkout form that confirms the order with a demo message. The cart lives in localStorage.',
+    tags: ['motocross', 'cart', 'checkout', 'shipping', 'ecommerce', 'form'], featured: true,
+    usage: `<MotoCart products={motoProducts} />`,
+  }),
+  section({
+    slug: 'moto-faq', name: 'Moto FAQ', file: 'MotoFaq.astro', sectionCategory: 'motocross',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['motocross', 'faq', 'accordion'],
+    usage: `<MotoFaq faqs={motoFaqs} />`,
+  }),
+  section({
+    slug: 'moto-footer', name: 'Moto Footer', file: 'MotoFooter.astro', sectionCategory: 'motocross',
+    description: 'Motocross-shop footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['motocross', 'footer', 'newsletter', 'wordmark'],
+    usage: `<MotoFooter brand="Barro" />`,
+  }),
 ];

@@ -277,3 +277,15 @@ export { default as FishKit } from './FishKit.astro';
 export { default as FishCart } from './FishCart.astro';
 export { default as FishFaq } from './FishFaq.astro';
 export { default as FishFooter } from './FishFooter.astro';
+
+// Motocross ("Barro")
+export { default as MotoHero } from './MotoHero.astro';
+export { default as MotoRide } from './MotoRide.astro';
+export { default as MotoShop } from './MotoShop.astro';
+export { default as MotoProduct } from './MotoProduct.astro';
+export { default as MotoCompare } from './MotoCompare.astro';
+export { default as MotoFinance } from './MotoFinance.astro';
+export { default as MotoSizeGuide } from './MotoSizeGuide.astro';
+export { default as MotoCart } from './MotoCart.astro';
+export { default as MotoFaq } from './MotoFaq.astro';
+export { default as MotoFooter } from './MotoFooter.astro';
