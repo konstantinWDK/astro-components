@@ -1,0 +1,53 @@
+---
+/**
+ * AcademySignInPage — Learner and instructor sign-in for Lumen, built on AcademySignIn.
+ * In the demo any email and a password of 4+ characters open the chosen area.
+ *
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import '../../../../styles/global.css';
+import './academy-theme.css';
+import AcademySignIn from '../../app/AcademySignIn.astro';
+import { academyRoutes, type AcademyRoutes } from './data';
+
+interface Props {
+  routes?: AcademyRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = academyRoutes, theme = 'dark', noindex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es" class="theme-academy" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Entrar — Lumen</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="academy-signin-page">
+    <AcademySignIn brand="Lumen" learnerHref={routes.dashboard} studioHref={routes.studio} backHref={routes.home} signUpHref={routes.pricing} />
+  </body>
+</html>
+
+<style>
+  .academy-signin-page {
+    margin: 0;
+    background: var(--ac-bg);
+  }
+</style>

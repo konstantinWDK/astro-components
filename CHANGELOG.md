@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Online academy template "Lumen"** (`astro-component-kit/templates/academy`): course platform with a home (search, learning paths, featured courses, instructors, reviews, plans), a filterable catalog (`?q=` / `?cat=`), a course page (enrolment card, syllabus accordion, reviews, related courses), plans with monthly/yearly billing and FAQ, and an instructor application, plus a learner area (sign-in, dashboard with weekly goal and streak, lesson player with notes and quiz) and an instructor studio (KPIs, 12-month chart, course manager). 9 page types, ink-blue and amber theme with a serif display face and light/dark variants.
+- Sections: `AcademyHero`, `AcademyTracks`, `AcademyCourseGrid`, `AcademyCourseHero`, `AcademyCurriculum`, `AcademyPricingPlans`, `AcademyInstructors`, `AcademyReviews`, `AcademyTeachForm`, `AcademyFooter` (new "Online Academy" section category).
+- App components: `AcademyLessonPlayer`, `AcademyProgressBoard`, `AcademyQuiz`, `AcademyStudioStats`, `AcademyCoursesTable`, plus its own area shell: `AcademyAreaNav` (bottom tab bar on phones), `AcademyAreaTopbar`, `AcademyAreaHeading` and `AcademySignIn`.
+- Built only from its own components (`reusedComponents: []`); the MCP server lists it (`get_template` slug `academy`) and the live preview is at `/preview/academy/`.
+
 ## [0.8.1] - 2026-11-21
 
 ### Changed

@@ -1,0 +1,293 @@
+---
+/**
+ * AcademyAreaNav — Navigation for the learner / instructor area: a vertical rail with the
+ * brand and a weekly-goal meter on desktop, and a fixed bottom tab bar on phones. No JavaScript.
+ *
+ * @param {Array<{label: string, href: string, icon: string, badge?: string|number}>} items - Links (keep 3–5 for the tab bar).
+ * @param {string} currentHref - Marks the matching link with aria-current="page".
+ * @param {string} brand - Academy name (rail only).
+ * @param {string} homeHref - Link for the brand.
+ * @param {{label: string, value: number, max: number}} goal - Rail goal meter. Omit to hide.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label; aria-current on the active link; every tab
+ * has a visible text label (icons aria-hidden); 56px tap targets on the tab bar; the goal
+ * meter has a text alternative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+
+interface Item { label: string; href: string; icon: string; badge?: string | number }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  brand?: string;
+  homeHref?: string;
+  goal?: { label: string; value: number; max: number };
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [
+    { label: 'Mi aprendizaje', href: '#', icon: 'home' },
+    { label: 'Clase', href: '#clase', icon: 'play' },
+    { label: 'Estudio', href: '#estudio', icon: 'chart' },
+  ],
+  currentHref = '#',
+  brand = 'Lumen',
+  homeHref = '#',
+  goal,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const icons: Record<string, string> = {
+  home: '<path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/>',
+  play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>',
+  book: '<path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4Z"/><path d="M9 9h6M9 13h6"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  lamp: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z"/>',
+};
+const isCurrent = (href: string) => href.replace(/\/$/, '') === currentHref.replace(/\/$/, '');
+const pct = goal ? Math.min(100, Math.round((goal.value / goal.max) * 100)) : 0;
+---
+
+<nav class:list={['academy-ui', 'academy-nav', classAttr]} aria-label="Área de aprendizaje" {...rest}>
+  <a href={homeHref} class="academy-nav__brand">
+    <span class="academy-nav__mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" set:html={icons.lamp} />
+    </span>
+    <span class="academy-nav__brand-name">{brand}</span>
+  </a>
+
+  <ul class="academy-nav__list" role="list">
+    {items.map((it) => (
+      <li>
+        <a href={it.href} class="academy-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
+          <span class="academy-nav__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={icons[it.icon] ?? icons.book} />
+            {it.badge !== undefined && it.badge !== 0 && <span class="academy-nav__badge">{it.badge}</span>}
+          </span>
+          <span class="academy-nav__label">
+            {it.label}
+            {it.badge !== undefined && it.badge !== 0 && <span class="ac-sr"> ({it.badge})</span>}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {goal && (
+    <div class="academy-nav__goal">
+      <p><span>{goal.label}</span><strong>{goal.value}/{goal.max} min</strong></p>
+      <span class="academy-nav__meter" role="img" aria-label={`${goal.label}: ${goal.value} de ${goal.max} minutos`}><i style={`width:${pct}%`}></i></span>
+    </div>
+  )}
+</nav>
+
+<style>
+  .academy-nav {
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-nav__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-nav__link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: var(--ac-text-2);
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .academy-nav__link:hover {
+    color: var(--ac-text);
+  }
+
+  .academy-nav__link:focus-visible,
+  .academy-nav__brand:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-nav__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .academy-nav__badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .academy-nav__brand {
+    display: none;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--ac-text);
+    text-decoration: none;
+  }
+
+  .academy-nav__mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-nav__brand-name {
+    font-family: var(--ac-font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .academy-nav__goal {
+    display: none;
+  }
+
+  /* Phones & tablets: bottom tab bar */
+  .academy-nav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 50;
+    border-top: 1px solid var(--ac-border-strong);
+    background: color-mix(in srgb, var(--ac-bg-raised) 94%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .academy-nav__list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  .academy-nav__link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 60px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .academy-nav__link[aria-current='page'] {
+    color: var(--ac-brand);
+  }
+
+  /* Desktop: vertical rail */
+  @media (min-width: 960px) {
+    .academy-nav {
+      position: sticky;
+      top: 0;
+      inset: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-6, 1.5rem);
+      flex: none;
+      width: 248px;
+      height: 100vh;
+      padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem);
+      border-top: 0;
+      border-right: 1px solid var(--ac-border);
+      background: var(--ac-bg-raised);
+      backdrop-filter: none;
+      box-sizing: border-box;
+    }
+
+    .academy-nav__brand {
+      display: flex;
+    }
+
+    .academy-nav__list {
+      display: grid;
+      grid-auto-flow: row;
+      grid-auto-columns: auto;
+      gap: var(--sp-1, 0.25rem);
+    }
+
+    .academy-nav__link {
+      flex-direction: row;
+      gap: var(--sp-3, 0.75rem);
+      min-height: 48px;
+      padding: 0 var(--sp-3, 0.75rem);
+      border-radius: var(--r-md, 12px);
+      font-size: 0.95rem;
+    }
+
+    .academy-nav__link:hover {
+      background: var(--ac-surface);
+    }
+
+    .academy-nav__link[aria-current='page'] {
+      background: rgba(var(--ac-brand-rgb), 0.14);
+      color: var(--ac-brand);
+    }
+
+    .academy-nav__goal {
+      display: block;
+      margin-top: auto;
+      padding: var(--sp-4, 1rem);
+      border: 1px solid var(--ac-border);
+      border-radius: var(--r-lg, 20px);
+      background: var(--ac-surface);
+    }
+
+    .academy-nav__goal p {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--sp-2, 0.5rem);
+      margin: 0 0 var(--sp-2, 0.5rem);
+      color: var(--ac-text-2);
+      font-size: 0.82rem;
+    }
+
+    .academy-nav__goal strong {
+      color: var(--ac-text);
+    }
+
+    .academy-nav__meter {
+      display: block;
+      height: 8px;
+      overflow: hidden;
+      border-radius: var(--r-full, 999px);
+      background: var(--ac-surface-2);
+    }
+
+    .academy-nav__meter i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--ac-brand), var(--ac-violet));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-nav__link {
+      transition: none;
+    }
+  }
+</style>

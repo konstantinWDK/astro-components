@@ -1,0 +1,403 @@
+---
+/**
+ * AcademyHero — Online academy landing hero: serif headline, course search, popular topics,
+ * learner figures and a featured-course card with a "lamp" glow.
+ *
+ * @param {string} title - Headline. Wrap a word in *asterisks* to highlight it.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} searchAction - GET endpoint of the search form (catalog page). Default '/cursos'.
+ * @param {string} pricingHref - Secondary CTA link.
+ * @param {string[]} topics - Popular search shortcuts (link to `searchAction?q=`).
+ * @param {AcademyCourse} featured - Course shown on the card.
+ * @param {string} featuredHref - Link of the featured course.
+ * @param {Array<{value: string, label: string}>} stats - Academy figures.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one h1; the form is a labelled role="search"; the lamp glow and cover
+ * illustration are aria-hidden; rating is written out, not only drawn.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyCourses, academyData, getAcademyInstructor, formatAcademyPrice, type AcademyCourse } from '../templates/academy/data';
+
+interface OwnProps {
+  title?: string;
+  subtitle?: string;
+  searchAction?: string;
+  pricingHref?: string;
+  topics?: string[];
+  featured?: AcademyCourse;
+  featuredHref?: string;
+  stats?: Array<{ value: string; label: string }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Aprende lo que *importa*, a tu ritmo',
+  subtitle = 'Cursos con proyecto real, instructores en activo y una comunidad que te revisa el trabajo. Empieza gratis hoy.',
+  searchAction = '/cursos',
+  pricingHref = '/precios',
+  topics = ['Diseño UI', 'Node', 'SQL', 'Inglés técnico'],
+  featured = academyCourses[0],
+  featuredHref = '/cursos',
+  stats = academyData.stats,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const [before, highlight, after] = title.split('*');
+const uid = `ah-${Math.random().toString(36).slice(2, 8)}`;
+const teacher = getAcademyInstructor(featured.instructorId);
+---
+
+<section class:list={['academy-ui', 'academy-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="academy-hero__glow" aria-hidden="true"></div>
+  <div class="academy-hero__inner">
+    <div class="academy-hero__copy">
+      <p class="academy-hero__kicker">Cursos online · Proyectos · Certificados</p>
+      <h1 id={`${uid}-title`} class="academy-hero__title">
+        {before}{highlight && <em>{highlight}</em>}{after}
+      </h1>
+      <p class="academy-hero__subtitle">{subtitle}</p>
+
+      <form class="academy-hero__search" action={searchAction} method="get" role="search">
+        <label class="ac-sr" for={`${uid}-q`}>Buscar cursos</label>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input id={`${uid}-q`} name="q" type="search" placeholder="¿Qué quieres aprender?" autocomplete="off" />
+        <button type="submit">Buscar</button>
+      </form>
+
+      <p class="academy-hero__topics">
+        <span>Populares:</span>
+        {topics.map((t) => <a href={`${searchAction}?q=${encodeURIComponent(t)}`}>{t}</a>)}
+      </p>
+
+      <dl class="academy-hero__stats">
+        {stats.map((s) => (
+          <div>
+            <dt>{s.label}</dt>
+            <dd>{s.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+
+    <a class="academy-hero__card" href={featuredHref} style={`--course-hue:${featured.hue}`}>
+      <span class="academy-hero__cover" aria-hidden="true">
+        <svg viewBox="0 0 200 120" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="100" cy="60" r="18" /><circle cx="100" cy="60" r="34" opacity=".6" /><circle cx="100" cy="60" r="52" opacity=".3" />
+          <path d="M20 100 100 60l80 40" opacity=".5" />
+        </svg>
+        {featured.bestseller && <span class="academy-hero__badge">Más vendido</span>}
+      </span>
+      <span class="academy-hero__card-body">
+        <span class="academy-hero__card-kicker">Curso destacado</span>
+        <strong class="academy-hero__card-title">{featured.title}</strong>
+        <span class="academy-hero__card-meta">{teacher?.name} · {featured.hours} h · {featured.level}</span>
+        <span class="academy-hero__card-foot">
+          <span><strong>★ {featured.rating.toString().replace('.', ',')}</strong> ({featured.reviews.toLocaleString('es-ES')} reseñas)</span>
+          <span class="academy-hero__price">{formatAcademyPrice(featured.price)}</span>
+        </span>
+      </span>
+    </a>
+    <a class="academy-hero__alt" href={pricingHref}>Ver planes de suscripción →</a>
+  </div>
+</section>
+
+<style>
+  .academy-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-hero__glow {
+    position: absolute;
+    top: -220px;
+    right: -120px;
+    width: 640px;
+    height: 640px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--ac-brand-rgb), 0.28), rgba(var(--ac-violet-rgb), 0.12) 45%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .academy-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .academy-hero__kicker {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--ac-brand);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .academy-hero__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+
+  .academy-hero__title em {
+    color: var(--ac-brand);
+    font-style: italic;
+  }
+
+  .academy-hero__subtitle {
+    max-width: 560px;
+    margin: var(--sp-4, 1rem) 0 var(--sp-6, 1.5rem);
+    color: var(--ac-text-2);
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .academy-hero__search {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    max-width: 560px;
+    padding: 6px 6px 6px var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-bg-raised);
+    color: var(--ac-text-3);
+  }
+
+  .academy-hero__search:focus-within {
+    border-color: var(--ac-brand);
+    box-shadow: 0 0 0 3px rgba(var(--ac-brand-rgb), 0.25);
+  }
+
+  .academy-hero__search input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--ac-text);
+    font: inherit;
+    outline: none;
+  }
+
+  .academy-hero__search input::placeholder {
+    color: var(--ac-text-3);
+  }
+
+  .academy-hero__search button {
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .academy-hero__search button:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-hero__search button:focus-visible,
+  .academy-hero__topics a:focus-visible,
+  .academy-hero__card:focus-visible,
+  .academy-hero__alt:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-hero__topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: var(--sp-4, 1rem) 0 var(--sp-8, 2rem);
+    color: var(--ac-text-3);
+    font-size: 0.9rem;
+  }
+
+  .academy-hero__topics a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 0.7rem;
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-full, 999px);
+    color: var(--ac-text-2);
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .academy-hero__topics a:hover {
+    border-color: var(--ac-brand);
+    color: var(--ac-brand);
+  }
+
+  .academy-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-6, 1.5rem) var(--sp-8, 2rem);
+    margin: 0;
+  }
+
+  .academy-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .academy-hero__stats dt {
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+  }
+
+  .academy-hero__stats dd {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .academy-hero__card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--ac-bg-raised);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+    transition: transform 0.25s ease;
+  }
+
+  .academy-hero__card:hover {
+    transform: translateY(-4px);
+  }
+
+  .academy-hero__cover {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    color: rgba(255, 255, 255, 0.85);
+    background: linear-gradient(140deg, hsl(var(--course-hue) 62% 42%), hsl(calc(var(--course-hue) + 50) 55% 16%));
+  }
+
+  .academy-hero__cover svg {
+    width: 70%;
+  }
+
+  .academy-hero__badge {
+    position: absolute;
+    top: var(--sp-3, 0.75rem);
+    left: var(--sp-3, 0.75rem);
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .academy-hero__card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-5, 1.25rem);
+  }
+
+  .academy-hero__card-kicker {
+    color: var(--ac-brand);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .academy-hero__card-title {
+    font-family: var(--ac-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .academy-hero__card-meta {
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+  }
+
+  .academy-hero__card-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-2, 0.5rem);
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--ac-border);
+    font-size: 0.9rem;
+    color: var(--ac-text-2);
+  }
+
+  .academy-hero__card-foot strong {
+    color: var(--ac-brand);
+  }
+
+  .academy-hero__price {
+    font-family: var(--ac-font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--ac-text);
+  }
+
+  .academy-hero__alt {
+    justify-self: start;
+    color: var(--ac-text-2);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  @media (min-width: 960px) {
+    .academy-hero__inner {
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: var(--sp-12, 3rem);
+    }
+
+    .academy-hero__card {
+      transform: rotate(1.5deg);
+    }
+
+    .academy-hero__card:hover {
+      transform: rotate(0deg) translateY(-4px);
+    }
+
+    .academy-hero__alt {
+      grid-column: 2;
+      justify-self: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-hero__card,
+    .academy-hero__card:hover {
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

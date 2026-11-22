@@ -1,0 +1,285 @@
+---
+/**
+ * AcademyStudioStats — Instructor studio overview: four KPI tiles with change vs. last month
+ * and a revenue / new-enrolments chart for the last 12 months with a metric switch.
+ * Charts are plain SVG; the switch only toggles which series is shown.
+ *
+ * @param {number[]} revenue - Net revenue per month (EUR), oldest first.
+ * @param {number[]} enrolments - New enrolments per month, same length.
+ * @param {string[]} months - Month labels, same length.
+ * @param {number} rating - Average rating across courses.
+ * @param {number} completion - Average completion percent.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each chart is role="img" with a text summary and the same values are
+ * available in a visually hidden table; the switch is a radio group; hovering a bar is not
+ * required (values are listed in the table and the latest value is printed).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyStudio } from '../templates/academy/data';
+
+interface OwnProps {
+  revenue?: number[];
+  enrolments?: number[];
+  months?: string[];
+  rating?: number;
+  completion?: number;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  revenue = academyStudio.revenue,
+  enrolments = academyStudio.enrolments,
+  months = academyStudio.months,
+  rating = 4.8,
+  completion = 61,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `ass-${Math.random().toString(36).slice(2, 8)}`;
+const last = (a: number[]) => a[a.length - 1];
+const prev = (a: number[]) => a[a.length - 2] ?? a[a.length - 1];
+const delta = (a: number[]) => Math.round(((last(a) - prev(a)) / prev(a)) * 100);
+const eur = (n: number) => `${n.toLocaleString('es-ES')} €`;
+const monthNames = ['dic', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov'];
+const kpis = [
+  { label: 'Ingresos del mes', value: eur(last(revenue)), change: delta(revenue) },
+  { label: 'Nuevas matrículas', value: String(last(enrolments)), change: delta(enrolments) },
+  { label: 'Valoración media', value: `★ ${rating.toString().replace('.', ',')}`, change: 0 },
+  { label: 'Finalización media', value: `${completion} %`, change: 0 },
+];
+
+const W = 640;
+const H = 220;
+const PAD = { t: 16, r: 8, b: 26, l: 8 };
+const bw = (W - PAD.l - PAD.r) / revenue.length;
+const series = [
+  { id: 'revenue', label: 'Ingresos (€)', data: revenue, fmt: eur },
+  { id: 'enrolments', label: 'Matrículas', data: enrolments, fmt: (n: number) => String(n) },
+];
+const bars = (data: number[]) => {
+  const max = Math.max(...data) * 1.08;
+  return data.map((v, i) => {
+    const h = ((H - PAD.t - PAD.b) * v) / max;
+    return { x: PAD.l + i * bw + bw * 0.18, y: H - PAD.b - h, w: bw * 0.64, h, v, i };
+  });
+};
+---
+
+<section class:list={['academy-ui', 'academy-stats', classAttr]} aria-label="Resumen del estudio" data-academy-stats {...rest}>
+  <ul class="academy-stats__kpis" role="list">
+    {kpis.map((k) => (
+      <li class="academy-stats__kpi">
+        <p class="academy-stats__label">{k.label}</p>
+        <p class="academy-stats__value">{k.value}</p>
+        {k.change !== 0 ? (
+          <p class:list={['academy-stats__delta', k.change > 0 ? 'is-up' : 'is-down']}>
+            <span aria-hidden="true">{k.change > 0 ? '▲' : '▼'}</span> {k.change > 0 ? '+' : ''}{k.change} % <span class="academy-stats__vs">vs. mes anterior</span>
+          </p>
+        ) : <p class="academy-stats__delta academy-stats__delta--flat">Últimos 12 meses</p>}
+      </li>
+    ))}
+  </ul>
+
+  <article class="academy-stats__chart" aria-labelledby={`${uid}-ch`}>
+    <header class="academy-stats__chead">
+      <h2 id={`${uid}-ch`}>Evolución de los últimos 12 meses</h2>
+      <fieldset class="academy-stats__switch">
+        <legend class="ac-sr">Métrica</legend>
+        {series.map((s, i) => (
+          <label>
+            <input type="radio" name={`${uid}-metric`} value={s.id} checked={i === 0} data-stats-metric />
+            <span>{s.label.split(' ')[0]}</span>
+          </label>
+        ))}
+      </fieldset>
+    </header>
+
+    {series.map((s, si) => {
+      const b = bars(s.data);
+      return (
+        <figure class="academy-stats__fig" data-stats-series={s.id} hidden={si !== 0}>
+          <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${s.label}: de ${s.fmt(s.data[0])} a ${s.fmt(last(s.data))} en 12 meses`}>
+            {[0.25, 0.5, 0.75].map((g) => <line x1={PAD.l} x2={W - PAD.r} y1={PAD.t + (H - PAD.t - PAD.b) * g} y2={PAD.t + (H - PAD.t - PAD.b) * g} stroke="var(--ac-border)" stroke-dasharray="3 5" />)}
+            {b.map((r) => (
+              <>
+                <rect x={r.x} y={r.y} width={r.w} height={r.h} rx="5" fill={r.i === b.length - 1 ? 'var(--ac-brand)' : 'var(--ac-violet)'} opacity={r.i === b.length - 1 ? 1 : 0.7} />
+                <text x={r.x + r.w / 2} y={H - 8} text-anchor="middle" font-size="12" fill="var(--ac-text-3)">{months[r.i]}</text>
+              </>
+            ))}
+            <text x={b[b.length - 1].x + b[b.length - 1].w / 2} y={b[b.length - 1].y - 6} text-anchor="middle" font-size="12" font-weight="700" fill="var(--ac-brand)">{s.fmt(last(s.data))}</text>
+          </svg>
+          <figcaption class="ac-sr">
+            <table>
+              <caption>{s.label} por mes</caption>
+              <thead><tr><th>Mes</th><th>{s.label}</th></tr></thead>
+              <tbody>{s.data.map((v, i) => <tr><td>{monthNames[i % 12]}</td><td>{s.fmt(v)}</td></tr>)}</tbody>
+            </table>
+          </figcaption>
+        </figure>
+      );
+    })}
+  </article>
+</section>
+
+<script>
+  function initStats(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const figs = Array.from(root.querySelectorAll<HTMLElement>('[data-stats-series]'));
+    root.querySelectorAll<HTMLInputElement>('[data-stats-metric]').forEach((input) => {
+      input.addEventListener('change', () => {
+        if (!input.checked) return;
+        figs.forEach((f) => (f.hidden = f.dataset.statsSeries !== input.value));
+      });
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-stats]').forEach(initStats);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-stats {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-stats__kpis {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-stats__kpi {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-stats__label {
+    margin: 0;
+    color: var(--ac-text-3);
+    font-size: 0.82rem;
+  }
+
+  .academy-stats__value {
+    margin: var(--sp-1, 0.25rem) 0;
+    font-family: var(--ac-font-display);
+    font-size: clamp(1.5rem, 4vw, 2.1rem);
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .academy-stats__delta {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .academy-stats__delta.is-up { color: var(--ac-ok); }
+  .academy-stats__delta.is-down { color: var(--ac-bad); }
+  .academy-stats__delta--flat { color: var(--ac-text-3); font-weight: 400; }
+
+  .academy-stats__vs {
+    color: var(--ac-text-3);
+    font-weight: 400;
+  }
+
+  .academy-stats__chart {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-stats__chead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .academy-stats__chead h2 {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .academy-stats__switch {
+    display: inline-flex;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+  }
+
+  .academy-stats__switch label {
+    position: relative;
+  }
+
+  .academy-stats__switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .academy-stats__switch span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .academy-stats__switch input:checked + span {
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-stats__switch label:focus-within span {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-stats__fig {
+    margin: 0;
+  }
+
+  .academy-stats__fig[hidden] {
+    display: none;
+  }
+
+  .academy-stats__fig svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 900px) {
+    .academy-stats__kpis {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+</style>

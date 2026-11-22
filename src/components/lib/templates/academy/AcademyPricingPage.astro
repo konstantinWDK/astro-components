@@ -1,0 +1,114 @@
+---
+/**
+ * AcademyPricingPage — Subscription plans with the monthly / yearly switch and the academy's
+ * billing FAQ.
+ *
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {typeof academyData} data - Plans and brand.
+ */
+import AcademySiteLayout from './AcademySiteLayout.astro';
+import AcademyPricingPlans from '../../sections/AcademyPricingPlans.astro';
+import { academyRoutes, academyData, type AcademyRoutes } from './data';
+
+interface Props {
+  routes?: AcademyRoutes;
+  data?: typeof academyData;
+}
+
+const { routes = academyRoutes, data = academyData } = Astro.props;
+
+const faqs = [
+  { q: '¿Puedo cancelar cuando quiera?', a: 'Sí. Cancelas desde tu aula en dos clics y conservas el acceso hasta el final del periodo pagado.' },
+  { q: '¿Los certificados son verificables?', a: 'Cada certificado tiene un enlace público con tu nombre, el curso y la fecha, que puedes añadir a LinkedIn.' },
+  { q: '¿Qué pasa con los cursos que compré por separado?', a: 'Son tuyos para siempre, tengas o no una suscripción activa.' },
+  { q: '¿Hay descuento para estudiantes o desempleo?', a: 'Sí, un 40 % con una acreditación válida. Escríbenos y lo activamos en el día.' },
+];
+---
+
+<AcademySiteLayout
+  title={`Planes y precios · ${data.brand.name}`}
+  description="Planes de suscripción para aprender sin límites: Explora (gratis), Pro y Equipos. Ahorra pagando al año."
+  current="pricing"
+  routes={routes}
+>
+  <AcademyPricingPlans plans={data.plans} ctaHref={routes.signIn} title="Planes y precios" headingLevel="h1" />
+  <section class="academy-ui academy-faq" aria-labelledby="academy-faq-title">
+    <h2 id="academy-faq-title" class="academy-faq__title">Preguntas frecuentes</h2>
+    <div class="academy-faq__list">
+      {faqs.map((f) => (
+        <details class="academy-faq__item">
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+</AcademySiteLayout>
+
+<style>
+  .academy-faq {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    color: var(--ac-text);
+  }
+
+  .academy-faq__title {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: 2rem;
+  }
+
+  .academy-faq__list {
+    border-top: 1px solid var(--ac-border);
+  }
+
+  .academy-faq__item {
+    border-bottom: 1px solid var(--ac-border);
+  }
+
+  .academy-faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 56px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .academy-faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .academy-faq__item summary::after {
+    content: '+';
+    color: var(--ac-brand);
+    font-size: 1.5rem;
+    font-weight: 400;
+    transition: transform 0.2s ease;
+  }
+
+  .academy-faq__item[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .academy-faq__item summary:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-faq__item p {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--ac-text-2);
+    line-height: 1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-faq__item summary::after {
+      transition: none;
+    }
+  }
+</style>

@@ -1,0 +1,189 @@
+---
+/**
+ * AcademyInstructors — Teaching team: initials portrait, role, short bio, and students /
+ * courses / rating figures.
+ *
+ * @param {AcademyInstructor[]} instructors - Teachers to show.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each teacher is an <article> named by its heading; portraits are decorative;
+ * figures are a description list with text labels.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyInstructors, type AcademyInstructor } from '../templates/academy/data';
+
+interface OwnProps {
+  instructors?: AcademyInstructor[];
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  instructors = academyInstructors,
+  title = 'Aprende de quien lo hace a diario',
+  subtitle = 'Profesionales en activo, seleccionados por su forma de enseñar y no solo por su CV.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const uid = `ai-${Math.random().toString(36).slice(2, 8)}`;
+const initialsOf = (n: string) => n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+const fmt = (n: number) => n.toLocaleString('es-ES');
+---
+
+<section class:list={['academy-ui', 'academy-team', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="academy-team__inner">
+    <header class="academy-team__head">
+      <Heading id={`${uid}-title`} class="academy-team__title">{title}</Heading>
+      {subtitle && <p class="academy-team__subtitle">{subtitle}</p>}
+    </header>
+    <ul class="academy-team__grid" role="list">
+      {instructors.map((i) => (
+        <li>
+          <article class="academy-teacher" aria-labelledby={`${uid}-${i.id}`} style={`--teacher-hue:${i.hue}`}>
+            <div class="academy-teacher__top">
+              <span class="academy-teacher__avatar" aria-hidden="true">{initialsOf(i.name)}</span>
+              <div>
+                <Sub id={`${uid}-${i.id}`} class="academy-teacher__name">{i.name}</Sub>
+                <p class="academy-teacher__role">{i.role}</p>
+              </div>
+            </div>
+            <p class="academy-teacher__bio">{i.bio}</p>
+            <dl class="academy-teacher__stats">
+              <div><dt>Alumnos</dt><dd>{fmt(i.students)}</dd></div>
+              <div><dt>Cursos</dt><dd>{i.courses}</dd></div>
+              <div><dt>Valoración</dt><dd>★ {i.rating.toString().replace('.', ',')}</dd></div>
+            </dl>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .academy-team {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--ac-bg-raised);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-team__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .academy-team__head {
+    max-width: 640px;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .academy-team__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+  }
+
+  .academy-team__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--ac-text-2);
+    line-height: 1.6;
+  }
+
+  .academy-team__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-teacher {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    height: 100%;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg);
+    box-sizing: border-box;
+  }
+
+  .academy-teacher__top {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .academy-teacher__avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, hsl(var(--teacher-hue) 62% 46%), hsl(calc(var(--teacher-hue) + 50) 55% 20%));
+    color: #fff;
+    font-family: var(--ac-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .academy-teacher__name {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .academy-teacher__role {
+    margin: 2px 0 0;
+    color: var(--ac-text-3);
+    font-size: 0.88rem;
+  }
+
+  .academy-teacher__bio {
+    margin: 0;
+    color: var(--ac-text-2);
+    line-height: 1.55;
+  }
+
+  .academy-teacher__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2, 0.5rem);
+    margin: auto 0 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--ac-border);
+  }
+
+  .academy-teacher__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .academy-teacher__stats dt {
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+  }
+
+  .academy-teacher__stats dd {
+    margin: 0;
+    font-weight: 700;
+  }
+</style>

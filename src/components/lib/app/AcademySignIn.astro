@@ -1,0 +1,402 @@
+---
+/**
+ * AcademySignIn — Split sign-in screen: illustrated brand panel (lamp, testimonial, figures)
+ * and a form with a learner / instructor switch, email, password with show/hide and
+ * demo quick-access links. Without an `action` it redirects to the chosen area.
+ *
+ * @param {string} learnerHref - Destination for learners.
+ * @param {string} studioHref - Destination for instructors.
+ * @param {string} backHref - Link back to the public site.
+ * @param {string} signUpHref - "Create account" link.
+ * @param {string} action - Backend endpoint. Empty = demo redirect.
+ * @param {string} brand - Academy name.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields with autocomplete; the role switch is a radio group;
+ * show/hide password is a toggle button (aria-pressed); errors in role="alert".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+
+interface OwnProps {
+  learnerHref?: string;
+  studioHref?: string;
+  backHref?: string;
+  signUpHref?: string;
+  action?: string;
+  brand?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  learnerHref = '/aula',
+  studioHref = '/aula/estudio',
+  backHref = '/',
+  signUpHref = '/precios',
+  action = '',
+  brand = 'Lumen',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `asi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['academy-ui', 'academy-signin', classAttr]} aria-labelledby={`${uid}-title`} data-academy-signin data-learner={learnerHref} data-studio={studioHref} {...rest}>
+  <aside class="academy-signin__brand">
+    <a class="academy-signin__back" href={backHref}><span aria-hidden="true">←</span> Volver a {brand}</a>
+    <svg class="academy-signin__lamp" viewBox="0 0 240 240" fill="none" aria-hidden="true">
+      <circle cx="120" cy="100" r="96" fill="url(#lamp-glow)" />
+      <path d="M120 58a40 40 0 0 0-23 72c4 3 7 8 7 13v3h32v-3c0-5 3-10 7-13a40 40 0 0 0-23-72Z" stroke="currentColor" stroke-width="3" />
+      <path d="M104 160h32M108 172h24" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+      <path d="M120 20v-8M52 52l-6-6M188 52l6-6M28 100h-8M220 100h-8" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".6" />
+      <defs>
+        <radialGradient id="lamp-glow"><stop stop-color="#ffb84d" stop-opacity=".35" /><stop offset="1" stop-color="#ffb84d" stop-opacity="0" /></radialGradient>
+      </defs>
+    </svg>
+    <figure class="academy-signin__quote">
+      <blockquote>“Terminé mi primer proyecto en tres semanas. Lo que más me ayudó fue que alguien revisara mi trabajo de verdad.”</blockquote>
+      <figcaption>Lucía Fernández · diseñadora junior</figcaption>
+    </figure>
+    <dl class="academy-signin__stats">
+      <div><dt>alumnos activos</dt><dd>86.000</dd></div>
+      <div><dt>terminan su curso</dt><dd>71 %</dd></div>
+    </dl>
+  </aside>
+
+  <div class="academy-signin__panel">
+    <div class="academy-signin__box">
+      <h1 id={`${uid}-title`} class="academy-signin__title">Entra a tu aula</h1>
+      <p class="academy-signin__lead">Retoma justo donde lo dejaste.</p>
+
+      <form action={action || undefined} method={action ? 'post' : undefined} class="academy-signin__form" data-signin-form novalidate={!action}>
+        <fieldset class="academy-signin__roles">
+          <legend>Entro como</legend>
+          <label><input type="radio" name="role" value="learner" checked /><span>Alumno</span></label>
+          <label><input type="radio" name="role" value="studio" /><span>Instructor</span></label>
+        </fieldset>
+
+        <div class="academy-signin__field">
+          <label for={`${uid}-email`}>Email</label>
+          <input id={`${uid}-email`} name="email" type="email" autocomplete="username" required placeholder="tu@email.com" />
+        </div>
+        <div class="academy-signin__field">
+          <label for={`${uid}-pw`}>Contraseña</label>
+          <div class="academy-signin__pw">
+            <input id={`${uid}-pw`} name="password" type="password" autocomplete="current-password" required minlength="4" />
+            <button type="button" aria-pressed="false" data-pw-toggle aria-controls={`${uid}-pw`}>Mostrar</button>
+          </div>
+        </div>
+        <label class="academy-signin__remember"><input type="checkbox" name="remember" checked /> Mantener la sesión iniciada</label>
+        <p class="academy-signin__error" role="alert" hidden data-signin-error></p>
+        <button type="submit" class="academy-signin__submit">Entrar</button>
+      </form>
+
+      <p class="academy-signin__demo">
+        Demo rápida: <a href={learnerHref}>Aula de alumno</a> · <a href={studioHref}>Estudio de instructor</a>
+      </p>
+      <p class="academy-signin__alt">¿Aún no tienes cuenta? <a href={signUpHref}>Elige un plan</a></p>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initSignIn(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-signin-form]');
+    const err = root.querySelector<HTMLElement>('[data-signin-error]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-pw-toggle]');
+    const pw = form?.elements.namedItem('password') as HTMLInputElement | null;
+    toggle?.addEventListener('click', () => {
+      if (!pw) return;
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    if (!form || form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        if (err) { err.hidden = false; err.textContent = 'Escribe un email válido y una contraseña de al menos 4 caracteres.'; }
+        form.querySelector<HTMLElement>(':invalid')?.focus();
+        return;
+      }
+      const role = (form.elements.namedItem('role') as RadioNodeList).value;
+      location.href = (role === 'studio' ? root.dataset.studio : root.dataset.learner) ?? '/';
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-signin]').forEach(initSignIn);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-signin {
+    display: grid;
+    min-height: 100vh;
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-signin__brand {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-8, 2rem);
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(var(--ac-brand-rgb), 0.18), transparent 60%),
+      linear-gradient(180deg, var(--ac-surface), var(--ac-bg-raised));
+    border-right: 1px solid var(--ac-border);
+  }
+
+  .academy-signin__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--ac-text-2);
+    text-decoration: none;
+  }
+
+  .academy-signin__back:hover {
+    color: var(--ac-brand);
+  }
+
+  .academy-signin__lamp {
+    align-self: center;
+    width: min(260px, 60%);
+    color: var(--ac-brand);
+  }
+
+  .academy-signin__quote {
+    margin: 0;
+  }
+
+  .academy-signin__quote blockquote {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.5rem;
+    line-height: 1.35;
+  }
+
+  .academy-signin__quote figcaption {
+    margin-top: var(--sp-3, 0.75rem);
+    color: var(--ac-text-3);
+    font-size: 0.9rem;
+  }
+
+  .academy-signin__stats {
+    display: flex;
+    gap: var(--sp-8, 2rem);
+    margin: 0;
+  }
+
+  .academy-signin__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .academy-signin__stats dt {
+    color: var(--ac-text-3);
+    font-size: 0.82rem;
+  }
+
+  .academy-signin__stats dd {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  .academy-signin__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+  }
+
+  .academy-signin__box {
+    width: min(100%, 420px);
+  }
+
+  .academy-signin__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: 2.4rem;
+  }
+
+  .academy-signin__lead {
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-6, 1.5rem);
+    color: var(--ac-text-2);
+  }
+
+  .academy-signin__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .academy-signin__roles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-signin__roles legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .academy-signin__roles label {
+    position: relative;
+  }
+
+  .academy-signin__roles input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .academy-signin__roles span {
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    border-radius: var(--r-sm, 8px);
+    color: var(--ac-text-2);
+    font-weight: 700;
+  }
+
+  .academy-signin__roles input:checked + span {
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-signin__roles label:focus-within span {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-signin__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .academy-signin__field label {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .academy-signin__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .academy-signin__pw {
+    position: relative;
+  }
+
+  .academy-signin__pw input {
+    padding-right: 90px;
+  }
+
+  .academy-signin__pw button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 80px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--ac-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .academy-signin__field input:focus-visible,
+  .academy-signin__pw button:focus-visible,
+  .academy-signin__submit:focus-visible,
+  .academy-signin a:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-signin__remember {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 32px;
+    color: var(--ac-text-2);
+    font-size: 0.92rem;
+  }
+
+  .academy-signin__error {
+    margin: 0;
+    color: var(--ac-bad);
+    font-size: 0.9rem;
+  }
+
+  .academy-signin__submit {
+    min-height: 50px;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .academy-signin__submit:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-signin__demo,
+  .academy-signin__alt {
+    margin: var(--sp-5, 1.25rem) 0 0;
+    color: var(--ac-text-3);
+    font-size: 0.9rem;
+  }
+
+  .academy-signin a {
+    color: var(--ac-brand);
+  }
+
+  @media (min-width: 900px) {
+    .academy-signin {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .academy-signin__brand {
+      display: flex;
+    }
+  }
+</style>

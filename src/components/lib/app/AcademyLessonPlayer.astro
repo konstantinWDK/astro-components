@@ -1,0 +1,672 @@
+---
+/**
+ * AcademyLessonPlayer — Course player: a lesson stage with play / pause, scrubber and speed
+ * (simulated clock — swap the stage for your video element), previous / next and "mark as
+ * complete", plus the course outline with per-lesson checks, overall progress and personal
+ * notes saved per lesson in the browser.
+ *
+ * @param {AcademyCourse} course - Course being studied.
+ * @param {string} currentLessonId - Lesson open on load. Defaults to the first unfinished one.
+ * @param {string[]} done - Ids of completed lessons.
+ * @param {string} courseHref - Link back to the course page.
+ * @param {number} demoSpeedup - Simulated seconds per real second at 1× (demo only). Default 20.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: lesson list buttons expose aria-current and a completed state in text; the
+ * scrubber is a labelled range input; keyboard: Space toggles playback when the stage has
+ * focus; the progress bar has role="progressbar" values; completion changes are announced
+ * in a polite live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyCourses, type AcademyCourse } from '../templates/academy/data';
+
+interface OwnProps {
+  course?: AcademyCourse;
+  currentLessonId?: string;
+  done?: string[];
+  courseHref?: string;
+  demoSpeedup?: number;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  course = academyCourses[0],
+  done = [],
+  courseHref = '#',
+  demoSpeedup = 20,
+  currentLessonId,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `alp-${Math.random().toString(36).slice(2, 8)}`;
+const all = course.modules.flatMap((m) => m.lessons.map((l) => ({ ...l, module: m.title })));
+const current = all.find((l) => l.id === currentLessonId) ?? all.find((l) => !done.includes(l.id)) ?? all[0];
+const typeLabel = { video: 'Vídeo', lectura: 'Lectura', quiz: 'Test', proyecto: 'Proyecto' } as const;
+const pct = Math.round((done.length / all.length) * 100);
+---
+
+<section class:list={['academy-ui', 'academy-player', classAttr]} aria-labelledby={`${uid}-title`} data-academy-player data-course={course.id} data-speedup={demoSpeedup} {...rest}>
+  <div class="academy-player__main">
+    <p class="academy-player__crumbs"><a href={courseHref}>{course.title}</a> <span aria-hidden="true">/</span> <span data-p-module>{current.module}</span></p>
+
+    <div class="academy-player__stage" tabindex="0" aria-label="Zona de la clase. Pulsa espacio para reproducir o pausar" data-p-stage style={`--course-hue:${course.hue}`}>
+      <div class="academy-player__art" aria-hidden="true">
+        <svg viewBox="0 0 200 120" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="100" cy="60" r="16" /><circle cx="100" cy="60" r="32" opacity=".55" /><circle cx="100" cy="60" r="50" opacity=".28" /></svg>
+      </div>
+      <p class="academy-player__badge" data-p-type>{typeLabel[current.type]}</p>
+      <button type="button" class="academy-player__big" data-p-big aria-label="Reproducir">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-p-bigicon><path d="M8 5.500v13l11-6.500z" /></svg>
+      </button>
+      <p class="academy-player__caption" data-p-caption aria-hidden="true"></p>
+    </div>
+
+    <div class="academy-player__controls" data-p-controls>
+      <button type="button" class="academy-player__btn" data-p-play aria-label="Reproducir">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" data-p-playicon><path d="M8 5.500v13l11-6.500z" /></svg>
+      </button>
+      <span class="academy-player__time" data-p-time>0:00</span>
+      <label class="ac-sr" for={`${uid}-seek`}>Posición en la clase</label>
+      <input id={`${uid}-seek`} class="academy-player__seek" type="range" min="0" max="100" value="0" step="1" data-p-seek />
+      <span class="academy-player__time" data-p-total>0:00</span>
+      <label class="ac-sr" for={`${uid}-rate`}>Velocidad</label>
+      <select id={`${uid}-rate`} class="academy-player__rate" data-p-rate>
+        <option value="1">1×</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2×</option>
+      </select>
+    </div>
+
+    <div class="academy-player__head">
+      <div>
+        <h1 id={`${uid}-title`} class="academy-player__title" data-p-title>{current.title}</h1>
+        <p class="academy-player__meta"><span data-p-minutes>{current.minutes} min</span> · lección <span data-p-index>1</span> de {all.length}</p>
+      </div>
+      <div class="academy-player__nav">
+        <button type="button" class="academy-player__ghost" data-p-prev>← Anterior</button>
+        <button type="button" class="academy-player__done" aria-pressed="false" data-p-complete>Marcar como completada</button>
+        <button type="button" class="academy-player__ghost" data-p-next>Siguiente →</button>
+      </div>
+    </div>
+
+    <div class="academy-player__notes">
+      <label for={`${uid}-notes`}>Mis apuntes de esta clase</label>
+      <textarea id={`${uid}-notes`} rows="4" placeholder="Escribe aquí lo importante. Se guarda en este navegador." data-p-notes></textarea>
+      <p class="academy-player__saved" role="status" aria-live="polite" data-p-status></p>
+    </div>
+  </div>
+
+  <aside class="academy-player__side" aria-label="Contenido del curso">
+    <div class="academy-player__progress">
+      <p><strong data-p-pct>{pct} %</strong> completado · <span data-p-count>{done.length}</span>/{all.length} clases</p>
+      <div class="academy-player__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct} aria-label="Progreso del curso" data-p-bar><i style={`width:${pct}%`}></i></div>
+    </div>
+    <div class="academy-player__outline">
+      {course.modules.map((m, mi) => (
+        <details class="academy-player__mod" open={m.lessons.some((l) => l.id === current.id) || mi === 0}>
+          <summary>{m.title}</summary>
+          <ul role="list">
+            {m.lessons.map((l) => (
+              <li>
+                <button
+                  type="button"
+                  class="academy-player__lesson"
+                  data-lesson={l.id}
+                  data-title={l.title}
+                  data-minutes={l.minutes}
+                  data-type={l.type}
+                  data-module={m.title}
+                  data-done={done.includes(l.id) ? 'true' : 'false'}
+                  aria-current={l.id === current.id ? 'true' : undefined}
+                >
+                  <span class="academy-player__check" aria-hidden="true"></span>
+                  <span class="academy-player__lesson-title">{l.title}</span>
+                  <span class="academy-player__lesson-meta">{typeLabel[l.type]} · {l.minutes} min<span class="ac-sr" data-sr-done>{done.includes(l.id) ? ' · completada' : ''}</span></span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))}
+    </div>
+  </aside>
+</section>
+
+<script>
+  function initPlayer(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const lessons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-lesson]'));
+    const speedup = Number(root.dataset.speedup) || 20;
+    const key = (id: string) => `academy-notes:${root.dataset.course}:${id}`;
+    const stage = q('[data-p-stage]');
+    const seek = q<HTMLInputElement>('[data-p-seek]');
+    const rate = q<HTMLSelectElement>('[data-p-rate]');
+    const notes = q<HTMLTextAreaElement>('[data-p-notes]');
+    const status = q('[data-p-status]');
+    const completeBtn = q<HTMLButtonElement>('[data-p-complete]');
+    let index = Math.max(0, lessons.findIndex((l) => l.getAttribute('aria-current') === 'true'));
+    let seconds = 0;
+    let total = 0;
+    let timer: number | undefined;
+
+    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const playing = () => timer !== undefined;
+    const setPlayIcons = (on: boolean) => {
+      const label = on ? 'Pausar' : 'Reproducir';
+      const path = on ? '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>' : '<path d="M8 5.500v13l11-6.500z"/>';
+      q('[data-p-playicon]').innerHTML = path;
+      q('[data-p-bigicon]').innerHTML = path;
+      q('[data-p-play]').setAttribute('aria-label', label);
+      q('[data-p-big]').setAttribute('aria-label', label);
+      stage.classList.toggle('is-playing', on);
+    };
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+      setPlayIcons(false);
+    };
+    const render = () => {
+      q('[data-p-time]').textContent = fmt(seconds);
+      seek.value = String(total ? Math.round((seconds / total) * 100) : 0);
+      q('[data-p-caption]').textContent = playing() ? 'Reproduciendo (simulación): sustituye esta zona por tu reproductor de vídeo.' : '';
+    };
+    const tick = () => {
+      seconds = Math.min(total, seconds + Number(rate.value) * speedup);
+      render();
+      if (seconds >= total) {
+        stop();
+        if (lessons[index].dataset.done !== 'true') toggleDone(true);
+      }
+    };
+    const play = () => {
+      if (playing()) return stop();
+      if (seconds >= total) seconds = 0;
+      timer = window.setInterval(tick, 1000);
+      setPlayIcons(true);
+      render();
+    };
+    const refreshProgress = () => {
+      const done = lessons.filter((l) => l.dataset.done === 'true').length;
+      const pct = Math.round((done / lessons.length) * 100);
+      q('[data-p-pct]').textContent = `${pct} %`;
+      q('[data-p-count]').textContent = String(done);
+      q('[data-p-bar]').setAttribute('aria-valuenow', String(pct));
+      q<HTMLElement>('[data-p-bar] i').style.width = `${pct}%`;
+    };
+    const syncComplete = () => {
+      const on = lessons[index].dataset.done === 'true';
+      completeBtn.setAttribute('aria-pressed', String(on));
+      completeBtn.textContent = on ? '✓ Completada' : 'Marcar como completada';
+    };
+    function toggleDone(force?: boolean) {
+      const el = lessons[index];
+      const next = force ?? el.dataset.done !== 'true';
+      el.dataset.done = String(next);
+      const sr = el.querySelector('[data-sr-done]');
+      if (sr) sr.textContent = next ? ' · completada' : '';
+      refreshProgress();
+      syncComplete();
+      status.textContent = next ? 'Clase marcada como completada.' : 'Clase marcada como pendiente.';
+    }
+    const select = (i: number) => {
+      stop();
+      index = Math.min(lessons.length - 1, Math.max(0, i));
+      const el = lessons[index];
+      lessons.forEach((l) => (l === el ? l.setAttribute('aria-current', 'true') : l.removeAttribute('aria-current')));
+      el.closest('details')?.setAttribute('open', '');
+      q('[data-p-title]').textContent = el.dataset.title ?? '';
+      q('[data-p-minutes]').textContent = `${el.dataset.minutes} min`;
+      q('[data-p-index]').textContent = String(index + 1);
+      q('[data-p-module]').textContent = el.dataset.module ?? '';
+      const labels: Record<string, string> = { video: 'Vídeo', lectura: 'Lectura', quiz: 'Test', proyecto: 'Proyecto' };
+      q('[data-p-type]').textContent = labels[el.dataset.type ?? 'video'];
+      q('[data-p-controls]').toggleAttribute('hidden', el.dataset.type !== 'video');
+      q('[data-p-big]').toggleAttribute('hidden', el.dataset.type !== 'video');
+      total = Number(el.dataset.minutes) * 60;
+      seconds = 0;
+      q('[data-p-total]').textContent = fmt(total);
+      render();
+      syncComplete();
+      try { notes.value = localStorage.getItem(key(el.dataset.lesson ?? '')) ?? ''; } catch (e) { notes.value = ''; }
+      status.textContent = '';
+    };
+
+    lessons.forEach((l, i) => l.addEventListener('click', () => select(i)));
+    q('[data-p-play]').addEventListener('click', play);
+    q('[data-p-big]').addEventListener('click', play);
+    q('[data-p-prev]').addEventListener('click', () => select(index - 1));
+    q('[data-p-next]').addEventListener('click', () => select(index + 1));
+    completeBtn.addEventListener('click', () => toggleDone());
+    seek.addEventListener('input', () => { seconds = (Number(seek.value) / 100) * total; render(); });
+    stage.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === ' ' && lessons[index].dataset.type === 'video') { e.preventDefault(); play(); }
+    });
+    let saveTimer: number | undefined;
+    notes.addEventListener('input', () => {
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(() => {
+        try {
+          localStorage.setItem(key(lessons[index].dataset.lesson ?? ''), notes.value);
+          status.textContent = 'Apuntes guardados.';
+        } catch (e) { status.textContent = 'No se pudieron guardar los apuntes en este navegador.'; }
+      }, 400);
+    });
+    select(index);
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-player]').forEach(initPlayer);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-player {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-player__main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4, 1rem);
+    min-width: 0;
+  }
+
+  .academy-player__crumbs {
+    margin: 0;
+    color: var(--ac-text-3);
+    font-size: 0.88rem;
+  }
+
+  .academy-player__crumbs a {
+    color: var(--ac-text-2);
+    text-underline-offset: 3px;
+  }
+
+  .academy-player__stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: linear-gradient(140deg, hsl(var(--course-hue) 55% 30%), hsl(calc(var(--course-hue) + 50) 50% 10%));
+    color: #fff;
+  }
+
+  .academy-player__stage:focus-visible,
+  .academy-player a:focus-visible,
+  .academy-player button:focus-visible,
+  .academy-player select:focus-visible,
+  .academy-player textarea:focus-visible,
+  .academy-player input:focus-visible,
+  .academy-player summary:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-player__art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0.55;
+  }
+
+  .academy-player__art svg {
+    width: 56%;
+  }
+
+  .academy-player__stage.is-playing .academy-player__art svg {
+    animation: academy-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes academy-pulse {
+    50% { transform: scale(1.08); opacity: 0.7; }
+  }
+
+  .academy-player__badge {
+    position: absolute;
+    top: var(--sp-4, 1rem);
+    left: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0.2rem 0.7rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(13, 14, 28, 0.7);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .academy-player__big {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    box-shadow: 0 0 0 10px rgba(var(--ac-brand-rgb), 0.25);
+    cursor: pointer;
+  }
+
+  .academy-player__stage.is-playing .academy-player__big {
+    opacity: 0;
+  }
+
+  .academy-player__stage.is-playing:hover .academy-player__big,
+  .academy-player__stage.is-playing:focus-within .academy-player__big {
+    opacity: 1;
+  }
+
+  .academy-player__caption {
+    position: absolute;
+    right: var(--sp-4, 1rem);
+    bottom: var(--sp-3, 0.75rem);
+    left: var(--sp-4, 1rem);
+    margin: 0;
+    font-size: 0.85rem;
+    text-align: center;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  }
+
+  .academy-player__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-player__controls[hidden] {
+    display: none;
+  }
+
+  .academy-player__btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    cursor: pointer;
+  }
+
+  .academy-player__time {
+    min-width: 40px;
+    color: var(--ac-text-2);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .academy-player__seek {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    accent-color: var(--ac-brand);
+    cursor: pointer;
+  }
+
+  .academy-player__rate {
+    min-height: 44px;
+    padding: 0 var(--sp-2, 0.5rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    font: inherit;
+  }
+
+  .academy-player__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .academy-player__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    line-height: 1.15;
+  }
+
+  .academy-player__meta {
+    margin: var(--sp-1, 0.25rem) 0 0;
+    color: var(--ac-text-3);
+    font-size: 0.9rem;
+  }
+
+  .academy-player__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-player__ghost,
+  .academy-player__done {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--ac-text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .academy-player__ghost:hover {
+    border-color: var(--ac-brand);
+  }
+
+  .academy-player__done {
+    border-color: var(--ac-brand);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-player__done[aria-pressed='true'] {
+    background: rgba(var(--ac-brand-rgb), 0.16);
+    color: var(--ac-brand);
+  }
+
+  .academy-player__notes {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-player__notes label {
+    font-weight: 700;
+  }
+
+  .academy-player__notes textarea {
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    font: inherit;
+    resize: vertical;
+  }
+
+  .academy-player__saved {
+    min-height: 1.2em;
+    margin: 0;
+    color: var(--ac-text-3);
+    font-size: 0.82rem;
+  }
+
+  .academy-player__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+  }
+
+  .academy-player__progress {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-player__progress p {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+  }
+
+  .academy-player__progress strong {
+    color: var(--ac-brand);
+  }
+
+  .academy-player__bar {
+    height: 8px;
+    overflow: hidden;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-surface-2);
+  }
+
+  .academy-player__bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ac-brand), var(--ac-violet));
+    transition: width 0.4s ease;
+  }
+
+  .academy-player__outline {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-player__mod {
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+    overflow: hidden;
+  }
+
+  .academy-player__mod summary {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-4, 1rem);
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .academy-player__mod ul {
+    margin: 0;
+    padding: 0 var(--sp-2, 0.5rem) var(--sp-2, 0.5rem);
+    list-style: none;
+  }
+
+  .academy-player__lesson {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 var(--sp-3, 0.75rem);
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--ac-text-2);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .academy-player__lesson:hover {
+    background: var(--ac-surface);
+  }
+
+  .academy-player__lesson[aria-current='true'] {
+    background: rgba(var(--ac-brand-rgb), 0.14);
+    color: var(--ac-text);
+  }
+
+  .academy-player__check {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--ac-border-strong);
+    border-radius: 50%;
+  }
+
+  .academy-player__lesson[data-done='true'] .academy-player__check {
+    border-color: var(--ac-ok);
+    background: var(--ac-ok);
+  }
+
+  .academy-player__lesson[data-done='true'] .academy-player__check::after {
+    content: '';
+    width: 5px;
+    height: 10px;
+    margin-bottom: 2px;
+    border: solid #0d0e1c;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .academy-player__lesson-title {
+    font-size: 0.93rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .academy-player__lesson-meta {
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+  }
+
+  @media (min-width: 1080px) {
+    .academy-player {
+      grid-template-columns: minmax(0, 1fr) 360px;
+      align-items: start;
+    }
+
+    .academy-player__side {
+      position: sticky;
+      top: 88px;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-player__stage.is-playing .academy-player__art svg {
+      animation: none;
+    }
+
+    .academy-player__bar i {
+      transition: none;
+    }
+  }
+</style>

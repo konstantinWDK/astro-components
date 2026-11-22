@@ -1,0 +1,186 @@
+---
+/**
+ * AcademyReviews — Student outcomes: a large rating summary plus review cards with stars,
+ * quote, author, role and the course they took.
+ *
+ * @param {AcademyReview[]} reviews - Reviews to show.
+ * @param {AcademyCourse[]} courses - Used to name each review's course.
+ * @param {string} rating - Headline rating, e.g. '4,8'.
+ * @param {string} total - Total reviews label, e.g. '12.400 reseñas'.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: stars are written out ("5 de 5 estrellas") and the glyphs are aria-hidden;
+ * each review is a <figure> with <blockquote> and <figcaption>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyReviews, academyCourses, type AcademyReview, type AcademyCourse } from '../templates/academy/data';
+
+interface OwnProps {
+  reviews?: AcademyReview[];
+  courses?: AcademyCourse[];
+  rating?: string;
+  total?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  reviews = academyReviews,
+  courses = academyCourses,
+  rating = '4,8',
+  total = '12.400 reseñas verificadas',
+  title = 'Lo que dicen quienes ya terminaron',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ar-${Math.random().toString(36).slice(2, 8)}`;
+const courseName = (id: string) => courses.find((c) => c.id === id)?.title ?? '';
+---
+
+<section class:list={['academy-ui', 'academy-reviews', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="academy-reviews__inner">
+    <header class="academy-reviews__head">
+      <Heading id={`${uid}-title`} class="academy-reviews__title">{title}</Heading>
+      <p class="academy-reviews__score">
+        <strong>{rating}</strong>
+        <span><span class="academy-reviews__stars" aria-hidden="true">★★★★★</span><br />{total}</span>
+      </p>
+    </header>
+    <ul class="academy-reviews__grid" role="list">
+      {reviews.map((r) => (
+        <li>
+          <figure class="academy-review">
+            <p class="academy-review__rating">
+              <span aria-hidden="true">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+              <span class="ac-sr">{r.rating} de 5 estrellas</span>
+            </p>
+            <blockquote class="academy-review__text">{r.text}</blockquote>
+            <figcaption class="academy-review__who">
+              <strong>{r.name}</strong>
+              <span>{r.role}</span>
+              <span class="academy-review__course">Curso: {courseName(r.courseId)}</span>
+            </figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .academy-reviews {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-reviews__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .academy-reviews__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-5, 1.25rem);
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .academy-reviews__title {
+    max-width: 560px;
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+  }
+
+  .academy-reviews__score {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .academy-reviews__score strong {
+    font-family: var(--ac-font-display);
+    font-size: 4rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--ac-brand);
+  }
+
+  .academy-reviews__stars {
+    color: var(--ac-brand);
+    letter-spacing: 2px;
+  }
+
+  .academy-reviews__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-review {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    height: 100%;
+    margin: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+    box-sizing: border-box;
+  }
+
+  .academy-review__rating {
+    margin: 0;
+    color: var(--ac-brand);
+    letter-spacing: 2px;
+  }
+
+  .academy-review__text {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.08rem;
+    line-height: 1.55;
+  }
+
+  .academy-review__who {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--ac-border);
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+  }
+
+  .academy-review__who strong {
+    color: var(--ac-text);
+    font-size: 0.95rem;
+  }
+
+  .academy-review__course {
+    color: var(--ac-violet);
+  }
+</style>

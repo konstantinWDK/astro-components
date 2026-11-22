@@ -1,0 +1,164 @@
+---
+/**
+ * AcademyAppLayout — Learner area and instructor studio shell for the "Lumen" template.
+ * Uses AcademyAreaNav (rail on desktop, bottom tab bar on phones) and AcademyAreaTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Lumen").
+ * @param {string} current - Active route key (dashboard | player | studio).
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './academy-theme.css';
+import AcademyAreaNav from '../../app/AcademyAreaNav.astro';
+import AcademyAreaTopbar from '../../app/AcademyAreaTopbar.astro';
+import { academyRoutes, academyLearner, type AcademyRoutes } from './data';
+
+type Key = 'dashboard' | 'player' | 'studio';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: AcademyRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Lumen · Tu aula: continúa tus cursos, estudia con el reproductor y gestiona tus cursos si eres instructor.',
+  current = 'dashboard',
+  routes = academyRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const navItems = [
+  { label: 'Mi aprendizaje', href: routes.dashboard, icon: 'home' },
+  { label: 'Clase', href: routes.player, icon: 'play' },
+  { label: 'Catálogo', href: routes.courses, icon: 'book' },
+  { label: 'Estudio', href: routes.studio, icon: 'chart' },
+];
+const notifications = [
+  { title: 'Proyecto revisado', text: 'Elena dejó comentarios en tu paleta de color', time: 'hace 15 min', unread: true },
+  { title: 'Racha de 12 días', text: 'Sigue así: mañana desbloqueas una insignia', time: 'hoy', unread: true },
+  { title: 'Nuevo curso', text: 'Design systems con tokens ya está disponible', time: 'hace 2 días' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-academy" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Lumen`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="academy-app-body">
+    <a href="#main-content" class="academy-app-skip">Saltar al contenido</a>
+    <div class="academy-app-shell">
+      <AcademyAreaNav
+        items={navItems}
+        currentHref={routes[current] ?? routes.dashboard}
+        brand="Lumen"
+        homeHref={routes.home}
+        goal={{ label: 'Meta semanal', value: academyLearner.minutesThisWeek, max: academyLearner.weeklyGoalMinutes }}
+      />
+      <div class="academy-app-column">
+        <AcademyAreaTopbar
+          user={{ name: academyLearner.name, plan: academyLearner.plan, id: academyLearner.id }}
+          streak={academyLearner.streakDays}
+          notifications={notifications}
+          links={[{ label: 'Web de Lumen', href: routes.home }, { label: 'Cambiar de plan', href: routes.pricing }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="academy-app-main" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .academy-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-app-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .academy-app-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .academy-app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .academy-app-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .academy-app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-12, 3rem);
+    box-sizing: border-box;
+  }
+
+  .academy-app-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .academy-app-main {
+      padding: var(--sp-8, 2rem) var(--sp-8, 2rem) var(--sp-16, 4rem);
+    }
+  }
+
+  /* Room for the bottom tab bar on phones and tablets */
+  @media (max-width: 959px) {
+    .academy-app-main {
+      padding-bottom: calc(var(--sp-16, 4rem) + 64px);
+    }
+  }
+</style>

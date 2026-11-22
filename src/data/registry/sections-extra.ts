@@ -1019,4 +1019,66 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['gym', 'fitness', 'footer', 'hours', 'cta'],
     usage: `<GymFooter cta={{ title: 'Tu primera semana es gratis', href: '/prueba-gratis', label: 'Empezar prueba' }} />`,
   }),
+
+  // === ONLINE ACADEMY ("Lumen") ===
+  section({
+    slug: 'academy-hero', name: 'Academy Hero', file: 'AcademyHero.astro', sectionCategory: 'academy',
+    description: 'Online academy hero with a serif headline, course search with popular topics, learner figures and a featured-course card over an amber lamp glow.',
+    tags: ['academy', 'education', 'hero', 'search', 'courses'], featured: true,
+    usage: `<AcademyHero searchAction="/cursos" pricingHref="/precios" featured={academyCourses[0]} featuredHref="/cursos/diseno-de-interfaces-desde-cero" />`,
+  }),
+  section({
+    slug: 'academy-tracks', name: 'Academy Tracks', file: 'AcademyTracks.astro', sectionCategory: 'academy',
+    description: 'Learning-path cards per area with icon, description and course count; each links to the catalog filtered by that category.',
+    tags: ['academy', 'education', 'categories', 'cards', 'paths'], featured: true,
+    usage: `<AcademyTracks categories={academyCategories} courses={academyCourses} coursesHref="/cursos" />`,
+  }),
+  section({
+    slug: 'academy-course-grid', name: 'Academy Course Grid', file: 'AcademyCourseGrid.astro', sectionCategory: 'academy',
+    description: 'Course catalog with search, category chips, level filter and sorting. Reads ?q= and ?cat= from the URL and announces the result count.',
+    tags: ['academy', 'education', 'catalog', 'filter', 'search', 'courses'], featured: true,
+    usage: `<AcademyCourseGrid courses={academyCourses} courseBase="/cursos" />`,
+  }),
+  section({
+    slug: 'academy-course-hero', name: 'Academy Course Hero', file: 'AcademyCourseHero.astro', sectionCategory: 'academy',
+    description: 'Course page header: breadcrumbs, rating and meta line, teacher, what you will learn and a sticky enrolment card with price, discount and what is included.',
+    tags: ['academy', 'education', 'course', 'enroll', 'pricing'], featured: true,
+    usage: `<AcademyCourseHero course={academyCourses[0]} enrollHref="/acceso" coursesHref="/cursos" />`,
+  }),
+  section({
+    slug: 'academy-curriculum', name: 'Academy Curriculum', file: 'AcademyCurriculum.astro', sectionCategory: 'academy',
+    description: 'Course syllabus as an accordion of modules with lesson type, duration, free-preview badges and expand/collapse all.',
+    tags: ['academy', 'education', 'syllabus', 'accordion', 'lessons'], featured: true,
+    usage: `<AcademyCurriculum modules={academyCourses[0].modules} />`,
+  }),
+  section({
+    slug: 'academy-pricing-plans', name: 'Academy Pricing Plans', file: 'AcademyPricingPlans.astro', sectionCategory: 'academy',
+    description: 'Subscription plans with a monthly / yearly switch that updates prices, the yearly total and the saving.',
+    tags: ['academy', 'education', 'pricing', 'plans', 'billing', 'toggle'], featured: true,
+    usage: `<AcademyPricingPlans plans={academyPlans} ctaHref="/acceso" billing="yearly" />`,
+  }),
+  section({
+    slug: 'academy-instructors', name: 'Academy Instructors', file: 'AcademyInstructors.astro', sectionCategory: 'academy',
+    description: 'Teaching team cards with initials portrait, role, short bio and students, courses and rating figures.',
+    tags: ['academy', 'education', 'team', 'instructors'],
+    usage: `<AcademyInstructors instructors={academyInstructors} />`,
+  }),
+  section({
+    slug: 'academy-reviews', name: 'Academy Reviews', file: 'AcademyReviews.astro', sectionCategory: 'academy',
+    description: 'Student outcomes: a large rating summary and review cards with stars, quote, author, role and the course taken.',
+    tags: ['academy', 'education', 'reviews', 'testimonials', 'rating'],
+    usage: `<AcademyReviews reviews={academyReviews} rating="4,8" total="12.400 reseñas verificadas" />`,
+  }),
+  section({
+    slug: 'academy-teach-form', name: 'Academy Teach Form', file: 'AcademyTeachForm.astro', sectionCategory: 'academy',
+    description: 'Instructor application: benefits list beside a validated form that posts to your backend or shows an on-page confirmation.',
+    tags: ['academy', 'education', 'form', 'instructor', 'lead'],
+    usage: `<AcademyTeachForm action="/api/teach" />`,
+  }),
+  section({
+    slug: 'academy-footer', name: 'Academy Footer', file: 'AcademyFooter.astro', sectionCategory: 'academy',
+    description: 'Academy footer with a call-to-action band, link columns, contact details and a legal row.',
+    tags: ['academy', 'education', 'footer', 'cta', 'contact'],
+    usage: `<AcademyFooter cta={{ title: 'Tu primera clase es gratis', href: '/acceso', label: 'Empezar a aprender' }} />`,
+  }),
 ];

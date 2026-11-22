@@ -180,3 +180,15 @@ export { default as GymMembershipPlans } from './GymMembershipPlans.astro';
 export { default as GymTrainersGrid } from './GymTrainersGrid.astro';
 export { default as GymTrialForm } from './GymTrialForm.astro';
 export { default as GymFooter } from './GymFooter.astro';
+
+// Online academy ("Lumen")
+export { default as AcademyHero } from './AcademyHero.astro';
+export { default as AcademyTracks } from './AcademyTracks.astro';
+export { default as AcademyCourseGrid } from './AcademyCourseGrid.astro';
+export { default as AcademyCourseHero } from './AcademyCourseHero.astro';
+export { default as AcademyCurriculum } from './AcademyCurriculum.astro';
+export { default as AcademyPricingPlans } from './AcademyPricingPlans.astro';
+export { default as AcademyInstructors } from './AcademyInstructors.astro';
+export { default as AcademyReviews } from './AcademyReviews.astro';
+export { default as AcademyTeachForm } from './AcademyTeachForm.astro';
+export { default as AcademyFooter } from './AcademyFooter.astro';

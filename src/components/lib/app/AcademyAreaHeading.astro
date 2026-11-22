@@ -1,0 +1,131 @@
+---
+/**
+ * AcademyAreaHeading — Page heading for the learner / instructor area: kicker, serif title,
+ * description, optional back link and action buttons.
+ *
+ * @param {string} title - Page title (renders the page's h1).
+ * @param {string} kicker - Small label above the title.
+ * @param {string} description - Supporting text.
+ * @param {{label: string, href: string}} back - Optional back link.
+ * @param {Array<{label: string, href: string, primary?: boolean}>} actions - Buttons on the right.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; back link has an arrow marked aria-hidden; buttons are 44px tall links.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+
+interface OwnProps {
+  title?: string;
+  kicker?: string;
+  description?: string;
+  back?: { label: string; href: string };
+  actions?: Array<{ label: string; href: string; primary?: boolean }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { title = 'Mi aprendizaje', kicker, description, back, actions = [], class: classAttr, ...rest } = Astro.props;
+---
+
+<header class:list={['academy-ui', 'academy-heading', classAttr]} {...rest}>
+  <div class="academy-heading__text">
+    {back && <a class="academy-heading__back" href={back.href}><span aria-hidden="true">←</span> {back.label}</a>}
+    {kicker && <p class="academy-heading__kicker">{kicker}</p>}
+    <h1 class="academy-heading__title">{title}</h1>
+    {description && <p class="academy-heading__desc">{description}</p>}
+  </div>
+  {actions.length > 0 && (
+    <div class="academy-heading__actions">
+      {actions.map((a) => <a href={a.href} class:list={['academy-heading__btn', a.primary && 'is-primary']}>{a.label}</a>)}
+    </div>
+  )}
+</header>
+
+<style>
+  .academy-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-heading__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .academy-heading__back:hover {
+    color: var(--ac-brand);
+  }
+
+  .academy-heading__kicker {
+    margin: 0 0 var(--sp-1, 0.25rem);
+    color: var(--ac-brand);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .academy-heading__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .academy-heading__desc {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--ac-text-2);
+  }
+
+  .academy-heading__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-heading__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--ac-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .academy-heading__btn:hover {
+    border-color: var(--ac-brand);
+  }
+
+  .academy-heading__btn.is-primary {
+    border-color: var(--ac-brand);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-heading__btn.is-primary:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-heading__btn:focus-visible,
+  .academy-heading__back:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+</style>

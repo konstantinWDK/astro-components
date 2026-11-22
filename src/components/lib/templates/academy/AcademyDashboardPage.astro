@@ -1,0 +1,38 @@
+---
+/**
+ * AcademyDashboardPage — Learner home: weekly goal, study streak and the courses in progress.
+ *
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {typeof academyData} data - Learner and courses.
+ */
+import AcademyAppLayout from './AcademyAppLayout.astro';
+import AcademyAreaHeading from '../../app/AcademyAreaHeading.astro';
+import AcademyProgressBoard from '../../app/AcademyProgressBoard.astro';
+import { academyRoutes, academyData, type AcademyRoutes } from './data';
+
+interface Props {
+  routes?: AcademyRoutes;
+  data?: typeof academyData;
+}
+
+const { routes = academyRoutes, data = academyData } = Astro.props;
+const firstName = data.learner.name.split(' ')[0];
+---
+
+<AcademyAppLayout title="Mi aprendizaje" current="dashboard" routes={routes}>
+  <AcademyAreaHeading
+    kicker="Mi aula"
+    title={`Hola, ${firstName}`}
+    description={`Plan ${data.learner.plan} · alumna desde ${data.learner.since}`}
+    actions={[{ label: 'Continuar clase', href: routes.player, primary: true }, { label: 'Explorar cursos', href: routes.courses }]}
+  />
+  <div class="academy-dash">
+    <AcademyProgressBoard learner={data.learner} courses={data.courses} playerHref={routes.player} catalogHref={routes.courses} />
+  </div>
+</AcademyAppLayout>
+
+<style>
+  .academy-dash {
+    margin-top: var(--sp-6, 1.5rem);
+  }
+</style>

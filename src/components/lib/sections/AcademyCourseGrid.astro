@@ -1,0 +1,492 @@
+---
+/**
+ * AcademyCourseGrid — Course catalog: search, category chips, level and sort controls and
+ * course cards with cover, rating, duration and price. Filters client-side and reads `?q=` and
+ * `?cat=` from the URL, so hero searches and category cards land on a filtered list.
+ *
+ * @param {AcademyCourse[]} courses - Courses to list.
+ * @param {AcademyCategory[]} categories - Category chips.
+ * @param {AcademyInstructor[]} instructors - Used for each card's teacher.
+ * @param {string} courseBase - Base URL of course pages; each links to `${courseBase}/${slug}`.
+ * @param {boolean} filters - Show the filter bar. Default true.
+ * @param {number} limit - Show only the first N courses (no filters). Default 0 = all.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: results count in an aria-live region; chips are a toggle button group with
+ * aria-pressed; each card is an <article> with a single link on its title (stretched).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import {
+  academyCourses, academyCategories, academyInstructors, getAcademyCategory, getAcademyInstructor, formatAcademyPrice,
+  type AcademyCourse, type AcademyCategory, type AcademyInstructor,
+} from '../templates/academy/data';
+
+interface OwnProps {
+  courses?: AcademyCourse[];
+  categories?: AcademyCategory[];
+  instructors?: AcademyInstructor[];
+  courseBase?: string;
+  filters?: boolean;
+  limit?: number;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  courses = academyCourses,
+  categories = academyCategories,
+  instructors = academyInstructors,
+  courseBase = '/cursos',
+  filters = true,
+  limit = 0,
+  title = 'Catálogo de cursos',
+  subtitle = 'Todos incluyen proyecto final, comunidad y certificado.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ag-${Math.random().toString(36).slice(2, 8)}`;
+const list = limit > 0 ? courses.slice(0, limit) : courses;
+const showFilters = filters && limit === 0;
+---
+
+<section class:list={['academy-ui', 'academy-grid', classAttr]} aria-labelledby={`${uid}-title`} data-academy-grid {...rest}>
+  <div class="academy-grid__inner">
+    <header class="academy-grid__head">
+      <Heading id={`${uid}-title`} class="academy-grid__title">{title}</Heading>
+      {subtitle && <p class="academy-grid__subtitle">{subtitle}</p>}
+    </header>
+
+    {showFilters && (
+      <form class="academy-grid__bar" role="search" onsubmit="return false">
+        <div class="academy-grid__field academy-grid__field--search">
+          <label for={`${uid}-q`}>Buscar</label>
+          <input id={`${uid}-q`} type="search" placeholder="SQL, diseño, inglés…" autocomplete="off" data-grid-q />
+        </div>
+        <div class="academy-grid__field">
+          <label for={`${uid}-level`}>Nivel</label>
+          <select id={`${uid}-level`} data-grid-level>
+            <option value="">Todos</option>
+            <option>Inicial</option>
+            <option>Intermedio</option>
+            <option>Avanzado</option>
+          </select>
+        </div>
+        <div class="academy-grid__field">
+          <label for={`${uid}-sort`}>Ordenar por</label>
+          <select id={`${uid}-sort`} data-grid-sort>
+            <option value="popular">Más populares</option>
+            <option value="rating">Mejor valorados</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="hours">Más duración</option>
+          </select>
+        </div>
+        <div class="academy-grid__chips" role="group" aria-label="Categoría">
+          <button type="button" class="academy-grid__chip" aria-pressed="true" data-grid-cat="">Todas</button>
+          {categories.map((c) => <button type="button" class="academy-grid__chip" aria-pressed="false" data-grid-cat={c.id}>{c.name}</button>)}
+        </div>
+      </form>
+      <p class="academy-grid__count" role="status" aria-live="polite" data-grid-count>{list.length} cursos</p>
+    )}
+
+    <ul class="academy-grid__list" role="list" data-grid-list>
+      {list.map((c) => {
+        const teacher = getAcademyInstructor(c.instructorId, instructors);
+        const cat = getAcademyCategory(c.categoryId, categories);
+        return (
+          <li
+            data-course
+            data-title={`${c.title} ${c.subtitle} ${cat?.name ?? ''} ${teacher?.name ?? ''}`.toLowerCase()}
+            data-cat={c.categoryId}
+            data-level={c.level}
+            data-rating={c.rating}
+            data-price={c.price}
+            data-hours={c.hours}
+            data-students={c.students}
+          >
+            <article class="academy-card" style={`--course-hue:${c.hue}`}>
+              <div class="academy-card__cover" aria-hidden="true">
+                <svg viewBox="0 0 200 120" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="100" cy="60" r="16" /><circle cx="100" cy="60" r="32" opacity=".55" /><circle cx="100" cy="60" r="50" opacity=".28" /></svg>
+                <span class="academy-card__cat">{cat?.name}</span>
+                {c.bestseller && <span class="academy-card__flag">Más vendido</span>}
+                {!c.bestseller && c.isNew && <span class="academy-card__flag">Nuevo</span>}
+              </div>
+              <div class="academy-card__body">
+                <h3 class="academy-card__title"><a href={`${courseBase}/${c.slug}`}>{c.title}</a></h3>
+                <p class="academy-card__teacher">{teacher?.name}</p>
+                <p class="academy-card__meta">
+                  <span><strong>★ {c.rating.toString().replace('.', ',')}</strong> <span class="academy-card__muted">({c.reviews.toLocaleString('es-ES')})</span></span>
+                  <span>{c.hours} h · {c.level}</span>
+                </p>
+                <p class="academy-card__price">
+                  <strong>{formatAcademyPrice(c.price)}</strong>
+                  {c.oldPrice && <s><span class="ac-sr">Antes </span>{c.oldPrice} €</s>}
+                </p>
+              </div>
+            </article>
+          </li>
+        );
+      })}
+    </ul>
+    <p class="academy-grid__empty" hidden data-grid-empty>Ningún curso coincide. Prueba con otra búsqueda o quita los filtros.</p>
+  </div>
+</section>
+
+<script>
+  function initGrid(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const q = root.querySelector<HTMLInputElement>('[data-grid-q]');
+    const level = root.querySelector<HTMLSelectElement>('[data-grid-level]');
+    const sort = root.querySelector<HTMLSelectElement>('[data-grid-sort]');
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-grid-cat]'));
+    const list = root.querySelector<HTMLElement>('[data-grid-list]');
+    const count = root.querySelector<HTMLElement>('[data-grid-count]');
+    const empty = root.querySelector<HTMLElement>('[data-grid-empty]');
+    if (!list || !q || !level || !sort) return;
+    const items = Array.from(list.querySelectorAll<HTMLElement>('[data-course]'));
+    let cat = '';
+
+    const apply = () => {
+      const term = q.value.trim().toLowerCase();
+      const compare: Record<string, (a: HTMLElement, b: HTMLElement) => number> = {
+        popular: (a, b) => Number(b.dataset.students) - Number(a.dataset.students),
+        rating: (a, b) => Number(b.dataset.rating) - Number(a.dataset.rating),
+        'price-asc': (a, b) => Number(a.dataset.price) - Number(b.dataset.price),
+        hours: (a, b) => Number(b.dataset.hours) - Number(a.dataset.hours),
+      };
+      const sorted = [...items].sort(compare[sort.value] ?? compare.popular);
+      let visible = 0;
+      sorted.forEach((el) => {
+        const ok =
+          (!term || (el.dataset.title ?? '').includes(term)) &&
+          (!cat || el.dataset.cat === cat) &&
+          (!level.value || el.dataset.level === level.value);
+        el.hidden = !ok;
+        if (ok) visible++;
+        list.appendChild(el);
+      });
+      if (count) count.textContent = `${visible} ${visible === 1 ? 'curso' : 'cursos'}`;
+      if (empty) empty.hidden = visible > 0;
+    };
+
+    chips.forEach((chip) =>
+      chip.addEventListener('click', () => {
+        cat = chip.dataset.gridCat ?? '';
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        apply();
+      }),
+    );
+    q.addEventListener('input', apply);
+    level.addEventListener('change', apply);
+    sort.addEventListener('change', apply);
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('q')) q.value = params.get('q') ?? '';
+    const wanted = params.get('cat');
+    const chip = chips.find((c) => c.dataset.gridCat === wanted);
+    if (chip) chip.click();
+    else apply();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-grid]').forEach(initGrid);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-grid {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-grid__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .academy-grid__head {
+    max-width: 640px;
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .academy-grid__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .academy-grid__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--ac-text-2);
+    line-height: 1.6;
+  }
+
+  .academy-grid__bar {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-grid__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .academy-grid__field label {
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .academy-grid__field input,
+  .academy-grid__field select {
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    font: inherit;
+  }
+
+  .academy-grid__field input:focus-visible,
+  .academy-grid__field select:focus-visible,
+  .academy-grid__chip:focus-visible,
+  .academy-card__title a:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-grid__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-grid__chip {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--ac-text-2);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .academy-grid__chip:hover {
+    border-color: var(--ac-brand);
+    color: var(--ac-text);
+  }
+
+  .academy-grid__chip[aria-pressed='true'] {
+    border-color: var(--ac-brand);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-grid__count {
+    margin: var(--sp-4, 1rem) 0;
+    color: var(--ac-text-3);
+    font-size: 0.9rem;
+  }
+
+  .academy-grid__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: var(--sp-5, 1.25rem);
+    margin: var(--sp-6, 1.5rem) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-grid__bar + .academy-grid__count + .academy-grid__list {
+    margin-top: 0;
+  }
+
+  .academy-grid__list > li[hidden] {
+    display: none;
+  }
+
+  .academy-grid__empty {
+    padding: var(--sp-8, 2rem);
+    border: 1px dashed var(--ac-border-strong);
+    border-radius: var(--r-lg, 20px);
+    color: var(--ac-text-2);
+    text-align: center;
+  }
+
+  .academy-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+
+  .academy-card:hover,
+  .academy-card:focus-within {
+    transform: translateY(-3px);
+    border-color: var(--ac-border-strong);
+  }
+
+  .academy-card__cover {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    color: rgba(255, 255, 255, 0.8);
+    background: linear-gradient(140deg, hsl(var(--course-hue) 62% 42%), hsl(calc(var(--course-hue) + 50) 55% 16%));
+  }
+
+  .academy-card__cover svg {
+    width: 62%;
+  }
+
+  .academy-card__cat,
+  .academy-card__flag {
+    position: absolute;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--r-full, 999px);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+
+  .academy-card__cat {
+    left: var(--sp-3, 0.75rem);
+    bottom: var(--sp-3, 0.75rem);
+    background: rgba(13, 14, 28, 0.7);
+    color: #f5f3ec;
+  }
+
+  .academy-card__flag {
+    top: var(--sp-3, 0.75rem);
+    left: var(--sp-3, 0.75rem);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    flex: 1;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .academy-card__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .academy-card__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Stretched link: the whole card is clickable */
+  .academy-card__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .academy-card__teacher {
+    margin: 0;
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+  }
+
+  .academy-card__meta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    color: var(--ac-text-2);
+    font-size: 0.85rem;
+  }
+
+  .academy-card__meta strong {
+    color: var(--ac-brand);
+  }
+
+  .academy-card__muted {
+    color: var(--ac-text-3);
+  }
+
+  .academy-card__price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2, 0.5rem);
+    margin: auto 0 0;
+    padding-top: var(--sp-2, 0.5rem);
+  }
+
+  .academy-card__price strong {
+    font-family: var(--ac-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .academy-card__price s {
+    color: var(--ac-text-3);
+    font-size: 0.9rem;
+  }
+
+  @media (min-width: 900px) {
+    .academy-grid__bar {
+      grid-template-columns: 1fr 180px 220px;
+      align-items: end;
+    }
+
+    .academy-grid__chips {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-card,
+    .academy-grid__chip {
+      transition: none;
+    }
+
+    .academy-card:hover,
+    .academy-card:focus-within {
+      transform: none;
+    }
+  }
+</style>

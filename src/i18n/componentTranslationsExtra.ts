@@ -1071,4 +1071,81 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso al gimnasio con selector socio o staff, número de socio o email, PIN con mostrar y botones de acceso de demostración sobre fondo de rayas.',
     ru: 'Вход в спортзал: переключатель участник/персонал, номер или email, PIN с показом и демо-кнопки на полосатом фоне.',
   },
+  // ── Online academy ("Lumen") ────────────────────────
+  'academy-hero': {
+    es: 'Hero de academia online con titular serif, buscador de cursos con temas populares, cifras de alumnos y tarjeta del curso destacado sobre un resplandor ámbar.',
+    ru: 'Главный экран онлайн-академии с засечным заголовком, поиском курсов и популярными темами, цифрами и карточкой популярного курса на янтарном свечении.',
+  },
+  'academy-tracks': {
+    es: 'Tarjetas de rutas por área con icono, descripción y número de cursos; cada una abre el catálogo filtrado por esa categoría.',
+    ru: 'Карточки направлений с иконкой, описанием и числом курсов; каждая открывает каталог, отфильтрованный по категории.',
+  },
+  'academy-course-grid': {
+    es: 'Catálogo de cursos con buscador, categorías, filtro por nivel y orden. Lee ?q= y ?cat= de la URL y anuncia el número de resultados.',
+    ru: 'Каталог курсов с поиском, категориями, фильтром по уровню и сортировкой. Читает ?q= и ?cat= из URL и озвучивает число результатов.',
+  },
+  'academy-course-hero': {
+    es: 'Cabecera de la ficha de curso: migas de pan, valoración y datos, instructor, qué aprenderás y tarjeta de matrícula fija con precio, descuento y contenido incluido.',
+    ru: 'Шапка страницы курса: хлебные крошки, рейтинг и данные, преподаватель, чему вы научитесь и закреплённая карточка записи с ценой, скидкой и составом.',
+  },
+  'academy-curriculum': {
+    es: 'Temario del curso como acordeón de módulos con tipo de clase, duración, clases de muestra gratuitas y botón para expandir o contraer todo.',
+    ru: 'Программа курса в виде аккордеона модулей с типом урока, длительностью, бесплатными пробными уроками и кнопкой «развернуть всё».',
+  },
+  'academy-pricing-plans': {
+    es: 'Planes de suscripción con interruptor mensual o anual que actualiza precios, el total anual y el ahorro.',
+    ru: 'Тарифы подписки с переключателем помесячно или за год, который обновляет цены, годовую сумму и экономию.',
+  },
+  'academy-instructors': {
+    es: 'Tarjetas del equipo docente con iniciales, cargo, biografía breve y cifras de alumnos, cursos y valoración.',
+    ru: 'Карточки преподавателей с инициалами, должностью, краткой биографией и цифрами: ученики, курсы, рейтинг.',
+  },
+  'academy-reviews': {
+    es: 'Resultados de alumnos: puntuación grande y tarjetas de opiniones con estrellas, cita, autor, ocupación y curso realizado.',
+    ru: 'Результаты учеников: крупная оценка и карточки отзывов со звёздами, цитатой, автором, профессией и пройденным курсом.',
+  },
+  'academy-teach-form': {
+    es: 'Solicitud para instructores: lista de ventajas junto a un formulario validado que envía a tu backend o muestra una confirmación en la página.',
+    ru: 'Заявка преподавателя: список преимуществ рядом с проверяемой формой, которая отправляет данные на ваш бэкенд или показывает подтверждение на странице.',
+  },
+  'academy-footer': {
+    es: 'Pie de página de academia con banda de llamada a la acción, columnas de enlaces, contacto y fila legal.',
+    ru: 'Подвал академии с призывом к действию, колонками ссылок, контактами и юридической строкой.',
+  },
+  'academy-lesson-player': {
+    es: 'Reproductor de curso: zona de clase con play, pausa, barra de posición y velocidad, anterior y siguiente, marcar como completada, temario con checks por clase, progreso total y apuntes guardados en el navegador.',
+    ru: 'Плеер курса: зона урока с воспроизведением, паузой, перемоткой и скоростью, предыдущий и следующий урок, отметка о завершении, программа с отметками, общий прогресс и заметки в браузере.',
+  },
+  'academy-progress-board': {
+    es: 'Inicio del alumno: anillo de meta semanal, semana de racha con minutos por día y tarjetas para seguir cada curso con su progreso. SVG y CSS puros.',
+    ru: 'Главная ученика: кольцо недельной цели, неделя серии с минутами по дням и карточки продолжения курсов с прогрессом. Чистые SVG и CSS.',
+  },
+  'academy-quiz': {
+    es: 'Test de opción múltiple: una pregunta cada vez, respuesta inmediata con explicación, nota final con mínimo para aprobar y repetir.',
+    ru: 'Тест с выбором ответа: по одному вопросу, мгновенная обратная связь с объяснением, итоговый балл с проходным порогом и повтор.',
+  },
+  'academy-studio-stats': {
+    es: 'Resumen del estudio del instructor: cuatro KPIs con cambio frente al mes anterior y gráfico de barras de 12 meses de ingresos y matrículas con cambio de métrica y tabla de datos para lectores de pantalla.',
+    ru: 'Обзор студии преподавателя: четыре KPI с изменением к прошлому месяцу и столбчатый график выручки и записей за 12 месяцев с переключением метрики и таблицей для скринридеров.',
+  },
+  'academy-courses-table': {
+    es: 'Gestor de cursos del instructor: búsqueda, filtros por estado, orden por alumnos, valoración, finalización e ingresos, estados en texto y enlace para editar.',
+    ru: 'Менеджер курсов преподавателя: поиск, фильтры по статусу, сортировка по ученикам, рейтингу, завершаемости и выручке, статусы текстом и ссылка редактирования.',
+  },
+  'academy-area-nav': {
+    es: 'Navegación del aula: barra lateral con marca y meta semanal en escritorio y barra de pestañas fija abajo en móvil. Sin JavaScript.',
+    ru: 'Навигация кабинета: боковая панель с логотипом и недельной целью на десктопе и нижняя панель вкладок на телефоне. Без JavaScript.',
+  },
+  'academy-area-topbar': {
+    es: 'Barra superior del aula con fecha de hoy, racha de estudio, cambio de tema, avisos y menú de usuario (popovers nativos).',
+    ru: 'Верхняя панель кабинета с сегодняшней датой, серией занятий, сменой темы, уведомлениями и меню пользователя (нативные popover).',
+  },
+  'academy-area-heading': {
+    es: 'Encabezado serif para el aula con antetítulo, descripción, enlace de vuelta y botones de acción.',
+    ru: 'Заголовок кабинета с засечным шрифтом, надзаголовком, описанием, ссылкой назад и кнопками.',
+  },
+  'academy-sign-in': {
+    es: 'Acceso a pantalla partida con panel ilustrado de la lámpara, selector alumno o instructor, mostrar contraseña y accesos de demostración.',
+    ru: 'Вход на двух панелях с иллюстрацией лампы, переключателем ученик/преподаватель, показом пароля и демо-ссылками.',
+  },
 };

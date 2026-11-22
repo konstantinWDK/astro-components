@@ -1,0 +1,228 @@
+---
+/**
+ * AcademyFooter — Academy footer with a newsletter / call-to-action band, link columns,
+ * contact details and a legal row.
+ *
+ * @param {string} brand - Academy name.
+ * @param {string} description - Short pitch under the brand.
+ * @param {{title: string, href: string, label: string, text?: string}} cta - Top call-to-action band.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {{email: string, phone: string, address: string, hours: string, legalName: string}} contact - Contact data.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark; each column is a <nav> with its heading as label;
+ * contact is an <address>; links have 44px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyData } from '../templates/academy/data';
+
+interface Column { title: string; links: Array<{ label: string; href: string }> }
+
+interface OwnProps {
+  brand?: string;
+  description?: string;
+  cta?: { title: string; href: string; label: string; text?: string };
+  columns?: Column[];
+  contact?: { email: string; phone: string; address: string; hours: string; legalName: string };
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = academyData.brand.name,
+  description = 'Cursos con proyecto real, instructores en activo y una comunidad que te ayuda a terminar lo que empiezas.',
+  cta = { title: 'Tu primera clase es gratis', text: 'Crea tu cuenta y prueba cualquier curso sin tarjeta.', href: '/acceso', label: 'Empezar a aprender' },
+  columns = [
+    { title: 'Aprende', links: [{ label: 'Catálogo', href: '/cursos' }, { label: 'Planes', href: '/precios' }, { label: 'Mi aula', href: '/aula' }] },
+    { title: 'Lumen', links: [{ label: 'Enseña con nosotros', href: '/ensena' }, { label: 'Para empresas', href: '/precios' }, { label: 'Contacto', href: '/ensena' }] },
+  ],
+  contact = academyData.brand,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `af-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<footer class:list={['academy-ui', 'academy-footer', classAttr]} {...rest}>
+  <div class="academy-footer__inner">
+    <div class="academy-footer__cta">
+      <div>
+        <p class="academy-footer__cta-title">{cta.title}</p>
+        {cta.text && <p class="academy-footer__cta-text">{cta.text}</p>}
+      </div>
+      <a class="academy-footer__cta-btn" href={cta.href}>{cta.label}</a>
+    </div>
+
+    <div class="academy-footer__grid">
+      <div class="academy-footer__about">
+        <p class="academy-footer__brand">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" /></svg>
+          {brand}
+        </p>
+        <p class="academy-footer__desc">{description}</p>
+      </div>
+
+      {columns.map((col, i) => (
+        <nav aria-labelledby={`${uid}-c${i}`}>
+          <h2 id={`${uid}-c${i}`} class="academy-footer__col-title">{col.title}</h2>
+          <ul role="list">
+            {col.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+          </ul>
+        </nav>
+      ))}
+
+      <address class="academy-footer__contact">
+        <h2 class="academy-footer__col-title">Contacto</h2>
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+        <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+        <span>{contact.address}</span>
+        <span>{contact.hours}</span>
+      </address>
+    </div>
+
+    <p class="academy-footer__legal">© {new Date().getFullYear()} {contact.legalName} · Aviso legal · Privacidad · Cookies</p>
+  </div>
+</footer>
+
+<style>
+  .academy-footer {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--ac-border);
+    background: var(--ac-bg-raised);
+    color: var(--ac-text-2);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-footer__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .academy-footer__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-10, 2.5rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid rgba(var(--ac-brand-rgb), 0.45);
+    border-radius: var(--r-xl, 24px);
+    background: linear-gradient(120deg, rgba(var(--ac-brand-rgb), 0.16), rgba(var(--ac-violet-rgb), 0.12));
+  }
+
+  .academy-footer__cta-title {
+    margin: 0;
+    color: var(--ac-text);
+    font-family: var(--ac-font-display);
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 600;
+  }
+
+  .academy-footer__cta-text {
+    margin: var(--sp-1, 0.25rem) 0 0;
+  }
+
+  .academy-footer__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .academy-footer__cta-btn:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-footer a:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-footer__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .academy-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--ac-text);
+    font-family: var(--ac-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .academy-footer__brand svg {
+    color: var(--ac-brand);
+  }
+
+  .academy-footer__desc {
+    max-width: 340px;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .academy-footer__col-title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--ac-text);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .academy-footer ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-footer nav a,
+  .academy-footer__contact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ac-text-2);
+    text-decoration: none;
+  }
+
+  .academy-footer nav a:hover,
+  .academy-footer__contact a:hover {
+    color: var(--ac-brand);
+  }
+
+  .academy-footer__contact {
+    display: flex;
+    flex-direction: column;
+    font-style: normal;
+  }
+
+  .academy-footer__contact span {
+    padding: 4px 0;
+    font-size: 0.92rem;
+  }
+
+  .academy-footer__legal {
+    margin: var(--sp-8, 2rem) 0 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--ac-border);
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+  }
+
+  @media (min-width: 900px) {
+    .academy-footer__grid {
+      grid-template-columns: 1.6fr 1fr 1fr 1.3fr;
+    }
+  }
+</style>

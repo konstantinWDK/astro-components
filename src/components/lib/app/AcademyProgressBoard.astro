@@ -1,0 +1,370 @@
+---
+/**
+ * AcademyProgressBoard — Learner home: weekly-goal ring, study-streak week with minutes per
+ * day (plain SVG/CSS, no JavaScript) and "continue learning" cards with per-course progress.
+ *
+ * @param {AcademyLearnerData} learner - Learner with goal, minutes, daily minutes, streak and enrollments.
+ * @param {AcademyCourse[]} courses - Course catalog used to name the enrollments.
+ * @param {string} playerHref - Resume links go to `${playerHref}`.
+ * @param {string} catalogHref - "Find more courses" link.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the ring and bars have text alternatives (role="img" + label) and the same
+ * data is shown as text; completed courses say "Completado" in words; each resume link names
+ * its course.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyCourses, academyLearner, getAcademyInstructor, type AcademyCourse } from '../templates/academy/data';
+
+interface LearnerData {
+  weeklyGoalMinutes: number;
+  minutesThisWeek: number;
+  daily: number[];
+  streakDays: number;
+  certificates: number;
+  enrollments: Array<{ courseId: string; progress: number; lastLessonId: string; done: string[] }>;
+}
+
+interface OwnProps {
+  learner?: LearnerData;
+  courses?: AcademyCourse[];
+  playerHref?: string;
+  catalogHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  learner = academyLearner,
+  courses = academyCourses,
+  playerHref = '#',
+  catalogHref = '/cursos',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `apb-${Math.random().toString(36).slice(2, 8)}`;
+const pct = Math.min(100, Math.round((learner.minutesThisWeek / learner.weeklyGoalMinutes) * 100));
+const R = 54;
+const C = 2 * Math.PI * R;
+const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const dayNames = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+const maxDay = Math.max(30, ...learner.daily);
+const todayIdx = (new Date().getDay() + 6) % 7;
+const left = Math.max(0, learner.weeklyGoalMinutes - learner.minutesThisWeek);
+const rows = learner.enrollments
+  .map((e) => ({ e, c: courses.find((c) => c.id === e.courseId) }))
+  .filter((r): r is { e: LearnerData['enrollments'][number]; c: AcademyCourse } => !!r.c);
+---
+
+<section class:list={['academy-ui', 'academy-board', classAttr]} aria-label="Resumen de tu aprendizaje" {...rest}>
+  <div class="academy-board__top">
+    <article class="academy-board__card academy-board__goal" aria-labelledby={`${uid}-goal`}>
+      <h2 id={`${uid}-goal`} class="academy-board__h">Meta semanal</h2>
+      <div class="academy-board__ring">
+        <svg viewBox="0 0 130 130" role="img" aria-label={`${learner.minutesThisWeek} de ${learner.weeklyGoalMinutes} minutos (${pct} %)`}>
+          <circle cx="65" cy="65" r={R} fill="none" stroke="var(--ac-surface-2)" stroke-width="12" />
+          <circle cx="65" cy="65" r={R} fill="none" stroke="var(--ac-brand)" stroke-width="12" stroke-linecap="round" stroke-dasharray={`${(pct / 100) * C} ${C}`} transform="rotate(-90 65 65)" />
+        </svg>
+        <p><strong>{learner.minutesThisWeek}</strong><span>de {learner.weeklyGoalMinutes} min</span></p>
+      </div>
+      <p class="academy-board__hint">{left > 0 ? `Te faltan ${left} min para tu meta. ¡Una clase más y casi está!` : '¡Meta cumplida! Sigue si te apetece.'}</p>
+    </article>
+
+    <article class="academy-board__card academy-board__streak" aria-labelledby={`${uid}-streak`}>
+      <h2 id={`${uid}-streak`} class="academy-board__h">Racha de estudio</h2>
+      <p class="academy-board__big"><strong>{learner.streakDays}</strong> días seguidos</p>
+      <ol class="academy-board__days" role="list">
+        {learner.daily.map((m, i) => (
+          <li class:list={[i === todayIdx && 'is-today']}>
+            <span class="academy-board__col" role="img" aria-label={`${dayNames[i]}: ${m} minutos`}>
+              <i style={`height:${Math.max(m > 0 ? 8 : 3, Math.round((m / maxDay) * 100))}%`} class:list={[m === 0 && 'is-empty']}></i>
+            </span>
+            <span class="academy-board__dayl" aria-hidden="true">{days[i]}</span>
+          </li>
+        ))}
+      </ol>
+    </article>
+
+    <article class="academy-board__card academy-board__cert" aria-labelledby={`${uid}-cert`}>
+      <h2 id={`${uid}-cert`} class="academy-board__h">Certificados</h2>
+      <p class="academy-board__big"><strong>{learner.certificates}</strong> obtenidos</p>
+      <p class="academy-board__hint">Descárgalos o compártelos en LinkedIn con un enlace verificable.</p>
+    </article>
+  </div>
+
+  <div class="academy-board__continue">
+    <div class="academy-board__chead">
+      <h2 class="academy-board__h academy-board__h--lg">Sigue aprendiendo</h2>
+      <a href={catalogHref}>Explorar más cursos →</a>
+    </div>
+    <ul class="academy-board__list" role="list">
+      {rows.map(({ e, c }) => {
+        const finished = e.progress >= 100;
+        return (
+          <li>
+            <article class="academy-board__course" style={`--course-hue:${c.hue}`}>
+              <div class="academy-board__cover" aria-hidden="true"></div>
+              <div class="academy-board__cbody">
+                <h3>{c.title}</h3>
+                <p class="academy-board__by">{getAcademyInstructor(c.instructorId)?.name}</p>
+                <div class="academy-board__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={e.progress} aria-label={`Progreso de ${c.title}`}><i style={`width:${e.progress}%`}></i></div>
+                <p class="academy-board__pct">{finished ? 'Completado' : `${e.progress} % completado`}</p>
+              </div>
+              <a class="academy-board__resume" href={`${playerHref}`} aria-label={`${finished ? 'Repasar' : 'Continuar'} ${c.title}`}>{finished ? 'Repasar' : 'Continuar'}</a>
+            </article>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .academy-board {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-board__top {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .academy-board__card {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-board__h {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--ac-text-2);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .academy-board__h--lg {
+    margin: 0;
+    color: var(--ac-text);
+    font-family: var(--ac-font-display);
+    font-size: 1.6rem;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .academy-board__ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 150px;
+    margin: 0 auto;
+  }
+
+  .academy-board__ring p {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .academy-board__ring strong {
+    font-family: var(--ac-font-display);
+    font-size: 2.2rem;
+    font-weight: 600;
+  }
+
+  .academy-board__ring span {
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+  }
+
+  .academy-board__hint {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--ac-text-2);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .academy-board__big {
+    margin: 0;
+    color: var(--ac-text-2);
+  }
+
+  .academy-board__big strong {
+    margin-right: 0.3rem;
+    color: var(--ac-brand);
+    font-family: var(--ac-font-display);
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .academy-board__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--sp-2, 0.5rem);
+    margin: var(--sp-4, 1rem) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-board__days li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .academy-board__col {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 28px;
+    height: 72px;
+    border-radius: 8px;
+    background: var(--ac-surface);
+    overflow: hidden;
+  }
+
+  .academy-board__col i {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+    background: linear-gradient(180deg, var(--ac-brand), var(--ac-violet));
+  }
+
+  .academy-board__col i.is-empty {
+    background: var(--ac-border-strong);
+  }
+
+  .academy-board__dayl {
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .is-today .academy-board__dayl {
+    color: var(--ac-brand);
+  }
+
+  .academy-board__chead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .academy-board__chead a {
+    color: var(--ac-brand);
+    font-weight: 700;
+  }
+
+  .academy-board a:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-board__list {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-board__course {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    align-items: center;
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-board__cover {
+    align-self: stretch;
+    min-height: 72px;
+    border-radius: var(--r-md, 12px);
+    background: linear-gradient(140deg, hsl(var(--course-hue) 62% 42%), hsl(calc(var(--course-hue) + 50) 55% 16%));
+  }
+
+  .academy-board__cbody h3 {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .academy-board__by {
+    margin: 2px 0 var(--sp-2, 0.5rem);
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+  }
+
+  .academy-board__bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-surface-2);
+  }
+
+  .academy-board__bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--ac-brand);
+  }
+
+  .academy-board__pct {
+    margin: 6px 0 0;
+    color: var(--ac-text-2);
+    font-size: 0.82rem;
+  }
+
+  .academy-board__resume {
+    grid-column: 1 / -1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border: 1px solid var(--ac-brand);
+    border-radius: var(--r-full, 999px);
+    color: var(--ac-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .academy-board__resume:hover {
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  @media (min-width: 720px) {
+    .academy-board__top {
+      grid-template-columns: 1fr 1.4fr 1fr;
+    }
+
+    .academy-board__course {
+      grid-template-columns: 96px 1fr auto;
+    }
+
+    .academy-board__resume {
+      grid-column: auto;
+      padding: 0 var(--sp-5, 1.25rem);
+    }
+  }
+</style>

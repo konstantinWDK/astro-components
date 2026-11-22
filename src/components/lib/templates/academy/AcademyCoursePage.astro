@@ -1,0 +1,52 @@
+---
+/**
+ * AcademyCoursePage — Course detail: header with enrolment card, syllabus, teacher,
+ * reviews and related courses.
+ *
+ * @param {string} slug - Course slug. Defaults to the first course.
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {typeof academyData} data - Courses, instructors, categories and reviews.
+ */
+import AcademySiteLayout from './AcademySiteLayout.astro';
+import AcademyCourseHero from '../../sections/AcademyCourseHero.astro';
+import AcademyCurriculum from '../../sections/AcademyCurriculum.astro';
+import AcademyInstructors from '../../sections/AcademyInstructors.astro';
+import AcademyReviews from '../../sections/AcademyReviews.astro';
+import AcademyCourseGrid from '../../sections/AcademyCourseGrid.astro';
+import { academyRoutes, academyData, academyCourseBase, getAcademyCourse, getAcademyInstructor, getAcademyCategory, type AcademyRoutes } from './data';
+
+interface Props {
+  slug?: string;
+  routes?: AcademyRoutes;
+  data?: typeof academyData;
+}
+
+const { slug, routes = academyRoutes, data = academyData } = Astro.props;
+const course = (slug && getAcademyCourse(slug, data.courses)) || data.courses[0];
+const instructor = getAcademyInstructor(course.instructorId, data.instructors) ?? data.instructors[0];
+const category = getAcademyCategory(course.categoryId, data.categories) ?? data.categories[0];
+const reviews = data.reviews.filter((r) => r.courseId === course.id);
+const related = data.courses.filter((c) => c.id !== course.id && (c.categoryId === course.categoryId || c.instructorId === course.instructorId)).slice(0, 3);
+const fallbackRelated = related.length ? related : data.courses.filter((c) => c.id !== course.id).slice(0, 3);
+---
+
+<AcademySiteLayout
+  title={`${course.title} · ${data.brand.name}`}
+  description={course.subtitle.slice(0, 155)}
+  current="courses"
+  routes={routes}
+>
+  <AcademyCourseHero course={course} instructor={instructor} category={category} enrollHref={routes.signIn} coursesHref={routes.courses} />
+  <AcademyCurriculum modules={course.modules} />
+  <AcademyInstructors instructors={[instructor]} title={`Tu instructor`} subtitle="" headingLevel="h2" />
+  {reviews.length > 0 && <AcademyReviews reviews={reviews} courses={data.courses} rating={course.rating.toString().replace('.', ',')} total={`${course.reviews.toLocaleString('es-ES')} reseñas`} title="Opiniones de este curso" />}
+  <AcademyCourseGrid
+    courses={fallbackRelated}
+    categories={data.categories}
+    instructors={data.instructors}
+    courseBase={academyCourseBase(routes)}
+    limit={3}
+    title="También te puede interesar"
+    subtitle=""
+  />
+</AcademySiteLayout>

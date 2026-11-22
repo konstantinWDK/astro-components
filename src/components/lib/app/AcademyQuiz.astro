@@ -1,0 +1,389 @@
+---
+/**
+ * AcademyQuiz — Multiple-choice quiz: one question at a time, check the answer, see why it is
+ * right or wrong, then a final score with a retry button. Works without a backend.
+ *
+ * @param {AcademyQuizQuestion[]} questions - Questions ({ id, prompt, options[], answer, explanation }).
+ * @param {string} title - Quiz heading.
+ * @param {number} passPercent - Score needed to pass. Default 70.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: options are native radios in a fieldset with the question as legend;
+ * feedback and the final result are announced in a polite live region (role="status");
+ * correct / wrong states use text and icons, not colour alone.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+
+interface AcademyQuizQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+  /** Index of the correct option. */
+  answer: number;
+  explanation: string;
+}
+
+interface OwnProps {
+  questions?: AcademyQuizQuestion[];
+  title?: string;
+  passPercent?: number;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  questions = [
+    { id: 'q1', prompt: '¿Qué ratio de contraste mínimo pide WCAG AA para texto normal?', options: ['3:1', '4,5:1', '7:1', '10:1'], answer: 1, explanation: 'AA exige 4,5:1 para texto normal (3:1 para texto grande). AAA sube a 7:1.' },
+    { id: 'q2', prompt: '¿Qué te ayuda más a crear jerarquía visual?', options: ['Usar diez colores distintos', 'Variar tamaño, peso y espacio con intención', 'Poner todo en negrita', 'Centrar todo el texto'], answer: 1, explanation: 'La jerarquía nace del contraste entre tamaños, pesos y espacios, no de añadir más efectos.' },
+    { id: 'q3', prompt: 'Un token de diseño sirve para…', options: ['Guardar contraseñas', 'Nombrar una decisión de diseño reutilizable', 'Exportar imágenes', 'Medir el tráfico'], answer: 1, explanation: 'Un token da nombre a una decisión (color, espacio, radio) para usarla igual en diseño y código.' },
+  ],
+  title = 'Test de fundamentos',
+  passPercent = 70,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `aq-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['academy-ui', 'academy-quiz', classAttr]} aria-labelledby={`${uid}-title`} data-academy-quiz data-pass={passPercent} {...rest}>
+  <script is:inline type="application/json" data-quiz-data set:html={JSON.stringify(questions)} />
+  <header class="academy-quiz__head">
+    <h2 id={`${uid}-title`} class="academy-quiz__title">{title}</h2>
+    <p class="academy-quiz__step" data-quiz-step>Pregunta 1 de {questions.length}</p>
+  </header>
+  <div class="academy-quiz__bar" aria-hidden="true"><i data-quiz-bar style={`width:${100 / questions.length}%`}></i></div>
+
+  <form class="academy-quiz__form" data-quiz-form novalidate>
+    <fieldset class="academy-quiz__fieldset" data-quiz-fieldset>
+      <legend class="academy-quiz__prompt" data-quiz-prompt></legend>
+      <div class="academy-quiz__options" data-quiz-options></div>
+    </fieldset>
+    <div class="academy-quiz__feedback" role="status" aria-live="polite" data-quiz-feedback></div>
+    <div class="academy-quiz__actions">
+      <button type="submit" class="academy-quiz__btn" data-quiz-check>Comprobar</button>
+      <button type="button" class="academy-quiz__btn academy-quiz__btn--ghost" data-quiz-next hidden>Siguiente</button>
+    </div>
+  </form>
+
+  <div class="academy-quiz__result" role="status" aria-live="polite" tabindex="-1" hidden data-quiz-result>
+    <p class="academy-quiz__score"><strong data-quiz-score></strong></p>
+    <p data-quiz-verdict></p>
+    <button type="button" class="academy-quiz__btn" data-quiz-retry>Repetir el test</button>
+  </div>
+</section>
+
+<script>
+  function initQuiz(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const data = JSON.parse(root.querySelector('[data-quiz-data]')?.textContent ?? '[]') as Array<{ id: string; prompt: string; options: string[]; answer: number; explanation: string }>;
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const form = q<HTMLFormElement>('[data-quiz-form]');
+    const options = q('[data-quiz-options]');
+    const feedback = q('[data-quiz-feedback]');
+    const check = q<HTMLButtonElement>('[data-quiz-check]');
+    const next = q<HTMLButtonElement>('[data-quiz-next]');
+    const result = q('[data-quiz-result]');
+    const pass = Number(root.dataset.pass) || 70;
+    let i = 0;
+    let score = 0;
+    let checked = false;
+
+    const show = () => {
+      const item = data[i];
+      checked = false;
+      q('[data-quiz-step]').textContent = `Pregunta ${i + 1} de ${data.length}`;
+      q<HTMLElement>('[data-quiz-bar]').style.width = `${((i + 1) / data.length) * 100}%`;
+      q('[data-quiz-prompt]').textContent = item.prompt;
+      options.innerHTML = '';
+      item.options.forEach((text, n) => {
+        const label = document.createElement('label');
+        label.className = 'academy-quiz__option';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = `${item.id}`;
+        input.value = String(n);
+        const span = document.createElement('span');
+        span.textContent = text;
+        label.append(input, span);
+        options.appendChild(label);
+      });
+      feedback.textContent = '';
+      feedback.className = 'academy-quiz__feedback';
+      check.hidden = false;
+      next.hidden = true;
+      q<HTMLFieldSetElement>('[data-quiz-fieldset]').disabled = false;
+      options.querySelector<HTMLInputElement>('input')?.focus();
+    };
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (checked) return;
+      const picked = form.querySelector<HTMLInputElement>('input[type=radio]:checked');
+      if (!picked) {
+        feedback.className = 'academy-quiz__feedback is-warn';
+        feedback.textContent = 'Elige una opción para comprobar.';
+        return;
+      }
+      checked = true;
+      const item = data[i];
+      const ok = Number(picked.value) === item.answer;
+      if (ok) score++;
+      options.querySelectorAll<HTMLElement>('.academy-quiz__option').forEach((el, n) => {
+        if (n === item.answer) el.classList.add('is-right');
+        else if (el.contains(picked)) el.classList.add('is-wrong');
+      });
+      q<HTMLFieldSetElement>('[data-quiz-fieldset]').disabled = true;
+      feedback.className = `academy-quiz__feedback ${ok ? 'is-ok' : 'is-bad'}`;
+      feedback.textContent = `${ok ? '✓ ¡Correcto!' : '✗ No es esa.'} ${item.explanation}`;
+      check.hidden = true;
+      next.hidden = false;
+      next.textContent = i === data.length - 1 ? 'Ver resultado' : 'Siguiente';
+      next.focus();
+    });
+
+    next.addEventListener('click', () => {
+      if (i < data.length - 1) {
+        i++;
+        show();
+        return;
+      }
+      const percent = Math.round((score / data.length) * 100);
+      form.hidden = true;
+      result.hidden = false;
+      q('[data-quiz-score]').textContent = `${score} de ${data.length} · ${percent} %`;
+      q('[data-quiz-verdict]').textContent = percent >= pass ? '¡Aprobado! Puedes continuar con la siguiente clase.' : `Necesitas un ${pass} % para aprobar. Repasa la clase y vuelve a intentarlo.`;
+      result.focus();
+    });
+
+    q('[data-quiz-retry]').addEventListener('click', () => {
+      i = 0;
+      score = 0;
+      result.hidden = true;
+      form.hidden = false;
+      show();
+    });
+
+    show();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-quiz]').forEach(initQuiz);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style is:global>
+  .academy-quiz__option {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 52px;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .academy-quiz__option:hover {
+    border-color: var(--ac-brand);
+  }
+
+  .academy-quiz__option:has(input:checked) {
+    border-color: var(--ac-brand);
+    background: rgba(var(--ac-brand-rgb), 0.12);
+  }
+
+  .academy-quiz__option:has(input:focus-visible) {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-quiz__option input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ac-brand);
+  }
+
+  .academy-quiz__option.is-right {
+    border-color: var(--ac-ok);
+    background: rgba(98, 224, 162, 0.12);
+  }
+
+  .academy-quiz__option.is-right::after {
+    content: 'Correcta';
+    margin-left: auto;
+    color: var(--ac-ok);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .academy-quiz__option.is-wrong {
+    border-color: var(--ac-bad);
+    background: rgba(255, 130, 148, 0.12);
+  }
+
+  .academy-quiz__option.is-wrong::after {
+    content: 'Tu respuesta';
+    margin-left: auto;
+    color: var(--ac-bad);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+</style>
+
+<style>
+  .academy-quiz {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--ac-bg-raised);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-quiz__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-quiz__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .academy-quiz__step {
+    margin: 0;
+    color: var(--ac-text-3);
+    font-size: 0.88rem;
+  }
+
+  .academy-quiz__bar {
+    height: 6px;
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    overflow: hidden;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-surface-2);
+  }
+
+  .academy-quiz__bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--ac-brand);
+    transition: width 0.3s ease;
+  }
+
+  .academy-quiz__fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .academy-quiz__prompt {
+    margin-bottom: var(--sp-4, 1rem);
+    padding: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .academy-quiz__options {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-quiz__feedback {
+    min-height: 1.5em;
+    margin-top: var(--sp-4, 1rem);
+    color: var(--ac-text-2);
+    line-height: 1.5;
+  }
+
+  .academy-quiz__feedback.is-ok { color: var(--ac-ok); }
+  .academy-quiz__feedback.is-bad { color: var(--ac-bad); }
+  .academy-quiz__feedback.is-warn { color: var(--ac-warn); }
+
+  .academy-quiz__actions {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    margin-top: var(--sp-4, 1rem);
+  }
+
+  .academy-quiz__btn {
+    min-height: 48px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 1px solid var(--ac-brand);
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .academy-quiz__btn:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-quiz__btn--ghost {
+    background: transparent;
+    color: var(--ac-brand);
+  }
+
+  .academy-quiz__btn:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-quiz__btn[hidden] {
+    display: none;
+  }
+
+  .academy-quiz__result {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+    outline: none;
+  }
+
+  .academy-quiz__result[hidden] {
+    display: none;
+  }
+
+  .academy-quiz__score {
+    margin: 0;
+  }
+
+  .academy-quiz__score strong {
+    color: var(--ac-brand);
+    font-family: var(--ac-font-display);
+    font-size: 2.4rem;
+    font-weight: 600;
+  }
+
+  .academy-quiz__result p {
+    margin: 0;
+    color: var(--ac-text-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-quiz__bar i {
+      transition: none;
+    }
+  }
+</style>

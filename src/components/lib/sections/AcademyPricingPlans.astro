@@ -1,0 +1,348 @@
+---
+/**
+ * AcademyPricingPlans — Subscription plans with a monthly / yearly switch that updates prices,
+ * the billed-yearly total and the saving.
+ *
+ * @param {AcademyPlan[]} plans - Plans to compare (one can be `highlighted`).
+ * @param {string} ctaHref - Plan buttons link here with `?plan=<id>`.
+ * @param {string} billing - Initial billing: 'monthly' | 'yearly'. Default 'yearly'.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the switch is a radio group (arrow keys); prices update inside the cards and
+ * the saving line is in an aria-live region; the highlighted plan also says "Recomendado" in text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyPlans, type AcademyPlan } from '../templates/academy/data';
+
+interface OwnProps {
+  plans?: AcademyPlan[];
+  ctaHref?: string;
+  billing?: 'monthly' | 'yearly';
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  plans = academyPlans,
+  ctaHref = '/acceso',
+  billing = 'yearly',
+  title = 'Un plan para cada ritmo',
+  subtitle = 'Cancela cuando quieras. Si no te convence en 14 días, te devolvemos el dinero.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ap-${Math.random().toString(36).slice(2, 8)}`;
+const money = (n: number) => `${n} €`;
+---
+
+<section class:list={['academy-ui', 'academy-plans', classAttr]} aria-labelledby={`${uid}-title`} data-academy-plans data-billing={billing} {...rest}>
+  <div class="academy-plans__inner">
+    <header class="academy-plans__head">
+      <Heading id={`${uid}-title`} class="academy-plans__title">{title}</Heading>
+      <p class="academy-plans__subtitle">{subtitle}</p>
+      <fieldset class="academy-plans__switch">
+        <legend class="ac-sr">Facturación</legend>
+        <label>
+          <input type="radio" name={`${uid}-billing`} value="monthly" checked={billing === 'monthly'} data-billing-input />
+          <span>Mensual</span>
+        </label>
+        <label>
+          <input type="radio" name={`${uid}-billing`} value="yearly" checked={billing === 'yearly'} data-billing-input />
+          <span>Anual <em>-33 %</em></span>
+        </label>
+      </fieldset>
+    </header>
+
+    <ul class="academy-plans__grid" role="list">
+      {plans.map((p) => (
+        <li>
+          <article class:list={['academy-plan', p.highlighted && 'is-featured']} aria-labelledby={`${uid}-${p.id}`}>
+            {p.highlighted && <p class="academy-plan__flag">Recomendado</p>}
+            <h3 id={`${uid}-${p.id}`} class="academy-plan__name">{p.name}</h3>
+            <p class="academy-plan__tagline">{p.tagline}</p>
+            <p class="academy-plan__price">
+              <strong data-monthly={money(p.monthly)} data-yearly={money(p.yearly)}>{money(billing === 'yearly' ? p.yearly : p.monthly)}</strong>
+              <span>{p.monthly === 0 ? 'para siempre' : '/ mes'}</span>
+            </p>
+            <p class="academy-plan__note" aria-live="polite">
+              {p.monthly === 0 ? 'Sin tarjeta' : (
+                <>
+                  <span data-monthly="Facturado cada mes" data-yearly={`Facturado ${p.yearly * 12} € al año · ahorras ${(p.monthly - p.yearly) * 12} €`}>
+                    {billing === 'yearly' ? `Facturado ${p.yearly * 12} € al año · ahorras ${(p.monthly - p.yearly) * 12} €` : 'Facturado cada mes'}
+                  </span>
+                </>
+              )}
+            </p>
+            <a class="academy-plan__cta" href={`${ctaHref}?plan=${p.id}`}>{p.monthly === 0 ? 'Crear cuenta gratis' : `Elegir ${p.name}`}</a>
+            <ul class="academy-plan__features" role="list">
+              {p.features.map((f) => <li>{f}</li>)}
+            </ul>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  function initPlans(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const apply = (billing: string) => {
+      root.dataset.billing = billing;
+      root.querySelectorAll<HTMLElement>('[data-monthly][data-yearly]').forEach((el) => {
+        el.textContent = (billing === 'yearly' ? el.dataset.yearly : el.dataset.monthly) ?? '';
+      });
+    };
+    root.querySelectorAll<HTMLInputElement>('[data-billing-input]').forEach((input) => {
+      input.addEventListener('change', () => input.checked && apply(input.value));
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-plans]').forEach(initPlans);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-plans {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-plans__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .academy-plans__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: var(--sp-8, 2rem);
+    text-align: center;
+  }
+
+  .academy-plans__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+  }
+
+  .academy-plans__subtitle {
+    max-width: 520px;
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--ac-text-2);
+  }
+
+  .academy-plans__switch {
+    display: inline-flex;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-plans__switch label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .academy-plans__switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .academy-plans__switch span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--ac-text-2);
+    font-weight: 700;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .academy-plans__switch em {
+    color: var(--ac-ok);
+    font-size: 0.78rem;
+    font-style: normal;
+  }
+
+  .academy-plans__switch input:checked + span {
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-plans__switch input:checked + span em {
+    color: var(--ac-on-brand);
+  }
+
+  .academy-plans__switch label:focus-within span {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-plans__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-plan {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--ac-bg-raised);
+    box-sizing: border-box;
+  }
+
+  .academy-plan.is-featured {
+    border-color: var(--ac-brand);
+    background: linear-gradient(180deg, rgba(var(--ac-brand-rgb), 0.12), var(--ac-bg-raised) 55%);
+    box-shadow: 0 0 0 1px var(--ac-brand), 0 24px 60px -30px rgba(var(--ac-brand-rgb), 0.5);
+  }
+
+  .academy-plan__flag {
+    position: absolute;
+    top: -13px;
+    left: var(--sp-6, 1.5rem);
+    margin: 0;
+    padding: 0.2rem 0.8rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .academy-plan__name {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .academy-plan__tagline {
+    margin: var(--sp-1, 0.25rem) 0 var(--sp-4, 1rem);
+    color: var(--ac-text-2);
+    font-size: 0.95rem;
+  }
+
+  .academy-plan__price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+  }
+
+  .academy-plan__price strong {
+    font-family: var(--ac-font-display);
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .academy-plan__price span {
+    color: var(--ac-text-3);
+  }
+
+  .academy-plan__note {
+    min-height: 2.6em;
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-4, 1rem);
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+  }
+
+  .academy-plan__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    color: var(--ac-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .academy-plan__cta:hover {
+    border-color: var(--ac-brand);
+  }
+
+  .academy-plan.is-featured .academy-plan__cta {
+    border-color: var(--ac-brand);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-plan.is-featured .academy-plan__cta:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-plan__cta:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-plan__features {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: var(--sp-5, 1.25rem) 0 0;
+    padding: var(--sp-5, 1.25rem) 0 0;
+    border-top: 1px solid var(--ac-border);
+    list-style: none;
+    color: var(--ac-text-2);
+    font-size: 0.93rem;
+  }
+
+  .academy-plan__features li::before {
+    content: '✓';
+    margin-right: 0.6rem;
+    color: var(--ac-brand);
+    font-weight: 700;
+  }
+
+  @media (min-width: 860px) {
+    .academy-plans__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-plans__switch span,
+    .academy-plan__cta {
+      transition: none;
+    }
+  }
+</style>

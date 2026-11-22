@@ -2207,6 +2207,163 @@ const routes = { ...gymRoutes, classes: '/timetable', trial: '/free-trial' };
 
 <GymHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'academy',
+    name: { en: 'Lumen · Online Academy & Studio', es: 'Lumen · Academia online & Estudio', ru: 'Lumen · Онлайн-академия & Студия' },
+    tagline: { en: 'Online course platform with a filterable catalog, course pages, plans and a teaching application, plus a learner area with a lesson player and quizzes, and an instructor studio with analytics.', es: 'Plataforma de cursos online con catálogo filtrable, fichas de curso, planes y solicitud de instructores, más un aula con reproductor de clases y tests, y un estudio para instructores con analítica.', ru: 'Платформа онлайн-курсов с каталогом и фильтрами, страницами курсов, тарифами и заявкой преподавателя, плюс кабинет ученика с плеером уроков и тестами и студия преподавателя с аналитикой.' },
+    description: { en: 'Complete template for an online academy, bootcamp or course marketplace. 9 page types: home with search, learning paths, featured courses, instructors, reviews and plans; filterable catalog; course page with enrolment card and syllabus accordion; plans with monthly/yearly billing and FAQ; instructor application; plus sign-in, a learner dashboard (weekly goal, streak, courses in progress), a lesson player with outline, notes and a quiz, and an instructor studio with KPIs, a 12-month chart and a course manager.', es: 'Plantilla completa para una academia online, bootcamp o marketplace de cursos. 9 tipos de página: home con buscador, rutas de aprendizaje, cursos destacados, instructores, opiniones y planes; catálogo filtrable; ficha de curso con tarjeta de matrícula y temario desplegable; planes con pago mensual o anual y preguntas frecuentes; solicitud de instructores; y además acceso, panel del alumno (meta semanal, racha, cursos en curso), reproductor de clases con temario, apuntes y test, y estudio del instructor con KPIs, gráfico de 12 meses y gestor de cursos.', ru: 'Полный шаблон для онлайн-академии, буткемпа или маркетплейса курсов. 9 типов страниц: главная с поиском, направлениями, популярными курсами, преподавателями, отзывами и тарифами; каталог с фильтрами; страница курса с карточкой записи и программой-аккордеоном; тарифы с оплатой помесячно или за год и FAQ; заявка преподавателя; а также вход, панель ученика (недельная цель, серия, курсы в процессе), плеер уроков с программой, заметками и тестом и студия преподавателя с KPI, графиком за 12 месяцев и менеджером курсов.' },
+    highlights: {
+      en: [
+        'Catalog that filters by search, category, level and sorting, and opens pre-filtered from the hero and category cards',
+        'Course page with a sticky enrolment card, discount and a syllabus accordion with free previews',
+        'Lesson player with scrubber, speed, per-lesson completion, progress and notes saved in the browser',
+        'Learner dashboard with weekly-goal ring, streak week and per-course progress in plain SVG',
+        'Instructor studio with KPIs, a metric-switch bar chart (with a data table) and a sortable course manager',
+      ],
+      es: [
+        'Catálogo que filtra por búsqueda, categoría, nivel y orden, y se abre ya filtrado desde el hero y las rutas',
+        'Ficha de curso con tarjeta de matrícula fija, descuento y temario desplegable con clases de muestra',
+        'Reproductor con barra de posición, velocidad, clases completadas, progreso y apuntes guardados en el navegador',
+        'Panel del alumno con anillo de meta semanal, racha de la semana y progreso por curso en SVG puro',
+        'Estudio del instructor con KPIs, gráfico con cambio de métrica (y tabla de datos) y gestor de cursos ordenable',
+      ],
+      ru: [
+        'Каталог с поиском, категориями, уровнем и сортировкой, открывается уже отфильтрованным из героя и карточек направлений',
+        'Страница курса с закреплённой карточкой записи, скидкой и программой-аккордеоном с бесплатными уроками',
+        'Плеер с перемоткой, скоростью, отметками о завершении, прогрессом и заметками в браузере',
+        'Панель ученика с кольцом недельной цели, неделей серии и прогрессом по курсам на чистом SVG',
+        'Студия преподавателя с KPI, графиком с переключением метрики (и таблицей данных) и сортируемым менеджером курсов',
+      ],
+    },
+    tags: ['education', 'courses', 'academy', 'lms', 'e-learning', 'dashboard', 'pricing', 'quiz'],
+    previewBase: '/preview/academy/',
+    importPath: 'astro-component-kit/templates/academy',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with course search, learning paths, featured courses, instructors, reviews and plans.', es: 'Hero con buscador de cursos, rutas de aprendizaje, cursos destacados, instructores, opiniones y planes.', ru: 'Главный экран с поиском курсов, направлениями, популярными курсами, преподавателями, отзывами и тарифами.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { AcademyHomePage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyHomePage />`,
+      },
+      {
+        id: 'courses', path: 'cursos/',
+        name: { en: 'Catalog', es: 'Catálogo', ru: 'Каталог' },
+        description: { en: 'Filterable catalog with search, category chips, level and sorting; reads ?q= and ?cat=.', es: 'Catálogo filtrable con buscador, categorías, nivel y orden; lee ?q= y ?cat=.', ru: 'Каталог с поиском, категориями, уровнем и сортировкой; читает ?q= и ?cat=.' },
+        file: 'src/pages/cursos/index.astro',
+        code: `---
+import { AcademyCoursesPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyCoursesPage />`,
+      },
+      {
+        id: 'course', path: 'cursos/diseno-de-interfaces-desde-cero/',
+        name: { en: 'Course page', es: 'Ficha de curso', ru: 'Страница курса' },
+        description: { en: 'Header with enrolment card, syllabus accordion, instructor, reviews and related courses.', es: 'Cabecera con tarjeta de matrícula, temario desplegable, instructor, opiniones y cursos relacionados.', ru: 'Шапка с карточкой записи, программа-аккордеон, преподаватель, отзывы и похожие курсы.' },
+        file: 'src/pages/cursos/[slug].astro',
+        code: `---
+import { AcademyCoursePage } from 'astro-component-kit/templates/academy';
+export function getStaticPaths() {
+  return [{ params: { slug: 'diseno-de-interfaces-desde-cero' } }]; // one per course slug
+}
+---
+
+<AcademyCoursePage slug={Astro.params.slug} />`,
+      },
+      {
+        id: 'pricing', path: 'precios/',
+        name: { en: 'Plans', es: 'Planes', ru: 'Тарифы' },
+        description: { en: 'Subscription plans with monthly/yearly billing and billing FAQ.', es: 'Planes de suscripción con pago mensual o anual y preguntas frecuentes.', ru: 'Тарифы подписки с оплатой помесячно или за год и частые вопросы.' },
+        file: 'src/pages/precios.astro',
+        code: `---
+import { AcademyPricingPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyPricingPage />`,
+      },
+      {
+        id: 'teach', path: 'ensena/',
+        name: { en: 'Teach', es: 'Enseña', ru: 'Преподавайте' },
+        description: { en: 'Instructor application form and the current teaching team.', es: 'Formulario de solicitud para instructores y equipo docente actual.', ru: 'Форма заявки для преподавателей и текущая команда.' },
+        file: 'src/pages/ensena.astro',
+        code: `---
+import { AcademyTeachPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyTeachPage action="/api/teach" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Sign in', es: 'Acceso', ru: 'Вход' },
+        description: { en: 'Split sign-in for learners and instructors with a testimonial and figures.', es: 'Acceso para alumnos e instructores con testimonio y cifras.', ru: 'Вход для учеников и преподавателей с отзывом и цифрами.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { AcademySignInPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademySignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'aula/',
+        name: { en: 'My learning', es: 'Mi aprendizaje', ru: 'Моё обучение' },
+        description: { en: 'Weekly goal, study streak and courses in progress.', es: 'Meta semanal, racha de estudio y cursos en curso.', ru: 'Недельная цель, серия занятий и курсы в процессе.' },
+        file: 'src/pages/aula/index.astro',
+        code: `---
+import { AcademyDashboardPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyDashboardPage />`,
+      },
+      {
+        id: 'player', path: 'aula/clase/',
+        name: { en: 'Course player', es: 'Reproductor de clase', ru: 'Плеер урока' },
+        description: { en: 'Lesson player with outline, progress, notes saved per lesson and a quiz.', es: 'Reproductor con temario, progreso, apuntes por clase y test.', ru: 'Плеер урока с программой, прогрессом, заметками к каждому уроку и тестом.' },
+        file: 'src/pages/aula/clase.astro',
+        code: `---
+import { AcademyPlayerPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyPlayerPage />`,
+      },
+      {
+        id: 'studio', path: 'aula/estudio/',
+        name: { en: 'Instructor studio', es: 'Estudio del instructor', ru: 'Студия преподавателя' },
+        description: { en: 'Revenue and enrolment KPIs, 12-month chart and a course manager table.', es: 'KPIs de ingresos y matrículas, gráfico de 12 meses y tabla de cursos.', ru: 'KPI выручки и записей, график за 12 месяцев и таблица курсов.' },
+        file: 'src/pages/aula/estudio.astro',
+        code: `---
+import { AcademyStudioPage } from 'astro-component-kit/templates/academy';
+---
+
+<AcademyStudioPage />`,
+      },
+    ],
+    newComponents: [
+      'academy-hero', 'academy-tracks', 'academy-course-grid', 'academy-course-hero', 'academy-curriculum', 'academy-pricing-plans',
+      'academy-instructors', 'academy-reviews', 'academy-teach-form', 'academy-footer',
+      'academy-lesson-player', 'academy-progress-board', 'academy-quiz', 'academy-studio-stats', 'academy-courses-table',
+      'academy-area-nav', 'academy-area-topbar', 'academy-area-heading', 'academy-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your LMS)
+import { AcademyHomePage, academyData, academyRoutes } from 'astro-component-kit/templates/academy';
+
+const data = {
+  ...academyData,
+  brand: { ...academyData.brand, name: 'Aula Norte', phone: '+34 900 000 000' },
+  courses: await fetch('https://api.example.com/courses').then((r) => r.json()),
+};
+
+const routes = { ...academyRoutes, courses: '/catalog', pricing: '/plans' };
+---
+
+<AcademyHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

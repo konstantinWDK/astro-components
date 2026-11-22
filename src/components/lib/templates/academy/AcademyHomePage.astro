@@ -1,0 +1,39 @@
+---
+/**
+ * AcademyHomePage — Home of the "Lumen" academy template: hero with search, learning paths,
+ * featured courses, instructors, student reviews and plans.
+ *
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {typeof academyData} data - Brand, categories, courses, instructors, reviews and plans.
+ */
+import AcademySiteLayout from './AcademySiteLayout.astro';
+import AcademyHero from '../../sections/AcademyHero.astro';
+import AcademyTracks from '../../sections/AcademyTracks.astro';
+import AcademyCourseGrid from '../../sections/AcademyCourseGrid.astro';
+import AcademyInstructors from '../../sections/AcademyInstructors.astro';
+import AcademyReviews from '../../sections/AcademyReviews.astro';
+import AcademyPricingPlans from '../../sections/AcademyPricingPlans.astro';
+import { academyRoutes, academyData, academyCourseBase, type AcademyRoutes } from './data';
+
+interface Props {
+  routes?: AcademyRoutes;
+  data?: typeof academyData;
+}
+
+const { routes = academyRoutes, data = academyData } = Astro.props;
+const base = academyCourseBase(routes);
+const featured = data.courses.find((c) => c.bestseller) ?? data.courses[0];
+---
+
+<AcademySiteLayout
+  title={`${data.brand.name} · Cursos online con proyecto real`}
+  description="Cursos online de diseño, programación, datos, negocio, idiomas y música con proyecto final, instructores en activo y certificados."
+  routes={routes}
+>
+  <AcademyHero searchAction={routes.courses} pricingHref={routes.pricing} featured={featured} featuredHref={`${base}/${featured.slug}`} stats={data.stats} />
+  <AcademyTracks categories={data.categories} courses={data.courses} coursesHref={routes.courses} />
+  <AcademyCourseGrid courses={data.courses} categories={data.categories} instructors={data.instructors} courseBase={base} limit={6} title="Cursos más elegidos" subtitle="Empieza por los favoritos de la comunidad." />
+  <AcademyInstructors instructors={data.instructors.slice(0, 3)} />
+  <AcademyReviews reviews={data.reviews} courses={data.courses} />
+  <AcademyPricingPlans plans={data.plans} ctaHref={routes.signIn} />
+</AcademySiteLayout>

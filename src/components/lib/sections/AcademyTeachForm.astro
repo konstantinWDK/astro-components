@@ -1,0 +1,325 @@
+---
+/**
+ * AcademyTeachForm — "Teach on Lumen" application: benefits list beside a form (name, email,
+ * topic, level, pitch and sample link). With an `action` it posts to your backend; without
+ * one it validates and shows a confirmation on the page.
+ *
+ * @param {AcademyCategory[]} categories - Topic options.
+ * @param {string} action - Form endpoint. Empty = demo confirmation on the page.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string[]} benefits - Why teach here.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every field has a visible <label>; required fields use `required` and
+ * `autocomplete`; the confirmation is a role="status" region that receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyCategories, type AcademyCategory } from '../templates/academy/data';
+
+interface OwnProps {
+  categories?: AcademyCategory[];
+  action?: string;
+  title?: string;
+  subtitle?: string;
+  benefits?: string[];
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  categories = academyCategories,
+  action = '',
+  title = 'Enseña lo que sabes',
+  subtitle = 'Publica tu curso en Lumen: tú pones el conocimiento y nosotros el estudio, la plataforma y la audiencia.',
+  benefits = ['Te quedas con el 70 % de cada venta', 'Equipo de producción y revisión pedagógica', 'Panel con analítica de alumnos y ventas', 'Pagos mensuales sin mínimos'],
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `at-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['academy-ui', 'academy-teach', classAttr]} aria-labelledby={`${uid}-title`} data-academy-teach {...rest}>
+  <div class="academy-teach__inner">
+    <div class="academy-teach__copy">
+      <p class="academy-teach__kicker">Para instructores</p>
+      <Heading id={`${uid}-title`} class="academy-teach__title">{title}</Heading>
+      <p class="academy-teach__subtitle">{subtitle}</p>
+      <ul class="academy-teach__benefits" role="list">
+        {benefits.map((b) => <li>{b}</li>)}
+      </ul>
+    </div>
+
+    <div class="academy-teach__panel">
+      <form class="academy-teach__form" action={action || undefined} method={action ? 'post' : undefined} data-teach-form novalidate={!action}>
+        <div class="academy-teach__row">
+          <div class="academy-teach__field">
+            <label for={`${uid}-name`}>Nombre y apellidos</label>
+            <input id={`${uid}-name`} name="name" type="text" required autocomplete="name" />
+          </div>
+          <div class="academy-teach__field">
+            <label for={`${uid}-email`}>Email</label>
+            <input id={`${uid}-email`} name="email" type="email" required autocomplete="email" />
+          </div>
+        </div>
+        <div class="academy-teach__row">
+          <div class="academy-teach__field">
+            <label for={`${uid}-topic`}>Área</label>
+            <select id={`${uid}-topic`} name="topic" required>
+              {categories.map((c) => <option value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div class="academy-teach__field">
+            <label for={`${uid}-level`}>Nivel del curso</label>
+            <select id={`${uid}-level`} name="level">
+              <option>Inicial</option><option>Intermedio</option><option>Avanzado</option>
+            </select>
+          </div>
+        </div>
+        <div class="academy-teach__field">
+          <label for={`${uid}-pitch`}>¿Qué enseñarías y a quién?</label>
+          <textarea id={`${uid}-pitch`} name="pitch" rows="4" required minlength="20"></textarea>
+        </div>
+        <div class="academy-teach__field">
+          <label for={`${uid}-sample`}>Enlace a una muestra <span>(opcional)</span></label>
+          <input id={`${uid}-sample`} name="sample" type="url" placeholder="https://" autocomplete="url" />
+        </div>
+        <p class="academy-teach__error" role="alert" hidden data-teach-error></p>
+        <button type="submit" class="academy-teach__submit">Enviar solicitud</button>
+      </form>
+
+      <div class="academy-teach__done" role="status" tabindex="-1" hidden data-teach-done>
+        <span class="academy-teach__check" aria-hidden="true">✓</span>
+        <h3>¡Solicitud recibida!</h3>
+        <p>Revisamos cada propuesta en menos de 5 días laborables. Te escribiremos a <strong data-teach-email></strong>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initTeach(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-teach-form]');
+    const done = root.querySelector<HTMLElement>('[data-teach-done]');
+    const err = root.querySelector<HTMLElement>('[data-teach-error]');
+    if (!form || !done || !err || form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        const bad = form.querySelector<HTMLElement>(':invalid');
+        err.hidden = false;
+        err.textContent = 'Revisa los campos marcados: faltan datos o el formato no es válido.';
+        bad?.focus();
+        return;
+      }
+      err.hidden = true;
+      const email = root.querySelector<HTMLElement>('[data-teach-email]');
+      if (email) email.textContent = (form.elements.namedItem('email') as HTMLInputElement).value;
+      form.hidden = true;
+      done.hidden = false;
+      done.focus();
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-teach]').forEach(initTeach);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-teach {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-teach__inner {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .academy-teach__kicker {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--ac-brand);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .academy-teach__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.04;
+  }
+
+  .academy-teach__subtitle {
+    margin: var(--sp-4, 1rem) 0 var(--sp-5, 1.25rem);
+    color: var(--ac-text-2);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .academy-teach__benefits {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .academy-teach__benefits li {
+    display: flex;
+    gap: var(--sp-3, 0.75rem);
+    color: var(--ac-text);
+  }
+
+  .academy-teach__benefits li::before {
+    content: '';
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.55em;
+    border-radius: 50%;
+    background: var(--ac-brand);
+    box-shadow: 0 0 0 4px rgba(var(--ac-brand-rgb), 0.25);
+  }
+
+  .academy-teach__panel {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--ac-bg-raised);
+  }
+
+  .academy-teach__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .academy-teach__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .academy-teach__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .academy-teach__field label {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .academy-teach__field label span {
+    color: var(--ac-text-3);
+    font-weight: 400;
+  }
+
+  .academy-teach__field input,
+  .academy-teach__field select,
+  .academy-teach__field textarea {
+    min-height: 46px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    font: inherit;
+  }
+
+  .academy-teach__field textarea {
+    padding: var(--sp-3, 0.75rem);
+    resize: vertical;
+  }
+
+  .academy-teach__field input:focus-visible,
+  .academy-teach__field select:focus-visible,
+  .academy-teach__field textarea:focus-visible,
+  .academy-teach__submit:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-teach__error {
+    margin: 0;
+    color: var(--ac-bad);
+    font-size: 0.9rem;
+  }
+
+  .academy-teach__submit {
+    min-height: 50px;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .academy-teach__submit:hover {
+    background: var(--ac-brand-hover);
+  }
+
+  .academy-teach__done {
+    text-align: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+    outline: none;
+  }
+
+  .academy-teach__check {
+    display: inline-grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(var(--ac-brand-rgb), 0.2);
+    color: var(--ac-brand);
+    font-size: 1.6rem;
+  }
+
+  .academy-teach__done h3 {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-2, 0.5rem);
+    font-family: var(--ac-font-display);
+    font-size: 1.6rem;
+  }
+
+  .academy-teach__done p {
+    margin: 0;
+    color: var(--ac-text-2);
+  }
+
+  @media (min-width: 640px) {
+    .academy-teach__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 960px) {
+    .academy-teach__inner {
+      grid-template-columns: 1fr 1.1fr;
+      gap: var(--sp-12, 3rem);
+      align-items: start;
+    }
+  }
+</style>

@@ -1,0 +1,349 @@
+---
+/**
+ * AcademyCoursesTable — Instructor course manager: search, status filter chips, sorting by
+ * students, rating, completion and revenue, status badges with text, and an edit link per course.
+ *
+ * @param {AcademyStudioCourse[]} courses - Rows ({ id, title, status, students, rating, completion, revenue, updated }).
+ * @param {string} editBase - Row action links to `${editBase}`.
+ * @param {string} title - Table heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <table> with <caption>; sortable headers are buttons with aria-sort;
+ * the result count is a polite live region; status is text, not only colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyStudio } from '../templates/academy/data';
+
+interface StudioCourse {
+  id: string;
+  title: string;
+  status: 'Publicado' | 'Borrador' | 'En revisión';
+  students: number;
+  rating: number;
+  completion: number;
+  revenue: number;
+  updated: string;
+}
+
+interface OwnProps {
+  courses?: StudioCourse[];
+  editBase?: string;
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  courses = academyStudio.courses,
+  editBase = '#',
+  title = 'Tus cursos',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `act-${Math.random().toString(36).slice(2, 8)}`;
+const statuses = ['Publicado', 'En revisión', 'Borrador'];
+const cols = [
+  { key: 'students', label: 'Alumnos' },
+  { key: 'rating', label: 'Valoración' },
+  { key: 'completion', label: 'Finalización' },
+  { key: 'revenue', label: 'Ingresos' },
+];
+const date = (iso: string) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+---
+
+<section class:list={['academy-ui', 'academy-table', classAttr]} aria-labelledby={`${uid}-title`} data-academy-table {...rest}>
+  <header class="academy-table__head">
+    <h2 id={`${uid}-title`}>{title}</h2>
+    <div class="academy-table__tools">
+      <label class="ac-sr" for={`${uid}-q`}>Buscar curso</label>
+      <input id={`${uid}-q`} type="search" placeholder="Buscar curso…" autocomplete="off" data-table-q />
+      <div class="academy-table__chips" role="group" aria-label="Estado">
+        <button type="button" aria-pressed="true" data-table-status="">Todos</button>
+        {statuses.map((s) => <button type="button" aria-pressed="false" data-table-status={s}>{s}</button>)}
+      </div>
+    </div>
+  </header>
+  <p class="academy-table__count" role="status" aria-live="polite" data-table-count>{courses.length} cursos</p>
+
+  <div class="academy-table__scroll" tabindex="0" role="region" aria-label="Tabla de cursos, desplazable">
+    <table>
+      <caption class="ac-sr">Cursos del estudio con alumnos, valoración, finalización e ingresos</caption>
+      <thead>
+        <tr>
+          <th scope="col">Curso</th>
+          <th scope="col">Estado</th>
+          {cols.map((c) => (
+            <th scope="col" aria-sort="none" data-sort-th={c.key}>
+              <button type="button" data-table-sort={c.key}>{c.label}<span aria-hidden="true"></span></button>
+            </th>
+          ))}
+          <th scope="col"><span class="ac-sr">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody data-table-body>
+        {courses.map((c) => (
+          <tr data-row data-title={c.title.toLowerCase()} data-status={c.status} data-students={c.students} data-rating={c.rating} data-completion={c.completion} data-revenue={c.revenue}>
+            <th scope="row">
+              <span class="academy-table__name">{c.title}</span>
+              <span class="academy-table__upd">Actualizado {date(c.updated)}</span>
+            </th>
+            <td><span class:list={['academy-table__badge', `is-${c.status === 'Publicado' ? 'live' : c.status === 'En revisión' ? 'review' : 'draft'}`]}>{c.status}</span></td>
+            <td>{c.students ? c.students.toLocaleString('es-ES') : '—'}</td>
+            <td>{c.rating ? `★ ${c.rating.toString().replace('.', ',')}` : '—'}</td>
+            <td>{c.completion ? `${c.completion} %` : '—'}</td>
+            <td>{c.revenue ? `${c.revenue.toLocaleString('es-ES')} €` : '—'}</td>
+            <td><a class="academy-table__edit" href={editBase} aria-label={`Editar ${c.title}`}>Editar</a></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="academy-table__empty" hidden data-table-empty>Ningún curso coincide con el filtro.</p>
+</section>
+
+<script>
+  function initTable(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const rows = Array.from(root.querySelectorAll<HTMLTableRowElement>('[data-row]'));
+    const body = root.querySelector<HTMLElement>('[data-table-body]')!;
+    const q = root.querySelector<HTMLInputElement>('[data-table-q]')!;
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-table-status]'));
+    const count = root.querySelector<HTMLElement>('[data-table-count]')!;
+    const empty = root.querySelector<HTMLElement>('[data-table-empty]')!;
+    let status = '';
+    let sortKey = '';
+    let dir = 1;
+
+    const apply = () => {
+      const term = q.value.trim().toLowerCase();
+      const list = [...rows];
+      if (sortKey) list.sort((a, b) => (Number(a.dataset[sortKey]) - Number(b.dataset[sortKey])) * dir);
+      let n = 0;
+      list.forEach((r) => {
+        const ok = (!term || (r.dataset.title ?? '').includes(term)) && (!status || r.dataset.status === status);
+        r.hidden = !ok;
+        if (ok) n++;
+        body.appendChild(r);
+      });
+      count.textContent = `${n} ${n === 1 ? 'curso' : 'cursos'}`;
+      empty.hidden = n > 0;
+    };
+
+    q.addEventListener('input', apply);
+    chips.forEach((c) =>
+      c.addEventListener('click', () => {
+        status = c.dataset.tableStatus ?? '';
+        chips.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
+        apply();
+      }),
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-table-sort]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.tableSort ?? '';
+        dir = sortKey === key ? -dir : -1;
+        sortKey = key;
+        root.querySelectorAll<HTMLElement>('[data-sort-th]').forEach((th) =>
+          th.setAttribute('aria-sort', th.dataset.sortTh === key ? (dir === 1 ? 'ascending' : 'descending') : 'none'),
+        );
+        apply();
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-table]').forEach(initTable);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-table {
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-table__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .academy-table__head h2 {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .academy-table__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .academy-table__tools input {
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--ac-surface);
+    color: var(--ac-text);
+    font: inherit;
+  }
+
+  .academy-table__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .academy-table__chips button {
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--ac-text-2);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .academy-table__chips button[aria-pressed='true'] {
+    border-color: var(--ac-brand);
+    background: var(--ac-brand);
+    color: var(--ac-on-brand);
+  }
+
+  .academy-table input:focus-visible,
+  .academy-table button:focus-visible,
+  .academy-table a:focus-visible,
+  .academy-table__scroll:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-table__count {
+    margin: var(--sp-3, 0.75rem) 0;
+    color: var(--ac-text-3);
+    font-size: 0.88rem;
+  }
+
+  .academy-table__scroll {
+    position: relative; /* contains the visually hidden labels inside the scroller */
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+  }
+
+  th,
+  td {
+    padding: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--ac-border);
+    text-align: left;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead th {
+    border-top: 0;
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  thead button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  thead th[aria-sort='ascending'] button span::after { content: '▲'; font-size: 0.7em; color: var(--ac-brand); }
+  thead th[aria-sort='descending'] button span::after { content: '▼'; font-size: 0.7em; color: var(--ac-brand); }
+
+  tbody tr[hidden] {
+    display: none;
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+
+  .academy-table__name {
+    display: block;
+    font-weight: 700;
+  }
+
+  .academy-table__upd {
+    color: var(--ac-text-3);
+    font-size: 0.8rem;
+  }
+
+  .academy-table__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--ac-surface);
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .academy-table__badge::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .academy-table__badge.is-live { color: var(--ac-ok); }
+  .academy-table__badge.is-review { color: var(--ac-warn); }
+  .academy-table__badge.is-draft { color: var(--ac-text-3); }
+
+  .academy-table__edit {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    color: var(--ac-brand);
+    font-weight: 700;
+  }
+
+  .academy-table__empty {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--ac-text-2);
+    text-align: center;
+  }
+</style>

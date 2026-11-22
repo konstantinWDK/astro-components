@@ -1,0 +1,45 @@
+---
+/**
+ * AcademyPlayerPage — Course player with outline, progress, personal notes and a quiz.
+ *
+ * @param {AcademyRoutes} routes - Template route URLs.
+ * @param {typeof academyData} data - Learner and courses.
+ * @param {string} courseId - Course being studied. Defaults to the learner's first enrolment.
+ */
+import AcademyAppLayout from './AcademyAppLayout.astro';
+import AcademyAreaHeading from '../../app/AcademyAreaHeading.astro';
+import AcademyLessonPlayer from '../../app/AcademyLessonPlayer.astro';
+import AcademyQuiz from '../../app/AcademyQuiz.astro';
+import { academyRoutes, academyData, academyCourseBase, getAcademyCourse, type AcademyRoutes } from './data';
+
+interface Props {
+  routes?: AcademyRoutes;
+  data?: typeof academyData;
+  courseId?: string;
+}
+
+const { routes = academyRoutes, data = academyData, courseId } = Astro.props;
+const enrollment = data.learner.enrollments.find((e) => e.courseId === courseId) ?? data.learner.enrollments[0];
+const course = getAcademyCourse(enrollment.courseId, data.courses) ?? data.courses[0];
+---
+
+<AcademyAppLayout title={course.title} current="player" routes={routes}>
+  <AcademyAreaHeading
+    kicker="Estudiando"
+    title={course.title}
+    back={{ label: 'Mi aprendizaje', href: routes.dashboard }}
+    actions={[{ label: 'Ver ficha del curso', href: `${academyCourseBase(routes)}/${course.slug}` }]}
+  />
+  <div class="academy-play">
+    <AcademyLessonPlayer course={course} done={enrollment.done} currentLessonId={enrollment.lastLessonId} courseHref={`${academyCourseBase(routes)}/${course.slug}`} />
+    <AcademyQuiz />
+  </div>
+</AcademyAppLayout>
+
+<style>
+  .academy-play {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    margin-top: var(--sp-4, 1rem);
+  }
+</style>

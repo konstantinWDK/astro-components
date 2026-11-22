@@ -78,3 +78,14 @@ export { default as GymSignIn } from './GymSignIn.astro';
 
 export { appIcons, appIcon, initials, hueFrom } from './app-icons';
 export type { AppIcon } from './app-icons';
+
+// Online academy learner area & instructor studio ("Lumen")
+export { default as AcademyLessonPlayer } from './AcademyLessonPlayer.astro';
+export { default as AcademyProgressBoard } from './AcademyProgressBoard.astro';
+export { default as AcademyQuiz } from './AcademyQuiz.astro';
+export { default as AcademyStudioStats } from './AcademyStudioStats.astro';
+export { default as AcademyCoursesTable } from './AcademyCoursesTable.astro';
+export { default as AcademyAreaNav } from './AcademyAreaNav.astro';
+export { default as AcademyAreaTopbar } from './AcademyAreaTopbar.astro';
+export { default as AcademyAreaHeading } from './AcademyAreaHeading.astro';
+export { default as AcademySignIn } from './AcademySignIn.astro';

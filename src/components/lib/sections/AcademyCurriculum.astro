@@ -1,0 +1,305 @@
+---
+/**
+ * AcademyCurriculum — Course syllabus as an accordion of modules, each listing its lessons with
+ * type, duration and a "muestra" badge for free previews. Includes expand/collapse all.
+ *
+ * @param {AcademyModule[]} modules - Syllabus modules.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {boolean} openFirst - Open the first module on load. Default true.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native <details>/<summary> (keyboard and screen-reader support built in);
+ * lesson type and duration are written out; the expand-all button reports its state with
+ * aria-expanded; icons are decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/academy/academy-theme.css';
+import { academyCourses, academyModuleMinutes, formatAcademyMinutes, type AcademyModule } from '../templates/academy/data';
+
+interface OwnProps {
+  modules?: AcademyModule[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+  openFirst?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  modules = academyCourses[0].modules,
+  title = 'Temario del curso',
+  headingLevel = 'h2',
+  openFirst = true,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `acu-${Math.random().toString(36).slice(2, 8)}`;
+const lessonCount = modules.reduce((n, m) => n + m.lessons.length, 0);
+const totalMinutes = modules.reduce((n, m) => n + academyModuleMinutes(m), 0);
+const typeLabel = { video: 'Vídeo', lectura: 'Lectura', quiz: 'Test', proyecto: 'Proyecto' } as const;
+const typeIcon: Record<string, string> = {
+  video: '<path d="M8 5.5v13l11-6.5z"/>',
+  lectura: '<path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4Z"/><path d="M9 9h6M9 13h6"/>',
+  quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+  proyecto: '<path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M10 20v-5h4v5"/>',
+};
+---
+
+<section class:list={['academy-ui', 'academy-syllabus', classAttr]} aria-labelledby={`${uid}-title`} data-academy-syllabus {...rest}>
+  <div class="academy-syllabus__inner">
+    <header class="academy-syllabus__head">
+      <div>
+        <Heading id={`${uid}-title`} class="academy-syllabus__title">{title}</Heading>
+        <p class="academy-syllabus__summary">{modules.length} módulos · {lessonCount} clases · {formatAcademyMinutes(totalMinutes)}</p>
+      </div>
+      <button type="button" class="academy-syllabus__toggle" aria-expanded="false" data-syllabus-toggle>Expandir todo</button>
+    </header>
+
+    <div class="academy-syllabus__list">
+      {modules.map((m, i) => (
+        <details class="academy-mod" open={openFirst && i === 0} data-syllabus-mod>
+          <summary class="academy-mod__summary">
+            <span class="academy-mod__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <span class="academy-mod__name">{m.title}</span>
+            <span class="academy-mod__meta">{m.lessons.length} clases · {formatAcademyMinutes(academyModuleMinutes(m))}</span>
+          </summary>
+          <ul class="academy-mod__lessons" role="list">
+            {m.lessons.map((l) => (
+              <li class="academy-lesson">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={typeIcon[l.type]} />
+                <span class="academy-lesson__title">{l.title}</span>
+                <span class="academy-lesson__type">{typeLabel[l.type]}{l.preview && <b class="academy-lesson__preview"> · Muestra gratis</b>}</span>
+                <span class="academy-lesson__time">{l.minutes} min</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  function initSyllabus(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const btn = root.querySelector<HTMLButtonElement>('[data-syllabus-toggle]');
+    const mods = Array.from(root.querySelectorAll<HTMLDetailsElement>('[data-syllabus-mod]'));
+    if (!btn) return;
+    const sync = () => {
+      const all = mods.every((m) => m.open);
+      btn.textContent = all ? 'Contraer todo' : 'Expandir todo';
+      btn.setAttribute('aria-expanded', String(all));
+    };
+    btn.addEventListener('click', () => {
+      const open = !mods.every((m) => m.open);
+      mods.forEach((m) => (m.open = open));
+      sync();
+    });
+    mods.forEach((m) => m.addEventListener('toggle', sync));
+    sync();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-academy-syllabus]').forEach(initSyllabus);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .academy-syllabus {
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+    background: var(--ac-bg);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .academy-syllabus__inner {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .academy-syllabus__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-5, 1.25rem);
+  }
+
+  .academy-syllabus__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-weight: 600;
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    line-height: 1.1;
+  }
+
+  .academy-syllabus__summary {
+    margin: var(--sp-1, 0.25rem) 0 0;
+    color: var(--ac-text-3);
+    font-size: 0.92rem;
+  }
+
+  .academy-syllabus__toggle {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--ac-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--ac-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .academy-syllabus__toggle:hover {
+    border-color: var(--ac-brand);
+  }
+
+  .academy-syllabus__toggle:focus-visible,
+  .academy-mod__summary:focus-visible {
+    outline: 2px solid var(--ac-brand);
+    outline-offset: 2px;
+  }
+
+  .academy-syllabus__list {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .academy-mod {
+    border: 1px solid var(--ac-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--ac-bg-raised);
+    overflow: hidden;
+  }
+
+  .academy-mod[open] {
+    border-color: var(--ac-border-strong);
+  }
+
+  .academy-mod__summary {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 64px;
+    padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .academy-mod__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .academy-mod__summary::after {
+    content: '+';
+    grid-column: 4;
+    grid-row: 1;
+    color: var(--ac-brand);
+    font-size: 1.5rem;
+    transition: transform 0.2s ease;
+  }
+
+  .academy-mod[open] .academy-mod__summary::after {
+    transform: rotate(45deg);
+  }
+
+  .academy-mod__num {
+    color: var(--ac-brand);
+    font-family: var(--ac-font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .academy-mod__name {
+    font-family: var(--ac-font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .academy-mod__meta {
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+    text-align: right;
+  }
+
+  .academy-mod__lessons {
+    margin: 0;
+    padding: 0 var(--sp-5, 1.25rem) var(--sp-3, 0.75rem);
+    list-style: none;
+  }
+
+  .academy-lesson {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem) var(--sp-3, 0.75rem);
+    min-height: 48px;
+    padding: var(--sp-2, 0.5rem) 0;
+    border-top: 1px solid var(--ac-border);
+    color: var(--ac-text-2);
+    font-size: 0.95rem;
+  }
+
+  .academy-lesson svg {
+    color: var(--ac-text-3);
+  }
+
+  .academy-lesson__type {
+    grid-column: 2;
+    grid-row: 2;
+    color: var(--ac-text-3);
+    font-size: 0.78rem;
+  }
+
+  .academy-lesson__preview {
+    color: var(--ac-brand);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .academy-lesson__time {
+    grid-column: 3;
+    grid-row: 1;
+    color: var(--ac-text-3);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (min-width: 640px) {
+    .academy-lesson {
+      grid-template-columns: auto 1fr auto auto;
+    }
+
+    .academy-lesson__type,
+    .academy-lesson__time {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .academy-lesson__type {
+      min-width: 150px;
+      text-align: right;
+    }
+
+    .academy-lesson__time {
+      min-width: 56px;
+      text-align: right;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .academy-mod__summary::after {
+      transition: none;
+    }
+  }
+</style>

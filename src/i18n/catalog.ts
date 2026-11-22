@@ -208,6 +208,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Gimnasio y fitness', description: 'Secciones para gimnasios, boxes y estudios: hero con las clases de hoy, disciplinas con intensidad, horario semanal con pestañas y filtros, tarifas con pago mensual o anual, equipo de entrenadores y alta de prueba gratis.' },
     ru: { name: 'Спортзал и фитнес', description: 'Секции для спортзалов и фитнес-студий: главный экран с занятиями на сегодня, направления с интенсивностью, недельное расписание с вкладками и фильтрами, абонементы с оплатой помесячно или за год, команда тренеров и запись на пробный период.' },
   },
+  academy: {
+    en: { name: 'Online Academy', description: 'Sections for online course platforms and academies: hero with course search, learning-path cards, filterable course catalog, course page header with enrolment card, syllabus accordion, subscription plans, instructor team, student reviews, instructor application form and footer.' },
+    es: { name: 'Academia online', description: 'Secciones para plataformas de cursos y academias online: hero con buscador de cursos, rutas de aprendizaje, catálogo filtrable, cabecera de curso con tarjeta de matrícula, temario desplegable, planes de suscripción, equipo de instructores, opiniones de alumnos, solicitud para enseñar y pie de página.' },
+    ru: { name: 'Онлайн-академия', description: 'Секции для платформ онлайн-курсов и академий: главный экран с поиском курсов, карточки направлений, каталог с фильтрами, шапка курса с карточкой записи, программа-аккордеон, тарифы подписки, команда преподавателей, отзывы учеников, заявка преподавателя и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

@@ -53,6 +53,7 @@
     'construction': isEs ? 'Strukto · Constructora & Site OS' : isRu ? 'Strukto · Строительство и Site OS' : 'Strukto · Construction & Site OS',
     'real-estate': isEs ? 'Inmobiliaria & CRM' : 'Real Estate Agency',
     'gym': isEs ? 'Gimnasio & Socios' : 'Gym & Member Area',
+    'academy': isEs ? 'Lumen · Academia online' : isRu ? 'Lumen · Онлайн-академия' : 'Lumen · Online Academy',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',
