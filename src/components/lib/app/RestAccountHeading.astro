@@ -1,0 +1,94 @@
+---
+/**
+ * RestAccountHeading — Page heading for the members area: kicker, large serif title, description,
+ * optional back link and a slot for action buttons.
+ *
+ * @param {string} title - Page title (the page's <h1>).
+ * @param {string} kicker - Small label above the title.
+ * @param {string} description - Supporting text.
+ * @param {string} backHref - Optional "back" link.
+ * @param {string} backLabel - Text of the back link.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: renders the page <h1>; the back link has visible text and a 44px target.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+
+interface OwnProps {
+  title: string;
+  kicker?: string;
+  description?: string;
+  backHref?: string;
+  backLabel?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { title, kicker = '', description = '', backHref = '', backLabel = 'Volver', class: classAttr, ...rest } = Astro.props;
+---
+
+<header class:list={['rest-ui', 'rest-mh', classAttr]} {...rest}>
+  <div>
+    {backHref && <a class="rest-mh__back" href={backHref}>← {backLabel}</a>}
+    {kicker && <p class="rs-eyebrow">{kicker}</p>}
+    <h1 class="rest-mh__title">{title}</h1>
+    {description && <p class="rest-mh__desc">{description}</p>}
+  </div>
+  <div class="rest-mh__actions"><slot /></div>
+</header>
+
+<style>
+  .rest-mh {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-8, 2rem);
+    padding-bottom: var(--sp-5, 1.25rem);
+    border-bottom: 1px solid var(--rs-border-strong);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-mh__back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: var(--sp-1, 0.25rem);
+    font-size: 0.9rem;
+    color: var(--rs-text-2);
+    text-decoration: none;
+  }
+
+  .rest-mh__back:hover {
+    color: var(--rs-brand);
+  }
+
+  .rest-mh__title {
+    margin: 0;
+    font-family: var(--rs-font-display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  .rest-mh__desc {
+    max-width: 52ch;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    line-height: 1.6;
+    color: var(--rs-text-2);
+  }
+
+  .rest-mh__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .rest-mh__actions:empty {
+    display: none;
+  }
+</style>

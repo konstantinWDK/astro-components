@@ -239,3 +239,12 @@ export { default as PerfQuiz } from './PerfQuiz.astro';
 export { default as PerfDiscovery } from './PerfDiscovery.astro';
 export { default as PerfFaq } from './PerfFaq.astro';
 export { default as PerfFooter } from './PerfFooter.astro';
+
+// Restaurant ("Lumbre")
+export { default as RestHero } from './RestHero.astro';
+export { default as RestTasting } from './RestTasting.astro';
+export { default as RestMenu } from './RestMenu.astro';
+export { default as RestOrigin } from './RestOrigin.astro';
+export { default as RestBooking } from './RestBooking.astro';
+export { default as RestFaq } from './RestFaq.astro';
+export { default as RestFooter } from './RestFooter.astro';

@@ -1464,4 +1464,69 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con un gran frasco generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большим сгенерированным флаконом и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── Restaurant ("Lumbre") ────────────────────────
+  'rest-hero': {
+    es: 'Hero de restaurante con un logotipo enorme relleno de un degradado de brasa lento, chispas que suben desde abajo (solo CSS, generadas con una semilla), lema, horario, dos botones y tres cifras clave. No necesita fotografía.',
+    ru: 'Главный экран ресторана с огромным логотипом, залитым медленным градиентом углей, искрами, поднимающимися снизу (чистый CSS, по зерну), слоганом, часами работы, двумя кнопками и тремя ключевыми цифрами. Фото не нужны.',
+  },
+  'rest-tasting': {
+    es: 'El menú degustación plato a plato: una lista de pases numerados junto a un gran plato generado; elige un pase y el plato se redibuja con sus ingredientes, maridaje, temperatura de servicio y los kilómetros que ha viajado.',
+    ru: 'Дегустационное меню блюдо за блюдом: список пронумерованных подач рядом с большой сгенерированной тарелкой; выберите подачу — тарелка перерисуется с ингредиентами, сочетанием, температурой подачи и пройденными километрами.',
+  },
+  'rest-menu': {
+    es: 'La carta como lista tipográfica de precios con puntos guía; un filtro de dieta (todo, vegetariano, vegano, sin gluten) oculta platos y secciones vacías en vivo y un contador dice cuántos se muestran. Los platos agotados salen tachados con una etiqueta de texto.',
+    ru: 'Меню à la carte как типографский прайс с точечными линиями; фильтр по диете (всё, вегетарианское, веганское, без глютена) на лету скрывает блюда и пустые разделы, счётчик показывает количество. Закончившиеся блюда зачёркнуты с текстовой пометкой.',
+  },
+  'rest-origin': {
+    es: 'De dónde viene la comida como un radar: el restaurante en el centro de anillos concéntricos (50, 100, 200, 400 km) y cada productor un punto a su distancia real. Elige uno en la lista o en el radar; la distancia media se calcula con los datos.',
+    ru: 'Откуда продукты — в виде радара: ресторан в центре концентрических колец (50, 100, 200, 400 км), каждый производитель — точка на реальном расстоянии. Выберите его в списке или на радаре; среднее расстояние считается по данным.',
+  },
+  'rest-booking': {
+    es: 'Reserva de mesa con plano de sala: elige fecha, hora y comensales y escoge tu mesa en el plano del comedor (barra, sala, patio, con la brasa dibujada). Las mesas ocupadas, pequeñas o en día cerrado se desactivan y dicen por qué; una región en vivo informa de cuántas quedan.',
+    ru: 'Бронирование стола с планом зала: выберите дату, время и число гостей, затем свой стол на плане (барная стойка, зал, патио, с нарисованным мангалом). Занятые, слишком маленькие столы и выходные дни отключены с причиной; live-регион сообщает, сколько осталось.',
+  },
+  'rest-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'rest-footer': {
+    es: 'Pie de página de restaurante con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал ресторана с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'rest-plate': {
+    es: 'Plato visto desde arriba dibujado en SVG a partir de los datos de un pase: borde, fondo y un emplatado en uno de cuatro estilos (pincelada, torre, esparcido, cuenco) construido con su paleta y una semilla, de modo que cada plato tiene su propia composición repetible. No necesita imágenes.',
+    ru: 'Тарелка сверху в SVG по данным подачи: борт, центр и подача в одном из четырёх стилей (мазок, башня, россыпь, чаша) из палитры и зерна — у каждого блюда своя повторяемая композиция. Картинки не нужны.',
+  },
+  'rest-account-summary': {
+    es: 'Inicio del área de cliente: la próxima reserva como una fecha enorme con cuenta atrás, su mesa, comensales, menú y nota; las cifras del cliente (visitas, saldo de vales, años, próxima celebración) y una tarjeta para reservar de nuevo según sus preferencias.',
+    ru: 'Главная кабинета клиента: ближайшая бронь с огромной датой и обратным отсчётом, стол, гости, меню и заметка; цифры клиента (визиты, баланс сертификатов, годы, ближайшее торжество) и карточка повторной брони по предпочтениям.',
+  },
+  'rest-reservations': {
+    es: 'Las reservas del cliente en dos vistas (próximas / pasadas) con un grupo de radio; cada fila muestra fecha, hora, comensales, mesa, menú y estado en palabras; las próximas se pueden cancelar (gratis hasta 24 h antes, con la norma de cobro en el mensaje en vivo) o cambiar.',
+    ru: 'Брони клиента в двух видах (предстоящие / прошедшие) через группу радио; в каждой строке дата, время, гости, стол, меню и статус словами; предстоящие можно отменить (бесплатно за 24 ч, правило штрафа — в live-сообщении) или изменить.',
+  },
+  'rest-preferences': {
+    es: 'Lo que la cocina debe saber antes de que llegues: alergias (grupo de casillas), dieta, zona preferida, una nota para el chef y una lista de celebraciones que añadir o quitar. Se guarda en localStorage (demo) con confirmación visible.',
+    ru: 'Что кухне нужно знать до вашего прихода: аллергии (группа флажков), диета, предпочтительная зона, заметка для шефа и список торжеств, которые можно добавлять и удалять. Сохраняется в localStorage (демо) с видимым подтверждением.',
+  },
+  'rest-gift-cards': {
+    es: 'Vales regalo dibujados como tarjetas con el código en monoespaciada, un saldo grande y la caducidad, con botón de copiar código; un saldo total arriba y un formulario para añadir otro por código (LUM-XXXX-XXXX, saldo demo de 50 €).',
+    ru: 'Подарочные сертификаты в виде карточек с кодом моноширинным шрифтом, крупным балансом и сроком, с кнопкой копирования; общий баланс сверху и форма добавления по коду (LUM-XXXX-XXXX, демо-баланс 50 €).',
+  },
+  'rest-account-nav': {
+    es: 'Navegación del área de cliente: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета клиента: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'rest-account-topbar': {
+    es: 'Lado derecho de la cabecera de cliente: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú del cliente (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню клиента (нативные popover).',
+  },
+  'rest-account-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, título serif grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, крупным засечным названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'rest-sign-in': {
+    es: 'Acceso a pantalla partida con un gran plato generado y un testimonio, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большой сгенерированной тарелкой и отзывом, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

@@ -1,0 +1,278 @@
+---
+/**
+ * RestOrigin — Where the food comes from as a radar: the restaurant sits at the centre of concentric
+ * rings (50, 100, 200, 400 km) and every producer is a point placed at its real distance. Pick one in
+ * the list or on the radar to read who they are, what they send and how far it travels; the average
+ * distance is computed from the data.
+ *
+ * @param {RestProducer[]} producers - Producers to place on the radar.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the real control is a radio group (arrow keys); the radar mirrors it visually and
+ * its points are clickable but not required. Without JavaScript every producer is listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restProducers, restRng, type RestProducer } from '../templates/restaurant/data';
+
+interface OwnProps {
+  producers?: RestProducer[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  producers = restProducers,
+  title = 'De dónde viene lo que comes',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ro-${Math.random().toString(36).slice(2, 8)}`;
+const rings = [50, 100, 200, 400];
+const maxKm = 420;
+const rad = (km: number) => 12 + (Math.sqrt(km / maxKm)) * 84;
+const rnd = restRng(5);
+const pts = producers.map((p, i) => {
+  const ang = ((i / producers.length) * 360 + rnd() * 30) * (Math.PI / 180);
+  const r = rad(p.km);
+  return { p, x: Math.round((100 + Math.cos(ang) * r) * 10) / 10, y: Math.round((100 + Math.sin(ang) * r) * 10) / 10 };
+});
+const avg = Math.round(producers.reduce((n, p) => n + p.km, 0) / Math.max(1, producers.length));
+---
+
+<section class:list={['rest-ui', 'rest-orig', classAttr]} aria-labelledby={`${uid}-title`} data-rest-orig {...rest}>
+  <div class="rest-orig__inner">
+    <header class="rest-orig__head">
+      <p class="rs-eyebrow">Origen</p>
+      <Heading id={`${uid}-title`} class="rest-orig__title">{title}</Heading>
+      <p class="rest-orig__lead">Seis casas que nos mandan casi todo. De media, cada producto recorre <strong>{avg} km</strong> hasta la brasa.</p>
+    </header>
+
+    <div class="rest-orig__grid">
+      <svg class="rest-orig__radar" viewBox="0 0 200 200" aria-hidden="true">
+        {rings.map((km) => (
+          <g>
+            <circle cx="100" cy="100" r={rad(km)} fill="none" stroke="currentColor" opacity="0.2" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"></circle>
+            <text x="100" y={100 - rad(km) - 1.5} font-size="3.4" text-anchor="middle" fill="currentColor" opacity="0.6">{km} km</text>
+          </g>
+        ))}
+        <circle cx="100" cy="100" r="6" fill="var(--rs-brand)"></circle>
+        <circle cx="100" cy="100" r="11" fill="none" stroke="var(--rs-brand)" opacity="0.5"></circle>
+        <text x="100" y="116" font-size="4" text-anchor="middle" fill="currentColor">Lumbre</text>
+        {pts.map(({ p, x, y }) => (
+          <g class="rest-orig__pt" data-pt={p.id}>
+            <line x1="100" y1="100" x2={x} y2={y} stroke="currentColor" opacity="0.18" vector-effect="non-scaling-stroke"></line>
+            <circle class="rest-orig__dot" cx={x} cy={y} r="3.2" fill="var(--rs-accent)"></circle>
+            <text x={x} y={y - 5} font-size="3.6" text-anchor="middle" fill="currentColor">{p.name}</text>
+          </g>
+        ))}
+      </svg>
+
+      <div>
+        <fieldset class="rest-orig__list">
+          <legend class="rs-sr">Elige un productor</legend>
+          {producers.map((p, i) => (
+            <label>
+              <input type="radio" name={`${uid}-p`} value={p.id} checked={i === 0} />
+              <span>{p.name}<b>{p.km} km</b></span>
+            </label>
+          ))}
+        </fieldset>
+
+        {producers.map((p, i) => (
+          <article class="rest-orig__detail" data-detail={p.id} hidden={i !== 0 ? true : undefined}>
+            <h3>{p.name}</h3>
+            <p class="rest-orig__meta">{p.product} · {p.place} · a {p.km} km</p>
+            <p>{p.text}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rest-orig {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--rs-bg-raised);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+    border-block: 1px solid var(--rs-border);
+  }
+
+  .rest-orig [hidden] {
+    display: none !important;
+  }
+
+  .rest-orig__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .rest-orig__title {
+    max-width: 14ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 7vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  .rest-orig__lead {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--rs-text-2);
+  }
+
+  .rest-orig__lead strong {
+    color: var(--rs-brand);
+  }
+
+  .rest-orig__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .rest-orig__radar {
+    width: 100%;
+    max-width: 620px;
+    aspect-ratio: 1;
+    color: var(--rs-text);
+    overflow: visible;
+  }
+
+  .rest-orig__pt {
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.25s ease;
+  }
+
+  .rest-orig__pt.is-on {
+    opacity: 1;
+  }
+
+  .rest-orig__pt.is-on .rest-orig__dot {
+    stroke: var(--rs-text);
+    stroke-width: 0.6;
+    r: 4.4;
+  }
+
+  .rest-orig__list {
+    display: grid;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    border: 0;
+    border-top: 1px solid var(--rs-border-strong);
+  }
+
+  .rest-orig__list input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rest-orig__list span {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    min-height: 48px;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--rs-border);
+    color: var(--rs-text-2);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .rest-orig__list b {
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: 1.3rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-orig__list input:checked + span {
+    color: var(--rs-text);
+    border-bottom-color: var(--rs-brand);
+  }
+
+  .rest-orig__list input:checked + span b {
+    color: var(--rs-brand);
+  }
+
+  .rest-orig__list input:focus-visible + span {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 2px;
+  }
+
+  .rest-orig__detail h3 {
+    margin: 0 0 0.3rem;
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+
+  .rest-orig__meta {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.86rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--rs-accent);
+  }
+
+  .rest-orig__detail p {
+    max-width: 50ch;
+    margin: 0;
+    line-height: 1.65;
+    color: var(--rs-text-2);
+  }
+
+  .rest-orig__detail p.rest-orig__meta {
+    margin-bottom: var(--sp-3, 0.75rem);
+    color: var(--rs-accent);
+  }
+
+  @media (min-width: 900px) {
+    .rest-orig {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .rest-orig__grid {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: var(--sp-12, 3rem);
+      align-items: center;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-orig]').forEach((root) => {
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.rest-orig__list input')];
+    const details = [...root.querySelectorAll<HTMLElement>('[data-detail]')];
+    const points = [...root.querySelectorAll<SVGGElement>('[data-pt]')];
+
+    const show = (id?: string) => {
+      details.forEach((d) => { d.hidden = d.dataset.detail !== id; });
+      points.forEach((p) => p.classList.toggle('is-on', p.dataset.pt === id));
+    };
+
+    radios.forEach((r) => r.addEventListener('change', () => show(r.value)));
+    points.forEach((p) =>
+      p.addEventListener('click', () => {
+        const r = radios.find((x) => x.value === p.dataset.pt);
+        if (r) { r.checked = true; show(r.value); }
+      }),
+    );
+    show(radios.find((r) => r.checked)?.value);
+  });
+</script>

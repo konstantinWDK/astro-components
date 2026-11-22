@@ -1,0 +1,247 @@
+---
+/**
+ * RestMenu — The à la carte menu as a typographic price list with dotted leaders. A diet filter
+ * (everything, vegetarian, vegan, gluten-free) hides dishes and empty sections live, a counter in a
+ * live region says how many are shown, and sold-out dishes are struck through with a text label.
+ *
+ * @param {RestDish[]} dishes - Dishes of the day.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the filter is a radio group, every dish is a list item with its price as text,
+ * "sold out" is written (not only struck through), the counter is aria-live; without JavaScript the
+ * whole menu is shown.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restDishes, restMoney, type RestDish } from '../templates/restaurant/data';
+
+interface OwnProps {
+  dishes?: RestDish[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  dishes = restDishes,
+  title = 'La carta de hoy',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `rm-${Math.random().toString(36).slice(2, 8)}`;
+const sections = ['Para empezar', 'A la brasa', 'Postres'] as const;
+const filters = [
+  { value: 'todo', label: 'Todo' },
+  { value: 'vegetariano', label: 'Vegetariano' },
+  { value: 'vegano', label: 'Vegano' },
+  { value: 'sin gluten', label: 'Sin gluten' },
+];
+---
+
+<section class:list={['rest-ui', 'rest-menu', classAttr]} aria-labelledby={`${uid}-title`} data-rest-menu {...rest}>
+  <div class="rest-menu__inner">
+    <header class="rest-menu__head">
+      <p class="rs-eyebrow">A la carta</p>
+      <Heading id={`${uid}-title`} class="rest-menu__title">{title}</Heading>
+    </header>
+
+    <fieldset class="rest-menu__filter">
+      <legend class="rs-sr">Filtrar por dieta</legend>
+      {filters.map((f, i) => (
+        <label>
+          <input type="radio" name={`${uid}-d`} value={f.value} checked={i === 0} />
+          <span>{f.label}</span>
+        </label>
+      ))}
+    </fieldset>
+    <p class="rest-menu__count" aria-live="polite" data-count>{dishes.length} platos</p>
+
+    {sections.map((sec) => (
+      <section class="rest-menu__sec" data-sec aria-label={sec}>
+        <h3>{sec}</h3>
+        <ul>
+          {dishes.filter((d) => d.section === sec).map((d) => (
+            <li class:list={['rest-menu__dish', { 'is-out': d.soldOut }]} data-diet={d.diet.join('|')}>
+              <div class="rest-menu__line">
+                <span class="rest-menu__name">{d.name}</span>
+                <span class="rest-menu__dots" aria-hidden="true"></span>
+                <span class="rest-menu__price">{d.soldOut ? 'Agotado hoy' : restMoney(d.price)}</span>
+              </div>
+              <p>{d.text}{d.diet.length ? ` · ${d.diet.join(', ')}` : ''}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+</section>
+
+<style>
+  .rest-menu {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--rs-bg);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-menu [hidden] {
+    display: none !important;
+  }
+
+  .rest-menu__inner {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .rest-menu__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(2.8rem, 8vw, 5.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  .rest-menu__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .rest-menu__filter input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rest-menu__filter span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.2rem;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .rest-menu__filter input:checked + span {
+    background: var(--rs-brand);
+    border-color: var(--rs-brand);
+    color: var(--rs-on-brand);
+  }
+
+  .rest-menu__filter input:focus-visible + span {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 3px;
+  }
+
+  .rest-menu__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-8, 2rem);
+    font-size: 0.86rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-menu__sec {
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .rest-menu__sec h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    padding-bottom: var(--sp-2, 0.5rem);
+    border-bottom: 1px solid var(--rs-border-strong);
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 2rem;
+    color: var(--rs-brand);
+  }
+
+  .rest-menu__sec ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rest-menu__dish {
+    padding: 0.85rem 0;
+  }
+
+  .rest-menu__line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .rest-menu__name {
+    font-family: var(--rs-font-display);
+    font-size: clamp(1.35rem, 3.4vw, 1.8rem);
+    line-height: 1.15;
+  }
+
+  .rest-menu__dots {
+    flex: 1;
+    min-width: 1rem;
+    border-bottom: 1px dotted var(--rs-border-strong);
+    transform: translateY(-0.3em);
+  }
+
+  .rest-menu__price {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .rest-menu__dish p {
+    margin: 0.25rem 0 0;
+    max-width: 60ch;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--rs-text-3);
+  }
+
+  .rest-menu__dish.is-out .rest-menu__name {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    color: var(--rs-text-3);
+  }
+
+  .rest-menu__dish.is-out .rest-menu__price {
+    color: var(--rs-warn);
+    font-size: 0.84rem;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-menu]').forEach((root) => {
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.rest-menu__filter input')];
+    const items = [...root.querySelectorAll<HTMLElement>('.rest-menu__dish')];
+    const secs = [...root.querySelectorAll<HTMLElement>('[data-sec]')];
+    const count = root.querySelector<HTMLElement>('[data-count]');
+
+    const apply = () => {
+      const v = radios.find((r) => r.checked)?.value ?? 'todo';
+      let n = 0;
+      items.forEach((li) => {
+        const ok = v === 'todo' || (li.dataset.diet ?? '').split('|').includes(v);
+        li.hidden = !ok;
+        if (ok) n += 1;
+      });
+      secs.forEach((s) => { s.hidden = !s.querySelector('.rest-menu__dish:not([hidden])'); });
+      if (count) count.textContent = `${n} ${n === 1 ? 'plato' : 'platos'}`;
+    };
+
+    radios.forEach((r) => r.addEventListener('change', apply));
+    apply();
+  });
+</script>

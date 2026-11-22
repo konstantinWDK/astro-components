@@ -1,0 +1,207 @@
+---
+/**
+ * RestGiftCards — Gift cards of the customer: each is drawn as a card with its code in monospace,
+ * balance as a large figure and expiry date, with a "copy code" button; a total balance on top and a
+ * form to add another card by code (format LUM-XXXX-XXXX, demo balance of 50 €).
+ *
+ * @param {RestGiftCard[]} cards - Cards to show.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the total and every balance are text, copy and add actions report in an aria-live
+ * region, the code field has a visible label and an error in role="alert", targets are 44–48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restGiftCards, restMoney, type RestGiftCard } from '../templates/restaurant/data';
+
+interface OwnProps {
+  cards?: RestGiftCard[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { cards = restGiftCards, class: classAttr, ...rest } = Astro.props;
+
+const uid = `rgc-${Math.random().toString(36).slice(2, 8)}`;
+const total = cards.reduce((n, c) => n + c.balance, 0);
+const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<section class:list={['rest-ui', 'rest-gift', classAttr]} aria-label="Vales regalo" data-rest-gift {...rest}>
+  <p class="rest-gift__total">Saldo total <strong data-total>{restMoney(total)}</strong></p>
+
+  <ul class="rest-gift__list" data-list>
+    {cards.map((c) => (
+      <li class="rest-gift__card" data-balance={c.balance}>
+        <p class="rest-gift__label">Vale regalo</p>
+        <p class="rest-gift__balance">{restMoney(c.balance)}</p>
+        <p class="rest-gift__code" data-code>{c.code}</p>
+        <p class="rest-gift__exp">Caduca el {fmt(c.expires)}</p>
+        <button type="button" class="rs-btn rs-btn--ghost" data-copy>Copiar código</button>
+      </li>
+    ))}
+  </ul>
+
+  <form class="rest-gift__add" data-form novalidate>
+    <label for={`${uid}-code`}>Añadir otro vale</label>
+    <div>
+      <input id={`${uid}-code`} type="text" placeholder="LUM-XXXX-XXXX" autocomplete="off" aria-describedby={`${uid}-err`} data-input />
+      <button type="submit" class="rs-btn">Añadir</button>
+    </div>
+    <p id={`${uid}-err`} class="rest-gift__err" role="alert" data-err></p>
+  </form>
+  <p class="rest-gift__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .rest-gift {
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-gift__total {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    color: var(--rs-text-2);
+  }
+
+  .rest-gift__total strong {
+    display: block;
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(3rem, 10vw, 5rem);
+    line-height: 1;
+    color: var(--rs-brand);
+  }
+
+  .rest-gift__list {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0 0 var(--sp-8, 2rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .rest-gift__card,
+  .rest-gift :global(.rest-gift__card) {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--rs-border-strong);
+    background: linear-gradient(135deg, rgba(var(--rs-brand-rgb), 0.22), transparent 55%), var(--rs-bg-raised);
+  }
+
+  .rest-gift :global(.rest-gift__label) {
+    margin: 0;
+    font: 700 0.72rem/1 var(--rs-font-body);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--rs-accent);
+  }
+
+  .rest-gift :global(.rest-gift__balance) {
+    margin: 0.4rem 0;
+    font-family: var(--rs-font-display);
+    font-size: 3.4rem;
+    line-height: 1;
+  }
+
+  .rest-gift :global(.rest-gift__code) {
+    margin: 0;
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+  }
+
+  .rest-gift :global(.rest-gift__exp) {
+    margin: 0.35rem 0 var(--sp-4, 1rem);
+    font-size: 0.84rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-gift__add label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--rs-text-2);
+  }
+
+  .rest-gift__add > div {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .rest-gift__add input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    background: var(--rs-surface);
+    color: var(--rs-text);
+    font: 400 1rem ui-monospace, Menlo, monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .rest-gift__err {
+    min-height: 1.2em;
+    margin: 0.4rem 0 0;
+    font-size: 0.86rem;
+    color: var(--rs-bad);
+  }
+
+  .rest-gift__live {
+    min-height: 1.4em;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--rs-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 700px) {
+    .rest-gift__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rest-gift__add > div {
+      grid-template-columns: 1fr auto;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-gift]').forEach((root) => {
+    const list = root.querySelector<HTMLElement>('[data-list]');
+    const total = root.querySelector<HTMLElement>('[data-total]');
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    const err = root.querySelector<HTMLElement>('[data-err]');
+    const input = root.querySelector<HTMLInputElement>('[data-input]');
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    if (!list || !form || !input) return;
+    const eur = (n: number) => `${n.toLocaleString('es-ES')} €`;
+    const sum = () => { if (total) total.textContent = eur([...list.children].reduce((n, li) => n + Number((li as HTMLElement).dataset.balance), 0)); };
+
+    list.addEventListener('click', async (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
+      if (!b) return;
+      const code = b.closest('li')?.querySelector('[data-code]')?.textContent ?? '';
+      try { await navigator.clipboard.writeText(code); if (live) live.textContent = `Código ${code} copiado.`; }
+      catch { if (live) live.textContent = `Copia el código a mano: ${code}`; }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = input.value.trim().toUpperCase();
+      if (!/^LUM-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) { if (err) err.textContent = 'El código tiene el formato LUM-XXXX-XXXX.'; input.focus(); return; }
+      if ([...list.querySelectorAll('[data-code]')].some((c) => c.textContent === code)) { if (err) err.textContent = 'Ese vale ya está en tu cuenta.'; return; }
+      if (err) err.textContent = '';
+      const li = document.createElement('li');
+      li.className = 'rest-gift__card';
+      li.dataset.balance = '50';
+      li.innerHTML = `<p class="rest-gift__label">Vale regalo</p><p class="rest-gift__balance">50 €</p><p class="rest-gift__code" data-code>${code}</p><p class="rest-gift__exp">Vale añadido ahora (demostración)</p><button type="button" class="rs-btn rs-btn--ghost" data-copy>Copiar código</button>`;
+      list.append(li);
+      input.value = '';
+      sum();
+      if (live) live.textContent = `Vale ${code} añadido: 50 € (demostración).`;
+    });
+  });
+</script>

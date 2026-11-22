@@ -1,0 +1,181 @@
+---
+/**
+ * RestAccountLayout — Customer-area shell for the "Lumbre" restaurant template.
+ * Header row with RestAccountNav (tabs on desktop, bottom bar on phones) and RestAccountTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Lumbre").
+ * @param {string} current - Active route key (dashboard | reservations | preferences).
+ * @param {RestRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './rest-theme.css';
+import RestAccountNav from '../../app/RestAccountNav.astro';
+import RestAccountTopbar from '../../app/RestAccountTopbar.astro';
+import { restRoutes, restData, type RestRoutes } from './data';
+
+type Key = 'dashboard' | 'reservations' | 'preferences';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: RestRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Lumbre · Tu mesa: tus reservas, tus preferencias y alergias, y tus vales regalo.',
+  current = 'dashboard',
+  routes = restRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = restData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Reservas', href: routes.reservations, badge: restData.reservations.filter((r) => r.status === 'Confirmada' || r.status === 'Pendiente').length },
+  { label: 'Preferencias', href: routes.preferences },
+];
+const notifications = [
+  { title: 'Reserva confirmada', text: 'Jueves 4 de diciembre, 21:00, mesa Sala 2 para 4 personas', time: 'hace 2 días', unread: true },
+  { title: 'Tu mesa del 19 está pendiente', text: 'Confirmaremos en cuanto cierre el turno', time: 'hace 5 días', unread: true },
+  { title: 'Gracias por venir', text: 'Cuéntanos qué te pareció tu cena de octubre', time: 'hace 6 semanas' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-rest" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Lumbre`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="rest-app-body">
+    <a href="#main-content" class="rest-app-skip">Saltar al contenido</a>
+
+    <div class="rest-app-head">
+      <div class="rest-app-head__inner">
+        <RestAccountNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Lumbre" homeHref={routes.home} />
+        <RestAccountTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Lumbre', href: routes.home }, { label: 'Reservar una mesa', href: routes.reserve }, { label: 'Mis reservas', href: routes.reservations }]}
+          signOutHref={routes.signIn}
+          brand="Lumbre"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="rest-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .rest-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--rs-bg);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--rs-brand);
+    color: var(--rs-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .rest-app-skip:focus {
+    top: 1rem;
+  }
+
+  .rest-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--rs-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--rs-border);
+  }
+
+  .rest-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .rest-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .rest-app-main:focus {
+    outline: none;
+  }
+
+  :global(.rest-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.rest-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--rs-font-display);
+    font-weight: 300;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .rest-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .rest-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .rest-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

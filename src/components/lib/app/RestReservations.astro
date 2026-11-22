@@ -1,0 +1,254 @@
+---
+/**
+ * RestReservations — The customer's reservations in two views (upcoming / past) chosen with a radio
+ * group. Each row shows date, time, party, table, menu and status in words; upcoming ones can be
+ * cancelled (free until 24 h before, with the fee rule explained in the live message) or changed.
+ *
+ * @param {RestReservation[]} reservations - Reservations, any order.
+ * @param {string} reserveHref - Link of "change" and "book again".
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native radio group for the view, status is text with a coloured marker, action
+ * feedback goes to an aria-live region, buttons are 44px tall. Without JavaScript both lists show.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restReservations, restTableById, type RestReservation } from '../templates/restaurant/data';
+
+interface OwnProps {
+  reservations?: RestReservation[];
+  reserveHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { reservations = restReservations, reserveHref = '/reservar', class: classAttr, ...rest } = Astro.props;
+
+const uid = `rre-${Math.random().toString(36).slice(2, 8)}`;
+const isUp = (r: RestReservation) => r.status === 'Confirmada' || r.status === 'Pendiente';
+const upcoming = reservations.filter(isUp).sort((a, b) => a.date.localeCompare(b.date));
+const past = reservations.filter((r) => !isUp(r)).sort((a, b) => b.date.localeCompare(a.date));
+const fmt = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const groups = [
+  { id: 'up', label: `Próximas (${upcoming.length})`, list: upcoming },
+  { id: 'past', label: `Pasadas (${past.length})`, list: past },
+];
+---
+
+<section class:list={['rest-ui', 'rest-res', classAttr]} aria-label="Mis reservas" data-rest-res {...rest}>
+  <fieldset class="rest-res__view">
+    <legend class="rs-sr">Ver reservas</legend>
+    {groups.map((g, i) => (
+      <label>
+        <input type="radio" name={`${uid}-v`} value={g.id} checked={i === 0} />
+        <span>{g.label}</span>
+      </label>
+    ))}
+  </fieldset>
+
+  {groups.map((g, i) => (
+    <div class="rest-res__group" data-group={g.id} hidden={i !== 0 ? true : undefined}>
+      {g.list.length ? (
+        <ul class="rest-res__list">
+          {g.list.map((r) => {
+            const t = restTableById(r.tableId);
+            return (
+              <li class="rest-res__item" data-res={r.id} data-date={r.date}>
+                <div class="rest-res__main">
+                  <p class="rest-res__when">{fmt(r.date)} · {r.time}</p>
+                  <p class="rest-res__what">{r.guests} {r.guests === 1 ? 'persona' : 'personas'} · {t?.name ?? r.tableId} · {r.menu}</p>
+                  {r.note && <p class="rest-res__note">{r.note}</p>}
+                </div>
+                <div class="rest-res__side">
+                  <span class:list={['rest-res__status', `is-${r.status.toLowerCase()}`]} data-status>{r.status}</span>
+                  <p class="rest-res__id">{r.id}</p>
+                  {isUp(r) ? (
+                    <div class="rest-res__acts">
+                      <a class="rs-btn rs-btn--ghost" href={reserveHref}>Cambiar</a>
+                      <button type="button" class="rs-btn rs-btn--ghost" data-cancel>Cancelar</button>
+                    </div>
+                  ) : r.status === 'Completada' ? (
+                    <a class="rs-btn rs-btn--ghost" href={reserveHref}>Reservar de nuevo</a>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p class="rest-res__empty">No hay reservas en esta lista.</p>
+      )}
+    </div>
+  ))}
+  <p class="rest-res__live" role="status" aria-live="polite" data-live></p>
+</section>
+
+<style>
+  .rest-res {
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-res [hidden] {
+    display: none !important;
+  }
+
+  .rest-res__view {
+    display: flex;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--rs-border);
+  }
+
+  .rest-res__view input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rest-res__view span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    border-bottom: 2px solid transparent;
+    font-weight: 600;
+    color: var(--rs-text-3);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .rest-res__view input:checked + span {
+    color: var(--rs-text);
+    border-bottom-color: var(--rs-brand);
+  }
+
+  .rest-res__view input:focus-visible + span {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 2px;
+  }
+
+  .rest-res__list {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rest-res__item {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--rs-border);
+    background: var(--rs-bg-raised);
+  }
+
+  .rest-res__when {
+    margin: 0 0 0.3rem;
+    font-family: var(--rs-font-display);
+    font-size: 1.7rem;
+    line-height: 1.1;
+    text-transform: capitalize;
+  }
+
+  .rest-res__what {
+    margin: 0;
+    color: var(--rs-text-2);
+  }
+
+  .rest-res__note {
+    margin: 0.6rem 0 0;
+    font-style: italic;
+    color: var(--rs-text-3);
+  }
+
+  .rest-res__side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .rest-res__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font: 700 0.74rem/1 var(--rs-font-body);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .rest-res__status::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .rest-res__status.is-confirmada { color: var(--rs-ok); }
+  .rest-res__status.is-pendiente { color: var(--rs-warn); }
+  .rest-res__status.is-completada { color: var(--rs-text-3); }
+  .rest-res__status.is-cancelada { color: var(--rs-bad); }
+
+  .rest-res__id {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-res__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+  }
+
+  .rest-res__empty {
+    color: var(--rs-text-3);
+  }
+
+  .rest-res__live {
+    min-height: 1.4em;
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--rs-ok);
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 760px) {
+    .rest-res__item {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .rest-res__side {
+      justify-content: flex-end;
+      max-width: 22rem;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-res]').forEach((root) => {
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.rest-res__view input')];
+    const groups = [...root.querySelectorAll<HTMLElement>('[data-group]')];
+    const live = root.querySelector<HTMLElement>('[data-live]');
+    const show = (id?: string) => groups.forEach((g) => { g.hidden = g.dataset.group !== id; });
+    radios.forEach((r) => r.addEventListener('change', () => show(r.value)));
+    show(radios.find((r) => r.checked)?.value);
+
+    root.querySelectorAll<HTMLButtonElement>('[data-cancel]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const item = b.closest<HTMLElement>('[data-res]');
+        if (!item) return;
+        const hours = (new Date(`${item.dataset.date}T12:00:00`).getTime() - Date.now()) / 3600000;
+        const st = item.querySelector<HTMLElement>('[data-status]');
+        if (st) { st.textContent = 'Cancelada'; st.className = 'rest-res__status is-cancelada'; }
+        item.querySelectorAll<HTMLElement>('.rest-res__acts button, .rest-res__acts a').forEach((x) => x.setAttribute('hidden', ''));
+        if (live) live.textContent = hours >= 24 ? `Reserva ${item.dataset.res} cancelada sin coste (demostración).` : `Reserva ${item.dataset.res} cancelada. Al quedar menos de 24 horas se cobran 20 € por persona (demostración).`;
+      }),
+    );
+  });
+</script>

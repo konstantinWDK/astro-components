@@ -2961,6 +2961,147 @@ const routes = { ...perfRoutes, fragrances: '/perfumes', discover: '/muestras' }
 
 <PerfHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'restaurant',
+    name: { en: 'Lumbre · Fire-cooking Restaurant', es: 'Lumbre · Restaurante a la brasa', ru: 'Lumbre · Ресторан на углях' },
+    tagline: { en: 'Fire-cooking restaurant with an ember hero, a tasting menu told plate by plate with generated plates, a producer radar and table booking on a floor plan, plus a customer area with reservations, preferences and gift cards.', es: 'Restaurante a la brasa con un hero de brasas, un menú degustación contado plato a plato con platos generados, un radar de productores y reserva de mesa sobre un plano de sala, más un área de cliente con reservas, preferencias y vales regalo.', ru: 'Ресторан на углях с героем из углей, дегустационным меню блюдо за блюдом со сгенерированными тарелками, радаром производителей и бронированием стола на плане зала, плюс кабинет клиента с бронями, предпочтениями и сертификатами.' },
+    description: { en: 'Complete template for a fire-cooking restaurant. 8 page types: home with an ember hero, the tasting menu and the producer radar; the menu with the eight-course tasting menu and an à la carte list with diet filter; origin with a radar of producers at their real distance; booking with date, time, guests and a floor plan where taken or too-small tables are disabled; customer sign-in; and a customer area with a home (next reservation with a countdown), reservations with cancel and change actions, and preferences with allergies, celebrations and gift cards.', es: 'Plantilla completa para un restaurante a la brasa. 8 tipos de página: home con un hero de brasas, el menú degustación y el radar de productores; el menú con el degustación de ocho pases y una carta con filtro de dieta; el origen con un radar de productores a su distancia real; la reserva con fecha, hora, comensales y un plano de sala donde las mesas ocupadas o pequeñas se desactivan; acceso de clientes; y un área de cliente con inicio (próxima reserva con cuenta atrás), reservas con acciones de cancelar y cambiar, y preferencias con alergias, celebraciones y vales regalo.', ru: 'Полный шаблон для ресторана на углях. 8 типов страниц: главная с героем из углей, дегустационным меню и радаром производителей; меню с дегустационным из восьми подач и картой à la carte с фильтром по диете; происхождение с радаром производителей на реальном расстоянии; бронирование с датой, временем, гостями и планом зала, где занятые или слишком маленькие столы отключены; вход клиентов; и кабинет с главной (ближайшая бронь с отсчётом), бронями с действиями отмены и изменения и предпочтениями с аллергиями, торжествами и сертификатами.' },
+    highlights: {
+      en: [
+        'Tasting menu told plate by plate: pick a course and a plate generated in SVG redraws with its ingredients, pairing, temperature and kilometres travelled',
+        'Table booking on a floor plan of the dining room: tables that are taken, too small or on a closed day are disabled and say why',
+        'Producer radar that places every supplier at its real distance, with the average computed from the data',
+        'Ember hero with a gradient wordmark and CSS sparks that stop under prefers-reduced-motion',
+        'Customer area with reservations you can cancel or change, preferences for the kitchen and gift cards',
+      ],
+      es: [
+        'Menú degustación contado plato a plato: elige un pase y un plato generado en SVG se redibuja con sus ingredientes, maridaje, temperatura y kilómetros recorridos',
+        'Reserva de mesa sobre un plano del comedor: las mesas ocupadas, pequeñas o en día cerrado se desactivan y dicen por qué',
+        'Radar de productores que sitúa cada proveedor a su distancia real, con la media calculada a partir de los datos',
+        'Hero de brasas con un logotipo en degradado y chispas CSS que se detienen con prefers-reduced-motion',
+        'Área de cliente con reservas que se pueden cancelar o cambiar, preferencias para la cocina y vales regalo',
+      ],
+      ru: [
+        'Дегустационное меню блюдо за блюдом: выберите подачу — сгенерированная в SVG тарелка перерисуется с ингредиентами, сочетанием, температурой и пройденными километрами',
+        'Бронирование стола на плане зала: занятые, слишком маленькие столы и выходные дни отключены с объяснением причины',
+        'Радар производителей размещает каждого поставщика на реальном расстоянии, среднее считается по данным',
+        'Главный экран с углями, градиентным логотипом и CSS-искрами, которые останавливаются при prefers-reduced-motion',
+        'Кабинет клиента с бронями, которые можно отменить или изменить, предпочтениями для кухни и подарочными сертификатами',
+      ],
+    },
+    tags: ['restaurant', 'food', 'booking', 'reservations', 'menu', 'storytelling', 'portal', 'dashboard'],
+    previewBase: '/preview/restaurant/',
+    importPath: 'astro-component-kit/templates/restaurant',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Ember hero with rising sparks, the tasting menu plate by plate and the producer radar.', es: 'Hero de brasa con chispas, el menú degustación plato a plato y el radar de productores.', ru: 'Главный экран с углями и искрами, дегустационное меню блюдо за блюдом и радар производителей.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { RestHomePage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestHomePage />`,
+      },
+      {
+        id: 'menu', path: 'menu/',
+        name: { en: 'Menu', es: 'Menú y carta', ru: 'Меню' },
+        description: { en: 'The eight-course tasting menu with generated plates, the à la carte list with diet filter and FAQ.', es: 'El menú degustación de ocho pases con platos generados, la carta con filtro de dieta y preguntas frecuentes.', ru: 'Дегустационное меню из восьми подач со сгенерированными тарелками, меню à la carte с фильтром по диете и FAQ.' },
+        file: 'src/pages/menu.astro',
+        code: `---
+import { RestMenuPage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestMenuPage />`,
+      },
+      {
+        id: 'origin', path: 'origen/',
+        name: { en: 'Origin', es: 'Origen', ru: 'Происхождение' },
+        description: { en: 'A radar of producers at their real distance with who they are and what they send.', es: 'Un radar de productores a su distancia real con quiénes son y qué mandan.', ru: 'Радар производителей на реальном расстоянии: кто они и что присылают.' },
+        file: 'src/pages/origen.astro',
+        code: `---
+import { RestOriginPage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestOriginPage />`,
+      },
+      {
+        id: 'reserve', path: 'reservar/',
+        name: { en: 'Book a table', es: 'Reservar mesa', ru: 'Забронировать стол' },
+        description: { en: 'Date, time and guests, then pick your table on the floor plan; unavailable tables say why.', es: 'Fecha, hora y comensales, y eliges tu mesa en el plano; las mesas no disponibles dicen por qué.', ru: 'Дата, время и гости, затем выбор стола на плане; недоступные столы объясняют причину.' },
+        file: 'src/pages/reservar.astro',
+        code: `---
+import { RestReservePage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestReservePage action="/api/reservar" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Customer sign in', es: 'Acceso clientes', ru: 'Вход для клиентов' },
+        description: { en: 'Split sign-in with a large generated plate and a customer quote.', es: 'Acceso a pantalla partida con un gran plato generado y un testimonio.', ru: 'Вход на двух панелях с большой сгенерированной тарелкой и отзывом.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { RestSignInPage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'mesa/',
+        name: { en: 'Account home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'Next reservation with a countdown, customer figures and a rebook card.', es: 'Próxima reserva con cuenta atrás, cifras del cliente y tarjeta para reservar de nuevo.', ru: 'Ближайшая бронь с отсчётом, цифры клиента и карточка повторной брони.' },
+        file: 'src/pages/mesa/index.astro',
+        code: `---
+import { RestDashboardPage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestDashboardPage />`,
+      },
+      {
+        id: 'reservations', path: 'mesa/reservas/',
+        name: { en: 'Reservations', es: 'Reservas', ru: 'Брони' },
+        description: { en: 'Upcoming and past reservations with cancel and change actions.', es: 'Reservas próximas y pasadas con acciones de cancelar y cambiar.', ru: 'Предстоящие и прошедшие брони с действиями отмены и изменения.' },
+        file: 'src/pages/mesa/reservas.astro',
+        code: `---
+import { RestReservationsPage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestReservationsPage />`,
+      },
+      {
+        id: 'preferences', path: 'mesa/preferencias/',
+        name: { en: 'Preferences & gift cards', es: 'Preferencias y vales', ru: 'Предпочтения и сертификаты' },
+        description: { en: 'Allergies, diet, zone, celebrations and gift cards.', es: 'Alergias, dieta, zona, celebraciones y vales regalo.', ru: 'Аллергии, диета, зона, торжества и подарочные сертификаты.' },
+        file: 'src/pages/mesa/preferencias.astro',
+        code: `---
+import { RestPreferencesPage } from 'astro-component-kit/templates/restaurant';
+---
+
+<RestPreferencesPage />`,
+      },
+    ],
+    newComponents: [
+      'rest-hero', 'rest-tasting', 'rest-menu', 'rest-origin', 'rest-booking', 'rest-faq', 'rest-footer',
+      'rest-plate', 'rest-account-summary', 'rest-reservations', 'rest-preferences', 'rest-gift-cards', 'rest-account-nav', 'rest-account-topbar', 'rest-account-heading', 'rest-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your menu and booking system)
+import { RestHomePage, restData, restRoutes } from 'astro-component-kit/templates/restaurant';
+
+const data = {
+  ...restData,
+  brand: { ...restData.brand, name: 'Fogón Norte', phone: '+34 900 000 000' },
+  dishes: await fetch('https://api.example.com/dishes').then((r) => r.json()),
+};
+
+const routes = { ...restRoutes, menu: '/carta', reserve: '/mesa-libre' };
+---
+
+<RestHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

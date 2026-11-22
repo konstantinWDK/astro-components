@@ -1,0 +1,317 @@
+---
+/**
+ * RestPreferences — What the kitchen should know before you arrive: allergies (checkbox group),
+ * diet, preferred zone (radio group), a free note for the chef and a list of celebrations to add or
+ * remove. Saved in localStorage (demo) with a visible confirmation.
+ *
+ * @param {RestPreferences} preferences - Initial preferences.
+ * @param {string[]} allergens - Allergens offered as checkboxes.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: grouped controls use <fieldset> and <legend>, the save result is an aria-live
+ * message, add/remove buttons have labelled actions and 44px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restPreferences, type RestPreferences } from '../templates/restaurant/data';
+
+interface OwnProps {
+  preferences?: RestPreferences;
+  allergens?: string[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  preferences = restPreferences,
+  allergens = ['Gluten', 'Frutos secos', 'Marisco', 'Pescado', 'Huevo', 'Lácteos', 'Sulfitos'],
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `rpr-${Math.random().toString(36).slice(2, 8)}`;
+const zones = ['Indiferente', 'Barra', 'Sala', 'Patio'];
+const diets = ['Sin restricciones', 'Vegetariano', 'Vegano', 'Sin gluten'];
+---
+
+<section class:list={['rest-ui', 'rest-pref', classAttr]} aria-label="Mis preferencias" data-rest-pref data-seed={JSON.stringify(preferences)} {...rest}>
+  <form class="rest-pref__form" data-form novalidate>
+    <fieldset>
+      <legend>Alergias e intolerancias</legend>
+      <div class="rest-pref__checks">
+        {allergens.map((a) => (
+          <label>
+            <input type="checkbox" name="allergy" value={a} checked={preferences.allergies.includes(a)} />
+            <span>{a}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <div class="rest-pref__field">
+      <label for={`${uid}-diet`}>Dieta</label>
+      <select id={`${uid}-diet`} name="diet" data-diet>
+        {diets.map((d) => <option value={d} selected={d === preferences.diet}>{d}</option>)}
+      </select>
+    </div>
+
+    <fieldset>
+      <legend>Dónde te gusta sentarte</legend>
+      <div class="rest-pref__checks">
+        {zones.map((z) => (
+          <label>
+            <input type="radio" name="zone" value={z} checked={z === preferences.zone} />
+            <span>{z}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <div class="rest-pref__field">
+      <label for={`${uid}-note`}>Una nota para la cocina</label>
+      <textarea id={`${uid}-note`} name="note" rows="3" maxlength="240" data-note>{preferences.chefNote}</textarea>
+    </div>
+
+    <fieldset class="rest-pref__cel">
+      <legend>Celebraciones</legend>
+      <ul data-list></ul>
+      <div class="rest-pref__add">
+        <div class="rest-pref__field">
+          <label for={`${uid}-cl`}>Qué celebras</label>
+          <input id={`${uid}-cl`} type="text" maxlength="40" data-cl />
+        </div>
+        <div class="rest-pref__field">
+          <label for={`${uid}-cd`}>Cuándo</label>
+          <input id={`${uid}-cd`} type="date" data-cd />
+        </div>
+        <button type="button" class="rs-btn rs-btn--ghost" data-add>Añadir</button>
+      </div>
+    </fieldset>
+
+    <p class="rest-pref__err" role="alert" data-err></p>
+    <button type="submit" class="rs-btn">Guardar preferencias</button>
+    <p class="rest-pref__ok" role="status" data-ok></p>
+  </form>
+</section>
+
+<style>
+  .rest-pref {
+    max-width: 760px;
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-pref__form {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .rest-pref fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .rest-pref legend,
+  .rest-pref__field label {
+    display: block;
+    margin-bottom: 0.5rem;
+    padding: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--rs-text-2);
+  }
+
+  .rest-pref__checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .rest-pref__checks input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rest-pref__checks span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .rest-pref__checks input:checked + span {
+    background: var(--rs-brand);
+    border-color: var(--rs-brand);
+    color: var(--rs-on-brand);
+    font-weight: 600;
+  }
+
+  .rest-pref__checks input:focus-visible + span {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 3px;
+  }
+
+  .rest-pref input[type='text'],
+  .rest-pref input[type='date'],
+  .rest-pref select,
+  .rest-pref textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    background: var(--rs-surface);
+    color: var(--rs-text);
+    font: 400 1rem var(--rs-font-body);
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] .rest-pref input[type='date'] {
+    color-scheme: light;
+  }
+
+  .rest-pref textarea {
+    padding-block: 0.8rem;
+    resize: vertical;
+  }
+
+  .rest-pref__cel ul {
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--rs-border);
+  }
+
+  .rest-pref__cel :global(li) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--rs-border);
+  }
+
+  .rest-pref__cel :global(li small) {
+    display: block;
+    color: var(--rs-text-3);
+  }
+
+  .rest-pref__cel :global(li button) {
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    background: none;
+    color: var(--rs-text);
+    font: 600 0.85rem var(--rs-font-body);
+    cursor: pointer;
+  }
+
+  .rest-pref__add {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .rest-pref__err {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--rs-bad);
+  }
+
+  .rest-pref__ok {
+    margin: 0;
+    color: var(--rs-ok);
+  }
+
+  .rest-pref__form > .rs-btn {
+    justify-self: start;
+  }
+
+  @media (min-width: 700px) {
+    .rest-pref__add {
+      grid-template-columns: 1fr 12rem auto;
+      align-items: end;
+    }
+  }
+</style>
+
+<script>
+  type Prefs = { allergies: string[]; diet: string; zone: string; chefNote: string; celebrations: Array<{ label: string; date: string }> };
+  const KEY = 'rest-prefs';
+
+  document.querySelectorAll<HTMLElement>('[data-rest-pref]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    const list = root.querySelector<HTMLElement>('[data-list]');
+    const cl = root.querySelector<HTMLInputElement>('[data-cl]');
+    const cd = root.querySelector<HTMLInputElement>('[data-cd]');
+    const err = root.querySelector<HTMLElement>('[data-err]');
+    const ok = root.querySelector<HTMLElement>('[data-ok]');
+    if (!form || !list || !cl || !cd) return;
+
+    let cel: Prefs['celebrations'] = (JSON.parse(root.dataset.seed ?? '{}') as Prefs).celebrations ?? [];
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const p = JSON.parse(raw) as Prefs;
+        cel = p.celebrations ?? cel;
+        form.querySelectorAll<HTMLInputElement>('input[name="allergy"]').forEach((i) => { i.checked = p.allergies.includes(i.value); });
+        const z = form.querySelector<HTMLInputElement>(`input[name="zone"][value="${p.zone}"]`);
+        if (z) z.checked = true;
+        const diet = form.querySelector<HTMLSelectElement>('[data-diet]');
+        if (diet) diet.value = p.diet;
+        const note = form.querySelector<HTMLTextAreaElement>('[data-note]');
+        if (note) note.value = p.chefNote;
+      }
+    } catch { /* storage unavailable: keep the initial values */ }
+
+    const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+    const fmt = (d: string) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : 'sin fecha');
+    const render = () => {
+      list.innerHTML = cel.length
+        ? cel.map((c, i) => `<li><span>${esc(c.label)}<small>${fmt(c.date)}</small></span><button type="button" data-del="${i}" aria-label="Quitar ${esc(c.label)}">Quitar</button></li>`).join('')
+        : '<li><span><small>Aún no has apuntado ninguna.</small></span></li>';
+    };
+
+    root.querySelector('[data-add]')?.addEventListener('click', () => {
+      const label = cl.value.trim();
+      if (!label) { if (err) err.textContent = 'Escribe qué celebras.'; cl.focus(); return; }
+      if (err) err.textContent = '';
+      cel = [...cel, { label, date: cd.value }];
+      cl.value = '';
+      cd.value = '';
+      render();
+    });
+    list.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-del]');
+      if (!b) return;
+      cel = cel.filter((_, i) => i !== Number(b.dataset.del));
+      render();
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data: Prefs = {
+        allergies: [...form.querySelectorAll<HTMLInputElement>('input[name="allergy"]:checked')].map((i) => i.value),
+        diet: form.querySelector<HTMLSelectElement>('[data-diet]')?.value ?? '',
+        zone: form.querySelector<HTMLInputElement>('input[name="zone"]:checked')?.value ?? 'Indiferente',
+        chefNote: form.querySelector<HTMLTextAreaElement>('[data-note]')?.value.trim() ?? '',
+        celebrations: cel,
+      };
+      let saved = true;
+      try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { saved = false; }
+      if (err) err.textContent = '';
+      if (ok) ok.textContent = saved ? 'Preferencias guardadas. La cocina lo tendrá apuntado (demostración).' : 'No se pudieron guardar en este navegador.';
+    });
+    render();
+  });
+</script>

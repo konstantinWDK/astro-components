@@ -1,0 +1,104 @@
+---
+/**
+ * RestPlate — Overhead plate drawn in SVG from a course's data: a rim, a well and a plating in one of
+ * four styles (swoosh, stack, scatter, bowl) built from the course palette and a seed, so every dish
+ * gets its own repeatable arrangement. No images needed.
+ *
+ * @param {RestCourse} course - Course to draw (palette, seed, style, name).
+ * @param {boolean} decorative - Hide from assistive tech (use when the name is next to it).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: exposed as an image with the course name and its ingredients, or aria-hidden when
+ * decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restCourses, restRng, type RestCourse } from '../templates/restaurant/data';
+
+interface OwnProps {
+  course?: RestCourse;
+  decorative?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'figure'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { course = restCourses[0], decorative = false, class: classAttr, ...rest } = Astro.props;
+
+const rnd = restRng(course.seed);
+const [food, sauce, garnish] = course.palette;
+const uid = `rp-${course.id}-${Math.random().toString(36).slice(2, 7)}`;
+const f = (n: number) => Math.round(n * 10) / 10;
+
+type Blob = { x: number; y: number; rx: number; ry: number; rot: number; fill: string; op?: number };
+const blobs: Blob[] = [];
+let swoosh = '';
+
+if (course.style === 'swoosh') {
+  const a = 0.5 + rnd() * 0.5;
+  swoosh = `M52 ${f(112 + rnd() * 10)} C 78 ${f(60 - a * 20)}, 130 ${f(64 + a * 18)}, 150 ${f(96 + rnd() * 10)}`;
+  for (let i = 0; i < 3; i++) blobs.push({ x: 82 + i * 22 + rnd() * 6, y: 98 + rnd() * 10 - i * 3, rx: 14 + rnd() * 5, ry: 10 + rnd() * 4, rot: rnd() * 40 - 20, fill: food });
+  for (let i = 0; i < 6; i++) blobs.push({ x: 70 + rnd() * 60, y: 70 + rnd() * 62, rx: 2 + rnd() * 2.4, ry: 2 + rnd() * 2.4, rot: 0, fill: garnish });
+} else if (course.style === 'stack') {
+  for (let i = 0; i < 3; i++) blobs.push({ x: 100 + rnd() * 6 - 3, y: 118 - i * 16, rx: 30 - i * 4, ry: 12 - i, rot: rnd() * 10 - 5, fill: i === 1 ? sauce : food });
+  for (let i = 0; i < 7; i++) blobs.push({ x: 66 + rnd() * 68, y: 128 + rnd() * 18, rx: 2.2 + rnd() * 2, ry: 1.4 + rnd() * 1.4, rot: rnd() * 180, fill: garnish });
+  blobs.push({ x: 100, y: 66, rx: 9, ry: 5, rot: -20, fill: garnish });
+} else if (course.style === 'scatter') {
+  for (let i = 0; i < 11; i++) {
+    const ang = rnd() * Math.PI * 2;
+    const r = Math.sqrt(rnd()) * 46;
+    blobs.push({ x: 100 + Math.cos(ang) * r, y: 100 + Math.sin(ang) * r, rx: 5 + rnd() * 9, ry: 4 + rnd() * 7, rot: rnd() * 180, fill: i % 4 === 0 ? sauce : food });
+  }
+  for (let i = 0; i < 9; i++) {
+    const ang = rnd() * Math.PI * 2;
+    const r = Math.sqrt(rnd()) * 50;
+    blobs.push({ x: 100 + Math.cos(ang) * r, y: 100 + Math.sin(ang) * r, rx: 1.6 + rnd() * 2, ry: 1.6 + rnd() * 2, rot: 0, fill: garnish });
+  }
+} else {
+  blobs.push({ x: 100, y: 100, rx: 40, ry: 40, rot: 0, fill: food });
+  blobs.push({ x: 100 + rnd() * 6 - 3, y: 100 + rnd() * 6 - 3, rx: 27, ry: 26, rot: 0, fill: sauce, op: 0.9 });
+  for (let i = 0; i < 6; i++) {
+    const ang = (i / 6) * Math.PI * 2 + rnd();
+    blobs.push({ x: 100 + Math.cos(ang) * 14, y: 100 + Math.sin(ang) * 14, rx: 3 + rnd() * 2.4, ry: 2 + rnd() * 2, rot: (ang * 180) / Math.PI, fill: garnish });
+  }
+}
+
+const aria = decorative ? undefined : `${course.name}: ${course.ingredients.join(', ')}`;
+---
+
+<figure class:list={['rest-ui', 'rest-plate', classAttr]} {...rest}>
+  <svg viewBox="0 0 200 200" role={decorative ? undefined : 'img'} aria-label={aria} aria-hidden={decorative ? 'true' : undefined} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id={`${uid}-rim`} cx="0.4" cy="0.35" r="0.8">
+        <stop offset="0" stop-color="#fbf7f0"></stop>
+        <stop offset="1" stop-color="#cfc6b6"></stop>
+      </radialGradient>
+      <radialGradient id={`${uid}-well`} cx="0.5" cy="0.5" r="0.6">
+        <stop offset="0" stop-color="#f3eee4"></stop>
+        <stop offset="1" stop-color="#e2dac9"></stop>
+      </radialGradient>
+    </defs>
+    <ellipse cx="100" cy="184" rx="78" ry="8" fill="#000" opacity="0.3"></ellipse>
+    <circle cx="100" cy="100" r="90" fill={`url(#${uid}-rim)`}></circle>
+    <circle cx="100" cy="100" r="90" fill="none" stroke="#000" stroke-opacity="0.08"></circle>
+    <circle cx="100" cy="100" r="64" fill={`url(#${uid}-well)`}></circle>
+    <circle cx="100" cy="100" r="64" fill="none" stroke="#000" stroke-opacity="0.07"></circle>
+    {swoosh && <path d={swoosh} fill="none" stroke={sauce} stroke-width="14" stroke-linecap="round" opacity="0.9"></path>}
+    {blobs.map((b) => (
+      <ellipse cx={f(b.x)} cy={f(b.y)} rx={f(b.rx)} ry={f(b.ry)} fill={b.fill} opacity={b.op ?? 1} transform={`rotate(${f(b.rot)} ${f(b.x)} ${f(b.y)})`}></ellipse>
+    ))}
+  </svg>
+</figure>
+
+<style>
+  .rest-plate {
+    margin: 0;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .rest-plate svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

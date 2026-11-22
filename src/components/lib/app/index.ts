@@ -136,3 +136,14 @@ export { default as PerfAccountNav } from './PerfAccountNav.astro';
 export { default as PerfAccountTopbar } from './PerfAccountTopbar.astro';
 export { default as PerfAccountHeading } from './PerfAccountHeading.astro';
 export { default as PerfSignIn } from './PerfSignIn.astro';
+
+// Restaurant customer area ("Lumbre")
+export { default as RestPlate } from './RestPlate.astro';
+export { default as RestAccountSummary } from './RestAccountSummary.astro';
+export { default as RestReservations } from './RestReservations.astro';
+export { default as RestPreferences } from './RestPreferences.astro';
+export { default as RestGiftCards } from './RestGiftCards.astro';
+export { default as RestAccountNav } from './RestAccountNav.astro';
+export { default as RestAccountTopbar } from './RestAccountTopbar.astro';
+export { default as RestAccountHeading } from './RestAccountHeading.astro';
+export { default as RestSignIn } from './RestSignIn.astro';

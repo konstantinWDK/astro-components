@@ -233,6 +233,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Perfumería', description: 'Secciones para perfumerías de autor: hero con nubes de color, deslizador de evolución en piel, carril de fragancias, mapa olfativo, atelier de materias primas, test de perfil olfativo, constructor de set de descubrimiento, preguntas frecuentes y pie de página.' },
     ru: { name: 'Парфюмерия', description: 'Секции для нишевых парфюмерных домов: главный экран с облаками цвета, ползунок эволюции на коже, лента ароматов, ольфакторная карта, ателье сырья, тест аромапрофиля, конструктор набора для знакомства, FAQ и подвал.' },
   },
+  restaurant: {
+    en: { name: 'Restaurant', description: 'Sections for restaurants: ember hero with rising sparks, tasting menu plate by plate with generated plates, à la carte with diet filter, producer radar, table booking on a floor plan, FAQ and footer.' },
+    es: { name: 'Restaurante', description: 'Secciones para restaurantes: hero de brasas con chispas, menú degustación plato a plato con platos generados, carta con filtro de dieta, radar de productores, reserva de mesa sobre un plano de sala, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Ресторан', description: 'Секции для ресторанов: главный экран с углями и искрами, дегустационное меню блюдо за блюдом со сгенерированными тарелками, меню à la carte с фильтром по диете, радар производителей, бронирование стола на плане зала, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

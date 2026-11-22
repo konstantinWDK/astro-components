@@ -1,0 +1,321 @@
+---
+/**
+ * RestAccountTopbar — Right side of the members header: wordmark on phones, today's date, a theme
+ * toggle, notifications and the member menu (native popovers).
+ *
+ * @param {{name: string, plan: string, id: string}} user - Signed-in member.
+ * @param {Array<{title: string, text: string, time: string, unread?: boolean}>} notifications - Notification list.
+ * @param {Array<{label: string, href: string}>} links - Entries of the member menu.
+ * @param {string} signOutHref - Sign-out link.
+ * @param {string} brand - Restaurant name (phones only).
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: popovers close with Escape and outside click (native); the bell announces the
+ * unread count; the theme toggle reports aria-pressed; targets are 44px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+
+interface Note { title: string; text: string; time: string; unread?: boolean }
+
+interface OwnProps {
+  user?: { name: string; plan: string; id: string };
+  notifications?: Note[];
+  links?: Array<{ label: string; href: string }>;
+  signOutHref?: string;
+  brand?: string;
+  homeHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  user = { name: 'Álex Beltrán', plan: 'Cliente de la casa', id: 'LUM-0156' },
+  notifications = [],
+  links = [],
+  signOutHref = '#',
+  brand = 'Lumbre',
+  homeHref = '#',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `wmt-${Math.random().toString(36).slice(2, 8)}`;
+const unread = notifications.filter((n) => n.unread).length;
+const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+---
+
+<div class:list={['rest-ui', 'rest-top', classAttr]} data-rest-top {...rest}>
+  <a href={homeHref} class="rest-top__brand">{brand}</a>
+  <time class="rest-top__date" data-today></time>
+
+  <div class="rest-top__actions">
+    <button type="button" class="rest-top__icon" aria-pressed="false" aria-label="Cambiar tema claro u oscuro" data-theme-toggle>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
+    </button>
+
+    <button type="button" class="rest-top__icon" popovertarget={`${uid}-notes`} aria-label={unread ? `Avisos, ${unread} sin leer` : 'Avisos'}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0" /></svg>
+      {unread > 0 && <span class="rest-top__dot" aria-hidden="true"></span>}
+    </button>
+    <div id={`${uid}-notes`} popover class="rest-pop" data-rest-pop>
+      <p class="rest-pop__title">Avisos</p>
+      {notifications.length ? (
+        <ul role="list">
+          {notifications.map((n) => (
+            <li class:list={[n.unread && 'is-unread']}>
+              <strong>{n.title}</strong>
+              <span>{n.text}</span>
+              <small>{n.time}</small>
+            </li>
+          ))}
+        </ul>
+      ) : <p class="rest-pop__empty">Todo al día.</p>}
+    </div>
+
+    <button type="button" class="rest-top__me" popovertarget={`${uid}-me`} aria-label={`Menú de ${user.name}`}>
+      <span class="rest-top__avatar" aria-hidden="true">{initials}</span>
+      <span class="rest-top__who"><strong>{user.name}</strong><small>{user.plan}</small></span>
+    </button>
+    <div id={`${uid}-me`} popover class="rest-pop" data-rest-pop>
+      <p class="rest-pop__title">{user.name}<small>Socia nº {user.id}</small></p>
+      <ul role="list" class="rest-pop__menu">
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><a href={signOutHref}>Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  .rest-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    flex: 1;
+    min-width: 0;
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-top__brand {
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-size: 1.6rem;
+    color: var(--rs-text);
+    text-decoration: none;
+  }
+
+  .rest-top__date {
+    display: none;
+    margin-left: auto;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+    color: var(--rs-text-3);
+  }
+
+  .rest-top__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .rest-top__icon,
+  .rest-top__me {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 var(--sp-2, 0.5rem);
+    justify-content: center;
+    border: 0;
+    background: none;
+    color: var(--rs-text-2);
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .rest-top__icon:hover,
+  .rest-top__me:hover {
+    color: var(--rs-text);
+  }
+
+  .rest-top__dot {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--rs-accent);
+  }
+
+  .rest-top__avatar {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--rs-brand);
+    border-radius: 50%;
+    font-family: var(--rs-font-display);
+    font-size: 0.95rem;
+    color: var(--rs-brand);
+  }
+
+  .rest-top__who {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .rest-top__who strong {
+    font-size: 0.88rem;
+    color: var(--rs-text);
+  }
+
+  .rest-top__who small {
+    font-size: 0.74rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-pop {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: min(320px, calc(100vw - 16px));
+    max-height: 70vh;
+    overflow: auto;
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 2px;
+    background: var(--rs-bg-raised);
+    color: var(--rs-text);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .rest-pop__title {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--rs-font-display);
+    font-size: 1.15rem;
+  }
+
+  .rest-pop__title small {
+    display: block;
+    font: 500 0.78rem var(--rs-font-body);
+    color: var(--rs-text-3);
+  }
+
+  .rest-pop ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rest-pop li:not(:last-child) {
+    border-bottom: 1px solid var(--rs-border);
+  }
+
+  .rest-pop li > strong,
+  .rest-pop li > span,
+  .rest-pop li > small {
+    display: block;
+  }
+
+  .rest-pop li:not(.rest-pop__menu li) {
+    padding: var(--sp-2, 0.5rem) 0;
+  }
+
+  .rest-pop li.is-unread > strong::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 0.45rem;
+    border-radius: 50%;
+    background: var(--rs-accent);
+  }
+
+  .rest-pop li > span {
+    font-size: 0.88rem;
+    color: var(--rs-text-2);
+  }
+
+  .rest-pop li > small {
+    font-size: 0.76rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-pop__menu a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-2, 0.5rem);
+    color: var(--rs-text);
+    text-decoration: none;
+  }
+
+  .rest-pop__menu a:hover {
+    background: rgba(var(--rs-brand-rgb), 0.1);
+  }
+
+  .rest-pop__empty {
+    margin: 0;
+    color: var(--rs-text-3);
+  }
+
+  @media (min-width: 760px) {
+    .rest-top__brand {
+      display: none;
+    }
+
+    .rest-top__date {
+      display: block;
+    }
+
+    .rest-top__who {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  function initTop(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const time = root.querySelector<HTMLTimeElement>('[data-today]');
+    if (time) {
+      const now = new Date();
+      time.dateTime = now.toISOString().slice(0, 10);
+      time.textContent = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+    }
+    const toggle = root.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    const sync = () => toggle?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
+    sync();
+    toggle?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('ack-theme', next); } catch (e) { /* storage unavailable */ }
+      sync();
+    });
+    root.querySelectorAll<HTMLElement>('[data-rest-pop]').forEach((pop) => {
+      pop.addEventListener('toggle', (e) => {
+        if ((e as Event & { newState?: string }).newState !== 'open') return;
+        const btn = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        pop.style.top = `${r.bottom + 8}px`;
+        pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth))}px`;
+      });
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-rest-top]').forEach(initTop);
+</script>

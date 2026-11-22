@@ -1,0 +1,278 @@
+---
+/**
+ * RestSignIn — Split sign-in for the customer area: a large generated plate with a customer quote
+ * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
+ * quick-access link and a link to join the club.
+ *
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} joinHref - Link to the club page.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus rings and 48px controls; the label illustration is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import RestPlate from './RestPlate.astro';
+import { restCourses } from '../templates/restaurant/data';
+
+interface OwnProps {
+  dashboardHref?: string;
+  joinHref?: string;
+  homeHref?: string;
+  action?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { dashboardHref = '/mesa', joinHref = '/reservar', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const course = restCourses[2];
+const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['rest-ui', 'rest-si', classAttr]} aria-labelledby={`${uid}-title`} data-rest-si data-dashboard={dashboardHref} {...rest}>
+  <div class="rest-si__art">
+    <a href={homeHref} class="rest-si__brand">Lumbre</a>
+    <div class="rest-si__label"><RestPlate course={course} decorative /></div>
+    <blockquote>
+      <p>Reservo siempre la misma mesa junto a la brasa y ya no tengo que repetir mis alergias. Cuando llego, saben que la yema curada es lo primero que quiero.</p>
+      <footer>Álex Beltrán · cliente desde 2024</footer>
+    </blockquote>
+  </div>
+
+  <div class="rest-si__panel">
+    <form class="rest-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-rest-si-form>
+      <p class="rs-eyebrow">Mi mesa</p>
+      <h1 id={`${uid}-title`}>Bienvenido de nuevo</h1>
+
+      <div class="rest-si__field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="rest-si__field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="rest-si__pass">
+          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-rest-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="rest-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+
+      <p class="rest-si__error" role="alert" data-rest-si-error></p>
+
+      <button type="submit" class="rs-btn">Entrar</button>
+      <a class="rest-si__demo rs-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
+
+      <p class="rest-si__join">¿Primera vez? <a class="rs-link" href={joinHref}>Reserva tu mesa</a></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .rest-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--rs-bg);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-si__art {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--rs-accent-rgb), 0.22), transparent 70%), var(--rs-surface);
+    border-right: 1px solid var(--rs-border);
+  }
+
+  .rest-si__brand {
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-size: 2rem;
+    color: var(--rs-text);
+    text-decoration: none;
+  }
+
+  .rest-si__label {
+    width: min(340px, 78%);
+    margin: 0 auto;
+        filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .rest-si__label :global(.rest-plate) {
+    max-width: none;
+  }
+
+  .rest-si__art blockquote {
+    max-width: 38ch;
+    margin: 0;
+  }
+
+  .rest-si__art blockquote p {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .rest-si__art footer {
+    font-size: 0.85rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .rest-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .rest-si__form h1 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--rs-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .rest-si__field label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--rs-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rs-accent);
+  }
+
+  .rest-si__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 2px;
+    background: var(--rs-bg-raised);
+    color: var(--rs-text);
+    font: 1rem var(--rs-font-body);
+  }
+
+  .rest-si__pass {
+    position: relative;
+  }
+
+  .rest-si__pass input {
+    padding-right: 5.5rem;
+  }
+
+  .rest-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--rs-text-2);
+    font: 600 0.8rem var(--rs-font-body);
+    cursor: pointer;
+  }
+
+  .rest-si__pass button:hover {
+    color: var(--rs-brand);
+  }
+
+  .rest-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--rs-text-2);
+    cursor: pointer;
+  }
+
+  .rest-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--rs-brand);
+  }
+
+  .rest-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--rs-bad);
+  }
+
+  .rest-si__demo,
+  .rest-si__join {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--rs-text-2);
+  }
+
+  .rest-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 900px) {
+    .rest-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .rest-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-rest-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-rest-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-rest-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

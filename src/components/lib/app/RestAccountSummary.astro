@@ -1,0 +1,271 @@
+---
+/**
+ * RestAccountSummary — Overview of the customer area: the next reservation as a huge date with a live
+ * countdown, its table, party size, menu and note; the customer's figures (visits, gift-card balance,
+ * years, next celebration); and a one-tap "book the same table again" card from their preferences.
+ *
+ * @param {RestMember} member - Signed-in customer.
+ * @param {RestReservation[]} reservations - All reservations (the next upcoming one is shown).
+ * @param {RestPreferences} preferences - Customer preferences.
+ * @param {RestGiftCard[]} giftCards - Gift cards to sum the balance.
+ * @param {string} reservationsHref - Link to the reservations page.
+ * @param {string} reserveHref - Link to the booking page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the date has a full-text equivalent, the countdown is text, figures are a <dl>,
+ * targets are 48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import {
+  restMember,
+  restReservations,
+  restPreferences,
+  restGiftCards,
+  restTableById,
+  restMoney,
+  type RestMember,
+  type RestReservation,
+  type RestPreferences,
+  type RestGiftCard,
+} from '../templates/restaurant/data';
+
+interface OwnProps {
+  member?: RestMember;
+  reservations?: RestReservation[];
+  preferences?: RestPreferences;
+  giftCards?: RestGiftCard[];
+  reservationsHref?: string;
+  reserveHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = restMember,
+  reservations = restReservations,
+  preferences = restPreferences,
+  giftCards = restGiftCards,
+  reservationsHref = '/mesa/reservas',
+  reserveHref = '/reservar',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `ras-${Math.random().toString(36).slice(2, 8)}`;
+const first = member.name.split(' ')[0];
+const upcoming = reservations
+  .filter((r) => r.status === 'Confirmada' || r.status === 'Pendiente')
+  .sort((a, b) => a.date.localeCompare(b.date))[0];
+const date = upcoming ? new Date(`${upcoming.date}T12:00:00`) : undefined;
+const day = date?.getDate();
+const month = date?.toLocaleDateString('es-ES', { month: 'long' });
+const full = date?.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const table = upcoming ? restTableById(upcoming.tableId) : undefined;
+const years = Math.max(1, new Date().getFullYear() - new Date(member.since).getFullYear());
+const balance = giftCards.reduce((n, g) => n + g.balance, 0);
+const celebration = preferences.celebrations[0];
+---
+
+<section class:list={['rest-ui', 'rest-sum', classAttr]} aria-labelledby={`${uid}-title`} data-rest-sum {...rest}>
+  <article class="rest-sum__next">
+    <p class="rs-eyebrow">Tu próxima mesa</p>
+    <h2 id={`${uid}-title`} class="rs-sr">Próxima reserva</h2>
+    {upcoming && date ? (
+      <>
+        <div class="rest-sum__date">
+          <span class="rest-sum__day" aria-hidden="true">{day}</span>
+          <span class="rest-sum__month" aria-hidden="true">{month}</span>
+          <time datetime={upcoming.date} class="rs-sr">{full}</time>
+        </div>
+        <p class="rest-sum__count" data-count data-date={upcoming.date}>{full}</p>
+        <dl class="rest-sum__facts">
+          <div><dt>Hora</dt><dd>{upcoming.time}</dd></div>
+          <div><dt>Comensales</dt><dd>{upcoming.guests}</dd></div>
+          <div><dt>Mesa</dt><dd>{table?.name ?? upcoming.tableId}</dd></div>
+          <div><dt>Menú</dt><dd>{upcoming.menu}</dd></div>
+          <div><dt>Estado</dt><dd>{upcoming.status}</dd></div>
+        </dl>
+        {upcoming.note && <p class="rest-sum__note">“{upcoming.note}”</p>}
+        <a class="rs-btn" href={reservationsHref}>Gestionar mis reservas</a>
+      </>
+    ) : (
+      <>
+        <p class="rest-sum__empty">No tienes ninguna reserva próxima.</p>
+        <a class="rs-btn" href={reserveHref}>Reservar mesa</a>
+      </>
+    )}
+  </article>
+
+  <div class="rest-sum__side">
+    <p class="rest-sum__hello">Hola, {first}. <span>{member.tier}</span></p>
+    <dl class="rest-sum__stats">
+      <div><dt>Veces que nos has visitado</dt><dd>{member.visits}</dd></div>
+      <div><dt>Saldo en vales</dt><dd>{restMoney(balance)}</dd></div>
+      <div><dt>Años con nosotros</dt><dd>{years}</dd></div>
+      <div><dt>Próxima celebración</dt><dd class="rest-sum__small">{celebration ? new Date(`${celebration.date}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '–'}</dd></div>
+    </dl>
+
+    <div class="rest-sum__again">
+      <p class="rs-eyebrow">Tu sitio de siempre</p>
+      <p>Te gusta la zona <strong>{preferences.zone === 'Indiferente' ? 'que haya libre' : preferences.zone.toLowerCase()}</strong>{preferences.allergies.length ? <> y ya tenemos apuntado: {preferences.allergies.join(', ').toLowerCase()}</> : null}.</p>
+      <a class="rs-link" href={reserveHref}>Reservar otra mesa</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rest-sum {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-sum__next {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--rs-border-strong);
+    background: linear-gradient(160deg, rgba(var(--rs-brand-rgb), 0.16), transparent 60%), var(--rs-bg-raised);
+  }
+
+  .rest-sum__date {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-2, 0.5rem);
+  }
+
+  .rest-sum__day {
+    font-family: var(--rs-font-display);
+    font-size: clamp(6rem, 22vw, 10rem);
+    line-height: 0.8;
+    letter-spacing: -0.04em;
+    color: var(--rs-brand);
+  }
+
+  .rest-sum__month {
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-size: clamp(2rem, 6vw, 3rem);
+    text-transform: capitalize;
+  }
+
+  .rest-sum__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    font-size: 0.95rem;
+    color: var(--rs-text-2);
+  }
+
+  .rest-sum__facts {
+    display: grid;
+    margin: 0 0 var(--sp-4, 1rem);
+    border-top: 1px solid var(--rs-border);
+  }
+
+  .rest-sum__facts div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--rs-border);
+  }
+
+  .rest-sum__facts dt {
+    color: var(--rs-text-3);
+  }
+
+  .rest-sum__facts dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .rest-sum__note {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-size: 1.3rem;
+    line-height: 1.3;
+    color: var(--rs-text-2);
+  }
+
+  .rest-sum__empty {
+    margin: var(--sp-4, 1rem) 0 var(--sp-5, 1.25rem);
+    color: var(--rs-text-2);
+  }
+
+  .rest-sum__hello {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--rs-font-display);
+    font-size: 2rem;
+  }
+
+  .rest-sum__hello span {
+    display: block;
+    margin-top: 0.25rem;
+    font: 700 0.72rem/1 var(--rs-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rs-accent);
+  }
+
+  .rest-sum__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1px solid var(--rs-border);
+  }
+
+  .rest-sum__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .rest-sum__stats dt {
+    font-size: 0.84rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-sum__stats dd {
+    margin: 0;
+    font-family: var(--rs-font-display);
+    font-size: 2.8rem;
+    line-height: 1;
+  }
+
+  .rest-sum__stats dd.rest-sum__small {
+    font-size: 2rem;
+    text-transform: capitalize;
+  }
+
+  .rest-sum__again p:not(.rs-eyebrow) {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    line-height: 1.55;
+    color: var(--rs-text-2);
+  }
+
+  @media (min-width: 960px) {
+    .rest-sum {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .rest-sum__next {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-sum] [data-count]').forEach((el) => {
+    const date = el.dataset.date;
+    if (!date) return;
+    const days = Math.ceil((new Date(`${date}T12:00:00`).getTime() - Date.now()) / 86400000);
+    const full = el.textContent ?? '';
+    if (days > 1) el.textContent = `Faltan ${days} días · ${full}`;
+    else if (days === 1) el.textContent = `Es mañana · ${full}`;
+    else if (days === 0) el.textContent = `Es hoy · ${full}`;
+  });
+</script>

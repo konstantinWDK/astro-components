@@ -1,0 +1,300 @@
+---
+/**
+ * RestTasting — The tasting menu, plate by plate. A list of numbered courses on one side and a large
+ * generated plate on the other; pick a course (list, arrows or the Previous/Next buttons) and the
+ * plate redraws with its ingredients, pairing, serving temperature and the kilometres it travelled.
+ *
+ * @param {RestCourse[]} courses - Courses of the menu.
+ * @param {number} price - Price per person. Default 96.
+ * @param {string} reserveHref - Link of the button.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: a radio group chooses the course (arrow keys), the detail is an aria-live region,
+ * every plate is described by its ingredients; without JavaScript all courses are listed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import RestPlate from '../app/RestPlate.astro';
+import { restCourses, restMoney, type RestCourse } from '../templates/restaurant/data';
+
+interface OwnProps {
+  courses?: RestCourse[];
+  price?: number;
+  reserveHref?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  courses = restCourses,
+  price = 96,
+  reserveHref = '/reservar',
+  title = 'Ocho pases, una sola brasa',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `rt-${Math.random().toString(36).slice(2, 8)}`;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<section class:list={['rest-ui', 'rest-tast', classAttr]} aria-labelledby={`${uid}-title`} data-rest-tast {...rest}>
+  <div class="rest-tast__inner">
+    <header class="rest-tast__head">
+      <p class="rs-eyebrow">Menú degustación</p>
+      <Heading id={`${uid}-title`} class="rest-tast__title">{title}</Heading>
+      <p class="rest-tast__lead">{restMoney(price)} por persona, para toda la mesa. Unas dos horas y media. Cambiamos cualquier pase si avisas de una alergia.</p>
+    </header>
+
+    <div class="rest-tast__grid">
+      <fieldset class="rest-tast__list">
+        <legend class="rs-sr">Elige un pase</legend>
+        {courses.map((c, i) => (
+          <label>
+            <input type="radio" name={`${uid}-c`} value={c.id} checked={i === 0} />
+            <span><b>{pad(c.number)}</b>{c.name}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div class="rest-tast__stage" aria-live="polite">
+        {courses.map((c, i) => (
+          <article class="rest-tast__course" data-course={c.id} hidden={i !== 0 ? true : undefined}>
+            <div class="rest-tast__plate"><RestPlate course={c} /></div>
+            <div class="rest-tast__body">
+              <p class="rest-tast__no" aria-hidden="true">{pad(c.number)}</p>
+              <h3>{c.name}</h3>
+              <p>{c.text}</p>
+              <dl>
+                <div><dt>En el plato</dt><dd>{c.ingredients.join(' · ')}</dd></div>
+                <div><dt>Para beber</dt><dd>{c.pairing}</dd></div>
+                <div><dt>Temperatura</dt><dd>{c.temperature}</dd></div>
+                <div><dt>Ha viajado</dt><dd>{c.km} km</dd></div>
+              </dl>
+            </div>
+          </article>
+        ))}
+
+        <div class="rest-tast__nav">
+          <button type="button" class="rs-btn rs-btn--ghost" data-prev>Anterior</button>
+          <button type="button" class="rs-btn rs-btn--ghost" data-next>Siguiente</button>
+          <a class="rs-btn" href={reserveHref}>Reservar este menú</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rest-tast {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--rs-bg-raised);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+    border-block: 1px solid var(--rs-border);
+  }
+
+  .rest-tast [hidden] {
+    display: none !important;
+  }
+
+  .rest-tast__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .rest-tast__title {
+    max-width: 14ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(2.8rem, 8vw, 6rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+  }
+
+  .rest-tast__lead {
+    max-width: 50ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--rs-text-2);
+  }
+
+  .rest-tast__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .rest-tast__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-top: 1px solid var(--rs-border-strong);
+  }
+
+  .rest-tast__list input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rest-tast__list span {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    min-height: 48px;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--rs-border);
+    font-family: var(--rs-font-display);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    color: var(--rs-text-3);
+    cursor: pointer;
+    transition: color 0.2s ease, padding 0.25s ease;
+  }
+
+  .rest-tast__list b {
+    min-width: 2ch;
+    font: 700 0.78rem/1 var(--rs-font-body);
+    letter-spacing: 0.1em;
+  }
+
+  .rest-tast__list span:hover {
+    color: var(--rs-text);
+  }
+
+  .rest-tast__list input:checked + span {
+    padding-left: 0.6rem;
+    color: var(--rs-brand);
+    border-bottom-color: var(--rs-brand);
+  }
+
+  .rest-tast__list input:focus-visible + span {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 2px;
+  }
+
+  .rest-tast__course {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    animation: rest-plate-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  @keyframes rest-plate-in {
+    from { opacity: 0; transform: translateY(14px) rotate(-6deg) scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .rest-tast__plate {
+    width: min(100%, 360px);
+    margin: 0 auto;
+    filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .rest-tast__no {
+    margin: 0;
+    font-family: var(--rs-font-display);
+    font-size: clamp(4rem, 14vw, 7rem);
+    line-height: 0.8;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--rs-brand);
+  }
+
+  .rest-tast__body h3 {
+    margin: 0.5rem 0 var(--sp-3, 0.75rem);
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1;
+  }
+
+  .rest-tast__body p {
+    margin: 0 0 var(--sp-4, 1rem);
+    max-width: 46ch;
+    line-height: 1.6;
+    color: var(--rs-text-2);
+  }
+
+  .rest-tast__body p.rest-tast__no {
+    color: transparent;
+  }
+
+  .rest-tast__body dl {
+    display: grid;
+    margin: 0;
+  }
+
+  .rest-tast__body dl div {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--rs-border);
+    font-size: 0.92rem;
+  }
+
+  .rest-tast__body dt {
+    color: var(--rs-text-3);
+  }
+
+  .rest-tast__body dd {
+    margin: 0;
+  }
+
+  .rest-tast__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  @media (min-width: 900px) {
+    .rest-tast {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .rest-tast__grid {
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+      gap: var(--sp-12, 3rem);
+      align-items: start;
+    }
+
+    .rest-tast__course {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+      align-items: center;
+    }
+
+    .rest-tast__list {
+      position: sticky;
+      top: 90px;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rest-tast]').forEach((root) => {
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.rest-tast__list input')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-course]')];
+    if (!radios.length) return;
+
+    const show = (id?: string) => panels.forEach((p) => { p.hidden = p.dataset.course !== id; });
+    const go = (d: number) => {
+      const i = radios.findIndex((r) => r.checked);
+      const n = (i + d + radios.length) % radios.length;
+      radios[n].checked = true;
+      show(radios[n].value);
+    };
+
+    radios.forEach((r) => r.addEventListener('change', () => show(r.value)));
+    root.querySelector('[data-prev]')?.addEventListener('click', () => go(-1));
+    root.querySelector('[data-next]')?.addEventListener('click', () => go(1));
+    show(radios.find((r) => r.checked)?.value);
+  });
+</script>

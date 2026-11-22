@@ -1,0 +1,224 @@
+---
+/**
+ * RestHero — Restaurant hero: an enormous wordmark filled with a slow ember gradient, sparks rising
+ * from the bottom (pure CSS, generated from a seed), the tagline, hours, two buttons and three key
+ * figures. No photography needed.
+ *
+ * @param {string} brand - Wordmark.
+ * @param {string} tagline - Line under the wordmark.
+ * @param {string} hours - Opening hours line.
+ * @param {RestStat[]} stats - Three key figures.
+ * @param {string} reserveHref - Link of the primary button.
+ * @param {string} menuHref - Link of the secondary button.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h1'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the wordmark is the page heading (real text), sparks are decorative (aria-hidden)
+ * and stop under prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restBrand, restStats, restRng, type RestStat } from '../templates/restaurant/data';
+
+interface OwnProps {
+  brand?: string;
+  tagline?: string;
+  hours?: string;
+  stats?: RestStat[];
+  reserveHref?: string;
+  menuHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = restBrand.name,
+  tagline = 'Cocina a la brasa. Un solo fuego, ocho pases y veintiséis sillas.',
+  hours = restBrand.hours,
+  stats = restStats,
+  reserveHref = '/reservar',
+  menuHref = '/menu',
+  headingLevel = 'h1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `rh-${Math.random().toString(36).slice(2, 8)}`;
+const rnd = restRng(7);
+const sparks = Array.from({ length: 28 }, () => ({
+  left: Math.round(rnd() * 100),
+  size: Math.round((2 + rnd() * 4) * 10) / 10,
+  delay: Math.round(rnd() * 90) / 10,
+  dur: Math.round((6 + rnd() * 8) * 10) / 10,
+  drift: Math.round((rnd() * 60 - 30)),
+}));
+---
+
+<section class:list={['rest-ui', 'rest-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="rest-hero__sparks" aria-hidden="true">
+    {sparks.map((s) => (
+      <i style={`left:${s.left}%;width:${s.size}px;height:${s.size}px;animation-delay:-${s.delay}s;animation-duration:${s.dur}s;--dx:${s.drift}px`}></i>
+    ))}
+  </div>
+  <div class="rest-hero__glow" aria-hidden="true"></div>
+
+  <div class="rest-hero__inner">
+    <p class="rs-eyebrow">Madrid · Cocina a la brasa de autor</p>
+    <Heading id={`${uid}-title`} class="rest-hero__title">{brand}</Heading>
+    <p class="rest-hero__tag">{tagline}</p>
+
+    <div class="rest-hero__actions">
+      <a class="rs-btn" href={reserveHref}>Reservar mesa</a>
+      <a class="rs-btn rs-btn--ghost" href={menuHref}>Ver el menú</a>
+    </div>
+    <p class="rest-hero__hours">{hours}</p>
+
+    <dl class="rest-hero__stats">
+      {stats.map((s) => (
+        <div>
+          <dt>{s.label}</dt>
+          <dd>{s.value}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>
+
+<style>
+  .rest-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem) var(--sp-10, 2.5rem);
+    min-height: min(92vh, 860px);
+    display: grid;
+    align-items: end;
+    background: var(--rs-bg);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+  }
+
+  .rest-hero__glow {
+    position: absolute;
+    left: 50%;
+    bottom: -35%;
+    width: 130%;
+    aspect-ratio: 1.6;
+    translate: -50% 0;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(var(--rs-brand-rgb), 0.55), rgba(var(--rs-brand-rgb), 0.12) 55%, transparent 75%);
+    animation: rest-breathe 6s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes rest-breathe {
+    from { opacity: 0.65; scale: 1; }
+    to { opacity: 1; scale: 1.06; }
+  }
+
+  .rest-hero__sparks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .rest-hero__sparks i {
+    position: absolute;
+    bottom: -10px;
+    border-radius: 50%;
+    background: var(--rs-accent);
+    box-shadow: 0 0 8px 2px rgba(var(--rs-brand-rgb), 0.8);
+    opacity: 0;
+    animation: rest-rise linear infinite;
+  }
+
+  @keyframes rest-rise {
+    0% { transform: translate(0, 0); opacity: 0; }
+    10% { opacity: 0.95; }
+    100% { transform: translate(var(--dx), -85vh); opacity: 0; }
+  }
+
+  .rest-hero__inner {
+    position: relative;
+    max-width: 1240px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .rest-hero__title {
+    margin: 0;
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(5.5rem, 25vw, 20rem);
+    line-height: 0.82;
+    letter-spacing: -0.04em;
+    background: linear-gradient(100deg, var(--rs-text) 0%, var(--rs-accent) 30%, var(--rs-brand) 55%, var(--rs-accent) 80%, var(--rs-text) 100%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: rest-flame 9s ease-in-out infinite alternate;
+  }
+
+  @keyframes rest-flame {
+    from { background-position: 0% 50%; }
+    to { background-position: 100% 50%; }
+  }
+
+  .rest-hero__tag {
+    max-width: 30ch;
+    margin: var(--sp-5, 1.25rem) 0 var(--sp-6, 1.5rem);
+    font-family: var(--rs-font-display);
+    font-style: italic;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    line-height: 1.15;
+  }
+
+  .rest-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .rest-hero__hours {
+    margin: var(--sp-4, 1rem) 0 0;
+    font-size: 0.92rem;
+    color: var(--rs-text-2);
+  }
+
+  .rest-hero__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: var(--sp-10, 2.5rem) 0 0;
+    padding-top: var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--rs-border-strong);
+  }
+
+  .rest-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.25rem;
+  }
+
+  .rest-hero__stats dt {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    color: var(--rs-text-2);
+  }
+
+  .rest-hero__stats dd {
+    margin: 0;
+    font-family: var(--rs-font-display);
+    font-size: clamp(2rem, 6vw, 3.6rem);
+    line-height: 1;
+  }
+
+  @media (min-width: 900px) {
+    .rest-hero {
+      padding-inline: var(--sp-8, 2rem);
+    }
+  }
+</style>

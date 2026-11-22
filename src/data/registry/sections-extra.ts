@@ -1319,4 +1319,47 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['perfume', 'perfumery', 'footer', 'newsletter', 'wordmark'],
     usage: `<PerfFooter brand="Umbra" />`,
   }),
+  // === RESTAURANT ("Lumbre") ===
+  section({
+    slug: 'rest-hero', name: 'Rest Hero', file: 'RestHero.astro', sectionCategory: 'restaurant',
+    description: 'Restaurant hero with an enormous wordmark filled with a slow ember gradient, sparks rising from the bottom (pure CSS, generated from a seed), tagline, hours, two buttons and three key figures. No photography needed.',
+    tags: ['restaurant', 'hero', 'fire', 'animation', 'typography'], featured: true,
+    usage: `<RestHero reserveHref="/reservar" menuHref="/menu" />`,
+  }),
+  section({
+    slug: 'rest-tasting', name: 'Rest Tasting', file: 'RestTasting.astro', sectionCategory: 'restaurant',
+    description: 'The tasting menu plate by plate: a list of numbered courses beside a large generated plate; pick a course and the plate redraws with its ingredients, pairing, serving temperature and the kilometres it travelled.',
+    tags: ['restaurant', 'tasting-menu', 'plate', 'svg', 'radio', 'storytelling'], featured: true,
+    usage: `<RestTasting courses={restCourses} price={96} />`,
+  }),
+  section({
+    slug: 'rest-menu', name: 'Rest Menu', file: 'RestMenu.astro', sectionCategory: 'restaurant',
+    description: 'The à la carte menu as a typographic price list with dotted leaders; a diet filter (everything, vegetarian, vegan, gluten-free) hides dishes and empty sections live and a counter says how many are shown. Sold-out dishes are struck through with a text label.',
+    tags: ['restaurant', 'menu', 'filter', 'pricing', 'list'], featured: true,
+    usage: `<RestMenu dishes={restDishes} />`,
+  }),
+  section({
+    slug: 'rest-origin', name: 'Rest Origin', file: 'RestOrigin.astro', sectionCategory: 'restaurant',
+    description: 'Where the food comes from as a radar: the restaurant at the centre of concentric rings (50, 100, 200, 400 km) and every producer a point at its real distance. Pick one in the list or on the radar; the average distance is computed from the data.',
+    tags: ['restaurant', 'origin', 'radar', 'svg', 'radio', 'sustainability'], featured: true,
+    usage: `<RestOrigin producers={restProducers} />`,
+  }),
+  section({
+    slug: 'rest-booking', name: 'Rest Booking', file: 'RestBooking.astro', sectionCategory: 'restaurant',
+    description: 'Table booking with a floor plan: choose date, time and guests, then pick your table on the plan of the dining room (bar, room, patio, with the grill drawn in). Taken, too-small or closed-day tables are disabled and say why; a live region reports how many are left.',
+    tags: ['restaurant', 'booking', 'floor-plan', 'form', 'radio', 'reservations'], featured: true,
+    usage: `<RestBooking tables={restTables} slots={restSlots} action="/api/reservar" />`,
+  }),
+  section({
+    slug: 'rest-faq', name: 'Rest FAQ', file: 'RestFaq.astro', sectionCategory: 'restaurant',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['restaurant', 'faq', 'accordion'],
+    usage: `<RestFaq faqs={restFaqs} />`,
+  }),
+  section({
+    slug: 'rest-footer', name: 'Rest Footer', file: 'RestFooter.astro', sectionCategory: 'restaurant',
+    description: 'Restaurant footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['restaurant', 'footer', 'newsletter', 'wordmark'],
+    usage: `<RestFooter brand="Lumbre" />`,
+  }),
 ];

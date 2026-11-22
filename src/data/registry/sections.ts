@@ -173,6 +173,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9zM7 7h10v14H7z"/></svg>`,
   },
   {
+    id: 'restaurant',
+    name: 'Restaurant',
+    description: 'Sections for restaurants: ember hero with rising sparks, tasting menu plate by plate with generated plates, à la carte with diet filter, producer radar, table booking on a floor plan, FAQ and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

@@ -1,0 +1,598 @@
+---
+/**
+ * RestBooking — Table booking with a floor plan. Choose a date, a time and the number of guests, then
+ * pick your table on the plan of the dining room (bar, room, patio, with the grill drawn in). Tables
+ * that are taken, too small for the party, or on a closed day are disabled and say why; a live region
+ * reports how many are left. The summary shows the chosen table and, for the tasting menu, the total.
+ *
+ * @param {RestTable[]} tables - Tables of the dining room (position in plan units, seats, zone).
+ * @param {string[]} slots - Available times.
+ * @param {number} menuPrice - Tasting-menu price per person. Default 96.
+ * @param {string} action - Form action (POST). Empty runs a demo confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: tables are real radio inputs inside labels (keyboard and screen readers work without
+ * the drawing), disabled ones carry the reason in text, errors are in role="alert", availability is
+ * aria-live, targets are at least 44px. Without JavaScript every table can be chosen.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/restaurant/rest-theme.css';
+import { restTables, restSlots, restMoney, type RestTable } from '../templates/restaurant/data';
+
+interface OwnProps {
+  tables?: RestTable[];
+  slots?: string[];
+  menuPrice?: number;
+  action?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  tables = restTables,
+  slots = restSlots,
+  menuPrice = 96,
+  action = '',
+  title = 'Elige tu mesa',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `rb-${Math.random().toString(36).slice(2, 8)}`;
+const W = 520;
+const H = 260;
+const zones = [
+  { name: 'Barra', left: 1, width: 24 },
+  { name: 'Sala', left: 28, width: 47 },
+  { name: 'Patio', left: 78, width: 21 },
+];
+---
+
+<section id="reservar" class:list={['rest-ui', 'rest-book', classAttr]} aria-labelledby={`${uid}-title`} data-rest-book data-menu-price={menuPrice} data-tables={JSON.stringify(tables.map((t) => ({ id: t.id, name: t.name, seats: t.seats })))} {...rest}>
+  <div class="rest-book__inner">
+    <header class="rest-book__head">
+      <p class="rs-eyebrow">Reservar</p>
+      <Heading id={`${uid}-title`} class="rest-book__title">{title}</Heading>
+      <p class="rest-book__lead">Dinos cuándo y cuántos sois y te enseñamos qué mesas quedan. Cerramos lunes y martes.</p>
+    </header>
+
+    <form class="rest-book__form" method="post" action={action || undefined} data-form novalidate>
+      <div class="rest-book__row">
+        <div class="rest-book__field">
+          <label for={`${uid}-date`}>Fecha</label>
+          <input id={`${uid}-date`} type="date" name="date" required data-date />
+        </div>
+        <div class="rest-book__field">
+          <label for={`${uid}-guests`}>Comensales</label>
+          <select id={`${uid}-guests`} name="guests" data-guests>
+            {[1, 2, 3, 4, 5, 6].map((n) => <option value={n} selected={n === 2}>{n} {n === 1 ? 'persona' : 'personas'}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <fieldset class="rest-book__slots">
+        <legend>Hora</legend>
+        {slots.map((s, i) => (
+          <label>
+            <input type="radio" name="time" value={s} checked={i === 4} data-time />
+            <span>{s}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      <p class="rest-book__avail" aria-live="polite" data-avail>Elige una fecha para ver las mesas libres.</p>
+
+      <fieldset class="rest-book__plan-wrap">
+        <legend>Plano de la sala</legend>
+        <div class="rest-book__plan">
+          {zones.map((z) => (
+            <div class="rest-book__zone" style={`left:${z.left}%;width:${z.width}%`}><span>{z.name}</span></div>
+          ))}
+          <div class="rest-book__grill" aria-hidden="true"><span>La brasa</span></div>
+          {tables.map((t) => (
+            <label class:list={['rest-book__table', `is-${t.shape}`, `is-s${t.seats}`]} style={`left:${(t.x / W) * 100}%;top:${(t.y / H) * 100}%`} data-table={t.id}>
+              <input type="radio" name="table" value={t.id} />
+              <span><b>{t.name}</b><small>{t.seats} plazas</small></span>
+            </label>
+          ))}
+        </div>
+        <ul class="rest-book__legend" aria-hidden="true">
+          <li><i class="is-free"></i>Libre</li>
+          <li><i class="is-sel"></i>Tu mesa</li>
+          <li><i class="is-off"></i>No disponible</li>
+        </ul>
+      </fieldset>
+
+      <fieldset class="rest-book__menu">
+        <legend>Qué vais a tomar</legend>
+        <label><input type="radio" name="menu" value="Menú degustación" checked data-menu /><span>Menú degustación · {restMoney(menuPrice)} por persona</span></label>
+        <label><input type="radio" name="menu" value="Carta" data-menu /><span>A la carta</span></label>
+      </fieldset>
+
+      <div class="rest-book__row">
+        <div class="rest-book__field">
+          <label for={`${uid}-name`}>Nombre</label>
+          <input id={`${uid}-name`} type="text" name="name" autocomplete="name" required />
+        </div>
+        <div class="rest-book__field">
+          <label for={`${uid}-mail`}>Email</label>
+          <input id={`${uid}-mail`} type="email" name="email" autocomplete="email" required />
+        </div>
+      </div>
+      <div class="rest-book__field">
+        <label for={`${uid}-note`}>Alergias o una celebración (opcional)</label>
+        <textarea id={`${uid}-note`} name="note" rows="2"></textarea>
+      </div>
+
+      <div class="rest-book__sum" aria-live="polite">
+        <p data-sum>Aún no has elegido mesa.</p>
+        <p class="rest-book__total" data-total></p>
+      </div>
+      <p class="rest-book__err" role="alert" data-err></p>
+      <button type="submit" class="rs-btn">Confirmar reserva</button>
+      <p class="rest-book__ok" role="status" data-ok></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .rest-book {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--rs-bg);
+    color: var(--rs-text);
+    font-family: var(--rs-font-body);
+    scroll-margin-top: 80px;
+  }
+
+  .rest-book__inner {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .rest-book__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--rs-font-display);
+    font-weight: 400;
+    font-size: clamp(2.8rem, 8vw, 5.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  .rest-book__lead {
+    max-width: 52ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--rs-text-2);
+  }
+
+  .rest-book__form {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .rest-book__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .rest-book__field label,
+  .rest-book fieldset > legend {
+    display: block;
+    margin-bottom: 0.4rem;
+    padding: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--rs-text-2);
+  }
+
+  .rest-book input[type='date'],
+  .rest-book input[type='text'],
+  .rest-book input[type='email'],
+  .rest-book select,
+  .rest-book textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    background: var(--rs-surface);
+    color: var(--rs-text);
+    font: 400 1rem var(--rs-font-body);
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] .rest-book input[type='date'] {
+    color-scheme: light;
+  }
+
+  .rest-book textarea {
+    padding-block: 0.8rem;
+    resize: vertical;
+  }
+
+  .rest-book fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .rest-book__slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .rest-book__slots legend {
+    width: 100%;
+  }
+
+  .rest-book input[type='radio'] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .rest-book__slots span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 1.2rem;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .rest-book__slots input:checked + span {
+    background: var(--rs-brand);
+    border-color: var(--rs-brand);
+    color: var(--rs-on-brand);
+  }
+
+  .rest-book input[type='radio']:focus-visible + span {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 3px;
+  }
+
+  .rest-book__avail {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--rs-accent);
+  }
+
+  .rest-book__plan {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    box-sizing: border-box;
+    border: 1px solid var(--rs-border-strong);
+    background:
+      repeating-linear-gradient(0deg, transparent 0 23px, var(--rs-border) 23px 24px),
+      repeating-linear-gradient(90deg, transparent 0 23px, var(--rs-border) 23px 24px),
+      var(--rs-bg-raised);
+  }
+
+  .rest-book__zone {
+    position: absolute;
+    top: 3%;
+    bottom: 3%;
+    border: 1px dashed var(--rs-border-strong);
+  }
+
+  .rest-book__zone span {
+    position: absolute;
+    left: 0.5rem;
+    top: 0.35rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rs-text-3);
+  }
+
+  .rest-book__grill {
+    position: absolute;
+    left: 26.5%;
+    top: 50%;
+    width: 5%;
+    min-width: 34px;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--rs-accent), var(--rs-brand) 60%, transparent 72%);
+    box-shadow: 0 0 28px 8px rgba(var(--rs-brand-rgb), 0.55);
+    animation: rest-breathe2 3s ease-in-out infinite alternate;
+  }
+
+  .rest-book__grill span {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    translate: -50% 0.4rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--rs-accent);
+  }
+
+  @keyframes rest-breathe2 {
+    from { opacity: 0.75; }
+    to { opacity: 1; }
+  }
+
+  .rest-book__table {
+    position: absolute;
+    translate: -50% -50%;
+  }
+
+  .rest-book__table span {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    min-width: 56px;
+    min-height: 56px;
+    padding: 0.2rem 0.35rem;
+    border: 1.5px solid var(--rs-accent);
+    background: var(--rs-surface);
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .rest-book__table.is-round span {
+    border-radius: 50%;
+  }
+
+  .rest-book__table.is-rect span {
+    border-radius: 6px;
+  }
+
+  .rest-book__table.is-s4 span {
+    min-width: 72px;
+  }
+
+  .rest-book__table.is-s6 span {
+    min-width: 96px;
+  }
+
+  .rest-book__table b {
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  .rest-book__table small {
+    font-size: 0.64rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-book__table input:checked + span {
+    background: var(--rs-brand);
+    border-color: var(--rs-brand);
+    color: var(--rs-on-brand);
+    transform: scale(1.08);
+  }
+
+  .rest-book__table input:checked + span small {
+    color: var(--rs-on-brand);
+  }
+
+  .rest-book__table input:disabled + span {
+    opacity: 0.38;
+    border-style: dashed;
+    border-color: var(--rs-border-strong);
+    cursor: not-allowed;
+  }
+
+  .rest-book__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    color: var(--rs-text-3);
+  }
+
+  .rest-book__legend i {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 0.4rem;
+    border: 1.5px solid var(--rs-accent);
+    border-radius: 50%;
+    vertical-align: -1px;
+  }
+
+  .rest-book__legend i.is-sel { background: var(--rs-brand); border-color: var(--rs-brand); }
+  .rest-book__legend i.is-off { border-style: dashed; border-color: var(--rs-border-strong); opacity: 0.5; }
+
+  .rest-book__menu label {
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .rest-book__menu span {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--rs-border-strong);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .rest-book__menu input:checked + span {
+    border-color: var(--rs-brand);
+    background: rgba(var(--rs-brand-rgb), 0.14);
+  }
+
+  .rest-book__sum {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--rs-border-strong);
+    background: var(--rs-bg-raised);
+  }
+
+  .rest-book__sum p {
+    margin: 0;
+  }
+
+  .rest-book__total {
+    margin-top: 0.35rem;
+    font-family: var(--rs-font-display);
+    font-size: 1.9rem;
+    color: var(--rs-brand);
+  }
+
+  .rest-book__err {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--rs-bad);
+  }
+
+  .rest-book__ok {
+    margin: 0;
+    color: var(--rs-ok);
+    font-size: 0.95rem;
+  }
+
+  .rest-book .rs-btn {
+    justify-self: start;
+  }
+
+  @media (min-width: 700px) {
+    .rest-book__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .rest-book {
+      padding-inline: var(--sp-8, 2rem);
+    }
+
+    .rest-book__plan {
+      height: auto;
+      aspect-ratio: 2 / 1;
+      min-height: 380px;
+    }
+  }
+
+  @media (max-width: 600px) {
+
+    .rest-book__table span {
+      min-width: 48px;
+      min-height: 48px;
+    }
+
+    .rest-book__table.is-s4 span { min-width: 56px; }
+    .rest-book__table.is-s6 span { min-width: 68px; }
+    .rest-book__table small { display: none; }
+  }
+</style>
+
+<script>
+  /** Same deterministic demo availability as `restTableFree` in the template data. */
+  const hash = (s: string) => {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) % 100;
+  };
+  const closed = (date: string) => { const d = new Date(`${date}T12:00:00`).getDay(); return d === 1 || d === 2; };
+  const free = (id: string, date: string, time: string) => !closed(date) && hash(`${id}|${date}|${time}`) >= 35;
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  document.querySelectorAll<HTMLElement>('[data-rest-book]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-form]');
+    const date = root.querySelector<HTMLInputElement>('[data-date]');
+    const guestsEl = root.querySelector<HTMLSelectElement>('[data-guests]');
+    const avail = root.querySelector<HTMLElement>('[data-avail]');
+    const sum = root.querySelector<HTMLElement>('[data-sum]');
+    const total = root.querySelector<HTMLElement>('[data-total]');
+    const err = root.querySelector<HTMLElement>('[data-err]');
+    const ok = root.querySelector<HTMLElement>('[data-ok]');
+    if (!form || !date || !guestsEl) return;
+    const price = Number(root.dataset.menuPrice);
+    const tables: Array<{ id: string; name: string; seats: number }> = JSON.parse(root.dataset.tables ?? '[]');
+    const inputs = [...form.querySelectorAll<HTMLInputElement>('[data-table] input')];
+    const timeOf = () => form.querySelector<HTMLInputElement>('[data-time]:checked')?.value ?? '';
+    const menuOf = () => form.querySelector<HTMLInputElement>('[data-menu]:checked')?.value ?? '';
+
+    const today = new Date();
+    date.min = iso(today);
+    const next = new Date(today);
+    for (let i = 1; i < 8; i++) { next.setDate(today.getDate() + i); const d = next.getDay(); if (d !== 1 && d !== 2) break; }
+    date.value = iso(next);
+
+    const longDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const paint = () => {
+      const d = date.value;
+      const t = timeOf();
+      const g = Number(guestsEl.value);
+      if (!d) { if (avail) avail.textContent = 'Elige una fecha para ver las mesas libres.'; return; }
+      let left = 0;
+      inputs.forEach((inp) => {
+        const meta = tables.find((x) => x.id === inp.value);
+        const isClosed = closed(d);
+        const taken = !isClosed && !free(inp.value, d, t);
+        const small = !!meta && meta.seats < g;
+        inp.disabled = isClosed || taken || small;
+        const reason = isClosed ? 'cerrado' : taken ? 'ocupada' : small ? `solo ${meta?.seats} plazas` : 'libre';
+        inp.setAttribute('aria-label', `${meta?.name}, ${meta?.seats} plazas, ${reason}`);
+        if (!inp.disabled) left += 1;
+        if (inp.disabled && inp.checked) inp.checked = false;
+      });
+      if (avail) avail.textContent = closed(d) ? 'Ese día cerramos. Elige de miércoles a domingo.' : left ? `A las ${t} quedan ${left} ${left === 1 ? 'mesa libre' : 'mesas libres'} para ${g} ${g === 1 ? 'persona' : 'personas'}.` : `A las ${t} no queda ninguna mesa para ${g}. Prueba otra hora.`;
+      summary();
+    };
+
+    const summary = () => {
+      const sel = inputs.find((i) => i.checked);
+      const meta = tables.find((x) => x.id === sel?.value);
+      const g = Number(guestsEl.value);
+      if (sum) sum.textContent = meta ? `${meta.name} (${meta.seats} plazas) · ${longDate(date.value)} · ${timeOf()} · ${g} ${g === 1 ? 'persona' : 'personas'}` : 'Aún no has elegido mesa.';
+      if (total) total.textContent = menuOf() === 'Menú degustación' && meta ? `${(price * g).toLocaleString('es-ES')} € de menú (${g} × ${price} €)` : '';
+      if (err) err.textContent = '';
+      if (ok) ok.textContent = '';
+    };
+
+    form.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.name === 'table' || t.name === 'menu') summary(); else paint();
+    });
+    form.addEventListener('submit', (e) => {
+      const sel = inputs.find((i) => i.checked);
+      const name = form.querySelector<HTMLInputElement>('input[name="name"]');
+      const mail = form.querySelector<HTMLInputElement>('input[name="email"]');
+      let msg = '';
+      if (!date.value) msg = 'Elige una fecha.';
+      else if (!sel) msg = 'Elige una mesa en el plano.';
+      else if (!name?.value.trim()) msg = 'Escribe tu nombre.';
+      else if (!mail?.value || !mail.checkValidity()) msg = 'Escribe un email válido.';
+      if (msg) { e.preventDefault(); if (err) err.textContent = msg; return; }
+      if (!form.getAttribute('action')) {
+        e.preventDefault();
+        const meta = tables.find((x) => x.id === sel?.value);
+        if (ok) ok.textContent = `Reserva enviada: ${meta?.name}, ${longDate(date.value)} a las ${timeOf()}. Te escribiremos a ${mail?.value} (demostración).`;
+      }
+    });
+    paint();
+  });
+</script>
