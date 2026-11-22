@@ -1,0 +1,353 @@
+---
+/**
+ * BankAppTopbar — Top bar for the account area: today's date, a status chip (e.g. security
+ * check), a theme toggle, notifications and a user menu (native popovers).
+ *
+ * @param {{name: string, plan: string, id: string}} user - Signed-in user.
+ * @param {string} chip - Short status chip text (hidden when empty).
+ * @param {Array<{title: string, text: string, time: string, unread?: boolean}>} notifications - Notification list.
+ * @param {Array<{label: string, href: string}>} links - Entries of the user menu.
+ * @param {string} signOutHref - Sign-out link.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: popovers close with Escape and outside click (native); the bell button
+ * announces the unread count; the theme toggle reports aria-pressed; targets are 44px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface Note { title: string; text: string; time: string; unread?: boolean }
+
+interface OwnProps {
+  user?: { name: string; plan: string; id: string };
+  chip?: string;
+  notifications?: Note[];
+  links?: Array<{ label: string; href: string }>;
+  signOutHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  user = { name: 'Elena Marqués', plan: 'Autónomo', id: 'C-20418' },
+  chip = '',
+  notifications = [],
+  links = [],
+  signOutHref = '#',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `aat-${Math.random().toString(36).slice(2, 8)}`;
+const unread = notifications.filter((n) => n.unread).length;
+const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+---
+
+<header class:list={['bank-ui', 'bank-top', classAttr]} data-bank-top {...rest}>
+  <div class="bank-top__left">
+    <time class="bank-top__date" data-today></time>
+    {chip && (
+      <span class="bank-top__chip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.500 3.400 8 8 9 4.600-1 8-4.500 8-9V6z" /><path d="m9 12 2 2 4-4" /></svg>
+        {chip}
+      </span>
+    )}
+  </div>
+
+  <div class="bank-top__actions">
+    <button type="button" class="bank-top__icon" aria-pressed="false" aria-label="Cambiar tema claro u oscuro" data-theme-toggle>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.800 9.800Z" /></svg>
+    </button>
+
+    <button type="button" class="bank-top__icon" popovertarget={`${uid}-notes`} aria-label={unread ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0" /></svg>
+      {unread > 0 && <span class="bank-top__dot" aria-hidden="true"></span>}
+    </button>
+    <div id={`${uid}-notes`} popover class="bank-pop" data-bank-pop>
+      <p class="bank-pop__title">Notificaciones</p>
+      {notifications.length ? (
+        <ul role="list">
+          {notifications.map((n) => (
+            <li class:list={[n.unread && 'is-unread']}>
+              <strong>{n.title}</strong>
+              <span>{n.text}</span>
+              <small>{n.time}</small>
+            </li>
+          ))}
+        </ul>
+      ) : <p class="bank-pop__empty">Todo al día.</p>}
+    </div>
+
+    <button type="button" class="bank-top__me" popovertarget={`${uid}-me`} aria-label={`Menú de ${user.name}`}>
+      <span class="bank-top__avatar" aria-hidden="true">{initials}</span>
+      <span class="bank-top__who"><strong>{user.name}</strong><small>Plan {user.plan}</small></span>
+    </button>
+    <div id={`${uid}-me`} popover class="bank-pop" data-bank-pop>
+      <p class="bank-pop__title">{user.name}<small>Cliente {user.id}</small></p>
+      <ul role="list" class="bank-pop__menu">
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><a href={signOutHref}>Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  function initTop(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const time = root.querySelector<HTMLTimeElement>('[data-today]');
+    if (time) {
+      const now = new Date();
+      time.dateTime = now.toISOString().slice(0, 10);
+      time.textContent = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+    }
+    const toggle = root.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    const sync = () => toggle?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
+    sync();
+    toggle?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('ack-theme', next); } catch (e) { /* storage unavailable */ }
+      sync();
+    });
+    root.querySelectorAll<HTMLElement>('[data-bank-pop]').forEach((pop) => {
+      pop.addEventListener('toggle', (e) => {
+        if ((e as Event & { newState?: string }).newState !== 'open') return;
+        const btn = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        pop.style.top = `${r.bottom + 8}px`;
+        pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth))}px`;
+      });
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-top]').forEach(initTop);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-top {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 64px;
+    padding: 0 var(--sp-4, 1rem);
+    border-bottom: 1px solid var(--bk-border);
+    background: color-mix(in srgb, var(--bk-bg) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-top__left,
+  .bank-top__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+  }
+
+  .bank-top__actions {
+    flex: none;
+  }
+
+  .bank-top__icon,
+  .bank-top__me {
+    flex: none;
+  }
+
+  .bank-top__date {
+    display: block;
+    overflow: hidden;
+    font-family: var(--bk-font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .bank-top__date::first-letter {
+    text-transform: uppercase;
+  }
+
+  .bank-top__chip {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(var(--bk-brand-rgb), 0.16);
+    color: var(--bk-brand);
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .bank-top__icon,
+  .bank-top__me {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .bank-top__icon:hover,
+  .bank-top__me:hover {
+    border-color: var(--bk-border-strong);
+  }
+
+  .bank-top__icon:focus-visible,
+  .bank-top__me:focus-visible,
+  .bank-pop a:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-top__me {
+    padding: 0 var(--sp-2, 0.5rem);
+  }
+
+  .bank-top__dot {
+    position: absolute;
+    top: 9px;
+    right: 10px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--bk-brand);
+    box-shadow: 0 0 0 2px var(--bk-bg-raised);
+  }
+
+  .bank-top__avatar {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--bk-brand), var(--bk-violet));
+    color: var(--bk-on-brand);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .bank-top__who {
+    display: none;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.2;
+  }
+
+  .bank-top__who small {
+    color: var(--bk-text-3);
+  }
+
+  .bank-pop {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: min(320px, calc(100vw - 16px));
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  }
+
+  .bank-pop__title {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-weight: 700;
+  }
+
+  .bank-pop__title small {
+    color: var(--bk-text-3);
+    font-weight: 400;
+  }
+
+  .bank-pop ul {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-pop li:not(.is-unread) {
+    padding-left: 0;
+  }
+
+  .bank-pop ul:not(.bank-pop__menu) li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--bk-surface);
+    font-size: 0.88rem;
+  }
+
+  .bank-pop li.is-unread {
+    box-shadow: inset 3px 0 var(--bk-brand);
+  }
+
+  .bank-pop li span {
+    color: var(--bk-text-2);
+  }
+
+  .bank-pop li small,
+  .bank-pop__empty {
+    color: var(--bk-text-3);
+  }
+
+  .bank-pop__menu a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    color: var(--bk-text);
+    text-decoration: none;
+  }
+
+  .bank-pop__menu a:hover {
+    background: var(--bk-surface);
+  }
+
+  @media (min-width: 640px) {
+    .bank-top {
+      padding: 0 var(--sp-8, 2rem);
+    }
+
+    .bank-top__chip,
+    .bank-top__who {
+      display: inline-flex;
+    }
+
+    .bank-top__who {
+      display: flex;
+    }
+  }
+</style>

@@ -1,0 +1,165 @@
+---
+/**
+ * BankSpendingBreakdown — Where your money went: a donut chart of spending by category for
+ * the transactions given, with a legend listing amount and percentage. Plain SVG.
+ *
+ * @param {BankTransaction[]} transactions - Transactions to analyse (only outgoing, completed ones count).
+ * @param {BankCategory[]} categories - Category definitions.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the donut is role="img" with a text summary; the legend carries every value
+ * as text, so colour is never the only channel.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankTransactions, bankCategories, formatBankMoney, type BankTransaction, type BankCategory } from '../templates/fintech/data';
+
+interface OwnProps {
+  transactions?: BankTransaction[];
+  categories?: BankCategory[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { transactions = bankTransactions, categories = bankCategories, title = 'Gasto por categoría', class: classAttr, ...rest } = Astro.props;
+
+const uid = `bsb-${Math.random().toString(36).slice(2, 8)}`;
+const out = transactions.filter((t) => t.amount < 0 && t.status === 'Completado' && !t.merchant.startsWith('Traspaso'));
+const byCat = categories
+  .map((c) => ({ c, total: out.filter((t) => t.category === c.id).reduce((n, t) => n + Math.abs(t.amount), 0) }))
+  .filter((x) => x.total > 0)
+  .sort((a, b) => b.total - a.total);
+const total = byCat.reduce((n, x) => n + x.total, 0);
+const R = 52;
+const C = 2 * Math.PI * R;
+let offset = 0;
+const segs = byCat.map((x) => {
+  const len = (x.total / total) * C;
+  const seg = { ...x, len, offset, pct: Math.round((x.total / total) * 100) };
+  offset += len;
+  return seg;
+});
+---
+
+<section class:list={['bank-ui', 'bank-spend', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <h2 id={`${uid}-title`} class="bank-spend__title">{title}</h2>
+  <div class="bank-spend__body">
+    <div class="bank-spend__donut">
+      <svg viewBox="0 0 130 130" role="img" aria-label={`Gasto total ${formatBankMoney(total, false)}, la mayor categoría es ${segs[0]?.c.name ?? 'ninguna'}`}>
+        <circle cx="65" cy="65" r={R} fill="none" stroke="var(--bk-surface-2)" stroke-width="16" />
+        {segs.map((s) => (
+          <circle cx="65" cy="65" r={R} fill="none" stroke={`hsl(${s.c.hue} 70% 58%)`} stroke-width="16" stroke-dasharray={`${Math.max(0, s.len - 2)} ${C}`} stroke-dashoffset={-s.offset} transform="rotate(-90 65 65)" />
+        ))}
+      </svg>
+      <p><span>Total</span><strong>{formatBankMoney(total, false)}</strong></p>
+    </div>
+    <ul class="bank-spend__legend" role="list">
+      {segs.map((s) => (
+        <li>
+          <i style={`background:hsl(${s.c.hue} 70% 58%)`} aria-hidden="true"></i>
+          <span class="bank-spend__name">{s.c.name}</span>
+          <span class="bank-spend__pct">{s.pct} %</span>
+          <strong>{formatBankMoney(s.total, false)}</strong>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .bank-spend {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-spend__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--bk-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .bank-spend__body {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-items: center;
+  }
+
+  .bank-spend__donut {
+    position: relative;
+    width: 170px;
+    margin: 0 auto;
+  }
+
+  .bank-spend__donut p {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .bank-spend__donut span {
+    color: var(--bk-text-3);
+    font-size: 0.78rem;
+  }
+
+  .bank-spend__donut strong {
+    font-family: var(--bk-font-mono);
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-spend__legend {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-spend__legend li {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    font-size: 0.9rem;
+  }
+
+  .bank-spend__legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .bank-spend__name {
+    color: var(--bk-text-2);
+  }
+
+  .bank-spend__pct {
+    white-space: nowrap;
+    color: var(--bk-text-3);
+    font-size: 0.8rem;
+  }
+
+  .bank-spend__legend strong {
+    min-width: 76px;
+    font-family: var(--bk-font-mono);
+    font-size: 0.85rem;
+    text-align: right;
+  }
+
+  @media (min-width: 560px) {
+    .bank-spend__body {
+      grid-template-columns: 170px 1fr;
+    }
+  }
+</style>

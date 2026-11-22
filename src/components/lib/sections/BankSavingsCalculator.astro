@@ -1,0 +1,313 @@
+---
+/**
+ * BankSavingsCalculator — Interactive savings simulator: sliders for the initial amount, the
+ * monthly contribution and the years, with the resulting balance, interest earned and a
+ * growth bar split between what you put in and what you earn. Compound interest, monthly.
+ *
+ * @param {number} rate - Annual rate in percent (TAE). Default 2.5.
+ * @param {number} initial - Initial deposit (EUR). Default 2000.
+ * @param {number} monthly - Monthly contribution (EUR). Default 200.
+ * @param {number} years - Years. Default 5.
+ * @param {string} openHref - CTA link.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native range inputs with visible labels and values; the result is an
+ * aria-live="polite" region; the growth bar has a text alternative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface OwnProps {
+  rate?: number;
+  initial?: number;
+  monthly?: number;
+  years?: number;
+  openHref?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  rate = 2.5,
+  initial = 2000,
+  monthly = 200,
+  years = 5,
+  openHref = '/abrir-cuenta',
+  title = 'Mira crecer tu hucha',
+  subtitle = 'Interés compuesto con abonos mensuales. Sin permanencia: retiras cuando quieras.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `bsc-${Math.random().toString(36).slice(2, 8)}`;
+const fmt = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+const calc = (i: number, m: number, y: number, r: number) => {
+  const mr = r / 100 / 12;
+  let bal = i;
+  for (let k = 0; k < y * 12; k++) bal = bal * (1 + mr) + m;
+  const put = i + m * y * 12;
+  return { total: bal, put, earned: bal - put };
+};
+const start = calc(initial, monthly, years, rate);
+const pctEarned = Math.max(2, Math.round((start.earned / start.total) * 100));
+---
+
+<section class:list={['bank-ui', 'bank-calc', classAttr]} aria-labelledby={`${uid}-title`} data-bank-calc data-rate={rate} {...rest}>
+  <div class="bank-calc__inner">
+    <div class="bank-calc__copy">
+      <Heading id={`${uid}-title`} class="bank-calc__title">{title}</Heading>
+      <p class="bank-calc__subtitle">{subtitle}</p>
+      <a class="bank-calc__cta" href={openHref}>Abrir mi hucha</a>
+      <p class="bank-calc__legal">TAE {rate.toString().replace('.', ',')} % variable. Simulación orientativa, no constituye una oferta vinculante.</p>
+    </div>
+
+    <form class="bank-calc__panel" onsubmit="return false">
+      <div class="bank-calc__field">
+        <label for={`${uid}-i`}>Ingreso inicial <output data-out-initial>{fmt(initial)}</output></label>
+        <input id={`${uid}-i`} type="range" min="0" max="50000" step="500" value={initial} data-calc="initial" />
+      </div>
+      <div class="bank-calc__field">
+        <label for={`${uid}-m`}>Aportación mensual <output data-out-monthly>{fmt(monthly)}</output></label>
+        <input id={`${uid}-m`} type="range" min="0" max="2000" step="25" value={monthly} data-calc="monthly" />
+      </div>
+      <div class="bank-calc__field">
+        <label for={`${uid}-y`}>Plazo <output data-out-years>{years} {years === 1 ? 'año' : 'años'}</output></label>
+        <input id={`${uid}-y`} type="range" min="1" max="30" step="1" value={years} data-calc="years" />
+      </div>
+
+      <div class="bank-calc__result" role="status" aria-live="polite">
+        <p class="bank-calc__label">Tendrás</p>
+        <p class="bank-calc__total" data-out-total>{fmt(start.total)}</p>
+        <div class="bank-calc__bar" role="img" aria-label={`Aportado ${fmt(start.put)} e intereses ${fmt(start.earned)}`} data-out-bar>
+          <i style={`width:${100 - pctEarned}%`}></i><b style={`width:${pctEarned}%`}></b>
+        </div>
+        <dl class="bank-calc__split">
+          <div><dt><span class="bank-calc__dot is-put"></span>Aportado</dt><dd data-out-put>{fmt(start.put)}</dd></div>
+          <div><dt><span class="bank-calc__dot is-earn"></span>Intereses</dt><dd data-out-earned>{fmt(start.earned)}</dd></div>
+        </dl>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  function initCalc(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const rate = Number(root.dataset.rate) || 2.5;
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const get = (k: string) => Number(root.querySelector<HTMLInputElement>(`[data-calc="${k}"]`)!.value);
+    const fmt = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+    const update = () => {
+      const i = get('initial');
+      const m = get('monthly');
+      const y = get('years');
+      const mr = rate / 100 / 12;
+      let bal = i;
+      for (let k = 0; k < y * 12; k++) bal = bal * (1 + mr) + m;
+      const put = i + m * y * 12;
+      const earned = bal - put;
+      const pct = Math.max(2, Math.round((earned / bal) * 100));
+      q('[data-out-initial]').textContent = fmt(i);
+      q('[data-out-monthly]').textContent = fmt(m);
+      q('[data-out-years]').textContent = `${y} ${y === 1 ? 'año' : 'años'}`;
+      q('[data-out-total]').textContent = fmt(bal);
+      q('[data-out-put]').textContent = fmt(put);
+      q('[data-out-earned]').textContent = fmt(earned);
+      const bar = q('[data-out-bar]');
+      bar.setAttribute('aria-label', `Aportado ${fmt(put)} e intereses ${fmt(earned)}`);
+      bar.querySelector<HTMLElement>('i')!.style.width = `${100 - pct}%`;
+      bar.querySelector<HTMLElement>('b')!.style.width = `${pct}%`;
+    };
+    root.querySelectorAll('[data-calc]').forEach((el) => el.addEventListener('input', update));
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-calc]').forEach(initCalc);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-calc {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-calc__inner {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .bank-calc__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-calc__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--bk-text-2);
+    line-height: 1.6;
+  }
+
+  .bank-calc__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 50px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bank-calc__cta:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-calc__cta:focus-visible,
+  .bank-calc input:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 3px;
+  }
+
+  .bank-calc__legal {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--bk-text-3);
+    font-size: 0.8rem;
+  }
+
+  .bank-calc__panel {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+  }
+
+  .bank-calc__field label {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: 6px;
+    color: var(--bk-text-2);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .bank-calc__field output {
+    color: var(--bk-text);
+    font-family: var(--bk-font-mono);
+    font-weight: 700;
+  }
+
+  .bank-calc__field input {
+    width: 100%;
+    height: 44px;
+    accent-color: var(--bk-brand);
+    cursor: pointer;
+  }
+
+  .bank-calc__result {
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--bk-bg);
+  }
+
+  .bank-calc__label {
+    margin: 0;
+    color: var(--bk-text-3);
+    font-size: 0.85rem;
+  }
+
+  .bank-calc__total {
+    margin: 2px 0 var(--sp-3, 0.75rem);
+    font-family: var(--bk-font-mono);
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: var(--bk-mint);
+  }
+
+  .bank-calc__bar {
+    display: flex;
+    height: 12px;
+    overflow: hidden;
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-surface-2);
+  }
+
+  .bank-calc__bar i {
+    background: var(--bk-text-3);
+    transition: width 0.3s ease;
+  }
+
+  .bank-calc__bar b {
+    background: var(--bk-mint);
+    transition: width 0.3s ease;
+  }
+
+  .bank-calc__split {
+    display: flex;
+    gap: var(--sp-6, 1.5rem);
+    margin: var(--sp-3, 0.75rem) 0 0;
+  }
+
+  .bank-calc__split dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--bk-text-3);
+    font-size: 0.82rem;
+  }
+
+  .bank-calc__split dd {
+    margin: 2px 0 0;
+    font-family: var(--bk-font-mono);
+    font-weight: 700;
+  }
+
+  .bank-calc__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .bank-calc__dot.is-put { background: var(--bk-text-3); }
+  .bank-calc__dot.is-earn { background: var(--bk-mint); }
+
+  @media (min-width: 900px) {
+    .bank-calc__inner {
+      grid-template-columns: 1fr 1.1fr;
+      align-items: center;
+      gap: var(--sp-12, 3rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bank-calc__bar i,
+    .bank-calc__bar b {
+      transition: none;
+    }
+  }
+</style>

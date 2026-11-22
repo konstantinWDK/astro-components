@@ -1,0 +1,246 @@
+---
+/**
+ * BankBalanceCard — Total balance with a hide/show toggle and the list of accounts (checking,
+ * savings, tax reserve) with masked IBAN, balance and rate, plus a copy-IBAN button.
+ *
+ * @param {BankAccount[]} accounts - Accounts to list.
+ * @param {string} title - Card heading.
+ * @param {boolean} hidden - Start with balances hidden. Default false.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the visibility toggle is a button with aria-pressed; hidden amounts are
+ * replaced by "•••" and announced as "oculto"; copy feedback is a polite live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankAccounts, formatBankMoney, maskBankIban, type BankAccount } from '../templates/fintech/data';
+
+interface OwnProps {
+  accounts?: BankAccount[];
+  title?: string;
+  hidden?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { accounts = bankAccounts, title = 'Tu dinero', hidden = false, class: classAttr, ...rest } = Astro.props;
+
+const uid = `bbc-${Math.random().toString(36).slice(2, 8)}`;
+const total = accounts.reduce((n, a) => n + a.balance, 0);
+---
+
+<section class:list={['bank-ui', 'bank-balance', classAttr]} aria-labelledby={`${uid}-title`} data-bank-balance data-hidden={hidden ? 'true' : 'false'} {...rest}>
+  <header class="bank-balance__head">
+    <div>
+      <h2 id={`${uid}-title`} class="bank-balance__title">{title}</h2>
+      <p class="bank-balance__total"><span data-money={formatBankMoney(total)}>{hidden ? '••••••' : formatBankMoney(total)}</span><span class="bk-sr" data-hidden-label></span></p>
+    </div>
+    <button type="button" class="bank-balance__eye" aria-pressed={hidden ? 'true' : 'false'} data-balance-toggle>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.500-7 10-7 10 7 10 7-3.500 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+      <span data-eye-label>{hidden ? 'Mostrar saldos' : 'Ocultar saldos'}</span>
+    </button>
+  </header>
+
+  <ul class="bank-balance__list" role="list">
+    {accounts.map((a) => (
+      <li class="bank-account">
+        <span class="bank-account__kind" data-kind={a.kind} aria-hidden="true"></span>
+        <div class="bank-account__main">
+          <p class="bank-account__name">{a.name}{a.rate && <span class="bank-account__rate">{a.rate.toString().replace('.', ',')} % TAE</span>}</p>
+          <p class="bank-account__iban">{maskBankIban(a.iban)}</p>
+        </div>
+        <p class="bank-account__balance" data-money={formatBankMoney(a.balance)}>{hidden ? '•••' : formatBankMoney(a.balance)}</p>
+        <button type="button" class="bank-account__copy" data-copy={a.iban} aria-label={`Copiar IBAN de ${a.name}`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></svg>
+        </button>
+      </li>
+    ))}
+  </ul>
+  <p class="bank-balance__status" role="status" aria-live="polite" data-balance-status></p>
+</section>
+
+<script>
+  function initBalance(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const status = root.querySelector<HTMLElement>('[data-balance-status]')!;
+    const btn = root.querySelector<HTMLButtonElement>('[data-balance-toggle]')!;
+    const apply = () => {
+      const hide = root.dataset.hidden === 'true';
+      root.querySelectorAll<HTMLElement>('[data-money]').forEach((el) => {
+        el.textContent = hide ? (el.closest('.bank-balance__total') ? '••••••' : '•••') : (el.dataset.money ?? '');
+      });
+      btn.setAttribute('aria-pressed', String(hide));
+      btn.querySelector('[data-eye-label]')!.textContent = hide ? 'Mostrar saldos' : 'Ocultar saldos';
+      root.querySelector('[data-hidden-label]')!.textContent = hide ? 'Saldo oculto' : '';
+    };
+    btn.addEventListener('click', () => {
+      root.dataset.hidden = root.dataset.hidden === 'true' ? 'false' : 'true';
+      apply();
+    });
+    root.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(b.dataset.copy ?? '');
+          status.textContent = 'IBAN copiado al portapapeles.';
+        } catch (e) {
+          status.textContent = 'No se pudo copiar. Selecciona el IBAN manualmente.';
+        }
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-balance]').forEach(initBalance);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-balance {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-balance__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .bank-balance__title {
+    margin: 0;
+    color: var(--bk-text-2);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .bank-balance__total {
+    margin: var(--sp-1, 0.25rem) 0 0;
+    font-family: var(--bk-font-mono);
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+  }
+
+  .bank-balance__eye {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--bk-text-2);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .bank-balance__eye:hover {
+    border-color: var(--bk-brand);
+    color: var(--bk-text);
+  }
+
+  .bank-balance__eye:focus-visible,
+  .bank-account__copy:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-balance__list {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-account {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-radius: var(--r-lg, 20px);
+    background: var(--bk-bg);
+  }
+
+  .bank-account__kind {
+    width: 10px;
+    height: 36px;
+    border-radius: 6px;
+    background: var(--bk-brand);
+  }
+
+  .bank-account__kind[data-kind='Ahorro'] { background: var(--bk-mint); }
+  .bank-account__kind[data-kind='Impuestos'] { background: var(--bk-warn); }
+
+  .bank-account__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .bank-account__rate {
+    padding: 0.05rem 0.5rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(var(--bk-mint-rgb), 0.16);
+    color: var(--bk-mint);
+    font-size: 0.72rem;
+  }
+
+  .bank-account__iban {
+    margin: 2px 0 0;
+    color: var(--bk-text-3);
+    font-family: var(--bk-font-mono);
+    font-size: 0.8rem;
+  }
+
+  .bank-account__balance {
+    margin: 0;
+    font-family: var(--bk-font-mono);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-account__copy {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--bk-text-3);
+    cursor: pointer;
+  }
+
+  .bank-account__copy:hover {
+    background: var(--bk-surface);
+    color: var(--bk-text);
+  }
+
+  .bank-balance__status {
+    min-height: 1.2em;
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--bk-text-3);
+    font-size: 0.82rem;
+  }
+</style>

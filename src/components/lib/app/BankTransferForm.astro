@@ -1,0 +1,405 @@
+---
+/**
+ * BankTransferForm — Send money in two steps: fill (from account, beneficiary or new IBAN,
+ * amount, concept, instant or standard) then review and confirm, ending in a receipt. Checks
+ * the balance and validates the IBAN (mod-97) before letting you continue. Demo: nothing is sent.
+ *
+ * @param {BankAccount[]} accounts - Source accounts.
+ * @param {BankBeneficiary[]} beneficiaries - Saved beneficiaries.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, inline errors in role="alert" tied with aria-describedby and
+ * aria-invalid; the review step is a description list; the receipt receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankAccounts, bankBeneficiaries, formatBankMoney, type BankAccount, type BankBeneficiary } from '../templates/fintech/data';
+
+interface OwnProps {
+  accounts?: BankAccount[];
+  beneficiaries?: BankBeneficiary[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { accounts = bankAccounts, beneficiaries = bankBeneficiaries, title = 'Nueva transferencia', class: classAttr, ...rest } = Astro.props;
+
+const uid = `btf-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bank-ui', 'bank-tf', classAttr]} aria-labelledby={`${uid}-title`} data-bank-tf {...rest}>
+  <h2 id={`${uid}-title`} class="bank-tf__title">{title}</h2>
+
+  <form class="bank-tf__form" novalidate data-tf-form>
+    <div class="bank-tf__field">
+      <label for={`${uid}-from`}>Desde</label>
+      <select id={`${uid}-from`} name="from" data-tf-from>
+        {accounts.map((a) => <option value={a.id} data-balance={a.balance}>{a.name} · {formatBankMoney(a.balance)}</option>)}
+      </select>
+    </div>
+
+    <div class="bank-tf__field">
+      <label for={`${uid}-to`}>Para</label>
+      <select id={`${uid}-to`} name="to" data-tf-to>
+        {beneficiaries.map((b) => <option value={b.iban} data-name={b.name}>{b.name}</option>)}
+        <option value="">Otro beneficiario (nuevo IBAN)</option>
+      </select>
+    </div>
+
+    <div class="bank-tf__field" data-tf-new hidden>
+      <label for={`${uid}-iban`}>IBAN del beneficiario</label>
+      <input id={`${uid}-iban`} name="iban" placeholder="ES00 0000 0000 0000 0000 0000" autocomplete="off" aria-describedby={`${uid}-err-iban`} data-tf-iban />
+      <p class="bank-tf__error" id={`${uid}-err-iban`} role="alert" data-err="iban"></p>
+    </div>
+
+    <div class="bank-tf__row">
+      <div class="bank-tf__field">
+        <label for={`${uid}-amount`}>Importe (€)</label>
+        <input id={`${uid}-amount`} name="amount" inputmode="decimal" placeholder="0,00" autocomplete="off" aria-describedby={`${uid}-err-amount`} data-tf-amount />
+        <p class="bank-tf__error" id={`${uid}-err-amount`} role="alert" data-err="amount"></p>
+      </div>
+      <div class="bank-tf__field">
+        <label for={`${uid}-concept`}>Concepto</label>
+        <input id={`${uid}-concept`} name="concept" placeholder="Factura 2026-114" maxlength="60" data-tf-concept />
+      </div>
+    </div>
+
+    <fieldset class="bank-tf__speed">
+      <legend>Velocidad</legend>
+      <label><input type="radio" name="speed" value="instant" checked /><span><strong>Instantánea</strong><small>En segundos · 0 €</small></span></label>
+      <label><input type="radio" name="speed" value="standard" /><span><strong>Estándar</strong><small>Mismo día hábil · 0 €</small></span></label>
+    </fieldset>
+
+    <button type="submit" class="bank-tf__btn">Revisar transferencia</button>
+  </form>
+
+  <div class="bank-tf__review" hidden data-tf-review>
+    <h3>Revisa y confirma</h3>
+    <dl>
+      <div><dt>Desde</dt><dd data-r-from></dd></div>
+      <div><dt>Para</dt><dd data-r-to></dd></div>
+      <div><dt>Importe</dt><dd class="is-big" data-r-amount></dd></div>
+      <div><dt>Concepto</dt><dd data-r-concept></dd></div>
+      <div><dt>Llegada</dt><dd data-r-speed></dd></div>
+    </dl>
+    <div class="bank-tf__actions">
+      <button type="button" class="bank-tf__btn bank-tf__btn--ghost" data-tf-back>Editar</button>
+      <button type="button" class="bank-tf__btn" data-tf-confirm>Confirmar y enviar</button>
+    </div>
+  </div>
+
+  <div class="bank-tf__done" role="status" tabindex="-1" hidden data-tf-done>
+    <span class="bank-tf__check" aria-hidden="true">✓</span>
+    <h3>Transferencia enviada</h3>
+    <p data-d-text></p>
+    <p class="bank-tf__ref">Referencia <code data-d-ref></code></p>
+    <button type="button" class="bank-tf__btn" data-tf-again>Hacer otra transferencia</button>
+  </div>
+</section>
+
+<script>
+  function ibanOk(raw: string) {
+    const s = raw.replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return false;
+    const moved = s.slice(4) + s.slice(0, 4);
+    const digits = moved.replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+    let rem = 0;
+    for (const ch of digits) rem = (rem * 10 + Number(ch)) % 97;
+    return rem === 1;
+  }
+
+  function initTf(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const form = q<HTMLFormElement>('[data-tf-form]');
+    const from = q<HTMLSelectElement>('[data-tf-from]');
+    const to = q<HTMLSelectElement>('[data-tf-to]');
+    const newBox = q('[data-tf-new]');
+    const iban = q<HTMLInputElement>('[data-tf-iban]');
+    const amount = q<HTMLInputElement>('[data-tf-amount]');
+    const review = q('[data-tf-review]');
+    const done = q('[data-tf-done]');
+    const eur = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+    let value = 0;
+
+    const setErr = (name: string, msg: string, field: HTMLInputElement) => {
+      q(`[data-err="${name}"]`).textContent = msg;
+      field.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    };
+    to.addEventListener('change', () => { newBox.hidden = to.value !== ''; if (!newBox.hidden) iban.focus(); });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      let ok = true;
+      setErr('iban', '', iban);
+      setErr('amount', '', amount);
+      if (to.value === '' && !ibanOk(iban.value)) { setErr('iban', 'El IBAN no es válido. Revisa los dígitos.', iban); ok = false; }
+      value = Number(amount.value.replace(/\./g, '').replace(',', '.'));
+      const balance = Number(from.selectedOptions[0].dataset.balance);
+      if (!(value > 0)) { setErr('amount', 'Introduce un importe mayor que 0.', amount); ok = false; }
+      else if (value > balance) { setErr('amount', `No tienes saldo suficiente (${eur.format(balance)}).`, amount); ok = false; }
+      if (!ok) { form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(); return; }
+      const speed = (form.elements.namedItem('speed') as RadioNodeList).value;
+      const dest = to.value === '' ? iban.value.toUpperCase() : `${to.selectedOptions[0].dataset.name} · ${to.value}`;
+      q('[data-r-from]').textContent = from.selectedOptions[0].textContent?.split(' · ')[0] ?? '';
+      q('[data-r-to]').textContent = dest;
+      q('[data-r-amount]').textContent = eur.format(value);
+      q('[data-r-concept]').textContent = q<HTMLInputElement>('[data-tf-concept]').value || '—';
+      q('[data-r-speed]').textContent = speed === 'instant' ? 'En segundos' : 'Mismo día hábil';
+      form.hidden = true;
+      review.hidden = false;
+      review.querySelector<HTMLElement>('button')?.focus();
+    });
+    q('[data-tf-back]').addEventListener('click', () => { review.hidden = true; form.hidden = false; amount.focus(); });
+    q('[data-tf-confirm]').addEventListener('click', () => {
+      q('[data-d-text]').textContent = `${eur.format(value)} enviados a ${q('[data-r-to]').textContent?.split(' · ')[0]}.`;
+      q('[data-d-ref]').textContent = `TR-${Date.now().toString(36).toUpperCase().slice(-8)}`;
+      review.hidden = true;
+      done.hidden = false;
+      done.focus();
+    });
+    q('[data-tf-again]').addEventListener('click', () => { form.reset(); newBox.hidden = true; done.hidden = true; form.hidden = false; });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-tf]').forEach(initTf);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-tf {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-tf__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--bk-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .bank-tf__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bank-tf__form[hidden],
+  .bank-tf__review[hidden],
+  .bank-tf__done[hidden],
+  .bank-tf__field[hidden] {
+    display: none;
+  }
+
+  .bank-tf__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bank-tf__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .bank-tf__field label,
+  .bank-tf__speed legend {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .bank-tf__field input,
+  .bank-tf__field select {
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-surface);
+    color: var(--bk-text);
+    font: inherit;
+  }
+
+  .bank-tf__field input[aria-invalid='true'] {
+    border-color: var(--bk-bad);
+  }
+
+  .bank-tf__field input:focus-visible,
+  .bank-tf__field select:focus-visible,
+  .bank-tf__btn:focus-visible,
+  .bank-tf__speed input:focus-visible + span {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-tf__error {
+    min-height: 0;
+    margin: 0;
+    color: var(--bk-bad);
+    font-size: 0.85rem;
+  }
+
+  .bank-tf__speed {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bank-tf__speed legend {
+    margin-bottom: 6px;
+    padding: 0;
+  }
+
+  .bank-tf__speed label {
+    position: relative;
+  }
+
+  .bank-tf__speed input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bank-tf__speed span {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-surface);
+  }
+
+  .bank-tf__speed small {
+    color: var(--bk-text-3);
+  }
+
+  .bank-tf__speed input:checked + span {
+    border-color: var(--bk-brand);
+    background: rgba(var(--bk-brand-rgb), 0.12);
+  }
+
+  .bank-tf__btn {
+    min-height: 50px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-brand);
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bank-tf__btn:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-tf__btn--ghost {
+    background: transparent;
+    border-color: var(--bk-border-strong);
+    color: var(--bk-text);
+  }
+
+  .bank-tf__review h3,
+  .bank-tf__done h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--bk-font-display);
+    font-size: 1.5rem;
+  }
+
+  .bank-tf__review dl {
+    margin: 0 0 var(--sp-5, 1.25rem);
+  }
+
+  .bank-tf__review dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-3, 0.75rem) 0;
+    border-top: 1px solid var(--bk-border);
+  }
+
+  .bank-tf__review dt {
+    color: var(--bk-text-3);
+  }
+
+  .bank-tf__review dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .bank-tf__review dd.is-big {
+    color: var(--bk-brand);
+    font-family: var(--bk-font-mono);
+    font-size: 1.4rem;
+  }
+
+  .bank-tf__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .bank-tf__done {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    text-align: center;
+    outline: none;
+  }
+
+  .bank-tf__done p {
+    margin: 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-tf__check {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(var(--bk-mint-rgb), 0.18);
+    color: var(--bk-mint);
+    font-size: 1.8rem;
+  }
+
+  .bank-tf__ref code {
+    color: var(--bk-mint);
+    font-family: var(--bk-font-mono);
+    font-weight: 700;
+  }
+
+  .bank-tf__done .bank-tf__btn {
+    margin-top: var(--sp-3, 0.75rem);
+  }
+
+  @media (min-width: 640px) {
+    .bank-tf__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .bank-tf__speed {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .bank-tf__speed legend {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

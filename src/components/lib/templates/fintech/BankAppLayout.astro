@@ -1,0 +1,165 @@
+---
+/**
+ * BankAppLayout — Account-area shell for the "Cobre" neobank template.
+ * Uses BankAppNav (rail on desktop, bottom tab bar on phones) and BankAppTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Cobre").
+ * @param {string} current - Active route key (dashboard | transactions | cards | transfers).
+ * @param {BankRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './bank-theme.css';
+import BankAppNav from '../../app/BankAppNav.astro';
+import BankAppTopbar from '../../app/BankAppTopbar.astro';
+import { bankRoutes, bankUser, bankAccounts, type BankRoutes } from './data';
+
+type Key = 'dashboard' | 'transactions' | 'cards' | 'transfers';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: BankRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Cobre · Tu cuenta: saldos, movimientos, tarjetas y transferencias.',
+  current = 'dashboard',
+  routes = bankRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const navItems = [
+  { label: 'Resumen', href: routes.dashboard, icon: 'home' },
+  { label: 'Movimientos', href: routes.transactions, icon: 'list' },
+  { label: 'Tarjetas', href: routes.cards, icon: 'card' },
+  { label: 'Enviar', href: routes.transfers, icon: 'send' },
+];
+const notifications = [
+  { title: 'Cobro recibido', text: 'Estudio Brisa te ha pagado 2.400,00 €', time: 'hace 12 min', unread: true },
+  { title: 'Impuestos al día', text: 'Tu reserva cubre el 100 % del próximo trimestre', time: 'hoy', unread: true },
+  { title: 'Tarjeta congelada', text: 'Viajes · •••• 9164 sigue en pausa', time: 'hace 2 días' },
+];
+const reserve = bankAccounts.find((a) => a.kind === 'Impuestos');
+---
+
+<!doctype html>
+<html lang={lang} class="theme-bank" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Cobre`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="bank-app-body">
+    <a href="#main-content" class="bank-app-skip">Saltar al contenido</a>
+    <div class="bank-app-shell">
+      <BankAppNav
+        items={navItems}
+        currentHref={routes[current] ?? routes.dashboard}
+        brand="Cobre"
+        homeHref={routes.home}
+        goal={{ label: 'Reserva de impuestos', value: Math.round(reserve?.balance ?? 0), max: 4000 }}
+      />
+      <div class="bank-app-column">
+        <BankAppTopbar
+          user={{ name: bankUser.name, plan: 'Autónomo', id: bankUser.id }}
+          chip="Cuenta verificada"
+          notifications={notifications}
+          links={[{ label: 'Web de Cobre', href: routes.home }, { label: 'Cambiar de plan', href: routes.pricing }]}
+          signOutHref={routes.signIn}
+        />
+        <main id="main-content" class="bank-app-main" tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .bank-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-app-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bank-app-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .bank-app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .bank-app-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bank-app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: var(--sp-6, 1.5rem) var(--sp-4, 1rem) var(--sp-12, 3rem);
+    box-sizing: border-box;
+  }
+
+  .bank-app-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 768px) {
+    .bank-app-main {
+      padding: var(--sp-8, 2rem) var(--sp-8, 2rem) var(--sp-16, 4rem);
+    }
+  }
+
+  /* Room for the bottom tab bar on phones and tablets */
+  @media (max-width: 959px) {
+    .bank-app-main {
+      padding-bottom: calc(var(--sp-16, 4rem) + 64px);
+    }
+  }
+</style>

@@ -1,0 +1,221 @@
+---
+/**
+ * BankSecurity — Trust section: four protection pillars with a big deposit-guarantee figure,
+ * and a row of regulatory badges.
+ *
+ * @param {Array<{title: string, text: string}>} pillars - Protection pillars.
+ * @param {string[]} badges - Regulatory / certification badges.
+ * @param {string} guarantee - Headline guarantee figure. Default '100.000 €'.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: pillars are a list of <article>s named by headings; the guarantee figure is
+ * plain text; decorative shield art is aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface Pillar { title: string; text: string }
+
+interface OwnProps {
+  pillars?: Pillar[];
+  badges?: string[];
+  guarantee?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  pillars = [
+    { title: 'Depósitos garantizados', text: 'Tu dinero está cubierto por el Fondo de Garantía de Depósitos hasta 100.000 € por titular.' },
+    { title: 'Verificación en cada pago', text: 'Autenticación reforzada (PSD2) con biometría para pagos y cambios sensibles.' },
+    { title: 'Tarjetas bajo tu control', text: 'Congela, limita por país o por comercio y recibe aviso al instante de cada cargo.' },
+    { title: 'Monitorización 24/7', text: 'Detectamos patrones raros y te escribimos antes de que un cargo sospechoso se complete.' },
+  ],
+  badges = ['Banco de España', 'PSD2', 'ISO 27001', 'PCI DSS', 'FGD · 100.000 €'],
+  guarantee = '100.000 €',
+  title = 'Seguridad bancaria, sin vueltas',
+  subtitle = 'Cuidamos tu dinero como si fuera nuestro: regulación, cifrado y personas atentas.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const uid = `bs-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bank-ui', 'bank-security', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="bank-security__inner">
+    <div class="bank-security__lead">
+      <Heading id={`${uid}-title`} class="bank-security__title">{title}</Heading>
+      <p class="bank-security__subtitle">{subtitle}</p>
+      <div class="bank-security__guarantee">
+        <svg class="bank-security__shield" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.500 3.400 8 8 9 4.600-1 8-4.500 8-9V6z" /><path d="m9 12 2 2 4-4" /></svg>
+        <p><strong>{guarantee}</strong><span>de garantía de depósitos por titular</span></p>
+      </div>
+    </div>
+
+    <ul class="bank-security__grid" role="list">
+      {pillars.map((p, i) => (
+        <li>
+          <article class="bank-pillar" aria-labelledby={`${uid}-p${i}`}>
+            <span class="bank-pillar__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <Sub id={`${uid}-p${i}`} class="bank-pillar__title">{p.title}</Sub>
+            <p class="bank-pillar__text">{p.text}</p>
+          </article>
+        </li>
+      ))}
+    </ul>
+
+    <ul class="bank-security__badges" role="list" aria-label="Regulación y certificaciones">
+      {badges.map((b) => <li>{b}</li>)}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .bank-security {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-security__inner {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .bank-security__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-security__subtitle {
+    max-width: 520px;
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--bk-text-2);
+    line-height: 1.6;
+  }
+
+  .bank-security__guarantee {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border: 1px solid rgba(var(--bk-mint-rgb), 0.4);
+    border-radius: var(--r-xl, 24px);
+    background: rgba(var(--bk-mint-rgb), 0.08);
+  }
+
+  .bank-security__shield {
+    flex: none;
+    color: var(--bk-mint);
+  }
+
+  .bank-security__guarantee p {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .bank-security__guarantee strong {
+    color: var(--bk-mint);
+    font-family: var(--bk-font-mono);
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+  }
+
+  .bank-security__guarantee span {
+    color: var(--bk-text-2);
+    font-size: 0.88rem;
+  }
+
+  .bank-security__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-pillar {
+    height: 100%;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-lg, 20px);
+    background: var(--bk-bg);
+    box-sizing: border-box;
+  }
+
+  .bank-pillar__num {
+    color: var(--bk-brand);
+    font-family: var(--bk-font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .bank-pillar__title {
+    margin: var(--sp-2, 0.5rem) 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .bank-pillar__text {
+    margin: 0;
+    color: var(--bk-text-2);
+    line-height: 1.55;
+  }
+
+  .bank-security__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-security__badges li {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text-2);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  @media (min-width: 720px) {
+    .bank-security__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .bank-security__inner {
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: start;
+      gap: var(--sp-8, 2rem) var(--sp-12, 3rem);
+    }
+
+    .bank-security__badges {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

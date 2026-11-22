@@ -89,3 +89,15 @@ export { default as AcademyAreaNav } from './AcademyAreaNav.astro';
 export { default as AcademyAreaTopbar } from './AcademyAreaTopbar.astro';
 export { default as AcademyAreaHeading } from './AcademyAreaHeading.astro';
 export { default as AcademySignIn } from './AcademySignIn.astro';
+
+// Neobank account area ("Cobre")
+export { default as BankBalanceCard } from './BankBalanceCard.astro';
+export { default as BankCashflowChart } from './BankCashflowChart.astro';
+export { default as BankSpendingBreakdown } from './BankSpendingBreakdown.astro';
+export { default as BankTransactionsTable } from './BankTransactionsTable.astro';
+export { default as BankCardManager } from './BankCardManager.astro';
+export { default as BankTransferForm } from './BankTransferForm.astro';
+export { default as BankAppNav } from './BankAppNav.astro';
+export { default as BankAppTopbar } from './BankAppTopbar.astro';
+export { default as BankAppHeading } from './BankAppHeading.astro';
+export { default as BankSignIn } from './BankSignIn.astro';

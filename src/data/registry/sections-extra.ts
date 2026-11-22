@@ -1081,4 +1081,65 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['academy', 'education', 'footer', 'cta', 'contact'],
     usage: `<AcademyFooter cta={{ title: 'Tu primera clase es gratis', href: '/acceso', label: 'Empezar a aprender' }} />`,
   }),
+  // === FINTECH NEOBANK ("Cobre") ===
+  section({
+    slug: 'bank-hero', name: 'Bank Hero', file: 'BankHero.astro', sectionCategory: 'fintech',
+    description: 'Neobank hero with a grotesque headline, open-account and pricing CTAs, key figures and a product mock with a copper metal card, balance panel and tax-reserve badge.',
+    tags: ['bank', 'fintech', 'hero', 'cta', 'card'], featured: true,
+    usage: `<BankHero openHref="/abrir-cuenta" pricingHref="/precios" />`,
+  }),
+  section({
+    slug: 'bank-features', name: 'Bank Features', file: 'BankFeatures.astro', sectionCategory: 'fintech',
+    description: 'Bento grid of product benefits with icons; the first feature spans two columns as the focal point.',
+    tags: ['bank', 'fintech', 'features', 'bento', 'grid'], featured: true,
+    usage: `<BankFeatures features={bankFeatures} />`,
+  }),
+  section({
+    slug: 'bank-card-showcase', name: 'Bank Card Showcase', file: 'BankCardShowcase.astro', sectionCategory: 'fintech',
+    description: 'Card picker: choose metal, virtual or team and see the illustration, price and perks change. Native radio group, no backend.',
+    tags: ['bank', 'fintech', 'cards', 'picker', 'tabs'], featured: true,
+    usage: `<BankCardShowcase openHref="/abrir-cuenta" />`,
+  }),
+  section({
+    slug: 'bank-plans', name: 'Bank Plans', file: 'BankPlans.astro', sectionCategory: 'fintech',
+    description: 'Plans with a monthly / yearly switch that updates prices and the saving, with a highlighted recommended plan.',
+    tags: ['bank', 'fintech', 'pricing', 'plans', 'billing', 'toggle'], featured: true,
+    usage: `<BankPlans plans={bankPlans} ctaHref="/abrir-cuenta" billing="yearly" />`,
+  }),
+  section({
+    slug: 'bank-fee-table', name: 'Bank Fee Table', file: 'BankFeeTable.astro', sectionCategory: 'fintech',
+    description: 'Comparison table of what each concept costs at the neobank versus a traditional bank, with the neobank column highlighted.',
+    tags: ['bank', 'fintech', 'table', 'comparison', 'fees'],
+    usage: `<BankFeeTable brand="Cobre" />`,
+  }),
+  section({
+    slug: 'bank-savings-calculator', name: 'Bank Savings Calculator', file: 'BankSavingsCalculator.astro', sectionCategory: 'fintech',
+    description: 'Savings simulator with sliders for initial deposit, monthly contribution and years; shows the final balance, interest earned and a split bar.',
+    tags: ['bank', 'fintech', 'calculator', 'savings', 'range', 'interest'], featured: true,
+    usage: `<BankSavingsCalculator rate={2.5} initial={2000} monthly={200} years={5} />`,
+  }),
+  section({
+    slug: 'bank-security', name: 'Bank Security', file: 'BankSecurity.astro', sectionCategory: 'fintech',
+    description: 'Trust section with the deposit-guarantee figure, four protection pillars and a row of regulatory badges.',
+    tags: ['bank', 'fintech', 'security', 'trust', 'compliance'],
+    usage: `<BankSecurity guarantee="100.000 €" />`,
+  }),
+  section({
+    slug: 'bank-faq', name: 'Bank FAQ', file: 'BankFaq.astro', sectionCategory: 'fintech',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['bank', 'fintech', 'faq', 'accordion'],
+    usage: `<BankFaq faqs={bankFaqs} />`,
+  }),
+  section({
+    slug: 'bank-onboarding', name: 'Bank Onboarding', file: 'BankOnboarding.astro', sectionCategory: 'fintech',
+    description: 'Open-an-account wizard in three steps with progress, per-step validation, plan pre-selection from ?plan= and a confirmation with the new IBAN.',
+    tags: ['bank', 'fintech', 'form', 'wizard', 'onboarding', 'signup'], featured: true,
+    usage: `<BankOnboarding plans={bankPlans} dashboardHref="/app" />`,
+  }),
+  section({
+    slug: 'bank-footer', name: 'Bank Footer', file: 'BankFooter.astro', sectionCategory: 'fintech',
+    description: 'Neobank footer with a call-to-action band, link columns, contact and the regulatory and deposit-guarantee legal block.',
+    tags: ['bank', 'fintech', 'footer', 'legal', 'contact'],
+    usage: `<BankFooter cta={{ title: 'Abre tu cuenta hoy', href: '/abrir-cuenta', label: 'Abrir cuenta gratis' }} />`,
+  }),
 ];

@@ -1,0 +1,382 @@
+---
+/**
+ * BankSignIn — Split sign-in screen: brand panel with a floating card illustration, a
+ * testimonial and key figures, and a form with email, password (show/hide), a "remember me"
+ * option and a demo quick-access link. Without an `action` it redirects to `dashboardHref`.
+ *
+ * @param {string} dashboardHref - Destination after signing in.
+ * @param {string} backHref - Link back to the public site.
+ * @param {string} openHref - "Open an account" link.
+ * @param {string} action - Backend endpoint. Empty = demo redirect.
+ * @param {string} brand - Bank name.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields with autocomplete tokens; the password toggle is a button with
+ * aria-pressed; errors are announced in role="alert"; the brand illustration is aria-hidden.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface OwnProps {
+  dashboardHref?: string;
+  backHref?: string;
+  openHref?: string;
+  action?: string;
+  brand?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  dashboardHref = '/app',
+  backHref = '/',
+  openHref = '/abrir-cuenta',
+  action = '',
+  brand = 'Cobre',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bank-ui', 'bank-signin', classAttr]} aria-labelledby={`${uid}-title`} data-bank-signin data-dashboard={dashboardHref} {...rest}>
+  <aside class="bank-signin__brand">
+    <a class="bank-signin__back" href={backHref}><span aria-hidden="true">←</span> Volver a {brand}</a>
+    <div class="bank-signin__art" aria-hidden="true">
+      <div class="bank-signin__card c1"><span>{brand}</span><b>•••• 4821</b></div>
+      <div class="bank-signin__card c2"><span>Virtual</span><b>•••• 0357</b></div>
+    </div>
+    <figure class="bank-signin__quote">
+      <blockquote>“Cobro, aparto mis impuestos y mando a mi gestoría el trimestre en un clic. Hacienda ya no me da miedo.”</blockquote>
+      <figcaption>Elena Marqués · diseñadora freelance</figcaption>
+    </figure>
+    <dl class="bank-signin__stats">
+      <div><dt>autónomos y pymes</dt><dd>120.000</dd></div>
+      <div><dt>TAE en tu hucha</dt><dd>2,5 %</dd></div>
+    </dl>
+  </aside>
+
+  <div class="bank-signin__panel">
+    <div class="bank-signin__box">
+      <h1 id={`${uid}-title`} class="bank-signin__title">Accede a tu cuenta</h1>
+      <p class="bank-signin__lead">Tu dinero, siempre a mano.</p>
+
+      <form class="bank-signin__form" action={action || undefined} method={action ? 'post' : undefined} novalidate={!action} data-signin-form>
+        <div class="bank-signin__field"><label for={`${uid}-email`}>Email</label><input id={`${uid}-email`} name="email" type="email" required autocomplete="username" placeholder="tu@email.com" /></div>
+        <div class="bank-signin__field">
+          <label for={`${uid}-pw`}>Contraseña</label>
+          <div class="bank-signin__pw">
+            <input id={`${uid}-pw`} name="password" type="password" required minlength="4" autocomplete="current-password" />
+            <button type="button" aria-pressed="false" aria-controls={`${uid}-pw`} data-pw-toggle>Mostrar</button>
+          </div>
+        </div>
+        <label class="bank-signin__remember"><input type="checkbox" name="remember" checked /> Recordar este dispositivo</label>
+        <p class="bank-signin__error" role="alert" hidden data-signin-error></p>
+        <button type="submit" class="bank-signin__submit">Entrar</button>
+      </form>
+
+      <p class="bank-signin__demo">Demo rápida: <a href={dashboardHref}>Entrar a mi cuenta</a></p>
+      <p class="bank-signin__alt">¿Aún no eres cliente? <a href={openHref}>Abre tu cuenta</a></p>
+      <p class="bank-signin__sec">🔒 Conexión cifrada · Verificación en dos pasos disponible</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initSignIn(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-signin-form]')!;
+    const err = root.querySelector<HTMLElement>('[data-signin-error]')!;
+    const toggle = root.querySelector<HTMLButtonElement>('[data-pw-toggle]')!;
+    const pw = form.elements.namedItem('password') as HTMLInputElement;
+    toggle.addEventListener('click', () => {
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    if (form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        err.hidden = false;
+        err.textContent = 'Escribe un email válido y una contraseña de al menos 4 caracteres.';
+        form.querySelector<HTMLElement>(':invalid')?.focus();
+        return;
+      }
+      location.href = root.dataset.dashboard ?? '/';
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-signin]').forEach(initSignIn);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-signin {
+    display: grid;
+    min-height: 100vh;
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-signin__brand {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-8, 2rem);
+    overflow: hidden;
+    border-right: 1px solid var(--bk-border);
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(var(--bk-brand-rgb), 0.22), transparent 55%),
+      linear-gradient(180deg, var(--bk-surface), var(--bk-bg-raised));
+  }
+
+  .bank-signin__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--bk-text-2);
+    text-decoration: none;
+  }
+
+  .bank-signin__back:hover {
+    color: var(--bk-brand);
+  }
+
+  .bank-signin__art {
+    position: relative;
+    align-self: center;
+    width: min(320px, 80%);
+    aspect-ratio: 1.3;
+  }
+
+  .bank-signin__card {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 78%;
+    aspect-ratio: 1.586;
+    padding: var(--sp-4, 1rem);
+    border-radius: 18px;
+    box-sizing: border-box;
+    color: #10150f;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.7);
+  }
+
+  .bank-signin__card b {
+    font-family: var(--bk-font-mono);
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .bank-signin__card.c1 {
+    top: 0;
+    left: 0;
+    background: linear-gradient(135deg, #f08a5d, #a8420f);
+    transform: rotate(-6deg);
+  }
+
+  .bank-signin__card.c2 {
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #4fe3b0, #0d7a52);
+    transform: rotate(5deg);
+  }
+
+  .bank-signin__quote {
+    margin: 0;
+  }
+
+  .bank-signin__quote blockquote {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.5rem;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+
+  .bank-signin__quote figcaption {
+    margin-top: var(--sp-3, 0.75rem);
+    color: var(--bk-text-3);
+    font-size: 0.9rem;
+  }
+
+  .bank-signin__stats {
+    display: flex;
+    gap: var(--sp-8, 2rem);
+    margin: 0;
+  }
+
+  .bank-signin__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .bank-signin__stats dt {
+    color: var(--bk-text-3);
+    font-size: 0.82rem;
+  }
+
+  .bank-signin__stats dd {
+    margin: 0;
+    font-family: var(--bk-font-mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+  }
+
+  .bank-signin__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+  }
+
+  .bank-signin__box {
+    width: min(100%, 420px);
+  }
+
+  .bank-signin__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: 2.4rem;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-signin__lead {
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-6, 1.5rem);
+    color: var(--bk-text-2);
+  }
+
+  .bank-signin__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bank-signin__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .bank-signin__field label {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .bank-signin__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-surface);
+    color: var(--bk-text);
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .bank-signin__pw {
+    position: relative;
+  }
+
+  .bank-signin__pw input {
+    padding-right: 92px;
+  }
+
+  .bank-signin__pw button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 84px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--r-sm, 8px);
+    background: transparent;
+    color: var(--bk-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bank-signin__field input:focus-visible,
+  .bank-signin__pw button:focus-visible,
+  .bank-signin__submit:focus-visible,
+  .bank-signin a:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-signin__remember {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 32px;
+    color: var(--bk-text-2);
+    font-size: 0.92rem;
+  }
+
+  .bank-signin__remember input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--bk-brand);
+  }
+
+  .bank-signin__error {
+    margin: 0;
+    color: var(--bk-bad);
+    font-size: 0.9rem;
+  }
+
+  .bank-signin__submit {
+    min-height: 52px;
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bank-signin__submit:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-signin__demo,
+  .bank-signin__alt,
+  .bank-signin__sec {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--bk-text-3);
+    font-size: 0.9rem;
+  }
+
+  .bank-signin a {
+    color: var(--bk-brand);
+    font-weight: 700;
+  }
+
+  @media (min-width: 900px) {
+    .bank-signin {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .bank-signin__brand {
+      display: flex;
+    }
+  }
+</style>

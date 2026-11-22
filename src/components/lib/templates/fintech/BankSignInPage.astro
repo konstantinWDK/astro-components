@@ -1,0 +1,53 @@
+---
+/**
+ * BankSignInPage — Client sign-in for Cobre, built on BankSignIn.
+ * In the demo any email and a password of 4+ characters open the account area.
+ *
+ * @param {BankRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Add robots noindex. Default true.
+ */
+import '../../../../styles/global.css';
+import './bank-theme.css';
+import BankSignIn from '../../app/BankSignIn.astro';
+import { bankRoutes, type BankRoutes } from './data';
+
+interface Props {
+  routes?: BankRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+}
+
+const { routes = bankRoutes, theme = 'dark', noindex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es" class="theme-bank" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acceso — Cobre</title>
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="bank-signin-page">
+    <BankSignIn brand="Cobre" dashboardHref={routes.dashboard} backHref={routes.home} openHref={routes.open} />
+  </body>
+</html>
+
+<style>
+  .bank-signin-page {
+    margin: 0;
+    background: var(--bk-bg);
+  }
+</style>

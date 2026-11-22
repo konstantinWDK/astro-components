@@ -1,0 +1,519 @@
+---
+/**
+ * BankOnboarding — Open-an-account wizard in three steps (you, your activity, plan and
+ * consent) with a progress indicator, per-step validation and a confirmation that shows the
+ * new account's IBAN. Pre-selects the plan from `?plan=`. With an `action` the last step
+ * submits to your backend; without one the confirmation is shown on the page.
+ *
+ * @param {BankPlan[]} plans - Plans offered in step 3.
+ * @param {string} action - Backend endpoint. Empty = demo confirmation.
+ * @param {string} dashboardHref - Link shown on the confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each step is a fieldset with a legend; the progress list marks the current
+ * step with aria-current="step"; errors are in a role="alert" region and focus moves to the
+ * first invalid field; the confirmation receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankPlans, type BankPlan } from '../templates/fintech/data';
+
+interface OwnProps {
+  plans?: BankPlan[];
+  action?: string;
+  dashboardHref?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  plans = bankPlans,
+  action = '',
+  dashboardHref = '/app',
+  title = 'Abre tu cuenta en 6 minutos',
+  subtitle = 'Sin papeles ni citas: te pedimos lo justo y verificas tu identidad con el móvil.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `bo-${Math.random().toString(36).slice(2, 8)}`;
+const steps = ['Tus datos', 'Tu actividad', 'Plan y envío'];
+---
+
+<section class:list={['bank-ui', 'bank-open', classAttr]} aria-labelledby={`${uid}-title`} data-bank-open data-dashboard={dashboardHref} {...rest}>
+  <div class="bank-open__inner">
+    <header class="bank-open__head">
+      <Heading id={`${uid}-title`} class="bank-open__title">{title}</Heading>
+      <p class="bank-open__subtitle">{subtitle}</p>
+    </header>
+
+    <div class="bank-open__card">
+      <ol class="bank-open__steps" aria-label="Progreso">
+        {steps.map((s, i) => (
+          <li data-step-ind aria-current={i === 0 ? 'step' : undefined}><span aria-hidden="true">{i + 1}</span>{s}</li>
+        ))}
+      </ol>
+
+      <form class="bank-open__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-open-form>
+        <fieldset class="bank-open__step" data-step>
+          <legend>Cuéntanos quién eres</legend>
+          <div class="bank-open__row">
+            <div class="bank-open__field"><label for={`${uid}-name`}>Nombre y apellidos</label><input id={`${uid}-name`} name="name" required autocomplete="name" /></div>
+            <div class="bank-open__field"><label for={`${uid}-email`}>Email</label><input id={`${uid}-email`} name="email" type="email" required autocomplete="email" /></div>
+          </div>
+          <div class="bank-open__row">
+            <div class="bank-open__field"><label for={`${uid}-phone`}>Móvil</label><input id={`${uid}-phone`} name="phone" type="tel" required autocomplete="tel" inputmode="tel" /></div>
+            <div class="bank-open__field"><label for={`${uid}-nif`}>NIF / NIE</label><input id={`${uid}-nif`} name="nif" required pattern="[A-Za-z0-9]{8,10}" autocomplete="off" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="bank-open__step" data-step hidden>
+          <legend>Sobre tu actividad</legend>
+          <div class="bank-open__row">
+            <div class="bank-open__field">
+              <label for={`${uid}-type`}>Tipo de cuenta</label>
+              <select id={`${uid}-type`} name="type" required>
+                <option value="">Elige una opción</option>
+                <option value="freelance">Autónomo</option>
+                <option value="company">Sociedad</option>
+                <option value="personal">Particular</option>
+              </select>
+            </div>
+            <div class="bank-open__field">
+              <label for={`${uid}-income`}>Ingresos mensuales aproximados</label>
+              <select id={`${uid}-income`} name="income" required>
+                <option value="">Elige un rango</option>
+                <option>Menos de 2.000 €</option><option>2.000 – 5.000 €</option><option>5.000 – 10.000 €</option><option>Más de 10.000 €</option>
+              </select>
+            </div>
+          </div>
+          <div class="bank-open__field"><label for={`${uid}-activity`}>A qué te dedicas</label><input id={`${uid}-activity`} name="activity" required placeholder="Diseño, desarrollo, consultoría…" /></div>
+        </fieldset>
+
+        <fieldset class="bank-open__step" data-step hidden>
+          <legend>Elige tu plan</legend>
+          <div class="bank-open__plans">
+            {plans.map((p, i) => (
+              <label class="bank-open__plan">
+                <input type="radio" name="plan" value={p.id} checked={p.highlighted ?? i === 0} />
+                <span class="bank-open__plan-body"><strong>{p.name}</strong><em>{p.monthly === 0 ? 'Gratis' : `${p.yearly} €/mes anual`}</em><small>{p.tagline}</small></span>
+              </label>
+            ))}
+          </div>
+          <label class="bank-open__consent"><input type="checkbox" name="terms" required /> Acepto las condiciones del contrato y la política de privacidad.</label>
+        </fieldset>
+
+        <p class="bank-open__error" role="alert" hidden data-open-error></p>
+        <div class="bank-open__actions">
+          <button type="button" class="bank-open__btn bank-open__btn--ghost" data-open-prev hidden>Atrás</button>
+          <button type="button" class="bank-open__btn" data-open-next>Continuar</button>
+          <button type="submit" class="bank-open__btn" data-open-submit hidden>Abrir mi cuenta</button>
+        </div>
+      </form>
+
+      <div class="bank-open__done" role="status" tabindex="-1" hidden data-open-done>
+        <span class="bank-open__check" aria-hidden="true">✓</span>
+        <h3>¡Cuenta abierta, <span data-done-name></span>!</h3>
+        <p>Tu IBAN ya está activo. Te hemos enviado un email con los siguientes pasos.</p>
+        <p class="bank-open__iban"><span>Tu IBAN</span><code data-done-iban></code></p>
+        <a class="bank-open__btn bank-open__btn--link" href={dashboardHref}>Entrar a mi cuenta</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initOpen(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const form = q<HTMLFormElement>('[data-open-form]');
+    const steps = Array.from(root.querySelectorAll<HTMLFieldSetElement>('[data-step]'));
+    const inds = Array.from(root.querySelectorAll<HTMLElement>('[data-step-ind]'));
+    const prev = q<HTMLButtonElement>('[data-open-prev]');
+    const next = q<HTMLButtonElement>('[data-open-next]');
+    const submit = q<HTMLButtonElement>('[data-open-submit]');
+    const err = q('[data-open-error]');
+    let i = 0;
+
+    const plan = new URLSearchParams(location.search).get('plan');
+    if (plan) form.querySelector<HTMLInputElement>(`input[name="plan"][value="${plan}"]`)?.click();
+
+    const show = (n: number) => {
+      i = n;
+      steps.forEach((s, k) => (s.hidden = k !== n));
+      inds.forEach((el, k) => {
+        el.classList.toggle('is-done', k < n);
+        if (k === n) el.setAttribute('aria-current', 'step');
+        else el.removeAttribute('aria-current');
+      });
+      prev.hidden = n === 0;
+      next.hidden = n === steps.length - 1;
+      submit.hidden = n !== steps.length - 1;
+      err.hidden = true;
+      steps[n].querySelector<HTMLElement>('input,select')?.focus();
+    };
+    const valid = () => {
+      const bad = Array.from(steps[i].querySelectorAll<HTMLInputElement>('input,select')).find((el) => !el.checkValidity());
+      if (bad) {
+        err.hidden = false;
+        err.textContent = 'Revisa los campos obligatorios: falta información o el formato no es válido.';
+        bad.focus();
+        return false;
+      }
+      return true;
+    };
+    next.addEventListener('click', () => valid() && show(i + 1));
+    prev.addEventListener('click', () => show(i - 1));
+
+    if (form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!valid()) return;
+      const name = (form.elements.namedItem('name') as HTMLInputElement).value.split(' ')[0];
+      const digits = Array.from({ length: 4 }, () => String(Math.floor(1000 + Math.random() * 9000)));
+      q('[data-done-name]').textContent = name;
+      q('[data-done-iban]').textContent = `ES${Math.floor(10 + Math.random() * 89)} 2100 ${digits.join(' ')}`;
+      form.hidden = true;
+      root.querySelector<HTMLElement>('.bank-open__steps')!.hidden = true;
+      const done = q('[data-open-done]');
+      done.hidden = false;
+      done.focus();
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-open]').forEach(initOpen);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-open {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background:
+      radial-gradient(ellipse at 100% 0%, rgba(var(--bk-brand-rgb), 0.14), transparent 55%),
+      var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-open__inner {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .bank-open__head {
+    margin-bottom: var(--sp-6, 1.5rem);
+    text-align: center;
+  }
+
+  .bank-open__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-open__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-open__card {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+  }
+
+  .bank-open__steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-open__steps[hidden] {
+    display: none;
+  }
+
+  .bank-open__steps li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--bk-text-3);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .bank-open__steps li span {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--bk-border-strong);
+    border-radius: 50%;
+    font-family: var(--bk-font-mono);
+  }
+
+  .bank-open__steps li[aria-current='step'] {
+    color: var(--bk-text);
+  }
+
+  .bank-open__steps li[aria-current='step'] span {
+    border-color: var(--bk-brand);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-open__steps li.is-done span {
+    border-color: var(--bk-mint);
+    color: var(--bk-mint);
+  }
+
+  .bank-open__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bank-open__step {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bank-open__step[hidden] {
+    display: none;
+  }
+
+  .bank-open__step legend {
+    margin-bottom: var(--sp-4, 1rem);
+    padding: 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .bank-open__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bank-open__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .bank-open__field label {
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .bank-open__field input,
+  .bank-open__field select {
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-surface);
+    color: var(--bk-text);
+    font: inherit;
+  }
+
+  .bank-open__plans {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .bank-open__plan {
+    position: relative;
+    display: block;
+  }
+
+  .bank-open__plan input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    cursor: pointer;
+  }
+
+  .bank-open__plan-body {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-surface);
+  }
+
+  .bank-open__plan-body em {
+    color: var(--bk-brand);
+    font-style: normal;
+    font-family: var(--bk-font-mono);
+    font-weight: 700;
+  }
+
+  .bank-open__plan-body small {
+    grid-column: 1 / -1;
+    color: var(--bk-text-3);
+  }
+
+  .bank-open__plan input:checked + .bank-open__plan-body {
+    border-color: var(--bk-brand);
+    background: rgba(var(--bk-brand-rgb), 0.12);
+  }
+
+  .bank-open__plan input:focus-visible + .bank-open__plan-body,
+  .bank-open__field input:focus-visible,
+  .bank-open__field select:focus-visible,
+  .bank-open__btn:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-open__consent {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    color: var(--bk-text-2);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .bank-open__consent input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    accent-color: var(--bk-brand);
+  }
+
+  .bank-open__error {
+    margin: 0;
+    color: var(--bk-bad);
+    font-size: 0.9rem;
+  }
+
+  .bank-open__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .bank-open__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-brand);
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .bank-open__btn:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-open__btn--ghost {
+    background: transparent;
+    color: var(--bk-text);
+    border-color: var(--bk-border-strong);
+  }
+
+  .bank-open__btn[hidden] {
+    display: none;
+  }
+
+  .bank-open__done {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    text-align: center;
+    outline: none;
+  }
+
+  .bank-open__done[hidden] {
+    display: none;
+  }
+
+  .bank-open__done h3 {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.8rem;
+  }
+
+  .bank-open__done p {
+    margin: 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-open__check {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(var(--bk-mint-rgb), 0.18);
+    color: var(--bk-mint);
+    font-size: 1.8rem;
+  }
+
+  .bank-open__iban {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem);
+    border: 1px dashed var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+  }
+
+  .bank-open__iban span {
+    color: var(--bk-text-3);
+    font-size: 0.8rem;
+  }
+
+  .bank-open__iban code {
+    font-family: var(--bk-font-mono);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--bk-mint);
+  }
+
+  @media (min-width: 640px) {
+    .bank-open__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .bank-open__card {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>

@@ -1,0 +1,226 @@
+---
+/**
+ * BankFooter — Neobank footer: call-to-action band, link columns, contact, and the legal block
+ * with the entity's regulatory notice and deposit-guarantee text.
+ *
+ * @param {string} brand - Bank name.
+ * @param {string} description - Short pitch under the brand.
+ * @param {{title: string, text?: string, href: string, label: string}} cta - Top call-to-action band.
+ * @param {Array<{title: string, links: Array<{label: string, href: string}>}>} columns - Link columns.
+ * @param {{email: string, phone: string, address: string, hours: string, legalName: string, legal: string}} contact - Contact and legal data.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark; each column is a <nav> labelled by its heading;
+ * contact is an <address>; links have 44px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankData } from '../templates/fintech/data';
+
+interface Column { title: string; links: Array<{ label: string; href: string }> }
+
+interface OwnProps {
+  brand?: string;
+  description?: string;
+  cta?: { title: string; text?: string; href: string; label: string };
+  columns?: Column[];
+  contact?: { email: string; phone: string; address: string; hours: string; legalName: string; legal: string };
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = bankData.brand.name,
+  description = 'La cuenta para quien trabaja por cuenta propia: cobra, ahorra y cumple con Hacienda sin dolores de cabeza.',
+  cta = { title: 'Abre tu cuenta hoy', text: 'Sin cuotas en el plan Base y sin permanencia.', href: '/abrir-cuenta', label: 'Abrir cuenta gratis' },
+  columns = [
+    { title: 'Producto', links: [{ label: 'Precios', href: '/precios' }, { label: 'Seguridad', href: '/seguridad' }, { label: 'Abrir cuenta', href: '/abrir-cuenta' }] },
+    { title: 'Clientes', links: [{ label: 'Acceso', href: '/acceso' }, { label: 'Mi cuenta', href: '/app' }, { label: 'Ayuda', href: '/seguridad' }] },
+  ],
+  contact = bankData.brand,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bfo-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<footer class:list={['bank-ui', 'bank-footer', classAttr]} {...rest}>
+  <div class="bank-footer__inner">
+    <div class="bank-footer__cta">
+      <div>
+        <p class="bank-footer__cta-title">{cta.title}</p>
+        {cta.text && <p class="bank-footer__cta-text">{cta.text}</p>}
+      </div>
+      <a class="bank-footer__cta-btn" href={cta.href}>{cta.label}</a>
+    </div>
+
+    <div class="bank-footer__grid">
+      <div>
+        <p class="bank-footer__brand"><span aria-hidden="true">◐</span> {brand}</p>
+        <p class="bank-footer__desc">{description}</p>
+      </div>
+      {columns.map((col, i) => (
+        <nav aria-labelledby={`${uid}-c${i}`}>
+          <h2 id={`${uid}-c${i}`} class="bank-footer__col-title">{col.title}</h2>
+          <ul role="list">{col.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+        </nav>
+      ))}
+      <address class="bank-footer__contact">
+        <h2 class="bank-footer__col-title">Contacto</h2>
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+        <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+        <span>{contact.address}</span>
+        <span>{contact.hours}</span>
+      </address>
+    </div>
+
+    <p class="bank-footer__legal">
+      © {new Date().getFullYear()} {contact.legalName}. {contact.legal} Los depósitos están garantizados por el Fondo de Garantía de Depósitos hasta 100.000 €. Rentabilidades pasadas no garantizan rentabilidades futuras.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .bank-footer {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--bk-border);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text-2);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-footer__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .bank-footer__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-10, 2.5rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid rgba(var(--bk-brand-rgb), 0.5);
+    border-radius: var(--r-xl, 24px);
+    background: linear-gradient(120deg, rgba(var(--bk-brand-rgb), 0.18), rgba(var(--bk-mint-rgb), 0.08));
+  }
+
+  .bank-footer__cta-title {
+    margin: 0;
+    color: var(--bk-text);
+    font-family: var(--bk-font-display);
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .bank-footer__cta-text {
+    margin: var(--sp-1, 0.25rem) 0 0;
+  }
+
+  .bank-footer__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 50px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bank-footer__cta-btn:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-footer a:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-footer__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .bank-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--bk-text);
+    font-family: var(--bk-font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .bank-footer__brand span {
+    color: var(--bk-brand);
+  }
+
+  .bank-footer__desc {
+    max-width: 340px;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .bank-footer__col-title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    color: var(--bk-text);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .bank-footer ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-footer nav a,
+  .bank-footer__contact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--bk-text-2);
+    text-decoration: none;
+  }
+
+  .bank-footer nav a:hover,
+  .bank-footer__contact a:hover {
+    color: var(--bk-brand);
+  }
+
+  .bank-footer__contact {
+    display: flex;
+    flex-direction: column;
+    font-style: normal;
+  }
+
+  .bank-footer__contact span {
+    padding: 4px 0;
+    font-size: 0.92rem;
+  }
+
+  .bank-footer__legal {
+    max-width: 900px;
+    margin: var(--sp-8, 2rem) 0 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--bk-border);
+    color: var(--bk-text-3);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 900px) {
+    .bank-footer__grid {
+      grid-template-columns: 1.6fr 1fr 1fr 1.3fr;
+    }
+  }
+</style>

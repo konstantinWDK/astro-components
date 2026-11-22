@@ -1,0 +1,376 @@
+---
+/**
+ * BankSiteLayout — Public layout for the "Cobre" neobank template.
+ * Skip link, announcement strip, sticky header with primary nav (disclosure menu on mobile),
+ * sign-in link + open-account CTA, and the BankFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (pricing | security | open).
+ * @param {BankRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link, the mobile menu
+ * button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './bank-theme.css';
+import BankFooter from '../../sections/BankFooter.astro';
+import { bankRoutes, bankData, type BankRoutes } from './data';
+
+type NavKey = 'pricing' | 'security' | 'open';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: BankRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Cobre · La cuenta para autónomos y pymes: cobra, ahorra y aparta tus impuestos. Abre tu cuenta gratis en 6 minutos.',
+  current,
+  routes = bankRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const { brand } = bankData;
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'pricing', label: 'Precios', href: routes.pricing },
+  { key: 'security', label: 'Seguridad', href: routes.security },
+  { key: 'open', label: 'Abrir cuenta', href: routes.open },
+];
+const footerColumns = [
+  { title: 'Producto', links: [{ label: 'Precios', href: routes.pricing }, { label: 'Seguridad', href: routes.security }, { label: 'Abrir cuenta', href: routes.open }] },
+  { title: 'Clientes', links: [{ label: 'Acceso', href: routes.signIn }, { label: 'Mi cuenta', href: routes.dashboard }, { label: 'Ayuda', href: routes.security }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-bank" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="bank-body">
+    <a href="#main-content" class="bank-skip">Saltar al contenido</a>
+
+    <p class="bank-strip">
+      Nuevo: <strong>reserva de impuestos automática</strong> en todos los planes.
+      <a href={routes.pricing}>Ver precios</a>
+    </p>
+
+    <header class="bank-header">
+      <div class="bank-header__inner">
+        <a href={routes.home} class="bank-logo" aria-label={`${brand.name} inicio`}>
+          <span class="bank-logo__mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" /></svg>
+          </span>
+          <span class="bank-logo__name">{brand.name}</span>
+        </a>
+
+        <button type="button" class="bank-menu-btn" aria-expanded="false" aria-controls="bank-nav" data-bank-menu>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <span class="bank-sr">Menú</span>
+        </button>
+
+        <nav id="bank-nav" class="bank-nav" aria-label="Navegación principal">
+          <ul class="bank-nav__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="bank-nav__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <div class="bank-nav__actions">
+            <a href={routes.signIn} class="bank-nav__signin">Acceder</a>
+            <a href={routes.open} class="bank-nav__cta">Abrir cuenta</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="bank-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <BankFooter
+      brand={brand.name}
+      cta={{ title: 'Abre tu cuenta hoy', text: 'Sin cuotas en el plan Base y sin permanencia.', href: routes.open, label: 'Abrir cuenta gratis' }}
+      columns={footerColumns}
+      contact={brand}
+    />
+
+    <script>
+      function initBankMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-bank-menu]');
+        const nav = document.getElementById('bank-nav');
+        if (!btn || !nav || btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        const setOpen = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            setOpen(false);
+            btn.focus();
+          }
+        });
+      }
+      initBankMenu();
+      document.addEventListener('astro:page-load', initBankMenu);
+    </script>
+  </body>
+</html>
+
+<style>
+  .bank-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-main {
+    flex: 1;
+  }
+
+  .bank-main:focus {
+    outline: none;
+  }
+
+  .bank-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .bank-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bank-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .bank-strip {
+    margin: 0;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    background: linear-gradient(90deg, rgba(var(--bk-brand-rgb), 0.2), rgba(var(--bk-violet-rgb), 0.2));
+    color: var(--bk-text);
+    font-size: 0.88rem;
+    text-align: center;
+  }
+
+  .bank-strip a {
+    margin-left: var(--sp-2, 0.5rem);
+    color: var(--bk-brand);
+    font-weight: 700;
+  }
+
+  .bank-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    border-bottom: 1px solid var(--bk-border);
+    background: color-mix(in srgb, var(--bk-bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .bank-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    max-width: 1280px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 var(--sp-4, 1rem);
+  }
+
+  .bank-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--bk-text);
+    text-decoration: none;
+  }
+
+  .bank-logo__mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-logo__name {
+    font-family: var(--bk-font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .bank-menu-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--bk-text);
+    cursor: pointer;
+  }
+
+  .bank-nav {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem);
+    border-bottom: 1px solid var(--bk-border);
+    background: var(--bk-bg-raised);
+  }
+
+  .bank-nav.is-open {
+    display: flex;
+  }
+
+  .bank-nav__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-nav__link {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--bk-text-2);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .bank-nav__link:hover,
+  .bank-nav__link[aria-current='page'] {
+    color: var(--bk-brand);
+  }
+
+  .bank-nav__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .bank-nav__signin,
+  .bank-nav__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bank-nav__signin {
+    border: 1px solid var(--bk-border-strong);
+    color: var(--bk-text);
+  }
+
+  .bank-nav__signin:hover {
+    border-color: var(--bk-brand);
+  }
+
+  .bank-nav__cta {
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-nav__cta:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-logo:focus-visible,
+  .bank-menu-btn:focus-visible,
+  .bank-nav a:focus-visible,
+  .bank-strip a:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 900px) {
+    .bank-header__inner {
+      padding: 0 var(--sp-8, 2rem);
+    }
+
+    .bank-menu-btn {
+      display: none;
+    }
+
+    .bank-nav {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0 0 var(--sp-8, 2rem);
+      border: 0;
+      background: transparent;
+    }
+
+    .bank-nav__list {
+      display: flex;
+      gap: var(--sp-5, 1.25rem);
+    }
+  }
+</style>

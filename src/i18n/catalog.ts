@@ -213,6 +213,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Academia online', description: 'Secciones para plataformas de cursos y academias online: hero con buscador de cursos, rutas de aprendizaje, catálogo filtrable, cabecera de curso con tarjeta de matrícula, temario desplegable, planes de suscripción, equipo de instructores, opiniones de alumnos, solicitud para enseñar y pie de página.' },
     ru: { name: 'Онлайн-академия', description: 'Секции для платформ онлайн-курсов и академий: главный экран с поиском курсов, карточки направлений, каталог с фильтрами, шапка курса с карточкой записи, программа-аккордеон, тарифы подписки, команда преподавателей, отзывы учеников, заявка преподавателя и подвал.' },
   },
+  fintech: {
+    en: { name: 'Fintech & Banking', description: 'Sections for neobanks and fintech products: hero with product mock, bento benefits, card picker, plans, fee comparison, savings calculator, security and trust, account-opening wizard, FAQ and footer.' },
+    es: { name: 'Fintech y banca', description: 'Secciones para neobancos y productos fintech: hero con mock del producto, ventajas en cuadrícula bento, selector de tarjetas, planes, comparativa de comisiones, calculadora de ahorro, seguridad y confianza, asistente de apertura de cuenta, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Финтех и банкинг', description: 'Секции для необанков и финтех-продуктов: главный экран с макетом продукта, бенто-преимущества, выбор карты, тарифы, сравнение комиссий, калькулятор накоплений, безопасность и доверие, мастер открытия счёта, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

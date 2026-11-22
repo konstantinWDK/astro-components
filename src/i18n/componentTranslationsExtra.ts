@@ -1148,4 +1148,85 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con panel ilustrado de la lámpara, selector alumno o instructor, mostrar contraseña y accesos de demostración.',
     ru: 'Вход на двух панелях с иллюстрацией лампы, переключателем ученик/преподаватель, показом пароля и демо-ссылками.',
   },
+  // ── Fintech neobank ("Cobre") ────────────────────────
+  'bank-hero': {
+    es: 'Hero de neobanco con titular grotesco, llamadas a abrir cuenta y ver precios, cifras clave y un mock del producto con tarjeta metálica cobre, panel de saldo e insignia de reserva de impuestos.',
+    ru: 'Главный экран необанка с заголовком, кнопками открытия счёта и тарифов, цифрами и макетом продукта: медная карта, панель баланса и налоговый резерв.',
+  },
+  'bank-features': {
+    es: 'Cuadrícula bento de ventajas del producto con iconos; la primera ocupa dos columnas como punto focal.',
+    ru: 'Бенто-сетка преимуществ продукта с иконками; первое занимает две колонки как акцент.',
+  },
+  'bank-card-showcase': {
+    es: 'Selector de tarjetas: elige metal, virtual o de equipo y cambian la ilustración, el precio y las ventajas. Grupo de radios nativo, sin backend.',
+    ru: 'Выбор карты: металлическая, виртуальная или командная — меняются иллюстрация, цена и преимущества. Нативные радиокнопки, без бэкенда.',
+  },
+  'bank-plans': {
+    es: 'Planes con interruptor mensual o anual que actualiza precios y ahorro, con un plan recomendado destacado.',
+    ru: 'Тарифы с переключателем помесячно или за год, который обновляет цены и экономию, с выделенным рекомендуемым тарифом.',
+  },
+  'bank-fee-table': {
+    es: 'Tabla comparativa de lo que cuesta cada concepto en el neobanco frente a un banco tradicional, con la columna del neobanco destacada.',
+    ru: 'Таблица сравнения стоимости услуг в необанке и в традиционном банке с выделенной колонкой необанка.',
+  },
+  'bank-savings-calculator': {
+    es: 'Simulador de ahorro con deslizadores de ingreso inicial, aportación mensual y plazo; muestra el saldo final, los intereses y una barra comparativa.',
+    ru: 'Симулятор накоплений с ползунками первоначального взноса, ежемесячного пополнения и срока; показывает итог, проценты и полосу соотношения.',
+  },
+  'bank-security': {
+    es: 'Sección de confianza con la cifra de garantía de depósitos, cuatro pilares de protección y una fila de sellos regulatorios.',
+    ru: 'Блок доверия с суммой гарантии вкладов, четырьмя опорами защиты и рядом регуляторных знаков.',
+  },
+  'bank-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'bank-onboarding': {
+    es: 'Asistente para abrir cuenta en tres pasos con progreso, validación por paso, plan preseleccionado desde ?plan= y confirmación con el nuevo IBAN.',
+    ru: 'Мастер открытия счёта из трёх шагов с прогрессом, проверкой на каждом шаге, предвыбором тарифа из ?plan= и подтверждением с новым IBAN.',
+  },
+  'bank-footer': {
+    es: 'Pie de página de neobanco con banda de llamada a la acción, columnas de enlaces, contacto y el bloque legal regulatorio y de garantía de depósitos.',
+    ru: 'Подвал необанка с призывом к действию, колонками ссылок, контактами и юридическим блоком о регулировании и гарантии вкладов.',
+  },
+  'bank-balance-card': {
+    es: 'Saldo total con botón para ocultar o mostrar y lista de cuentas (corriente, ahorro, impuestos) con IBAN enmascarado, saldo, TAE y botón para copiar el IBAN.',
+    ru: 'Общий баланс с кнопкой скрыть/показать и список счетов (текущий, накопительный, налоговый) с маскированным IBAN, балансом, ставкой и копированием IBAN.',
+  },
+  'bank-cashflow-chart': {
+    es: 'Gráfico de barras agrupadas de ingresos y gastos en SVG puro con cambio de 6 o 12 meses, resultado neto y tabla de datos accesible.',
+    ru: 'Групповая столбчатая диаграмма доходов и расходов на чистом SVG с переключением 6/12 месяцев, чистым результатом и доступной таблицей данных.',
+  },
+  'bank-spending-breakdown': {
+    es: 'Gráfico de anillo del gasto por categoría a partir de tus movimientos, con leyenda de importe y porcentaje. SVG puro.',
+    ru: 'Кольцевая диаграмма расходов по категориям на основе операций с легендой сумм и процентов. Чистый SVG.',
+  },
+  'bank-transactions-table': {
+    es: 'Tabla de movimientos con búsqueda, filtros por categoría y tipo, orden por fecha o importe, estados, recuento y balance en vivo y exportación a CSV de lo filtrado.',
+    ru: 'Таблица операций с поиском, фильтрами по категории и типу, сортировкой по дате или сумме, статусами, живым счётчиком и балансом и экспортом отфильтрованного в CSV.',
+  },
+  'bank-card-manager': {
+    es: 'Gestión de tarjetas: elige una, muestra su número, congélala con un interruptor y fija su límite mensual con un medidor de gasto en vivo.',
+    ru: 'Управление картами: выбор карты, показ номера, заморозка переключателем и месячный лимит с живым индикатором расходов.',
+  },
+  'bank-transfer-form': {
+    es: 'Transferencia en dos pasos: cuenta de origen, beneficiario guardado o nuevo con validación IBAN (mod 97), importe con control de saldo, revisión y justificante.',
+    ru: 'Перевод в два шага: счёт списания, сохранённый или новый получатель с проверкой IBAN (mod 97), сумма с контролем баланса, проверка и квитанция.',
+  },
+  'bank-app-nav': {
+    es: 'Navegación del área de cliente: barra lateral con marca y medidor de reserva de impuestos en escritorio y barra de pestañas fija abajo en móvil. Sin JavaScript.',
+    ru: 'Навигация кабинета клиента: боковая панель с логотипом и индикатором налогового резерва на десктопе и нижняя панель вкладок на телефоне. Без JavaScript.',
+  },
+  'bank-app-topbar': {
+    es: 'Barra superior del área de cliente con fecha de hoy, indicador de estado, cambio de tema, avisos y menú de usuario (popovers nativos).',
+    ru: 'Верхняя панель кабинета клиента: сегодняшняя дата, статус-чип, смена темы, уведомления и меню пользователя (нативные popover).',
+  },
+  'bank-app-heading': {
+    es: 'Encabezado de página del área de cliente con antetítulo, descripción, enlace de vuelta y botones de acción.',
+    ru: 'Заголовок страницы кабинета клиента с надзаголовком, описанием, ссылкой назад и кнопками.',
+  },
+  'bank-sign-in': {
+    es: 'Acceso a pantalla partida con ilustración de tarjetas flotantes, testimonio, cifras, mostrar contraseña y acceso de demostración.',
+    ru: 'Вход на двух панелях с иллюстрацией парящих карт, отзывом, цифрами, показом пароля и демо-ссылкой.',
+  },
 };

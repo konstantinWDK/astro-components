@@ -1,0 +1,51 @@
+---
+/**
+ * BankTransfersPage — Send money: two-step transfer with IBAN validation and a receipt, next to
+ * the latest outgoing movements.
+ *
+ * @param {BankRoutes} routes - Template route URLs.
+ * @param {typeof bankData} data - Accounts, beneficiaries and transactions.
+ */
+import BankAppLayout from './BankAppLayout.astro';
+import BankAppHeading from '../../app/BankAppHeading.astro';
+import BankTransferForm from '../../app/BankTransferForm.astro';
+import BankTransactionsTable from '../../app/BankTransactionsTable.astro';
+import { bankRoutes, bankData, type BankRoutes } from './data';
+
+interface Props {
+  routes?: BankRoutes;
+  data?: typeof bankData;
+}
+
+const { routes = bankRoutes, data = bankData } = Astro.props;
+const outgoing = data.transactions.filter((t) => t.amount < 0);
+---
+
+<BankAppLayout title="Transferencias" current="transfers" routes={routes}>
+  <BankAppHeading
+    kicker="Mi cuenta"
+    title="Enviar dinero"
+    description="Transferencias SEPA instantáneas y sin comisión."
+    back={{ label: 'Resumen', href: routes.dashboard }}
+  />
+  <div class="bank-send">
+    <BankTransferForm accounts={data.accounts} beneficiaries={data.beneficiaries} />
+    <BankTransactionsTable transactions={outgoing} categories={data.categories} limit={5} title="Últimos pagos" />
+  </div>
+</BankAppLayout>
+
+<style>
+  .bank-send {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+    margin-top: var(--sp-4, 1rem);
+    align-items: start;
+  }
+
+  @media (min-width: 1100px) {
+    .bank-send {
+      grid-template-columns: 1fr 1.1fr;
+    }
+  }
+</style>

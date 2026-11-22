@@ -1,0 +1,404 @@
+---
+/**
+ * BankHero — Neobank landing hero: serif-free grotesque headline, open-account and pricing CTAs,
+ * key figures, and a product mock with a copper metal card and a live-looking balance panel.
+ *
+ * @param {string} title - Headline. Wrap a word in *asterisks* to highlight it.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} openHref - Primary CTA link.
+ * @param {string} pricingHref - Secondary CTA link.
+ * @param {Array<{value: string, label: string}>} stats - Key figures.
+ * @param {number} balance - Balance shown on the mock panel (EUR).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: one h1; the product mock is decorative (aria-hidden) and its figures are
+ * repeated in the stats list; CTAs are real links with 48px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankData, formatBankMoney } from '../templates/fintech/data';
+
+interface OwnProps {
+  title?: string;
+  subtitle?: string;
+  openHref?: string;
+  pricingHref?: string;
+  stats?: Array<{ value: string; label: string }>;
+  balance?: number;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Tu dinero, tus impuestos y tus *cobros* en un solo sitio',
+  subtitle = 'La cuenta para autónomos y pymes que aparta tus impuestos, te deja cobrar en minutos y controla tus gastos por ti.',
+  openHref = '/abrir-cuenta',
+  pricingHref = '/precios',
+  stats = bankData.stats,
+  balance = 12480.35,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const [before, highlight, after] = title.split('*');
+const uid = `bh-${Math.random().toString(36).slice(2, 8)}`;
+const bars = [38, 52, 44, 68, 58, 82, 74];
+---
+
+<section class:list={['bank-ui', 'bank-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="bank-hero__grid" aria-hidden="true"></div>
+  <div class="bank-hero__inner">
+    <div class="bank-hero__copy">
+      <p class="bank-hero__kicker"><span aria-hidden="true"></span> Neobanco para autónomos y pymes</p>
+      <h1 id={`${uid}-title`} class="bank-hero__title">{before}{highlight && <em>{highlight}</em>}{after}</h1>
+      <p class="bank-hero__subtitle">{subtitle}</p>
+      <div class="bank-hero__cta">
+        <a class="bank-hero__btn bank-hero__btn--primary" href={openHref}>Abrir cuenta gratis</a>
+        <a class="bank-hero__btn" href={pricingHref}>Ver precios</a>
+      </div>
+      <dl class="bank-hero__stats">
+        {stats.map((s) => (
+          <div><dt>{s.label}</dt><dd>{s.value}</dd></div>
+        ))}
+      </dl>
+    </div>
+
+    <div class="bank-hero__mock" aria-hidden="true">
+      <div class="bank-hero__panel">
+        <p class="bank-hero__panel-label">Saldo disponible</p>
+        <p class="bank-hero__balance">{formatBankMoney(balance)}</p>
+        <p class="bank-hero__delta"><span>▲ +6.967 €</span> cobrados este mes</p>
+        <div class="bank-hero__bars">
+          {bars.map((h, i) => <i style={`height:${h}%`} class:list={[i === bars.length - 1 && 'is-last']}></i>)}
+        </div>
+        <ul class="bank-hero__tx">
+          <li><span>Estudio Brisa</span><b class="is-in">+2.400,00 €</b></li>
+          <li><span>Figma</span><b>-15,00 €</b></li>
+        </ul>
+      </div>
+      <div class="bank-hero__card">
+        <span class="bank-hero__chip"></span>
+        <span class="bank-hero__brand">Cobre</span>
+        <span class="bank-hero__num">•••• •••• •••• 4821</span>
+        <span class="bank-hero__holder">ELENA MARQUÉS <small>09/29</small></span>
+      </div>
+      <div class="bank-hero__tax">
+        <span>Reserva de impuestos</span>
+        <strong>3.150,60 €</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .bank-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background:
+      radial-gradient(ellipse at 85% 0%, rgba(var(--bk-brand-rgb), 0.2), transparent 55%),
+      radial-gradient(ellipse at 0% 100%, rgba(var(--bk-mint-rgb), 0.1), transparent 50%),
+      var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-hero__grid {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(var(--bk-border) 1px, transparent 1px), linear-gradient(90deg, var(--bk-border) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 70%);
+    opacity: 0.5;
+  }
+
+  .bank-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .bank-hero__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text-2);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .bank-hero__kicker span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bk-mint);
+    box-shadow: 0 0 0 4px rgba(var(--bk-mint-rgb), 0.2);
+  }
+
+  .bank-hero__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2.5rem, 6.5vw, 4.7rem);
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+
+  .bank-hero__title em {
+    color: var(--bk-brand);
+    font-style: normal;
+  }
+
+  .bank-hero__subtitle {
+    max-width: 540px;
+    margin: var(--sp-5, 1.25rem) 0 var(--sp-6, 1.5rem);
+    color: var(--bk-text-2);
+    font-size: 1.12rem;
+    line-height: 1.6;
+  }
+
+  .bank-hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .bank-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .bank-hero__btn:hover {
+    border-color: var(--bk-brand);
+  }
+
+  .bank-hero__btn--primary {
+    border-color: var(--bk-brand);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-hero__btn--primary:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-hero__btn:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 3px;
+  }
+
+  .bank-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-5, 1.25rem) var(--sp-8, 2rem);
+    margin: 0;
+  }
+
+  .bank-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .bank-hero__stats dt {
+    color: var(--bk-text-3);
+    font-size: 0.85rem;
+  }
+
+  .bank-hero__stats dd {
+    margin: 0;
+    font-family: var(--bk-font-mono);
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-hero__mock {
+    position: relative;
+    min-height: 480px;
+  }
+
+  .bank-hero__panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: min(100%, 360px);
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.7);
+  }
+
+  .bank-hero__panel-label {
+    margin: 0;
+    color: var(--bk-text-3);
+    font-size: 0.82rem;
+  }
+
+  .bank-hero__balance {
+    margin: 4px 0;
+    font-family: var(--bk-font-mono);
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+  }
+
+  .bank-hero__delta {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--bk-text-3);
+    font-size: 0.85rem;
+  }
+
+  .bank-hero__delta span {
+    color: var(--bk-mint);
+    font-weight: 700;
+  }
+
+  .bank-hero__bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 80px;
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .bank-hero__bars i {
+    flex: 1;
+    border-radius: 6px 6px 3px 3px;
+    background: var(--bk-surface-2);
+  }
+
+  .bank-hero__bars i.is-last {
+    background: linear-gradient(180deg, var(--bk-brand), rgba(var(--bk-brand-rgb), 0.4));
+  }
+
+  .bank-hero__tx {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: var(--sp-3, 0.75rem) 0 0;
+    border-top: 1px solid var(--bk-border);
+    list-style: none;
+    font-size: 0.88rem;
+  }
+
+  .bank-hero__tx li {
+    display: flex;
+    justify-content: space-between;
+    color: var(--bk-text-2);
+  }
+
+  .bank-hero__tx b {
+    font-family: var(--bk-font-mono);
+    font-weight: 600;
+    color: var(--bk-text);
+  }
+
+  .bank-hero__tx b.is-in {
+    color: var(--bk-mint);
+  }
+
+  .bank-hero__card {
+    position: absolute;
+    top: 215px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: min(78%, 300px);
+    aspect-ratio: 1.586;
+    padding: var(--sp-4, 1rem);
+    border-radius: 18px;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.25), transparent 40%),
+      linear-gradient(135deg, #f08a5d, #a8420f);
+    color: #1c0e07;
+    transform: rotate(4deg);
+    box-shadow: 0 30px 60px -20px rgba(168, 66, 15, 0.6);
+  }
+
+  .bank-hero__chip {
+    width: 34px;
+    height: 26px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #f7d9a8, #c99a54);
+  }
+
+  .bank-hero__brand {
+    position: absolute;
+    top: var(--sp-4, 1rem);
+    right: var(--sp-4, 1rem);
+    font-family: var(--bk-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .bank-hero__num {
+    font-family: var(--bk-font-mono);
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+  }
+
+  .bank-hero__holder {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .bank-hero__tax {
+    position: absolute;
+    bottom: 0;
+    left: var(--sp-6, 1.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid rgba(var(--bk-mint-rgb), 0.4);
+    border-radius: var(--r-lg, 20px);
+    background: var(--bk-bg-raised);
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.6);
+  }
+
+  .bank-hero__tax span {
+    color: var(--bk-text-3);
+    font-size: 0.78rem;
+  }
+
+  .bank-hero__tax strong {
+    color: var(--bk-mint);
+    font-family: var(--bk-font-mono);
+    font-size: 1.15rem;
+  }
+
+  @media (min-width: 960px) {
+    .bank-hero__inner {
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+      gap: var(--sp-12, 3rem);
+    }
+  }
+
+  @media (max-width: 420px) {
+    .bank-hero__card {
+      width: 70%;
+    }
+  }
+</style>

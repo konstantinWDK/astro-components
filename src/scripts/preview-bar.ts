@@ -54,6 +54,7 @@
     'real-estate': isEs ? 'Inmobiliaria & CRM' : 'Real Estate Agency',
     'gym': isEs ? 'Gimnasio & Socios' : 'Gym & Member Area',
     'academy': isEs ? 'Lumen · Academia online' : isRu ? 'Lumen · Онлайн-академия' : 'Lumen · Online Academy',
+    'fintech': isEs ? 'Cobre · Neobanco' : isRu ? 'Cobre · Необанк' : 'Cobre · Neobank',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

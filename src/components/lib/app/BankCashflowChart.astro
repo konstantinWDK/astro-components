@@ -1,0 +1,240 @@
+---
+/**
+ * BankCashflowChart — Income vs. expenses chart: grouped SVG bars per month, a 6 / 12 month
+ * range switch, and a summary with the net result for the range. No libraries.
+ *
+ * @param {number[]} income - Income per month, oldest first.
+ * @param {number[]} expenses - Expenses per month, same length.
+ * @param {string[]} months - Month labels, same length.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each chart is role="img" with a text summary and the same numbers are in a
+ * visually hidden table; the range switch is a radio group; the net figure shows a ▲/▼ sign
+ * as well as colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankCashflow, formatBankMoney } from '../templates/fintech/data';
+
+interface OwnProps {
+  income?: number[];
+  expenses?: number[];
+  months?: string[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  income = bankCashflow.income,
+  expenses = bankCashflow.expenses,
+  months = bankCashflow.months,
+  title = 'Ingresos y gastos',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bcc-${Math.random().toString(36).slice(2, 8)}`;
+const W = 640;
+const H = 220;
+const PAD = { t: 14, r: 4, b: 24, l: 4 };
+const sum = (a: number[]) => a.reduce((n, v) => n + v, 0);
+const ranges = [
+  { id: '12', label: '12 meses', n: 12 },
+  { id: '6', label: '6 meses', n: 6 },
+].map((r) => {
+  const inc = income.slice(-r.n);
+  const exp = expenses.slice(-r.n);
+  const mon = months.slice(-r.n);
+  const max = Math.max(...inc, ...exp) * 1.1;
+  const slot = (W - PAD.l - PAD.r) / inc.length;
+  const bw = Math.min(26, slot * 0.34);
+  const y = (v: number) => H - PAD.b - ((H - PAD.t - PAD.b) * v) / max;
+  return { ...r, inc, exp, mon, slot, bw, y, net: sum(inc) - sum(exp), tin: sum(inc), tout: sum(exp) };
+});
+---
+
+<section class:list={['bank-ui', 'bank-flow', classAttr]} aria-labelledby={`${uid}-title`} data-bank-flow {...rest}>
+  <header class="bank-flow__head">
+    <h2 id={`${uid}-title`} class="bank-flow__title">{title}</h2>
+    <fieldset class="bank-flow__switch">
+      <legend class="bk-sr">Periodo</legend>
+      {ranges.map((r, i) => (
+        <label><input type="radio" name={`${uid}-range`} value={r.id} checked={i === 0} data-flow-input /><span>{r.label}</span></label>
+      ))}
+    </fieldset>
+  </header>
+
+  {ranges.map((r, ri) => (
+    <div data-flow-range={r.id} hidden={ri !== 0}>
+      <dl class="bank-flow__sum">
+        <div><dt><i class="is-in"></i>Ingresos</dt><dd>{formatBankMoney(r.tin, false)}</dd></div>
+        <div><dt><i class="is-out"></i>Gastos</dt><dd>{formatBankMoney(r.tout, false)}</dd></div>
+        <div><dt>Resultado</dt><dd class:list={[r.net >= 0 ? 'is-pos' : 'is-neg']}><span aria-hidden="true">{r.net >= 0 ? '▲' : '▼'}</span> {formatBankMoney(r.net, false)}</dd></div>
+      </dl>
+      <figure class="bank-flow__fig">
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Ingresos ${formatBankMoney(r.tin, false)} y gastos ${formatBankMoney(r.tout, false)} en ${r.n} meses`}>
+          {[0.25, 0.5, 0.75].map((g) => <line x1={PAD.l} x2={W - PAD.r} y1={PAD.t + (H - PAD.t - PAD.b) * g} y2={PAD.t + (H - PAD.t - PAD.b) * g} stroke="var(--bk-border)" stroke-dasharray="3 5" />)}
+          {r.inc.map((v, i) => {
+            const cx = PAD.l + r.slot * i + r.slot / 2;
+            return (
+              <>
+                <rect x={cx - r.bw - 2} y={r.y(v)} width={r.bw} height={H - PAD.b - r.y(v)} rx="4" fill="var(--bk-mint)" />
+                <rect x={cx + 2} y={r.y(r.exp[i])} width={r.bw} height={H - PAD.b - r.y(r.exp[i])} rx="4" fill="var(--bk-brand)" />
+                <text x={cx} y={H - 7} text-anchor="middle" font-size="12" fill="var(--bk-text-3)">{r.mon[i]}</text>
+              </>
+            );
+          })}
+        </svg>
+        <figcaption class="bk-sr">
+          <table>
+            <caption>Ingresos y gastos por mes</caption>
+            <thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th></tr></thead>
+            <tbody>{r.inc.map((v, i) => <tr><td>{r.mon[i]}</td><td>{formatBankMoney(v, false)}</td><td>{formatBankMoney(r.exp[i], false)}</td></tr>)}</tbody>
+          </table>
+        </figcaption>
+      </figure>
+    </div>
+  ))}
+</section>
+
+<script>
+  function initFlow(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-flow-range]'));
+    root.querySelectorAll<HTMLInputElement>('[data-flow-input]').forEach((input) =>
+      input.addEventListener('change', () => input.checked && panels.forEach((p) => (p.hidden = p.dataset.flowRange !== input.value))),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-flow]').forEach(initFlow);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-flow {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-flow__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .bank-flow__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .bank-flow__switch {
+    display: inline-flex;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+  }
+
+  .bank-flow__switch label {
+    position: relative;
+  }
+
+  .bank-flow__switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bank-flow__switch span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-4, 1rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text-2);
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  .bank-flow__switch input:checked + span {
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-flow__switch label:focus-within span {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  [data-flow-range][hidden] {
+    display: none;
+  }
+
+  .bank-flow__sum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem) var(--sp-8, 2rem);
+    margin: 0 0 var(--sp-3, 0.75rem);
+  }
+
+  .bank-flow__sum div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bank-flow__sum dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--bk-text-3);
+    font-size: 0.82rem;
+  }
+
+  .bank-flow__sum dt i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .bank-flow__sum .is-in { background: var(--bk-mint); }
+  .bank-flow__sum .is-out { background: var(--bk-brand); }
+
+  .bank-flow__sum dd {
+    margin: 2px 0 0;
+    font-family: var(--bk-font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  dd.is-pos { color: var(--bk-mint); }
+  dd.is-neg { color: var(--bk-bad); }
+
+  .bank-flow__fig {
+    margin: 0;
+  }
+
+  .bank-flow__fig svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

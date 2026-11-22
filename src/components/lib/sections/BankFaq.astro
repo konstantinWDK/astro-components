@@ -1,0 +1,141 @@
+---
+/**
+ * BankFaq — Frequently asked questions as a native accordion with an optional "open all"
+ * control and a contact line.
+ *
+ * @param {BankFaq[]} faqs - Questions and answers.
+ * @param {string} title - Section heading.
+ * @param {string} contactText - Line under the list.
+ * @param {string} contactHref - Link of the contact line.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native <details>/<summary>; summary targets are 56px tall with a visible focus ring.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankFaqs, type BankFaq } from '../templates/fintech/data';
+
+interface OwnProps {
+  faqs?: BankFaq[];
+  title?: string;
+  contactText?: string;
+  contactHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  faqs = bankFaqs,
+  title = 'Preguntas frecuentes',
+  contactText = '¿No encuentras tu duda? Escríbenos por chat, respondemos en minutos.',
+  contactHref = 'mailto:hola@cobre.example',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `bq-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bank-ui', 'bank-faq', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="bank-faq__inner">
+    <Heading id={`${uid}-title`} class="bank-faq__title">{title}</Heading>
+    <div class="bank-faq__list">
+      {faqs.map((f) => (
+        <details class="bank-faq__item">
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </div>
+    <p class="bank-faq__contact">{contactText} <a href={contactHref}>Contactar</a></p>
+  </div>
+</section>
+
+<style>
+  .bank-faq {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-faq__inner {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  .bank-faq__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    letter-spacing: -0.03em;
+  }
+
+  .bank-faq__list {
+    border-top: 1px solid var(--bk-border);
+  }
+
+  .bank-faq__item {
+    border-bottom: 1px solid var(--bk-border);
+  }
+
+  .bank-faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 60px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .bank-faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .bank-faq__item summary::after {
+    content: '+';
+    color: var(--bk-brand);
+    font-size: 1.6rem;
+    font-weight: 400;
+    transition: transform 0.2s ease;
+  }
+
+  .bank-faq__item[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .bank-faq__item summary:focus-visible,
+  .bank-faq__contact a:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-faq__item p {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--bk-text-2);
+    line-height: 1.65;
+  }
+
+  .bank-faq__contact {
+    margin: var(--sp-6, 1.5rem) 0 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-faq__contact a {
+    color: var(--bk-brand);
+    font-weight: 700;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bank-faq__item summary::after {
+      transition: none;
+    }
+  }
+</style>

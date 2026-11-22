@@ -1,0 +1,338 @@
+---
+/**
+ * BankCardShowcase — Card picker: choose between card variants (metal, virtual, team) and see
+ * the card illustration and its perks change. A radio group drives the panel, no backend needed.
+ *
+ * @param {BankCardVariant[]} variants - Variants ({ id, name, tagline, price, gradient, perks[] }).
+ * @param {string} openHref - CTA link; the chosen variant is added as `?card=<id>`.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: variant switch is a native radio group (arrow keys); the panel is a polite
+ * live region; card art is decorative and its details are repeated in text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface BankCardVariant {
+  id: string;
+  name: string;
+  tagline: string;
+  price: string;
+  gradient: string;
+  perks: string[];
+}
+
+interface OwnProps {
+  variants?: BankCardVariant[];
+  openHref?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  variants = [
+    { id: 'metal', name: 'Cobre Metal', tagline: 'Tu tarjeta física de acero con acabado cobre.', price: 'Incluida en Autónomo', gradient: 'linear-gradient(135deg,#f08a5d,#a8420f)', perks: ['1 % de devolución en software y viajes', 'Retiradas gratis en cajeros de la zona euro', 'Seguro de viaje y de compra protegida', 'Apple Pay y Google Pay al instante'] },
+    { id: 'virtual', name: 'Virtual', tagline: 'Una tarjeta distinta por cada proveedor.', price: 'Gratis en todos los planes', gradient: 'linear-gradient(135deg,#4fe3b0,#0d7a52)', perks: ['Crea y borra tarjetas en un segundo', 'Límite mensual por tarjeta', 'Congela con un toque si algo falla', 'Ideal para suscripciones y anuncios'] },
+    { id: 'team', name: 'Equipo', tagline: 'Gasto de empresa con reglas claras.', price: 'Incluida en Empresa', gradient: 'linear-gradient(135deg,#9b8cff,#3b2db0)', perks: ['Hasta 10 tarjetas con titular propio', 'Aprobaciones y límites por persona', 'Justificantes con foto desde el móvil', 'Exportación contable automática'] },
+  ],
+  openHref = '/abrir-cuenta',
+  title = 'Una tarjeta para cada forma de gastar',
+  subtitle = 'Elige la que encaja contigo; puedes tener las tres.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `bcs-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bank-ui', 'bank-cards', classAttr]} aria-labelledby={`${uid}-title`} data-bank-cards data-open={openHref} {...rest}>
+  <script is:inline type="application/json" data-cards-data set:html={JSON.stringify(variants)} />
+  <div class="bank-cards__inner">
+    <header class="bank-cards__head">
+      <Heading id={`${uid}-title`} class="bank-cards__title">{title}</Heading>
+      {subtitle && <p class="bank-cards__subtitle">{subtitle}</p>}
+      <fieldset class="bank-cards__switch">
+        <legend class="bk-sr">Tipo de tarjeta</legend>
+        {variants.map((v, i) => (
+          <label>
+            <input type="radio" name={`${uid}-variant`} value={v.id} checked={i === 0} data-card-input />
+            <span>{v.name}</span>
+          </label>
+        ))}
+      </fieldset>
+    </header>
+
+    <div class="bank-cards__stage" role="status" aria-live="polite">
+      <div class="bank-cards__art" aria-hidden="true">
+        <div class="bank-cards__card" data-card-art style={`background:${variants[0].gradient}`}>
+          <span class="bank-cards__chip"></span>
+          <span class="bank-cards__logo">Cobre</span>
+          <span class="bank-cards__num">•••• •••• •••• 4821</span>
+          <span class="bank-cards__holder" data-card-label>{variants[0].name}</span>
+        </div>
+      </div>
+      <div class="bank-cards__body">
+        <h3 class="bank-cards__name" data-card-name>{variants[0].name}</h3>
+        <p class="bank-cards__tagline" data-card-tagline>{variants[0].tagline}</p>
+        <p class="bank-cards__price" data-card-price>{variants[0].price}</p>
+        <ul class="bank-cards__perks" role="list" data-card-perks>
+          {variants[0].perks.map((p) => <li>{p}</li>)}
+        </ul>
+        <a class="bank-cards__cta" href={`${openHref}?card=${variants[0].id}`} data-card-cta>Pedir esta tarjeta</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initCards(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const data = JSON.parse(root.querySelector('[data-cards-data]')?.textContent ?? '[]') as Array<{ id: string; name: string; tagline: string; price: string; gradient: string; perks: string[] }>;
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const open = root.dataset.open ?? '/';
+    root.querySelectorAll<HTMLInputElement>('[data-card-input]').forEach((input) =>
+      input.addEventListener('change', () => {
+        const v = data.find((d) => d.id === input.value);
+        if (!v || !input.checked) return;
+        q('[data-card-art]').style.background = v.gradient;
+        q('[data-card-label]').textContent = v.name;
+        q('[data-card-name]').textContent = v.name;
+        q('[data-card-tagline]').textContent = v.tagline;
+        q('[data-card-price]').textContent = v.price;
+        q('[data-card-perks]').replaceChildren(...v.perks.map((p) => Object.assign(document.createElement('li'), { textContent: p })));
+        q<HTMLAnchorElement>('[data-card-cta]').href = `${open}?card=${v.id}`;
+      }),
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-cards]').forEach(initCards);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-cards {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-cards__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .bank-cards__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: var(--sp-8, 2rem);
+    text-align: center;
+  }
+
+  .bank-cards__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-cards__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--bk-text-2);
+  }
+
+  .bank-cards__switch {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+  }
+
+  .bank-cards__switch label {
+    position: relative;
+  }
+
+  .bank-cards__switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bank-cards__switch span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text-2);
+    font-weight: 700;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .bank-cards__switch input:checked + span {
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-cards__switch label:focus-within span {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-cards__stage {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    align-items: center;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg);
+  }
+
+  .bank-cards__art {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-6, 1.5rem) 0;
+    perspective: 900px;
+  }
+
+  .bank-cards__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: min(100%, 340px);
+    aspect-ratio: 1.586;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: 20px;
+    color: #10150f;
+    box-sizing: border-box;
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transform: rotateY(-12deg) rotateX(6deg);
+    transition: background 0.4s ease, transform 0.4s ease;
+  }
+
+  .bank-cards__card:hover {
+    transform: rotateY(0) rotateX(0);
+  }
+
+  .bank-cards__chip {
+    width: 40px;
+    height: 30px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #f7d9a8, #c99a54);
+  }
+
+  .bank-cards__logo {
+    position: absolute;
+    top: var(--sp-5, 1.25rem);
+    right: var(--sp-5, 1.25rem);
+    font-family: var(--bk-font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .bank-cards__num {
+    font-family: var(--bk-font-mono);
+    letter-spacing: 0.1em;
+  }
+
+  .bank-cards__holder {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .bank-cards__name {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .bank-cards__tagline {
+    margin: var(--sp-2, 0.5rem) 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-cards__price {
+    margin: 0 0 var(--sp-4, 1rem);
+    color: var(--bk-brand);
+    font-weight: 700;
+  }
+
+  .bank-cards__perks {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+    color: var(--bk-text-2);
+  }
+
+  .bank-cards__perks li::before {
+    content: '✓';
+    margin-right: 0.6rem;
+    color: var(--bk-mint);
+    font-weight: 700;
+  }
+
+  .bank-cards__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .bank-cards__cta:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-cards__cta:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 3px;
+  }
+
+  @media (min-width: 860px) {
+    .bank-cards__stage {
+      grid-template-columns: 1fr 1fr;
+      padding: var(--sp-8, 2rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bank-cards__card,
+    .bank-cards__card:hover {
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

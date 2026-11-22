@@ -1,0 +1,189 @@
+---
+/**
+ * BankFeeTable — Comparison table of what each concept costs at the neobank versus a
+ * traditional bank. Highlights the neobank column and the saving per row.
+ *
+ * @param {Array<{concept: string, bank: string, other: string}>} rows - Comparison rows.
+ * @param {string} brand - Neobank column heading.
+ * @param {string} otherLabel - Other column heading.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: a real <table> with <caption>, scoped headers and a scrollable region on
+ * small screens; the highlighted column is also marked with text, not only colour.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface Row { concept: string; bank: string; other: string }
+
+interface OwnProps {
+  rows?: Row[];
+  brand?: string;
+  otherLabel?: string;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  rows = [
+    { concept: 'Mantenimiento de la cuenta', bank: '0 €', other: '9 – 15 € / mes' },
+    { concept: 'Transferencia SEPA', bank: '0 €', other: '0,50 – 3 €' },
+    { concept: 'Transferencia instantánea', bank: '0 €', other: '1 – 5 €' },
+    { concept: 'Tarjeta de débito', bank: '0 € el primer año', other: '12 – 30 € / año' },
+    { concept: 'Retirada en cajero (zona euro)', bank: '0 €', other: '1,50 – 3 €' },
+    { concept: 'Intereses de tu ahorro', bank: '2,5 % TAE', other: '0 – 0,5 % TAE' },
+  ],
+  brand = 'Cobre',
+  otherLabel = 'Banco tradicional',
+  title = 'Lo que te cuesta cada cosa',
+  subtitle = 'Comparamos comisiones habituales del mercado con las nuestras. Sin asteriscos.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `bt-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bank-ui', 'bank-fees', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="bank-fees__inner">
+    <header class="bank-fees__head">
+      <Heading id={`${uid}-title`} class="bank-fees__title">{title}</Heading>
+      {subtitle && <p class="bank-fees__subtitle">{subtitle}</p>}
+    </header>
+    <div class="bank-fees__scroll" tabindex="0" role="region" aria-labelledby={`${uid}-title`}>
+      <table>
+        <caption class="bk-sr">Comisiones de {brand} frente a un banco tradicional</caption>
+        <thead>
+          <tr>
+            <th scope="col">Concepto</th>
+            <th scope="col" class="is-brand">{brand} <span>Tu cuenta</span></th>
+            <th scope="col">{otherLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <th scope="row">{r.concept}</th>
+              <td class="is-brand">{r.bank}</td>
+              <td>{r.other}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="bank-fees__foot">Comisiones tradicionales: rango orientativo de tarifas publicadas por bancos españoles (demo).</p>
+  </div>
+</section>
+
+<style>
+  .bank-fees {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-fees__inner {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .bank-fees__head {
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .bank-fees__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-fees__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-fees__scroll {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg);
+  }
+
+  .bank-fees__scroll:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border-top: 1px solid var(--bk-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  thead th {
+    border-top: 0;
+    color: var(--bk-text-3);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  tbody th {
+    font-weight: 600;
+  }
+
+  td {
+    color: var(--bk-text-2);
+    font-family: var(--bk-font-mono);
+    font-size: 0.93rem;
+  }
+
+  .is-brand {
+    background: rgba(var(--bk-brand-rgb), 0.1);
+    color: var(--bk-text);
+  }
+
+  td.is-brand {
+    color: var(--bk-mint);
+    font-weight: 700;
+  }
+
+  thead th.is-brand {
+    color: var(--bk-brand);
+  }
+
+  thead th.is-brand span {
+    display: block;
+    color: var(--bk-text-3);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .bank-fees__foot {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--bk-text-3);
+    font-size: 0.8rem;
+  }
+</style>

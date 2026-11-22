@@ -141,7 +141,7 @@ export function createMcpServer(): McpServer {
   // 5. list_templates
   server.tool(
     'list_templates',
-    'List all multi-page production templates (e.g. E-Commerce Store, Editorial Shop, SaaS Hotel PMS, Marketing Agency, Developer Portfolio, Toy Store, Clinic SaaS, Cyberpunk, Dental Practice, Moving & Logistics, Food Delivery & Kitchen OS, Construction & Real Estate Site OS, Real Estate Agency & CRM, Gym & Member Area, Online Academy & Instructor Studio) with page lists and features.',
+    'List all multi-page production templates (e.g. E-Commerce Store, Editorial Shop, SaaS Hotel PMS, Marketing Agency, Developer Portfolio, Toy Store, Clinic SaaS, Cyberpunk, Dental Practice, Moving & Logistics, Food Delivery & Kitchen OS, Construction & Real Estate Site OS, Real Estate Agency & CRM, Gym & Member Area, Online Academy & Instructor Studio, Neobank & Account Area) with page lists and features.',
     {},
     async () => {
       const templates = listTemplates();
@@ -159,11 +159,11 @@ export function createMcpServer(): McpServer {
   // 6. get_template
   server.tool(
     'get_template',
-    'Get the complete multi-page template specification, architecture, pages, code, and routing instructions (e.g. "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio", "toy-store", "saas-clinic", "cyberpunk", "dental", "moving", "food-delivery", "construction", "real-estate", "gym", "academy").',
+    'Get the complete multi-page template specification, architecture, pages, code, and routing instructions (e.g. "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio", "toy-store", "saas-clinic", "cyberpunk", "dental", "moving", "food-delivery", "construction", "real-estate", "gym", "academy", "fintech").',
     {
       slug: z
         .string()
-        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby), "agency" (Volta marketing agency), "portfolio" (Keycap developer portfolio), "toy-store" (Kapow action-figure store), "saas-clinic" (Pulso medical consultations SaaS), "cyberpunk" (NULL/SECTOR futuristic-brutalist site), "dental" (Dentis dental clinic & practice OS), "moving" (Muvr moving, logistics & van fleet), "food-delivery" (BiteFlow food delivery & kitchen OS), "construction" (Strukto construction, developments & site OS), "real-estate" (Nido real estate agency, listings & agent CRM), "gym" (Forja gym, class booking & member area), or "academy" (Lumen online academy, course player & instructor studio)'),
+        .describe('Template slug: "ecommerce" (Nova Store), "ecommerce-editorial" (Forma Studio), "saas-hotel" (The Lobby), "agency" (Volta marketing agency), "portfolio" (Keycap developer portfolio), "toy-store" (Kapow action-figure store), "saas-clinic" (Pulso medical consultations SaaS), "cyberpunk" (NULL/SECTOR futuristic-brutalist site), "dental" (Dentis dental clinic & practice OS), "moving" (Muvr moving, logistics & van fleet), "food-delivery" (BiteFlow food delivery & kitchen OS), "construction" (Strukto construction, developments & site OS), "real-estate" (Nido real estate agency, listings & agent CRM), "gym" (Forja gym, class booking & member area), "academy" (Lumen online academy, course player & instructor studio), or "fintech" (Cobre neobank, accounts, cards & transfers)'),
     },
     async ({ slug }) => {
       const template = getTemplate(slug);
@@ -173,7 +173,7 @@ export function createMcpServer(): McpServer {
           content: [
             {
               type: 'text',
-              text: `Template "${slug}" not found. Valid slugs are: "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio", "toy-store", "saas-clinic", "cyberpunk", "dental", "moving", "food-delivery", "construction", "real-estate", "gym", "academy". Use "list_templates" to inspect them.`,
+              text: `Template "${slug}" not found. Valid slugs are: "ecommerce", "ecommerce-editorial", "saas-hotel", "agency", "portfolio", "toy-store", "saas-clinic", "cyberpunk", "dental", "moving", "food-delivery", "construction", "real-estate", "gym", "academy", "fintech". Use "list_templates" to inspect them.`,
             },
           ],
         };

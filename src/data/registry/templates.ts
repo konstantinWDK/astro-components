@@ -2364,6 +2364,158 @@ const routes = { ...academyRoutes, courses: '/catalog', pricing: '/plans' };
 
 <AcademyHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'fintech',
+    name: { en: 'Cobre · Neobank & Account Area', es: 'Cobre · Neobanco & Área de cliente', ru: 'Cobre · Необанк & Кабинет клиента' },
+    tagline: { en: 'Neobank for freelancers and small businesses with plans, a card picker, savings calculator and account opening, plus an account area with balances, cash flow, movements, cards and transfers.', es: 'Neobanco para autónomos y pymes con planes, selector de tarjetas, calculadora de ahorro y apertura de cuenta, más un área de cliente con saldos, flujo de caja, movimientos, tarjetas y transferencias.', ru: 'Необанк для самозанятых и малого бизнеса с тарифами, выбором карты, калькулятором накоплений и открытием счёта, плюс кабинет клиента с балансами, денежным потоком, операциями, картами и переводами.' },
+    description: { en: 'Complete template for a neobank, fintech or payments product. 9 page types: home with a product mock, benefits, card picker, savings calculator, fee comparison, security and FAQ; plans with monthly/yearly billing; security and regulation; a three-step account-opening wizard; plus sign-in, a dashboard (balances, income vs. expenses, spending donut, latest movements), a movements table with filters and CSV export, card management with freeze and limits, and a two-step transfer form with IBAN validation.', es: 'Plantilla completa para un neobanco, fintech o producto de pagos. 9 tipos de página: home con mock del producto, ventajas, selector de tarjetas, calculadora de ahorro, comparativa de comisiones, seguridad y preguntas frecuentes; precios con pago mensual o anual; seguridad y regulación; asistente de apertura de cuenta en tres pasos; y además acceso, panel (saldos, ingresos y gastos, anillo de gasto, últimos movimientos), tabla de movimientos con filtros y exportación CSV, gestión de tarjetas con congelado y límites y transferencia en dos pasos con validación de IBAN.', ru: 'Полный шаблон для необанка, финтеха или платёжного продукта. 9 типов страниц: главная с макетом продукта, преимуществами, выбором карты, калькулятором накоплений, сравнением комиссий, безопасностью и FAQ; тарифы с оплатой помесячно или за год; безопасность и регулирование; мастер открытия счёта из трёх шагов; а также вход, панель (балансы, доходы и расходы, кольцо расходов, последние операции), таблица операций с фильтрами и экспортом CSV, управление картами с заморозкой и лимитами и перевод в два шага с проверкой IBAN.' },
+    highlights: {
+      en: [
+        'Savings simulator with live compound interest and a growth bar',
+        'Card picker that swaps the card art, price and perks',
+        'Movements with search, filters, sorting and CSV export of the filtered rows',
+        'Card manager with freeze switch, reveal number and a live spend meter',
+        'Transfer form with mod-97 IBAN validation and balance check',
+      ],
+      es: [
+        'Simulador de ahorro con interés compuesto en vivo y barra de crecimiento',
+        'Selector de tarjetas que cambia ilustración, precio y ventajas',
+        'Movimientos con búsqueda, filtros, orden y exportación CSV de lo filtrado',
+        'Gestor de tarjetas con interruptor de congelado, mostrar número y medidor de gasto en vivo',
+        'Transferencia con validación IBAN (mod 97) y control de saldo',
+      ],
+      ru: [
+        'Симулятор накоплений со сложным процентом в реальном времени и полосой роста',
+        'Выбор карты меняет изображение, цену и преимущества',
+        'Операции с поиском, фильтрами, сортировкой и экспортом отфильтрованного в CSV',
+        'Менеджер карт с заморозкой, показом номера и живым индикатором расходов',
+        'Форма перевода с проверкой IBAN (mod 97) и контролем баланса',
+      ],
+    },
+    tags: ['fintech', 'banking', 'neobank', 'payments', 'dashboard', 'cards', 'transfers', 'pricing'],
+    previewBase: '/preview/fintech/',
+    importPath: 'astro-component-kit/templates/fintech',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with product mock, benefits, card picker, savings calculator, fee comparison, security and FAQ.', es: 'Hero con mock del producto, ventajas, selector de tarjetas, calculadora de ahorro, comparativa de comisiones, seguridad y preguntas frecuentes.', ru: 'Главный экран с макетом продукта, преимуществами, выбором карты, калькулятором накоплений, сравнением комиссий, безопасностью и FAQ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { BankHomePage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankHomePage />`,
+      },
+      {
+        id: 'pricing', path: 'precios/',
+        name: { en: 'Pricing', es: 'Precios', ru: 'Тарифы' },
+        description: { en: 'Plans with monthly/yearly billing, fee comparison and FAQ.', es: 'Planes con pago mensual o anual, comparativa de comisiones y preguntas frecuentes.', ru: 'Тарифы с оплатой помесячно или за год, сравнение комиссий и FAQ.' },
+        file: 'src/pages/precios.astro',
+        code: `---
+import { BankPricingPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankPricingPage />`,
+      },
+      {
+        id: 'security', path: 'seguridad/',
+        name: { en: 'Security', es: 'Seguridad', ru: 'Безопасность' },
+        description: { en: 'Deposit guarantee, protection pillars, regulatory badges and FAQ.', es: 'Garantía de depósitos, pilares de protección, sellos regulatorios y preguntas frecuentes.', ru: 'Гарантия вкладов, опоры защиты, регуляторные знаки и FAQ.' },
+        file: 'src/pages/seguridad.astro',
+        code: `---
+import { BankSecurityPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankSecurityPage />`,
+      },
+      {
+        id: 'open', path: 'abrir-cuenta/',
+        name: { en: 'Open account', es: 'Abrir cuenta', ru: 'Открыть счёт' },
+        description: { en: 'Three-step account-opening wizard that returns a new IBAN; pre-selects the plan from ?plan=.', es: 'Asistente de apertura de cuenta en tres pasos que devuelve un IBAN nuevo; preselecciona el plan desde ?plan=.', ru: 'Мастер открытия счёта из трёх шагов, возвращает новый IBAN; предвыбирает тариф из ?plan=.' },
+        file: 'src/pages/abrir-cuenta.astro',
+        code: `---
+import { BankOpenAccountPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankOpenAccountPage action="/api/open-account" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Sign in', es: 'Acceso', ru: 'Вход' },
+        description: { en: 'Split sign-in with floating cards, testimonial and figures.', es: 'Acceso a pantalla partida con tarjetas flotantes, testimonio y cifras.', ru: 'Вход на двух панелях с парящими картами, отзывом и цифрами.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { BankSignInPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'app/',
+        name: { en: 'Dashboard', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'Balances, income vs. expenses, spending by category and latest movements.', es: 'Saldos, ingresos y gastos, gasto por categoría y últimos movimientos.', ru: 'Балансы, доходы и расходы, расходы по категориям и последние операции.' },
+        file: 'src/pages/app/index.astro',
+        code: `---
+import { BankDashboardPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankDashboardPage />`,
+      },
+      {
+        id: 'transactions', path: 'app/movimientos/',
+        name: { en: 'Transactions', es: 'Movimientos', ru: 'Операции' },
+        description: { en: 'Searchable, filterable and sortable movements with CSV export.', es: 'Movimientos con búsqueda, filtros, orden y exportación a CSV.', ru: 'Операции с поиском, фильтрами, сортировкой и экспортом в CSV.' },
+        file: 'src/pages/app/movimientos.astro',
+        code: `---
+import { BankTransactionsPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankTransactionsPage />`,
+      },
+      {
+        id: 'cards', path: 'app/tarjetas/',
+        name: { en: 'Cards', es: 'Tarjetas', ru: 'Карты' },
+        description: { en: 'Pick a card, reveal its number, freeze it and set its limit.', es: 'Elige tarjeta, muestra su número, congélala y fija su límite.', ru: 'Выбор карты, показ номера, заморозка и установка лимита.' },
+        file: 'src/pages/app/tarjetas.astro',
+        code: `---
+import { BankCardsPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankCardsPage />`,
+      },
+      {
+        id: 'transfers', path: 'app/transferencias/',
+        name: { en: 'Transfers', es: 'Transferencias', ru: 'Переводы' },
+        description: { en: 'Two-step transfer with IBAN validation, balance check and receipt.', es: 'Transferencia en dos pasos con validación de IBAN, control de saldo y justificante.', ru: 'Перевод в два шага с проверкой IBAN, контролем баланса и квитанцией.' },
+        file: 'src/pages/app/transferencias.astro',
+        code: `---
+import { BankTransfersPage } from 'astro-component-kit/templates/fintech';
+---
+
+<BankTransfersPage />`,
+      },
+    ],
+    newComponents: [
+      'bank-hero', 'bank-features', 'bank-card-showcase', 'bank-plans', 'bank-fee-table', 'bank-savings-calculator', 'bank-security', 'bank-faq', 'bank-onboarding', 'bank-footer',
+      'bank-balance-card', 'bank-cashflow-chart', 'bank-spending-breakdown', 'bank-transactions-table', 'bank-card-manager', 'bank-transfer-form', 'bank-app-nav', 'bank-app-topbar', 'bank-app-heading', 'bank-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your banking API)
+import { BankHomePage, bankData, bankRoutes } from 'astro-component-kit/templates/fintech';
+
+const data = {
+  ...bankData,
+  brand: { ...bankData.brand, name: 'Aurum', phone: '+34 900 000 000' },
+  transactions: await fetch('https://api.example.com/transactions').then((r) => r.json()),
+};
+
+const routes = { ...bankRoutes, pricing: '/plans', open: '/open-account' };
+---
+
+<BankHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

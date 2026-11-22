@@ -1,0 +1,131 @@
+---
+/**
+ * BankAppHeading — Page heading for the account area: kicker, serif title,
+ * description, optional back link and action buttons.
+ *
+ * @param {string} title - Page title (renders the page's h1).
+ * @param {string} kicker - Small label above the title.
+ * @param {string} description - Supporting text.
+ * @param {{label: string, href: string}} back - Optional back link.
+ * @param {Array<{label: string, href: string, primary?: boolean}>} actions - Buttons on the right.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; back link has an arrow marked aria-hidden; buttons are 44px tall links.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+
+interface OwnProps {
+  title?: string;
+  kicker?: string;
+  description?: string;
+  back?: { label: string; href: string };
+  actions?: Array<{ label: string; href: string; primary?: boolean }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { title = 'Resumen', kicker, description, back, actions = [], class: classAttr, ...rest } = Astro.props;
+---
+
+<header class:list={['bank-ui', 'bank-heading', classAttr]} {...rest}>
+  <div class="bank-heading__text">
+    {back && <a class="bank-heading__back" href={back.href}><span aria-hidden="true">←</span> {back.label}</a>}
+    {kicker && <p class="bank-heading__kicker">{kicker}</p>}
+    <h1 class="bank-heading__title">{title}</h1>
+    {description && <p class="bank-heading__desc">{description}</p>}
+  </div>
+  {actions.length > 0 && (
+    <div class="bank-heading__actions">
+      {actions.map((a) => <a href={a.href} class:list={['bank-heading__btn', a.primary && 'is-primary']}>{a.label}</a>)}
+    </div>
+  )}
+</header>
+
+<style>
+  .bank-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-heading__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    color: var(--bk-text-2);
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  .bank-heading__back:hover {
+    color: var(--bk-brand);
+  }
+
+  .bank-heading__kicker {
+    margin: 0 0 var(--sp-1, 0.25rem);
+    color: var(--bk-brand);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .bank-heading__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .bank-heading__desc {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--bk-text-2);
+  }
+
+  .bank-heading__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .bank-heading__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .bank-heading__btn:hover {
+    border-color: var(--bk-brand);
+  }
+
+  .bank-heading__btn.is-primary {
+    border-color: var(--bk-brand);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-heading__btn.is-primary:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-heading__btn:focus-visible,
+  .bank-heading__back:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+</style>

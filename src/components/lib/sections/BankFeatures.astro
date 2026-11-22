@@ -1,0 +1,186 @@
+---
+/**
+ * BankFeatures — Bento grid of product benefits with icon, title and text. The first
+ * feature spans two columns on desktop to give the grid a focal point.
+ *
+ * @param {BankFeature[]} features - Features to show (icon keys: shield | bolt | card | doc | chart).
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: each feature is an <article> named by its heading; icons are decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankFeatures, type BankFeature } from '../templates/fintech/data';
+
+interface OwnProps {
+  features?: BankFeature[];
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  features = bankFeatures,
+  title = 'Pensado para cómo trabajas de verdad',
+  subtitle = 'Menos papeleo y más claridad: cada función resuelve una tarea que antes te robaba tiempo.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const Sub = headingLevel === 'h1' ? 'h2' : 'h3';
+const uid = `bf-${Math.random().toString(36).slice(2, 8)}`;
+const icons: Record<string, string> = {
+  shield: '<path d="M12 3 4 6v6c0 4.500 3.400 8 8 9 4.600-1 8-4.500 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  card: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+};
+---
+
+<section class:list={['bank-ui', 'bank-features', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="bank-features__inner">
+    <header class="bank-features__head">
+      <Heading id={`${uid}-title`} class="bank-features__title">{title}</Heading>
+      {subtitle && <p class="bank-features__subtitle">{subtitle}</p>}
+    </header>
+    <ul class="bank-features__grid" role="list">
+      {features.map((f, i) => (
+        <li class:list={[i === 0 && 'is-wide']}>
+          <article class="bank-feature" aria-labelledby={`${uid}-${f.id}`}>
+            <span class="bank-feature__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" set:html={icons[f.icon] ?? icons.shield} />
+            </span>
+            <Sub id={`${uid}-${f.id}`} class="bank-feature__title">{f.title}</Sub>
+            <p class="bank-feature__text">{f.text}</p>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .bank-features {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-features__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .bank-features__head {
+    max-width: 620px;
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .bank-features__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-features__subtitle {
+    margin: var(--sp-3, 0.75rem) 0 0;
+    color: var(--bk-text-2);
+    line-height: 1.6;
+  }
+
+  .bank-features__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-feature {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    height: 100%;
+    min-height: 220px;
+    padding: var(--sp-6, 1.5rem);
+    overflow: hidden;
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    box-sizing: border-box;
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+
+  .bank-feature:hover {
+    border-color: rgba(var(--bk-brand-rgb), 0.55);
+    transform: translateY(-3px);
+  }
+
+  .is-wide .bank-feature {
+    background: linear-gradient(135deg, rgba(var(--bk-brand-rgb), 0.16), var(--bk-bg-raised) 60%);
+  }
+
+  .bank-feature__icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(var(--bk-brand-rgb), 0.14);
+    color: var(--bk-brand);
+  }
+
+  .bank-feature__title {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .bank-feature__text {
+    max-width: 440px;
+    margin: 0;
+    color: var(--bk-text-2);
+    line-height: 1.6;
+  }
+
+  @media (min-width: 720px) {
+    .bank-features__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .bank-features__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .bank-features__grid .is-wide {
+      grid-column: span 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bank-feature {
+      transition: none;
+    }
+
+    .bank-feature:hover {
+      transform: none;
+    }
+  }
+</style>

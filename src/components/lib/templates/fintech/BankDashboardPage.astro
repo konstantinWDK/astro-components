@@ -1,0 +1,73 @@
+---
+/**
+ * BankDashboardPage — Account home: balances, income vs. expenses, spending by category and the
+ * latest movements.
+ *
+ * @param {BankRoutes} routes - Template route URLs.
+ * @param {typeof bankData} data - Accounts, transactions, categories and cash flow.
+ */
+import BankAppLayout from './BankAppLayout.astro';
+import BankAppHeading from '../../app/BankAppHeading.astro';
+import BankBalanceCard from '../../app/BankBalanceCard.astro';
+import BankCashflowChart from '../../app/BankCashflowChart.astro';
+import BankSpendingBreakdown from '../../app/BankSpendingBreakdown.astro';
+import BankTransactionsTable from '../../app/BankTransactionsTable.astro';
+import { bankRoutes, bankData, type BankRoutes } from './data';
+
+interface Props {
+  routes?: BankRoutes;
+  data?: typeof bankData;
+}
+
+const { routes = bankRoutes, data = bankData } = Astro.props;
+const firstName = data.user.name.split(' ')[0];
+---
+
+<BankAppLayout title="Resumen" current="dashboard" routes={routes}>
+  <BankAppHeading
+    kicker="Mi cuenta"
+    title={`Hola, ${firstName}`}
+    description={`Cliente desde ${data.user.since} · plan Autónomo`}
+    actions={[{ label: 'Enviar dinero', href: routes.transfers, primary: true }, { label: 'Ver movimientos', href: routes.transactions }]}
+  />
+  <div class="bank-dash">
+    <div class="bank-dash__top">
+      <BankBalanceCard accounts={data.accounts} />
+      <BankSpendingBreakdown transactions={data.transactions} categories={data.categories} />
+    </div>
+    <BankCashflowChart income={data.cashflow.income} expenses={data.cashflow.expenses} months={data.cashflow.months} />
+    <BankTransactionsTable transactions={data.transactions} categories={data.categories} limit={6} title="Últimos movimientos" />
+    <a class="bank-dash__more" href={routes.transactions}>Ver todos los movimientos →</a>
+  </div>
+</BankAppLayout>
+
+<style>
+  .bank-dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .bank-dash__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+  }
+
+  .bank-dash__more {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--bk-brand);
+    font-family: var(--bk-font-body);
+    font-weight: 700;
+  }
+
+  @media (min-width: 1100px) {
+    .bank-dash__top {
+      grid-template-columns: 1.15fr 1fr;
+    }
+  }
+</style>

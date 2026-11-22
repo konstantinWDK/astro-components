@@ -1,0 +1,421 @@
+---
+/**
+ * BankCardManager — Manage the account's cards: pick a card, see its illustration with a
+ * reveal-number toggle, freeze / unfreeze it, change its monthly limit and watch the spend
+ * meter. State is kept in the page (demo) and announced in a live region.
+ *
+ * @param {BankCard[]} cards - Cards to manage.
+ * @param {string} title - Card heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the card picker is a radio group; freeze is a switch (role="switch" with
+ * aria-checked); the limit is a labelled range input; the spend meter is role="meter" with
+ * text; frozen state is written in text on the card, not only dimmed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankCards, formatBankMoney, type BankCard } from '../templates/fintech/data';
+
+interface OwnProps {
+  cards?: BankCard[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { cards = bankCards, title = 'Tus tarjetas', class: classAttr, ...rest } = Astro.props;
+
+const uid = `bcm-${Math.random().toString(36).slice(2, 8)}`;
+const first = cards[0];
+const grad = (h: number) => `linear-gradient(135deg, hsl(${h} 78% 62%), hsl(${h + 20} 70% 30%))`;
+const money = (n: number) => formatBankMoney(n, false);
+---
+
+<section class:list={['bank-ui', 'bank-cm', classAttr]} aria-labelledby={`${uid}-title`} data-bank-cm {...rest}>
+  <script is:inline type="application/json" data-cm-data set:html={JSON.stringify(cards)} />
+  <h2 id={`${uid}-title`} class="bank-cm__title">{title}</h2>
+
+  <fieldset class="bank-cm__picker">
+    <legend class="bk-sr">Elige una tarjeta</legend>
+    {cards.map((c, i) => (
+      <label>
+        <input type="radio" name={`${uid}-card`} value={c.id} checked={i === 0} data-cm-pick />
+        <span class="bank-cm__tab"><strong>{c.name}</strong><small>{c.kind} · •••• {c.last4}</small></span>
+      </label>
+    ))}
+  </fieldset>
+
+  <div class="bank-cm__stage">
+    <div class="bank-cm__art" aria-hidden="true">
+      <div class="bank-cm__card" data-cm-card style={`background:${grad(first.hue)}`}>
+        <span class="bank-cm__frozen" data-cm-frozen-badge hidden>Congelada</span>
+        <span class="bank-cm__logo">Cobre</span>
+        <span class="bank-cm__chip"></span>
+        <span class="bank-cm__num" data-cm-num>•••• •••• •••• {first.last4}</span>
+        <span class="bank-cm__holder"><span data-cm-holder>{first.holder}</span><span data-cm-exp>{first.expires}</span></span>
+      </div>
+    </div>
+
+    <div class="bank-cm__panel">
+      <div class="bank-cm__row">
+        <button type="button" class="bank-cm__btn" aria-pressed="false" data-cm-reveal>Mostrar número</button>
+        <div class="bank-cm__switch">
+          <span id={`${uid}-freeze`}>Congelar tarjeta</span>
+          <button type="button" role="switch" aria-checked={first.frozen ? 'true' : 'false'} aria-labelledby={`${uid}-freeze`} data-cm-freeze><i></i></button>
+        </div>
+      </div>
+
+      <div class="bank-cm__limit">
+        <label for={`${uid}-limit`}>Límite mensual <output data-cm-limit-out>{money(first.limit)}</output></label>
+        <input id={`${uid}-limit`} type="range" min="100" max="10000" step="100" value={first.limit} data-cm-limit />
+        <div class="bank-cm__meter" role="meter" aria-valuemin="0" aria-valuemax={first.limit} aria-valuenow={first.spent} aria-label="Gastado este mes" data-cm-meter><i style={`width:${Math.min(100, (first.spent / first.limit) * 100)}%`}></i></div>
+        <p class="bank-cm__spent"><span data-cm-spent>{money(first.spent)}</span> gastados este mes · quedan <strong data-cm-left>{money(Math.max(0, first.limit - first.spent))}</strong></p>
+      </div>
+      <p class="bank-cm__status" role="status" aria-live="polite" data-cm-status></p>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initCm(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    type Card = { id: string; name: string; kind: string; last4: string; expires: string; holder: string; limit: number; spent: number; frozen: boolean; hue: number };
+    const cards = JSON.parse(root.querySelector('[data-cm-data]')?.textContent ?? '[]') as Card[];
+    const q = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const eur = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+    let cur = cards[0];
+    let reveal = false;
+    const status = q('[data-cm-status]');
+
+    const render = () => {
+      q<HTMLElement>('[data-cm-card]').style.background = `linear-gradient(135deg, hsl(${cur.hue} 78% 62%), hsl(${cur.hue + 20} 70% 30%))`;
+      q('[data-cm-card]').classList.toggle('is-frozen', cur.frozen);
+      q('[data-cm-frozen-badge]').hidden = !cur.frozen;
+      const full = `4539 7201 ${String(cur.id.charCodeAt(1) * 37).padStart(4, '0').slice(-4)} ${cur.last4}`;
+      q('[data-cm-num]').textContent = reveal ? full : `•••• •••• •••• ${cur.last4}`;
+      q('[data-cm-holder]').textContent = cur.holder;
+      q('[data-cm-exp]').textContent = cur.expires;
+      q('[data-cm-freeze]').setAttribute('aria-checked', String(cur.frozen));
+      const lim = q<HTMLInputElement>('[data-cm-limit]');
+      lim.value = String(cur.limit);
+      q('[data-cm-limit-out]').textContent = eur(cur.limit);
+      q('[data-cm-spent]').textContent = eur(cur.spent);
+      q('[data-cm-left]').textContent = eur(Math.max(0, cur.limit - cur.spent));
+      const meter = q('[data-cm-meter]');
+      meter.setAttribute('aria-valuemax', String(cur.limit));
+      meter.setAttribute('aria-valuenow', String(cur.spent));
+      meter.querySelector<HTMLElement>('i')!.style.width = `${Math.min(100, (cur.spent / cur.limit) * 100)}%`;
+      const btn = q('[data-cm-reveal]');
+      btn.textContent = reveal ? 'Ocultar número' : 'Mostrar número';
+      btn.setAttribute('aria-pressed', String(reveal));
+    };
+
+    root.querySelectorAll<HTMLInputElement>('[data-cm-pick]').forEach((i) =>
+      i.addEventListener('change', () => {
+        cur = cards.find((c) => c.id === i.value) ?? cur;
+        reveal = false;
+        status.textContent = '';
+        render();
+      }),
+    );
+    q('[data-cm-reveal]').addEventListener('click', () => { reveal = !reveal; render(); });
+    q('[data-cm-freeze]').addEventListener('click', () => {
+      cur.frozen = !cur.frozen;
+      status.textContent = cur.frozen ? `Tarjeta ${cur.name} congelada: no aceptará pagos.` : `Tarjeta ${cur.name} activa de nuevo.`;
+      render();
+    });
+    q<HTMLInputElement>('[data-cm-limit]').addEventListener('input', (e) => {
+      cur.limit = Number((e.target as HTMLInputElement).value);
+      render();
+    });
+    render();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-cm]').forEach(initCm);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-cm {
+    min-width: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-cm__title {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--bk-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .bank-cm__picker {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    min-width: 0;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0 0 4px;
+    border: 0;
+    overflow-x: auto;
+  }
+
+  .bank-cm__picker label {
+    position: relative;
+    flex: none;
+  }
+
+  .bank-cm__picker input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bank-cm__tab {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--bk-bg);
+  }
+
+  .bank-cm__tab small {
+    color: var(--bk-text-3);
+    font-size: 0.78rem;
+  }
+
+  .bank-cm__picker input:checked + .bank-cm__tab {
+    border-color: var(--bk-brand);
+    background: rgba(var(--bk-brand-rgb), 0.12);
+  }
+
+  .bank-cm__picker input:focus-visible + .bank-cm__tab,
+  .bank-cm button:focus-visible,
+  .bank-cm input[type='range']:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-cm__stage {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    align-items: center;
+  }
+
+  .bank-cm__art {
+    display: grid;
+    place-items: center;
+  }
+
+  .bank-cm__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: min(100%, 340px);
+    aspect-ratio: 1.586;
+    padding: var(--sp-5, 1.25rem);
+    border-radius: 20px;
+    color: #fff;
+    box-sizing: border-box;
+    box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: filter 0.3s ease;
+  }
+
+  .bank-cm__card.is-frozen {
+    filter: grayscale(0.85) brightness(0.8);
+  }
+
+  .bank-cm__frozen {
+    position: absolute;
+    top: var(--sp-5, 1.25rem);
+    left: 50%;
+    padding: 0.2rem 0.8rem;
+    border-radius: var(--r-full, 999px);
+    background: rgba(9, 14, 12, 0.85);
+    color: #bfe3ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    transform: translateX(-50%);
+  }
+
+  .bank-cm__frozen[hidden] {
+    display: none;
+  }
+
+  .bank-cm__logo {
+    align-self: flex-end;
+    font-family: var(--bk-font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .bank-cm__chip {
+    width: 38px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #f7d9a8, #c99a54);
+  }
+
+  .bank-cm__num {
+    font-family: var(--bk-font-mono);
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+  }
+
+  .bank-cm__holder {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .bank-cm__panel {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .bank-cm__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .bank-cm__btn {
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--bk-text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bank-cm__btn:hover {
+    border-color: var(--bk-brand);
+  }
+
+  .bank-cm__switch {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    font-weight: 600;
+  }
+
+  .bank-cm__switch button {
+    position: relative;
+    width: 56px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-surface-2);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .bank-cm__switch button i {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+  }
+
+  .bank-cm__switch button[aria-checked='true'] {
+    background: var(--bk-brand);
+  }
+
+  .bank-cm__switch button[aria-checked='true'] i {
+    transform: translateX(24px);
+  }
+
+  .bank-cm__limit label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: var(--bk-text-2);
+    font-weight: 600;
+  }
+
+  .bank-cm__limit output {
+    color: var(--bk-text);
+    font-family: var(--bk-font-mono);
+    font-weight: 700;
+  }
+
+  .bank-cm__limit input {
+    width: 100%;
+    height: 44px;
+    accent-color: var(--bk-brand);
+  }
+
+  .bank-cm__meter {
+    height: 10px;
+    overflow: hidden;
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-surface-2);
+  }
+
+  .bank-cm__meter i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--bk-mint), var(--bk-brand));
+    transition: width 0.3s ease;
+  }
+
+  .bank-cm__spent {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--bk-text-3);
+    font-size: 0.88rem;
+  }
+
+  .bank-cm__spent span,
+  .bank-cm__spent strong {
+    color: var(--bk-text);
+    font-family: var(--bk-font-mono);
+  }
+
+  .bank-cm__status {
+    min-height: 1.2em;
+    margin: 0;
+    color: var(--bk-text-2);
+    font-size: 0.88rem;
+  }
+
+  @media (min-width: 860px) {
+    .bank-cm__stage {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-8, 2rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bank-cm__card,
+    .bank-cm__switch button,
+    .bank-cm__switch button i,
+    .bank-cm__meter i {
+      transition: none;
+    }
+  }
+</style>

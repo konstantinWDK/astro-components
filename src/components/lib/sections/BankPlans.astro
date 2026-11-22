@@ -1,0 +1,331 @@
+---
+/**
+ * BankPlans — Plans with a monthly / yearly switch that updates prices and the saving.
+ *
+ * @param {BankPlan[]} plans - Plans to compare (one can be `highlighted`).
+ * @param {string} ctaHref - Plan buttons link here with `?plan=<id>`.
+ * @param {string} billing - Initial billing: 'monthly' | 'yearly'. Default 'yearly'.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the switch is a radio group; the saving line is aria-live; the highlighted
+ * plan also says "Recomendado" in text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/fintech/bank-theme.css';
+import { bankPlans, type BankPlan } from '../templates/fintech/data';
+
+interface OwnProps {
+  plans?: BankPlan[];
+  ctaHref?: string;
+  billing?: 'monthly' | 'yearly';
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  plans = bankPlans,
+  ctaHref = '/abrir-cuenta',
+  billing = 'yearly',
+  title = 'Precios claros, sin letra pequeña',
+  subtitle = 'Empieza gratis y cambia de plan cuando tu actividad crezca. Sin permanencia.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `bp-${Math.random().toString(36).slice(2, 8)}`;
+const eur = (n: number) => `${n} €`;
+const note = (p: BankPlan, yearly: boolean) => (p.monthly === 0 ? 'Sin cuotas, siempre' : yearly ? `Facturado ${p.yearly * 12} € al año · ahorras ${(p.monthly - p.yearly) * 12} €` : 'Facturado cada mes');
+---
+
+<section class:list={['bank-ui', 'bank-plans', classAttr]} aria-labelledby={`${uid}-title`} data-bank-plans data-billing={billing} {...rest}>
+  <div class="bank-plans__inner">
+    <header class="bank-plans__head">
+      <Heading id={`${uid}-title`} class="bank-plans__title">{title}</Heading>
+      <p class="bank-plans__subtitle">{subtitle}</p>
+      <fieldset class="bank-plans__switch">
+        <legend class="bk-sr">Facturación</legend>
+        <label><input type="radio" name={`${uid}-billing`} value="monthly" checked={billing === 'monthly'} data-billing-input /><span>Mensual</span></label>
+        <label><input type="radio" name={`${uid}-billing`} value="yearly" checked={billing === 'yearly'} data-billing-input /><span>Anual <em>-33 %</em></span></label>
+      </fieldset>
+    </header>
+
+    <ul class="bank-plans__grid" role="list">
+      {plans.map((p) => (
+        <li>
+          <article class:list={['bank-plan', p.highlighted && 'is-featured']} aria-labelledby={`${uid}-${p.id}`}>
+            {p.highlighted && <p class="bank-plan__flag">Recomendado</p>}
+            <h3 id={`${uid}-${p.id}`} class="bank-plan__name">{p.name}</h3>
+            <p class="bank-plan__tagline">{p.tagline}</p>
+            <p class="bank-plan__price">
+              <strong data-monthly={eur(p.monthly)} data-yearly={eur(p.yearly)}>{eur(billing === 'yearly' ? p.yearly : p.monthly)}</strong>
+              <span>/ mes</span>
+            </p>
+            <p class="bank-plan__note" aria-live="polite">
+              <span data-monthly={note(p, false)} data-yearly={note(p, true)}>{note(p, billing === 'yearly')}</span>
+            </p>
+            <a class="bank-plan__cta" href={`${ctaHref}?plan=${p.id}`}>{p.monthly === 0 ? 'Empezar gratis' : `Elegir ${p.name}`}</a>
+            <ul class="bank-plan__features" role="list">
+              {p.features.map((f) => <li>{f}</li>)}
+            </ul>
+          </article>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<script>
+  function initPlans(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const apply = (billing: string) => {
+      root.dataset.billing = billing;
+      root.querySelectorAll<HTMLElement>('[data-monthly][data-yearly]').forEach((el) => {
+        el.textContent = (billing === 'yearly' ? el.dataset.yearly : el.dataset.monthly) ?? '';
+      });
+    };
+    root.querySelectorAll<HTMLInputElement>('[data-billing-input]').forEach((input) => {
+      input.addEventListener('change', () => input.checked && apply(input.value));
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('[data-bank-plans]').forEach(initPlans);
+  }
+
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>
+
+<style>
+  .bank-plans {
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem);
+    background: var(--bk-bg);
+    color: var(--bk-text);
+    font-family: var(--bk-font-body);
+  }
+
+  .bank-plans__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .bank-plans__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: var(--sp-8, 2rem);
+    text-align: center;
+  }
+
+  .bank-plans__title {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .bank-plans__subtitle {
+    max-width: 520px;
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    color: var(--bk-text-2);
+  }
+
+  .bank-plans__switch {
+    display: inline-flex;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-bg-raised);
+  }
+
+  .bank-plans__switch label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bank-plans__switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bank-plans__switch span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text-2);
+    font-weight: 700;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .bank-plans__switch em {
+    color: var(--bk-mint);
+    font-size: 0.78rem;
+    font-style: normal;
+  }
+
+  .bank-plans__switch input:checked + span {
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-plans__switch input:checked + span em {
+    color: var(--bk-on-brand);
+  }
+
+  .bank-plans__switch label:focus-within span {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-plans__grid {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bank-plan {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bk-border);
+    border-radius: var(--r-xl, 24px);
+    background: var(--bk-bg-raised);
+    box-sizing: border-box;
+  }
+
+  .bank-plan.is-featured {
+    border-color: var(--bk-brand);
+    background: linear-gradient(180deg, rgba(var(--bk-brand-rgb), 0.14), var(--bk-bg-raised) 55%);
+    box-shadow: 0 0 0 1px var(--bk-brand), 0 24px 60px -30px rgba(var(--bk-brand-rgb), 0.5);
+  }
+
+  .bank-plan__flag {
+    position: absolute;
+    top: -13px;
+    left: var(--sp-6, 1.5rem);
+    margin: 0;
+    padding: 0.2rem 0.8rem;
+    border-radius: var(--r-full, 999px);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .bank-plan__name {
+    margin: 0;
+    font-family: var(--bk-font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .bank-plan__tagline {
+    margin: var(--sp-1, 0.25rem) 0 var(--sp-4, 1rem);
+    color: var(--bk-text-2);
+    font-size: 0.95rem;
+  }
+
+  .bank-plan__price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+  }
+
+  .bank-plan__price strong {
+    font-family: var(--bk-font-mono);
+    font-size: 2.8rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+
+  .bank-plan__price span {
+    color: var(--bk-text-3);
+  }
+
+  .bank-plan__note {
+    min-height: 2.6em;
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-4, 1rem);
+    color: var(--bk-text-3);
+    font-size: 0.85rem;
+  }
+
+  .bank-plan__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border: 1px solid var(--bk-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--bk-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .bank-plan__cta:hover {
+    border-color: var(--bk-brand);
+  }
+
+  .bank-plan.is-featured .bank-plan__cta {
+    border-color: var(--bk-brand);
+    background: var(--bk-brand);
+    color: var(--bk-on-brand);
+  }
+
+  .bank-plan.is-featured .bank-plan__cta:hover {
+    background: var(--bk-brand-hover);
+  }
+
+  .bank-plan__cta:focus-visible {
+    outline: 2px solid var(--bk-brand);
+    outline-offset: 2px;
+  }
+
+  .bank-plan__features {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: var(--sp-5, 1.25rem) 0 0;
+    padding: var(--sp-5, 1.25rem) 0 0;
+    border-top: 1px solid var(--bk-border);
+    list-style: none;
+    color: var(--bk-text-2);
+    font-size: 0.93rem;
+  }
+
+  .bank-plan__features li::before {
+    content: '✓';
+    margin-right: 0.6rem;
+    color: var(--bk-mint);
+    font-weight: 700;
+  }
+
+  @media (min-width: 860px) {
+    .bank-plans__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

@@ -192,3 +192,15 @@ export { default as AcademyInstructors } from './AcademyInstructors.astro';
 export { default as AcademyReviews } from './AcademyReviews.astro';
 export { default as AcademyTeachForm } from './AcademyTeachForm.astro';
 export { default as AcademyFooter } from './AcademyFooter.astro';
+
+// Neobank ("Cobre")
+export { default as BankHero } from './BankHero.astro';
+export { default as BankFeatures } from './BankFeatures.astro';
+export { default as BankCardShowcase } from './BankCardShowcase.astro';
+export { default as BankPlans } from './BankPlans.astro';
+export { default as BankFeeTable } from './BankFeeTable.astro';
+export { default as BankSavingsCalculator } from './BankSavingsCalculator.astro';
+export { default as BankSecurity } from './BankSecurity.astro';
+export { default as BankFaq } from './BankFaq.astro';
+export { default as BankOnboarding } from './BankOnboarding.astro';
+export { default as BankFooter } from './BankFooter.astro';
