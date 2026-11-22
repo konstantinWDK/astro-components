@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Examples in context on every component and section page**: real snippets taken from the templates, sections and components that use it (with links), where it is used, what it works well with and what it is built from. Computed at build time from the real sources, so it never drifts.
+- **Smoother docs navigation**: previous/next now stay inside the category, an "On this page" jump bar, and a "More in <category>" block at the bottom of each component page.
 - **Component catalog pages**: `/components/` lists every category and `/components/<category>/` (buttons, forms, cards, feedback, navigation, layout, overlays, data, typography, charts, e-commerce, app) shows all its components as live preview cards that link to their docs page, in en/es/ru. The sidebar, the home categories and the doc breadcrumbs link to them.
 
 ### Added

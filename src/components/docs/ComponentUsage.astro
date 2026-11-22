@@ -1,0 +1,196 @@
+---
+// src/components/docs/ComponentUsage.astro
+// "In context" block for a component/section doc page: real snippets from the templates,
+// sections and components that use it, plus where it is used and what it combines well with.
+import CodeBlock from './CodeBlock.astro';
+import { getUsage } from '../../data/usage';
+import { components } from '../../data/registry/index';
+import { templates } from '../../data/registry/templates';
+import type { Locale } from '../../config/site';
+import { getLocalizedPath } from '../../i18n/translations';
+import { getLocalizedComponent } from '../../i18n/catalog';
+
+interface Props {
+  slug: string;
+  lang?: Locale;
+}
+
+const { slug, lang = 'en' } = Astro.props;
+const usage = getUsage(slug);
+
+const ui = {
+  en: {
+    title: 'Examples in context',
+    intro: 'Real code from the kit: how this piece is used inside templates, sections and other components.',
+    inTemplate: 'Template',
+    inSection: 'Section',
+    inComponent: 'Component',
+    usedIn: 'Used in',
+    templates: 'Templates',
+    componentsLbl: 'Sections & components',
+    worksWith: 'Works well with',
+    builtWith: 'Built with',
+    pages: 'pages',
+    page: 'page',
+    unused: 'Not used by other pieces of the kit yet: use it on its own, as shown above.',
+  },
+  es: {
+    title: 'Ejemplos en contexto',
+    intro: 'Código real del kit: cómo se usa esta pieza dentro de plantillas, secciones y otros componentes.',
+    inTemplate: 'Plantilla',
+    inSection: 'Sección',
+    inComponent: 'Componente',
+    usedIn: 'Se usa en',
+    templates: 'Plantillas',
+    componentsLbl: 'Secciones y componentes',
+    worksWith: 'Combina bien con',
+    builtWith: 'Construido con',
+    pages: 'páginas',
+    page: 'página',
+    unused: 'Todavía no la usa ninguna otra pieza del kit: úsala por sí sola, como se muestra arriba.',
+  },
+  ru: {
+    title: 'Примеры в контексте',
+    intro: 'Реальный код из набора: как этот элемент используется в шаблонах, секциях и других компонентах.',
+    inTemplate: 'Шаблон',
+    inSection: 'Секция',
+    inComponent: 'Компонент',
+    usedIn: 'Используется в',
+    templates: 'Шаблоны',
+    componentsLbl: 'Секции и компоненты',
+    worksWith: 'Хорошо сочетается с',
+    builtWith: 'Состоит из',
+    pages: 'страниц',
+    page: 'страница',
+    unused: 'Пока не используется другими частями набора: применяйте отдельно, как показано выше.',
+  },
+}[lang];
+
+const bySlug = new Map(components.map((c) => [c.slug, c]));
+const tplBySlug = new Map(templates.map((t) => [t.slug, t]));
+
+const compLink = (s: string) => {
+  const c = bySlug.get(s);
+  if (!c) return null;
+  const name = getLocalizedComponent(c as any, lang).name;
+  const href = getLocalizedPath(c.category === 'sections' ? `/sections/${s}` : `/docs/${s}`, lang);
+  return { name, href };
+};
+const tplLink = (s: string) => {
+  const t = tplBySlug.get(s);
+  return t ? { name: t.name[lang] ?? t.name.en, href: getLocalizedPath(`/templates/${s}`, lang) } : null;
+};
+
+const examples = usage.examples.map((e, i) => {
+  const target = e.kind === 'template' ? tplLink(e.slug) : compLink(e.slug);
+  const label = e.kind === 'template' ? ui.inTemplate : e.kind === 'section' ? ui.inSection : ui.inComponent;
+  return { ...e, i, target, label };
+});
+
+const tplChips = usage.usedInTemplates
+  .map((t) => ({ link: tplLink(t.slug), pages: new Set(t.pages).size }))
+  .filter((t) => t.link);
+const compChips = usage.usedInComponents.map(compLink).filter(Boolean) as { name: string; href: string }[];
+const withChips = usage.worksWith.map(compLink).filter(Boolean) as { name: string; href: string }[];
+const builtChips = usage.builtWith.map(compLink).filter(Boolean) as { name: string; href: string }[];
+
+const hasAnything = examples.length || tplChips.length || compChips.length || withChips.length || builtChips.length;
+---
+
+<section class="doc-section ctx" id="section-context" aria-labelledby="ctx-title">
+  <h2 class="doc-section__title" id="ctx-title">{ui.title}</h2>
+  <p class="doc-section__subtitle">{ui.intro}</p>
+
+  {!hasAnything && <p class="ctx__empty">{ui.unused}</p>}
+
+  {examples.length > 0 && (
+    <div class="ctx__examples">
+      {examples.map((e) => (
+        <figure class="ctx__example">
+          <figcaption class="ctx__cap">
+            <span class={`ctx__kind ctx__kind--${e.kind}`}>{e.label}</span>
+            {e.target ? <a href={e.target.href}>{e.target.name}</a> : <span>{e.file}</span>}
+            <code>{e.file}.astro</code>
+          </figcaption>
+          <div data-nosnippet>
+            <CodeBlock code={e.snippet} lang="astro" id={`ctx-${slug}-${e.i}`} />
+          </div>
+        </figure>
+      ))}
+    </div>
+  )}
+
+  {(tplChips.length > 0 || compChips.length > 0) && (
+    <div class="ctx__group">
+      <h3 class="ctx__h3">{ui.usedIn}</h3>
+      {tplChips.length > 0 && (
+        <div class="ctx__row">
+          <span class="ctx__rowlabel">{ui.templates}</span>
+          <ul class="ctx__chips">
+            {tplChips.map((t) => (
+              <li><a href={t.link!.href}>{t.link!.name} <span>{t.pages} {t.pages === 1 ? ui.page : ui.pages}</span></a></li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {compChips.length > 0 && (
+        <div class="ctx__row">
+          <span class="ctx__rowlabel">{ui.componentsLbl}</span>
+          <ul class="ctx__chips">
+            {compChips.slice(0, 16).map((c) => <li><a href={c.href}>{c.name}</a></li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  )}
+
+  {withChips.length > 0 && (
+    <div class="ctx__group">
+      <h3 class="ctx__h3">{ui.worksWith}</h3>
+      <ul class="ctx__chips">
+        {withChips.map((c) => <li><a href={c.href}>{c.name}</a></li>)}
+      </ul>
+    </div>
+  )}
+
+  {builtChips.length > 0 && (
+    <div class="ctx__group">
+      <h3 class="ctx__h3">{ui.builtWith}</h3>
+      <ul class="ctx__chips">
+        {builtChips.map((c) => <li><a href={c.href}>{c.name}</a></li>)}
+      </ul>
+    </div>
+  )}
+</section>
+
+<style>
+  .ctx__empty { color: var(--c-text-3); font-size: 0.9rem; margin: 0; }
+  .ctx__examples { display: grid; gap: var(--sp-5, 1.25rem); margin-top: var(--sp-4); }
+  .ctx__example { margin: 0; min-width: 0; }
+  .ctx__cap {
+    display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2);
+    margin-bottom: var(--sp-2); font-size: 0.85rem; color: var(--c-text-2);
+  }
+  .ctx__cap a { color: var(--c-text-1); font-weight: 600; text-decoration: none; }
+  .ctx__cap a:hover { color: var(--c-primary-light); text-decoration: underline; }
+  .ctx__cap code { margin-left: auto; font-size: 0.75rem; color: var(--c-text-3); }
+  .ctx__kind {
+    padding: 2px 0.55rem; border-radius: var(--r-full); font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--c-border); color: var(--c-text-2);
+  }
+  .ctx__kind--template { color: var(--c-primary-light); border-color: rgba(184,134,11,0.4); background: var(--c-primary-glow); }
+  .ctx__group { margin-top: var(--sp-6); }
+  .ctx__h3 { margin: 0 0 var(--sp-3); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-text-3); font-weight: 700; }
+  .ctx__row { display: flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+  .ctx__rowlabel { font-size: 0.8rem; color: var(--c-text-3); min-width: 150px; }
+  .ctx__chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .ctx__chips a {
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 36px; padding: 0 var(--sp-3);
+    border: 1px solid var(--c-border); border-radius: var(--r-full); color: var(--c-text-1);
+    font-size: 0.82rem; text-decoration: none; transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .ctx__chips a:hover { border-color: var(--c-primary-light); color: var(--c-primary-light); }
+  .ctx__chips a:focus-visible, .ctx__cap a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+  .ctx__chips a span { color: var(--c-text-3); font-size: 0.72rem; }
+  @media (max-width: 560px) { .ctx__cap code { margin-left: 0; } .ctx__rowlabel { min-width: 0; width: 100%; } }
+</style>

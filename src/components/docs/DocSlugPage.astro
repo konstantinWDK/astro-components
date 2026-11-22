@@ -3,6 +3,7 @@
 import DocsLayout from '../../layouts/DocsLayout.astro';
 import CodeBlock from './CodeBlock.astro';
 import PreviewRenderer from './PreviewRenderer.astro';
+import ComponentUsage from './ComponentUsage.astro';
 import { components, getComponentBySlug, categories } from '../../data/registry/index';
 import type { Locale } from '../../config/site';
 import { useTranslations, getLocalizedPath } from '../../i18n/translations';
@@ -26,10 +27,29 @@ const seo = getComponentSeoMeta(rawComp, lang);
 const rawCategory = categories.find((c) => c.id === comp.category);
 const category = rawCategory ? getLocalizedCategory(rawCategory, lang) : null;
 
-// Find prev/next components for navigation
-const currentIndex = components.findIndex((c) => c.slug === slug);
-const prevComp = currentIndex > 0 ? components[currentIndex - 1] : null;
-const nextComp = currentIndex < components.length - 1 ? components[currentIndex + 1] : null;
+// Prev/next within the same category, plus the sibling list for "more in this category".
+const siblings = components.filter((c) => c.category === rawComp.category);
+const currentIndex = siblings.findIndex((c) => c.slug === slug);
+const prevComp = currentIndex > 0 ? siblings[currentIndex - 1] : null;
+const nextComp = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
+const moreInCategory = siblings
+  .filter((c) => c.slug !== slug)
+  .map((c) => ({ c, score: c.tags.filter((tag) => rawComp.tags.includes(tag)).length }))
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 8)
+  .map((x) => getLocalizedComponent(x.c as any, lang));
+const nav = {
+  en: { jump: 'On this page', preview: 'Preview', usage: 'Usage', context: 'In context', code: 'Source code', info: 'Info', more: 'More in', all: 'View all', of: 'of' },
+  es: { jump: 'En esta página', preview: 'Vista previa', usage: 'Uso', context: 'En contexto', code: 'Código fuente', info: 'Info', more: 'Más en', all: 'Ver todos', of: 'de' },
+  ru: { jump: 'На этой странице', preview: 'Превью', usage: 'Использование', context: 'В контексте', code: 'Исходный код', info: 'Инфо', more: 'Ещё в', all: 'Все', of: 'из' },
+}[lang];
+const jump = [
+  ['section-preview', nav.preview],
+  ['section-usage', nav.usage],
+  ['section-context', nav.context],
+  ['section-code', nav.code],
+  ['section-info', nav.info],
+];
 
 // Ensure usage has imports
 let displayUsage = rawComp.usage;
@@ -88,6 +108,10 @@ const depText = comp.category === 'charts'
       <p class="doc-description">{comp.description}</p>
     </header>
 
+    <nav class="doc-jump" aria-label={nav.jump}>
+      {jump.map(([id, label]) => <a href={`#${id}`}>{label}</a>)}
+    </nav>
+
     <!-- 1. Live Preview -->
     <section class="doc-section anim-slide-up" id="section-preview">
       <h2 class="doc-section__title visually-hidden">{t('doc.livePreview')}</h2>
@@ -107,6 +131,8 @@ const depText = comp.category === 'charts'
         <CodeBlock code={displayUsage} lang="astro" id={`usage-${slug}`} />
       </div>
     </section>
+
+    <ComponentUsage slug={slug} lang={lang} />
 
     <!-- 3. Manual Installation -->
     <section class="doc-section anim-slide-up" id="section-code" style="animation-delay: 0.2s">
@@ -143,6 +169,26 @@ const depText = comp.category === 'charts'
         </div>
       </dl>
     </section>
+
+    <!-- More in this category -->
+    {moreInCategory.length > 0 && (
+      <nav class="doc-more" aria-labelledby="doc-more-title">
+        <div class="doc-more__head">
+          <h2 class="doc-more__title" id="doc-more-title">{nav.more} {category?.name}</h2>
+          <a class="doc-more__all" href={getLocalizedPath(`/components/${comp.category}`, lang)}>{nav.all} ({siblings.length}) →</a>
+        </div>
+        <ul class="doc-more__list">
+          {moreInCategory.map((m) => (
+            <li>
+              <a href={getLocalizedPath(`/docs/${m.slug}`, lang)}>
+                <span class="doc-more__name">{m.name}</span>
+                <span class="doc-more__desc">{m.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
   </div>
 </DocsLayout>
 
@@ -289,4 +335,29 @@ const depText = comp.category === 'charts'
     border-radius: 4px; font-size: 0.82em; color: #facc15;
   }
   .tags-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+
+  .doc-jump { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: calc(var(--sp-2) * -1) 0 var(--sp-6); }
+  .doc-jump a {
+    display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--sp-3);
+    border: 1px solid var(--c-border); border-radius: var(--r-full); color: var(--c-text-2);
+    font-size: 0.8rem; text-decoration: none; transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .doc-jump a:hover { border-color: var(--c-primary-light); color: var(--c-primary-light); }
+  .doc-jump a:focus-visible, .doc-more a:focus-visible { outline: 2px solid var(--c-primary-light); outline-offset: 2px; }
+  .doc-section { scroll-margin-top: 90px; }
+
+  .doc-more { margin-top: var(--sp-10, 3rem); padding-top: var(--sp-6); border-top: 1px solid var(--c-border); }
+  .doc-more__head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+  .doc-more__title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--c-text-1); }
+  .doc-more__all { font-size: 0.85rem; color: var(--c-primary-light); text-decoration: none; }
+  .doc-more__all:hover { text-decoration: underline; }
+  .doc-more__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+  .doc-more__list a {
+    display: flex; flex-direction: column; gap: 0.25rem; height: 100%; padding: var(--sp-3) var(--sp-4);
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-md);
+    text-decoration: none; transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .doc-more__list a:hover { border-color: var(--c-primary-light); background: var(--c-primary-glow); }
+  .doc-more__name { color: var(--c-text-1); font-weight: 600; font-size: 0.9rem; }
+  .doc-more__desc { color: var(--c-text-3); font-size: 0.78rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
