@@ -1,0 +1,132 @@
+---
+/**
+ * WineBottleLabel — Typographic bottle or label illustration generated from a wine's data
+ * (name, variety, vintage and its own label colours). No images: pure SVG, so it scales cleanly.
+ *
+ * @param {WineItem} wine - Wine to draw. Defaults to the first demo wine.
+ * @param {string} variant - 'bottle' (silhouette with label) or 'label' (flat label). Default 'bottle'.
+ * @param {string} label - Accessible description. Defaults to "Botella de <name> <vintage>".
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: exposed as role="img" with a text label; pass `decorative` to hide it when the
+ * wine name is already in the surrounding text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineList, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  wine?: WineItem;
+  variant?: 'bottle' | 'label';
+  label?: string;
+  decorative?: boolean;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'figure'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { wine = wineList[0], variant = 'bottle', label, decorative = false, class: classAttr, ...rest } = Astro.props;
+
+const glass: Record<string, string> = { Tinto: '#150a0b', Blanco: '#2c3622', Rosado: '#3b2327', Espumoso: '#202b1c' };
+const words = wine.name.split(' ');
+const mid = Math.ceil(words.length / 2);
+const lines = words.length > 1 ? [words.slice(0, mid).join(' '), words.slice(mid).join(' ')] : [wine.name];
+const longest = Math.max(...lines.map((l) => l.length));
+const uid = `wbl-${wine.id}-${Math.random().toString(36).slice(2, 6)}`;
+const description = label ?? `${variant === 'bottle' ? 'Botella' : 'Etiqueta'} de ${wine.name} ${wine.vintage}`;
+---
+
+<figure
+  class:list={['wine-ui', 'wine-bl', `wine-bl--${variant}`, classAttr]}
+  style={`--wl-bg:${wine.label.bg};--wl-ink:${wine.label.ink};--wl-accent:${wine.label.accent};`}
+  {...rest}
+>
+  {variant === 'bottle' ? (
+    <svg viewBox="0 0 120 400" role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : description} aria-hidden={decorative ? 'true' : undefined} focusable="false">
+      <defs>
+        <linearGradient id={`${uid}-shine`} x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stop-color="#fff" stop-opacity="0" />
+          <stop offset="0.22" stop-color="#fff" stop-opacity="0.2" />
+          <stop offset="0.34" stop-color="#fff" stop-opacity="0" />
+          <stop offset="1" stop-color="#000" stop-opacity="0.32" />
+        </linearGradient>
+      </defs>
+      <path class="wine-bl__glass" fill={glass[wine.type]} d="M52 6H68V16H66V84C66 108 100 124 100 160V372Q100 394 78 394H42Q20 394 20 372V160C20 124 54 108 54 84V16H52Z" />
+      <path fill={`url(#${uid}-shine)`} d="M52 6H68V16H66V84C66 108 100 124 100 160V372Q100 394 78 394H42Q20 394 20 372V160C20 124 54 108 54 84V16H52Z" />
+      <rect x="51" y="6" width="18" height="42" rx="2" fill="var(--wl-accent)" />
+      <rect x="51" y="40" width="18" height="2" fill="#000" opacity="0.25" />
+      <rect x="26" y="196" width="68" height="132" rx="1.5" fill="var(--wl-bg)" />
+      <rect x="29" y="199" width="62" height="126" rx="1" fill="none" stroke="var(--wl-accent)" stroke-width="0.6" />
+      <text x="60" y="214" text-anchor="middle" class="wine-bl__tiny" fill="var(--wl-accent)">SOLERA</text>
+      {lines.map((l, i) => (
+        <text x="60" y={242 + i * 15} text-anchor="middle" class="wine-bl__name" fill="var(--wl-ink)" font-size={longest > 9 ? 11.5 : 13.5}>{l}</text>
+      ))}
+      <line x1="46" x2="74" y1={lines.length > 1 ? 266 : 252} y2={lines.length > 1 ? 266 : 252} stroke="var(--wl-accent)" stroke-width="0.6" />
+      <text x="60" y="284" text-anchor="middle" class="wine-bl__tiny" fill="var(--wl-ink)">{wine.type.toUpperCase()}</text>
+      <text x="60" y="308" text-anchor="middle" class="wine-bl__year" fill="var(--wl-accent)">{wine.vintage}</text>
+    </svg>
+  ) : (
+    <svg viewBox="0 0 200 280" role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : description} aria-hidden={decorative ? 'true' : undefined} focusable="false">
+      <rect x="2" y="2" width="196" height="276" rx="3" fill="var(--wl-bg)" />
+      <rect x="10" y="10" width="180" height="260" rx="2" fill="none" stroke="var(--wl-accent)" stroke-width="1" />
+      <text x="100" y="42" text-anchor="middle" class="wine-bl__tiny wine-bl__tiny--lg" fill="var(--wl-accent)">BODEGA SOLERA</text>
+      <path d="M70 58H130" stroke="var(--wl-accent)" stroke-width="1" />
+      {lines.map((l, i) => (
+        <text x="100" y={118 + i * 34} text-anchor="middle" class="wine-bl__name" fill="var(--wl-ink)" font-size={longest > 9 ? 27 : 34}>{l}</text>
+      ))}
+      <text x="100" y={lines.length > 1 ? 188 : 154} text-anchor="middle" class="wine-bl__tiny wine-bl__tiny--lg" fill="var(--wl-ink)">{wine.variety.toUpperCase()}</text>
+      <path d="M86 206H114" stroke="var(--wl-accent)" stroke-width="1" />
+      <text x="100" y="244" text-anchor="middle" class="wine-bl__year wine-bl__year--lg" fill="var(--wl-accent)">{wine.vintage}</text>
+      <text x="100" y="260" text-anchor="middle" class="wine-bl__tiny" fill="var(--wl-ink)">RIBERA DEL DUERO · {wine.alcohol.toString().replace('.', ',')} % VOL.</text>
+    </svg>
+  )}
+</figure>
+
+<style>
+  .wine-bl {
+    margin: 0;
+    display: block;
+    line-height: 0;
+  }
+
+  .wine-bl svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .wine-bl--bottle {
+    max-width: 120px;
+  }
+
+  .wine-bl--label {
+    max-width: 240px;
+  }
+
+  .wine-bl__name {
+    font-family: var(--wn-font-display);
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  .wine-bl__tiny {
+    font-family: var(--wn-font-body);
+    font-weight: 600;
+    font-size: 5.2px;
+    letter-spacing: 0.22em;
+  }
+
+  .wine-bl__tiny--lg {
+    font-size: 6.6px;
+  }
+
+  .wine-bl__year {
+    font-family: var(--wn-font-display);
+    font-weight: 500;
+    font-size: 17px;
+    letter-spacing: 0.06em;
+  }
+
+  .wine-bl__year--lg {
+    font-size: 22px;
+  }
+</style>

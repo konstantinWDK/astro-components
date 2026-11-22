@@ -56,6 +56,7 @@
     'academy': isEs ? 'Lumen · Academia online' : isRu ? 'Lumen · Онлайн-академия' : 'Lumen · Online Academy',
     'fintech': isEs ? 'Cobre · Neobanco' : isRu ? 'Cobre · Необанк' : 'Cobre · Neobank',
     'law-firm': isEs ? 'Fuero · Despacho de abogados' : isRu ? 'Fuero · Юридическая фирма' : 'Fuero · Law Firm',
+    'winery': isEs ? 'Solera · Bodega y club de vino' : isRu ? 'Solera · Винодельня и клуб' : 'Solera · Winery & Wine Club',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

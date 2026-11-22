@@ -1,0 +1,181 @@
+---
+/**
+ * WineMemberLayout — Members-area shell for the "Solera" winery template.
+ * Header row with WineMemberNav (tabs on desktop, bottom bar on phones) and WineMemberTopbar.
+ *
+ * @param {string} title - Page title (suffixed with "Solera").
+ * @param {string} current - Active route key (dashboard | cellar | shipments).
+ * @param {WineRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmark <main>, nav marks the current page.
+ */
+import '../../../../styles/global.css';
+import './wine-theme.css';
+import WineMemberNav from '../../app/WineMemberNav.astro';
+import WineMemberTopbar from '../../app/WineMemberTopbar.astro';
+import { wineRoutes, wineData, type WineRoutes } from './data';
+
+type Key = 'dashboard' | 'cellar' | 'shipments';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: WineRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Solera · Área de socios: tu próxima caja, tu bodega, tus envíos y tu cuaderno de cata.',
+  current = 'dashboard',
+  routes = wineRoutes,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const member = wineData.member;
+const items = [
+  { label: 'Resumen', href: routes.dashboard },
+  { label: 'Mi bodega', href: routes.cellar },
+  { label: 'Envíos', href: routes.shipments, badge: wineData.shipments.filter((s) => s.status === 'Preparando').length },
+];
+const notifications = [
+  { title: 'Tu caja se está preparando', text: 'Inés ha elegido cuatro botellas para el envío del 5 de diciembre', time: 'hace 2 días', unread: true },
+  { title: 'Nueva añada de Alba', text: 'Ya puedes añadir Alba Brut Nature 2021 a tu próxima caja', time: 'hace 5 días', unread: true },
+  { title: 'Entrega confirmada', text: 'Tu caja de septiembre llegó a tu domicilio', time: 'hace 2 meses' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-wine" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Solera`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="wine-app-body">
+    <a href="#main-content" class="wine-app-skip">Saltar al contenido</a>
+
+    <div class="wine-app-head">
+      <div class="wine-app-head__inner">
+        <WineMemberNav items={items} currentHref={routes[current] ?? routes.dashboard} brand="Solera" homeHref={routes.home} />
+        <WineMemberTopbar
+          user={{ name: member.name, plan: member.tier, id: member.id }}
+          notifications={notifications}
+          links={[{ label: 'Web de Solera', href: routes.home }, { label: 'Reservar una visita', href: routes.visits }, { label: 'Mi plan', href: routes.shipments }]}
+          signOutHref={routes.signIn}
+          brand="Solera"
+          homeHref={routes.home}
+        />
+      </div>
+    </div>
+
+    <main id="main-content" class="wine-app-main" tabindex="-1">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .wine-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--wn-brand);
+    color: var(--wn-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .wine-app-skip:focus {
+    top: 1rem;
+  }
+
+  .wine-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--wn-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-app-head__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .wine-app-main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
+  }
+
+  .wine-app-main:focus {
+    outline: none;
+  }
+
+  :global(.wine-app-section) {
+    margin-top: var(--sp-12, 3rem);
+  }
+
+  :global(.wine-app-section h2) {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 759px) {
+    .wine-app-main {
+      padding-bottom: calc(4rem + 64px);
+    }
+  }
+
+  @media (min-width: 760px) {
+    .wine-app-main {
+      padding: 3rem 2rem 5rem;
+    }
+
+    .wine-app-head__inner {
+      padding: 0 2rem;
+    }
+  }
+</style>

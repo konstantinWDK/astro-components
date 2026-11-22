@@ -1203,4 +1203,65 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['law', 'legal', 'footer', 'contact', 'cta'],
     usage: `<LawFooter cta={{ title: 'Cuéntanos tu caso', href: '/consulta', label: 'Reservar consulta' }} />`,
   }),
+  // === WINERY ("Solera") ===
+  section({
+    slug: 'wine-hero', name: 'Wine Hero', file: 'WineHero.astro', sectionCategory: 'winery',
+    description: 'Winery hero with an oversized serif headline, topographic contour lines, key figures and a large generated bottle that tilts with the pointer.',
+    tags: ['wine', 'winery', 'hero', 'editorial', 'bottle'], featured: true,
+    usage: `<WineHero winesHref="/vinos" visitsHref="/visitas" />`,
+  }),
+  section({
+    slug: 'wine-vintage-scene', name: 'Wine Vintage Scene', file: 'WineVintageScene.astro', sectionCategory: 'winery',
+    description: 'Pinned scroll scene "a year in the vineyard": sky, hills, leaves and grapes of a drawn vineyard change continuously through pruning, budding, véraison, harvest and ageing while the text swaps in.',
+    tags: ['wine', 'winery', 'scroll', 'storytelling', 'parallax', 'svg'], featured: true,
+    usage: `<WineVintageScene stages={wineStages} />`,
+  }),
+  section({
+    slug: 'wine-collection', name: 'Wine Collection', file: 'WineCollection.astro', sectionCategory: 'winery',
+    description: 'Wine list as a large editorial index: each row opens (one at a time) into the generated bottle, tasting notes, a 1–5 profile, drinking window and a link to the club box, with a type filter.',
+    tags: ['wine', 'winery', 'list', 'accordion', 'filter', 'tasting-notes'], featured: true,
+    usage: `<WineCollection wines={wineList} clubHref="/club" />`,
+  }),
+  section({
+    slug: 'wine-terroir', name: 'Wine Terroir', file: 'WineTerroir.astro', sectionCategory: 'winery',
+    description: 'Interactive plot map of the estate: pick a parcel (list or drawing) to read variety, altitude, soil, planting year, exposure and the wines that come from it.',
+    tags: ['wine', 'winery', 'map', 'terroir', 'radio', 'svg'], featured: true,
+    usage: `<WineTerroir parcels={wineParcels} wines={wineList} />`,
+  }),
+  section({
+    slug: 'wine-story', name: 'Wine Story', file: 'WineStory.astro', sectionCategory: 'winery',
+    description: 'Family history as an editorial timeline: a pinned pull-quote from the winemaker beside five milestones with large outlined years.',
+    tags: ['wine', 'winery', 'story', 'timeline', 'quote'],
+    usage: `<WineStory milestones={wineMilestones} />`,
+  }),
+  section({
+    slug: 'wine-visits', name: 'Wine Visits', file: 'WineVisits.astro', sectionCategory: 'winery',
+    description: 'Visit booking: pick an experience, date, time slot and guests, see the total update live and send the request. Seasonal experiences warn when the date is out of season.',
+    tags: ['wine', 'winery', 'booking', 'form', 'visits', 'tasting'], featured: true,
+    usage: `<WineVisits visits={wineVisits} />`,
+  }),
+  section({
+    slug: 'wine-club', name: 'Wine Club', file: 'WineClub.astro', sectionCategory: 'winery',
+    description: 'Wine-club configurator: choose bottles, style and frequency; the crate drawn beside the form changes bottle by bottle and the price (with volume discount) updates live.',
+    tags: ['wine', 'winery', 'subscription', 'club', 'configurator', 'form'], featured: true,
+    usage: `<WineClub action="/api/club" />`,
+  }),
+  section({
+    slug: 'wine-awards', name: 'Wine Awards', file: 'WineAwards.astro', sectionCategory: 'winery',
+    description: 'Press scores as a typographic list: a huge number per row with the wine, the guide and the year. No badges or icons.',
+    tags: ['wine', 'winery', 'awards', 'scores', 'typography'],
+    usage: `<WineAwards awards={wineAwards} />`,
+  }),
+  section({
+    slug: 'wine-faq', name: 'Wine FAQ', file: 'WineFaq.astro', sectionCategory: 'winery',
+    description: 'Frequently asked questions as a native accordion with a contact line.',
+    tags: ['wine', 'winery', 'faq', 'accordion'],
+    usage: `<WineFaq faqs={wineFaqs} />`,
+  }),
+  section({
+    slug: 'wine-footer', name: 'Wine Footer', file: 'WineFooter.astro', sectionCategory: 'winery',
+    description: 'Winery footer with a closing call to action, link columns, newsletter form and an oversized outlined wordmark.',
+    tags: ['wine', 'winery', 'footer', 'newsletter', 'wordmark'],
+    usage: `<WineFooter brand="Solera" />`,
+  }),
 ];

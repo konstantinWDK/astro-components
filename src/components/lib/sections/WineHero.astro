@@ -1,0 +1,285 @@
+---
+/**
+ * WineHero — Winery hero: oversized serif headline, topographic contour lines drawn from the
+ * estate's altitude, key figures and a large generated bottle that tilts with the pointer.
+ *
+ * @param {string} winesHref - Link of the main button.
+ * @param {string} visitsHref - Link of the secondary button.
+ * @param {WineItem} wine - Wine shown on the bottle. Default "Madre".
+ * @param {Array} stats - Figures shown under the buttons ({ value, label }).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single <h1>; the bottle is described by its caption; the contour lines are
+ * decorative (aria-hidden); the tilt effect is disabled with prefers-reduced-motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from '../app/WineBottleLabel.astro';
+import { wineList, wineStats, wineBrand, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  winesHref?: string;
+  visitsHref?: string;
+  wine?: WineItem;
+  stats?: Array<{ value: string; label: string }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  winesHref = '/vinos',
+  visitsHref = '/visitas',
+  wine = wineList.find((w) => w.id === 'madre') ?? wineList[0],
+  stats = wineStats,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+// Contour lines: concentric wobbly rings (deterministic, so the HTML is stable between builds)
+const rings = Array.from({ length: 13 }, (_, i) => {
+  const base = 36 + i * 31;
+  const pts = Array.from({ length: 96 }, (_, k) => {
+    const a = (k / 96) * Math.PI * 2;
+    const r = base + Math.sin(a * 3 + i * 0.7) * (5 + i * 0.9) + Math.sin(a * 5 + i * 1.3) * (3 + i * 0.5);
+    return `${(400 + Math.cos(a) * r * 1.25).toFixed(1)},${(300 + Math.sin(a) * r).toFixed(1)}`;
+  });
+  return `M${pts.join('L')}Z`;
+});
+const uid = `wh-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-hero', classAttr]} aria-labelledby={`${uid}-title`} data-wine-hero {...rest}>
+  <svg class="wine-hero__contours" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    {rings.map((d, i) => <path d={d} fill="none" stroke="currentColor" stroke-width={i % 4 === 0 ? 1.4 : 0.7} opacity={0.18 + (i % 4 === 0 ? 0.14 : 0)} />)}
+  </svg>
+
+  <div class="wine-hero__inner">
+    <div class="wine-hero__copy">
+      <p class="wn-eyebrow">{wineBrand.place} · desde {wineBrand.founded}</p>
+      <h1 id={`${uid}-title`} class="wine-hero__title">
+        Vino que sabe a <em>altura</em>.
+      </h1>
+      <p class="wine-hero__lead">
+        Diecisiete hectáreas a {wineBrand.altitude} metros, vendimiadas a mano y criadas bajo tierra.
+        Pocas botellas, una por una, y todas con nombre de parcela.
+      </p>
+      <div class="wine-hero__actions">
+        <a class="wn-btn" href={winesHref}>Descubrir los vinos</a>
+        <a class="wn-btn wn-btn--ghost" href={visitsHref}>Visitar la bodega</a>
+      </div>
+      <dl class="wine-hero__stats">
+        {stats.map((s) => (
+          <div>
+            <dt>{s.label}</dt>
+            <dd>{s.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+
+    <figure class="wine-hero__stage">
+      <div class="wine-hero__disc" aria-hidden="true"></div>
+      <div class="wine-hero__bottle" data-wine-tilt>
+        <WineBottleLabel wine={wine} decorative />
+      </div>
+      <figcaption class="wine-hero__caption">
+        <strong>{wine.name} {wine.vintage}</strong>
+        <span>{wine.score} puntos · {wine.bottles.toLocaleString('es-ES')} botellas</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .wine-hero {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-12, 3rem) var(--sp-4, 1rem) var(--sp-16, 4rem);
+    background: radial-gradient(120% 90% at 78% 40%, rgba(var(--wn-accent-rgb), 0.16), transparent 55%), var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-hero__contours {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: var(--wn-text);
+    pointer-events: none;
+    animation: wine-hero-drift 60s ease-in-out infinite alternate;
+  }
+
+  .wine-hero__inner {
+    position: relative;
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-hero__title {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(3.2rem, 11vw, 7.4rem);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    font-variation-settings: 'opsz' 144;
+  }
+
+  .wine-hero__title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--wn-brand);
+  }
+
+  .wine-hero__lead {
+    max-width: 34rem;
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-size: 1.12rem;
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  .wine-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .wine-hero__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5, 1.25rem) var(--sp-6, 1.5rem);
+    margin: var(--sp-10, 2.5rem) 0 0;
+    padding: var(--sp-5, 1.25rem) 0 0;
+    border-top: 1px solid var(--wn-border);
+  }
+
+  .wine-hero__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.25rem;
+  }
+
+  .wine-hero__stats dt {
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--wn-text-3);
+  }
+
+  .wine-hero__stats dd {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--wn-text);
+  }
+
+  .wine-hero__stage {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    margin: 0;
+    padding-top: var(--sp-4, 1rem);
+  }
+
+  .wine-hero__disc {
+    position: absolute;
+    top: 8%;
+    width: min(78vw, 380px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(var(--wn-brand-rgb), 0.55), rgba(var(--wn-accent-rgb), 0.35) 55%, transparent 72%);
+    filter: blur(2px);
+  }
+
+  .wine-hero__bottle {
+    position: relative;
+    width: clamp(130px, 38vw, 210px);
+    perspective: 900px;
+    transform: rotateX(var(--wh-rx, 0deg)) rotateY(var(--wh-ry, 0deg));
+    transition: transform 0.25s ease-out;
+    filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.55));
+  }
+
+  .wine-hero__bottle :global(.wine-bl) {
+    max-width: none;
+  }
+
+  .wine-hero__caption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    margin-top: var(--sp-4, 1rem);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-hero__caption strong {
+    font-family: var(--wn-font-display);
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--wn-text);
+  }
+
+  @keyframes wine-hero-drift {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1.08) rotate(3deg); }
+  }
+
+  @media (min-width: 900px) {
+    .wine-hero {
+      padding-top: var(--sp-16, 4rem);
+    }
+
+    .wine-hero__inner {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      align-items: center;
+    }
+
+    .wine-hero__stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .wine-hero__bottle {
+      width: clamp(180px, 20vw, 250px);
+    }
+
+    .wine-hero__disc {
+      width: 460px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-hero__contours {
+      animation: none;
+    }
+
+    .wine-hero__bottle {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wine-hero]').forEach((root) => {
+    const bottle = root.querySelector<HTMLElement>('[data-wine-tilt]');
+    if (!bottle || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    root.addEventListener('pointermove', (e) => {
+      const r = root.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      bottle.style.setProperty('--wh-ry', `${(x * 16).toFixed(2)}deg`);
+      bottle.style.setProperty('--wh-rx', `${(-y * 10).toFixed(2)}deg`);
+    });
+    root.addEventListener('pointerleave', () => {
+      bottle.style.setProperty('--wh-ry', '0deg');
+      bottle.style.setProperty('--wh-rx', '0deg');
+    });
+  });
+</script>

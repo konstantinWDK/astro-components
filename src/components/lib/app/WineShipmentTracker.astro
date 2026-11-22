@@ -1,0 +1,380 @@
+---
+/**
+ * WineShipmentTracker — Member shipments as an expandable list. Each shipment shows its bottles,
+ * a vertical timeline, carrier and tracking number. Upcoming boxes can be postponed two weeks,
+ * skipped, or sent to another address (demo: state is kept in the page only).
+ *
+ * @param {WineShipment[]} shipments - Shipments, newest first.
+ * @param {WineItem[]} wines - Catalog, to resolve wine ids.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native <details> per shipment; actions are real buttons with visible text; every
+ * change is announced in a polite live region; the address editor is a labelled input.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from './WineBottleLabel.astro';
+import { wineShipments, wineList, wineById, type WineShipment, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  shipments?: WineShipment[];
+  wines?: WineItem[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { shipments = wineShipments, wines = wineList, class: classAttr, ...rest } = Astro.props;
+const fmt = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+const uid = `wst-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ship', classAttr, 'wine-ui']} aria-label="Envíos" data-wine-ship {...rest}>
+  <p class="wn-sr" role="status" aria-live="polite" data-wine-ship-live></p>
+
+  <ul class="wine-ship__list" role="list">
+    {shipments.map((s, i) => (
+      <li>
+        <details class="wine-ship__item" open={i === 0} data-id={s.id} data-date={s.date} data-status={s.status}>
+          <summary>
+            <span class="wine-ship__id">{s.id}</span>
+            <span class="wine-ship__date" data-ship-date>{fmt(s.date)}</span>
+            <span class="wine-ship__bottles">{s.items.reduce((n, it) => n + it.qty, 0)} botellas</span>
+            <span class="wine-ship__status" data-ship-status data-status={s.status}>{s.status}</span>
+          </summary>
+
+          <div class="wine-ship__body">
+            <ul class="wine-ship__wines" aria-label={`Botellas del envío ${s.id}`}>
+              {s.items.map((it) => {
+                const w = wineById(it.wineId, wines);
+                return w ? (
+                  <li>
+                    <span class="wine-ship__mini"><WineBottleLabel wine={w} decorative /></span>
+                    <span><strong>{it.qty} × {w.name}</strong><small>{w.vintage} · {w.type}</small></span>
+                  </li>
+                ) : null;
+              })}
+            </ul>
+
+            <ol class="wine-ship__timeline" aria-label="Seguimiento">
+              {s.events.map((e) => (
+                <li class:list={[e.done && 'is-done']}>
+                  <span>{e.title}</span>
+                  <time datetime={e.date}>{fmt(e.date)}</time>
+                  <span class="wn-sr">{e.done ? ' (hecho)' : ' (pendiente)'}</span>
+                </li>
+              ))}
+            </ol>
+
+            <dl class="wine-ship__meta">
+              <div><dt>Transportista</dt><dd>{s.carrier} · {s.tracking}</dd></div>
+              <div><dt>Dirección</dt><dd data-ship-address>{s.address}</dd></div>
+            </dl>
+
+            {(s.status === 'Preparando' || s.status === 'Pausado') && (
+              <div class="wine-ship__actions">
+                <button type="button" class="wn-btn wn-btn--ghost" data-ship-action="postpone">Aplazar dos semanas</button>
+                <button type="button" class="wn-btn wn-btn--ghost" data-ship-action="skip">{s.status === 'Pausado' ? 'Reanudar envío' : 'Saltar este envío'}</button>
+                <button type="button" class="wn-btn wn-btn--ghost" data-ship-action="address" aria-expanded="false" aria-controls={`${uid}-${s.id}-addr`}>Cambiar dirección</button>
+                <form class="wine-ship__addr" id={`${uid}-${s.id}-addr`} hidden data-ship-form>
+                  <label for={`${uid}-${s.id}-in`}>Nueva dirección</label>
+                  <input id={`${uid}-${s.id}-in`} type="text" value={s.address} autocomplete="street-address" required />
+                  <button type="submit" class="wn-btn">Guardar</button>
+                </form>
+              </div>
+            )}
+          </div>
+        </details>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .wine-ship {
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-ship__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-ship__item {
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-ship__item summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.25rem var(--sp-4, 1rem);
+    align-items: center;
+    min-height: 68px;
+    padding: var(--sp-4, 1rem) 0;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .wine-ship__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .wine-ship__id {
+    grid-column: 1;
+    font: 600 0.74rem/1 var(--wn-font-body);
+    letter-spacing: 0.16em;
+    color: var(--wn-text-3);
+  }
+
+  .wine-ship__date {
+    grid-column: 1;
+    font-family: var(--wn-font-display);
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .wine-ship__bottles {
+    grid-column: 1;
+    font-size: 0.86rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-ship__status {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    font: 600 0.74rem/1 var(--wn-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid var(--wn-border-strong);
+  }
+
+  .wine-ship__status[data-status='Preparando'] { color: var(--wn-warn); border-color: var(--wn-warn); }
+  .wine-ship__status[data-status='En ruta'] { color: var(--wn-brand); border-color: var(--wn-brand); }
+  .wine-ship__status[data-status='Entregado'] { color: var(--wn-ok); border-color: var(--wn-ok); }
+  .wine-ship__status[data-status='Pausado'] { color: var(--wn-text-3); }
+
+  .wine-ship__body {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-2, 0.5rem) 0 var(--sp-8, 2rem);
+  }
+
+  .wine-ship__wines {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .wine-ship__wines li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .wine-ship__wines strong {
+    font-family: var(--wn-font-display);
+    font-weight: 500;
+    font-size: 1.1rem;
+  }
+
+  .wine-ship__wines small {
+    display: block;
+    font-size: 0.84rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-ship__mini {
+    flex: none;
+    width: 30px;
+  }
+
+  .wine-ship__mini :global(.wine-bl) {
+    max-width: none;
+  }
+
+  .wine-ship__timeline {
+    position: relative;
+    margin: 0;
+    padding: 0 0 0 var(--sp-6, 1.5rem);
+    list-style: none;
+    border-left: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-ship__timeline li {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 var(--sp-3, 0.75rem);
+    padding: 0.4rem 0;
+    color: var(--wn-text-3);
+  }
+
+  .wine-ship__timeline li::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--sp-6, 1.5rem) - 5px);
+    top: 0.85rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--wn-bg);
+    border: 1.5px solid var(--wn-border-strong);
+  }
+
+  .wine-ship__timeline li.is-done {
+    color: var(--wn-text);
+  }
+
+  .wine-ship__timeline li.is-done::before {
+    background: var(--wn-brand);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-ship__timeline time {
+    font-size: 0.86rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-ship__meta {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+  }
+
+  .wine-ship__meta dt {
+    font: 600 0.7rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-ship__meta dd {
+    margin: 0.2rem 0 0;
+    color: var(--wn-text-2);
+  }
+
+  .wine-ship__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .wine-ship__addr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+  }
+
+  .wine-ship__addr[hidden] {
+    display: none;
+  }
+
+  .wine-ship__addr label {
+    width: 100%;
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-ship__addr input {
+    flex: 1 1 16rem;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: var(--wn-bg-raised);
+    color: var(--wn-text);
+    font: 1rem var(--wn-font-body);
+  }
+
+  @media (min-width: 900px) {
+    .wine-ship__item summary {
+      grid-template-columns: 7rem minmax(0, 1fr) 9rem 8rem;
+    }
+
+    .wine-ship__id,
+    .wine-ship__date,
+    .wine-ship__bottles,
+    .wine-ship__status {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .wine-ship__status {
+      justify-self: end;
+    }
+
+    .wine-ship__body {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-8, 2rem);
+    }
+
+    .wine-ship__meta,
+    .wine-ship__actions {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+
+<script>
+  const fmt = (d: Date) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  document.querySelectorAll<HTMLElement>('[data-wine-ship]').forEach((root) => {
+    const live = root.querySelector<HTMLElement>('[data-wine-ship-live]');
+    const say = (t: string) => { if (live) live.textContent = t; };
+
+    root.querySelectorAll<HTMLDetailsElement>('.wine-ship__item').forEach((item) => {
+      const id = item.dataset.id ?? '';
+      const status = item.querySelector<HTMLElement>('[data-ship-status]');
+      const dateEl = item.querySelector<HTMLElement>('[data-ship-date]');
+      const skipBtn = item.querySelector<HTMLButtonElement>('[data-ship-action="skip"]');
+      const form = item.querySelector<HTMLFormElement>('[data-ship-form]');
+      const addrBtn = item.querySelector<HTMLButtonElement>('[data-ship-action="address"]');
+      let date = new Date(`${item.dataset.date}T12:00:00`);
+
+      item.querySelector('[data-ship-action="postpone"]')?.addEventListener('click', () => {
+        date = new Date(date.getTime() + 14 * 86400000);
+        if (dateEl) dateEl.textContent = fmt(date);
+        say(`Envío ${id} aplazado al ${fmt(date)}.`);
+      });
+
+      skipBtn?.addEventListener('click', () => {
+        const paused = status?.dataset.status === 'Pausado';
+        const next = paused ? 'Preparando' : 'Pausado';
+        if (status) { status.dataset.status = next; status.textContent = next; }
+        skipBtn.textContent = paused ? 'Saltar este envío' : 'Reanudar envío';
+        say(paused ? `Envío ${id} reanudado.` : `Envío ${id} saltado. No se te cobrará.`);
+      });
+
+      addrBtn?.addEventListener('click', () => {
+        if (!form) return;
+        const open = form.hidden;
+        form.hidden = !open;
+        addrBtn.setAttribute('aria-expanded', String(open));
+        if (open) form.querySelector('input')?.focus();
+      });
+
+      form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = form.querySelector<HTMLInputElement>('input');
+        if (!input || !input.value.trim()) return;
+        const target = item.querySelector('[data-ship-address]');
+        if (target) target.textContent = input.value.trim();
+        form.hidden = true;
+        addrBtn?.setAttribute('aria-expanded', 'false');
+        addrBtn?.focus();
+        say(`Dirección del envío ${id} actualizada.`);
+      });
+    });
+  });
+</script>

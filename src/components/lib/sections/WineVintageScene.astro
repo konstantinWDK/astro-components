@@ -1,0 +1,464 @@
+---
+/**
+ * WineVintageScene — "A year in the vineyard": a pinned scroll scene where the sky, hills, leaves
+ * and grapes of a drawn vineyard change continuously through the five stages of the vintage
+ * (pruning, budding, véraison, harvest, ageing) while the text of each stage swaps in.
+ *
+ * @param {WineStage[]} stages - The five stages (id, month, title, text, fact).
+ * @param {string} title - Section heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: without JavaScript every stage is shown as a normal stacked list; with it, a
+ * labelled stage index (buttons with aria-current) jumps between stages, the text is the real
+ * content (the drawing is aria-hidden) and prefers-reduced-motion removes the fade transitions.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineStages, type WineStage } from '../templates/winery/data';
+
+interface OwnProps {
+  stages?: WineStage[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { stages = wineStages, title = 'Un año entero en el viñedo', class: classAttr, ...rest } = Astro.props;
+
+// One palette per stage; the script interpolates between neighbours while you scroll.
+const palettes = [
+  { top: '#1c2531', bot: '#8d9aa6', h1: '#4a5057', h2: '#363433', h3: '#241c17', leaf: '#6b5646', grape: '#3b1f33', sun: '#f4e5c6', soil: '#4a3a2c', leafS: 0.12, grapeO: 0, sunX: 0.16, sunY: 400 },
+  { top: '#2b4c60', bot: '#dbe5cb', h1: '#6f8d63', h2: '#53733f', h3: '#34502d', leaf: '#8dbb52', grape: '#4d6a2c', sun: '#fff0b8', soil: '#4a3a2c', leafS: 0.55, grapeO: 0, sunX: 0.32, sunY: 250 },
+  { top: '#1d5d8c', bot: '#f6dca2', h1: '#b09554', h2: '#7f8038', h3: '#4f6a2a', leaf: '#5d9a34', grape: '#5b2c58', sun: '#fff7cc', soil: '#5a4630', leafS: 1, grapeO: 0.85, sunX: 0.5, sunY: 130 },
+  { top: '#6c3a2b', bot: '#f2a65b', h1: '#b8702f', h2: '#8c4c26', h3: '#5d311f', leaf: '#d68a2e', grape: '#3a1130', sun: '#ffd18b', soil: '#4a2c1c', leafS: 0.92, grapeO: 1, sunX: 0.72, sunY: 300 },
+  { top: '#0a0912', bot: '#3b2531', h1: '#211a24', h2: '#171118', h3: '#0f0b10', leaf: '#5a3a2a', grape: '#2a0e22', sun: '#e8edf8', soil: '#1d1410', leafS: 0.16, grapeO: 0, sunX: 0.84, sunY: 190 },
+];
+
+// Deterministic pseudo-random numbers keep the markup identical between builds
+let seed = 7;
+const rnd = () => {
+  seed = (seed * 16807) % 2147483647;
+  return (seed - 1) / 2147483646;
+};
+
+const VX = 600;
+const VY = 452;
+const rows = [-420, -170, 90, 330, 570, 840, 1100, 1380].map((bx) => bx);
+const plants: Array<{ x: number; y: number; s: number; clusters: Array<[number, number]> }> = [];
+rows.forEach((bx) => {
+  for (let k = 0; k < 7; k++) {
+    const t = 0.16 + (k / 6) * 0.84;
+    const e = t * t;
+    const x = VX + (bx - VX) * e;
+    const y = VY + (700 - VY) * e + 4;
+    if (x < -40 || x > 1240) continue;
+    plants.push({ x, y, s: 0.35 + e * 1.9, clusters: [[-8 + rnd() * 4, -10], [4 + rnd() * 5, -6], [-1 + rnd() * 3, -2]] });
+  }
+});
+plants.sort((a, b) => a.y - b.y);
+
+const uid = `wvs-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section
+  class:list={['wine-ui', 'wine-scene', classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-wine-scene
+  data-palettes={JSON.stringify(palettes)}
+  style={`--n:${stages.length}`}
+  {...rest}
+>
+  <div class="wine-scene__track">
+    <div class="wine-scene__sticky">
+      <svg class="wine-scene__art" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id={`${uid}-sky`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" style="stop-color: var(--sc-top)" />
+            <stop offset="1" style="stop-color: var(--sc-bot)" />
+          </linearGradient>
+          <radialGradient id={`${uid}-glow`}>
+            <stop offset="0" style="stop-color: var(--sc-sun)" stop-opacity="0.55" />
+            <stop offset="1" style="stop-color: var(--sc-sun)" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="1200" height="700" fill={`url(#${uid}-sky)`} />
+        <g class="wine-scene__sun">
+          <circle r="190" fill={`url(#${uid}-glow)`} />
+          <circle r="44" style="fill: var(--sc-sun)" />
+        </g>
+        <path d="M0 400 C150 330 260 380 420 340 C560 305 700 380 860 330 C1000 290 1100 340 1200 320 V700 H0Z" style="fill: var(--sc-h1)" />
+        <path d="M0 450 C180 400 300 440 480 410 C640 382 760 440 920 410 C1050 388 1130 420 1200 410 V700 H0Z" style="fill: var(--sc-h2)" />
+        <path d="M0 470 C200 440 400 470 600 448 C800 428 1000 460 1200 440 V700 H0Z" style="fill: var(--sc-h3)" />
+        <g class="wine-scene__rows" style="stroke: var(--sc-soil)" stroke-width="1.2" opacity="0.55" fill="none">
+          {rows.map((bx) => <path d={`M${VX} ${VY}L${bx} 700`} />)}
+        </g>
+        {plants.map((p) => (
+          <g class="wine-scene__vine" style={`transform: translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${p.s.toFixed(2)})`}>
+            <path d="M0 0 L0 -16" style="stroke: var(--sc-soil)" stroke-width="3" stroke-linecap="round" />
+            <g class="wine-scene__canopy">
+              <circle cx="-9" cy="-20" r="11" style="fill: var(--sc-leaf)" />
+              <circle cx="9" cy="-22" r="12" style="fill: var(--sc-leaf)" />
+              <circle cx="0" cy="-30" r="13" style="fill: var(--sc-leaf)" />
+            </g>
+            <g class="wine-scene__grapes">
+              {p.clusters.map(([cx, cy]) => <circle cx={cx} cy={cy} r="3.4" style="fill: var(--sc-grape)" />)}
+            </g>
+          </g>
+        ))}
+      </svg>
+
+      <div class="wine-scene__head">
+        <p class="wn-eyebrow">La añada</p>
+        <h2 id={`${uid}-title`} class="wine-scene__title">{title}</h2>
+      </div>
+
+      <ol class="wine-scene__rail" aria-label="Etapas de la añada">
+        {stages.map((s, i) => (
+          <li>
+            <button type="button" class="wine-scene__stop" data-wine-stop={i} aria-current={i === 0 ? 'step' : undefined}>
+              <span class="wine-scene__stop-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              {s.title}
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <div class="wine-scene__copy">
+        {stages.map((s, i) => (
+          <article class:list={['wine-scene__panel', i === 0 && 'is-active']} data-wine-panel={i}>
+            <p class="wine-scene__month">{s.month}</p>
+            <h3 class="wine-scene__stage-title">{s.title}</h3>
+            <p class="wine-scene__text">{s.text}</p>
+            <p class="wine-scene__fact">{s.fact}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .wine-scene {
+    position: relative;
+    background: var(--wn-bg);
+    color: #f7ecd8;
+    font-family: var(--wn-font-body);
+
+    /* Defaults (stage 1) so the drawing is right before the script runs */
+    --sc-top: #1c2531;
+    --sc-bot: #8d9aa6;
+    --sc-h1: #4a5057;
+    --sc-h2: #363433;
+    --sc-h3: #241c17;
+    --sc-leaf: #6b5646;
+    --sc-grape: #3b1f33;
+    --sc-sun: #f4e5c6;
+    --sc-soil: #4a3a2c;
+    --sc-leaf-s: 0.12;
+    --sc-grape-o: 0;
+  }
+
+  .wine-scene__track {
+    position: relative;
+  }
+
+  .wine-scene__sticky {
+    position: relative;
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding: calc(var(--sp-10, 2.5rem) + 68px) var(--sp-4, 1rem) var(--sp-10, 2.5rem);
+    min-height: 100svh;
+    box-sizing: border-box;
+    overflow: hidden;
+    align-content: space-between;
+  }
+
+  .wine-scene__art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .wine-scene__sun {
+    transform: translate(var(--sc-sun-x, 190px), var(--sc-sun-y, 400px));
+  }
+
+  .wine-scene__canopy {
+    transform: scale(var(--sc-leaf-s));
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+  }
+
+  .wine-scene__grapes {
+    opacity: var(--sc-grape-o);
+  }
+
+  .wine-scene__head,
+  .wine-scene__rail,
+  .wine-scene__copy {
+    position: relative;
+  }
+
+  .wine-scene__head .wn-eyebrow {
+    color: #ffe3a8;
+  }
+
+  .wine-scene__title {
+    margin: 0;
+    max-width: 14ch;
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 7vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  .wine-scene__rail {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .wine-scene__rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wine-scene__stop {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 0;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.28);
+    background: rgba(12, 8, 6, 0.38);
+    color: rgba(255, 255, 255, 0.82);
+    font: 600 0.82rem/1 var(--wn-font-body);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+
+  .wine-scene__stop-n {
+    font-family: var(--wn-font-display);
+    font-size: 0.9rem;
+    opacity: 0.7;
+  }
+
+  .wine-scene__stop:hover {
+    color: #fff;
+  }
+
+  .wine-scene__stop[aria-current='step'] {
+    border-bottom-color: #ffe3a8;
+    background: rgba(12, 8, 6, 0.6);
+    color: #fff;
+  }
+
+  .wine-scene__copy {
+    display: grid;
+    max-width: 560px;
+  }
+
+  .wine-scene__panel {
+    grid-area: 1 / 1;
+    padding: var(--sp-5, 1.25rem);
+    background: rgba(12, 8, 6, 0.68);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-left: 3px solid #ffe3a8;
+    transition: opacity 0.45s ease, transform 0.45s ease, visibility 0.45s;
+  }
+
+  .wine-scene__month {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffe3a8;
+  }
+
+  .wine-scene__stage-title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--wn-font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1;
+  }
+
+  .wine-scene__text {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-size: 1.04rem;
+    line-height: 1.65;
+    color: #f2e6d0;
+  }
+
+  .wine-scene__fact {
+    margin: 0;
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #ffe3a8;
+  }
+
+  /* Without JavaScript: the drawing is a banner and every stage is listed */
+  .wine-scene:not(.is-live) .wine-scene__sticky {
+    min-height: 0;
+    gap: var(--sp-6, 1.5rem);
+    padding-bottom: var(--sp-12, 3rem);
+  }
+
+  .wine-scene:not(.is-live) .wine-scene__copy {
+    gap: var(--sp-8, 2rem);
+  }
+
+  .wine-scene:not(.is-live) .wine-scene__panel {
+    grid-area: auto;
+  }
+
+  .wine-scene:not(.is-live) .wine-scene__rail {
+    display: none;
+  }
+
+  /* With JavaScript: pinned scene, one tall track per stage */
+  .wine-scene.is-live .wine-scene__track {
+    height: calc(var(--n) * 90svh + 40svh);
+  }
+
+  .wine-scene.is-live .wine-scene__sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+  }
+
+  .wine-scene.is-live .wine-scene__panel {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(14px);
+  }
+
+  .wine-scene.is-live .wine-scene__panel.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  @media (min-width: 900px) {
+    .wine-scene__sticky {
+      padding: calc(var(--sp-12, 3rem) + 68px) var(--sp-10, 2.5rem) var(--sp-12, 3rem);
+    }
+
+    .wine-scene__head {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+    }
+
+    .wine-scene__rail {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      overflow: visible;
+    }
+
+    .wine-scene__stop {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .wine-scene__copy {
+      width: min(1240px, 100%);
+      max-width: none;
+      margin: 0 auto;
+    }
+
+    .wine-scene__panel {
+      max-width: 540px;
+      padding: var(--sp-6, 1.5rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-scene__panel {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const hex = (h: string): number[] => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a: string, b: string, t: number): string => {
+    const x = hex(a);
+    const y = hex(b);
+    return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(',')})`;
+  };
+  const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+  const smooth = (t: number): number => t * t * (3 - 2 * t);
+
+  type Palette = Record<string, string | number>;
+
+  document.querySelectorAll<HTMLElement>('[data-wine-scene]').forEach((root) => {
+    const palettes: Palette[] = JSON.parse(root.dataset.palettes ?? '[]');
+    const n = palettes.length;
+    const track = root.querySelector<HTMLElement>('.wine-scene__track');
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-wine-panel]'));
+    const stops = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-wine-stop]'));
+    if (!track || n < 2) return;
+
+    root.classList.add('is-live');
+    let active = 0;
+    let frame = 0;
+
+    const paint = () => {
+      frame = 0;
+      const rect = track.getBoundingClientRect();
+      const span = Math.max(1, rect.height - window.innerHeight);
+      const p = Math.min(1, Math.max(0, -rect.top / span));
+      const t = p * (n - 1);
+      const i = Math.min(n - 2, Math.floor(t));
+      const f = smooth(Math.min(1, Math.max(0, (t - i - 0.28) / 0.44)));
+      const a = palettes[i];
+      const b = palettes[i + 1];
+      const s = root.style;
+      (['top', 'bot', 'h1', 'h2', 'h3', 'leaf', 'grape', 'sun', 'soil'] as const).forEach((k) => {
+        s.setProperty(`--sc-${k}`, mix(a[k] as string, b[k] as string, f));
+      });
+      s.setProperty('--sc-leaf-s', lerp(a.leafS as number, b.leafS as number, f).toFixed(3));
+      s.setProperty('--sc-grape-o', lerp(a.grapeO as number, b.grapeO as number, f).toFixed(3));
+      s.setProperty('--sc-sun-x', `${lerp(a.sunX as number, b.sunX as number, f) * 1200}px`);
+      s.setProperty('--sc-sun-y', `${lerp(a.sunY as number, b.sunY as number, f)}px`);
+
+      const now = Math.min(n - 1, Math.round(t));
+      if (now !== active) {
+        active = now;
+        panels.forEach((el, k) => el.classList.toggle('is-active', k === now));
+        stops.forEach((el, k) => (k === now ? el.setAttribute('aria-current', 'step') : el.removeAttribute('aria-current')));
+      }
+    };
+
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
+
+    stops.forEach((btn, k) => {
+      btn.addEventListener('click', () => {
+        const top = track.getBoundingClientRect().top + window.scrollY;
+        const span = Math.max(1, track.offsetHeight - window.innerHeight);
+        window.scrollTo({ top: top + (k / (n - 1)) * span + 2, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      });
+    });
+
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request);
+    paint();
+  });
+</script>

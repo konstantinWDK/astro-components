@@ -1,0 +1,134 @@
+---
+/**
+ * WineFaq — Frequently asked questions as a native accordion with a contact line.
+ *
+ * @param {WineFaq[]} faqs - Questions and answers.
+ * @param {string} title - Section heading.
+ * @param {string} contactText - Line under the list.
+ * @param {string} contactHref - Link of the contact line.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: native <details>/<summary>; summary targets are 60px tall with a visible focus ring.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineFaqs, type WineFaq } from '../templates/winery/data';
+
+interface OwnProps {
+  faqs?: WineFaq[];
+  title?: string;
+  contactText?: string;
+  contactHref?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  faqs = wineFaqs,
+  title = 'Antes de venir',
+  contactText = '¿Otra duda? Escríbenos y te respondemos en el día.',
+  contactHref = 'mailto:bodega@solera.example',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `wf-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-faq', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="wine-faq__inner">
+    <Heading id={`${uid}-title`} class="wine-faq__title">{title}</Heading>
+    <div class="wine-faq__list">
+      {faqs.map((f) => (
+        <details class="wine-faq__item">
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </div>
+    <p class="wine-faq__contact">{contactText} <a class="wn-link" href={contactHref}>Escribir</a></p>
+  </div>
+</section>
+
+<style>
+  .wine-faq {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-faq__inner {
+    max-width: 840px;
+    margin: 0 auto;
+  }
+
+  .wine-faq__title {
+    margin: 0 0 var(--sp-6, 1.5rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .wine-faq__list {
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-faq__item {
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    min-height: 60px;
+    padding: var(--sp-3, 0.75rem) 0;
+    font-family: var(--wn-font-display);
+    font-size: 1.2rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .wine-faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .wine-faq__item summary::after {
+    content: '+';
+    flex: none;
+    font-family: var(--wn-font-body);
+    font-size: 1.5rem;
+    color: var(--wn-brand);
+    transition: transform 0.25s ease;
+  }
+
+  .wine-faq__item[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .wine-faq__item p {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    max-width: 60ch;
+    line-height: 1.65;
+    color: var(--wn-text-2);
+  }
+
+  .wine-faq__contact {
+    margin: var(--sp-6, 1.5rem) 0 0;
+    color: var(--wn-text-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-faq__item summary::after {
+      transition: none;
+    }
+  }
+</style>

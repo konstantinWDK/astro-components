@@ -1,0 +1,536 @@
+---
+/**
+ * WineVisits — Visit booking: pick an experience, a date, a time slot and the number of guests, see
+ * the total update live and send the request. Experiences that only run in some months (the harvest
+ * day) warn when the chosen date falls outside them.
+ *
+ * @param {WineVisit[]} visits - Experiences offered.
+ * @param {string} action - Backend endpoint for the form. Empty shows a demo confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: radio groups with legends, a labelled date input, +/- steppers next to a real number
+ * field, errors in a role="alert" region, a polite live summary and 48px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineVisits, type WineVisit } from '../templates/winery/data';
+
+interface OwnProps {
+  visits?: WineVisit[];
+  action?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { visits = wineVisits, action = '', title = 'Reserva tu visita', headingLevel = 'h2', class: classAttr, ...rest } = Astro.props;
+
+const Heading = headingLevel;
+const uid = `wv-${Math.random().toString(36).slice(2, 8)}`;
+const first = visits[0];
+---
+
+<section class:list={['wine-ui', 'wine-visit', classAttr]} aria-labelledby={`${uid}-title`} data-wine-visit data-visits={JSON.stringify(visits.map((v) => ({ id: v.id, name: v.name, price: v.price, max: v.maxGuests, months: v.months })))} {...rest}>
+  <div class="wine-visit__inner">
+    <header class="wine-visit__head">
+      <p class="wn-eyebrow">Visitas</p>
+      <Heading id={`${uid}-title`} class="wine-visit__title">{title}</Heading>
+      <p class="wine-visit__lead">Grupos de hasta doce personas, siempre con alguien de la casa. Eliges, reservas y te escribimos para confirmar.</p>
+    </header>
+
+    <form class="wine-visit__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-wine-visit-form>
+      <fieldset class="wine-visit__field">
+        <legend>1. Elige la experiencia</legend>
+        <div class="wine-visit__opts">
+          {visits.map((v, i) => (
+            <label class="wine-visit__opt">
+              <input type="radio" name="visit" value={v.id} checked={i === 0} />
+              <span class="wine-visit__opt-body">
+                <span class="wine-visit__opt-name">{v.name}</span>
+                <span class="wine-visit__opt-sum">{v.summary}</span>
+                <span class="wine-visit__opt-meta">{v.duration} · {v.price} € por persona · hasta {v.maxGuests} personas</span>
+                <span class="wine-visit__opt-inc">{v.includes.join(' · ')}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div class="wine-visit__row">
+        <div class="wine-visit__field">
+          <label for={`${uid}-date`}>2. Fecha</label>
+          <input id={`${uid}-date`} type="date" name="date" required />
+        </div>
+
+        <fieldset class="wine-visit__field">
+          <legend>3. Hora</legend>
+          {visits.map((v, vi) => (
+            <div class="wine-visit__slots" data-slots={v.id} hidden={vi !== 0}>
+              {v.slots.map((t, i) => (
+                <label class="wine-visit__slot">
+                  <input type="radio" name="slot" value={t} checked={vi === 0 && i === 0} disabled={vi !== 0} />
+                  <span>{t}</span>
+                </label>
+              ))}
+            </div>
+          ))}
+        </fieldset>
+      </div>
+
+      <div class="wine-visit__row">
+        <div class="wine-visit__field">
+          <label for={`${uid}-guests`}>4. Personas</label>
+          <div class="wine-visit__stepper">
+            <button type="button" class="wn-btn wn-btn--ghost" data-step="-1" aria-label="Una persona menos">−</button>
+            <input id={`${uid}-guests`} type="number" name="guests" min="1" max={first.maxGuests} value="2" inputmode="numeric" />
+            <button type="button" class="wn-btn wn-btn--ghost" data-step="1" aria-label="Una persona más">+</button>
+          </div>
+        </div>
+
+        <div class="wine-visit__field">
+          <label for={`${uid}-name`}>5. Tu nombre</label>
+          <input id={`${uid}-name`} type="text" name="name" required autocomplete="name" />
+        </div>
+
+        <div class="wine-visit__field">
+          <label for={`${uid}-email`}>Correo electrónico</label>
+          <input id={`${uid}-email`} type="email" name="email" required autocomplete="email" />
+        </div>
+      </div>
+
+      <p class="wine-visit__error" role="alert" data-wine-visit-error></p>
+
+      <aside class="wine-visit__summary" aria-label="Resumen de la reserva">
+        <p class="wine-visit__total" aria-live="polite">
+          <span>Total</span>
+          <strong data-wine-visit-total>{first.price * 2} €</strong>
+        </p>
+        <p class="wine-visit__recap" aria-live="polite" data-wine-visit-recap>{first.name} · 2 personas</p>
+        <button type="submit" class="wn-btn">Solicitar reserva</button>
+      </aside>
+
+      <div class="wine-visit__done" role="status" aria-live="polite" data-wine-visit-done hidden>
+        <h3>Solicitud recibida</h3>
+        <p data-wine-visit-done-text></p>
+        <button type="button" class="wn-btn wn-btn--ghost" data-wine-visit-reset>Hacer otra reserva</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .wine-visit {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-bg-raised);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-visit__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .wine-visit__title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 7vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  .wine-visit__lead {
+    max-width: 48ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  .wine-visit__form {
+    position: relative;
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .wine-visit__field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .wine-visit__field legend,
+  .wine-visit__field > label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    padding: 0;
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-visit input[type='text'],
+  .wine-visit input[type='email'],
+  .wine-visit input[type='date'],
+  .wine-visit input[type='number'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font: 1rem var(--wn-font-body);
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] .wine-visit input {
+    color-scheme: light;
+  }
+
+  .wine-visit__opts {
+    display: grid;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-visit__opt {
+    position: relative;
+    display: block;
+    border-bottom: 1px solid var(--wn-border);
+    cursor: pointer;
+  }
+
+  .wine-visit__opt input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .wine-visit__opt-body {
+    display: grid;
+    gap: 0.3rem;
+    padding: var(--sp-4, 1rem) var(--sp-3, 0.75rem) var(--sp-4, 1rem) var(--sp-8, 2rem);
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .wine-visit__opt-body::before {
+    content: '';
+    position: absolute;
+    left: var(--sp-3, 0.75rem);
+    top: 1.3rem;
+    width: 12px;
+    height: 12px;
+    border: 1.5px solid var(--wn-border-strong);
+    border-radius: 50%;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .wine-visit__opt:hover .wine-visit__opt-body {
+    background: rgba(var(--wn-brand-rgb), 0.06);
+  }
+
+  .wine-visit__opt input:checked + .wine-visit__opt-body {
+    background: rgba(var(--wn-brand-rgb), 0.1);
+  }
+
+  .wine-visit__opt input:checked + .wine-visit__opt-body::before {
+    background: var(--wn-brand);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-visit__opt input:focus-visible + .wine-visit__opt-body {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: -2px;
+  }
+
+  .wine-visit__opt-name {
+    font-family: var(--wn-font-display);
+    font-size: 1.4rem;
+    line-height: 1.15;
+  }
+
+  .wine-visit__opt-sum {
+    line-height: 1.55;
+    color: var(--wn-text-2);
+  }
+
+  .wine-visit__opt-meta {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--wn-brand);
+  }
+
+  .wine-visit__opt-inc {
+    font-size: 0.84rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-visit__row {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .wine-visit__slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .wine-visit__slot {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .wine-visit__slot input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .wine-visit__slot span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 76px;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    font-family: var(--wn-font-display);
+    font-size: 1.15rem;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+
+  .wine-visit__slot:hover span {
+    border-color: var(--wn-brand);
+  }
+
+  .wine-visit__slot input:checked + span {
+    background: var(--wn-brand);
+    border-color: var(--wn-brand);
+    color: var(--wn-on-brand);
+  }
+
+  .wine-visit__slot input:focus-visible + span {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: 3px;
+  }
+
+  .wine-visit__stepper {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .wine-visit__stepper .wn-btn {
+    min-width: 48px;
+    padding: 0;
+    font-size: 1.3rem;
+  }
+
+  .wine-visit__stepper input {
+    text-align: center;
+  }
+
+  .wine-visit__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--wn-bad);
+  }
+
+  .wine-visit__summary {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--wn-border-strong);
+    background: var(--wn-surface);
+  }
+
+  .wine-visit__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0;
+    font: 600 0.74rem/1 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-visit__total strong {
+    font-family: var(--wn-font-display);
+    font-size: 2.6rem;
+    font-weight: 300;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--wn-text);
+  }
+
+  .wine-visit__recap {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--wn-text-2);
+  }
+
+  .wine-visit__done {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+    padding: var(--sp-8, 2rem);
+    background: var(--wn-bg-raised);
+    border: 1px solid var(--wn-brand);
+  }
+
+  .wine-visit__done[hidden] {
+    display: none;
+  }
+
+  .wine-visit__done h3 {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--wn-brand);
+  }
+
+  .wine-visit__done p {
+    max-width: 44ch;
+    margin: 0;
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  @media (min-width: 800px) {
+    .wine-visit__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .wine-visit__row:last-of-type {
+      grid-template-columns: 220px 1fr 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-visit__opt-body,
+    .wine-visit__slot span {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  type V = { id: string; name: string; price: number; max: number; months: number[] };
+  const money = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-wine-visit]').forEach((root) => {
+    const visits: V[] = JSON.parse(root.dataset.visits ?? '[]');
+    const form = root.querySelector<HTMLFormElement>('[data-wine-visit-form]');
+    if (!form) return;
+    const date = form.elements.namedItem('date') as HTMLInputElement;
+    const guests = form.elements.namedItem('guests') as HTMLInputElement;
+    const total = root.querySelector<HTMLElement>('[data-wine-visit-total]');
+    const recap = root.querySelector<HTMLElement>('[data-wine-visit-recap]');
+    const error = root.querySelector<HTMLElement>('[data-wine-visit-error]');
+    const done = root.querySelector<HTMLElement>('[data-wine-visit-done]');
+    const doneText = root.querySelector<HTMLElement>('[data-wine-visit-done-text]');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+    const now = new Date();
+    date.min = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const current = (): V => {
+      const id = (form.querySelector<HTMLInputElement>('input[name="visit"]:checked'))?.value;
+      return visits.find((v) => v.id === id) ?? visits[0];
+    };
+    const fmtDate = (v: string) => (v ? new Date(`${v}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : 'sin fecha');
+
+    const update = () => {
+      const v = current();
+      root.querySelectorAll<HTMLElement>('[data-slots]').forEach((g) => {
+        const on = g.dataset.slots === v.id;
+        g.hidden = !on;
+        g.querySelectorAll<HTMLInputElement>('input').forEach((i) => (i.disabled = !on));
+        if (on && !g.querySelector('input:checked')) g.querySelector<HTMLInputElement>('input')?.setAttribute('checked', '');
+        if (on && !g.querySelector<HTMLInputElement>('input:checked')) {
+          const first = g.querySelector<HTMLInputElement>('input');
+          if (first) first.checked = true;
+        }
+      });
+      guests.max = String(v.max);
+      let n = Math.round(Number(guests.value) || 1);
+      n = Math.min(v.max, Math.max(1, n));
+      guests.value = String(n);
+
+      const slot = form.querySelector<HTMLInputElement>('.wine-visit__slots:not([hidden]) input:checked')?.value ?? '';
+      let message = '';
+      if (date.value) {
+        const month = Number(date.value.slice(5, 7));
+        if (!v.months.includes(month)) message = `“${v.name}” solo se ofrece en septiembre y octubre. Elige otra fecha o experiencia.`;
+        else if (date.min && date.value < date.min) message = 'Elige una fecha a partir de hoy.';
+      }
+      if (error) error.textContent = message;
+      if (submit) submit.disabled = Boolean(message);
+      if (total) total.textContent = money(v.price * n);
+      if (recap) recap.textContent = `${v.name} · ${n} ${n === 1 ? 'persona' : 'personas'} · ${fmtDate(date.value)}${slot ? `, ${slot}` : ''}`;
+    };
+
+    form.addEventListener('change', update);
+    form.addEventListener('input', update);
+    form.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) =>
+      b.addEventListener('click', () => {
+        guests.value = String((Number(guests.value) || 1) + Number(b.dataset.step));
+        update();
+      }),
+    );
+
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      update();
+      if (!date.value) {
+        if (error) error.textContent = 'Elige una fecha para la visita.';
+        date.focus();
+        return;
+      }
+      const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
+      const email = (form.elements.namedItem('email') as HTMLInputElement) as HTMLInputElement;
+      if (!name || !email.validity.valid || !email.value) {
+        if (error) error.textContent = 'Escribe tu nombre y un correo válido para confirmarte la visita.';
+        (name ? email : (form.elements.namedItem('name') as HTMLInputElement)).focus();
+        return;
+      }
+      if (submit?.disabled) return;
+      if (doneText) doneText.textContent = `${recap?.textContent ?? ''}. Te escribiremos a ${email.value} para confirmar (demostración).`;
+      if (done) {
+        done.hidden = false;
+        done.querySelector<HTMLButtonElement>('button')?.focus();
+      }
+    });
+
+    root.querySelector('[data-wine-visit-reset]')?.addEventListener('click', () => {
+      if (done) done.hidden = true;
+      form.reset();
+      update();
+    });
+
+    update();
+  });
+</script>

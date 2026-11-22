@@ -161,6 +161,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 21h12M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></svg>`,
   },
   {
+    id: 'winery',
+    name: 'Winery',
+    description: 'Sections for wineries and artisan producers: hero with a tilting bottle, a pinned scroll scene of the vintage, wine list as an editorial index, interactive plot map, family story, visit booking, wine-club configurator, press scores, FAQ and footer.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 7a5 5 0 0 1-10 0zM12 15v6M8 21h8"/></svg>`,
+  },
+  {
     id: 'logos',
     name: 'Logos & Partners',
     description: 'Client logo clouds, partner grids, and brand badges.',

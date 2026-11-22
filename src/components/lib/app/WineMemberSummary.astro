@@ -1,0 +1,298 @@
+---
+/**
+ * WineMemberSummary — Overview of the members area: next box with a live countdown and its bottles,
+ * the member's numbers (bottles in the cellar, average rating, credit, years as a member) and a
+ * suggestion of what to open this month.
+ *
+ * @param {WineMember} member - Signed-in member.
+ * @param {WineShipment} shipment - Next shipment.
+ * @param {WineCellarBottle[]} cellar - Bottles the member owns.
+ * @param {WineItem[]} wines - Catalog, to resolve wine ids.
+ * @param {string} shipmentsHref - Link to the shipments page.
+ * @param {string} cellarHref - Link to the cellar page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the countdown has a text equivalent (full date), figures are a <dl>, bottle
+ * illustrations are decorative; targets are 48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from './WineBottleLabel.astro';
+import {
+  wineMember,
+  wineShipments,
+  wineCellar,
+  wineList,
+  wineById,
+  wineMoney,
+  type WineMember,
+  type WineShipment,
+  type WineCellarBottle,
+  type WineItem,
+} from '../templates/winery/data';
+
+interface OwnProps {
+  member?: WineMember;
+  shipment?: WineShipment;
+  cellar?: WineCellarBottle[];
+  wines?: WineItem[];
+  shipmentsHref?: string;
+  cellarHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  member = wineMember,
+  shipment = wineShipments[0],
+  cellar = wineCellar,
+  wines = wineList,
+  shipmentsHref = '/socios/envios',
+  cellarHref = '/socios/bodega',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const date = new Date(`${shipment.date}T12:00:00`);
+const day = date.getDate();
+const month = date.toLocaleDateString('es-ES', { month: 'long' });
+const full = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const year = new Date().getFullYear();
+const owned = cellar.reduce((n, b) => n + b.qty, 0);
+const rated = cellar.filter((b) => b.rating);
+const avg = rated.length ? (rated.reduce((n, b) => n + (b.rating ?? 0), 0) / rated.length).toFixed(1).replace('.', ',') : '–';
+const years = Math.max(1, year - new Date(member.since).getFullYear());
+const suggestion = cellar
+  .map((b) => ({ b, w: wineById(b.wineId, wines) }))
+  .find((x) => x.w && x.b.qty > 0 && x.w.drinkFrom <= year && x.w.drinkTo >= year);
+const firstName = member.name.split(' ')[0];
+const uid = `wms-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-sum', classAttr]} aria-labelledby={`${uid}-title`} data-wine-sum {...rest}>
+  <article class="wine-sum__box">
+    <p class="wn-eyebrow">Tu próxima caja</p>
+    <h2 id={`${uid}-title`} class="wn-sr">Próximo envío</h2>
+    <div class="wine-sum__date">
+      <span class="wine-sum__day" aria-hidden="true">{day}</span>
+      <span class="wine-sum__month" aria-hidden="true">{month}</span>
+      <time datetime={shipment.date} class="wn-sr">{full}</time>
+    </div>
+    <p class="wine-sum__count" data-wine-sum-count data-date={shipment.date}>{full}</p>
+
+    <ul class="wine-sum__items" aria-label="Botellas de la caja">
+      {shipment.items.map((it) => {
+        const w = wineById(it.wineId, wines);
+        return w ? (
+          <li>
+            <span class="wine-sum__mini"><WineBottleLabel wine={w} decorative /></span>
+            <span><strong>{it.qty} × {w.name}</strong><small>{w.variety} · {w.vintage}</small></span>
+          </li>
+        ) : null;
+      })}
+    </ul>
+
+    <div class="wine-sum__actions">
+      <a class="wn-btn" href={shipmentsHref}>Ver y gestionar el envío</a>
+    </div>
+  </article>
+
+  <div class="wine-sum__side">
+    <p class="wine-sum__hello">Hola, {firstName}. <span>{member.tier}</span></p>
+    <dl class="wine-sum__stats">
+      <div><dt>Botellas en tu bodega</dt><dd>{owned}</dd></div>
+      <div><dt>Tu nota media</dt><dd>{avg}<small> / 5</small></dd></div>
+      <div><dt>Crédito en la tienda</dt><dd>{wineMoney(member.credit)}</dd></div>
+      <div><dt>Años con nosotros</dt><dd>{years}</dd></div>
+    </dl>
+
+    {suggestion && suggestion.w && (
+      <div class="wine-sum__tip">
+        <p class="wn-eyebrow">Para abrir este mes</p>
+        <div class="wine-sum__tip-body">
+          <span class="wine-sum__mini wine-sum__mini--lg"><WineBottleLabel wine={suggestion.w} decorative /></span>
+          <div>
+            <strong>{suggestion.w.name} {suggestion.w.vintage}</strong>
+            <p>Está en su mejor momento hasta {suggestion.w.drinkTo}. {suggestion.w.pairing.split(',')[0]}.</p>
+            <a class="wn-link" href={cellarHref}>Ir a mi bodega</a>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .wine-sum {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-sum__box {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--wn-border-strong);
+    background: linear-gradient(160deg, rgba(var(--wn-brand-rgb), 0.12), transparent 60%), var(--wn-bg-raised);
+  }
+
+  .wine-sum__date {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-2, 0.5rem);
+  }
+
+  .wine-sum__day {
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(5rem, 18vw, 8rem);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    color: var(--wn-brand);
+  }
+
+  .wine-sum__month {
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    text-transform: capitalize;
+  }
+
+  .wine-sum__count {
+    margin: var(--sp-3, 0.75rem) 0 var(--sp-5, 1.25rem);
+    font-size: 0.95rem;
+    color: var(--wn-text-2);
+  }
+
+  .wine-sum__items {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-4, 1rem) 0 0;
+    list-style: none;
+    border-top: 1px solid var(--wn-border);
+  }
+
+  .wine-sum__items li {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .wine-sum__items small {
+    display: block;
+    font-size: 0.84rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-sum__items strong {
+    font-family: var(--wn-font-display);
+    font-weight: 500;
+    font-size: 1.1rem;
+  }
+
+  .wine-sum__mini {
+    flex: none;
+    width: 32px;
+  }
+
+  .wine-sum__mini--lg {
+    width: 54px;
+  }
+
+  .wine-sum__mini :global(.wine-bl) {
+    max-width: none;
+  }
+
+  .wine-sum__hello {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--wn-font-display);
+    font-size: 1.6rem;
+  }
+
+  .wine-sum__hello span {
+    display: block;
+    margin-top: 0.2rem;
+    font: 600 0.74rem/1 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-sum__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5, 1.25rem);
+    margin: 0 0 var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-block: 1px solid var(--wn-border);
+  }
+
+  .wine-sum__stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.3rem;
+  }
+
+  .wine-sum__stats dt {
+    font-size: 0.84rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-sum__stats dd {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: 2.6rem;
+    line-height: 1;
+  }
+
+  .wine-sum__stats dd small {
+    font-size: 1rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-sum__tip-body {
+    display: flex;
+    gap: var(--sp-4, 1rem);
+    align-items: center;
+  }
+
+  .wine-sum__tip-body strong {
+    font-family: var(--wn-font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .wine-sum__tip-body p {
+    margin: 0.3rem 0 0.5rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--wn-text-2);
+  }
+
+  @media (min-width: 960px) {
+    .wine-sum {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .wine-sum__box {
+      padding: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wine-sum-count]').forEach((el) => {
+    const date = el.dataset.date;
+    if (!date) return;
+    const target = new Date(`${date}T12:00:00`).getTime();
+    const days = Math.ceil((target - Date.now()) / 86400000);
+    const full = el.textContent ?? '';
+    if (days > 1) el.textContent = `Llega en ${days} días · ${full}`;
+    else if (days === 1) el.textContent = `Llega mañana · ${full}`;
+    else if (days === 0) el.textContent = `Sale hoy · ${full}`;
+  });
+</script>

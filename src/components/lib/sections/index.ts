@@ -216,3 +216,15 @@ export { default as LawConsultation } from './LawConsultation.astro';
 export { default as LawInsights } from './LawInsights.astro';
 export { default as LawFaq } from './LawFaq.astro';
 export { default as LawFooter } from './LawFooter.astro';
+
+// Winery ("Solera")
+export { default as WineHero } from './WineHero.astro';
+export { default as WineVintageScene } from './WineVintageScene.astro';
+export { default as WineCollection } from './WineCollection.astro';
+export { default as WineTerroir } from './WineTerroir.astro';
+export { default as WineStory } from './WineStory.astro';
+export { default as WineVisits } from './WineVisits.astro';
+export { default as WineClub } from './WineClub.astro';
+export { default as WineAwards } from './WineAwards.astro';
+export { default as WineFaq } from './WineFaq.astro';
+export { default as WineFooter } from './WineFooter.astro';

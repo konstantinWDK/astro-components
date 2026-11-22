@@ -1,0 +1,279 @@
+---
+/**
+ * WineSignIn — Split sign-in for the members area: a large generated wine label with a member quote
+ * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
+ * quick-access link and a link to join the club.
+ *
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} joinHref - Link to the club page.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus rings and 48px controls; the label illustration is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from './WineBottleLabel.astro';
+import { wineList } from '../templates/winery/data';
+
+interface OwnProps {
+  dashboardHref?: string;
+  joinHref?: string;
+  homeHref?: string;
+  action?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { dashboardHref = '/socios', joinHref = '/club', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const wine = wineList.find((w) => w.id === 'madre') ?? wineList[0];
+const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-si', classAttr]} aria-labelledby={`${uid}-title`} data-wine-si data-dashboard={dashboardHref} {...rest}>
+  <div class="wine-si__art">
+    <a href={homeHref} class="wine-si__brand">Solera</a>
+    <div class="wine-si__label"><WineBottleLabel wine={wine} variant="label" decorative /></div>
+    <blockquote>
+      <p>Cada trimestre abro la caja y sé qué estoy bebiendo, de qué parcela viene y cuándo toca abrirlo. Es como tener un viñedo en casa.</p>
+      <footer>Lucía Ferrer · socia desde 2023</footer>
+    </blockquote>
+  </div>
+
+  <div class="wine-si__panel">
+    <form class="wine-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-wine-si-form>
+      <p class="wn-eyebrow">Área de socios</p>
+      <h1 id={`${uid}-title`}>Bienvenida de nuevo</h1>
+
+      <div class="wine-si__field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="wine-si__field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="wine-si__pass">
+          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-wine-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="wine-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+
+      <p class="wine-si__error" role="alert" data-wine-si-error></p>
+
+      <button type="submit" class="wn-btn">Entrar</button>
+      <a class="wine-si__demo wn-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
+
+      <p class="wine-si__join">¿Aún no eres socia o socio? <a class="wn-link" href={joinHref}>Descubre el club</a></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .wine-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-si__art {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--wn-accent-rgb), 0.22), transparent 70%), var(--wn-surface);
+    border-right: 1px solid var(--wn-border);
+  }
+
+  .wine-si__brand {
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-size: 2rem;
+    color: var(--wn-text);
+    text-decoration: none;
+  }
+
+  .wine-si__label {
+    width: min(260px, 70%);
+    margin: 0 auto;
+    transform: rotate(-3deg);
+    filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .wine-si__label :global(.wine-bl) {
+    max-width: none;
+  }
+
+  .wine-si__art blockquote {
+    max-width: 38ch;
+    margin: 0;
+  }
+
+  .wine-si__art blockquote p {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .wine-si__art footer {
+    font-size: 0.85rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .wine-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .wine-si__form h1 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .wine-si__field label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-si__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: var(--wn-bg-raised);
+    color: var(--wn-text);
+    font: 1rem var(--wn-font-body);
+  }
+
+  .wine-si__pass {
+    position: relative;
+  }
+
+  .wine-si__pass input {
+    padding-right: 5.5rem;
+  }
+
+  .wine-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--wn-text-2);
+    font: 600 0.8rem var(--wn-font-body);
+    cursor: pointer;
+  }
+
+  .wine-si__pass button:hover {
+    color: var(--wn-brand);
+  }
+
+  .wine-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--wn-text-2);
+    cursor: pointer;
+  }
+
+  .wine-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--wn-brand);
+  }
+
+  .wine-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--wn-bad);
+  }
+
+  .wine-si__demo,
+  .wine-si__join {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--wn-text-2);
+  }
+
+  .wine-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 900px) {
+    .wine-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .wine-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wine-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-wine-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-wine-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-wine-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

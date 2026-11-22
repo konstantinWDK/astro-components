@@ -1,0 +1,451 @@
+---
+/**
+ * WineTastingNotebook — The member's tasting notebook. A form (wine, four 1–5 sliders for body,
+ * acidity, tannin and oak, a 1–5 rating and free text) adds entries to a list shown newest first;
+ * each can be deleted. Notes are kept in the page and, when available, in localStorage.
+ *
+ * @param {WineNote[]} notes - Initial notes.
+ * @param {WineItem[]} wines - Wines that can be tasted.
+ * @param {string} storageKey - localStorage key for the member's notes.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every control is labelled; sliders announce their value as text ("3 de 5"); saving
+ * and deleting go through a polite live region; storage failures are ignored silently.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineNotes, wineList, wineById, type WineNote, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  notes?: WineNote[];
+  wines?: WineItem[];
+  storageKey?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { notes = wineNotes, wines = wineList, storageKey = 'solera-notes', class: classAttr, ...rest } = Astro.props;
+
+const sliders: Array<[string, string]> = [['cuerpo', 'Cuerpo'], ['acidez', 'Acidez'], ['taninos', 'Taninos'], ['madera', 'Madera']];
+const fmt = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date));
+const uid = `wtn-${Math.random().toString(36).slice(2, 8)}`;
+const catalog = wines.map((w) => ({ id: w.id, name: `${w.name} ${w.vintage}` }));
+---
+
+<section class:list={['wine-ui', 'wine-nb', classAttr]} aria-labelledby={`${uid}-title`} data-wine-nb data-key={storageKey} data-wines={JSON.stringify(catalog)} {...rest}>
+  <div class="wine-nb__grid">
+    <form class="wine-nb__form" novalidate data-nb-form>
+      <h2 id={`${uid}-title`}>Anotar una cata</h2>
+
+      <div class="wine-nb__field">
+        <label for={`${uid}-wine`}>Vino</label>
+        <select id={`${uid}-wine`} name="wine" required>
+          {wines.map((w) => <option value={w.id}>{w.name} {w.vintage}</option>)}
+        </select>
+      </div>
+
+      <fieldset class="wine-nb__field">
+        <legend>Perfil</legend>
+        <div class="wine-nb__sliders">
+          {sliders.map(([k, label]) => (
+            <label class="wine-nb__slider">
+              <span>{label} <output data-out={k}>3 de 5</output></span>
+              <input type="range" name={k} min="1" max="5" value="3" step="1" />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset class="wine-nb__field">
+        <legend>Tu nota</legend>
+        <div class="wine-nb__rating" role="radiogroup" aria-label="Tu nota de 1 a 5">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <label>
+              <input type="radio" name="rating" value={n} checked={n === 4} />
+              <span aria-hidden="true">★</span>
+              <span class="wn-sr">{n} de 5</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div class="wine-nb__field">
+        <label for={`${uid}-text`}>¿Con qué lo abriste? ¿Cómo estaba?</label>
+        <textarea id={`${uid}-text`} name="text" rows="4" placeholder="Decantado una hora, con cordero. La madera aún se nota…"></textarea>
+      </div>
+
+      <p class="wine-nb__error" role="alert" data-nb-error></p>
+      <button type="submit" class="wn-btn">Guardar en el cuaderno</button>
+    </form>
+
+    <div class="wine-nb__entries">
+      <h2 class="wine-nb__subtitle">Tus catas <span data-nb-count>{notes.length}</span></h2>
+      <p class="wn-sr" role="status" aria-live="polite" data-nb-live></p>
+      <ol class="wine-nb__list" data-nb-list reversed>
+        {sorted.map((n) => {
+          const w = wineById(n.wineId, wines);
+          return (
+            <li class="wine-nb__entry" data-note={n.id}>
+              <div class="wine-nb__head">
+                <h3>{w ? `${w.name} ${w.vintage}` : 'Vino'}</h3>
+                <p><time datetime={n.date}>{fmt(n.date)}</time> · <strong>{n.rating}</strong> de 5</p>
+              </div>
+              <p class="wine-nb__text">{n.text}</p>
+              <p class="wine-nb__prof">{sliders.map(([k, l]) => `${l} ${n.profile[k as keyof typeof n.profile]}`).join(' · ')}</p>
+              <button type="button" class="wine-nb__del" data-nb-del>Eliminar<span class="wn-sr"> la cata de {w?.name}</span></button>
+            </li>
+          );
+        })}
+      </ol>
+      <p class="wine-nb__empty" data-nb-empty hidden>Tu cuaderno está vacío. Anota la primera cata.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .wine-nb {
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-nb__grid {
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+  }
+
+  .wine-nb__form {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--wn-border-strong);
+    background: var(--wn-bg-raised);
+  }
+
+  .wine-nb__form h2,
+  .wine-nb__subtitle {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-weight: 400;
+    font-size: 1.8rem;
+  }
+
+  .wine-nb__subtitle span {
+    font-size: 1rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-nb__field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .wine-nb__field > label,
+  .wine-nb__field legend {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    padding: 0;
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-nb select,
+  .wine-nb textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font: 1rem var(--wn-font-body);
+  }
+
+  .wine-nb select {
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+  }
+
+  .wine-nb textarea {
+    padding: var(--sp-3, 0.75rem);
+    resize: vertical;
+  }
+
+  .wine-nb__sliders {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .wine-nb__slider span {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.2rem;
+    font-size: 0.9rem;
+    color: var(--wn-text-2);
+  }
+
+  .wine-nb__slider output {
+    font-weight: 600;
+    color: var(--wn-brand);
+  }
+
+  .wine-nb input[type='range'] {
+    width: 100%;
+    min-height: 32px;
+    accent-color: var(--wn-brand);
+  }
+
+  .wine-nb__rating {
+    display: flex;
+  }
+
+  .wine-nb__rating label {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+
+  .wine-nb__rating input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .wine-nb__rating span[aria-hidden] {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    font-size: 1.6rem;
+    color: var(--wn-border-strong);
+    transition: color 0.15s;
+  }
+
+  .wine-nb__rating input:focus-visible + span {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: -2px;
+  }
+
+  .wine-nb__error {
+    min-height: 1.3em;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--wn-bad);
+  }
+
+  .wine-nb__list {
+    margin: var(--sp-4, 1rem) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-nb__entry {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-bottom: 1px solid var(--wn-border);
+    justify-items: start;
+  }
+
+  .wine-nb__head h3 {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.5rem;
+  }
+
+  .wine-nb__head p {
+    margin: 0.2rem 0 0;
+    font-size: 0.86rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-nb__head strong {
+    color: var(--wn-brand);
+  }
+
+  .wine-nb__text {
+    margin: 0;
+    max-width: 58ch;
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  .wine-nb__prof {
+    margin: 0;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    color: var(--wn-text-3);
+  }
+
+  .wine-nb__del {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--wn-text-3);
+    font: 600 0.78rem var(--wn-font-body);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .wine-nb__del:hover {
+    color: var(--wn-bad);
+  }
+
+  .wine-nb__empty {
+    color: var(--wn-text-2);
+  }
+
+  @media (min-width: 960px) {
+    .wine-nb__grid {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: var(--sp-12, 3rem);
+    }
+
+    .wine-nb__form {
+      position: sticky;
+      top: var(--sp-6, 1.5rem);
+      padding: var(--sp-6, 1.5rem);
+    }
+  }
+</style>
+
+<script>
+  type Note = { id: string; wineId: string; wine: string; date: string; rating: number; profile: Record<string, number>; text: string };
+  const labels: Record<string, string> = { cuerpo: 'Cuerpo', acidez: 'Acidez', taninos: 'Taninos', madera: 'Madera' };
+
+  document.querySelectorAll<HTMLElement>('[data-wine-nb]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-nb-form]');
+    const list = root.querySelector<HTMLElement>('[data-nb-list]');
+    const count = root.querySelector<HTMLElement>('[data-nb-count]');
+    const empty = root.querySelector<HTMLElement>('[data-nb-empty]');
+    const live = root.querySelector<HTMLElement>('[data-nb-live]');
+    const error = root.querySelector<HTMLElement>('[data-nb-error]');
+    const key = root.dataset.key ?? 'solera-notes';
+    const catalog: Array<{ id: string; name: string }> = JSON.parse(root.dataset.wines ?? '[]');
+    if (!form || !list) return;
+
+    const added: Note[] = [];
+    const removed = new Set<string>();
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const saved = JSON.parse(raw) as { added: Note[]; removed: string[] };
+        added.push(...saved.added);
+        saved.removed.forEach((r) => removed.add(r));
+      }
+    } catch (e) { /* storage unavailable */ }
+
+    const persist = () => {
+      try { localStorage.setItem(key, JSON.stringify({ added, removed: [...removed] })); } catch (e) { /* storage unavailable */ }
+    };
+    const fmt = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    const refresh = () => {
+      const n = list.querySelectorAll('.wine-nb__entry').length;
+      if (count) count.textContent = String(n);
+      if (empty) empty.hidden = n > 0;
+    };
+
+    const build = (n: Note): HTMLLIElement => {
+      const li = document.createElement('li');
+      li.className = 'wine-nb__entry';
+      li.dataset.note = n.id;
+      const head = document.createElement('div');
+      head.className = 'wine-nb__head';
+      const h3 = document.createElement('h3');
+      h3.textContent = n.wine;
+      const meta = document.createElement('p');
+      const time = document.createElement('time');
+      time.dateTime = n.date;
+      time.textContent = fmt(n.date);
+      const strong = document.createElement('strong');
+      strong.textContent = String(n.rating);
+      meta.append(time, ' · ', strong, ' de 5');
+      head.append(h3, meta);
+      const text = document.createElement('p');
+      text.className = 'wine-nb__text';
+      text.textContent = n.text || 'Sin comentarios.';
+      const prof = document.createElement('p');
+      prof.className = 'wine-nb__prof';
+      prof.textContent = Object.entries(n.profile).map(([k, v]) => `${labels[k]} ${v}`).join(' · ');
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'wine-nb__del';
+      del.dataset.nbDel = '';
+      del.textContent = 'Eliminar';
+      const sr = document.createElement('span');
+      sr.className = 'wn-sr';
+      sr.textContent = ` la cata de ${n.wine}`;
+      del.append(sr);
+      li.append(head, text, prof, del);
+      return li;
+    };
+
+    // Apply stored changes to the server-rendered list
+    removed.forEach((id) => list.querySelector(`[data-note="${id}"]`)?.remove());
+    [...added].reverse().forEach((n) => list.prepend(build(n)));
+    refresh();
+
+    list.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('[data-nb-del]');
+      const li = btn?.closest<HTMLElement>('.wine-nb__entry');
+      if (!li) return;
+      const id = li.dataset.note ?? '';
+      const idx = added.findIndex((a) => a.id === id);
+      if (idx >= 0) added.splice(idx, 1);
+      else removed.add(id);
+      li.remove();
+      persist();
+      refresh();
+      if (live) live.textContent = 'Cata eliminada.';
+    });
+
+    form.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach((r) => {
+      const out = form.querySelector<HTMLOutputElement>(`[data-out="${r.name}"]`);
+      r.addEventListener('input', () => { if (out) out.textContent = `${r.value} de 5`; });
+    });
+
+    const paintStars = () => {
+      const val = Number(form.querySelector<HTMLInputElement>('input[name="rating"]:checked')?.value ?? 0);
+      form.querySelectorAll<HTMLInputElement>('input[name="rating"]').forEach((i) => {
+        const star = i.nextElementSibling as HTMLElement | null;
+        if (star) star.style.color = Number(i.value) <= val ? 'var(--wn-brand)' : '';
+      });
+    };
+    form.addEventListener('change', paintStars);
+    paintStars();
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const wineId = (form.elements.namedItem('wine') as HTMLSelectElement).value;
+      const wine = catalog.find((w) => w.id === wineId)?.name ?? 'Vino';
+      const text = (form.elements.namedItem('text') as HTMLTextAreaElement).value.trim();
+      const rating = Number(form.querySelector<HTMLInputElement>('input[name="rating"]:checked')?.value ?? 0);
+      if (!rating) {
+        if (error) error.textContent = 'Elige una nota de 1 a 5.';
+        return;
+      }
+      if (error) error.textContent = '';
+      const profile: Record<string, number> = {};
+      ['cuerpo', 'acidez', 'taninos', 'madera'].forEach((k) => { profile[k] = Number((form.elements.namedItem(k) as HTMLInputElement).value); });
+      const d = new Date();
+      const note: Note = { id: `u${Date.now()}`, wineId, wine, date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, rating, profile, text };
+      added.push(note);
+      list.prepend(build(note));
+      persist();
+      refresh();
+      (form.elements.namedItem('text') as HTMLTextAreaElement).value = '';
+      if (live) live.textContent = `Cata de ${wine} guardada.`;
+    });
+  });
+</script>

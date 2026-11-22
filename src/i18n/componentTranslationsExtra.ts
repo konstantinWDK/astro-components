@@ -1310,4 +1310,85 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con ilustración de la balanza, testimonio, cifras, mostrar contraseña y acceso de demostración.',
     ru: 'Вход на двух панелях с иллюстрацией весов, отзывом, цифрами, показом пароля и демо-ссылкой.',
   },
+  // ── Winery ("Solera") ────────────────────────
+  'wine-hero': {
+    es: 'Hero de bodega con titular serif enorme, curvas de nivel topográficas, cifras clave y una gran botella generada que se inclina con el puntero.',
+    ru: 'Главный экран винодельни с огромным засечным заголовком, топографическими линиями, ключевыми цифрами и большой сгенерированной бутылкой, наклоняющейся за курсором.',
+  },
+  'wine-vintage-scene': {
+    es: 'Escena de scroll fijada "un año en el viñedo": cielo, colinas, hojas y uvas de un viñedo dibujado cambian de forma continua entre poda, brotación, envero, vendimia y crianza mientras entra el texto.',
+    ru: 'Закреплённая сцена прокрутки «год на винограднике»: небо, холмы, листья и гроздья нарисованного виноградника плавно меняются от обрезки до выдержки, пока меняется текст.',
+  },
+  'wine-collection': {
+    es: 'Carta de vinos como índice editorial: cada fila se abre (una a la vez) con la botella generada, notas de cata, perfil de 1 a 5, ventana de consumo y enlace a la caja del club, con filtro por tipo.',
+    ru: 'Карта вин как крупный редакционный индекс: каждая строка раскрывается (по одной) с бутылкой, нотами дегустации, профилем 1–5, окном употребления и ссылкой на коробку клуба, с фильтром по типу.',
+  },
+  'wine-terroir': {
+    es: 'Mapa interactivo de parcelas de la finca: elige una parcela (lista o dibujo) para ver variedad, altitud, suelo, año de plantación, orientación y los vinos que salen de ella.',
+    ru: 'Интерактивная карта участков: выберите участок (список или схема), чтобы увидеть сорт, высоту, почву, год посадки, экспозицию и вина с него.',
+  },
+  'wine-story': {
+    es: 'Historia familiar como cronología editorial: una cita destacada de la enóloga fija junto a cinco hitos con grandes años en contorno.',
+    ru: 'История семьи как редакционная хронология: закреплённая цитата винодела рядом с пятью вехами и крупными контурными годами.',
+  },
+  'wine-visits': {
+    es: 'Reserva de visitas: elige experiencia, fecha, hora y personas, mira cómo se actualiza el total y envía la solicitud. Las experiencias de temporada avisan si la fecha queda fuera.',
+    ru: 'Запись на визит: выберите программу, дату, время и число гостей, следите за итогом и отправьте заявку. Сезонные программы предупреждают, если дата не в сезон.',
+  },
+  'wine-club': {
+    es: 'Configurador del club de vino: elige botellas, estilo y frecuencia; la caja dibujada junto al formulario cambia botella a botella y el precio (con descuento por volumen) se actualiza en vivo.',
+    ru: 'Конфигуратор винного клуба: выберите бутылки, стиль и частоту; нарисованный ящик меняется бутылка за бутылкой, а цена (со скидкой за объём) обновляется на лету.',
+  },
+  'wine-awards': {
+    es: 'Puntuaciones de prensa como lista tipográfica: un número enorme por fila con el vino, la guía y el año. Sin insignias ni iconos.',
+    ru: 'Оценки прессы как типографский список: огромное число в каждой строке с вином, гидом и годом. Без значков и иконок.',
+  },
+  'wine-faq': {
+    es: 'Preguntas frecuentes en acordeón nativo con una línea de contacto.',
+    ru: 'Частые вопросы в виде нативного аккордеона со строкой контакта.',
+  },
+  'wine-footer': {
+    es: 'Pie de página de bodega con llamada final a la acción, columnas de enlaces, boletín y un gran logotipo en contorno.',
+    ru: 'Подвал винодельни с финальным призывом, колонками ссылок, рассылкой и огромным контурным логотипом.',
+  },
+  'wine-bottle-label': {
+    es: 'Botella o etiqueta tipográfica dibujada en SVG a partir de los datos del vino (nombre, variedad, añada y sus colores de etiqueta). No necesita imágenes.',
+    ru: 'Типографская бутылка или этикетка в SVG по данным вина (название, сорт, год и цвета этикетки). Картинки не нужны.',
+  },
+  'wine-member-summary': {
+    es: 'Inicio del área de socios: próxima caja con cuenta atrás y sus botellas, cifras de la socia (botellas, nota media, crédito, años) y una sugerencia de qué abrir este mes.',
+    ru: 'Главная кабинета участника: ближайшая коробка с обратным отсчётом и бутылками, цифры участника (бутылки, средняя оценка, кредит, годы) и подсказка, что открыть в этом месяце.',
+  },
+  'wine-shipment-tracker': {
+    es: 'Envíos como lista desplegable con botellas, cronología vertical, transportista y seguimiento. Las cajas próximas se pueden aplazar, saltar o enviar a otra dirección (demo).',
+    ru: 'Отправления в раскрывающемся списке с бутылками, вертикальной хронологией, перевозчиком и трекингом. Ближайшие коробки можно отложить, пропустить или отправить на другой адрес (демо).',
+  },
+  'wine-cellar': {
+    es: 'Bodega personal: botellas que quedan, barra de ventana de consumo con marca de hoy y estado en lenguaje claro, nota de 1 a 5, botón "abrir una" y filtro en bodega / terminadas / todas.',
+    ru: 'Личный погреб: остаток бутылок, шкала окна употребления с отметкой «сегодня» и понятным статусом, оценка 1–5, кнопка «открыть одну» и фильтр: в погребе / допиты / все.',
+  },
+  'wine-tasting-notebook': {
+    es: 'Cuaderno de cata: elige un vino, ajusta cuerpo, acidez, taninos y madera, valóralo y escribe una nota; las catas se listan de más reciente a más antigua y se pueden borrar (guardadas en localStorage).',
+    ru: 'Дневник дегустаций: выберите вино, задайте тело, кислотность, танины и дуб, оцените и напишите заметку; записи идут от новых к старым и удаляются (хранятся в localStorage).',
+  },
+  'wine-plan-manager': {
+    es: 'Gestión del plan del club: botellas por envío, estilo, frecuencia e interruptor de pausa, con el precio por envío y al año recalculado en vivo (demo).',
+    ru: 'Управление планом клуба: бутылки в отправке, стиль, частота и переключатель паузы, цена за отправку и за год пересчитывается на лету (демо).',
+  },
+  'wine-member-nav': {
+    es: 'Navegación del área de socios: logotipo y pestañas de texto en una fila de cabecera en escritorio y barra de pestañas fija abajo en móvil. Solo texto, sin JavaScript.',
+    ru: 'Навигация кабинета участника: логотип и текстовые вкладки в шапке на десктопе и закреплённая нижняя панель на телефонах. Только текст, без JavaScript.',
+  },
+  'wine-member-topbar': {
+    es: 'Lado derecho de la cabecera de socios: logotipo en móvil, fecha de hoy, cambio de tema, avisos y menú de la socia (popovers nativos).',
+    ru: 'Правая часть шапки кабинета: логотип на телефоне, сегодняшняя дата, смена темы, уведомления и меню участника (нативные popover).',
+  },
+  'wine-member-heading': {
+    es: 'Encabezado de página del área de socios con antetítulo, título serif grande, descripción, enlace de vuelta y un hueco para acciones.',
+    ru: 'Заголовок страницы кабинета участника с надзаголовком, крупным засечным названием, описанием, ссылкой назад и слотом для действий.',
+  },
+  'wine-sign-in': {
+    es: 'Acceso a pantalla partida con una gran etiqueta de vino generada y un testimonio de socia, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
+    ru: 'Вход на двух панелях с большой сгенерированной этикеткой и отзывом участницы, показ пароля, «запомнить меня» и демо-ссылка.',
+  },
 };

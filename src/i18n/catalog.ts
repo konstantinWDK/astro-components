@@ -223,6 +223,11 @@ export const sectionCategoryTranslations: Record<string, Record<Locale, Localize
     es: { name: 'Despacho de abogados', description: 'Secciones para despachos de abogados y servicios profesionales: hero con tarjeta de expediente, áreas de práctica en pestañas, equipo con filtro por área, pasos del proceso, resultados y testimonios, modelos de honorarios, reserva de consulta, artículos jurídicos, preguntas frecuentes y pie de página.' },
     ru: { name: 'Юридическая фирма', description: 'Секции для юридических фирм и профессиональных услуг: главный экран с карточкой дела, направления практики во вкладках, команда с фильтром, шаги процесса, результаты и отзывы, модели гонораров, запись на консультацию, юридические статьи, FAQ и подвал.' },
   },
+  winery: {
+    en: { name: 'Winery', description: 'Sections for wineries and artisan producers: hero with a tilting bottle, a pinned scroll scene of the vintage, wine list as an editorial index, interactive plot map, family story, visit booking, wine-club configurator, press scores, FAQ and footer.' },
+    es: { name: 'Bodega', description: 'Secciones para bodegas y productores artesanales: hero con botella que se inclina, escena de scroll fijada de la añada, carta de vinos como índice editorial, mapa interactivo de parcelas, historia familiar, reserva de visitas, configurador del club de vino, puntuaciones de prensa, preguntas frecuentes y pie de página.' },
+    ru: { name: 'Винодельня', description: 'Секции для виноделен и ремесленных производителей: главный экран с наклоняющейся бутылкой, закреплённая сцена урожая, карта вин как редакционный индекс, интерактивная карта участков, история семьи, запись на визиты, конфигуратор винного клуба, оценки прессы, FAQ и подвал.' },
+  },
   logos: {
     en: { name: 'Logo Clouds', description: 'Infinite marquee partner and client logo showcases.' },
     es: { name: 'Nube de Logos', description: 'Marquesinas continuas para mostrar clientes, socios y patrocinadores.' },

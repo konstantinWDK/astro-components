@@ -2668,6 +2668,158 @@ const routes = { ...lawRoutes, areas: '/practice', consult: '/book' };
 
 <LawHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'winery',
+    name: { en: 'Solera · Winery & Wine Club', es: 'Solera · Bodega & Club de vino', ru: 'Solera · Винодельня & Винный клуб' },
+    tagline: { en: 'Winery site with a tilting-bottle hero, a pinned scroll scene of the vintage, an interactive plot map, visit booking and a wine-club configurator, plus a members area with cellar, tasting notebook, shipments and plan.', es: 'Web de bodega con hero de botella que se inclina, escena de scroll fijada de la añada, mapa interactivo de parcelas, reserva de visitas y configurador del club, más un área de socios con bodega, cuaderno de cata, envíos y plan.', ru: 'Сайт винодельни с наклоняющейся бутылкой, закреплённой сценой урожая, интерактивной картой участков, записью на визиты и конфигуратором клуба, плюс кабинет участника с погребом, дневником дегустаций, отправлениями и планом.' },
+    description: { en: 'Complete template for a winery or artisan producer with a subscription club. 9 page types: home with a tilting-bottle hero, wine preview, a pinned scroll scene that changes the vineyard through the year and press scores; the full wine list as an editorial index; the estate with a family story and an interactive plot map; visit booking with a live total; a wine-club configurator that draws the crate; members sign-in; and a members area with a home (next box with countdown), a cellar with drinking windows and a tasting notebook, and shipments with plan management.', es: 'Plantilla completa para una bodega o productor artesanal con club de suscripción. 9 tipos de página: home con hero de botella que se inclina, vista previa de vinos, una escena de scroll fijada que cambia el viñedo a lo largo del año y puntuaciones de prensa; la carta completa como índice editorial; la finca con historia familiar y mapa interactivo de parcelas; reserva de visitas con total en vivo; un configurador del club que dibuja la caja; acceso de socios; y un área de socios con inicio (próxima caja con cuenta atrás), bodega con ventanas de consumo y cuaderno de cata, y envíos con gestión del plan.', ru: 'Полный шаблон для винодельни или ремесленного производителя с клубом по подписке. 9 типов страниц: главная с наклоняющейся бутылкой, превью вин, закреплённой сценой прокрутки, меняющей виноградник в течение года, и оценками прессы; полная карта вин как редакционный индекс; поместье с историей семьи и интерактивной картой участков; запись на визиты с итогом на лету; конфигуратор клуба, рисующий ящик; вход участников; и кабинет с главной (ближайшая коробка с отсчётом), погребом с окнами употребления и дневником дегустаций, отправлениями и управлением планом.' },
+    highlights: {
+      en: [
+        'Pinned scroll scene: the sky, hills, leaves and grapes of a drawn vineyard change continuously through the five stages of the vintage',
+        'Interactive plot map with altitude, soil, planting year and the wines that come from each parcel',
+        'Wine club configurator that redraws the crate bottle by bottle and recalculates the price live',
+        'Personal cellar with drinking windows, ratings and a tasting notebook with sliders',
+        'Typographic bottles and labels generated in SVG from the wine data, with no image files',
+      ],
+      es: [
+        'Escena de scroll fijada: el cielo, las colinas, las hojas y las uvas de un viñedo dibujado cambian de forma continua entre las cinco etapas de la añada',
+        'Mapa interactivo de parcelas con altitud, suelo, año de plantación y los vinos que salen de cada una',
+        'Configurador del club que redibuja la caja botella a botella y recalcula el precio en vivo',
+        'Bodega personal con ventanas de consumo, notas y un cuaderno de cata con deslizadores',
+        'Botellas y etiquetas tipográficas generadas en SVG a partir de los datos del vino, sin archivos de imagen',
+      ],
+      ru: [
+        'Закреплённая сцена прокрутки: небо, холмы, листья и гроздья нарисованного виноградника плавно меняются через пять этапов урожая',
+        'Интерактивная карта участков с высотой, почвой, годом посадки и винами с каждого участка',
+        'Конфигуратор клуба перерисовывает ящик бутылка за бутылкой и пересчитывает цену на лету',
+        'Личный погреб с окнами употребления, оценками и дневником дегустаций с ползунками',
+        'Типографские бутылки и этикетки генерируются в SVG из данных вина, без файлов изображений',
+      ],
+    },
+    tags: ['wine', 'winery', 'subscription', 'club', 'booking', 'storytelling', 'portal', 'dashboard'],
+    previewBase: '/preview/winery/',
+    importPath: 'astro-component-kit/templates/winery',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with a tilting bottle, a first look at the wines, the pinned vintage scene and press scores.', es: 'Hero con botella que se inclina, primer vistazo a los vinos, la escena fijada de la añada y puntuaciones de prensa.', ru: 'Главный экран с наклоняющейся бутылкой, первый взгляд на вина, закреплённая сцена урожая и оценки прессы.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { WineHomePage } from 'astro-component-kit/templates/winery';
+---
+
+<WineHomePage />`,
+      },
+      {
+        id: 'wines', path: 'vinos/',
+        name: { en: 'Wines', es: 'Vinos', ru: 'Вина' },
+        description: { en: 'Full wine list as an editorial index with type filter, notes, profile and drinking window.', es: 'Carta completa como índice editorial con filtro por tipo, notas, perfil y ventana de consumo.', ru: 'Полная карта вин как редакционный индекс с фильтром по типу, нотами, профилем и окном употребления.' },
+        file: 'src/pages/vinos.astro',
+        code: `---
+import { WineWinesPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineWinesPage />`,
+      },
+      {
+        id: 'estate', path: 'finca/',
+        name: { en: 'Estate', es: 'La finca', ru: 'Поместье' },
+        description: { en: 'Family story with a pinned quote, interactive plot map and the year in the vineyard.', es: 'Historia familiar con cita fija, mapa interactivo de parcelas y el año en el viñedo.', ru: 'История семьи с закреплённой цитатой, интерактивная карта участков и год на винограднике.' },
+        file: 'src/pages/finca.astro',
+        code: `---
+import { WineEstatePage } from 'astro-component-kit/templates/winery';
+---
+
+<WineEstatePage />`,
+      },
+      {
+        id: 'visits', path: 'visitas/',
+        name: { en: 'Visits', es: 'Visitas', ru: 'Визиты' },
+        description: { en: 'Book an experience with date, time, guests and a live total, plus FAQ.', es: 'Reserva una experiencia con fecha, hora, personas y total en vivo, más preguntas frecuentes.', ru: 'Запись на программу с датой, временем, гостями и итогом на лету, плюс FAQ.' },
+        file: 'src/pages/visitas.astro',
+        code: `---
+import { WineVisitsPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineVisitsPage action="/api/visitas" />`,
+      },
+      {
+        id: 'club', path: 'club/',
+        name: { en: 'Wine club', es: 'El club', ru: 'Клуб' },
+        description: { en: 'Live configurator for bottles, style and frequency with the crate drawn beside the form.', es: 'Configurador en vivo de botellas, estilo y frecuencia con la caja dibujada junto al formulario.', ru: 'Конфигуратор бутылок, стиля и частоты с нарисованным рядом ящиком.' },
+        file: 'src/pages/club.astro',
+        code: `---
+import { WineClubPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineClubPage action="/api/club" />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Members sign in', es: 'Acceso socios', ru: 'Вход для участников' },
+        description: { en: 'Split sign-in with a large generated wine label and a member quote.', es: 'Acceso a pantalla partida con una gran etiqueta de vino generada y un testimonio.', ru: 'Вход на двух панелях с большой сгенерированной этикеткой и отзывом.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { WineSignInPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineSignInPage />`,
+      },
+      {
+        id: 'dashboard', path: 'socios/',
+        name: { en: 'Members home', es: 'Resumen', ru: 'Обзор' },
+        description: { en: 'Next box with countdown, cellar figures and a suggestion of what to open.', es: 'Próxima caja con cuenta atrás, cifras de bodega y una sugerencia de qué abrir.', ru: 'Ближайшая коробка с отсчётом, цифры погреба и подсказка, что открыть.' },
+        file: 'src/pages/socios/index.astro',
+        code: `---
+import { WineDashboardPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineDashboardPage />`,
+      },
+      {
+        id: 'cellar', path: 'socios/bodega/',
+        name: { en: 'Cellar & notebook', es: 'Bodega y cuaderno', ru: 'Погреб и дневник' },
+        description: { en: 'Personal cellar with drinking windows and ratings, plus the tasting notebook.', es: 'Bodega personal con ventanas de consumo y notas, más el cuaderno de cata.', ru: 'Личный погреб с окнами употребления и оценками, плюс дневник дегустаций.' },
+        file: 'src/pages/socios/bodega.astro',
+        code: `---
+import { WineCellarPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineCellarPage />`,
+      },
+      {
+        id: 'shipments', path: 'socios/envios/',
+        name: { en: 'Shipments & plan', es: 'Envíos y plan', ru: 'Отправления и план' },
+        description: { en: 'Shipments with tracking and actions, and club plan management.', es: 'Envíos con seguimiento y acciones, y gestión del plan del club.', ru: 'Отправления с трекингом и действиями, управление планом клуба.' },
+        file: 'src/pages/socios/envios.astro',
+        code: `---
+import { WineShipmentsPage } from 'astro-component-kit/templates/winery';
+---
+
+<WineShipmentsPage />`,
+      },
+    ],
+    newComponents: [
+      'wine-hero', 'wine-vintage-scene', 'wine-collection', 'wine-terroir', 'wine-story', 'wine-visits', 'wine-club', 'wine-awards', 'wine-faq', 'wine-footer',
+      'wine-bottle-label', 'wine-member-summary', 'wine-shipment-tracker', 'wine-cellar', 'wine-tasting-notebook', 'wine-plan-manager', 'wine-member-nav', 'wine-member-topbar', 'wine-member-heading', 'wine-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your catalog or club system)
+import { WineHomePage, wineData, wineRoutes } from 'astro-component-kit/templates/winery';
+
+const data = {
+  ...wineData,
+  brand: { ...wineData.brand, name: 'Bodegas Ribera', phone: '+34 900 000 000' },
+  wines: await fetch('https://api.example.com/wines').then((r) => r.json()),
+};
+
+const routes = { ...wineRoutes, wines: '/vinos', club: '/socios-club' };
+---
+
+<WineHomePage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

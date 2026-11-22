@@ -1,0 +1,367 @@
+---
+/**
+ * WineCellar — The member's personal cellar. Each bottle shows how many are left, a drinking-window
+ * bar with today's marker and a plain-language status, a 1–5 rating and a button to open one (the
+ * count goes down; at zero it moves to "Finished"). Filter by in the cellar / finished / all.
+ *
+ * @param {WineCellarBottle[]} cellar - Bottles the member owns.
+ * @param {WineItem[]} wines - Catalog, to resolve wine ids.
+ * @param {string} notesHref - Link to the tasting notebook (opens it after drinking a bottle).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the rating is a radio group of 44px buttons with text labels, counts and status
+ * changes go through a polite live region, the window bar has a text equivalent.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from './WineBottleLabel.astro';
+import { wineCellar, wineList, wineById, type WineCellarBottle, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  cellar?: WineCellarBottle[];
+  wines?: WineItem[];
+  notesHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { cellar = wineCellar, wines = wineList, notesHref = '#cuaderno', class: classAttr, ...rest } = Astro.props;
+
+const year = new Date().getFullYear();
+const axis = { from: year - 3, to: year + 20 };
+const pct = (y: number) => Math.min(100, Math.max(0, ((y - axis.from) / (axis.to - axis.from)) * 100));
+const statusOf = (w: WineItem) => {
+  if (year < w.drinkFrom) return `Déjalo reposar hasta ${w.drinkFrom}`;
+  if (year > w.drinkTo) return 'Ya pasó su momento';
+  if (year >= w.drinkTo - 1) return 'Bébelo pronto';
+  return 'En su mejor momento';
+};
+const rows = cellar.map((b) => ({ b, w: wineById(b.wineId, wines) })).filter((x): x is { b: WineCellarBottle; w: WineItem } => Boolean(x.w));
+const total = cellar.reduce((n, b) => n + b.qty, 0);
+const uid = `wce-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-cellar', classAttr]} aria-label="Mi bodega" data-wine-cellar data-notes={notesHref} {...rest}>
+  <div class="wine-cellar__bar">
+    <p class="wine-cellar__total"><strong data-cellar-total>{total}</strong> botellas guardadas</p>
+    <div class="wine-cellar__filter" role="group" aria-label="Filtrar botellas">
+      <button type="button" aria-pressed="true" data-filter="stock">En la bodega</button>
+      <button type="button" aria-pressed="false" data-filter="done">Terminadas</button>
+      <button type="button" aria-pressed="false" data-filter="all">Todas</button>
+    </div>
+  </div>
+  <p class="wn-sr" role="status" aria-live="polite" data-cellar-live></p>
+
+  <ul class="wine-cellar__list" role="list">
+    {rows.map(({ b, w }) => (
+      <li class="wine-cellar__item" data-id={b.id} data-qty={b.qty} data-wine={w.name}>
+        <div class="wine-cellar__mini"><WineBottleLabel wine={w} decorative /></div>
+
+        <div class="wine-cellar__main">
+          <h3>{w.name} <small>{w.vintage}</small></h3>
+          <p class="wine-cellar__meta">{w.variety} · {w.type}</p>
+
+          <div class="wine-cellar__window">
+            <div class="wine-cellar__axis" aria-hidden="true">
+              <span class="wine-cellar__span" style={`left:${pct(w.drinkFrom)}%;width:${pct(w.drinkTo) - pct(w.drinkFrom)}%`}></span>
+              <span class="wine-cellar__today" style={`left:${pct(year)}%`}></span>
+            </div>
+            <p>{statusOf(w)} <small>({w.drinkFrom}–{w.drinkTo})</small></p>
+          </div>
+        </div>
+
+        <div class="wine-cellar__side">
+          <p class="wine-cellar__qty"><strong data-qty-out>{b.qty}</strong> <span>{b.qty === 1 ? 'botella' : 'botellas'}</span></p>
+          <button type="button" class="wn-btn wn-btn--ghost" data-open disabled={b.qty === 0}>Abrir una</button>
+
+          <div class="wine-cellar__rate" role="radiogroup" aria-label={`Tu nota para ${w.name}`}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button type="button" role="radio" aria-checked={b.rating === n ? 'true' : 'false'} aria-label={`${n} de 5`} data-rate={n} class:list={[b.rating && n <= b.rating && 'is-on']}>★</button>
+            ))}
+          </div>
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  <p class="wine-cellar__empty" data-cellar-empty hidden>No hay botellas en esta vista.</p>
+  <p class="wine-cellar__after" data-cellar-after hidden>Disfrútala. <a class="wn-link" href={notesHref}>Anota tu cata en el cuaderno</a>.</p>
+  <span hidden id={uid}></span>
+</section>
+
+<style>
+  .wine-cellar {
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-cellar__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .wine-cellar__total {
+    margin: 0;
+    color: var(--wn-text-2);
+  }
+
+  .wine-cellar__total strong {
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: 2.2rem;
+    color: var(--wn-text);
+  }
+
+  .wine-cellar__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1, 0.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .wine-cellar__filter button {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--wn-text-3);
+    font: 600 0.78rem/1 var(--wn-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .wine-cellar__filter button[aria-pressed='true'] {
+    color: var(--wn-text);
+    border-bottom-color: var(--wn-brand);
+  }
+
+  .wine-cellar__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-cellar__item {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-cellar__item[hidden] {
+    display: none;
+  }
+
+  .wine-cellar__item.is-done .wine-cellar__mini {
+    opacity: 0.4;
+    filter: grayscale(1);
+  }
+
+  .wine-cellar__mini :global(.wine-bl) {
+    max-width: none;
+  }
+
+  .wine-cellar__main h3 {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1.1;
+  }
+
+  .wine-cellar__main h3 small {
+    font-size: 1rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-cellar__meta {
+    margin: 0.25rem 0 var(--sp-3, 0.75rem);
+    font-size: 0.86rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-cellar__window p {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--wn-text-2);
+  }
+
+  .wine-cellar__window small {
+    font-weight: 400;
+    color: var(--wn-text-3);
+  }
+
+  .wine-cellar__axis {
+    position: relative;
+    height: 10px;
+    max-width: 380px;
+    border-bottom: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-cellar__span {
+    position: absolute;
+    bottom: 0;
+    height: 6px;
+    background: var(--wn-brand);
+    opacity: 0.85;
+  }
+
+  .wine-cellar__today {
+    position: absolute;
+    bottom: -3px;
+    width: 2px;
+    height: 14px;
+    background: var(--wn-accent);
+  }
+
+  .wine-cellar__side {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+  }
+
+  .wine-cellar__qty {
+    margin: 0;
+    color: var(--wn-text-3);
+    font-size: 0.86rem;
+  }
+
+  .wine-cellar__qty strong {
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: 2.4rem;
+    color: var(--wn-text);
+  }
+
+  .wine-cellar__rate {
+    display: flex;
+  }
+
+  .wine-cellar__rate button {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    color: var(--wn-border-strong);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+
+  .wine-cellar__rate button.is-on {
+    color: var(--wn-brand);
+  }
+
+  .wine-cellar__rate button:hover {
+    transform: scale(1.12);
+  }
+
+  .wine-cellar__empty,
+  .wine-cellar__after {
+    margin: var(--sp-5, 1.25rem) 0 0;
+    color: var(--wn-text-2);
+  }
+
+  @media (min-width: 800px) {
+    .wine-cellar__item {
+      grid-template-columns: 64px minmax(0, 1.2fr) minmax(0, 1fr);
+      align-items: center;
+    }
+
+    .wine-cellar__side {
+      grid-column: auto;
+      justify-content: flex-end;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-cellar__rate button {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wine-cellar]').forEach((root) => {
+    const items = Array.from(root.querySelectorAll<HTMLElement>('.wine-cellar__item'));
+    const totalEl = root.querySelector<HTMLElement>('[data-cellar-total]');
+    const live = root.querySelector<HTMLElement>('[data-cellar-live]');
+    const empty = root.querySelector<HTMLElement>('[data-cellar-empty]');
+    const after = root.querySelector<HTMLElement>('[data-cellar-after]');
+    const filters = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    let mode = 'stock';
+
+    const qty = (el: HTMLElement) => Number(el.dataset.qty);
+    const paint = () => {
+      let shown = 0;
+      items.forEach((el) => {
+        const done = qty(el) === 0;
+        el.classList.toggle('is-done', done);
+        const visible = mode === 'all' || (mode === 'stock' ? !done : done);
+        el.hidden = !visible;
+        if (visible) shown += 1;
+      });
+      if (empty) empty.hidden = shown > 0;
+      if (totalEl) totalEl.textContent = String(items.reduce((n, el) => n + qty(el), 0));
+    };
+
+    filters.forEach((btn) =>
+      btn.addEventListener('click', () => {
+        mode = btn.dataset.filter ?? 'stock';
+        filters.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+        paint();
+      }),
+    );
+
+    items.forEach((el) => {
+      const out = el.querySelector<HTMLElement>('[data-qty-out]');
+      const open = el.querySelector<HTMLButtonElement>('[data-open]');
+      const label = el.querySelector<HTMLElement>('.wine-cellar__qty span');
+      const stars = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-rate]'));
+
+      open?.addEventListener('click', () => {
+        const n = Math.max(0, qty(el) - 1);
+        el.dataset.qty = String(n);
+        if (out) out.textContent = String(n);
+        if (label) label.textContent = n === 1 ? 'botella' : 'botellas';
+        if (open) open.disabled = n === 0;
+        if (live) live.textContent = `Has abierto ${el.dataset.wine}. Quedan ${n}.`;
+        if (after) after.hidden = false;
+        paint();
+      });
+
+      const rate = (n: number) => {
+        stars.forEach((s) => {
+          const v = Number(s.dataset.rate);
+          s.classList.toggle('is-on', v <= n);
+          s.setAttribute('aria-checked', String(v === n));
+        });
+        if (live) live.textContent = `${el.dataset.wine}: ${n} de 5.`;
+      };
+      stars.forEach((s, i) => {
+        s.addEventListener('click', () => rate(Number(s.dataset.rate)));
+        s.addEventListener('keydown', (e) => {
+          const k = (e as KeyboardEvent).key;
+          const to = k === 'ArrowRight' || k === 'ArrowUp' ? Math.min(4, i + 1) : k === 'ArrowLeft' || k === 'ArrowDown' ? Math.max(0, i - 1) : -1;
+          if (to >= 0) {
+            e.preventDefault();
+            stars[to].focus();
+            rate(Number(stars[to].dataset.rate));
+          }
+        });
+      });
+    });
+
+    paint();
+  });
+</script>

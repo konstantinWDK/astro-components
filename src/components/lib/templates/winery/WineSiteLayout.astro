@@ -1,0 +1,338 @@
+---
+/**
+ * WineSiteLayout — Public layout for the "Solera" winery template.
+ * Skip link, sticky header with the wordmark and primary nav (disclosure menu on mobile),
+ * members link, "book a visit" button and the WineFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (wines | estate | visits | club).
+ * @param {WineRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, aria-current on the active link, the mobile menu
+ * button exposes aria-expanded / aria-controls and closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './wine-theme.css';
+import WineFooter from '../../sections/WineFooter.astro';
+import { wineRoutes, wineBrand, type WineRoutes } from './data';
+
+type NavKey = 'wines' | 'estate' | 'visits' | 'club';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: WineRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Solera · Bodega de altura en Ribera del Duero. Vinos de parcela, visitas con cata y un club de socios sin permanencia.',
+  current,
+  routes = wineRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'wines', label: 'Vinos', href: routes.wines },
+  { key: 'estate', label: 'La finca', href: routes.estate },
+  { key: 'visits', label: 'Visitas', href: routes.visits },
+  { key: 'club', label: 'El club', href: routes.club },
+];
+const footerColumns = [
+  { title: 'La bodega', links: [{ label: 'Los vinos', href: routes.wines }, { label: 'La finca', href: routes.estate }, { label: 'Visitas y catas', href: routes.visits }] },
+  { title: 'Socios', links: [{ label: 'El club', href: routes.club }, { label: 'Área de socios', href: routes.signIn }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-wine" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="wine-body">
+    <a href="#main-content" class="wine-skip">Saltar al contenido</a>
+
+    <header class="wine-header">
+      <div class="wine-header__inner">
+        <a href={routes.home} class="wine-logo" aria-label={`${wineBrand.name} inicio`}>{wineBrand.name}</a>
+
+        <button type="button" class="wine-menu-btn" aria-expanded="false" aria-controls="wine-nav" data-wine-menu>
+          <span class="wine-menu-btn__bars" aria-hidden="true"></span>
+          <span class="wine-sr">Menú</span>
+        </button>
+
+        <nav id="wine-nav" class="wine-nav-main" aria-label="Navegación principal">
+          <ul class="wine-nav-main__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="wine-nav-main__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <div class="wine-nav-main__actions">
+            <a href={routes.signIn} class="wine-nav-main__members">Área de socios</a>
+            <a href={routes.visits} class="wine-nav-main__cta">Reservar visita</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="wine-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <WineFooter brand={wineBrand.name} columns={footerColumns} cta={{ title: 'Ven a probarlo donde nace', text: 'Visitas con cata, picnic entre viñas y un día de vendimia. Grupos pequeños, siempre con reserva.', href: routes.visits, label: 'Reservar una visita' }} />
+
+    <script>
+      const btn = document.querySelector<HTMLButtonElement>('[data-wine-menu]');
+      const nav = document.getElementById('wine-nav');
+      if (btn && nav) {
+        const set = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            set(false);
+            btn.focus();
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .wine-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .wine-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--wn-brand);
+    color: var(--wn-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .wine-skip:focus {
+    top: 1rem;
+  }
+
+  .wine-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--wn-bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 1240px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .wine-logo {
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.9rem;
+    letter-spacing: -0.01em;
+    color: var(--wn-text);
+    text-decoration: none;
+  }
+
+  .wine-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: none;
+    color: var(--wn-text);
+    cursor: pointer;
+  }
+
+  .wine-menu-btn__bars,
+  .wine-menu-btn__bars::before {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: currentColor;
+  }
+
+  .wine-menu-btn__bars {
+    position: relative;
+    top: -3px;
+  }
+
+  .wine-menu-btn__bars::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 0;
+  }
+
+  .wine-nav-main {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--wn-bg-raised);
+    border-bottom: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-nav-main.is-open {
+    display: flex;
+  }
+
+  .wine-nav-main__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .wine-nav-main__link,
+  .wine-nav-main__members {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--wn-text-2);
+    font: 600 0.82rem/1 var(--wn-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .wine-nav-main__link:hover,
+  .wine-nav-main__members:hover {
+    color: var(--wn-text);
+  }
+
+  .wine-nav-main__link[aria-current='page'] {
+    color: var(--wn-brand);
+  }
+
+  .wine-nav-main__actions {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .wine-nav-main__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border: 1px solid var(--wn-brand);
+    border-radius: 2px;
+    background: var(--wn-brand);
+    color: var(--wn-on-brand);
+    font: 600 0.78rem/1 var(--wn-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .wine-nav-main__cta:hover {
+    background: var(--wn-brand-hover);
+  }
+
+  .wine-header a:focus-visible,
+  .wine-header button:focus-visible {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: 3px;
+  }
+
+  .wine-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 900px) {
+    .wine-menu-btn {
+      display: none;
+    }
+
+    .wine-nav-main {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+
+    .wine-nav-main__list {
+      display: flex;
+      gap: 1.75rem;
+      margin-left: 2rem;
+    }
+
+    .wine-nav-main__actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+</style>

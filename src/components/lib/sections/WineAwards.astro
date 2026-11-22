@@ -1,0 +1,112 @@
+---
+/**
+ * WineAwards — Press scores as a typographic list: a huge number per row with the wine, the guide
+ * and the year. No badges or icons; the ratings carry the section.
+ *
+ * @param {WineAward[]} awards - Scores to list.
+ * @param {string} title - Section heading.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: a plain list with a visible label for each value; large numerals keep 7:1+ contrast.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineAwards, type WineAward } from '../templates/winery/data';
+
+interface OwnProps {
+  awards?: WineAward[];
+  title?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { awards = wineAwards, title = 'Lo que dicen las guías', class: classAttr, ...rest } = Astro.props;
+const uid = `wa-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-awards', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="wine-awards__inner">
+    <h2 id={`${uid}-title`} class="wine-awards__title">{title}</h2>
+    <ul class="wine-awards__list">
+      {awards.map((a) => (
+        <li>
+          <span class="wine-awards__score"><span class="wn-sr">Puntuación </span>{a.score}</span>
+          <span class="wine-awards__wine">{a.wine}</span>
+          <span class="wine-awards__source">{a.source} · {a.year}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .wine-awards {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-surface);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-awards__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-awards__title {
+    margin: 0 0 var(--sp-8, 2rem);
+    font: 600 0.78rem/1 var(--wn-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-awards__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-awards__list li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0 var(--sp-5, 1.25rem);
+    padding: var(--sp-5, 1.25rem) 0;
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-awards__score {
+    grid-row: span 2;
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(3.4rem, 13vw, 7rem);
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    color: var(--wn-brand);
+  }
+
+  .wine-awards__wine {
+    font-family: var(--wn-font-display);
+    font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+    font-style: italic;
+    line-height: 1.1;
+  }
+
+  .wine-awards__source {
+    font-size: 0.9rem;
+    letter-spacing: 0.06em;
+    color: var(--wn-text-3);
+  }
+
+  @media (min-width: 900px) {
+    .wine-awards__list li {
+      grid-template-columns: 11rem minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .wine-awards__score {
+      grid-row: auto;
+    }
+  }
+</style>

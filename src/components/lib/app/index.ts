@@ -113,3 +113,15 @@ export { default as LawPortalNav } from './LawPortalNav.astro';
 export { default as LawPortalTopbar } from './LawPortalTopbar.astro';
 export { default as LawPortalHeading } from './LawPortalHeading.astro';
 export { default as LawSignIn } from './LawSignIn.astro';
+
+// Winery members area ("Solera")
+export { default as WineBottleLabel } from './WineBottleLabel.astro';
+export { default as WineMemberSummary } from './WineMemberSummary.astro';
+export { default as WineShipmentTracker } from './WineShipmentTracker.astro';
+export { default as WineCellar } from './WineCellar.astro';
+export { default as WineTastingNotebook } from './WineTastingNotebook.astro';
+export { default as WinePlanManager } from './WinePlanManager.astro';
+export { default as WineMemberNav } from './WineMemberNav.astro';
+export { default as WineMemberTopbar } from './WineMemberTopbar.astro';
+export { default as WineMemberHeading } from './WineMemberHeading.astro';
+export { default as WineSignIn } from './WineSignIn.astro';

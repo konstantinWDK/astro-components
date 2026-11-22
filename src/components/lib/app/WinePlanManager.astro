@@ -1,0 +1,413 @@
+---
+/**
+ * WinePlanManager — Manage the club plan: bottles per shipment, style and frequency, plus a pause
+ * switch. The price per shipment and per year recalculates as you change options and "Save changes"
+ * confirms the new plan (demo: state is kept in the page only).
+ *
+ * @param {WinePlan} plan - Current plan.
+ * @param {number[]} bottleOptions - Bottles per shipment to offer.
+ * @param {WineClubStyle[]} styles - Styles.
+ * @param {WineClubFrequency[]} frequencies - Delivery frequencies.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: radio groups with legends, the pause control is role="switch" with aria-checked,
+ * the price summary and confirmation are polite live regions; 48px controls.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import {
+  winePlan,
+  wineClubBottles,
+  wineClubStyles,
+  wineClubFrequencies,
+  winePricing,
+  type WinePlan,
+  type WineClubStyle,
+  type WineClubFrequency,
+} from '../templates/winery/data';
+
+interface OwnProps {
+  plan?: WinePlan;
+  bottleOptions?: number[];
+  styles?: WineClubStyle[];
+  frequencies?: WineClubFrequency[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  plan = winePlan,
+  bottleOptions = [2, 3, 4, 6],
+  styles = wineClubStyles,
+  frequencies = wineClubFrequencies,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+void wineClubBottles;
+const uid = `wpm-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-plan', classAttr]} aria-labelledby={`${uid}-title`} data-wine-plan data-pricing={JSON.stringify(winePricing)} {...rest}>
+  <h2 id={`${uid}-title`} class="wn-sr">Mi plan del club</h2>
+
+  <form class="wine-plan__form" novalidate data-plan-form>
+    <fieldset>
+      <legend>Botellas por envío</legend>
+      <div class="wine-plan__nums">
+        {bottleOptions.map((n) => (
+          <label>
+            <input type="radio" name="bottles" value={n} checked={n === plan.bottles} />
+            <span>{n}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Estilo</legend>
+      <div class="wine-plan__rows">
+        {styles.map((s) => (
+          <label>
+            <input type="radio" name="style" value={s.id} checked={s.id === plan.style} />
+            <span><strong>{s.name}</strong><small>{s.text}</small></span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Frecuencia</legend>
+      <div class="wine-plan__nums wine-plan__nums--wide">
+        {frequencies.map((f) => (
+          <label>
+            <input type="radio" name="frequency" value={f.id} checked={f.id === plan.frequency} />
+            <span>{f.name}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <div class="wine-plan__pause">
+      <button type="button" role="switch" aria-checked={plan.paused ? 'true' : 'false'} aria-labelledby={`${uid}-pause`} data-plan-pause>
+        <span class="wine-plan__knob" aria-hidden="true"></span>
+      </button>
+      <div>
+        <p id={`${uid}-pause`}>Pausar mi suscripción</p>
+        <small>No se te enviará ni cobrará nada hasta que la reactives.</small>
+      </div>
+    </div>
+  </form>
+
+  <aside class="wine-plan__summary" aria-label="Resumen del plan">
+    <p class="wine-plan__label">Tu plan</p>
+    <p class="wine-plan__line" data-plan-line aria-live="polite"></p>
+    <p class="wine-plan__price"><strong data-plan-price></strong> <span data-plan-per></span></p>
+    <p class="wine-plan__year" data-plan-year></p>
+    <button type="button" class="wn-btn" data-plan-save>Guardar cambios</button>
+    <p class="wine-plan__ok" role="status" aria-live="polite" data-plan-ok></p>
+  </aside>
+</section>
+
+<style>
+  .wine-plan {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-plan__form {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    align-content: start;
+  }
+
+  .wine-plan__form fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .wine-plan__form legend {
+    margin-bottom: var(--sp-3, 0.75rem);
+    padding: 0;
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-plan label:has(input[type='radio']) {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+
+  .wine-plan input[type='radio'] {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .wine-plan__nums {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .wine-plan__nums--wide {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .wine-plan__nums span {
+    display: grid;
+    place-items: center;
+    min-height: 56px;
+    border: 1px solid var(--wn-border-strong);
+    font-family: var(--wn-font-display);
+    font-size: 1.5rem;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .wine-plan__nums--wide span {
+    font-size: 1.05rem;
+  }
+
+  .wine-plan__rows {
+    display: grid;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-plan__rows span {
+    position: relative;
+    display: grid;
+    gap: 0.15rem;
+    align-content: center;
+    min-height: 56px;
+    padding: var(--sp-3, 0.75rem) var(--sp-3, 0.75rem) var(--sp-3, 0.75rem) var(--sp-8, 2rem);
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-plan__rows span::before {
+    content: '';
+    position: absolute;
+    left: var(--sp-3, 0.75rem);
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    border: 1.5px solid var(--wn-border-strong);
+    border-radius: 50%;
+  }
+
+  .wine-plan__rows strong {
+    font-family: var(--wn-font-display);
+    font-weight: 500;
+    font-size: 1.15rem;
+  }
+
+  .wine-plan__rows small {
+    font-size: 0.85rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-plan label:hover span {
+    background: rgba(var(--wn-brand-rgb), 0.07);
+  }
+
+  .wine-plan input:checked + span {
+    background: rgba(var(--wn-brand-rgb), 0.13);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-plan__nums input:checked + span {
+    color: var(--wn-brand);
+  }
+
+  .wine-plan__rows input:checked + span::before {
+    background: var(--wn-brand);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-plan input[type='radio']:focus-visible + span {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: 2px;
+  }
+
+  .wine-plan__pause {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-4, 1rem) 0;
+    border-top: 1px solid var(--wn-border);
+  }
+
+  .wine-plan__pause p {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .wine-plan__pause small {
+    color: var(--wn-text-3);
+  }
+
+  .wine-plan__pause button {
+    position: relative;
+    flex: none;
+    width: 60px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 18px;
+    background: var(--wn-surface);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .wine-plan__knob {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--wn-text-2);
+    transition: transform 0.2s ease, background 0.2s;
+  }
+
+  .wine-plan__pause button[aria-checked='true'] {
+    background: rgba(var(--wn-brand-rgb), 0.3);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-plan__pause button[aria-checked='true'] .wine-plan__knob {
+    transform: translateX(24px);
+    background: var(--wn-brand);
+  }
+
+  .wine-plan__summary {
+    align-self: start;
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--wn-border-strong);
+    background: var(--wn-bg-raised);
+  }
+
+  .wine-plan__label {
+    margin: 0;
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-plan__line {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--wn-text-2);
+  }
+
+  .wine-plan__price {
+    margin: 0;
+  }
+
+  .wine-plan__price strong {
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: 3.6rem;
+    line-height: 1;
+  }
+
+  .wine-plan__price span,
+  .wine-plan__year {
+    font-size: 0.88rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-plan__year {
+    margin: 0 0 var(--sp-3, 0.75rem);
+  }
+
+  .wine-plan__ok {
+    min-height: 1.3em;
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--wn-ok);
+  }
+
+  .wine-plan.is-paused .wine-plan__price strong {
+    text-decoration: line-through;
+    color: var(--wn-text-3);
+  }
+
+  @media (min-width: 960px) {
+    .wine-plan {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: var(--sp-12, 3rem);
+    }
+
+    .wine-plan__summary {
+      position: sticky;
+      top: var(--sp-6, 1.5rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-plan__knob,
+    .wine-plan__nums span,
+    .wine-plan__pause button {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  type Pricing = { avg: Record<string, number>; discount: Record<string, number>; perYear: Record<string, number> };
+  const money = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-wine-plan]').forEach((root) => {
+    const pricing: Pricing = JSON.parse(root.dataset.pricing ?? '{}');
+    const form = root.querySelector<HTMLFormElement>('[data-plan-form]');
+    const pause = root.querySelector<HTMLButtonElement>('[data-plan-pause]');
+    const line = root.querySelector<HTMLElement>('[data-plan-line]');
+    const price = root.querySelector<HTMLElement>('[data-plan-price]');
+    const per = root.querySelector<HTMLElement>('[data-plan-per]');
+    const year = root.querySelector<HTMLElement>('[data-plan-year]');
+    const ok = root.querySelector<HTMLElement>('[data-plan-ok]');
+    if (!form) return;
+    const val = (n: string) => form.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? '';
+    const label = (n: string) => form.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.closest('label')?.querySelector('strong, span')?.textContent ?? '';
+
+    const update = () => {
+      const bottles = Number(val('bottles')) || 2;
+      const total = Math.round((pricing.avg[val('style')] ?? 30) * bottles * (1 - (pricing.discount[String(bottles)] ?? 0)));
+      const n = pricing.perYear[val('frequency')] ?? 4;
+      const paused = pause?.getAttribute('aria-checked') === 'true';
+      root.classList.toggle('is-paused', paused);
+      if (line) line.textContent = paused ? 'Suscripción en pausa' : `${bottles} botellas · ${label('style')} · ${label('frequency').toLowerCase()}`;
+      if (price) price.textContent = money(total);
+      if (per) per.textContent = paused ? 'en pausa' : 'por envío';
+      if (year) year.textContent = paused ? 'No se cobrará nada hasta que reactives el plan.' : `${n} envíos al año · ${money(total * n)} en total, con envío incluido.`;
+      if (ok) ok.textContent = '';
+    };
+
+    form.addEventListener('change', update);
+    pause?.addEventListener('click', () => {
+      pause.setAttribute('aria-checked', String(pause.getAttribute('aria-checked') !== 'true'));
+      update();
+    });
+    root.querySelector('[data-plan-save]')?.addEventListener('click', () => {
+      if (ok) ok.textContent = pause?.getAttribute('aria-checked') === 'true' ? 'Plan pausado (demostración).' : 'Plan actualizado (demostración).';
+    });
+    update();
+  });
+</script>

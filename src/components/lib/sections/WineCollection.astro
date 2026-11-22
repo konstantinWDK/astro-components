@@ -1,0 +1,455 @@
+---
+/**
+ * WineCollection — The wine list as a large editorial index. Each row opens (one at a time, native
+ * <details name>) into the generated bottle, tasting notes, a 1–5 profile, the drinking window and a
+ * link to receive it in the club box. A type filter hides rows without reloading.
+ *
+ * @param {WineItem[]} wines - Wines to list.
+ * @param {string} clubHref - Link of the "receive it in my box" action.
+ * @param {string} title - Section heading.
+ * @param {boolean} filter - Show the type filter. Default true.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: works without JavaScript; summaries are 64px+ tall with a visible focus ring;
+ * the 1–5 profile is real text for screen readers; the filter buttons use aria-pressed and a polite
+ * live region announces the resulting count.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from '../app/WineBottleLabel.astro';
+import { wineList, wineMoney, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  wines?: WineItem[];
+  clubHref?: string;
+  title?: string;
+  filter?: boolean;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  wines = wineList,
+  clubHref = '/club',
+  title = 'Seis vinos, seis parcelas',
+  filter = true,
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const types = ['Todos', ...Array.from(new Set(wines.map((w) => w.type)))];
+const uid = `wc-${Math.random().toString(36).slice(2, 8)}`;
+const axis = { from: 2022, to: 2046, today: 2026 };
+const pct = (y: number) => Math.min(100, Math.max(0, ((y - axis.from) / (axis.to - axis.from)) * 100));
+const profileLabels: Array<[keyof WineItem['profile'], string]> = [
+  ['cuerpo', 'Cuerpo'],
+  ['acidez', 'Acidez'],
+  ['taninos', 'Taninos'],
+  ['madera', 'Madera'],
+];
+---
+
+<section class:list={['wine-ui', 'wine-col', classAttr]} aria-labelledby={`${uid}-title`} data-wine-collection {...rest}>
+  <div class="wine-col__inner">
+    <header class="wine-col__head">
+      <div>
+        <p class="wn-eyebrow">La colección</p>
+        <Heading id={`${uid}-title`} class="wine-col__title">{title}</Heading>
+      </div>
+      {filter && (
+        <div class="wine-col__filter" role="group" aria-label="Filtrar por tipo de vino">
+          {types.map((t, i) => (
+            <button type="button" class="wine-col__chip" data-type={t} aria-pressed={i === 0 ? 'true' : 'false'}>{t}</button>
+          ))}
+        </div>
+      )}
+    </header>
+    <p class="wn-sr" role="status" aria-live="polite" data-wine-count></p>
+
+    <div class="wine-col__list">
+      {wines.map((w, i) => (
+        <details class="wine-col__row" name={`${uid}-wines`} data-type={w.type} open={i === 0}>
+          <summary>
+            <span class="wine-col__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <span class="wine-col__name">
+              {w.name}
+              <small>{w.variety} · {w.type}</small>
+            </span>
+            <span class="wine-col__vintage">{w.vintage}</span>
+            <span class="wine-col__price">{wineMoney(w.price)}</span>
+          </summary>
+
+          <div class="wine-col__detail">
+            <div class="wine-col__bottle"><WineBottleLabel wine={w} decorative /></div>
+
+            <div class="wine-col__notes">
+              <p class="wine-col__lead">{w.nose}</p>
+              <dl class="wine-col__facts">
+                <div><dt>En boca</dt><dd>{w.palate}</dd></div>
+                <div><dt>Crianza</dt><dd>{w.aging}</dd></div>
+                <div><dt>Para comer</dt><dd>{w.pairing}</dd></div>
+              </dl>
+            </div>
+
+            <div class="wine-col__side">
+              <p class="wine-col__score"><strong>{w.score}</strong> <span>puntos<br />{w.bottles.toLocaleString('es-ES')} botellas</span></p>
+
+              <ul class="wine-col__profile" aria-label={`Perfil de ${w.name}`}>
+                {profileLabels.map(([k, label]) => (
+                  <li>
+                    <span>{label}</span>
+                    <span class="wine-col__dots" aria-hidden="true">
+                      {[1, 2, 3, 4, 5].map((n) => <i class:list={[n <= w.profile[k] && 'is-on']}></i>)}
+                    </span>
+                    <span class="wn-sr">{w.profile[k]} de 5</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div class="wine-col__window">
+                <p>Ventana de consumo <strong>{w.drinkFrom}–{w.drinkTo}</strong></p>
+                <div class="wine-col__axis" aria-hidden="true">
+                  <span class="wine-col__span" style={`left:${pct(w.drinkFrom)}%;width:${pct(w.drinkTo) - pct(w.drinkFrom)}%`}></span>
+                  <span class="wine-col__today" style={`left:${pct(axis.today)}%`}></span>
+                </div>
+              </div>
+
+              <a class="wn-btn wn-btn--ghost" href={clubHref}>Recibirlo en mi caja</a>
+            </div>
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .wine-col {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-col__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-col__head {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .wine-col__title {
+    margin: 0;
+    max-width: 14ch;
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 7vw, 4.8rem);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+  }
+
+  .wine-col__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1, 0.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .wine-col__chip {
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--wn-text-3);
+    font: 600 0.82rem/1 var(--wn-font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .wine-col__chip:hover {
+    color: var(--wn-text);
+  }
+
+  .wine-col__chip[aria-pressed='true'] {
+    color: var(--wn-text);
+    border-bottom-color: var(--wn-brand);
+  }
+
+  .wine-col__list {
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-col__row {
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-col__row[hidden] {
+    display: none;
+  }
+
+  .wine-col__row summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem) var(--sp-4, 1rem);
+    min-height: 72px;
+    padding: var(--sp-4, 1rem) 0;
+    cursor: pointer;
+    list-style: none;
+    transition: padding 0.25s ease;
+  }
+
+  .wine-col__row summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .wine-col__row summary:hover {
+    padding-left: var(--sp-3, 0.75rem);
+  }
+
+  .wine-col__num {
+    font-family: var(--wn-font-display);
+    font-size: 0.95rem;
+    color: var(--wn-accent);
+  }
+
+  .wine-col__name {
+    font-family: var(--wn-font-display);
+    font-size: clamp(1.7rem, 4.6vw, 3rem);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+  }
+
+  .wine-col__row[open] .wine-col__name {
+    font-style: italic;
+    color: var(--wn-brand);
+  }
+
+  .wine-col__name small {
+    display: block;
+    margin-top: 0.3rem;
+    font-family: var(--wn-font-body);
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-style: normal;
+    letter-spacing: 0.04em;
+    color: var(--wn-text-3);
+  }
+
+  .wine-col__vintage {
+    display: none;
+    font-family: var(--wn-font-display);
+    font-size: 1.2rem;
+    color: var(--wn-text-2);
+  }
+
+  .wine-col__price {
+    justify-self: end;
+    font-family: var(--wn-font-display);
+    font-size: 1.3rem;
+    color: var(--wn-text);
+  }
+
+  .wine-col__detail {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    padding: var(--sp-2, 0.5rem) 0 var(--sp-10, 2.5rem);
+    animation: wine-col-in 0.4s ease both;
+  }
+
+  .wine-col__bottle {
+    width: 110px;
+  }
+
+  .wine-col__lead {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-size: 1.4rem;
+    line-height: 1.35;
+    color: var(--wn-text);
+  }
+
+  .wine-col__facts {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+  }
+
+  .wine-col__facts dt {
+    font: 600 0.72rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-col__facts dd {
+    margin: 0.3rem 0 0;
+    line-height: 1.55;
+    color: var(--wn-text-2);
+  }
+
+  .wine-col__score {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+  }
+
+  .wine-col__score strong {
+    font-family: var(--wn-font-display);
+    font-size: 3.4rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--wn-brand);
+  }
+
+  .wine-col__score span {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--wn-text-3);
+  }
+
+  .wine-col__profile {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .wine-col__profile li {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    align-items: center;
+    font-size: 0.88rem;
+    color: var(--wn-text-2);
+  }
+
+  .wine-col__dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .wine-col__dots i {
+    width: 100%;
+    max-width: 34px;
+    height: 4px;
+    background: var(--wn-border-strong);
+  }
+
+  .wine-col__dots i.is-on {
+    background: var(--wn-brand);
+  }
+
+  .wine-col__window {
+    margin-bottom: var(--sp-6, 1.5rem);
+    font-size: 0.88rem;
+    color: var(--wn-text-2);
+  }
+
+  .wine-col__window p {
+    margin: 0 0 var(--sp-2, 0.5rem);
+  }
+
+  .wine-col__window strong {
+    color: var(--wn-text);
+  }
+
+  .wine-col__axis {
+    position: relative;
+    height: 10px;
+    border-bottom: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-col__span {
+    position: absolute;
+    bottom: 0;
+    height: 6px;
+    background: var(--wn-brand);
+    opacity: 0.85;
+  }
+
+  .wine-col__today {
+    position: absolute;
+    bottom: -3px;
+    width: 2px;
+    height: 14px;
+    background: var(--wn-accent);
+  }
+
+  @keyframes wine-col-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (min-width: 900px) {
+    .wine-col__head {
+      grid-template-columns: 1fr auto;
+      align-items: end;
+    }
+
+    .wine-col__row summary {
+      grid-template-columns: 3rem minmax(0, 1fr) 6rem 6rem;
+    }
+
+    .wine-col__vintage {
+      display: block;
+    }
+
+    .wine-col__detail {
+      grid-template-columns: 150px minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: var(--sp-10, 2.5rem);
+      padding-left: 3rem;
+    }
+
+    .wine-col__bottle {
+      width: 130px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-col__detail {
+      animation: none;
+    }
+
+    .wine-col__row summary {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wine-collection]').forEach((root) => {
+    const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('.wine-col__chip'));
+    const rows = Array.from(root.querySelectorAll<HTMLDetailsElement>('.wine-col__row'));
+    const status = root.querySelector<HTMLElement>('[data-wine-count]');
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const type = chip.dataset.type ?? 'Todos';
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        let shown = 0;
+        rows.forEach((row) => {
+          const match = type === 'Todos' || row.dataset.type === type;
+          row.hidden = !match;
+          if (match) shown += 1;
+          else row.open = false;
+        });
+        const firstVisible = rows.find((r) => !r.hidden);
+        if (firstVisible && !rows.some((r) => !r.hidden && r.open)) firstVisible.open = true;
+        if (status) status.textContent = `${shown} ${shown === 1 ? 'vino' : 'vinos'}`;
+      });
+    });
+  });
+</script>

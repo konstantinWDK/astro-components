@@ -1,0 +1,351 @@
+---
+/**
+ * WineTerroir — Interactive plot map of the estate. Pick a parcel from the list (or click it on the
+ * drawing) to read its variety, altitude, soil, planting year, exposure and which wines come from it.
+ *
+ * @param {WineParcel[]} parcels - Parcels with a polygon in a 480×320 box.
+ * @param {WineItem[]} wines - Wines, to list the ones grown in each parcel.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the parcel list is a real radio group (arrow keys); the map is a visual mirror and
+ * hidden from assistive tech; the selected parcel is announced through a polite live region. Without
+ * JavaScript every parcel is shown as a list.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineParcels, wineList, type WineParcel, type WineItem } from '../templates/winery/data';
+
+interface OwnProps {
+  parcels?: WineParcel[];
+  wines?: WineItem[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { parcels = wineParcels, wines = wineList, title = 'Cinco parcelas, cinco maneras de ser vino', headingLevel = 'h2', class: classAttr, ...rest } = Astro.props;
+
+const Heading = headingLevel;
+const alts = parcels.map((p) => p.altitude);
+const minAlt = Math.min(...alts) - 20;
+const maxAlt = Math.max(...alts) + 20;
+const altPct = (a: number) => ((a - minAlt) / (maxAlt - minAlt)) * 100;
+const centroid = (pts: string) => {
+  const xy = pts.split(' ').map((p) => p.split(',').map(Number));
+  return [xy.reduce((n, p) => n + p[0], 0) / xy.length, xy.reduce((n, p) => n + p[1], 0) / xy.length];
+};
+const uid = `wt-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-terroir', classAttr]} aria-labelledby={`${uid}-title`} data-wine-terroir {...rest}>
+  <div class="wine-terroir__inner">
+    <header class="wine-terroir__head">
+      <p class="wn-eyebrow">El terruño</p>
+      <Heading id={`${uid}-title`} class="wine-terroir__title">{title}</Heading>
+    </header>
+
+    <div class="wine-terroir__grid">
+      <svg class="wine-terroir__map" viewBox="0 0 480 320" aria-hidden="true" focusable="false">
+        <defs>
+          <pattern id={`${uid}-hatch`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+            <path d="M0 0V8" stroke="currentColor" stroke-width="0.8" opacity="0.28" />
+          </pattern>
+        </defs>
+        {parcels.map((p, i) => {
+          const [cx, cy] = centroid(p.points);
+          return (
+            <g class:list={['wine-terroir__plot', i === 0 && 'is-on']} data-plot={p.id} style={`--a:${(0.08 + (altPct(p.altitude) / 100) * 0.26).toFixed(2)}`}>
+              <polygon points={p.points} />
+              <polygon points={p.points} fill={`url(#${uid}-hatch)`} class="wine-terroir__hatch" />
+              <text x={cx} y={cy} text-anchor="middle" dominant-baseline="middle">{p.altitude} m</text>
+            </g>
+          );
+        })}
+      </svg>
+
+      <div class="wine-terroir__panel">
+        <div class="wine-terroir__list" role="radiogroup" aria-label="Parcelas de la finca">
+          {parcels.map((p, i) => (
+            <label class="wine-terroir__opt">
+              <input type="radio" name={`${uid}-parcel`} value={p.id} checked={i === 0} />
+              <span>{p.name}</span>
+            </label>
+          ))}
+        </div>
+
+        <p class="wn-sr" role="status" aria-live="polite" data-wine-terroir-status></p>
+
+        {parcels.map((p, i) => {
+          const made = wines.filter((w) => w.parcelId === p.id);
+          return (
+            <article class:list={['wine-terroir__card', i === 0 && 'is-on']} data-card={p.id}>
+              <h3 class="wine-terroir__name">{p.name}</h3>
+              <p class="wine-terroir__variety">{p.variety}</p>
+              <p class="wine-terroir__note">{p.note}</p>
+              <dl class="wine-terroir__facts">
+                <div><dt>Altitud</dt><dd>{p.altitude} m</dd></div>
+                <div><dt>Plantada en</dt><dd>{p.planted}</dd></div>
+                <div><dt>Superficie</dt><dd>{String(p.hectares).replace('.', ',')} ha</dd></div>
+                <div><dt>Orientación</dt><dd>{p.exposure}</dd></div>
+                <div class="wine-terroir__wide"><dt>Suelo</dt><dd>{p.soil}</dd></div>
+              </dl>
+              {made.length > 0 && (
+                <p class="wine-terroir__wines">
+                  De aquí sale:{' '}
+                  {made.map((w, k) => <>{k > 0 && ', '}<strong>{w.name}</strong></>)}
+                </p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .wine-terroir {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-bg-raised);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-terroir__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-terroir__title {
+    max-width: 16ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 4.2rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .wine-terroir__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .wine-terroir__map {
+    width: 100%;
+    height: auto;
+    padding: var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--wn-border);
+    background: var(--wn-bg);
+    color: var(--wn-text);
+  }
+
+  .wine-terroir__plot polygon:first-child {
+    fill: rgba(var(--wn-brand-rgb), var(--a, 0.2));
+    stroke: var(--wn-border-strong);
+    stroke-width: 1.4;
+    stroke-linejoin: round;
+    cursor: pointer;
+    transition: fill 0.25s, stroke 0.25s;
+  }
+
+  .wine-terroir__hatch {
+    pointer-events: none;
+  }
+
+  .wine-terroir__plot text {
+    font: 600 11px var(--wn-font-body);
+    fill: var(--wn-text-2);
+    pointer-events: none;
+  }
+
+  .wine-terroir__plot.is-on polygon:first-child {
+    fill: rgba(var(--wn-brand-rgb), 0.55);
+    stroke: var(--wn-brand);
+    stroke-width: 2.4;
+  }
+
+  .wine-terroir__plot.is-on text {
+    fill: var(--wn-on-brand);
+  }
+
+  .wine-terroir__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1, 0.25rem) var(--sp-5, 1.25rem);
+    margin-bottom: var(--sp-5, 1.25rem);
+  }
+
+  .wine-terroir__opt {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .wine-terroir__opt input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .wine-terroir__opt span {
+    padding: 0.4rem 0;
+    border-bottom: 2px solid transparent;
+    font: 600 0.82rem/1 var(--wn-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--wn-text-3);
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .wine-terroir__opt:hover span {
+    color: var(--wn-text);
+  }
+
+  .wine-terroir__opt input:checked + span {
+    color: var(--wn-text);
+    border-bottom-color: var(--wn-brand);
+  }
+
+  .wine-terroir__opt input:focus-visible + span {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: 4px;
+  }
+
+  .wine-terroir__card {
+    padding: var(--sp-5, 1.25rem) 0 0;
+    border-top: 1px solid var(--wn-border);
+  }
+
+  .wine-terroir__card + .wine-terroir__card {
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .wine-terroir__name {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1;
+    color: var(--wn-brand);
+  }
+
+  .wine-terroir__variety {
+    margin: 0.3rem 0 var(--sp-4, 1rem);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--wn-text-3);
+  }
+
+  .wine-terroir__note {
+    margin: 0 0 var(--sp-5, 1.25rem);
+    line-height: 1.65;
+    color: var(--wn-text-2);
+  }
+
+  .wine-terroir__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0 0 var(--sp-5, 1.25rem);
+  }
+
+  .wine-terroir__facts dt {
+    font: 600 0.7rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-terroir__facts dd {
+    margin: 0.25rem 0 0;
+    font-family: var(--wn-font-display);
+    font-size: 1.35rem;
+    color: var(--wn-text);
+  }
+
+  .wine-terroir__wide {
+    grid-column: 1 / -1;
+  }
+
+  .wine-terroir__wines {
+    margin: 0;
+    color: var(--wn-text-2);
+  }
+
+  .wine-terroir__wines strong {
+    color: var(--wn-text);
+    font-weight: 600;
+  }
+
+  /* With JavaScript only the chosen parcel is shown */
+  .wine-terroir:not(.is-live) .wine-terroir__list {
+    display: none;
+  }
+
+  .wine-terroir.is-live .wine-terroir__card {
+    display: none;
+    margin-top: 0;
+    animation: wine-terroir-in 0.35s ease both;
+  }
+
+  .wine-terroir.is-live .wine-terroir__card.is-on {
+    display: block;
+  }
+
+  @keyframes wine-terroir-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (min-width: 900px) {
+    .wine-terroir__grid {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: var(--sp-12, 3rem);
+      align-items: start;
+    }
+
+    .wine-terroir__map {
+      position: sticky;
+      top: var(--sp-8, 2rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-terroir.is-live .wine-terroir__card {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-wine-terroir]').forEach((root) => {
+    const radios = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+    const plots = Array.from(root.querySelectorAll<SVGGElement>('[data-plot]'));
+    const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-card]'));
+    const status = root.querySelector<HTMLElement>('[data-wine-terroir-status]');
+    root.classList.add('is-live');
+
+    const select = (id: string, announce = true) => {
+      plots.forEach((el) => el.classList.toggle('is-on', el.dataset.plot === id));
+      cards.forEach((el) => el.classList.toggle('is-on', el.dataset.card === id));
+      radios.forEach((r) => (r.checked = r.value === id));
+      const card = cards.find((c) => c.dataset.card === id);
+      if (announce && status && card) status.textContent = `${card.querySelector('h3')?.textContent ?? ''} seleccionada`;
+    };
+
+    radios.forEach((r) => r.addEventListener('change', () => select(r.value)));
+    plots.forEach((g) => g.addEventListener('click', () => select(g.dataset.plot ?? '')));
+  });
+</script>

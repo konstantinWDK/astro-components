@@ -1,0 +1,253 @@
+---
+/**
+ * WineFooter — Site footer closing with a call to action, link columns, a newsletter form
+ * (demo confirmation unless an action is given) and an oversized outlined wordmark.
+ *
+ * @param {string} brand - Brand name used for the wordmark.
+ * @param {{title:string,text:string,href:string,label:string}} cta - Closing call to action.
+ * @param {Array} columns - Link columns ({ title, links: [{ label, href }] }).
+ * @param {string} address - Winery address.
+ * @param {string} newsletterAction - Backend endpoint for the form. Empty shows a demo confirmation.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark, labelled email input, polite confirmation, the wordmark is
+ * decorative (aria-hidden); "Beber con moderación" notice is real text.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineBrand } from '../templates/winery/data';
+
+interface OwnProps {
+  brand?: string;
+  cta?: { title: string; text: string; href: string; label: string };
+  columns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  address?: string;
+  newsletterAction?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = wineBrand.name,
+  cta = { title: 'Ven a probarlo donde nace', text: 'Visitas con cata, picnic entre viñas y un día de vendimia. Grupos pequeños, siempre con reserva.', href: '/visitas', label: 'Reservar una visita' },
+  columns = [
+    { title: 'La bodega', links: [{ label: 'Los vinos', href: '/vinos' }, { label: 'La finca', href: '/finca' }, { label: 'Visitas', href: '/visitas' }] },
+    { title: 'Socios', links: [{ label: 'El club', href: '/club' }, { label: 'Acceder', href: '/acceso' }] },
+  ],
+  address = wineBrand.address,
+  newsletterAction = '',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `wfo-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<footer class:list={['wine-ui', 'wine-foot', classAttr]} {...rest}>
+  <div class="wine-foot__inner">
+    <div class="wine-foot__cta">
+      <h2>{cta.title}</h2>
+      <p>{cta.text}</p>
+      <a class="wn-btn" href={cta.href}>{cta.label}</a>
+    </div>
+
+    <div class="wine-foot__cols">
+      {columns.map((c) => (
+        <nav aria-label={c.title}>
+          <h3>{c.title}</h3>
+          <ul>
+            {c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+          </ul>
+        </nav>
+      ))}
+      <div>
+        <h3>Escríbenos</h3>
+        <address>
+          {address}<br />
+          <a href={`tel:${wineBrand.phone.replace(/\s/g, '')}`}>{wineBrand.phone}</a><br />
+          <a href={`mailto:${wineBrand.email}`}>{wineBrand.email}</a>
+        </address>
+      </div>
+    </div>
+
+    <form class="wine-foot__news" action={newsletterAction || undefined} method={newsletterAction ? 'post' : undefined} data-wine-news>
+      <label for={`${uid}-mail`}>Una carta al mes desde el viñedo</label>
+      <div>
+        <input id={`${uid}-mail`} type="email" name="email" required autocomplete="email" placeholder="tu@correo.com" />
+        <button type="submit" class="wn-btn">Suscribirme</button>
+      </div>
+      <p class="wine-foot__ok" role="status" aria-live="polite" data-wine-news-ok></p>
+    </form>
+  </div>
+
+  <p class="wine-foot__mark" aria-hidden="true">{brand}</p>
+
+  <p class="wine-foot__legal">
+    <span>© {new Date().getFullYear()} {brand}. Beber con moderación; prohibida la venta a menores.</span>
+    <span>Ribera del Duero</span>
+  </p>
+</footer>
+
+<style>
+  .wine-foot {
+    position: relative;
+    overflow: hidden;
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    background: var(--wn-bg-raised);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+    border-top: 1px solid var(--wn-border);
+  }
+
+  .wine-foot__inner {
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-foot__cta h2 {
+    max-width: 14ch;
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 7vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  .wine-foot__cta p {
+    max-width: 42ch;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  .wine-foot__cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-6, 1.5rem);
+  }
+
+  .wine-foot h3 {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font: 600 0.72rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-foot ul {
+    display: grid;
+    gap: 0.1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .wine-foot a:not(.wn-btn) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    color: var(--wn-text-2);
+    text-decoration: none;
+  }
+
+  .wine-foot a:not(.wn-btn):hover {
+    color: var(--wn-brand);
+    text-decoration: underline;
+  }
+
+  .wine-foot address {
+    font-style: normal;
+    line-height: 1.7;
+    color: var(--wn-text-2);
+  }
+
+  .wine-foot__news label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font-family: var(--wn-font-display);
+    font-size: 1.3rem;
+  }
+
+  .wine-foot__news div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .wine-foot__news input {
+    flex: 1 1 14rem;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font: 1rem var(--wn-font-body);
+  }
+
+  .wine-foot__ok {
+    min-height: 1.4em;
+    margin: var(--sp-2, 0.5rem) 0 0;
+    font-size: 0.9rem;
+    color: var(--wn-ok);
+  }
+
+  .wine-foot__mark {
+    margin: var(--sp-10, 2.5rem) 0 0;
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(6rem, 30vw, 22rem);
+    line-height: 0.8;
+    letter-spacing: -0.04em;
+    text-align: center;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--wn-border-strong);
+    user-select: none;
+  }
+
+  .wine-foot__legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    max-width: 1240px;
+    margin: var(--sp-6, 1.5rem) auto 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--wn-border);
+    font-size: 0.82rem;
+    color: var(--wn-text-3);
+  }
+
+  @media (min-width: 900px) {
+    .wine-foot__inner {
+      grid-template-columns: 1.1fr 1fr;
+      gap: var(--sp-12, 3rem) var(--sp-16, 4rem);
+    }
+
+    .wine-foot__cols {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .wine-foot__news {
+      grid-column: 2;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('[data-wine-news]').forEach((form) => {
+    if (form.getAttribute('action')) return;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ok = form.querySelector<HTMLElement>('[data-wine-news-ok]');
+      const email = (form.elements.namedItem('email') as HTMLInputElement | null)?.value ?? '';
+      if (ok) ok.textContent = `Hecho. Te escribiremos a ${email} (demostración).`;
+      form.reset();
+    });
+  });
+</script>

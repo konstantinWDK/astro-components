@@ -1,0 +1,584 @@
+---
+/**
+ * WineClub — Wine-club configurator. Choose bottles per shipment, a style and how often; the box
+ * drawn next to the form changes bottle by bottle and the price (with volume discount) updates live.
+ *
+ * @param {number[]} bottleOptions - Bottles per shipment to offer. Default [2, 3, 6].
+ * @param {WineClubStyle[]} styles - Styles (tintos, mixto, blancos, sorpresa).
+ * @param {WineClubFrequency[]} frequencies - Delivery frequencies.
+ * @param {string} action - Backend endpoint for the form. Empty shows a demo confirmation.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: three radio groups with legends, the live summary is aria-live="polite", the box
+ * drawing is decorative (aria-hidden) and every target is at least 48px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import WineBottleLabel from '../app/WineBottleLabel.astro';
+import {
+  wineClubBottles,
+  wineClubStyles,
+  wineClubFrequencies,
+  wineList,
+  wineById,
+  winePricing,
+  type WineClubStyle,
+  type WineClubFrequency,
+} from '../templates/winery/data';
+
+interface OwnProps {
+  bottleOptions?: number[];
+  styles?: WineClubStyle[];
+  frequencies?: WineClubFrequency[];
+  action?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  bottleOptions = wineClubBottles,
+  styles = wineClubStyles,
+  frequencies = wineClubFrequencies,
+  action = '',
+  title = 'Tu caja, a tu manera',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `wcl-${Math.random().toString(36).slice(2, 8)}`;
+
+const { avg, discount, perYear } = winePricing;
+
+const sets: Record<string, string[]> = {
+  tintos: ['solera', 'cumbre', 'solera', 'cumbre', 'solera', 'cumbre'],
+  mixto: ['solera', 'pizarra', 'alba', 'cumbre', 'cierzo', 'solera'],
+  blancos: ['pizarra', 'alba', 'pizarra', 'alba', 'pizarra', 'alba'],
+  sorpresa: ['?', '?', '?', '?', '?', '?'],
+};
+const mystery = {
+  ...wineList[0],
+  id: 'sorpresa',
+  name: 'Sorpresa',
+  variety: 'A elegir por Inés',
+  label: { bg: '#1a1210', ink: '#e8d9b8', accent: '#dcab4a' },
+};
+const bottleFor = (id: string) => (id === '?' ? mystery : wineById(id) ?? wineList[0]);
+const defaultBottles = bottleOptions.includes(4) ? 4 : bottleOptions[Math.min(1, bottleOptions.length - 1)];
+const defaultStyle = styles.find((s) => s.id === 'mixto') ?? styles[0];
+const defaultFreq = frequencies.find((f) => f.id === 'trimestral') ?? frequencies[0];
+---
+
+<section
+  class:list={['wine-ui', 'wine-club', classAttr]}
+  aria-labelledby={`${uid}-title`}
+  data-wine-club
+  data-config={JSON.stringify({ avg, discount, perYear })}
+  {...rest}
+>
+  <div class="wine-club__inner">
+    <header class="wine-club__head">
+      <p class="wn-eyebrow">El club de socios</p>
+      <Heading id={`${uid}-title`} class="wine-club__title">{title}</Heading>
+      <p class="wine-club__lead">Sin permanencia. Pausa, salta un envío o cancela cuando quieras desde tu área de socios.</p>
+    </header>
+
+    <div class="wine-club__grid">
+      <form class="wine-club__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-wine-club-form>
+        <fieldset>
+          <legend>1. Botellas por envío</legend>
+          <div class="wine-club__nums">
+            {bottleOptions.map((n) => (
+              <label>
+                <input type="radio" name="bottles" value={n} checked={n === defaultBottles} />
+                <span><strong>{n}</strong> botellas</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>2. Qué te gusta beber</legend>
+          <div class="wine-club__rows">
+            {styles.map((s) => (
+              <label>
+                <input type="radio" name="style" value={s.id} checked={s.id === defaultStyle.id} />
+                <span><strong>{s.name}</strong><small>{s.text}</small></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3. Cada cuánto</legend>
+          <div class="wine-club__rows wine-club__rows--inline">
+            {frequencies.map((f) => (
+              <label>
+                <input type="radio" name="frequency" value={f.id} checked={f.id === defaultFreq.id} />
+                <span><strong>{f.name}</strong></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div class="wine-club__contact">
+          <div>
+            <label for={`${uid}-name`}>Tu nombre</label>
+            <input id={`${uid}-name`} type="text" name="name" autocomplete="name" required />
+          </div>
+          <div>
+            <label for={`${uid}-email`}>Correo electrónico</label>
+            <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+          </div>
+        </div>
+
+        <p class="wine-club__error" role="alert" data-wine-club-error></p>
+        <button type="submit" class="wn-btn">Unirme al club</button>
+        <div class="wine-club__done" role="status" aria-live="polite" data-wine-club-done hidden>
+          <h3>Bienvenida al club</h3>
+          <p data-wine-club-done-text></p>
+          <button type="button" class="wn-btn wn-btn--ghost" data-wine-club-reset>Cambiar mi selección</button>
+        </div>
+      </form>
+
+      <aside class="wine-club__box" aria-label="Resumen de tu caja">
+        <div class="wine-club__crate" aria-hidden="true">
+          {Object.entries(sets).map(([styleId, ids]) => (
+            <div class="wine-club__set" data-set={styleId} hidden={styleId !== defaultStyle.id}>
+              {ids.map((id, i) => (
+                <div class="wine-club__slot" data-slot={i} hidden={i >= defaultBottles}>
+                  <WineBottleLabel wine={bottleFor(id)} decorative />
+                </div>
+              ))}
+            </div>
+          ))}
+          <div class="wine-club__rail"></div>
+        </div>
+
+        <p class="wine-club__sum" aria-live="polite" data-wine-club-sum></p>
+        <p class="wine-club__price">
+          <strong data-wine-club-price></strong>
+          <span data-wine-club-per></span>
+        </p>
+        <p class="wine-club__year" data-wine-club-year></p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<style>
+  .wine-club {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-club__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-club__title {
+    max-width: 12ch;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 7vw, 4.6rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  .wine-club__lead {
+    max-width: 46ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  .wine-club__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+  }
+
+  .wine-club__form {
+    position: relative;
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    align-content: start;
+  }
+
+  .wine-club__form fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .wine-club__form legend,
+  .wine-club__contact label {
+    display: block;
+    margin-bottom: var(--sp-3, 0.75rem);
+    padding: 0;
+    font: 600 0.74rem/1.2 var(--wn-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wn-accent);
+  }
+
+  .wine-club__form label:has(input[type='radio']) {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+
+  .wine-club__form input[type='radio'] {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .wine-club__nums {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .wine-club__nums span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 88px;
+    border: 1px solid var(--wn-border-strong);
+    font-size: 0.85rem;
+    color: var(--wn-text-3);
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .wine-club__nums strong {
+    font-family: var(--wn-font-display);
+    font-size: 2.6rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--wn-text);
+  }
+
+  .wine-club__rows {
+    display: grid;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-club__rows--inline {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--sp-2, 0.5rem);
+    border: 0;
+  }
+
+  .wine-club__rows span {
+    display: grid;
+    gap: 0.15rem;
+    padding: var(--sp-3, 0.75rem) var(--sp-3, 0.75rem) var(--sp-3, 0.75rem) var(--sp-8, 2rem);
+    min-height: 56px;
+    align-content: center;
+    border-bottom: 1px solid var(--wn-border);
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .wine-club__rows--inline span {
+    padding: var(--sp-3, 0.75rem);
+    min-height: 56px;
+    text-align: center;
+    border: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-club__rows span::before {
+    content: '';
+    position: absolute;
+    left: var(--sp-3, 0.75rem);
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    margin-top: -6px;
+    border: 1.5px solid var(--wn-border-strong);
+    border-radius: 50%;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .wine-club__rows--inline span::before {
+    display: none;
+  }
+
+  .wine-club__rows strong {
+    font-family: var(--wn-font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .wine-club__rows small {
+    font-size: 0.86rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-club__form label:hover span {
+    background: rgba(var(--wn-brand-rgb), 0.07);
+  }
+
+  .wine-club__form input:checked + span {
+    background: rgba(var(--wn-brand-rgb), 0.13);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-club__nums input:checked + span strong {
+    color: var(--wn-brand);
+  }
+
+  .wine-club__rows input:checked + span::before {
+    background: var(--wn-brand);
+    border-color: var(--wn-brand);
+  }
+
+  .wine-club__form input[type='radio']:focus-visible + span {
+    outline: 2px solid var(--wn-brand);
+    outline-offset: 2px;
+  }
+
+  .wine-club__contact {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .wine-club__contact input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--wn-border-strong);
+    border-radius: 2px;
+    background: var(--wn-bg-raised);
+    color: var(--wn-text);
+    font: 1rem var(--wn-font-body);
+  }
+
+  .wine-club__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--wn-bad);
+  }
+
+  .wine-club__done {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-8, 2rem);
+    background: var(--wn-bg);
+    border: 1px solid var(--wn-brand);
+  }
+
+  .wine-club__done[hidden] {
+    display: none;
+  }
+
+  .wine-club__done h3 {
+    margin: 0;
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--wn-brand);
+  }
+
+  .wine-club__done p {
+    margin: 0;
+    max-width: 42ch;
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  .wine-club__box {
+    align-self: start;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--wn-border-strong);
+    background: var(--wn-bg-raised);
+  }
+
+  .wine-club__crate {
+    position: relative;
+    height: 220px;
+    margin-bottom: var(--sp-5, 1.25rem);
+    overflow: hidden;
+  }
+
+  .wine-club__set {
+    position: absolute;
+    inset: 0 0 18px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .wine-club__set[hidden],
+  .wine-club__slot[hidden] {
+    display: none;
+  }
+
+  .wine-club__slot {
+    width: 54px;
+    flex: none;
+    animation: wine-club-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+
+  .wine-club__slot:nth-child(2) { animation-delay: 0.05s; }
+  .wine-club__slot:nth-child(3) { animation-delay: 0.1s; }
+  .wine-club__slot:nth-child(4) { animation-delay: 0.15s; }
+  .wine-club__slot:nth-child(5) { animation-delay: 0.2s; }
+  .wine-club__slot:nth-child(6) { animation-delay: 0.25s; }
+
+  .wine-club__rail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 22px;
+    background: var(--wn-surface-2);
+    border-top: 3px solid var(--wn-brand);
+  }
+
+  .wine-club__sum {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--wn-text-2);
+  }
+
+  .wine-club__price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0 0 var(--sp-2, 0.5rem);
+  }
+
+  .wine-club__price strong {
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: 3.4rem;
+    line-height: 1;
+  }
+
+  .wine-club__price span,
+  .wine-club__year {
+    font-size: 0.88rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-club__year {
+    margin: 0;
+  }
+
+  @keyframes wine-club-pop {
+    from { opacity: 0; transform: translateY(24px) scale(0.92); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (min-width: 900px) {
+    .wine-club__grid {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: var(--sp-12, 3rem);
+    }
+
+    .wine-club__contact {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .wine-club__box {
+      position: sticky;
+      top: var(--sp-8, 2rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wine-club__slot {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  type Config = { avg: Record<string, number>; discount: Record<string, number>; perYear: Record<string, number> };
+  const money = (n: number) => `${n.toLocaleString('es-ES')} €`;
+
+  document.querySelectorAll<HTMLElement>('[data-wine-club]').forEach((root) => {
+    const cfg: Config = JSON.parse(root.dataset.config ?? '{}');
+    const form = root.querySelector<HTMLFormElement>('[data-wine-club-form]');
+    if (!form) return;
+    const sum = root.querySelector<HTMLElement>('[data-wine-club-sum]');
+    const price = root.querySelector<HTMLElement>('[data-wine-club-price]');
+    const per = root.querySelector<HTMLElement>('[data-wine-club-per]');
+    const year = root.querySelector<HTMLElement>('[data-wine-club-year]');
+    const error = root.querySelector<HTMLElement>('[data-wine-club-error]');
+    const done = root.querySelector<HTMLElement>('[data-wine-club-done]');
+    const doneText = root.querySelector<HTMLElement>('[data-wine-club-done-text]');
+    const val = (name: string) => form.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? '';
+    const label = (name: string) => form.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.closest('label')?.querySelector('strong')?.textContent ?? '';
+
+    const update = () => {
+      const bottles = Number(val('bottles')) || 2;
+      const style = val('style');
+      const freq = val('frequency');
+      const base = cfg.avg[style] ?? 30;
+      const d = cfg.discount[String(bottles)] ?? 0;
+      const total = Math.round(base * bottles * (1 - d));
+      const n = cfg.perYear[freq] ?? 4;
+
+      root.querySelectorAll<HTMLElement>('[data-set]').forEach((s) => (s.hidden = s.dataset.set !== style));
+      root.querySelectorAll<HTMLElement>('[data-slot]').forEach((s) => (s.hidden = Number(s.dataset.slot) >= bottles));
+
+      if (sum) sum.textContent = `${bottles} botellas · ${label('style')} · ${label('frequency').toLowerCase()}`;
+      if (price) price.textContent = money(total);
+      if (per) per.textContent = `por envío${d ? ` · ${Math.round(d * 100)} % de ahorro` : ''}`;
+      if (year) year.textContent = `${n} envíos al año · ${money(total * n)} en total. Envío incluido.`;
+    };
+
+    form.addEventListener('change', update);
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      if (!name || !email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe tu nombre y un correo válido para unirte.';
+        (name ? email : (form.elements.namedItem('name') as HTMLInputElement)).focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      if (doneText) doneText.textContent = `${sum?.textContent ?? ''}. Te hemos escrito a ${email.value} para confirmar el primer envío (demostración).`;
+      if (done) {
+        done.hidden = false;
+        done.querySelector<HTMLButtonElement>('button')?.focus();
+      }
+    });
+    root.querySelector('[data-wine-club-reset]')?.addEventListener('click', () => {
+      if (done) done.hidden = true;
+    });
+
+    update();
+  });
+</script>

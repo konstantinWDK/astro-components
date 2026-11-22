@@ -1,0 +1,183 @@
+---
+/**
+ * WineStory — Family history told as an editorial timeline: a pinned pull-quote from the winemaker
+ * next to five milestones with large outlined years.
+ *
+ * @param {WineMilestone[]} milestones - Milestones (year, title, text).
+ * @param {string} quote - Pull-quote text.
+ * @param {string} author - Who says it.
+ * @param {string} role - Role of the author.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: milestones are an ordered list; the pull-quote is a <blockquote> with a <cite>;
+ * the outlined years are real text with a 3:1+ stroke contrast and the title carries the meaning.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/winery/wine-theme.css';
+import { wineMilestones, type WineMilestone } from '../templates/winery/data';
+
+interface OwnProps {
+  milestones?: WineMilestone[];
+  quote?: string;
+  author?: string;
+  role?: string;
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  milestones = wineMilestones,
+  quote = 'Un buen vino no se inventa en la bodega. Se hereda del viñedo, y nosotros solo intentamos no estropearlo.',
+  author = 'Inés Alonso',
+  role = 'Enóloga, cuarta generación',
+  title = 'Cien años y cuatro generaciones',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ws-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['wine-ui', 'wine-story', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="wine-story__inner">
+    <div class="wine-story__lead">
+      <p class="wn-eyebrow">La casa</p>
+      <Heading id={`${uid}-title`} class="wine-story__title">{title}</Heading>
+      <blockquote class="wine-story__quote">
+        <p>{quote}</p>
+        <footer><cite>{author}</cite> · {role}</footer>
+      </blockquote>
+    </div>
+
+    <ol class="wine-story__list">
+      {milestones.map((m) => (
+        <li class="wine-story__item">
+          <span class="wine-story__year">{m.year}</span>
+          <div>
+            <h3>{m.title}</h3>
+            <p>{m.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .wine-story {
+    padding: var(--sp-16, 4rem) var(--sp-4, 1rem);
+    background: var(--wn-bg);
+    color: var(--wn-text);
+    font-family: var(--wn-font-body);
+  }
+
+  .wine-story__inner {
+    display: grid;
+    gap: var(--sp-10, 2.5rem);
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .wine-story__title {
+    max-width: 12ch;
+    margin: 0 0 var(--sp-8, 2rem);
+    font-family: var(--wn-font-display);
+    font-weight: 300;
+    font-size: clamp(2.3rem, 6vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .wine-story__quote {
+    margin: 0;
+    padding-left: var(--sp-5, 1.25rem);
+    border-left: 2px solid var(--wn-brand);
+  }
+
+  .wine-story__quote p {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-family: var(--wn-font-display);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    line-height: 1.3;
+  }
+
+  .wine-story__quote footer {
+    font-size: 0.88rem;
+    color: var(--wn-text-3);
+  }
+
+  .wine-story__quote cite {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--wn-text);
+  }
+
+  .wine-story__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--wn-border-strong);
+  }
+
+  .wine-story__item {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-6, 1.5rem) 0;
+    border-bottom: 1px solid var(--wn-border);
+  }
+
+  .wine-story__year {
+    font-family: var(--wn-font-display);
+    font-weight: 500;
+    font-size: clamp(3rem, 10vw, 5rem);
+    line-height: 0.9;
+    color: transparent;
+    -webkit-text-stroke: 1.2px var(--wn-brand);
+    letter-spacing: -0.02em;
+  }
+
+  .wine-story__item h3 {
+    margin: 0 0 0.35rem;
+    font-family: var(--wn-font-display);
+    font-weight: 500;
+    font-size: 1.5rem;
+  }
+
+  .wine-story__item p {
+    margin: 0;
+    max-width: 46ch;
+    line-height: 1.6;
+    color: var(--wn-text-2);
+  }
+
+  @media (min-width: 900px) {
+    .wine-story__inner {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: var(--sp-16, 4rem);
+    }
+
+    .wine-story__lead {
+      position: sticky;
+      top: var(--sp-10, 2.5rem);
+      align-self: start;
+    }
+
+    .wine-story__item {
+      grid-template-columns: 9.5rem minmax(0, 1fr);
+      align-items: center;
+      gap: var(--sp-6, 1.5rem);
+    }
+
+    .wine-story__year {
+      font-size: 3.6rem;
+    }
+  }
+</style>
