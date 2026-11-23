@@ -1,0 +1,173 @@
+---
+/**
+ * AgtAppLayout — App shell for the "Nexo" AI-agents template: a fixed sidebar on desktop (bottom
+ * tab bar on phones), a sticky top bar with theme toggle, notifications and user menu, and the
+ * main content area.
+ *
+ * @param {string} title - Page title (suffixed with "Nexo").
+ * @param {string} current - Active route key (chat | agents | users | integrations | usage).
+ * @param {AgtRoutes} routes - Template route URLs.
+ * @param {boolean} wide - Use the full width for the content (chat). Default false.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, landmarks (<nav>, <header>, <main>), current page marked.
+ */
+import '../../../../styles/global.css';
+import './agt-theme.css';
+import AgtSidebar from '../../app/AgtSidebar.astro';
+import AgtTopbar from '../../app/AgtTopbar.astro';
+import { agtRoutes, agtData, type AgtRoutes } from './data';
+
+type Key = 'chat' | 'agents' | 'users' | 'integrations' | 'usage';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: AgtRoutes;
+  wide?: boolean;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Nexo · Un espacio para hablar con tus agentes de IA, gestionar usuarios y conectar tus APIs.',
+  current = 'chat',
+  routes = agtRoutes,
+  wide = false,
+  theme = 'dark',
+  noindex = true,
+  lang = 'es',
+} = Astro.props;
+
+const labels: Record<Key, string> = { chat: 'Chat', agents: 'Agentes', users: 'Usuarios', integrations: 'Integraciones', usage: 'Consumo' };
+const items = [
+  { label: 'Chat', short: 'Chat', href: routes.chat, hint: 'Habla con tus agentes' },
+  { label: 'Agentes', short: 'Agentes', href: routes.agents, hint: `${agtData.agents.length} configurados` },
+  { label: 'Usuarios', short: 'Equipo', href: routes.users, hint: `${agtData.users.length} personas` },
+  { label: 'Integraciones', short: 'APIs', href: routes.integrations, hint: 'Claves y servicios' },
+  { label: 'Consumo', short: 'Uso', href: routes.usage, hint: 'Tokens y gasto' },
+];
+const hrefs: Record<Key, string> = { chat: routes.chat, agents: routes.agents, users: routes.users, integrations: routes.integrations, usage: routes.usage };
+const notifications = [
+  { title: 'El webhook de Slack está fallando', text: 'Tres entregas seguidas con error 410. Revisa la URL.', time: 'hace 1 h', unread: true },
+  { title: 'Lucía Marín aún no ha aceptado', text: 'La invitación como lector caduca en 5 días.', time: 'hace 2 días', unread: true },
+  { title: 'Presupuesto al 69 %', text: 'Vais a gastar unos 540 € este mes con el ritmo actual.', time: 'hace 3 días' },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-agt" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} — Nexo`}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="agt-app-body">
+    <a href="#main-content" class="agt-app-skip">Saltar al contenido</a>
+
+    <AgtSidebar items={items} currentHref={hrefs[current]} workspace={agtData.workspace.name} plan={agtData.workspace.plan} used={74} homeHref={routes.home} />
+
+    <div class="agt-app-col">
+      <div class="agt-app-head">
+        <div class="agt-app-head__inner">
+          <AgtTopbar
+            title={labels[current]}
+            user={agtData.workspace.member}
+            notifications={notifications}
+            links={[{ label: 'Agentes', href: routes.agents }, { label: 'Usuarios', href: routes.users }, { label: 'Claves de API', href: routes.integrations }]}
+            signOutHref={routes.signIn}
+          />
+        </div>
+      </div>
+
+      <main id="main-content" class:list={['agt-app-main', wide && 'agt-app-main--wide']} tabindex="-1">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  .agt-app-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ag-bg);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-app-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: var(--ag-brand);
+    color: var(--ag-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .agt-app-skip:focus {
+    top: 1rem;
+  }
+
+  .agt-app-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--ag-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--ag-border);
+  }
+
+  .agt-app-head__inner {
+    display: flex;
+    align-items: center;
+    min-height: 60px;
+    padding: 0 1rem;
+  }
+
+  .agt-app-main {
+    padding: 1.5rem 1rem calc(4rem + 60px);
+    box-sizing: border-box;
+    max-width: 1280px;
+  }
+
+  .agt-app-main:focus {
+    outline: none;
+  }
+
+  @media (min-width: 900px) {
+    .agt-app-col {
+      margin-left: 252px;
+    }
+
+    .agt-app-head__inner {
+      padding: 0 2rem;
+    }
+
+    .agt-app-main {
+      padding: 2rem 2rem 4rem;
+    }
+  }
+</style>

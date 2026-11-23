@@ -1,0 +1,720 @@
+---
+/**
+ * AgtChat — General chat for an AI-agents workspace (UI only): a list of conversations, the
+ * message log with tool-call blocks you can open, a composer with an agent picker, and an
+ * inspector with the selected agent's model, tools and prompt. Sending runs a demo: the agent
+ * "thinks", then streams a canned reply word by word; a Stop button interrupts it. Nothing
+ * calls a real model.
+ *
+ * @param {AgtThread[]} threads - Conversations with their messages.
+ * @param {AgtAgent[]} agents - Agents that can be picked.
+ * @param {string[]} replies - Canned replies the demo cycles through.
+ * @param {string} agentsHref - Link to the agents page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the log is role="log" with aria-live="polite"; conversations are a list of
+ * buttons with aria-current; the composer has a visible label, Enter sends and Shift+Enter adds
+ * a line; the streaming reply is announced once finished; tool calls are native <details>;
+ * 44px targets and visible focus; with reduced motion the reply appears at once.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+import { agtThreads, agtAgents, agtCannedReplies, type AgtThread, type AgtAgent } from '../templates/ai-agents/data';
+
+interface OwnProps {
+  threads?: AgtThread[];
+  agents?: AgtAgent[];
+  replies?: string[];
+  agentsHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  threads = agtThreads,
+  agents = agtAgents,
+  replies = agtCannedReplies,
+  agentsHref = '/agentes',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `agc-${Math.random().toString(36).slice(2, 8)}`;
+const active = threads[0];
+const agentById = (id: string) => agents.find((a) => a.id === id) ?? agents[0];
+const usable = agents.filter((a) => a.status !== 'Borrador');
+
+// Split "**bold**" markers into plain and bold runs (no HTML injection)
+const runs = (text: string) => text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((t) => (t.startsWith('**') ? { b: true, t: t.slice(2, -2) } : { b: false, t }));
+---
+
+<section class:list={['agt-ui', 'agt-chat', classAttr]} aria-label="Chat con agentes" data-agt-chat data-replies={JSON.stringify(replies)} {...rest}>
+  <aside class="agt-chat__threads" aria-label="Conversaciones">
+    <button type="button" class="ag-btn agt-chat__new" data-new>Nueva conversación</button>
+    <ul role="list" data-thread-list>
+      {threads.map((t) => (
+        <li>
+          <button type="button" class="agt-thread" data-thread={t.id} data-agent={t.agent} aria-current={t.id === active.id ? 'true' : undefined}>
+            <strong>{t.title}</strong>
+            <span>{t.preview}</span>
+            <small>{agentById(t.agent).name} · {t.updated}</small>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </aside>
+
+  <div class="agt-chat__main">
+    {threads.map((t) => (
+      <div class="agt-chat__panel" data-panel={t.id} hidden={t.id !== active.id}>
+        <div class="agt-chat__log" role="log" aria-live="polite" aria-label={`Mensajes de «${t.title}»`} tabindex="0">
+          {t.messages.map((m) => {
+            const a = m.agent ? agentById(m.agent) : null;
+            return m.from === 'user' ? (
+              <article class="agt-msg agt-msg--user">
+                <div class="agt-msg__body">
+                  <p class="agt-msg__meta"><strong>Tú</strong><time>{m.time}</time></p>
+                  <div class="agt-msg__text"><p>{m.text}</p></div>
+                </div>
+              </article>
+            ) : (
+              <article class="agt-msg agt-msg--agent" style={`--h:${a?.hue ?? 92}`}>
+                <span class="agt-msg__av" aria-hidden="true">{a?.name[0]}</span>
+                <div class="agt-msg__body">
+                  <p class="agt-msg__meta"><strong>{a?.name}</strong><time>{m.time}</time></p>
+                  <div class="agt-msg__text">
+                    <p>{runs(m.text).map((r) => (r.b ? <strong>{r.t}</strong> : r.t))}</p>
+                  </div>
+                  {m.tool && (
+                    <details class="agt-tool">
+                      <summary>
+                        <span>Herramienta · {m.tool.name}</span>
+                        <small>{m.tool.ms} ms</small>
+                      </summary>
+                      <div class="agt-tool__body">
+                        <p class="agt-tool__k">Entrada</p>
+                        <pre>{m.tool.input}</pre>
+                        <p class="agt-tool__k">Resultado</p>
+                        <pre>{m.tool.output}</pre>
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    ))}
+
+    <form class="agt-chat__composer" data-composer>
+      <div class="ag-field agt-chat__who">
+        <label for={`${uid}-agent`}>Habla con</label>
+        <select id={`${uid}-agent`} class="ag-input" data-agent-select>
+          {usable.map((a) => <option value={a.id} selected={a.id === active.agent}>{a.name}</option>)}
+        </select>
+      </div>
+      <div class="ag-field agt-chat__text">
+        <label for={`${uid}-msg`}>Mensaje</label>
+        <textarea id={`${uid}-msg`} class="ag-input" rows="2" placeholder="Pregunta o encarga algo. Enter envía, Mayús+Enter añade una línea." data-input></textarea>
+      </div>
+      <div class="agt-chat__send">
+        <button type="submit" class="ag-btn" data-send>Enviar</button>
+        <button type="button" class="ag-btn ag-btn--ghost" data-stop hidden>Detener</button>
+      </div>
+      <p class="agt-chat__hint" data-status role="status"></p>
+    </form>
+  </div>
+
+  <aside class="agt-chat__inspector" aria-label="Agente seleccionado">
+    {agents.map((a) => (
+      <div data-agent-card={a.id} style={`--h:${a.hue}`} hidden={a.id !== active.agent}>
+        <p class="ag-eyebrow">Agente</p>
+        <p class="agt-insp__name"><span class="agt-msg__av" aria-hidden="true">{a.name[0]}</span>{a.name}</p>
+        <p class="agt-insp__role">{a.role}</p>
+        <dl>
+          <div><dt>Modelo</dt><dd>{a.model}</dd></div>
+          <div><dt>Estado</dt><dd>{a.status}</dd></div>
+          <div><dt>Éxito</dt><dd>{a.runs ? `${a.successRate} % en ${a.runs.toLocaleString('es-ES')} ejecuciones` : 'Sin ejecuciones'}</dd></div>
+        </dl>
+        <p class="agt-insp__k">Herramientas</p>
+        <ul role="list">{a.tools.map((tool) => <li>{tool}</li>)}</ul>
+        <p class="agt-insp__k">Instrucciones</p>
+        <p class="agt-insp__prompt">{a.prompt}</p>
+      </div>
+    ))}
+    <a class="ag-link" href={agentsHref}>Gestionar agentes</a>
+  </aside>
+
+  <template data-tpl-thread>
+    <li>
+      <button type="button" class="agt-thread" data-thread="" data-agent="">
+        <strong></strong>
+        <span></span>
+        <small></small>
+      </button>
+    </li>
+  </template>
+  <template data-tpl-panel>
+    <div class="agt-chat__panel" data-panel="">
+      <div class="agt-chat__log" role="log" aria-live="polite" tabindex="0"></div>
+    </div>
+  </template>
+  <template data-tpl-user>
+    <article class="agt-msg agt-msg--user">
+      <div class="agt-msg__body">
+        <p class="agt-msg__meta"><strong>Tú</strong><time></time></p>
+        <div class="agt-msg__text"><p></p></div>
+      </div>
+    </article>
+  </template>
+  <template data-tpl-agent>
+    <article class="agt-msg agt-msg--agent">
+      <span class="agt-msg__av" aria-hidden="true"></span>
+      <div class="agt-msg__body">
+        <p class="agt-msg__meta"><strong></strong><time></time></p>
+        <div class="agt-msg__text"><p></p></div>
+      </div>
+    </article>
+  </template>
+</section>
+
+<style>
+  .agt-chat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-4, 1rem);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-chat__threads {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    align-content: start;
+  }
+
+  .agt-chat__threads ul {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0 0 4px;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .agt-chat__threads li {
+    flex: 0 0 min(78%, 280px);
+    scroll-snap-align: start;
+  }
+
+  .agt-thread {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.7rem 0.85rem;
+    box-sizing: border-box;
+    border: 1px solid var(--ag-border);
+    border-radius: 12px;
+    background: var(--ag-bg-raised);
+    color: var(--ag-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .agt-thread:hover {
+    background: var(--ag-surface);
+  }
+
+  .agt-thread[aria-current='true'] {
+    border-color: var(--ag-brand);
+    background: var(--ag-surface);
+  }
+
+  .agt-thread strong {
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .agt-thread span {
+    font-size: 0.84rem;
+    color: var(--ag-text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .agt-thread small {
+    font: 500 0.72rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+  }
+
+  .agt-chat__main {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-width: 0;
+    height: calc(100dvh - 330px);
+    min-height: 480px;
+    border: 1px solid var(--ag-border);
+    border-radius: 16px;
+    background: var(--ag-bg-raised);
+    overflow: hidden;
+  }
+
+  .agt-chat__panel {
+    min-height: 0;
+    display: grid;
+  }
+
+  .agt-chat__panel[hidden] {
+    display: none;
+  }
+
+  .agt-chat__log {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5, 1.25rem);
+    padding: var(--sp-4, 1rem);
+    overflow-y: auto;
+    scroll-behavior: auto;
+  }
+
+  .agt-msg {
+    display: flex;
+    gap: var(--sp-3, 0.75rem);
+    max-width: 100%;
+  }
+
+  .agt-msg--user {
+    justify-content: flex-end;
+  }
+
+  .agt-msg--user .agt-msg__body {
+    max-width: min(88%, 620px);
+    padding: 0.65rem 0.9rem;
+    border-radius: 14px 14px 4px 14px;
+    background: var(--ag-surface-2);
+  }
+
+  .agt-msg--agent .agt-msg__body {
+    max-width: min(100%, 680px);
+  }
+
+  .agt-msg__av {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid hsl(var(--h, 92) 55% 55% / 0.7);
+    border-radius: 10px;
+    background: hsl(var(--h, 92) 55% 50% / 0.22);
+    font-weight: 750;
+    font-size: 0.9rem;
+    color: var(--ag-text);
+  }
+
+  .agt-msg__meta {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    align-items: baseline;
+    margin: 0 0 2px;
+    font-size: 0.82rem;
+  }
+
+  .agt-msg__meta time {
+    font: 500 0.72rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+  }
+
+  .agt-msg__text p {
+    margin: 0;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .agt-msg.is-thinking .agt-msg__text p::after {
+    content: '';
+    display: inline-block;
+    width: 0.5em;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--ag-brand);
+    animation: agt-blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes agt-blink {
+    to { visibility: hidden; }
+  }
+
+  .agt-tool {
+    margin-top: var(--sp-2, 0.5rem);
+    border: 1px solid var(--ag-border);
+    border-radius: 10px;
+    background: var(--ag-bg);
+  }
+
+  .agt-tool summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 44px;
+    padding: 0 0.8rem;
+    font: 500 0.82rem var(--ag-font-mono);
+    color: var(--ag-accent);
+    cursor: pointer;
+  }
+
+  .agt-tool summary small {
+    color: var(--ag-text-3);
+  }
+
+  .agt-tool__body {
+    padding: 0 0.8rem 0.8rem;
+  }
+
+  .agt-tool__k {
+    margin: 0.5rem 0 0.2rem;
+    font: 500 0.7rem var(--ag-font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ag-text-3);
+  }
+
+  .agt-tool pre {
+    margin: 0;
+    padding: 0.6rem 0.7rem;
+    border-radius: 8px;
+    background: var(--ag-surface);
+    font: 0.8rem/1.5 var(--ag-font-mono);
+    color: var(--ag-text-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .agt-chat__composer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--ag-border);
+    background: var(--ag-bg);
+  }
+
+  .agt-chat__text textarea {
+    min-height: 64px;
+    max-height: 180px;
+  }
+
+  .agt-chat__send {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .agt-chat__send .ag-btn {
+    flex: 1;
+  }
+
+  .agt-chat__send [hidden] {
+    display: none;
+  }
+
+  .agt-chat__hint {
+    min-height: 1.2em;
+    margin: 0;
+    font: 500 0.76rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+  }
+
+  .agt-chat__inspector {
+    display: none;
+  }
+
+  .agt-insp__name {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  .agt-chat__inspector [hidden] {
+    display: none;
+  }
+
+  .agt-insp__role {
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-4, 1rem);
+    color: var(--ag-text-2);
+    font-size: 0.92rem;
+  }
+
+  .agt-chat__inspector dl {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0 0 var(--sp-4, 1rem);
+  }
+
+  .agt-chat__inspector dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    padding-bottom: var(--sp-2, 0.5rem);
+    border-bottom: 1px solid var(--ag-border);
+    font-size: 0.86rem;
+  }
+
+  .agt-chat__inspector dt {
+    color: var(--ag-text-3);
+  }
+
+  .agt-chat__inspector dd {
+    margin: 0;
+    text-align: right;
+    font-family: var(--ag-font-mono);
+    font-size: 0.8rem;
+  }
+
+  .agt-insp__k {
+    margin: var(--sp-4, 1rem) 0 var(--sp-2, 0.5rem);
+    font: 500 0.7rem var(--ag-font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ag-text-3);
+  }
+
+  .agt-chat__inspector ul {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.88rem;
+  }
+
+  .agt-insp__prompt {
+    margin: 0 0 var(--sp-4, 1rem);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--ag-text-2);
+  }
+
+  @media (min-width: 900px) {
+    .agt-chat {
+      grid-template-columns: 260px minmax(0, 1fr);
+    }
+
+    .agt-chat__threads ul {
+      display: grid;
+      overflow: visible;
+    }
+
+    .agt-chat__threads li {
+      flex: none;
+    }
+
+    .agt-chat__main {
+      height: calc(100dvh - 210px);
+      min-height: 560px;
+    }
+
+    .agt-chat__composer {
+      grid-template-columns: 200px minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .agt-chat__hint {
+      grid-column: 1 / -1;
+    }
+
+    .agt-chat__send {
+      flex-direction: column;
+    }
+  }
+
+  @media (min-width: 1240px) {
+    .agt-chat {
+      grid-template-columns: 250px minmax(0, 1fr) 290px;
+    }
+
+    .agt-chat__inspector {
+      display: block;
+      align-self: start;
+      padding: var(--sp-4, 1rem);
+      border: 1px solid var(--ag-border);
+      border-radius: 16px;
+      background: var(--ag-bg-raised);
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const replies: string[] = JSON.parse(root.dataset.replies || '[]');
+    const list = root.querySelector<HTMLElement>('[data-thread-list]')!;
+    const select = root.querySelector<HTMLSelectElement>('[data-agent-select]')!;
+    const input = root.querySelector<HTMLTextAreaElement>('[data-input]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-composer]')!;
+    const send = root.querySelector<HTMLButtonElement>('[data-send]')!;
+    const stop = root.querySelector<HTMLButtonElement>('[data-stop]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const main = root.querySelector<HTMLElement>('.agt-chat__main')!;
+    const tpl = (name: string) => root.querySelector<HTMLTemplateElement>(`[data-tpl-${name}]`)!;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let reply = 0;
+    let timer = 0;
+    let streaming = false;
+
+    const now = () => new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const agentName = () => select.selectedOptions[0]?.textContent ?? 'Agente';
+    const panel = () => root.querySelector<HTMLElement>('[data-panel]:not([hidden])');
+    const log = () => panel()?.querySelector<HTMLElement>('.agt-chat__log') ?? null;
+
+    function showCard() {
+      root.querySelectorAll<HTMLElement>('[data-agent-card]').forEach((c) => { c.hidden = c.dataset.agentCard !== select.value; });
+    }
+    select.addEventListener('change', showCard);
+
+    function openThread(id: string) {
+      list.querySelectorAll<HTMLElement>('[data-thread]').forEach((b) => {
+        if (b.dataset.thread === id) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+      });
+      main.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== id; });
+      const btn = list.querySelector<HTMLElement>(`[data-thread="${id}"]`);
+      if (btn?.dataset.agent && [...select.options].some((o) => o.value === btn.dataset.agent)) {
+        select.value = btn.dataset.agent;
+        showCard();
+      }
+      const l = log();
+      if (l) l.scrollTop = l.scrollHeight;
+    }
+    list.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-thread]');
+      if (b) openThread(b.dataset.thread!);
+    });
+
+    function newThread(title: string) {
+      const id = `n${Date.now()}`;
+      const li = tpl('thread').content.firstElementChild!.cloneNode(true) as HTMLElement;
+      const btn = li.querySelector<HTMLElement>('button')!;
+      btn.dataset.thread = id;
+      btn.dataset.agent = select.value;
+      btn.querySelector('strong')!.textContent = title.slice(0, 44);
+      btn.querySelector('span')!.textContent = 'Conversación nueva';
+      btn.querySelector('small')!.textContent = `${agentName()} · Ahora`;
+      list.prepend(li);
+      const p = tpl('panel').content.firstElementChild!.cloneNode(true) as HTMLElement;
+      p.dataset.panel = id;
+      p.querySelector('.agt-chat__log')!.setAttribute('aria-label', `Mensajes de «${title.slice(0, 44)}»`);
+      main.insertBefore(p, form);
+      openThread(id);
+    }
+
+    root.querySelector('[data-new]')?.addEventListener('click', () => {
+      input.value = '';
+      newThread('Conversación nueva');
+      input.focus();
+    });
+
+    function addUser(text: string) {
+      const el = tpl('user').content.firstElementChild!.cloneNode(true) as HTMLElement;
+      el.querySelector('time')!.textContent = now();
+      el.querySelector('.agt-msg__text p')!.textContent = text;
+      log()?.append(el);
+    }
+
+    function addAgent() {
+      const el = tpl('agent').content.firstElementChild!.cloneNode(true) as HTMLElement;
+      const card = root.querySelector<HTMLElement>(`[data-agent-card="${select.value}"]`);
+      el.style.setProperty('--h', card?.style.getPropertyValue('--h') || '92');
+      el.querySelector('.agt-msg__av')!.textContent = agentName()[0];
+      el.querySelector('strong')!.textContent = agentName();
+      el.querySelector('time')!.textContent = now();
+      el.classList.add('is-thinking');
+      log()?.append(el);
+      return el.querySelector<HTMLElement>('.agt-msg__text p')!;
+    }
+
+    const scroll = () => { const l = log(); if (l) l.scrollTop = l.scrollHeight; };
+
+    function setStreaming(on: boolean) {
+      streaming = on;
+      send.disabled = on;
+      stop.hidden = !on;
+    }
+
+    function run(text: string) {
+      const l = log();
+      if (!l) return;
+      if (!l.children.length && panel()?.dataset.panel?.startsWith('n')) {
+        const btn = list.querySelector<HTMLElement>(`[data-thread="${panel()!.dataset.panel}"]`);
+        if (btn) {
+          btn.querySelector('strong')!.textContent = text.slice(0, 44);
+          btn.querySelector('span')!.textContent = text.slice(0, 60);
+          l.setAttribute('aria-label', `Mensajes de «${text.slice(0, 44)}»`);
+        }
+      }
+      addUser(text);
+      const target = addAgent();
+      const words = replies[reply++ % replies.length].split(' ');
+      const el = target.closest('.agt-msg')!;
+      status.textContent = `${agentName()} está escribiendo…`;
+      setStreaming(true);
+      scroll();
+      const finish = (stopped: boolean) => {
+        window.clearTimeout(timer);
+        el.classList.remove('is-thinking');
+        setStreaming(false);
+        status.textContent = stopped ? 'Respuesta detenida.' : 'Respuesta completa.';
+        scroll();
+        input.focus();
+      };
+      if (reduce) {
+        target.textContent = words.join(' ');
+        finish(false);
+        return;
+      }
+      let i = 0;
+      const tick = () => {
+        i++;
+        target.textContent = words.slice(0, i).join(' ');
+        scroll();
+        if (i >= words.length) finish(false); else timer = window.setTimeout(tick, 38);
+      };
+      timer = window.setTimeout(tick, 650);
+      stop.onclick = () => finish(true);
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text || streaming) {
+        if (!text) status.textContent = 'Escribe un mensaje primero.';
+        return;
+      }
+      input.value = '';
+      run(text);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    scroll();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agt-chat]').forEach(init);
+</script>

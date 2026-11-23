@@ -63,6 +63,7 @@
     'theater': isEs ? 'Telón · Entradas de teatro' : isRu ? 'Telón · Театральные билеты' : 'Telón · Theatre Tickets',
     'fishing': isEs ? 'Corcho · Tienda de pesca' : isRu ? 'Corcho · Рыболовный магазин' : 'Corcho · Fishing Shop',
     'motocross': isEs ? 'Barro · Motos y equipo de cross' : isRu ? 'Barro · Кросс: мотоциклы и экипировка' : 'Barro · Motocross Shop',
+    'ai-agents': isEs ? 'Nexo · Espacio de agentes de IA' : isRu ? 'Nexo · Пространство ИИ-агентов' : 'Nexo · AI Agents Workspace',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

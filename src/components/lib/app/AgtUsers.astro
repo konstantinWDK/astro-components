@@ -1,0 +1,609 @@
+---
+/**
+ * AgtUsers — User management for an AI-agents workspace (UI only): a searchable members table
+ * (on phones each row becomes a stacked card), a role picker per member, suspend/reactivate and
+ * remove actions, an invite dialog, and a role-permissions matrix written out as a real table.
+ * Changes only update the page; nothing is sent anywhere.
+ *
+ * @param {AgtUser[]} users - Members of the workspace.
+ * @param {Record<AgtRole, string>} roleHelp - One-line description of each role.
+ * @param {number} seats - Seats included in the plan.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: search has a label and filters live; every role select is labelled with the
+ * member's name; destructive actions need a confirmation dialog; permissions are words ("Sí" /
+ * "No"), never only colour or ticks; changes are announced in a role="status" region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+import { agtUsers, agtRoleHelp, type AgtUser, type AgtRole } from '../templates/ai-agents/data';
+
+interface OwnProps {
+  users?: AgtUser[];
+  roleHelp?: Record<AgtRole, string>;
+  seats?: number;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { users = agtUsers, roleHelp = agtRoleHelp, seats = 8, class: classAttr, ...rest } = Astro.props;
+
+const uid = `agu-${Math.random().toString(36).slice(2, 8)}`;
+const roles = Object.keys(roleHelp) as AgtRole[];
+const tone = (s: string) => (s === 'Activo' ? 'ag-pill--ok' : s === 'Invitado' ? 'ag-pill--warn' : 'ag-pill--bad');
+const perms: Array<[string, boolean[]]> = [
+  ['Conversar con agentes', [true, true, true, true]],
+  ['Crear y editar agentes', [true, true, true, false]],
+  ['Gestionar usuarios', [true, true, false, false]],
+  ['Añadir integraciones y claves', [true, true, false, false]],
+  ['Ver el consumo y la facturación', [true, true, false, false]],
+  ['Eliminar el espacio de trabajo', [true, false, false, false]],
+];
+---
+
+<section class:list={['agt-ui', 'agt-usr', classAttr]} aria-label="Usuarios" data-agt-usr {...rest}>
+  <div class="agt-usr__bar">
+    <div class="ag-field agt-usr__search">
+      <label for={`${uid}-q`}>Buscar por nombre o correo</label>
+      <input id={`${uid}-q`} type="search" class="ag-input" autocomplete="off" data-search />
+    </div>
+    <p class="agt-usr__seats"><strong data-count>{users.length}</strong> de {seats} puestos usados</p>
+    <button type="button" class="ag-btn" data-open-invite>Invitar a alguien</button>
+  </div>
+
+  <p class="ag-sr" role="status" data-status></p>
+
+  <table class="agt-usr__table">
+    <caption class="ag-sr">Miembros del espacio de trabajo</caption>
+    <thead>
+      <tr><th scope="col">Persona</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">Última actividad</th><th scope="col"><span class="ag-sr">Acciones</span></th></tr>
+    </thead>
+    <tbody data-body>
+      {users.map((u) => (
+        <tr data-name={`${u.name} ${u.email}`.toLowerCase()} data-status={u.status}>
+          <th scope="row" data-label="Persona">
+            <span class="agt-usr__who">
+              <span class="agt-usr__av" aria-hidden="true">{u.name.split(' ').map((w) => w[0]).slice(0, 2).join('')}</span>
+              <span><strong data-uname>{u.name}</strong><small>{u.email}</small></span>
+            </span>
+          </th>
+          <td data-label="Rol">
+            <label class="ag-sr" for={`${uid}-r-${u.id}`}>Rol de {u.name}</label>
+            <select id={`${uid}-r-${u.id}`} class="ag-input agt-usr__role" disabled={u.role === 'Propietaria'} data-role>
+              {roles.map((r) => <option value={r} selected={r === u.role}>{r}</option>)}
+            </select>
+          </td>
+          <td data-label="Estado"><span class={`ag-pill ${tone(u.status)}`} data-pill>{u.status}</span></td>
+          <td data-label="Última actividad">{u.lastSeen}</td>
+          <td class="agt-usr__acts">
+            {u.role !== 'Propietaria' && (
+              <>
+                <button type="button" class="ag-btn ag-btn--ghost" data-suspend>{u.status === 'Suspendido' ? 'Reactivar' : 'Suspender'}</button>
+                <button type="button" class="ag-btn ag-btn--danger" data-remove>Quitar</button>
+              </>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <p class="agt-usr__empty" data-empty hidden>Nadie coincide con esa búsqueda.</p>
+
+  <h2 class="agt-usr__h2">Qué puede hacer cada rol</h2>
+  <div class="agt-usr__scroll">
+    <table class="agt-usr__matrix">
+      <caption class="ag-sr">Permisos por rol</caption>
+      <thead>
+        <tr><th scope="col">Permiso</th>{roles.map((r) => <th scope="col">{r}</th>)}</tr>
+      </thead>
+      <tbody>
+        {perms.map(([label, vals]) => (
+          <tr><th scope="row">{label}</th>{vals.map((v) => <td class:list={[v && 'is-yes']}>{v ? 'Sí' : 'No'}</td>)}</tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <ul class="agt-usr__help" role="list">
+    {roles.map((r) => <li><strong>{r}.</strong> {roleHelp[r]}</li>)}
+  </ul>
+
+  <dialog class="agt-dlg" aria-labelledby={`${uid}-it`} data-invite>
+    <form method="dialog" class="agt-dlg__form" data-invite-form novalidate>
+      <h2 id={`${uid}-it`}>Invitar a alguien</h2>
+      <div class="ag-field">
+        <label for={`${uid}-ie`}>Correo electrónico</label>
+        <input id={`${uid}-ie`} type="email" class="ag-input" name="email" autocomplete="off" required />
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-ir`}>Rol</label>
+        <select id={`${uid}-ir`} class="ag-input" name="role">
+          {roles.filter((r) => r !== 'Propietaria').map((r) => <option value={r} selected={r === 'Lector'}>{r}</option>)}
+        </select>
+      </div>
+      <p class="agt-dlg__error" role="alert" data-invite-error></p>
+      <div class="agt-dlg__actions">
+        <button type="button" class="ag-btn ag-btn--ghost" data-invite-cancel>Cancelar</button>
+        <button type="submit" class="ag-btn">Enviar invitación</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="agt-dlg" aria-labelledby={`${uid}-ct`} data-confirm>
+    <form method="dialog" class="agt-dlg__form">
+      <h2 id={`${uid}-ct`}>¿Quitar a <span data-confirm-name></span>?</h2>
+      <p class="agt-usr__warn">Perderá el acceso a los agentes y a las conversaciones compartidas. Sus claves no se borran. Esto es una demostración: no se envía nada.</p>
+      <div class="agt-dlg__actions">
+        <button type="button" class="ag-btn ag-btn--ghost" data-confirm-cancel>Cancelar</button>
+        <button type="button" class="ag-btn ag-btn--danger" data-confirm-ok>Quitar del espacio</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template data-tpl-row>
+    <tr data-name="" data-status="Invitado">
+      <th scope="row" data-label="Persona">
+        <span class="agt-usr__who">
+          <span class="agt-usr__av" aria-hidden="true"></span>
+          <span><strong data-uname></strong><small></small></span>
+        </span>
+      </th>
+      <td data-label="Rol">
+        <label class="ag-sr">Rol</label>
+        <select class="ag-input agt-usr__role" data-role>
+          {roles.filter((r) => r !== 'Propietaria').map((r) => <option value={r}>{r}</option>)}
+        </select>
+      </td>
+      <td data-label="Estado"><span class="ag-pill ag-pill--warn" data-pill>Invitado</span></td>
+      <td data-label="Última actividad">sin acceso aún</td>
+      <td class="agt-usr__acts">
+        <button type="button" class="ag-btn ag-btn--ghost" data-suspend>Suspender</button>
+        <button type="button" class="ag-btn ag-btn--danger" data-remove>Quitar</button>
+      </td>
+    </tr>
+  </template>
+</section>
+
+<style>
+  .agt-usr {
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-usr__bar {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-5, 1.25rem);
+  }
+
+  .agt-usr__seats {
+    margin: 0;
+    font: 500 0.82rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+  }
+
+  .agt-usr__table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .agt-usr__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .agt-usr__table tbody {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .agt-usr__table tr {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ag-border);
+    border-radius: 14px;
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-usr__table tr[hidden] {
+    display: none;
+  }
+
+  .agt-usr__table th,
+  .agt-usr__table td {
+    display: grid;
+    grid-template-columns: 8rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    padding: 0;
+    text-align: left;
+    font-weight: 400;
+    font-size: 0.92rem;
+  }
+
+  .agt-usr__table th[data-label]::before,
+  .agt-usr__table td[data-label]::before {
+    content: attr(data-label);
+    font: 500 0.72rem var(--ag-font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ag-text-3);
+  }
+
+  .agt-usr__table th[data-label] {
+    grid-template-columns: 1fr;
+  }
+
+  .agt-usr__table th[data-label]::before {
+    display: none;
+  }
+
+  .agt-usr__who {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+  }
+
+  .agt-usr__who strong,
+  .agt-usr__who small {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .agt-usr__who small {
+    font-weight: 400;
+    font-size: 0.82rem;
+    color: var(--ag-text-3);
+  }
+
+  .agt-usr__av {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--ag-surface-2);
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  .agt-usr__role {
+    max-width: 220px;
+  }
+
+  .agt-usr__acts {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .agt-usr__acts:empty {
+    display: none !important;
+  }
+
+  .agt-usr__acts .ag-btn {
+    flex: 1 1 auto;
+    padding: 0 0.8rem;
+    font-size: 0.88rem;
+  }
+
+  .agt-usr__empty {
+    margin: var(--sp-4, 1rem) 0 0;
+    color: var(--ag-text-3);
+  }
+
+  .agt-usr__h2 {
+    margin: var(--sp-10, 2.5rem) 0 var(--sp-4, 1rem);
+    font-size: 1.4rem;
+    font-weight: 750;
+    letter-spacing: -0.015em;
+  }
+
+  .agt-usr__scroll {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--ag-border);
+    border-radius: 14px;
+  }
+
+  .agt-usr__matrix {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .agt-usr__matrix th,
+  .agt-usr__matrix td {
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--ag-border);
+    text-align: left;
+  }
+
+  .agt-usr__matrix thead th {
+    font: 500 0.74rem var(--ag-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ag-text-3);
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-usr__matrix tbody th {
+    font-weight: 500;
+  }
+
+  .agt-usr__matrix td {
+    color: var(--ag-text-3);
+  }
+
+  .agt-usr__matrix td.is-yes {
+    color: var(--ag-ok);
+    font-weight: 700;
+  }
+
+  .agt-usr__matrix tr:last-child th,
+  .agt-usr__matrix tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .agt-usr__help {
+    display: grid;
+    gap: 4px;
+    margin: var(--sp-4, 1rem) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.88rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-usr__warn {
+    margin: 0;
+    color: var(--ag-text-2);
+    line-height: 1.55;
+  }
+
+  .agt-dlg {
+    width: min(480px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    inset: 0;
+    padding: 0;
+    border: 1px solid var(--ag-border-strong);
+    border-radius: 18px;
+    background: var(--ag-bg-raised);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+    overflow: auto;
+  }
+
+  .agt-dlg::backdrop {
+    background: rgba(5, 6, 8, 0.66);
+  }
+
+  .agt-dlg__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-5, 1.25rem);
+  }
+
+  .agt-dlg__form h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 750;
+  }
+
+  .agt-dlg__error {
+    min-height: 1.2em;
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ag-bad);
+  }
+
+  .agt-dlg__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  @media (min-width: 900px) {
+    .agt-usr__bar {
+      grid-template-columns: minmax(0, 360px) 1fr auto;
+      align-items: end;
+    }
+
+    .agt-usr__seats {
+      justify-self: end;
+    }
+
+    .agt-usr__table thead {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+    }
+
+    .agt-usr__table thead tr {
+      display: table-row;
+    }
+
+    .agt-usr__table,
+    .agt-usr__table tbody {
+      display: table;
+      width: 100%;
+    }
+
+    .agt-usr__table tbody {
+      display: table-row-group;
+    }
+
+    .agt-usr__table tr {
+      display: table-row;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+
+    .agt-usr__table th,
+    .agt-usr__table td {
+      display: table-cell;
+      padding: 0.85rem 0.9rem;
+      border-bottom: 1px solid var(--ag-border);
+      vertical-align: middle;
+    }
+
+    .agt-usr__table thead th {
+      font: 500 0.74rem var(--ag-font-mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ag-text-3);
+    }
+
+    .agt-usr__table th[data-label]::before,
+    .agt-usr__table td[data-label]::before {
+      display: none;
+    }
+
+    .agt-usr__acts {
+      display: table-cell !important;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .agt-usr__acts .ag-btn {
+      flex: none;
+      min-height: 38px;
+      margin-left: var(--sp-2, 0.5rem);
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const body = root.querySelector<HTMLElement>('[data-body]')!;
+    const search = root.querySelector<HTMLInputElement>('[data-search]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const count = root.querySelector<HTMLElement>('[data-count]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const invite = root.querySelector<HTMLDialogElement>('[data-invite]')!;
+    const inviteForm = root.querySelector<HTMLFormElement>('[data-invite-form]')!;
+    const inviteError = root.querySelector<HTMLElement>('[data-invite-error]')!;
+    const confirmDlg = root.querySelector<HTMLDialogElement>('[data-confirm]')!;
+    let pending: HTMLElement | null = null;
+
+    const say = (t: string) => { status.textContent = ''; window.setTimeout(() => { status.textContent = t; }, 40); };
+    const tone = (s: string) => (s === 'Activo' ? 'ag-pill--ok' : s === 'Invitado' ? 'ag-pill--warn' : 'ag-pill--bad');
+    const rows = () => [...body.querySelectorAll<HTMLElement>('tr')];
+
+    function setStatus(row: HTMLElement, s: string) {
+      row.dataset.status = s;
+      const pill = row.querySelector<HTMLElement>('[data-pill]')!;
+      pill.textContent = s;
+      pill.className = `ag-pill ${tone(s)}`;
+      const b = row.querySelector<HTMLElement>('[data-suspend]');
+      if (b) b.textContent = s === 'Suspendido' ? 'Reactivar' : 'Suspender';
+    }
+
+    function filter() {
+      const q = search.value.trim().toLowerCase();
+      let n = 0;
+      rows().forEach((r) => {
+        const show = !q || (r.dataset.name ?? '').includes(q);
+        r.hidden = !show;
+        if (show) n++;
+      });
+      empty.hidden = n > 0;
+      if (q) say(`${n} ${n === 1 ? 'persona' : 'personas'}`);
+    }
+    search.addEventListener('input', filter);
+
+    body.addEventListener('change', (e) => {
+      const sel = (e.target as HTMLElement).closest<HTMLSelectElement>('[data-role]');
+      if (!sel) return;
+      const row = sel.closest<HTMLElement>('tr')!;
+      say(`${row.querySelector('[data-uname]')!.textContent} ahora es ${sel.value}.`);
+    });
+
+    body.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const row = target.closest<HTMLElement>('tr');
+      if (!row) return;
+      const name = row.querySelector('[data-uname]')!.textContent ?? '';
+      if (target.closest('[data-suspend]')) {
+        const next = row.dataset.status === 'Suspendido' ? 'Activo' : 'Suspendido';
+        setStatus(row, next);
+        say(`${name} ${next === 'Suspendido' ? 'suspendido' : 'reactivado'}.`);
+      }
+      if (target.closest('[data-remove]')) {
+        pending = row;
+        root.querySelector('[data-confirm-name]')!.textContent = name;
+        confirmDlg.showModal();
+      }
+    });
+
+    root.querySelector('[data-confirm-cancel]')?.addEventListener('click', () => confirmDlg.close());
+    root.querySelector('[data-confirm-ok]')?.addEventListener('click', () => {
+      if (pending) {
+        const name = pending.querySelector('[data-uname]')!.textContent;
+        pending.remove();
+        count.textContent = String(rows().length);
+        say(`${name} ya no está en el espacio.`);
+        pending = null;
+      }
+      confirmDlg.close();
+    });
+
+    root.querySelector('[data-open-invite]')?.addEventListener('click', () => {
+      inviteForm.reset();
+      inviteError.textContent = '';
+      invite.showModal();
+      (inviteForm.elements.namedItem('email') as HTMLInputElement).focus();
+    });
+    root.querySelector('[data-invite-cancel]')?.addEventListener('click', () => invite.close());
+    [invite, confirmDlg].forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
+
+    inviteForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = inviteForm.elements.namedItem('email') as HTMLInputElement;
+      const role = inviteForm.elements.namedItem('role') as HTMLSelectElement;
+      if (!email.value || !email.validity.valid) {
+        inviteError.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (rows().some((r) => (r.dataset.name ?? '').includes(email.value.toLowerCase()))) {
+        inviteError.textContent = 'Esa persona ya está en el espacio.';
+        email.focus();
+        return;
+      }
+      const row = root.querySelector<HTMLTemplateElement>('[data-tpl-row]')!.content.firstElementChild!.cloneNode(true) as HTMLElement;
+      const local = email.value.split('@')[0];
+      const name = local.replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      row.dataset.name = `${name} ${email.value}`.toLowerCase();
+      row.querySelector('.agt-usr__av')!.textContent = name.split(' ').map((w) => w[0]).slice(0, 2).join('');
+      row.querySelector('[data-uname]')!.textContent = name;
+      row.querySelector('small')!.textContent = email.value;
+      const sel = row.querySelector<HTMLSelectElement>('[data-role]')!;
+      const id = `new-${Date.now()}`;
+      sel.id = id;
+      row.querySelector('label')!.setAttribute('for', id);
+      row.querySelector('label')!.textContent = `Rol de ${name}`;
+      sel.value = role.value;
+      body.prepend(row);
+      count.textContent = String(rows().length);
+      invite.close();
+      filter();
+      say(`Invitación enviada a ${email.value} como ${role.value}.`);
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agt-usr]').forEach(init);
+</script>

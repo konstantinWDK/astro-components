@@ -1,0 +1,258 @@
+---
+/**
+ * AgtSidebar — Navigation of the "Nexo" AI-agents workspace: workspace name, the five areas as a
+ * text list with the current one marked, and a plan/usage meter. On phones it becomes a fixed
+ * bottom tab bar with short labels.
+ *
+ * @param {Array<{label: string, short?: string, href: string, hint?: string}>} items - Navigation entries.
+ * @param {string} currentHref - Href of the current page.
+ * @param {string} workspace - Workspace name.
+ * @param {string} plan - Plan name.
+ * @param {number} used - Percentage of the monthly token limit used.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <nav> landmark with aria-label, aria-current="page" on the current entry, 44px
+ * targets, the usage meter has a text equivalent.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+
+interface Item { label: string; short?: string; href: string; hint?: string }
+
+interface OwnProps {
+  items?: Item[];
+  currentHref?: string;
+  workspace?: string;
+  plan?: string;
+  used?: number;
+  homeHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'nav'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [],
+  currentHref = '',
+  workspace = 'Nexo · Equipo producto',
+  plan = 'Equipo',
+  used = 74,
+  homeHref = '/',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+---
+
+<nav class:list={['agt-ui', 'agt-side', classAttr]} aria-label="Principal" {...rest}>
+  <a href={homeHref} class="agt-side__brand">
+    <span class="agt-side__mark" aria-hidden="true"></span>
+    Nexo
+  </a>
+  <p class="agt-side__ws">{workspace}</p>
+
+  <ul class="agt-side__list" role="list">
+    {items.map((it) => (
+      <li>
+        <a href={it.href} aria-current={it.href === currentHref ? 'page' : undefined}>
+          <span class="agt-side__label">{it.label}</span>
+          <span class="agt-side__short" aria-hidden="true">{it.short ?? it.label}</span>
+          {it.hint && <small>{it.hint}</small>}
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <div class="agt-side__plan">
+    <p>Plan {plan}</p>
+    <div class="agt-side__bar" role="img" aria-label={`${used} % del límite mensual de tokens usado`}>
+      <span style={`width:${used}%`}></span>
+    </div>
+    <small>{used} % de tokens usados este mes</small>
+  </div>
+</nav>
+
+<style>
+  .agt-side {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: block;
+    background: var(--ag-bg-raised);
+    border-top: 1px solid var(--ag-border);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-side__brand,
+  .agt-side__ws,
+  .agt-side__plan {
+    display: none;
+  }
+
+  .agt-side__list {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-side__list a {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 60px;
+    padding: 0 2px;
+    color: var(--ag-text-3);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .agt-side__list a[aria-current='page'] {
+    color: var(--ag-text);
+  }
+
+  .agt-side__list a[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 22%;
+    right: 22%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--ag-brand);
+  }
+
+  .agt-side__label,
+  .agt-side__list small {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .agt-side {
+      inset: 0 auto 0 0;
+      width: 252px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2, 0.5rem);
+      padding: var(--sp-5, 1.25rem) var(--sp-3, 0.75rem);
+      border-top: 0;
+      border-right: 1px solid var(--ag-border);
+      overflow-y: auto;
+    }
+
+    .agt-side__brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0 var(--sp-3, 0.75rem);
+      font-weight: 750;
+      font-size: 1.45rem;
+      letter-spacing: -0.02em;
+      color: var(--ag-text);
+      text-decoration: none;
+    }
+
+    .agt-side__mark {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px 12px 4px 12px;
+      background: var(--ag-brand);
+    }
+
+    .agt-side__ws {
+      display: block;
+      margin: 0 0 var(--sp-5, 1.25rem);
+      padding: 0 var(--sp-3, 0.75rem);
+      font: 500 0.78rem var(--ag-font-mono);
+      color: var(--ag-text-3);
+    }
+
+    .agt-side__list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+
+    .agt-side__list a {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 0 0.6rem;
+      min-height: 48px;
+      padding: 0.55rem var(--sp-3, 0.75rem);
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .agt-side__list a:hover {
+      background: var(--ag-surface);
+      color: var(--ag-text);
+    }
+
+    .agt-side__list a[aria-current='page'] {
+      background: var(--ag-surface-2);
+    }
+
+    .agt-side__list a[aria-current='page']::before {
+      top: 12px;
+      bottom: 12px;
+      left: 0;
+      right: auto;
+      width: 3px;
+      height: auto;
+      border-radius: 0 3px 3px 0;
+    }
+
+    .agt-side__label {
+      display: inline;
+    }
+
+    .agt-side__short {
+      display: none;
+    }
+
+    .agt-side__list small {
+      display: block;
+      flex-basis: 100%;
+      font-weight: 400;
+      font-size: 0.78rem;
+      color: var(--ag-text-3);
+    }
+
+    .agt-side__plan {
+      display: grid;
+      gap: 0.4rem;
+      margin-top: auto;
+      padding: var(--sp-3, 0.75rem);
+      border: 1px solid var(--ag-border);
+      border-radius: 12px;
+      background: var(--ag-surface);
+    }
+
+    .agt-side__plan p {
+      margin: 0;
+      font-weight: 650;
+    }
+
+    .agt-side__plan small {
+      color: var(--ag-text-3);
+      font-size: 0.78rem;
+    }
+  }
+
+  .agt-side__bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ag-surface-2);
+    overflow: hidden;
+  }
+
+  .agt-side__bar span {
+    display: block;
+    height: 100%;
+    background: var(--ag-brand);
+  }
+</style>

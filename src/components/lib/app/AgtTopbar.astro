@@ -1,0 +1,314 @@
+---
+/**
+ * AgtTopbar — Top bar of the AI-agents workspace: current section title, a status line, a theme
+ * toggle, notifications and the user menu (native popovers).
+ *
+ * @param {string} title - Name of the current section.
+ * @param {{name: string, role: string, id: string}} user - Signed-in user.
+ * @param {Array<{title: string, text: string, time: string, unread?: boolean}>} notifications - Notifications.
+ * @param {Array<{label: string, href: string}>} links - Entries of the user menu.
+ * @param {string} signOutHref - Sign-out link.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: popovers close with Escape and outside click (native); the bell announces the unread
+ * count; the theme toggle reports aria-pressed; targets are 44px.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+
+interface Note { title: string; text: string; time: string; unread?: boolean }
+
+interface OwnProps {
+  title?: string;
+  user?: { name: string; role: string; id: string };
+  notifications?: Note[];
+  links?: Array<{ label: string; href: string }>;
+  signOutHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Chat',
+  user = { name: 'Marta Olivares', role: 'Propietaria', id: 'NX-001' },
+  notifications = [],
+  links = [],
+  signOutHref = '#',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `agt-${Math.random().toString(36).slice(2, 8)}`;
+const unread = notifications.filter((n) => n.unread).length;
+const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
+---
+
+<header class:list={['agt-ui', 'agt-top', classAttr]} data-agt-top {...rest}>
+  <p class="agt-top__title">{title}</p>
+  <p class="agt-top__status"><span aria-hidden="true"></span>Todos los sistemas operativos</p>
+
+  <div class="agt-top__actions">
+    <button type="button" class="agt-top__icon" aria-pressed="false" aria-label="Cambiar tema claro u oscuro" data-theme-toggle>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
+    </button>
+
+    <button type="button" class="agt-top__icon" popovertarget={`${uid}-notes`} aria-label={unread ? `Avisos, ${unread} sin leer` : 'Avisos'}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0" /></svg>
+      {unread > 0 && <span class="agt-top__dot" aria-hidden="true"></span>}
+    </button>
+    <div id={`${uid}-notes`} popover class="agt-pop" data-agt-pop>
+      <p class="agt-pop__title">Avisos</p>
+      {notifications.length ? (
+        <ul role="list">
+          {notifications.map((n) => (
+            <li class:list={[n.unread && 'is-unread']}>
+              <strong>{n.title}</strong>
+              <span>{n.text}</span>
+              <small>{n.time}</small>
+            </li>
+          ))}
+        </ul>
+      ) : <p class="agt-pop__empty">Todo al día.</p>}
+    </div>
+
+    <button type="button" class="agt-top__me" popovertarget={`${uid}-me`} aria-label={`Menú de ${user.name}`}>
+      <span class="agt-top__avatar" aria-hidden="true">{initials}</span>
+      <span class="agt-top__who"><strong>{user.name}</strong><small>{user.role}</small></span>
+    </button>
+    <div id={`${uid}-me`} popover class="agt-pop" data-agt-pop>
+      <p class="agt-pop__title">{user.name}<small>{user.role} · {user.id}</small></p>
+      <ul role="list" class="agt-pop__menu">
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><a href={signOutHref}>Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<style>
+  .agt-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    flex: 1;
+    min-width: 0;
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-top__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .agt-top__status {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 auto 0 var(--sp-4, 1rem);
+    font: 500 0.78rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+  }
+
+  .agt-top__status span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ag-ok);
+  }
+
+  .agt-top__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1, 0.25rem);
+  }
+
+  .agt-top__icon,
+  .agt-top__me {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 var(--sp-2, 0.5rem);
+    border: 0;
+    background: none;
+    color: var(--ag-text-2);
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .agt-top__icon:hover,
+  .agt-top__me:hover {
+    color: var(--ag-text);
+  }
+
+  .agt-top__dot {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ag-brand);
+  }
+
+  .agt-top__avatar {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--ag-surface-2);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ag-text);
+  }
+
+  .agt-top__who {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .agt-top__who strong {
+    font-size: 0.88rem;
+    color: var(--ag-text);
+  }
+
+  .agt-top__who small {
+    font-size: 0.74rem;
+    color: var(--ag-text-3);
+  }
+
+  .agt-pop {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    width: min(330px, calc(100vw - 16px));
+    max-height: 70vh;
+    overflow: auto;
+    padding: var(--sp-3, 0.75rem);
+    border: 1px solid var(--ag-border-strong);
+    border-radius: 12px;
+    background: var(--ag-bg-raised);
+    color: var(--ag-text);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .agt-pop__title {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-weight: 700;
+  }
+
+  .agt-pop__title small {
+    display: block;
+    font: 500 0.78rem var(--ag-font-body);
+    color: var(--ag-text-3);
+  }
+
+  .agt-pop ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-pop li:not(:last-child) {
+    border-bottom: 1px solid var(--ag-border);
+  }
+
+  .agt-pop li > strong,
+  .agt-pop li > span,
+  .agt-pop li > small {
+    display: block;
+  }
+
+  .agt-pop li:not(.agt-pop__menu li) {
+    padding: var(--sp-2, 0.5rem) 0;
+  }
+
+  .agt-pop li.is-unread > strong::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 0.45rem;
+    border-radius: 50%;
+    background: var(--ag-brand);
+  }
+
+  .agt-pop li > span {
+    font-size: 0.88rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-pop li > small {
+    font-size: 0.76rem;
+    color: var(--ag-text-3);
+  }
+
+  .agt-pop__menu a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--sp-2, 0.5rem);
+    border-radius: 8px;
+    color: var(--ag-text);
+    text-decoration: none;
+  }
+
+  .agt-pop__menu a:hover {
+    background: var(--ag-surface);
+  }
+
+  .agt-pop__empty {
+    margin: 0;
+    color: var(--ag-text-3);
+  }
+
+  @media (min-width: 900px) {
+    .agt-top__status {
+      display: inline-flex;
+    }
+
+    .agt-top__who {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  function initTop(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const toggle = root.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    const sync = () => toggle?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
+    sync();
+    toggle?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('ack-theme', next); } catch (e) { /* storage unavailable */ }
+      sync();
+    });
+    root.querySelectorAll<HTMLElement>('[data-agt-pop]').forEach((pop) => {
+      pop.addEventListener('toggle', (e) => {
+        if ((e as Event & { newState?: string }).newState !== 'open') return;
+        const btn = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        pop.style.top = `${r.bottom + 8}px`;
+        pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth))}px`;
+      });
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agt-top]').forEach(initTop);
+</script>

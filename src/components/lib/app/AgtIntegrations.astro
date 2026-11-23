@@ -1,0 +1,700 @@
+---
+/**
+ * AgtIntegrations — Where an AI-agents workspace gets its APIs (UI only): provider cards you
+ * can connect or disconnect, a table of API keys (masked) with rotate and revoke, a dialog to
+ * add a key (with show/hide) that stores only its last four characters in the page, a one-time
+ * reveal after rotating, webhooks with a "send test" action, and a copyable request example.
+ * Nothing is sent or stored anywhere.
+ *
+ * @param {AgtProvider[]} providers - Services that can be connected.
+ * @param {AgtKey[]} keys - API keys already added.
+ * @param {AgtWebhook[]} webhooks - Webhook endpoints.
+ * @param {string[]} scopes - Scope options for a key (agents).
+ * @param {string} baseUrl - API base URL shown in the example.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: provider state is written ("Conectado" / "Sin conectar"); keys are in a real
+ * table with a caption; destructive actions need confirmation; the secret field is
+ * type="password" with an aria-pressed toggle; the one-time key is announced and selectable;
+ * changes go to a role="status" region; 44px targets and visible focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+import { agtProviders, agtKeys, agtWebhooks, type AgtProvider, type AgtKey, type AgtWebhook } from '../templates/ai-agents/data';
+
+interface OwnProps {
+  providers?: AgtProvider[];
+  keys?: AgtKey[];
+  webhooks?: AgtWebhook[];
+  scopes?: string[];
+  baseUrl?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  providers = agtProviders,
+  keys = agtKeys,
+  webhooks = agtWebhooks,
+  scopes = ['Todos los agentes', 'Solo borradores', 'Soporte', 'Analista', 'Redactor', 'Revisor de código'],
+  baseUrl = 'https://api.nexo.example/v1',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `agi-${Math.random().toString(36).slice(2, 8)}`;
+const events = ['run.completed', 'run.failed', 'user.invited'];
+const keyTone = (s: string) => (s === 'Activa' ? 'ag-pill--ok' : 'ag-pill--bad');
+const example = `curl ${baseUrl}/agents/soporte/runs \\
+  -H "Authorization: Bearer $NEXO_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"input": "¿Cómo cambio mi plan?"}'`;
+---
+
+<section class:list={['agt-ui', 'agt-int', classAttr]} aria-label="Integraciones y claves" data-agt-int {...rest}>
+  <p class="ag-sr" role="status" data-status></p>
+
+  <h2 class="agt-int__h2">Servicios conectados</h2>
+  <ul class="agt-int__grid" role="list">
+    {providers.map((p) => (
+      <li class="agt-prov" data-provider={p.name} data-connected={String(p.connected)}>
+        <p class="agt-prov__kind">{p.kind}</p>
+        <h3>{p.name}</h3>
+        <p class="agt-prov__desc">{p.description}</p>
+        <p class="agt-prov__scopes">{p.scopes.join(' · ')}</p>
+        <div class="agt-prov__foot">
+          <span class:list={['ag-pill', p.connected && 'ag-pill--ok']} data-state>{p.connected ? 'Conectado' : 'Sin conectar'}</span>
+          <button type="button" class="ag-btn ag-btn--ghost" data-connect aria-label={`${p.connected ? 'Desconectar' : 'Conectar'} ${p.name}`}>{p.connected ? 'Desconectar' : 'Conectar'}</button>
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  <div class="agt-int__row">
+    <h2 class="agt-int__h2">Claves de API</h2>
+    <button type="button" class="ag-btn" data-open-key>Añadir clave</button>
+  </div>
+  <div class="agt-int__scroll">
+    <table class="agt-keys">
+      <caption class="ag-sr">Claves de API del espacio</caption>
+      <thead>
+        <tr><th scope="col">Nombre</th><th scope="col">Servicio</th><th scope="col">Clave</th><th scope="col">Alcance</th><th scope="col">Último uso</th><th scope="col">Estado</th><th scope="col"><span class="ag-sr">Acciones</span></th></tr>
+      </thead>
+      <tbody data-keys>
+        {keys.map((k) => (
+          <tr data-status={k.status}>
+            <th scope="row" data-name>{k.name}<small>Creada {k.created}</small></th>
+            <td>{k.provider}</td>
+            <td><code>{k.preview}</code></td>
+            <td>{k.scope}</td>
+            <td>{k.lastUsed}</td>
+            <td><span class={`ag-pill ${keyTone(k.status)}`} data-pill>{k.status}</span></td>
+            <td class="agt-keys__acts">
+              {k.status === 'Activa' && (
+                <>
+                  <button type="button" class="ag-btn ag-btn--ghost" data-rotate>Rotar</button>
+                  <button type="button" class="ag-btn ag-btn--danger" data-revoke>Revocar</button>
+                </>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="agt-int__h2">Webhooks</h2>
+  <ul class="agt-hooks" role="list">
+    {webhooks.map((w) => (
+      <li data-hook>
+        <div>
+          <code>{w.url}</code>
+          <p>{w.events.join(', ')} · última entrega {w.lastDelivery}</p>
+        </div>
+        <span class:list={['ag-pill', w.status === 'Activo' ? 'ag-pill--ok' : 'ag-pill--bad']}>{w.status}</span>
+        <button type="button" class="ag-btn ag-btn--ghost" data-test>Enviar prueba</button>
+      </li>
+    ))}
+  </ul>
+  <form class="agt-hookform" data-hook-form novalidate>
+    <div class="ag-field">
+      <label for={`${uid}-wu`}>Nueva URL de webhook</label>
+      <input id={`${uid}-wu`} class="ag-input" name="url" type="url" placeholder="https://tu-servicio.example/hooks" autocomplete="off" />
+    </div>
+    <fieldset>
+      <legend class="ag-sr">Eventos</legend>
+      {events.map((ev, i) => <label><input type="checkbox" name="ev" value={ev} checked={i < 2} /> {ev}</label>)}
+    </fieldset>
+    <button type="submit" class="ag-btn ag-btn--ghost">Añadir webhook</button>
+    <p class="agt-dlg__error" role="alert" data-hook-error></p>
+  </form>
+
+  <h2 class="agt-int__h2">Llama a tus agentes por API</h2>
+  <div class="agt-code">
+    <pre data-example>{example}</pre>
+    <button type="button" class="ag-btn ag-btn--ghost" data-copy="example">Copiar ejemplo</button>
+  </div>
+
+  <dialog class="agt-dlg" aria-labelledby={`${uid}-kt`} data-key-dialog>
+    <form method="dialog" class="agt-dlg__form" data-key-form novalidate>
+      <h2 id={`${uid}-kt`}>Añadir clave de API</h2>
+      <div class="ag-field">
+        <label for={`${uid}-kn`}>Nombre</label>
+        <input id={`${uid}-kn`} class="ag-input" name="name" maxlength="40" autocomplete="off" required />
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-kp`}>Servicio</label>
+        <select id={`${uid}-kp`} class="ag-input" name="provider">
+          {providers.map((p) => <option value={p.name}>{p.name}</option>)}
+        </select>
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-kk`}>Clave</label>
+        <div class="agt-pass">
+          <input id={`${uid}-kk`} class="ag-input" name="secret" type="password" autocomplete="off" spellcheck="false" required />
+          <button type="button" aria-pressed="false" data-reveal>Mostrar</button>
+        </div>
+        <small class="agt-dlg__hint">En esta demostración la clave no se guarda: solo se muestran sus últimos cuatro caracteres.</small>
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-ks`}>Quién puede usarla</label>
+        <select id={`${uid}-ks`} class="ag-input" name="scope">
+          {scopes.map((s) => <option value={s}>{s}</option>)}
+        </select>
+      </div>
+      <p class="agt-dlg__error" role="alert" data-key-error></p>
+      <div class="agt-dlg__actions">
+        <button type="button" class="ag-btn ag-btn--ghost" data-key-cancel>Cancelar</button>
+        <button type="submit" class="ag-btn">Guardar clave</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="agt-dlg" aria-labelledby={`${uid}-rt`} data-reveal-dialog>
+    <div class="agt-dlg__form">
+      <h2 id={`${uid}-rt`}>Nueva clave generada</h2>
+      <p class="agt-dlg__hint">Cópiala ahora: no volverá a mostrarse. La anterior sigue funcionando 24 horas.</p>
+      <pre class="agt-secret" tabindex="0" data-secret></pre>
+      <div class="agt-dlg__actions">
+        <button type="button" class="ag-btn ag-btn--ghost" data-copy="secret">Copiar</button>
+        <button type="button" class="ag-btn" data-reveal-close>Ya la he guardado</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="agt-dlg" aria-labelledby={`${uid}-vt`} data-revoke-dialog>
+    <div class="agt-dlg__form">
+      <h2 id={`${uid}-vt`}>¿Revocar «<span data-revoke-name></span>»?</h2>
+      <p class="agt-dlg__hint">Los agentes que la usan dejarán de funcionar al instante. No se puede deshacer.</p>
+      <div class="agt-dlg__actions">
+        <button type="button" class="ag-btn ag-btn--ghost" data-revoke-cancel>Cancelar</button>
+        <button type="button" class="ag-btn ag-btn--danger" data-revoke-ok>Revocar clave</button>
+      </div>
+    </div>
+  </dialog>
+
+  <template data-tpl-key>
+    <tr data-status="Activa">
+      <th scope="row" data-name><small></small></th>
+      <td></td>
+      <td><code></code></td>
+      <td></td>
+      <td>ahora</td>
+      <td><span class="ag-pill ag-pill--ok" data-pill>Activa</span></td>
+      <td class="agt-keys__acts">
+        <button type="button" class="ag-btn ag-btn--ghost" data-rotate>Rotar</button>
+        <button type="button" class="ag-btn ag-btn--danger" data-revoke>Revocar</button>
+      </td>
+    </tr>
+  </template>
+  <template data-tpl-hook>
+    <li data-hook>
+      <div><code></code><p></p></div>
+      <span class="ag-pill ag-pill--ok">Activo</span>
+      <button type="button" class="ag-btn ag-btn--ghost" data-test>Enviar prueba</button>
+    </li>
+  </template>
+</section>
+
+<style>
+  .agt-int {
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-int__h2 {
+    margin: var(--sp-10, 2.5rem) 0 var(--sp-4, 1rem);
+    font-size: 1.4rem;
+    font-weight: 750;
+    letter-spacing: -0.015em;
+  }
+
+  .agt-int__h2:first-of-type {
+    margin-top: 0;
+  }
+
+  .agt-int__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-10, 2.5rem);
+    margin-bottom: var(--sp-4, 1rem);
+  }
+
+  .agt-int__row .agt-int__h2 {
+    margin: 0;
+  }
+
+  .agt-int__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-prov {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-2, 0.5rem);
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ag-border);
+    border-radius: 14px;
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-prov[data-connected='true'] {
+    border-color: rgba(var(--ag-brand-rgb), 0.45);
+  }
+
+  .agt-prov__kind {
+    margin: 0;
+    font: 500 0.7rem var(--ag-font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ag-accent);
+  }
+
+  .agt-prov h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .agt-prov__desc {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-prov__scopes {
+    margin: 0;
+    font: 0.74rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+    overflow-wrap: anywhere;
+  }
+
+  .agt-prov__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2, 0.5rem);
+    margin-top: var(--sp-2, 0.5rem);
+  }
+
+  .agt-prov__foot .ag-btn {
+    padding: 0 0.8rem;
+    font-size: 0.86rem;
+  }
+
+  .agt-int__scroll {
+    position: relative;
+    overflow-x: auto;
+    border: 1px solid var(--ag-border);
+    border-radius: 14px;
+  }
+
+  .agt-keys {
+    width: 100%;
+    min-width: 820px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .agt-keys th,
+  .agt-keys td {
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid var(--ag-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .agt-keys thead th {
+    font: 500 0.72rem var(--ag-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ag-text-3);
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-keys tbody th {
+    font-weight: 600;
+  }
+
+  .agt-keys tbody th small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: var(--ag-text-3);
+  }
+
+  .agt-keys tr:last-child th,
+  .agt-keys tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .agt-keys code,
+  .agt-hooks code {
+    font: 0.82rem var(--ag-font-mono);
+    color: var(--ag-text-2);
+    overflow-wrap: anywhere;
+  }
+
+  .agt-keys tr[data-status='Revocada'] {
+    opacity: 0.6;
+  }
+
+  .agt-keys__acts {
+    white-space: nowrap;
+    text-align: right !important;
+  }
+
+  .agt-keys__acts .ag-btn {
+    min-height: 38px;
+    padding: 0 0.8rem;
+    font-size: 0.86rem;
+    margin-left: var(--sp-2, 0.5rem);
+  }
+
+  .agt-hooks {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-hooks li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    align-items: center;
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--ag-border);
+    border-radius: 12px;
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-hooks p {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    color: var(--ag-text-3);
+  }
+
+  .agt-hooks .ag-btn {
+    grid-column: 1 / -1;
+  }
+
+  .agt-hookform {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin-top: var(--sp-4, 1rem);
+    max-width: 640px;
+  }
+
+  .agt-hookform fieldset {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px var(--sp-4, 1rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .agt-hookform label:not(.ag-field > label) {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 40px;
+    font: 0.84rem var(--ag-font-mono);
+    cursor: pointer;
+  }
+
+  .agt-hookform input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ag-brand);
+  }
+
+  .agt-hookform .ag-btn {
+    justify-self: start;
+  }
+
+  .agt-code {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+  }
+
+  .agt-code pre,
+  .agt-secret {
+    width: 100%;
+    margin: 0;
+    padding: var(--sp-4, 1rem);
+    box-sizing: border-box;
+    border: 1px solid var(--ag-border);
+    border-radius: 12px;
+    background: var(--ag-bg-raised);
+    font: 0.82rem/1.65 var(--ag-font-mono);
+    color: var(--ag-text-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .agt-secret {
+    color: var(--ag-brand);
+    user-select: all;
+  }
+
+  .agt-pass {
+    position: relative;
+  }
+
+  .agt-pass .ag-input {
+    padding-right: 5.5rem;
+  }
+
+  .agt-pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: var(--ag-text-2);
+    font: 600 0.8rem var(--ag-font-body);
+    cursor: pointer;
+  }
+
+  .agt-dlg {
+    width: min(480px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    inset: 0;
+    padding: 0;
+    border: 1px solid var(--ag-border-strong);
+    border-radius: 18px;
+    background: var(--ag-bg-raised);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+    overflow: auto;
+  }
+
+  .agt-dlg::backdrop {
+    background: rgba(5, 6, 8, 0.66);
+  }
+
+  .agt-dlg__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-5, 1.25rem);
+  }
+
+  .agt-dlg__form h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 750;
+  }
+
+  .agt-dlg__hint {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--ag-text-2);
+  }
+
+  .agt-dlg__error {
+    min-height: 1.2em;
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ag-bad);
+  }
+
+  .agt-dlg__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  @media (min-width: 760px) {
+    .agt-hooks li {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .agt-hooks .ag-btn {
+      grid-column: auto;
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const keysBody = root.querySelector<HTMLElement>('[data-keys]')!;
+    const keyDlg = root.querySelector<HTMLDialogElement>('[data-key-dialog]')!;
+    const keyForm = root.querySelector<HTMLFormElement>('[data-key-form]')!;
+    const keyError = root.querySelector<HTMLElement>('[data-key-error]')!;
+    const revealDlg = root.querySelector<HTMLDialogElement>('[data-reveal-dialog]')!;
+    const revokeDlg = root.querySelector<HTMLDialogElement>('[data-revoke-dialog]')!;
+    const secretEl = root.querySelector<HTMLElement>('[data-secret]')!;
+    const hookForm = root.querySelector<HTMLFormElement>('[data-hook-form]')!;
+    const hookError = root.querySelector<HTMLElement>('[data-hook-error]')!;
+    const tpl = (n: string) => root.querySelector<HTMLTemplateElement>(`[data-tpl-${n}]`)!;
+    let pending: HTMLElement | null = null;
+
+    const say = (t: string) => { status.textContent = ''; window.setTimeout(() => { status.textContent = t; }, 40); };
+    const rand = (n: number) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+    const mask = (s: string) => `${s.slice(0, Math.min(s.indexOf('-') + 1, 6) || 0)}••••••••••••${s.slice(-4)}`;
+
+    // Providers
+    root.querySelectorAll<HTMLElement>('.agt-prov').forEach((card) => {
+      card.querySelector('[data-connect]')?.addEventListener('click', () => {
+        const on = card.dataset.connected !== 'true';
+        card.dataset.connected = String(on);
+        const state = card.querySelector<HTMLElement>('[data-state]')!;
+        state.textContent = on ? 'Conectado' : 'Sin conectar';
+        state.className = `ag-pill${on ? ' ag-pill--ok' : ''}`;
+        const btn = card.querySelector<HTMLElement>('[data-connect]')!;
+        btn.textContent = on ? 'Desconectar' : 'Conectar';
+        btn.setAttribute('aria-label', `${on ? 'Desconectar' : 'Conectar'} ${card.dataset.provider}`);
+        say(`${card.dataset.provider} ${on ? 'conectado' : 'desconectado'}.`);
+      });
+    });
+
+    // Keys
+    root.querySelector('[data-open-key]')?.addEventListener('click', () => {
+      keyForm.reset();
+      keyError.textContent = '';
+      keyDlg.showModal();
+      (keyForm.elements.namedItem('name') as HTMLInputElement).focus();
+    });
+    root.querySelector('[data-key-cancel]')?.addEventListener('click', () => keyDlg.close());
+    root.querySelector('[data-reveal]')?.addEventListener('click', (e) => {
+      const b = e.currentTarget as HTMLButtonElement;
+      const f = keyForm.elements.namedItem('secret') as HTMLInputElement;
+      const show = f.type === 'password';
+      f.type = show ? 'text' : 'password';
+      b.textContent = show ? 'Ocultar' : 'Mostrar';
+      b.setAttribute('aria-pressed', String(show));
+    });
+    [keyDlg, revealDlg, revokeDlg].forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
+
+    keyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = (keyForm.elements.namedItem('name') as HTMLInputElement).value.trim();
+      const secret = (keyForm.elements.namedItem('secret') as HTMLInputElement).value.trim();
+      if (!name) { keyError.textContent = 'Ponle un nombre a la clave.'; (keyForm.elements.namedItem('name') as HTMLInputElement).focus(); return; }
+      if (secret.length < 8) { keyError.textContent = 'La clave parece demasiado corta.'; (keyForm.elements.namedItem('secret') as HTMLInputElement).focus(); return; }
+      const row = tpl('key').content.firstElementChild!.cloneNode(true) as HTMLElement;
+      const cells = row.querySelectorAll('td');
+      row.querySelector('th')!.prepend(document.createTextNode(name));
+      row.querySelector('th small')!.textContent = 'Creada hoy';
+      cells[0].textContent = (keyForm.elements.namedItem('provider') as HTMLSelectElement).value;
+      cells[1].querySelector('code')!.textContent = mask(secret);
+      cells[2].textContent = (keyForm.elements.namedItem('scope') as HTMLSelectElement).value;
+      keysBody.prepend(row);
+      keyDlg.close();
+      say(`Clave «${name}» añadida.`);
+    });
+
+    keysBody.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const row = target.closest<HTMLElement>('tr');
+      if (!row) return;
+      const name = row.querySelector<HTMLElement>('[data-name]')!.childNodes[0].textContent ?? '';
+      if (target.closest('[data-rotate]')) {
+        secretEl.textContent = `nx_live_${rand(36)}`;
+        const code = row.querySelector('code');
+        if (code) code.textContent = mask(secretEl.textContent);
+        revealDlg.showModal();
+        say(`Clave «${name}» rotada.`);
+      }
+      if (target.closest('[data-revoke]')) {
+        pending = row;
+        root.querySelector('[data-revoke-name]')!.textContent = name;
+        revokeDlg.showModal();
+      }
+    });
+    root.querySelector('[data-revoke-cancel]')?.addEventListener('click', () => revokeDlg.close());
+    root.querySelector('[data-revoke-ok]')?.addEventListener('click', () => {
+      if (pending) {
+        pending.dataset.status = 'Revocada';
+        const pill = pending.querySelector<HTMLElement>('[data-pill]')!;
+        pill.textContent = 'Revocada';
+        pill.className = 'ag-pill ag-pill--bad';
+        pending.querySelector('.agt-keys__acts')!.innerHTML = '';
+        say(`Clave «${root.querySelector('[data-revoke-name]')!.textContent}» revocada.`);
+        pending = null;
+      }
+      revokeDlg.close();
+    });
+    root.querySelector('[data-reveal-close]')?.addEventListener('click', () => revealDlg.close());
+
+    // Copy
+    root.querySelectorAll<HTMLElement>('[data-copy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const src = root.querySelector<HTMLElement>(`[data-${btn.dataset.copy}]`);
+        const text = src?.textContent ?? '';
+        try { await navigator.clipboard.writeText(text); say('Copiado al portapapeles.'); } catch (err) {
+          const r = document.createRange();
+          if (src) { r.selectNodeContents(src); const s = getSelection(); s?.removeAllRanges(); s?.addRange(r); }
+          say('Selecciona y copia con Ctrl+C.');
+        }
+      });
+    });
+
+    // Webhooks
+    root.querySelector('.agt-hooks')?.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-test]');
+      if (!b) return;
+      const url = b.closest('li')!.querySelector('code')!.textContent;
+      b.textContent = 'Enviando…';
+      window.setTimeout(() => { b.textContent = 'Enviar prueba'; say(`Prueba enviada a ${url}: respuesta 200 en 142 ms (demo).`); }, 700);
+    });
+    hookForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const url = hookForm.elements.namedItem('url') as HTMLInputElement;
+      const evs = [...hookForm.querySelectorAll<HTMLInputElement>('input[name="ev"]:checked')].map((c) => c.value);
+      if (!url.value || !url.validity.valid) { hookError.textContent = 'Escribe una URL válida que empiece por https://'; url.focus(); return; }
+      if (!evs.length) { hookError.textContent = 'Elige al menos un evento.'; return; }
+      hookError.textContent = '';
+      const li = tpl('hook').content.firstElementChild!.cloneNode(true) as HTMLElement;
+      li.querySelector('code')!.textContent = url.value;
+      li.querySelector('p')!.textContent = `${evs.join(', ')} · sin entregas todavía`;
+      root.querySelector('.agt-hooks')!.append(li);
+      hookForm.reset();
+      say('Webhook añadido.');
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agt-int]').forEach(init);
+</script>

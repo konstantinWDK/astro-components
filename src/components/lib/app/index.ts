@@ -191,3 +191,14 @@ export { default as MotoAccountNav } from './MotoAccountNav.astro';
 export { default as MotoAccountTopbar } from './MotoAccountTopbar.astro';
 export { default as MotoAccountHeading } from './MotoAccountHeading.astro';
 export { default as MotoSignIn } from './MotoSignIn.astro';
+
+// AI-agents workspace ("Nexo")
+export { default as AgtChat } from './AgtChat.astro';
+export { default as AgtAgents } from './AgtAgents.astro';
+export { default as AgtUsers } from './AgtUsers.astro';
+export { default as AgtIntegrations } from './AgtIntegrations.astro';
+export { default as AgtUsage } from './AgtUsage.astro';
+export { default as AgtSidebar } from './AgtSidebar.astro';
+export { default as AgtTopbar } from './AgtTopbar.astro';
+export { default as AgtHeading } from './AgtHeading.astro';
+export { default as AgtSignIn } from './AgtSignIn.astro';

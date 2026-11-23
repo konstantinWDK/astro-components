@@ -1809,4 +1809,41 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con una gran moto generada y un testimonio de piloto, mostrar/ocultar contraseña, recordarme y acceso de demostración.',
     ru: 'Вход на двух панелях с большим сгенерированным мотоциклом и отзывом гонщика, показ пароля, «запомнить меня» и демо-ссылка.',
   },
+  // ── AI-agents workspace ("Nexo") ────────────────────────
+  'agt-chat': {
+    es: 'Chat general para un espacio de agentes de IA (solo UI): lista de conversaciones, registro de mensajes con bloques de herramientas que se abren, un compositor con selector de agente y un inspector con el modelo, las herramientas y las instrucciones del agente elegido. Al enviar, una demo emite una respuesta de ejemplo palabra a palabra, con botón de detener.',
+    ru: 'Общий чат для рабочего пространства ИИ-агентов (только UI): список бесед, журнал сообщений с раскрываемыми блоками инструментов, поле ввода с выбором агента и панель с моделью, инструментами и инструкциями выбранного агента. Отправка запускает демо с потоковой выдачей готового ответа по словам и кнопкой «Остановить».',
+  },
+  'agt-agents': {
+    es: 'Gestión de agentes (solo UI): una lista filtrable con estado, modelo, herramientas y tasa de éxito, pausar/activar y un diálogo nativo para crear o editar un agente con nombre, utilidad, modelo, instrucciones, un deslizador de creatividad y casillas de herramientas.',
+    ru: 'Управление агентами (только UI): фильтруемый список со статусом, моделью, инструментами и долей успеха, пауза/активация и нативный диалог создания или правки агента: имя, назначение, модель, инструкции, ползунок креативности и флажки инструментов.',
+  },
+  'agt-users': {
+    es: 'Gestión de usuarios (solo UI): una tabla de miembros con búsqueda que en móvil pasa a tarjetas apiladas, selector de rol por miembro, suspender/reactivar y quitar con confirmación, un diálogo de invitación y la matriz de permisos por rol escrita como una tabla real.',
+    ru: 'Управление пользователями (только UI): таблица участников с поиском, на телефонах превращается в карточки; выбор роли, приостановка/возобновление и удаление с подтверждением, диалог приглашения и матрица прав по ролям как настоящая таблица.',
+  },
+  'agt-integrations': {
+    es: 'De dónde saca el espacio sus APIs (solo UI): tarjetas de servicios para conectar o desconectar, una tabla de claves de API con valores enmascarados, rotar (con revelado único) y revocar con confirmación, un diálogo para añadir clave con mostrar/ocultar, webhooks con acción de enviar prueba y un ejemplo de petición copiable.',
+    ru: 'Откуда пространство берёт API (только UI): карточки сервисов для подключения и отключения, таблица API-ключей с маской, ротация (единовременный показ) и отзыв с подтверждением, диалог добавления ключа с показом/скрытием, вебхуки с отправкой теста и копируемый пример запроса.',
+  },
+  'agt-usage': {
+    es: 'Consumo y límites (solo UI): medidores de tokens y gasto, un gráfico de barras diario conmutable entre 7 y 30 días con su tabla equivalente, el reparto por agente y ajustes de límite de gasto (deslizador de presupuesto e interruptores) que actualizan los medidores.',
+    ru: 'Расход и лимиты (только UI): шкалы токенов и затрат, дневная диаграмма с переключением 7/30 дней и таблицей-аналогом, доля расхода по агентам и настройки лимита (ползунок бюджета и переключатели), обновляющие шкалы.',
+  },
+  'agt-sidebar': {
+    es: 'Navegación del espacio de agentes de IA: nombre del espacio, las áreas como lista de texto con la actual marcada y un medidor de plan/consumo; barra de pestañas inferior en móvil.',
+    ru: 'Навигация рабочего пространства ИИ-агентов: название, разделы текстовым списком с отмеченным текущим и шкалой тарифа/расхода; на телефонах — нижняя панель вкладок.',
+  },
+  'agt-topbar': {
+    es: 'Barra superior del espacio de agentes de IA: título de sección, estado del sistema, cambio de tema, avisos y menú de usuario (popovers nativos).',
+    ru: 'Верхняя панель пространства ИИ-агентов: название раздела, статус системы, смена темы, уведомления и меню пользователя (нативные popover).',
+  },
+  'agt-heading': {
+    es: 'Encabezado de página del espacio de agentes de IA con antetítulo, título grande, descripción y un hueco para acciones.',
+    ru: 'Заголовок страницы пространства ИИ-агентов с надзаголовком, крупным названием, описанием и слотом для действий.',
+  },
+  'agt-sign-in': {
+    es: 'Acceso a pantalla partida para el espacio de agentes de IA: una conversación de ejemplo dibujada a un lado y el formulario con botón de SSO, mostrar/ocultar contraseña y acceso de demostración al otro.',
+    ru: 'Вход на двух панелях для пространства ИИ-агентов: нарисованная демо-беседа и форма с кнопкой SSO, показом пароля и демо-ссылкой.',
+  },
 };

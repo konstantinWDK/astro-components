@@ -1,0 +1,528 @@
+---
+/**
+ * AgtAgents — Agent management for an AI-agents workspace (UI only): a filterable list of agents
+ * (status, model, tools, success rate) with pause/activate, and a native <dialog> to create or
+ * edit an agent: name, role, model, instructions, creativity slider, tools and status. Saving
+ * updates the list in the page; nothing is sent anywhere.
+ *
+ * @param {AgtAgent[]} agents - Agents to list.
+ * @param {string[]} models - Models offered in the picker.
+ * @param {string[]} tools - Tools offered as checkboxes.
+ * @param {string} chatHref - Link of the "Open chat" action.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: filter is a radio group; list is a real <ul>; dialog is native (focus trap,
+ * Escape closes) with labelled fields and a role="alert" error; status is text, not only colour;
+ * changes are announced in a role="status" region; 44px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+import { agtAgents, agtModels, type AgtAgent } from '../templates/ai-agents/data';
+
+interface OwnProps {
+  agents?: AgtAgent[];
+  models?: string[];
+  tools?: string[];
+  chatHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  agents = agtAgents,
+  models = agtModels,
+  tools = ['Centro de ayuda', 'Zendesk', 'Stripe (lectura)', 'Almacén SQL', 'GitHub', 'Calendario', 'Correo', 'CMS', 'Navegador web'],
+  chatHref = '/chat',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `aga-${Math.random().toString(36).slice(2, 8)}`;
+const filters = ['Todos', 'Activo', 'En pausa', 'Borrador'];
+const tone = (s: string) => (s === 'Activo' ? 'ag-pill--ok' : s === 'En pausa' ? 'ag-pill--warn' : '');
+---
+
+<section class:list={['agt-ui', 'agt-ags', classAttr]} aria-label="Agentes" data-agt-ags data-chat={chatHref} {...rest}>
+  <div class="agt-ags__bar">
+    <fieldset class="agt-ags__filter">
+      <legend class="ag-sr">Filtrar por estado</legend>
+      {filters.map((f, i) => (
+        <label>
+          <input type="radio" name={`${uid}-f`} value={f} checked={i === 0} />
+          <span>{f}</span>
+        </label>
+      ))}
+    </fieldset>
+    <button type="button" class="ag-btn" data-open-new>Crear agente</button>
+  </div>
+
+  <p class="ag-sr" role="status" data-status></p>
+
+  <ul class="agt-ags__list" role="list" data-list>
+    {agents.map((a) => (
+      <li class="agt-ag" data-id={a.id} data-status={a.status} style={`--h:${a.hue}`}>
+        <div class="agt-ag__top">
+          <span class="agt-ag__av" aria-hidden="true">{a.name[0]}</span>
+          <div>
+            <h2 class="agt-ag__name">{a.name}</h2>
+            <p class="agt-ag__role">{a.role}</p>
+          </div>
+          <span class={`ag-pill ${tone(a.status)}`} data-pill>{a.status}</span>
+        </div>
+        <dl class="agt-ag__facts">
+          <div><dt>Modelo</dt><dd data-model>{a.model}</dd></div>
+          <div><dt>Herramientas</dt><dd data-tools>{a.tools.join(', ') || 'Ninguna'}</dd></div>
+          <div><dt>Última ejecución</dt><dd>{a.lastRun}</dd></div>
+        </dl>
+        <div class="agt-ag__rate">
+          <div class="agt-ag__meter" role="img" aria-label={a.runs ? `${a.successRate} % de éxito` : 'Sin ejecuciones todavía'}><span style={`width:${a.successRate}%`}></span></div>
+          <small>{a.runs ? `${a.successRate} % de éxito · ${a.runs.toLocaleString('es-ES')} ejecuciones` : 'Sin ejecuciones todavía'}</small>
+        </div>
+        <p class="ag-sr" data-prompt>{a.prompt}</p>
+        <div class="agt-ag__actions">
+          <a class="ag-btn ag-btn--ghost" href={chatHref}>Abrir chat</a>
+          <button type="button" class="ag-btn ag-btn--ghost" data-edit>Editar</button>
+          <button type="button" class="ag-btn ag-btn--ghost" data-toggle>{a.status === 'Activo' ? 'Pausar' : 'Activar'}</button>
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  <p class="agt-ags__empty" data-empty hidden>No hay agentes con ese estado.</p>
+
+  <dialog class="agt-dlg" aria-labelledby={`${uid}-dt`} data-dialog>
+    <form method="dialog" class="agt-dlg__form" data-form novalidate>
+      <h2 id={`${uid}-dt`} data-dialog-title>Crear agente</h2>
+
+      <div class="ag-field">
+        <label for={`${uid}-n`}>Nombre</label>
+        <input id={`${uid}-n`} class="ag-input" name="name" maxlength="40" autocomplete="off" required />
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-r`}>Para qué sirve</label>
+        <input id={`${uid}-r`} class="ag-input" name="role" maxlength="90" autocomplete="off" />
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-m`}>Modelo</label>
+        <select id={`${uid}-m`} class="ag-input" name="model">
+          {models.map((m) => <option value={m}>{m}</option>)}
+        </select>
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-p`}>Instrucciones</label>
+        <textarea id={`${uid}-p`} class="ag-input" name="prompt" rows="4" placeholder="Cómo debe comportarse, qué tono usar y qué no debe hacer nunca."></textarea>
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-t`}>Creatividad: <output data-temp-out>0,3</output></label>
+        <input id={`${uid}-t`} type="range" name="temp" min="0" max="1" step="0.1" value="0.3" data-temp />
+      </div>
+      <fieldset class="agt-dlg__tools">
+        <legend>Herramientas que puede usar</legend>
+        {tools.map((t) => (
+          <label><input type="checkbox" name="tool" value={t} /> {t}</label>
+        ))}
+      </fieldset>
+
+      <p class="agt-dlg__error" role="alert" data-error></p>
+      <div class="agt-dlg__actions">
+        <button type="button" class="ag-btn ag-btn--ghost" data-cancel>Cancelar</button>
+        <button type="submit" class="ag-btn" data-save>Guardar agente</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template data-tpl-agent>
+    <li class="agt-ag" data-id="" data-status="Borrador">
+      <div class="agt-ag__top">
+        <span class="agt-ag__av" aria-hidden="true"></span>
+        <div>
+          <h2 class="agt-ag__name"></h2>
+          <p class="agt-ag__role"></p>
+        </div>
+        <span class="ag-pill" data-pill>Borrador</span>
+      </div>
+      <dl class="agt-ag__facts">
+        <div><dt>Modelo</dt><dd data-model></dd></div>
+        <div><dt>Herramientas</dt><dd data-tools></dd></div>
+        <div><dt>Última ejecución</dt><dd>nunca</dd></div>
+      </dl>
+      <div class="agt-ag__rate">
+        <div class="agt-ag__meter" role="img" aria-label="Sin ejecuciones todavía"><span style="width:0%"></span></div>
+        <small>Sin ejecuciones todavía</small>
+      </div>
+      <p class="ag-sr" data-prompt></p>
+      <div class="agt-ag__actions">
+        <a class="ag-btn ag-btn--ghost" href={chatHref}>Abrir chat</a>
+        <button type="button" class="ag-btn ag-btn--ghost" data-edit>Editar</button>
+        <button type="button" class="ag-btn ag-btn--ghost" data-toggle>Activar</button>
+      </div>
+    </li>
+  </template>
+</section>
+
+<style>
+  .agt-ags {
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-ags__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-5, 1.25rem);
+  }
+
+  .agt-ags__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--ag-border);
+    border-radius: 12px;
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-ags__filter label {
+    position: relative;
+  }
+
+  .agt-ags__filter input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .agt-ags__filter span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 0 0.9rem;
+    border-radius: 9px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-ags__filter input:checked + span {
+    background: var(--ag-surface-2);
+    color: var(--ag-text);
+  }
+
+  .agt-ags__filter input:focus-visible + span {
+    outline: 2px solid var(--ag-accent);
+  }
+
+  .agt-ags__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-ag {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    align-content: start;
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ag-border);
+    border-radius: 16px;
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-ag[hidden] {
+    display: none;
+  }
+
+  .agt-ag__top {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--sp-3, 0.75rem);
+    align-items: start;
+  }
+
+  .agt-ag__av {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid hsl(var(--h, 92) 55% 55% / 0.7);
+    border-radius: 12px;
+    background: hsl(var(--h, 92) 55% 50% / 0.22);
+    font-weight: 750;
+    font-size: 1.1rem;
+  }
+
+  .agt-ag__name {
+    margin: 0;
+    font-size: 1.12rem;
+    font-weight: 700;
+  }
+
+  .agt-ag__role {
+    margin: 2px 0 0;
+    font-size: 0.88rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-ag__facts {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  .agt-ag__facts div {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .agt-ag__facts dt {
+    color: var(--ag-text-3);
+  }
+
+  .agt-ag__facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  [data-model] {
+    font-family: var(--ag-font-mono);
+    font-size: 0.8rem;
+  }
+
+  .agt-ag__meter {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ag-surface-2);
+    overflow: hidden;
+  }
+
+  .agt-ag__meter span {
+    display: block;
+    height: 100%;
+    background: var(--ag-brand);
+  }
+
+  .agt-ag__rate small {
+    display: block;
+    margin-top: 6px;
+    font: 500 0.74rem var(--ag-font-mono);
+    color: var(--ag-text-3);
+  }
+
+  .agt-ag__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .agt-ag__actions .ag-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 0.7rem;
+    font-size: 0.88rem;
+  }
+
+  .agt-ags__empty {
+    margin: var(--sp-6, 1.5rem) 0 0;
+    color: var(--ag-text-3);
+  }
+
+  .agt-dlg {
+    width: min(560px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    inset: 0;
+    padding: 0;
+    border: 1px solid var(--ag-border-strong);
+    border-radius: 18px;
+    background: var(--ag-bg-raised);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+    overflow: auto;
+  }
+
+  .agt-dlg::backdrop {
+    background: rgba(5, 6, 8, 0.66);
+  }
+
+  .agt-dlg__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-5, 1.25rem);
+  }
+
+  .agt-dlg__form h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 750;
+  }
+
+  .agt-dlg__form input[type='range'] {
+    width: 100%;
+    accent-color: var(--ag-brand);
+  }
+
+  .agt-dlg__tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 2px var(--sp-3, 0.75rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .agt-dlg__tools legend {
+    margin-bottom: var(--sp-2, 0.5rem);
+    padding: 0;
+    font: 600 0.82rem var(--ag-font-body);
+    color: var(--ag-text-2);
+  }
+
+  .agt-dlg__tools label {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 40px;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+
+  .agt-dlg__tools input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ag-brand);
+  }
+
+  .agt-dlg__error {
+    min-height: 1.2em;
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ag-bad);
+  }
+
+  .agt-dlg__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-2, 0.5rem);
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const list = root.querySelector<HTMLElement>('[data-list]')!;
+    const dialog = root.querySelector<HTMLDialogElement>('[data-dialog]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const error = root.querySelector<HTMLElement>('[data-error]')!;
+    const title = root.querySelector<HTMLElement>('[data-dialog-title]')!;
+    const temp = root.querySelector<HTMLInputElement>('[data-temp]')!;
+    const tempOut = root.querySelector<HTMLOutputElement>('[data-temp-out]')!;
+    let editing: HTMLElement | null = null;
+
+    const field = (n: string) => form.elements.namedItem(n) as HTMLInputElement;
+    const tone = (s: string) => (s === 'Activo' ? 'ag-pill--ok' : s === 'En pausa' ? 'ag-pill--warn' : '');
+    const say = (t: string) => { status.textContent = ''; window.setTimeout(() => { status.textContent = t; }, 40); };
+
+    function setStatus(card: HTMLElement, s: string) {
+      card.dataset.status = s;
+      const pill = card.querySelector<HTMLElement>('[data-pill]')!;
+      pill.textContent = s;
+      pill.className = `ag-pill ${tone(s)}`.trim();
+      const t = card.querySelector<HTMLElement>('[data-toggle]');
+      if (t) t.textContent = s === 'Activo' ? 'Pausar' : 'Activar';
+    }
+
+    function applyFilter() {
+      const v = (root.querySelector<HTMLInputElement>('input[type="radio"]:checked'))?.value ?? 'Todos';
+      let n = 0;
+      list.querySelectorAll<HTMLElement>('.agt-ag').forEach((c) => {
+        const show = v === 'Todos' || c.dataset.status === v;
+        c.hidden = !show;
+        if (show) n++;
+      });
+      empty.hidden = n > 0;
+      say(`${n} ${n === 1 ? 'agente' : 'agentes'}`);
+    }
+    root.querySelectorAll('input[type="radio"]').forEach((r) => r.addEventListener('change', applyFilter));
+
+    temp.addEventListener('input', () => { tempOut.textContent = temp.value.replace('.', ','); });
+
+    function open(card: HTMLElement | null) {
+      editing = card;
+      form.reset();
+      error.textContent = '';
+      title.textContent = card ? 'Editar agente' : 'Crear agente';
+      if (card) {
+        field('name').value = card.querySelector('.agt-ag__name')!.textContent ?? '';
+        field('role').value = card.querySelector('.agt-ag__role')!.textContent ?? '';
+        field('model').value = card.querySelector('[data-model]')!.textContent ?? '';
+        field('prompt').value = card.querySelector('[data-prompt]')!.textContent ?? '';
+        const have = (card.querySelector('[data-tools]')!.textContent ?? '').split(', ');
+        form.querySelectorAll<HTMLInputElement>('input[name="tool"]').forEach((c) => { c.checked = have.includes(c.value); });
+      }
+      tempOut.textContent = temp.value.replace('.', ',');
+      dialog.showModal();
+      field('name').focus();
+    }
+
+    root.querySelector('[data-open-new]')?.addEventListener('click', () => open(null));
+    root.querySelector('[data-cancel]')?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+    list.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const card = target.closest<HTMLElement>('.agt-ag');
+      if (!card) return;
+      if (target.closest('[data-edit]')) open(card);
+      if (target.closest('[data-toggle]')) {
+        const next = card.dataset.status === 'Activo' ? 'En pausa' : 'Activo';
+        setStatus(card, next);
+        say(`${card.querySelector('.agt-ag__name')!.textContent} ahora está ${next === 'Activo' ? 'activo' : 'en pausa'}.`);
+        applyFilter();
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = field('name').value.trim();
+      if (!name) {
+        error.textContent = 'Ponle un nombre al agente.';
+        field('name').focus();
+        return;
+      }
+      const tools = [...form.querySelectorAll<HTMLInputElement>('input[name="tool"]:checked')].map((c) => c.value);
+      let card = editing;
+      if (!card) {
+        card = (root.querySelector<HTMLTemplateElement>('[data-tpl-agent]')!.content.firstElementChild!.cloneNode(true)) as HTMLElement;
+        card.dataset.id = `n${Date.now()}`;
+        card.style.setProperty('--h', String(Math.floor(Math.random() * 360)));
+        list.prepend(card);
+      }
+      card.querySelector('.agt-ag__av')!.textContent = name[0].toUpperCase();
+      card.querySelector('.agt-ag__name')!.textContent = name;
+      card.querySelector('.agt-ag__role')!.textContent = field('role').value.trim() || 'Sin descripción';
+      card.querySelector('[data-model]')!.textContent = field('model').value;
+      card.querySelector('[data-tools]')!.textContent = tools.join(', ') || 'Ninguna';
+      card.querySelector('[data-prompt]')!.textContent = field('prompt').value.trim();
+      dialog.close();
+      applyFilter();
+      say(`Agente «${name}» ${editing ? 'actualizado' : 'creado como borrador'}.`);
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agt-ags]').forEach(init);
+</script>

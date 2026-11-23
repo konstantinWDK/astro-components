@@ -1,0 +1,301 @@
+---
+/**
+ * AgtSignIn — Split sign-in for the AI-agents workspace: a calm panel with a short product
+ * statement and a drawn conversation on one side, the form (email, password with show/hide,
+ * remember me, SSO button) on the other, plus a demo quick-access link.
+ *
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus and 48px controls; the sample conversation is decorative (aria-hidden).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+
+interface OwnProps {
+  dashboardHref?: string;
+  homeHref?: string;
+  action?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { dashboardHref = '/chat', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const uid = `agl-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['agt-ui', 'agt-si', classAttr]} aria-labelledby={`${uid}-title`} data-agt-si data-dashboard={dashboardHref} {...rest}>
+  <div class="agt-si__art">
+    <a href={homeHref} class="agt-si__brand"><span aria-hidden="true"></span>Nexo</a>
+    <div class="agt-si__convo" aria-hidden="true">
+      <p class="agt-si__me">¿Qué clientes han pedido reembolso esta semana?</p>
+      <p class="agt-si__bot"><b>Soporte</b>Han sido 3. Dos por cobro duplicado, ya revisados, y uno por cambio de plan.</p>
+      <p class="agt-si__tool">Herramienta · Stripe (lectura) · 288 ms</p>
+    </div>
+    <p class="agt-si__quote">Un sitio para hablar con todos tus agentes, decidir quién entra y qué claves usan.</p>
+  </div>
+
+  <div class="agt-si__panel">
+    <form class="agt-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-agt-si-form>
+      <p class="ag-eyebrow">Espacio de trabajo</p>
+      <h1 id={`${uid}-title`}>Entra en Nexo</h1>
+
+      <button type="button" class="ag-btn ag-btn--ghost agt-si__sso" data-sso>Continuar con el SSO de tu empresa</button>
+      <p class="agt-si__or"><span>o con tu correo</span></p>
+
+      <div class="ag-field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} class="ag-input" type="email" name="email" autocomplete="email" required />
+      </div>
+      <div class="ag-field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="agt-si__pass">
+          <input id={`${uid}-pass`} class="ag-input" type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-agt-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="agt-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+      <p class="agt-si__error" role="alert" data-agt-si-error></p>
+
+      <button type="submit" class="ag-btn">Entrar</button>
+      <a class="agt-si__demo ag-link" href={dashboardHref}>Ver el espacio de demostración</a>
+    </form>
+  </div>
+</section>
+
+<style>
+  .agt-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--ag-bg);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-si__art {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    border-right: 1px solid var(--ag-border);
+    background:
+      radial-gradient(70% 55% at 80% 20%, rgba(var(--ag-brand-rgb), 0.16), transparent 70%),
+      radial-gradient(60% 50% at 10% 90%, rgba(var(--ag-accent-rgb), 0.16), transparent 70%),
+      var(--ag-bg-raised);
+  }
+
+  .agt-si__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 750;
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+    color: var(--ag-text);
+    text-decoration: none;
+  }
+
+  .agt-si__brand span {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px 14px 5px 14px;
+    background: var(--ag-brand);
+  }
+
+  .agt-si__convo {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    width: min(440px, 100%);
+    margin: 0 auto;
+  }
+
+  .agt-si__convo p {
+    margin: 0;
+    padding: 0.8rem 1rem;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .agt-si__me {
+    justify-self: end;
+    max-width: 85%;
+    border-bottom-right-radius: 4px !important;
+    background: var(--ag-surface-2);
+  }
+
+  .agt-si__bot {
+    max-width: 92%;
+    border: 1px solid var(--ag-border);
+    border-bottom-left-radius: 4px !important;
+    background: var(--ag-surface);
+  }
+
+  .agt-si__bot b {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.8rem;
+    color: var(--ag-brand);
+  }
+
+  .agt-si__tool {
+    justify-self: start;
+    padding: 0.4rem 0.8rem !important;
+    border: 1px dashed var(--ag-border-strong);
+    font: 500 0.76rem var(--ag-font-mono) !important;
+    color: var(--ag-accent);
+  }
+
+  .agt-si__quote {
+    max-width: 34ch;
+    margin: 0;
+    font-weight: 650;
+    font-size: 1.5rem;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+  }
+
+  .agt-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .agt-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .agt-si__form h1 {
+    margin: 0;
+    font-weight: 750;
+    font-size: clamp(2rem, 6vw, 2.6rem);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .agt-si__or {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--ag-text-3);
+  }
+
+  .agt-si__or::before,
+  .agt-si__or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--ag-border);
+  }
+
+  .agt-si__pass {
+    position: relative;
+  }
+
+  .agt-si__pass .ag-input {
+    padding-right: 5.5rem;
+  }
+
+  .agt-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: var(--ag-text-2);
+    font: 600 0.8rem var(--ag-font-body);
+    cursor: pointer;
+  }
+
+  .agt-si__pass button:hover {
+    color: var(--ag-text);
+  }
+
+  .agt-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--ag-text-2);
+    cursor: pointer;
+  }
+
+  .agt-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ag-brand);
+  }
+
+  .agt-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ag-bad);
+  }
+
+  .agt-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 0.92rem;
+  }
+
+  @media (min-width: 900px) {
+    .agt-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .agt-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-agt-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-agt-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-agt-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-agt-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    root.querySelector('[data-sso]')?.addEventListener('click', () => { window.location.href = root.dataset.dashboard ?? '/'; });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

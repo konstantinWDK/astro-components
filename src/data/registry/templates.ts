@@ -3688,6 +3688,127 @@ const routes = { ...motoRoutes, shop: '/catalogo', kit: '/comparador' };
 
 <MotoHomePage data={data} routes={routes} />`,
   },
+  {
+    slug: 'ai-agents',
+    name: { en: 'Nexo · AI Agents Workspace', es: 'Nexo · Espacio de agentes de IA', ru: 'Nexo · Пространство ИИ-агентов' },
+    tagline: { en: 'UI template for an AI-agents app: a general chat with openable tool calls, agent management, users and roles, a place to add APIs, keys and webhooks, and usage with spending limits. Interface only, with demo data and no real model behind it.', es: 'Plantilla de UI para una app de agentes de IA: un chat general con herramientas desplegables, gestión de agentes, usuarios y roles, un lugar para añadir APIs, claves y webhooks, y consumo con límites de gasto. Solo interfaz, con datos de demostración y sin ningún modelo real detrás.', ru: 'UI-шаблон приложения с ИИ-агентами: общий чат с раскрываемыми вызовами инструментов, управление агентами, пользователями и ролями, место для API, ключей и вебхуков и расход с лимитами. Только интерфейс, демо-данные и никакой настоящей модели.' },
+    description: { en: 'Complete UI for an AI-agents workspace, six screens built only from its own components. The chat has a conversation list, a message log with tool-call blocks you can open, an agent picker and an inspector; sending streams a canned reply word by word with a Stop button. Agents lists every agent with status, model, tools and success rate, with pause/activate and a dialog to create or edit. Users has a searchable members table that turns into cards on phones, role pickers, suspend and remove with confirmation, an invite dialog and a written permissions matrix. Integrations holds provider cards to connect, an API-key table with masked values, rotate with a one-time reveal and revoke, an add-key dialog, webhooks with send-test and a copyable request example. Usage shows token and spend meters, a daily chart with an equivalent table, the share per agent and spending limits. Plus sign-in. Nothing here calls a model, stores a key or sends a request: connect your own backend.', es: 'Interfaz completa para un espacio de agentes de IA, seis pantallas hechas solo con componentes propios. El chat tiene lista de conversaciones, registro de mensajes con bloques de herramientas que se abren, selector de agente e inspector; al enviar se emite una respuesta de ejemplo palabra a palabra con botón de detener. Agentes lista cada agente con estado, modelo, herramientas y tasa de éxito, con pausar/activar y un diálogo para crear o editar. Usuarios tiene una tabla de miembros con búsqueda que pasa a tarjetas en móvil, selectores de rol, suspender y quitar con confirmación, un diálogo de invitación y una matriz de permisos escrita. Integraciones reúne tarjetas de servicios para conectar, una tabla de claves de API enmascaradas, rotar con revelado único y revocar, un diálogo para añadir clave, webhooks con envío de prueba y un ejemplo de petición copiable. Consumo muestra medidores de tokens y gasto, un gráfico diario con su tabla equivalente, el reparto por agente y límites de gasto. Más el acceso. Nada de esto llama a un modelo, guarda una clave ni envía una petición: conecta tu propio backend.', ru: 'Полный интерфейс пространства ИИ-агентов, шесть экранов только из собственных компонентов. В чате — список бесед, журнал сообщений с раскрываемыми блоками инструментов, выбор агента и панель; отправка выдаёт готовый ответ по словам с кнопкой «Остановить». «Агенты» — список со статусом, моделью, инструментами и долей успеха, пауза/активация и диалог создания или правки. «Пользователи» — таблица с поиском (на телефоне карточки), выбор ролей, приостановка и удаление с подтверждением, диалог приглашения и матрица прав. «Интеграции» — карточки сервисов, таблица API-ключей с маской, ротация с единовременным показом и отзыв, диалог добавления ключа, вебхуки с тестом и копируемый пример запроса. «Расход» — шкалы токенов и затрат, диаграмма по дням с таблицей, доли по агентам и лимиты. И вход. Ничто здесь не вызывает модель, не хранит ключ и не отправляет запрос: подключите свой бэкенд.' },
+    highlights: {
+      en: [
+        'Chat with openable tool-call blocks (input, result, milliseconds), an agent picker and an inspector; the demo reply streams word by word and can be stopped',
+        'Agent management with a native dialog to create or edit: model, instructions, a creativity slider and tool checkboxes',
+        'Users and roles: searchable table that becomes cards on phones, invitations, suspend and remove with confirmation and a written permissions matrix',
+        'APIs and keys: masked keys, one-time reveal when rotating, revoke with confirmation, add-key dialog with show/hide, webhooks with send-test and a copyable request',
+        'Usage with a 7/30-day chart and an equivalent table, share per agent and spending limits that move the meters',
+        'UI only: no model, no storage of secrets and no requests; light and dark themes, keyboard and screen-reader friendly',
+      ],
+      es: [
+        'Chat con bloques de herramientas que se abren (entrada, resultado, milisegundos), selector de agente e inspector; la respuesta de demostración se emite palabra a palabra y se puede detener',
+        'Gestión de agentes con un diálogo nativo para crear o editar: modelo, instrucciones, deslizador de creatividad y casillas de herramientas',
+        'Usuarios y roles: tabla con búsqueda que pasa a tarjetas en móvil, invitaciones, suspender y quitar con confirmación y una matriz de permisos escrita',
+        'APIs y claves: claves enmascaradas, revelado único al rotar, revocar con confirmación, diálogo para añadir con mostrar/ocultar, webhooks con envío de prueba y una petición copiable',
+        'Consumo con gráfico de 7/30 días y tabla equivalente, reparto por agente y límites de gasto que mueven los medidores',
+        'Solo UI: sin modelo, sin guardar secretos y sin peticiones; temas claro y oscuro, usable con teclado y lector de pantalla',
+      ],
+      ru: [
+        'Чат с раскрываемыми блоками инструментов (вход, результат, миллисекунды), выбором агента и панелью; демо-ответ идёт по словам и его можно остановить',
+        'Управление агентами с нативным диалогом создания и правки: модель, инструкции, ползунок креативности и флажки инструментов',
+        'Пользователи и роли: таблица с поиском (на телефоне карточки), приглашения, приостановка и удаление с подтверждением и матрица прав словами',
+        'API и ключи: ключи с маской, единовременный показ при ротации, отзыв с подтверждением, диалог добавления с показом/скрытием, вебхуки с тестом и копируемый запрос',
+        'Расход: диаграмма за 7/30 дней и таблица-аналог, доли по агентам и лимиты, двигающие шкалы',
+        'Только UI: без модели, без хранения секретов и без запросов; светлая и тёмная темы, удобно с клавиатуры и экранным диктором',
+      ],
+    },
+    tags: ['ai', 'agents', 'chat', 'dashboard', 'saas', 'api-keys', 'users', 'app'],
+    previewBase: '/preview/ai-agents/',
+    importPath: 'astro-component-kit/templates/ai-agents',
+    pages: [
+      {
+        id: 'chat', path: '',
+        name: { en: 'General chat', es: 'Chat general', ru: 'Общий чат' },
+        description: { en: 'Conversations list, message log with openable tool calls, agent picker and inspector; sending streams a demo reply.', es: 'Lista de conversaciones, registro de mensajes con herramientas desplegables, selector de agente e inspector; al enviar se emite una respuesta de demostración.', ru: 'Список бесед, журнал сообщений с раскрываемыми инструментами, выбор агента и панель; отправка запускает демо-ответ.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { AgtChatPage } from 'astro-component-kit/templates/ai-agents';
+---
+
+<AgtChatPage />`,
+      },
+      {
+        id: 'agents', path: 'agentes/',
+        name: { en: 'Agents', es: 'Agentes', ru: 'Агенты' },
+        description: { en: 'Agent list with filters, pause/activate and a dialog to create or edit.', es: 'Lista de agentes con filtros, pausar/activar y un diálogo para crear o editar.', ru: 'Список агентов с фильтрами, паузой/активацией и диалогом создания или правки.' },
+        file: 'src/pages/agentes.astro',
+        code: `---
+import { AgtAgentsPage } from 'astro-component-kit/templates/ai-agents';
+---
+
+<AgtAgentsPage />`,
+      },
+      {
+        id: 'users', path: 'usuarios/',
+        name: { en: 'Users', es: 'Usuarios', ru: 'Пользователи' },
+        description: { en: 'Members table with roles, invitations, suspension and the permissions matrix.', es: 'Tabla de miembros con roles, invitaciones, suspensión y la matriz de permisos.', ru: 'Таблица участников с ролями, приглашениями, приостановкой и матрицей прав.' },
+        file: 'src/pages/usuarios.astro',
+        code: `---
+import { AgtUsersPage } from 'astro-component-kit/templates/ai-agents';
+---
+
+<AgtUsersPage />`,
+      },
+      {
+        id: 'integrations', path: 'integraciones/',
+        name: { en: 'Integrations & keys', es: 'Integraciones y claves', ru: 'Интеграции и ключи' },
+        description: { en: 'Connected services, API keys with rotate and revoke, webhooks and a request example.', es: 'Servicios conectados, claves de API con rotar y revocar, webhooks y un ejemplo de petición.', ru: 'Подключённые сервисы, API-ключи с ротацией и отзывом, вебхуки и пример запроса.' },
+        file: 'src/pages/integraciones.astro',
+        code: `---
+import { AgtIntegrationsPage } from 'astro-component-kit/templates/ai-agents';
+---
+
+<AgtIntegrationsPage />`,
+      },
+      {
+        id: 'usage', path: 'uso/',
+        name: { en: 'Usage & limits', es: 'Consumo y límites', ru: 'Расход и лимиты' },
+        description: { en: 'Token and spend meters, daily chart, share per agent and spending limits.', es: 'Medidores de tokens y gasto, gráfico diario, reparto por agente y límites de gasto.', ru: 'Шкалы токенов и затрат, дневная диаграмма, доли по агентам и лимиты.' },
+        file: 'src/pages/uso.astro',
+        code: `---
+import { AgtUsagePage } from 'astro-component-kit/templates/ai-agents';
+---
+
+<AgtUsagePage />`,
+      },
+      {
+        id: 'sign-in', path: 'acceso/',
+        name: { en: 'Sign in', es: 'Acceso', ru: 'Вход' },
+        description: { en: 'Split sign-in with a drawn sample conversation, SSO button and demo access.', es: 'Acceso a pantalla partida con una conversación de ejemplo dibujada, botón de SSO y acceso de demostración.', ru: 'Вход на двух панелях с нарисованной беседой, кнопкой SSO и демо-доступом.' },
+        file: 'src/pages/acceso.astro',
+        code: `---
+import { AgtSignInPage } from 'astro-component-kit/templates/ai-agents';
+---
+
+<AgtSignInPage />`,
+      },
+    ],
+    newComponents: [
+      'agt-chat', 'agt-agents', 'agt-users', 'agt-integrations', 'agt-usage', 'agt-sidebar', 'agt-topbar', 'agt-heading', 'agt-sign-in',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your backend)
+import { AgtChatPage, agtData, agtRoutes } from 'astro-component-kit/templates/ai-agents';
+
+const data = {
+  ...agtData,
+  agents: await fetch('https://api.example.com/agents').then((r) => r.json()),
+  threads: await fetch('https://api.example.com/threads').then((r) => r.json()),
+};
+
+const routes = { ...agtRoutes, chat: '/app', agents: '/app/agents' };
+---
+
+<AgtChatPage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

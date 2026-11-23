@@ -1,0 +1,481 @@
+---
+/**
+ * AgtUsage — Consumption and limits for an AI-agents workspace (UI only): token and spend
+ * meters, a daily bar chart you can switch between 7 and 30 days (hover or focus a bar to read
+ * it; the same figures are in a real table), the share of use per agent, and spending-limit
+ * settings (monthly budget slider and a "pause agents at the limit" switch) that update the
+ * meters on the page.
+ *
+ * @param {typeof agtUsage} usage - Period figures.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every meter has a text equivalent; the chart has a summary label and an
+ * "equivalent table" in a <details>; the range switch is a radio group; the budget slider is
+ * labelled with its output; status words (not only colour) show how close the limit is.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/ai-agents/agt-theme.css';
+import { agtUsage } from '../templates/ai-agents/data';
+
+interface OwnProps {
+  usage?: typeof agtUsage;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { usage = agtUsage, class: classAttr, ...rest } = Astro.props;
+
+const uid = `agg-${Math.random().toString(36).slice(2, 8)}`;
+const tokenPct = Math.round((usage.tokens / usage.tokensLimit) * 100);
+const spendPct = Math.round((usage.spend / usage.budget) * 100);
+const max = Math.max(...usage.daily);
+const fmt = (n: number) => n.toLocaleString('es-ES');
+const euro = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const mill = (n: number) => `${(n / 1_000_000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} M`;
+---
+
+<section class:list={['agt-ui', 'agt-use', classAttr]} aria-label="Consumo" data-agt-use data-spend={usage.spend} data-daily={JSON.stringify(usage.daily)} {...rest}>
+  <ul class="agt-use__stats" role="list">
+    <li>
+      <p class="agt-use__k">Tokens · {usage.period}</p>
+      <p class="agt-use__v">{mill(usage.tokens)} <small>de {mill(usage.tokensLimit)}</small></p>
+      <div class="agt-use__meter" role="img" aria-label={`${tokenPct} % del límite de tokens`}><span style={`width:${tokenPct}%`}></span></div>
+      <p class="agt-use__s">{tokenPct} % del límite · {tokenPct >= 90 ? 'casi al límite' : tokenPct >= 70 ? 'ritmo alto' : 'con margen'}</p>
+    </li>
+    <li>
+      <p class="agt-use__k">Ejecuciones</p>
+      <p class="agt-use__v">{fmt(usage.runs)}</p>
+      <p class="agt-use__s">{fmt(Math.round(usage.runs / 23))} de media por día laborable</p>
+    </li>
+    <li>
+      <p class="agt-use__k">Gasto</p>
+      <p class="agt-use__v"><span data-spend-out>{euro(usage.spend)}</span> <small>de <span data-budget-out>{euro(usage.budget)}</span></small></p>
+      <div class="agt-use__meter" role="img" aria-label={`${spendPct} % del presupuesto`} data-spend-meter><span style={`width:${spendPct}%`} data-spend-bar></span></div>
+      <p class="agt-use__s" data-spend-text>{spendPct} % del presupuesto · {spendPct >= 90 ? 'casi al límite' : spendPct >= 70 ? 'ritmo alto' : 'con margen'}</p>
+    </li>
+  </ul>
+
+  <div class="agt-use__panel">
+    <div class="agt-use__head">
+      <h2>Tokens por día</h2>
+      <fieldset class="agt-use__range">
+        <legend class="ag-sr">Periodo</legend>
+        <label><input type="radio" name={`${uid}-r`} value="30" checked /><span>30 días</span></label>
+        <label><input type="radio" name={`${uid}-r`} value="7" /><span>7 días</span></label>
+      </fieldset>
+    </div>
+    <p class="agt-use__read" role="status" data-read>Pasa el ratón o enfoca una barra para ver el día.</p>
+    <div class="agt-use__chart" role="img" aria-label={`Barras de tokens por día. Máximo ${fmt(max)} mil tokens, media ${fmt(Math.round(usage.daily.reduce((a, b) => a + b, 0) / usage.daily.length))} mil.`} data-chart>
+      {usage.daily.map((v, i) => (
+        <span class="agt-bar" data-i={i} data-v={v} tabindex="-1" style={`height:${Math.round((v / max) * 100)}%`}></span>
+      ))}
+    </div>
+    <details class="agt-use__table">
+      <summary>Ver los datos en una tabla</summary>
+      <div class="agt-use__tscroll">
+        <table>
+          <caption class="ag-sr">Tokens por día, en miles</caption>
+          <thead><tr><th scope="col">Día</th><th scope="col">Miles de tokens</th></tr></thead>
+          <tbody>{usage.daily.map((v, i) => <tr><th scope="row">{i + 1} nov</th><td>{fmt(v)}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="agt-use__cols">
+    <div class="agt-use__panel">
+      <h2>Reparto por agente</h2>
+      <ul class="agt-use__share" role="list">
+        {usage.byAgent.map((a) => (
+          <li>
+            <span>{a.agent}</span>
+            <div class="agt-use__meter" role="img" aria-label={`${a.share} %`}><span style={`width:${a.share}%`}></span></div>
+            <strong>{a.share} %</strong>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <form class="agt-use__panel agt-use__limits" novalidate onsubmit="return false">
+      <h2>Límites de gasto</h2>
+      <div class="ag-field">
+        <label for={`${uid}-b`}>Presupuesto mensual: <output data-budget-label>{euro(usage.budget)}</output></label>
+        <input id={`${uid}-b`} type="range" min="200" max="1500" step="50" value={usage.budget} data-budget />
+      </div>
+      <label class="agt-use__switch">
+        <input type="checkbox" role="switch" checked data-pause />
+        <span>Pausar los agentes al llegar al límite</span>
+      </label>
+      <label class="agt-use__switch">
+        <input type="checkbox" role="switch" checked data-alert />
+        <span>Avisarme por correo al llegar al 80 %</span>
+      </label>
+      <p class="agt-use__note" role="status" data-note></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .agt-use {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--ag-text);
+    font-family: var(--ag-font-body);
+  }
+
+  .agt-use__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-use__stats li,
+  .agt-use__panel {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--ag-border);
+    border-radius: 16px;
+    background: var(--ag-bg-raised);
+  }
+
+  .agt-use__k {
+    margin: 0;
+    font: 500 0.72rem var(--ag-font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ag-text-3);
+  }
+
+  .agt-use__v {
+    margin: var(--sp-2, 0.5rem) 0 var(--sp-3, 0.75rem);
+    font-weight: 750;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .agt-use__v small {
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    color: var(--ag-text-3);
+  }
+
+  .agt-use__s {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    font-size: 0.84rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-use__meter {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--ag-surface-2);
+    overflow: hidden;
+  }
+
+  .agt-use__meter > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--ag-brand);
+    transition: width 0.3s ease;
+  }
+
+  .agt-use__meter.is-high > span {
+    background: var(--ag-warn);
+  }
+
+  .agt-use__panel h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .agt-use__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .agt-use__range {
+    display: flex;
+    gap: 4px;
+    margin: 0;
+    padding: 4px;
+    border: 1px solid var(--ag-border);
+    border-radius: 12px;
+  }
+
+  .agt-use__range label {
+    position: relative;
+  }
+
+  .agt-use__range input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .agt-use__range span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 0.8rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.86rem;
+    color: var(--ag-text-2);
+  }
+
+  .agt-use__range input:checked + span {
+    background: var(--ag-surface-2);
+    color: var(--ag-text);
+  }
+
+  .agt-use__range input:focus-visible + span {
+    outline: 2px solid var(--ag-accent);
+  }
+
+  .agt-use__read {
+    min-height: 1.4em;
+    margin: var(--sp-3, 0.75rem) 0;
+    font: 500 0.82rem var(--ag-font-mono);
+    color: var(--ag-text-2);
+  }
+
+  .agt-use__chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 200px;
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--ag-border-strong);
+  }
+
+  .agt-bar {
+    flex: 1;
+    min-width: 0;
+    border-radius: 3px 3px 0 0;
+    background: rgba(var(--ag-brand-rgb), 0.55);
+    transition: background 0.15s ease;
+  }
+
+  .agt-bar:hover,
+  .agt-bar.is-on {
+    background: var(--ag-brand);
+  }
+
+  .agt-bar[hidden] {
+    display: none;
+  }
+
+  .agt-use__table {
+    margin-top: var(--sp-3, 0.75rem);
+  }
+
+  .agt-use__table summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ag-accent);
+    cursor: pointer;
+  }
+
+  .agt-use__tscroll {
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid var(--ag-border);
+    border-radius: 10px;
+  }
+
+  .agt-use__table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+
+  .agt-use__table th,
+  .agt-use__table td {
+    padding: 0.5rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--ag-border);
+  }
+
+  .agt-use__table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--ag-surface);
+  }
+
+  .agt-use__table td {
+    font-family: var(--ag-font-mono);
+  }
+
+  .agt-use__cols {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .agt-use__share {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-4, 1rem) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .agt-use__share li {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr) 3rem;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    font-size: 0.9rem;
+  }
+
+  .agt-use__share strong {
+    text-align: right;
+    font-family: var(--ag-font-mono);
+    font-size: 0.82rem;
+  }
+
+  .agt-use__limits {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    align-content: start;
+  }
+
+  .agt-use__limits input[type='range'] {
+    width: 100%;
+    accent-color: var(--ag-brand);
+  }
+
+  .agt-use__switch {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+
+  .agt-use__switch input {
+    appearance: none;
+    flex: 0 0 auto;
+    position: relative;
+    width: 44px;
+    height: 26px;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--ag-surface-2);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .agt-use__switch input::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ag-text);
+    transition: transform 0.2s ease;
+  }
+
+  .agt-use__switch input:checked {
+    background: var(--ag-brand);
+  }
+
+  .agt-use__switch input:checked::after {
+    transform: translateX(18px);
+    background: var(--ag-on-brand);
+  }
+
+  .agt-use__note {
+    min-height: 1.2em;
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--ag-text-2);
+  }
+
+  @media (min-width: 900px) {
+    .agt-use__cols {
+      grid-template-columns: 1.2fr 1fr;
+    }
+
+    .agt-use__chart {
+      height: 260px;
+      gap: 6px;
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const daily: number[] = JSON.parse(root.dataset.daily || '[]');
+    const spend = Number(root.dataset.spend);
+    const bars = [...root.querySelectorAll<HTMLElement>('.agt-bar')];
+    const read = root.querySelector<HTMLElement>('[data-read]')!;
+    const budget = root.querySelector<HTMLInputElement>('[data-budget]')!;
+    const euro = (n: number) => `${n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
+    const show = (i: number) => {
+      bars.forEach((b) => b.classList.toggle('is-on', b === bars[i]));
+      read.textContent = `${i + 1} de noviembre: ${daily[i].toLocaleString('es-ES')} mil tokens`;
+    };
+    bars.forEach((b, i) => {
+      b.addEventListener('pointerenter', () => show(i));
+      b.addEventListener('click', () => show(i));
+    });
+
+    root.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((r) => {
+      r.addEventListener('change', () => {
+        const n = Number(r.value);
+        const max = Math.max(...daily.slice(-n));
+        bars.forEach((b, i) => {
+          const visible = i >= daily.length - n;
+          b.hidden = !visible;
+          b.style.height = `${Math.round((daily[i] / max) * 100)}%`;
+        });
+        read.textContent = `Mostrando los últimos ${n} días.`;
+      });
+    });
+
+    const spendBar = root.querySelector<HTMLElement>('[data-spend-bar]')!;
+    const spendMeter = root.querySelector<HTMLElement>('[data-spend-meter]')!;
+    const spendText = root.querySelector<HTMLElement>('[data-spend-text]')!;
+    const budgetOut = root.querySelector<HTMLElement>('[data-budget-out]')!;
+    const budgetLabel = root.querySelector<HTMLElement>('[data-budget-label]')!;
+    const note = root.querySelector<HTMLElement>('[data-note]')!;
+    const pause = root.querySelector<HTMLInputElement>('[data-pause]')!;
+
+    function updateBudget() {
+      const b = Number(budget.value);
+      const pct = Math.min(100, Math.round((spend / b) * 100));
+      spendBar.style.width = `${pct}%`;
+      spendMeter.setAttribute('aria-label', `${pct} % del presupuesto`);
+      spendMeter.classList.toggle('is-high', pct >= 80);
+      budgetOut.textContent = euro(b);
+      budgetLabel.textContent = euro(b);
+      const word = pct >= 90 ? 'casi al límite' : pct >= 70 ? 'ritmo alto' : 'con margen';
+      spendText.textContent = `${pct} % del presupuesto · ${word}`;
+      note.textContent = pct >= 90 && pause.checked ? 'Con este límite los agentes se pausarían en unos días.' : '';
+    }
+    budget.addEventListener('input', updateBudget);
+    pause.addEventListener('change', updateBudget);
+    updateBudget();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agt-use]').forEach(init);
+</script>
