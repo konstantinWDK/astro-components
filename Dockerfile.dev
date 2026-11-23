@@ -1,0 +1,22 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+
+# Copy dependency manifests
+COPY package.json package-lock.json ./
+
+# Install full dependencies
+RUN npm install
+
+# Expose Astro default dev port and optional MCP port
+EXPOSE 4321
+EXPOSE 3000
+
+ENV HOST=0.0.0.0
+ENV PORT=4321
+
+# Start Astro dev server binding to 0.0.0.0 so it is accessible from the host
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
