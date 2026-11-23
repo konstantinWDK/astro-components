@@ -55,7 +55,7 @@ export const ui = {
     'nav.docs': 'Documentation',
 
     // Search & Sidebar
-    'search.placeholder': 'Search 320+ components, sections & templates...',
+    'search.placeholder': 'Search 700+ components, sections & templates...',
     'search.noResults': 'No components found',
     'sidebar.components': 'UI Components',
     'sidebar.sections': 'Page Sections',
@@ -180,7 +180,7 @@ export const ui = {
     'nav.docs': 'Documentación',
 
     // Search & Sidebar
-    'search.placeholder': 'Buscar entre 320+ componentes, secciones y plantillas...',
+    'search.placeholder': 'Buscar entre 700+ componentes, secciones y plantillas...',
     'search.noResults': 'No se encontraron componentes',
     'sidebar.components': 'Componentes UI',
     'sidebar.sections': 'Secciones de Página',
@@ -305,7 +305,7 @@ export const ui = {
     'nav.docs': 'Документация',
 
     // Search & Sidebar
-    'search.placeholder': 'Поиск среди 320+ компонентов, секций и шаблонов...',
+    'search.placeholder': 'Поиск среди 700+ компонентов, секций и шаблонов...',
     'search.noResults': 'Компоненты не найдены',
     'sidebar.components': 'UI Компоненты',
     'sidebar.sections': 'Секции Страниц',

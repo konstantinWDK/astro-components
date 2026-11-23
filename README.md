@@ -174,7 +174,7 @@ Add this endpoint to your editor's MCP settings (`claude_desktop_config.json`, C
 
 ## 📚 Component & Section Library
 
-**320+ components & full-page sections** across 13 categories plus 5 complete templates:
+**700+ components & full-page sections** across 13 categories plus 5 complete templates:
 
 | Category | Components | Description |
 |----------|:----------:|-------------|
@@ -457,7 +457,7 @@ import { Badge } from 'astro-component-kit/feedback';
 astro-component-kit/
 ├── src/
 │   ├── components/
-│   │   ├── lib/                 ← 320+ component source files & templates
+│   │   ├── lib/                 ← 700+ component source files & templates
 │   │   │   ├── templates/       ← Multi-page templates (ecommerce, editorial, saas-hotel)
 │   │   │   ├── ecommerce/       ← 29 e-commerce components & cart-store
 │   │   │   ├── app/             ← 15 SaaS & dashboard components
