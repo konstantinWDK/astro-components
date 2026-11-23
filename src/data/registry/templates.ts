@@ -3809,6 +3809,130 @@ const routes = { ...agtRoutes, chat: '/app', agents: '/app/agents' };
 
 <AgtChatPage data={data} routes={routes} />`,
   },
+  {
+    slug: 'bike-workshop',
+    name: { en: 'Biela · Custom Bicycle Workshop', es: 'Biela · Taller de bicis a medida', ru: 'Biela · Мастерская велосипедов на заказ' },
+    tagline: { en: 'Multi-page template for a custom bicycle workshop: a live configurator with a bike drawn in SVG, price and delivery time, a gallery of finished builds, a size and fit calculator, the build queue by month and visit booking.', es: 'Plantilla multipágina para un taller de bicis a medida: un configurador en vivo con la bici dibujada en SVG, precio y plazo, una galería de bicis construidas, una calculadora de talla y ajuste, la cola de plazas por mes y la reserva de visitas.', ru: 'Многостраничный шаблон мастерской велосипедов на заказ: конфигуратор в реальном времени с рисунком в SVG, цена и срок, галерея готовых сборок, калькулятор размера и посадки, очередь мест по месяцам и запись на визит.' },
+    description: { en: 'Six pages built only from its own components. The configurator lets you choose type (gravel, road, city, track), frame material, transmission filtered by type, wheels, colour, extras and size while a bike drawn from a real geometry changes colour, tube thickness, mudguards, rack, light and leather; price and delivery time recalculate in a live region, a native dialog reserves a place with a demo build code, and the build travels in the URL. The gallery filters finished bikes by type, sorts by price or date and opens the configurator from any of them. The workshop page explains the six stages with exclusive details, compares frame materials in a table that turns into cards on phones and shows the build queue by month with a waiting list. The fit calculator estimates frame size, saddle height, stem, handlebar width and cranks from height, inseam and flexibility. The visit page generates the next open days in the browser, with time slots and a confirmation. Everything is UI with demo data: nothing is sent or charged.', es: 'Seis páginas hechas solo con componentes propios. El configurador deja elegir tipo (gravel, ruta, ciudad, pista), material del cuadro, transmisión filtrada por tipo, ruedas, color, extras y talla mientras una bici dibujada a partir de una geometría real cambia de color, grosor de tubos, guardabarros, portabultos, luz y cuero; el precio y el plazo se recalculan en una región en vivo, un diálogo nativo reserva plaza con un código de demostración y la bici viaja en la URL. La galería filtra las bicis construidas por tipo, ordena por precio o fecha y abre el configurador desde cualquiera. La página del taller explica los seis pasos con details exclusivos, compara los materiales del cuadro en una tabla que pasa a tarjetas en móvil y muestra la cola de plazas por mes con lista de espera. La calculadora de talla estima talla del cuadro, altura del sillín, potencia, ancho del manillar y bielas con la altura, la entrepierna y la flexibilidad. La página de visita genera los próximos días abiertos en el navegador, con horas y confirmación. Todo es UI con datos de demostración: no se envía ni se cobra nada.', ru: 'Шесть страниц только из собственных компонентов. Конфигуратор позволяет выбрать тип (гревел, шоссе, город, трек), материал рамы, трансмиссию по типу, колёса, цвет, опции и размер, пока рисунок велосипеда по настоящей геометрии меняет цвет, толщину труб, крылья, багажник, свет и кожу; цена и срок пересчитываются в live-области, нативный диалог бронирует место с демо-кодом, а сборка передаётся в URL. Галерея фильтрует готовые велосипеды по типу, сортирует по цене или дате и открывает конфигуратор с любого. Страница мастерской объясняет шесть этапов на эксклюзивных details, сравнивает материалы рам в таблице, которая на телефоне становится карточками, и показывает очередь мест по месяцам с листом ожидания. Калькулятор размера оценивает размер рамы, высоту седла, вынос, ширину руля и шатуны по росту, длине ноги и гибкости. Страница визита строит ближайшие рабочие дни в браузере с временем и подтверждением. Всё — UI с демо-данными: ничего не отправляется и не списывается.' },
+    highlights: {
+      en: [
+        'A bike drawn in SVG from a real geometry that changes with the type, the frame colour, the tube thickness of each material and the extras (mudguards, rack, dynamo light, leather)',
+        'Live price and delivery time written in a live region, with a shareable URL and a native reservation dialog',
+        'Transmission options that filter themselves by bike type, and a size field fed by the fit calculator',
+        'Gallery of finished builds with filter, sort and a "start from this bike" link into the configurator',
+        'Fit calculator with sliders paired to number inputs, validation and a table of recommended measures',
+        'Build queue by month with a waiting list, and a visit booking that generates the next open days in the browser',
+        'Light and dark themes, no icon grids or tag clouds, fully usable by keyboard and screen reader',
+      ],
+      es: [
+        'Una bici dibujada en SVG a partir de una geometría real que cambia con el tipo, el color del cuadro, el grosor de tubos de cada material y los extras (guardabarros, portabultos, luz con dinamo, cuero)',
+        'Precio y plazo en vivo escritos en una región en vivo, con URL compartible y un diálogo nativo de reserva',
+        'Opciones de transmisión que se filtran solas por tipo de bici y un campo de talla alimentado por la calculadora de ajuste',
+        'Galería de bicis construidas con filtro, orden y un enlace «partir de esta bici» hacia el configurador',
+        'Calculadora de ajuste con deslizadores emparejados con campos numéricos, validación y una tabla de medidas recomendadas',
+        'Cola de plazas por mes con lista de espera y una reserva de visita que genera los próximos días abiertos en el navegador',
+        'Temas claro y oscuro, sin cuadrículas de iconos ni nubes de etiquetas, usable por completo con teclado y lector de pantalla',
+      ],
+      ru: [
+        'Велосипед в SVG по настоящей геометрии: меняется с типом, цветом рамы, толщиной труб каждого материала и опциями (крылья, багажник, динамо-фара, кожа)',
+        'Цена и срок в реальном времени в live-области, ссылка для передачи сборки и нативный диалог бронирования',
+        'Варианты трансмиссии сами фильтруются по типу велосипеда, а поле размера заполняется калькулятором посадки',
+        'Галерея готовых сборок с фильтром, сортировкой и ссылкой «начать с этого велосипеда» в конфигуратор',
+        'Калькулятор посадки: ползунки в паре с числовыми полями, проверка значений и таблица рекомендованных размеров',
+        'Очередь мест по месяцам с листом ожидания и запись на визит, строящая ближайшие рабочие дни в браузере',
+        'Светлая и тёмная темы, без сеток иконок и облаков тегов, полностью доступно с клавиатуры и для экранного диктора',
+      ],
+    },
+    tags: ['bike', 'bicycle', 'workshop', 'configurator', 'custom', 'craft', 'booking', 'ecommerce'],
+    previewBase: '/preview/bike-workshop/',
+    importPath: 'astro-component-kit/templates/bike-workshop',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with a repaintable drawn bike, three recent builds, the six stages of a build and the build queue.', es: 'Portada con una bici dibujada que se repinta, tres bicis recientes, los seis pasos de una construcción y la cola de plazas.', ru: 'Главная с перекрашиваемым рисунком велосипеда, тремя недавними сборками, шестью этапами и очередью мест.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { BielaHomePage } from 'astro-component-kit/templates/bike-workshop';
+---
+
+<BielaHomePage />`,
+      },
+      {
+        id: 'configurator', path: 'configurador/',
+        name: { en: 'Configurator', es: 'Configurador', ru: 'Конфигуратор' },
+        description: { en: 'Live configurator: type, material, transmission, wheels, colour, extras and size, with the drawing, price and delivery time updating.', es: 'Configurador en vivo: tipo, material, transmisión, ruedas, color, extras y talla, con el dibujo, el precio y el plazo actualizándose.', ru: 'Конфигуратор в реальном времени: тип, материал, трансмиссия, колёса, цвет, опции и размер; рисунок, цена и срок обновляются.' },
+        file: 'src/pages/configurador.astro',
+        code: `---
+import { BielaConfiguratorPage } from 'astro-component-kit/templates/bike-workshop';
+---
+
+<BielaConfiguratorPage />`,
+      },
+      {
+        id: 'builds', path: 'bicis/',
+        name: { en: 'Builds', es: 'Bicis', ru: 'Сборки' },
+        description: { en: 'Gallery of finished bikes with a type filter, sorting and a link to start from any of them.', es: 'Galería de bicis terminadas con filtro por tipo, orden y un enlace para partir de cualquiera.', ru: 'Галерея готовых велосипедов с фильтром по типу, сортировкой и ссылкой «начать с этой».' },
+        file: 'src/pages/bicis.astro',
+        code: `---
+import { BielaBuildsPage } from 'astro-component-kit/templates/bike-workshop';
+---
+
+<BielaBuildsPage />`,
+      },
+      {
+        id: 'workshop', path: 'taller/',
+        name: { en: 'Workshop', es: 'El taller', ru: 'Мастерская' },
+        description: { en: 'The six stages of a build, a materials comparison table and the build queue by month.', es: 'Los seis pasos de una construcción, una tabla comparativa de materiales y la cola de plazas por mes.', ru: 'Шесть этапов сборки, сравнительная таблица материалов и очередь мест по месяцам.' },
+        file: 'src/pages/taller.astro',
+        code: `---
+import { BielaWorkshopPage } from 'astro-component-kit/templates/bike-workshop';
+---
+
+<BielaWorkshopPage />`,
+      },
+      {
+        id: 'fit', path: 'talla/',
+        name: { en: 'Size & fit', es: 'Tu talla', ru: 'Размер и посадка' },
+        description: { en: 'Frame size and fit calculator from height, inseam and flexibility.', es: 'Calculadora de talla y ajuste con la altura, la entrepierna y la flexibilidad.', ru: 'Калькулятор размера рамы и посадки по росту, длине ноги и гибкости.' },
+        file: 'src/pages/talla.astro',
+        code: `---
+import { BielaFitPage } from 'astro-component-kit/templates/bike-workshop';
+---
+
+<BielaFitPage />`,
+      },
+      {
+        id: 'visit', path: 'visita/',
+        name: { en: 'Visit', es: 'Visítanos', ru: 'Визит' },
+        description: { en: 'Workshop visit booking with open days, time slots and the address.', es: 'Reserva de visita al taller con días abiertos, horas y dirección.', ru: 'Запись в мастерскую: рабочие дни, время и адрес.' },
+        file: 'src/pages/visita.astro',
+        code: `---
+import { BielaVisitPage } from 'astro-component-kit/templates/bike-workshop';
+---
+
+<BielaVisitPage />`,
+      },
+    ],
+    newComponents: [
+      'biela-bike', 'biela-configurator', 'biela-builds', 'biela-fit', 'biela-slots', 'biela-visit', 'biela-hero', 'biela-process', 'biela-materials', 'biela-header', 'biela-footer',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your CMS)
+import { BielaConfiguratorPage, bielaData, bielaRoutes } from 'astro-component-kit/templates/bike-workshop';
+
+const data = {
+  ...bielaData,
+  builds: await fetch('https://api.example.com/builds').then((r) => r.json()),
+  months: await fetch('https://api.example.com/queue').then((r) => r.json()),
+};
+
+const routes = { ...bielaRoutes, configurator: '/disena-tu-bici', builds: '/bicis' };
+---
+
+<BielaConfiguratorPage data={data} routes={routes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

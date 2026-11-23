@@ -1,0 +1,147 @@
+---
+/**
+ * BielaMaterials — Comparison of the frame materials as a real table: feel, frame weight, lifespan,
+ * repairability, surcharge and delivery time. On phones every row becomes a labelled card.
+ *
+ * @param {BielaMaterialInfo[]} materials - Materials to compare.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: a <table> with caption, column and row headers; on narrow screens each cell keeps
+ * its label through a data attribute so the meaning survives the card layout.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import { bielaMaterials, bielaEuro, type BielaMaterialInfo } from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  materials?: BielaMaterialInfo[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { materials = bielaMaterials, class: classAttr, ...rest } = Astro.props;
+---
+
+<div class:list={['bl-ui', 'blm', classAttr]} {...rest}>
+  <table class="blm__table">
+    <caption class="bl-sr">Comparación de los materiales del cuadro</caption>
+    <thead>
+      <tr>
+        <th scope="col">Material</th>
+        <th scope="col">Tacto</th>
+        <th scope="col">Cuadro (talla 54)</th>
+        <th scope="col">Vida útil</th>
+        <th scope="col">Reparación</th>
+        <th scope="col">Suplemento</th>
+        <th scope="col">Plazo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {materials.map((m) => (
+        <tr>
+          <th scope="row"><strong>{m.name}</strong><small>{m.tagline}</small></th>
+          <td data-label="Tacto">{m.feel}</td>
+          <td data-label="Cuadro (talla 54)">{m.weight.toLocaleString('es-ES')} kg</td>
+          <td data-label="Vida útil">{m.life}</td>
+          <td data-label="Reparación">{m.repair}</td>
+          <td data-label="Suplemento">{m.price === 0 ? 'Incluido' : `+ ${bielaEuro(m.price)}`}</td>
+          <td data-label="Plazo">{m.weeks} semanas</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .blm {
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .blm__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .blm__table th,
+  .blm__table td {
+    padding: 1rem 0.75rem 1rem 0;
+    border-bottom: 1px solid var(--bl-border-strong);
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.45;
+  }
+
+  .blm__table thead th {
+    font: 500 0.74rem var(--bl-font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bl-text-3);
+  }
+
+  .blm__table tbody th strong {
+    display: block;
+    font: 800 1.35rem var(--bl-font-display);
+  }
+
+  .blm__table tbody th small {
+    font-weight: 400;
+    color: var(--bl-accent);
+  }
+
+  .blm__table td {
+    color: var(--bl-text-2);
+  }
+
+  @media (max-width: 859px) {
+    .blm__table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .blm__table,
+    .blm__table tbody,
+    .blm__table tr {
+      display: block;
+    }
+
+    .blm__table tr {
+      margin-bottom: var(--sp-4, 1rem);
+      padding: var(--sp-4, 1rem);
+      border: 1px solid var(--bl-border-strong);
+      border-radius: 14px;
+      background: var(--bl-bg-raised);
+    }
+
+    .blm__table th,
+    .blm__table td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--bl-border);
+      text-align: right;
+    }
+
+    .blm__table tbody th {
+      display: block;
+      text-align: left;
+      border-bottom: 0;
+    }
+
+    .blm__table td:last-child {
+      border-bottom: 0;
+    }
+
+    .blm__table td::before {
+      content: attr(data-label);
+      flex: none;
+      text-align: left;
+      color: var(--bl-text-3);
+    }
+  }
+</style>

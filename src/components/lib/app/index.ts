@@ -202,3 +202,16 @@ export { default as AgtSidebar } from './AgtSidebar.astro';
 export { default as AgtTopbar } from './AgtTopbar.astro';
 export { default as AgtHeading } from './AgtHeading.astro';
 export { default as AgtSignIn } from './AgtSignIn.astro';
+
+// Custom bicycle workshop ("Biela")
+export { default as BielaBike } from './BielaBike.astro';
+export { default as BielaConfigurator } from './BielaConfigurator.astro';
+export { default as BielaBuilds } from './BielaBuilds.astro';
+export { default as BielaFit } from './BielaFit.astro';
+export { default as BielaSlots } from './BielaSlots.astro';
+export { default as BielaVisit } from './BielaVisit.astro';
+export { default as BielaHero } from './BielaHero.astro';
+export { default as BielaProcess } from './BielaProcess.astro';
+export { default as BielaMaterials } from './BielaMaterials.astro';
+export { default as BielaHeader } from './BielaHeader.astro';
+export { default as BielaFooter } from './BielaFooter.astro';

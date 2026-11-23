@@ -1,0 +1,406 @@
+---
+/**
+ * BielaFit — Frame-size and fit calculator (UI only): from height, inseam, flexibility and the kind
+ * of bike it estimates the frame size, saddle height, stem length, handlebar width, crank length
+ * and the drop between saddle and bars. The result updates as you type and links to the
+ * configurator with the size preset. It is a starting estimate; the fitting session confirms it.
+ *
+ * @param {string} configuratorHref - URL of the configurator ("?s=<size>&t=<type>" is appended).
+ * @param {string} visitHref - URL of the visit booking page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every control has a visible label and a unit, errors are announced with
+ * role="alert", the results are a real table with row headers and are announced politely, and
+ * the sliders have a number input twin for exact values.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+
+interface OwnProps {
+  configuratorHref?: string;
+  visitHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { configuratorHref = '#configurador', visitHref = '#visita', class: classAttr, ...rest } = Astro.props;
+
+const uid = `blf-${Math.random().toString(36).slice(2, 8)}`;
+const kinds = [
+  { id: 'gravel', name: 'Gravel' },
+  { id: 'ruta', name: 'Ruta' },
+  { id: 'ciudad', name: 'Ciudad' },
+  { id: 'pista', name: 'Pista' },
+];
+const flex = [
+  { id: 'baja', name: 'Poca', help: 'Me cuesta tocarme los pies' },
+  { id: 'media', name: 'Normal', help: 'Llego a los tobillos' },
+  { id: 'alta', name: 'Mucha', help: 'Apoyo las palmas en el suelo' },
+];
+const sep = configuratorHref.includes('?') ? '&' : '?';
+---
+
+<section class:list={['bl-ui', 'blf', classAttr]} aria-label="Calculadora de talla y ajuste" data-blf data-href={`${configuratorHref}${sep}`} {...rest}>
+  <form class="blf__form" novalidate data-form>
+    <div class="bl-field">
+      <label for={`${uid}-h`}>Tu altura (cm)</label>
+      <div class="blf__pair">
+        <input id={`${uid}-h`} class="bl-input" type="number" inputmode="numeric" min="140" max="210" step="1" value="172" name="height" />
+        <input type="range" min="140" max="210" step="1" value="172" aria-label="Altura, deslizador" data-range="height" />
+      </div>
+    </div>
+
+    <div class="bl-field">
+      <label for={`${uid}-i`}>Entrepierna (cm)</label>
+      <div class="blf__pair">
+        <input id={`${uid}-i`} class="bl-input" type="number" inputmode="numeric" min="60" max="100" step="1" value="80" name="inseam" aria-describedby={`${uid}-ih`} />
+        <input type="range" min="60" max="100" step="1" value="80" aria-label="Entrepierna, deslizador" data-range="inseam" />
+      </div>
+      <p class="blf__hint" id={`${uid}-ih`}>De pie, descalzo y con un libro entre las piernas, desde el suelo hasta el libro. <button type="button" class="blf__link" data-estimate>No lo sé: estimarla con mi altura</button></p>
+    </div>
+
+    <fieldset class="blf__group">
+      <legend>Flexibilidad</legend>
+      <div class="blf__opts">
+        {flex.map((f, i) => (
+          <label class="blf__opt">
+            <input type="radio" name="flex" value={f.id} checked={i === 1} />
+            <span><strong>{f.name}</strong><small>{f.help}</small></span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blf__group">
+      <legend>Tipo de bici</legend>
+      <div class="blf__opts blf__opts--4">
+        {kinds.map((k, i) => (
+          <label class="blf__opt">
+            <input type="radio" name="kind" value={k.id} checked={i === 0} />
+            <span><strong>{k.name}</strong></span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <p class="blf__error" role="alert" data-error hidden></p>
+  </form>
+
+  <div class="blf__result">
+    <p class="blf__size" aria-live="polite">Talla recomendada <strong data-size>54</strong> <span>cm</span></p>
+    <table class="blf__table">
+      <caption class="bl-sr">Medidas recomendadas</caption>
+      <tbody data-rows>
+        <tr><th scope="row">Altura del sillín</th><td>—</td></tr>
+      </tbody>
+    </table>
+    <p class="blf__note" data-note>Es una estimación de partida. En el ajuste del taller la comprobamos sobre una bici regulable y la dejamos escrita en tu ficha.</p>
+    <div class="blf__actions">
+      <a class="bl-btn" href={configuratorHref} data-use>Usar esta talla en el configurador</a>
+      <a class="bl-btn bl-btn--ghost" href={visitHref}>Reservar un ajuste</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .blf {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .blf__form {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    align-content: start;
+  }
+
+  .blf__pair {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .blf__pair input[type='range'] {
+    width: 100%;
+    min-height: 44px;
+    accent-color: var(--bl-brand);
+  }
+
+  .blf__hint {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--bl-text-3);
+  }
+
+  .blf__link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--bl-text);
+    font: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--bl-accent);
+    text-underline-offset: 0.25em;
+    cursor: pointer;
+  }
+
+  .blf__group {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .blf__group legend {
+    margin-bottom: var(--sp-2, 0.5rem);
+    padding: 0;
+    font: 600 0.84rem var(--bl-font-body);
+    color: var(--bl-text-2);
+  }
+
+  .blf__opts {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    grid-template-columns: 1fr;
+  }
+
+  .blf__opt {
+    position: relative;
+    display: block;
+  }
+
+  .blf__opt input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .blf__opt span {
+    display: grid;
+    gap: 0.15rem;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 12px;
+    background: var(--bl-bg-raised);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .blf__opt small {
+    font-size: 0.8rem;
+    color: var(--bl-text-3);
+  }
+
+  .blf__opt input:checked + span {
+    border-color: var(--bl-brand);
+    background: color-mix(in srgb, var(--bl-brand) 11%, var(--bl-bg-raised));
+    box-shadow: inset 0 0 0 1px var(--bl-brand);
+  }
+
+  .blf__opt input:focus-visible + span {
+    outline: 2px solid var(--bl-accent);
+    outline-offset: 2px;
+  }
+
+  .blf__error {
+    margin: 0;
+    color: var(--bl-bad);
+    font-size: 0.9rem;
+  }
+
+  .blf__result {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-4, 1rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 18px;
+    background:
+      linear-gradient(var(--bl-grid) 1px, transparent 1px) 0 0 / 28px 28px,
+      linear-gradient(90deg, var(--bl-grid) 1px, transparent 1px) 0 0 / 28px 28px,
+      var(--bl-bg-raised);
+  }
+
+  .blf__size {
+    margin: 0;
+    font: 500 0.78rem var(--bl-font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bl-text-3);
+  }
+
+  .blf__size strong {
+    display: block;
+    font: 800 4.2rem/1 var(--bl-font-display);
+    letter-spacing: -0.03em;
+    color: var(--bl-brand);
+    text-transform: none;
+  }
+
+  .blf__size span {
+    font: 700 1.1rem var(--bl-font-display);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--bl-text);
+  }
+
+  .blf__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .blf__table :global(th),
+  .blf__table :global(td) {
+    padding: 0.65rem 0;
+    border-top: 1px solid var(--bl-border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .blf__table :global(th) {
+    width: 46%;
+    font-weight: 600;
+    color: var(--bl-text-2);
+  }
+
+  .blf__table :global(td strong) {
+    display: block;
+    font: 700 1.05rem var(--bl-font-display);
+  }
+
+  .blf__table :global(td small) {
+    display: block;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--bl-text-3);
+  }
+
+  .blf__note {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--bl-text-3);
+  }
+
+  .blf__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  @media (min-width: 640px) {
+    .blf__opts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .blf__opts--4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 900px) {
+    .blf {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--sp-10, 2.5rem);
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const heightEl = form.elements.namedItem('height') as HTMLInputElement;
+    const inseamEl = form.elements.namedItem('inseam') as HTMLInputElement;
+    const error = root.querySelector<HTMLElement>('[data-error]')!;
+    const rows = root.querySelector<HTMLElement>('[data-rows]')!;
+    const sizeEl = root.querySelector<HTMLElement>('[data-size]')!;
+    const use = root.querySelector<HTMLAnchorElement>('[data-use]')!;
+    const hrefBase = root.dataset.href || '#';
+    const fmt = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+    const pick = (name: string) => (form.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value || '');
+
+    function compute() {
+      const h = Number(heightEl.value);
+      const inseam = Number(inseamEl.value);
+      const flex = pick('flex');
+      const kind = pick('kind');
+      const okH = h >= 140 && h <= 210;
+      const okI = inseam >= 60 && inseam <= 100;
+      if (!okH || !okI) {
+        error.textContent = !okH ? 'La altura debe estar entre 140 y 210 cm.' : 'La entrepierna debe estar entre 60 y 100 cm.';
+        error.hidden = false;
+        return;
+      }
+      error.hidden = true;
+
+      const kindFactor: Record<string, number> = { ruta: 0.665, gravel: 0.655, ciudad: 0.655, pista: 0.675 };
+      let size = Math.round((inseam * (kindFactor[kind] ?? 0.665)) / 2) * 2;
+      size = Math.max(46, Math.min(62, size));
+      const saddle = inseam * 0.883;
+      let stem = h < 165 ? 80 : h < 175 ? 90 : h < 185 ? 100 : 110;
+      if (flex === 'baja') stem -= 10;
+      if (kind === 'ciudad') stem -= 10;
+      stem = Math.max(60, stem);
+      const bar = h < 165 ? 38 : h < 175 ? 40 : h < 185 ? 42 : 44;
+      const crank = inseam < 76 ? 165 : inseam < 81 ? 170 : inseam < 86 ? 172.5 : 175;
+      const drops: Record<string, number[]> = { ruta: [4, 7, 10], gravel: [2, 5, 8], pista: [6, 9, 12], ciudad: [-4, -2, 0] };
+      const drop = (drops[kind] ?? drops.ruta)[flex === 'baja' ? 0 : flex === 'alta' ? 2 : 1];
+
+      sizeEl.textContent = String(size);
+      const data: Array<[string, string, string]> = [
+        ['Altura del sillín', `${fmt(saddle)} cm`, 'Desde el eje del pedalier hasta la parte alta del sillín.'],
+        ['Potencia', `${stem} mm`, flex === 'baja' ? 'Más corta y con espaciadores para no forzar la espalda.' : 'Longitud de la potencia para llegar sin estirarte.'],
+        ['Ancho del manillar', `${bar} cm`, 'Medido de centro a centro de los extremos.'],
+        ['Bielas', `${fmt(crank)} mm`, 'Más cortas si te molestan las rodillas al subir el pedal.'],
+        ['Caída sillín-manillar', drop > 0 ? `${drop} cm` : drop === 0 ? 'Misma altura' : `${Math.abs(drop)} cm por encima del sillín`, drop < 0 ? 'El manillar queda más alto que el sillín para ir erguido.' : 'Cuánto más bajo queda el manillar que el sillín.'],
+      ];
+      rows.replaceChildren(...data.map(([k, v, note]) => {
+        const tr = document.createElement('tr');
+        const th = document.createElement('th');
+        th.scope = 'row';
+        th.textContent = k;
+        const td = document.createElement('td');
+        const strong = document.createElement('strong');
+        strong.textContent = v;
+        const small = document.createElement('small');
+        small.textContent = note;
+        td.append(strong, small);
+        tr.append(th, td);
+        return tr;
+      }));
+      use.href = `${hrefBase}s=${size}&t=${kind}`;
+    }
+
+    root.querySelectorAll<HTMLInputElement>('[data-range]').forEach((range) => {
+      const num = form.elements.namedItem(range.dataset.range!) as HTMLInputElement;
+      range.addEventListener('input', () => { num.value = range.value; compute(); });
+      num.addEventListener('input', () => { if (num.value) range.value = num.value; compute(); });
+    });
+    form.addEventListener('change', compute);
+    form.addEventListener('submit', (e) => e.preventDefault());
+    root.querySelector<HTMLButtonElement>('[data-estimate]')!.addEventListener('click', () => {
+      const v = String(Math.round(Number(heightEl.value) * 0.455));
+      inseamEl.value = v;
+      const r = root.querySelector<HTMLInputElement>('[data-range="inseam"]');
+      if (r) r.value = v;
+      compute();
+    });
+    compute();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-blf]').forEach(init);
+</script>

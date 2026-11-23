@@ -1,0 +1,375 @@
+---
+/**
+ * BielaVisit — Workshop visit booking (UI only): pick a day among the next open ones (Tuesday to
+ * Saturday), a time slot (Saturday mornings only; some are shown as taken), the reason for the
+ * visit and your contact data. Shows a confirmation with the chosen slot. Nothing is sent.
+ *
+ * @param {Array<{id: string, label: string, minutes: number}>} reasons - Reasons for the visit.
+ * @param {number} days - How many open days to offer. Default 10.
+ * @param {string} address - Workshop address shown in the confirmation.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: days and times are native radios in fieldsets, taken slots are disabled and
+ * labelled "ocupado", errors use role="alert", and the confirmation is announced and focused.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import { bielaBrand } from '../templates/bike-workshop/data';
+
+interface Reason { id: string; label: string; minutes: number }
+
+interface OwnProps {
+  reasons?: Reason[];
+  days?: number;
+  address?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  reasons = [
+    { id: 'charla', label: 'Charla para una bici nueva', minutes: 60 },
+    { id: 'ajuste', label: 'Ajuste en el banco', minutes: 45 },
+    { id: 'revision', label: 'Revisión de mi bici', minutes: 30 },
+    { id: 'recoger', label: 'Recoger mi bici', minutes: 15 },
+  ],
+  days = 10,
+  address = bielaBrand.address,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `blv-${Math.random().toString(36).slice(2, 8)}`;
+const times = ['10:00', '11:30', '16:00', '17:30'];
+---
+
+<section class:list={['bl-ui', 'blv', classAttr]} aria-label="Reservar una visita al taller" data-blv data-days={days} data-address={address} data-reasons={JSON.stringify(reasons)} {...rest}>
+  <form class="blv__form" novalidate data-form>
+    <fieldset class="blv__group">
+      <legend>1. Elige el día</legend>
+      <div class="blv__days" data-days-list>
+        <p class="blv__hint">Cargando los próximos días abiertos…</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="blv__group">
+      <legend>2. Elige la hora</legend>
+      <div class="blv__times" data-times>
+        {times.map((t) => (
+          <label class="blv__time" data-time={t}>
+            <input type="radio" name="time" value={t} />
+            <span>{t}</span>
+          </label>
+        ))}
+      </div>
+      <p class="blv__hint" data-time-hint>Los sábados solo abrimos por la mañana.</p>
+    </fieldset>
+
+    <div class="bl-field">
+      <label for={`${uid}-r`}>3. Motivo de la visita</label>
+      <select id={`${uid}-r`} class="bl-input" name="reason">
+        {reasons.map((r) => <option value={r.id}>{r.label} ({r.minutes} min)</option>)}
+      </select>
+    </div>
+
+    <div class="blv__row">
+      <div class="bl-field">
+        <label for={`${uid}-n`}>Tu nombre</label>
+        <input id={`${uid}-n`} class="bl-input" name="name" autocomplete="name" required />
+      </div>
+      <div class="bl-field">
+        <label for={`${uid}-e`}>Correo electrónico</label>
+        <input id={`${uid}-e`} class="bl-input" type="email" name="email" autocomplete="email" required />
+      </div>
+    </div>
+    <div class="bl-field">
+      <label for={`${uid}-m`}>¿Algo que debamos saber? (opcional)</label>
+      <textarea id={`${uid}-m`} class="bl-input" name="notes" rows="3"></textarea>
+    </div>
+
+    <p class="blv__error" role="alert" data-error hidden></p>
+    <button type="submit" class="bl-btn">Reservar la visita</button>
+    <p class="blv__fine">Es una demostración: no se envía nada.</p>
+  </form>
+
+  <div class="blv__done" data-done tabindex="-1" hidden>
+    <p class="bl-eyebrow">Visita anotada</p>
+    <h3 data-done-title></h3>
+    <p data-done-text></p>
+    <p class="blv__addr" data-done-addr></p>
+    <button type="button" class="bl-btn bl-btn--ghost" data-again>Reservar otra</button>
+  </div>
+</section>
+
+<style>
+  .blv {
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .blv__form,
+  .blv__done {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    max-width: 44rem;
+  }
+
+  .blv__form[hidden],
+  .blv__done[hidden] {
+    display: none;
+  }
+
+  .blv__group {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .blv__group legend {
+    margin-bottom: var(--sp-3, 0.75rem);
+    padding: 0;
+    font: 700 1.15rem var(--bl-font-display);
+  }
+
+  .blv__days,
+  .blv__times {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
+  }
+
+  .blv__days :global(.blv__day),
+  .blv__time {
+    position: relative;
+    display: block;
+  }
+
+  .blv__time[hidden] {
+    display: none;
+  }
+
+  .blv__days :global(.blv__day input),
+  .blv__time input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .blv__days :global(.blv__day span),
+  .blv__time span {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 0.1rem;
+    min-height: 56px;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 12px;
+    background: var(--bl-bg-raised);
+    font-weight: 600;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .blv__days :global(.blv__day small) {
+    font: 500 0.72rem var(--bl-font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bl-text-3);
+  }
+
+  .blv__days :global(.blv__day input:checked + span),
+  .blv__time input:checked + span {
+    border-color: var(--bl-brand);
+    background: color-mix(in srgb, var(--bl-brand) 11%, var(--bl-bg-raised));
+    box-shadow: inset 0 0 0 1px var(--bl-brand);
+  }
+
+  .blv__days :global(.blv__day input:focus-visible + span),
+  .blv__time input:focus-visible + span {
+    outline: 2px solid var(--bl-accent);
+    outline-offset: 2px;
+  }
+
+  .blv__time input:disabled + span {
+    opacity: 0.45;
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
+  .blv__time input:disabled {
+    cursor: not-allowed;
+  }
+
+  .blv__hint,
+  .blv__fine {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--bl-text-3);
+  }
+
+  .blv__row {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .blv__error {
+    margin: 0;
+    color: var(--bl-bad);
+    font-size: 0.92rem;
+  }
+
+  .blv__done {
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 18px;
+    background: var(--bl-bg-raised);
+    justify-items: start;
+  }
+
+  .blv__done:focus {
+    outline: none;
+  }
+
+  .blv__done h3 {
+    margin: 0;
+    font: 800 1.8rem/1.15 var(--bl-font-display);
+  }
+
+  .blv__done p {
+    margin: 0;
+    color: var(--bl-text-2);
+    line-height: 1.55;
+  }
+
+  .blv__addr {
+    font: 500 0.9rem var(--bl-font-mono);
+  }
+
+  @media (min-width: 640px) {
+    .blv__row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const list = root.querySelector<HTMLElement>('[data-days-list]')!;
+    const error = root.querySelector<HTMLElement>('[data-error]')!;
+    const done = root.querySelector<HTMLElement>('[data-done]')!;
+    const hint = root.querySelector<HTMLElement>('[data-time-hint]')!;
+    const total = Number(root.dataset.days || 10);
+    const reasons: Array<{ id: string; label: string }> = JSON.parse(root.dataset.reasons || '[]');
+    const address = root.dataset.address || '';
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const hash = (s: string) => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0; return h; };
+    const dayFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'short' });
+    const longFmt = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const days: Date[] = [];
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    while (days.length < total) {
+      const wd = cursor.getDay();
+      if (wd >= 2 && wd <= 6) days.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    list.replaceChildren(...days.map((d, i) => {
+      const label = document.createElement('label');
+      label.className = 'blv__day';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'day';
+      input.value = iso(d);
+      if (i === 0) input.checked = true;
+      const span = document.createElement('span');
+      const small = document.createElement('small');
+      small.textContent = dayFmt.format(d).replace('.', '');
+      const num = document.createElement('b');
+      num.textContent = `${d.getDate()}/${d.getMonth() + 1}`;
+      span.append(small, num);
+      label.append(input, span);
+      return label;
+    }));
+
+    function refreshTimes() {
+      const value = form.querySelector<HTMLInputElement>('input[name="day"]:checked')?.value;
+      if (!value) return;
+      const day = new Date(`${value}T12:00:00`);
+      const saturday = day.getDay() === 6;
+      const now = new Date();
+      let firstFree: HTMLInputElement | null = null;
+      form.querySelectorAll<HTMLElement>('[data-time]').forEach((el) => {
+        const t = el.dataset.time!;
+        const afternoon = Number(t.slice(0, 2)) >= 14;
+        el.hidden = saturday && afternoon;
+        const input = el.querySelector<HTMLInputElement>('input')!;
+        const [hh, mm] = t.split(':').map(Number);
+        const when = new Date(`${value}T00:00:00`);
+        when.setHours(hh, mm, 0, 0);
+        const taken = hash(`${value}${t}`) % 4 === 0 || when.getTime() < now.getTime() + 3600_000;
+        input.disabled = taken;
+        const span = el.querySelector('span')!;
+        span.textContent = taken ? `${t} ocupado` : t;
+        if (taken && input.checked) input.checked = false;
+        if (!taken && !el.hidden && !firstFree) firstFree = input;
+      });
+      hint.textContent = saturday ? 'Los sábados solo abrimos por la mañana.' : 'Las horas tachadas ya están ocupadas.';
+      if (!form.querySelector('input[name="time"]:checked') && firstFree) (firstFree as HTMLInputElement).checked = true;
+    }
+
+    form.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).name === 'day') refreshTimes(); });
+    refreshTimes();
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const name = String(data.get('name') || '').trim();
+      const email = String(data.get('email') || '').trim();
+      const day = String(data.get('day') || '');
+      const time = String(data.get('time') || '');
+      let msg = '';
+      let focus = '';
+      if (!time) { msg = 'No queda ninguna hora libre ese día: prueba con otro.'; focus = 'time'; }
+      else if (!name) { msg = 'Escribe tu nombre para anotar la visita.'; focus = 'name'; }
+      else if (!/^\S+@\S+\.\S+$/.test(email)) { msg = 'Escribe un correo válido para poder confirmártela.'; focus = 'email'; }
+      if (msg) {
+        error.textContent = msg;
+        error.hidden = false;
+        (form.querySelector(`[name="${focus}"]`) as HTMLElement | null)?.focus();
+        return;
+      }
+      error.hidden = true;
+      const reason = reasons.find((r) => r.id === data.get('reason'))?.label.toLowerCase() || 'visita';
+      const text = longFmt.format(new Date(`${day}T12:00:00`));
+      root.querySelector<HTMLElement>('[data-done-title]')!.textContent = `${text[0].toUpperCase()}${text.slice(1)}, a las ${time}`;
+      root.querySelector<HTMLElement>('[data-done-text]')!.textContent = `Gracias, ${name.split(' ')[0]}. Para ${reason}. Te escribiríamos a ${email} para confirmarla. Es una demostración y no se ha enviado nada.`;
+      root.querySelector<HTMLElement>('[data-done-addr]')!.textContent = address;
+      form.hidden = true;
+      done.hidden = false;
+      done.focus();
+    });
+
+    root.querySelector<HTMLButtonElement>('[data-again]')!.addEventListener('click', () => {
+      form.reset();
+      const firstDay = form.querySelector<HTMLInputElement>('input[name="day"]');
+      if (firstDay) firstDay.checked = true;
+      refreshTimes();
+      done.hidden = true;
+      form.hidden = false;
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-blv]').forEach(init);
+</script>

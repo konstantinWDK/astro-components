@@ -1,0 +1,239 @@
+---
+/**
+ * BielaSlots — Build queue of the workshop (UI only): one card per month with the number of places
+ * taken drawn as squares, plus the text "N places left" or "Full". Choosing a month shows its note
+ * and either a link to the configurator or, when full, a small waiting-list form. Nothing is sent.
+ *
+ * @param {BielaMonth[]} months - Months with capacity and taken places.
+ * @param {string} configuratorHref - URL of the configurator ("?month=<id>" is appended).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: months are native radios in a fieldset; availability is written in words (never
+ * only colour or the squares, which are aria-hidden); the detail panel is a polite live region.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import { bielaMonths, type BielaMonth } from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  months?: BielaMonth[];
+  configuratorHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { months = bielaMonths, configuratorHref = '#configurador', class: classAttr, ...rest } = Astro.props;
+
+const uid = `bls-${Math.random().toString(36).slice(2, 8)}`;
+const sep = configuratorHref.includes('?') ? '&' : '?';
+const firstOpen = Math.max(0, months.findIndex((m) => m.capacity - m.taken > 0));
+const left = (m: BielaMonth) => m.capacity - m.taken;
+const label = (m: BielaMonth) => (left(m) === 0 ? 'Completo' : left(m) === 1 ? 'Queda 1 plaza' : `Quedan ${left(m)} plazas`);
+---
+
+<section class:list={['bl-ui', 'bls', classAttr]} aria-label="Plazas del taller" data-bls data-href={`${configuratorHref}${sep}month=`} {...rest}>
+  <fieldset class="bls__months">
+    <legend class="bl-sr">Mes de inicio del cuadro</legend>
+    {months.map((m, i) => (
+      <label class="bls__month">
+        <input type="radio" name={`${uid}-m`} value={m.id} data-left={left(m)} data-label={m.label} data-note={m.note} checked={i === firstOpen} />
+        <span class="bls__card">
+          <strong>{m.label.split(' ')[0]}</strong>
+          <small>{m.label.split(' ')[1]}</small>
+          <span class="bls__dots" aria-hidden="true">
+            {Array.from({ length: m.capacity }, (_, k) => <i class:list={[k < m.taken && 'is-taken']}></i>)}
+          </span>
+          <span class:list={['bls__left', left(m) === 0 && 'is-full']}>{label(m)}</span>
+        </span>
+      </label>
+    ))}
+  </fieldset>
+
+  <div class="bls__panel" aria-live="polite" data-panel>
+    <h3 data-title></h3>
+    <p data-note></p>
+    <a class="bl-btn" data-go href={configuratorHref}>Configurar mi bici para este mes</a>
+    <form class="bls__wait" data-wait novalidate hidden>
+      <div class="bl-field">
+        <label for={`${uid}-e`}>Tu correo para la lista de espera</label>
+        <input id={`${uid}-e`} class="bl-input" type="email" autocomplete="email" name="email" />
+      </div>
+      <button type="submit" class="bl-btn">Apuntarme a la lista</button>
+      <p class="bls__msg" data-msg role="status"></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .bls {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .bls__months {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bls__month {
+    position: relative;
+    display: block;
+  }
+
+  .bls__month input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bls__card {
+    display: grid;
+    gap: 0.25rem;
+    height: 100%;
+    box-sizing: border-box;
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 14px;
+    background: var(--bl-bg-raised);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .bls__card strong {
+    font: 800 1.35rem var(--bl-font-display);
+  }
+
+  .bls__card small {
+    font: 500 0.78rem var(--bl-font-mono);
+    color: var(--bl-text-3);
+  }
+
+  .bls__dots {
+    display: flex;
+    gap: 4px;
+    margin: 0.4rem 0 0.2rem;
+  }
+
+  .bls__dots i {
+    flex: 1;
+    height: 10px;
+    border: 1px solid var(--bl-text-3);
+    border-radius: 2px;
+  }
+
+  .bls__dots i.is-taken {
+    background: var(--bl-text-3);
+  }
+
+  .bls__left {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--bl-ok);
+  }
+
+  .bls__left.is-full {
+    color: var(--bl-bad);
+  }
+
+  .bls__month input:checked + .bls__card {
+    border-color: var(--bl-brand);
+    background: color-mix(in srgb, var(--bl-brand) 11%, var(--bl-bg-raised));
+    box-shadow: inset 0 0 0 1px var(--bl-brand);
+  }
+
+  .bls__month input:focus-visible + .bls__card {
+    outline: 2px solid var(--bl-accent);
+    outline-offset: 3px;
+  }
+
+  .bls__panel {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-3, 0.75rem);
+    justify-items: start;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bl-border);
+    border-radius: 14px;
+    background: var(--bl-surface);
+  }
+
+  .bls__panel h3 {
+    margin: 0;
+    font: 800 1.4rem var(--bl-font-display);
+  }
+
+  .bls__panel p {
+    margin: 0;
+    color: var(--bl-text-2);
+    line-height: 1.5;
+  }
+
+  .bls__wait {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    width: 100%;
+    max-width: 24rem;
+  }
+
+  .bls__wait[hidden],
+  .bls__panel [hidden] {
+    display: none;
+  }
+
+  .bls__msg {
+    min-height: 1.2em;
+    font-size: 0.9rem;
+  }
+
+  @media (min-width: 720px) {
+    .bls__months {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const title = root.querySelector<HTMLElement>('[data-title]')!;
+    const note = root.querySelector<HTMLElement>('[data-note]')!;
+    const go = root.querySelector<HTMLAnchorElement>('[data-go]')!;
+    const wait = root.querySelector<HTMLFormElement>('[data-wait]')!;
+    const msg = root.querySelector<HTMLElement>('[data-msg]')!;
+    const base = root.dataset.href || '#';
+
+    function show() {
+      const r = root.querySelector<HTMLInputElement>('input[type="radio"]:checked');
+      if (!r) return;
+      const left = Number(r.dataset.left);
+      title.textContent = `${r.dataset.label}: ${left === 0 ? 'completo' : left === 1 ? 'queda 1 plaza' : `quedan ${left} plazas`}`;
+      note.textContent = r.dataset.note || '';
+      go.href = `${base}${r.value}`;
+      go.hidden = left === 0;
+      wait.hidden = left !== 0;
+      msg.textContent = '';
+    }
+
+    root.querySelectorAll('input[type="radio"]').forEach((r) => r.addEventListener('change', show));
+    wait.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = String(new FormData(wait).get('email') || '').trim();
+      msg.textContent = /^\S+@\S+\.\S+$/.test(email)
+        ? `Apuntado: si se libera una plaza te escribiríamos a ${email}. Es una demostración y no se ha enviado nada.`
+        : 'Escribe un correo válido para apuntarte.';
+    });
+    show();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-bls]').forEach(init);
+</script>

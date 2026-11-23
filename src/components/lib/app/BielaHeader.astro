@@ -1,0 +1,243 @@
+---
+/**
+ * BielaHeader — Sticky site header for the custom bicycle workshop: wordmark, primary navigation
+ * (a native popover menu on phones), a theme toggle and a call-to-action button.
+ *
+ * @param {Array<{label: string, href: string}>} items - Navigation links.
+ * @param {string} currentHref - Href of the current page (gets aria-current="page").
+ * @param {string} brand - Workshop name.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} ctaHref - Link of the call-to-action button.
+ * @param {string} ctaLabel - Label of the call-to-action button.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <header> with a labelled <nav>; the menu button reports expanded state through the
+ * native popover (light dismiss and Escape); the theme toggle reports aria-pressed; 44px targets.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+
+interface OwnProps {
+  items?: Array<{ label: string; href: string }>;
+  currentHref?: string;
+  brand?: string;
+  homeHref?: string;
+  ctaHref?: string;
+  ctaLabel?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  items = [],
+  currentHref = '',
+  brand = 'Biela',
+  homeHref = '#',
+  ctaHref = '#configurador',
+  ctaLabel = 'Diseña tu bici',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `bln-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<header class:list={['bl-ui', 'bln', classAttr]} data-bln {...rest}>
+  <div class="bln__inner">
+    <a class="bln__brand" href={homeHref} aria-label={`${brand}, inicio`}>{brand}</a>
+
+    <nav class="bln__nav" aria-label="Principal">
+      <ul role="list">
+        {items.map((i) => <li><a href={i.href} aria-current={i.href === currentHref ? 'page' : undefined}>{i.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <div class="bln__actions">
+      <button type="button" class="bln__icon" aria-pressed="false" aria-label="Cambiar tema claro u oscuro" data-theme-toggle>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
+      </button>
+      <a class="bl-btn bln__cta" href={ctaHref}>{ctaLabel}</a>
+      <button type="button" class="bln__menu" popovertarget={`${uid}-menu`} aria-label="Abrir el menú">
+        <span aria-hidden="true">Menú</span>
+      </button>
+    </div>
+  </div>
+
+  <div id={`${uid}-menu`} popover class="bln__pop">
+    <ul role="list">
+      {items.map((i) => <li><a href={i.href} aria-current={i.href === currentHref ? 'page' : undefined}>{i.label}</a></li>)}
+      <li><a class="bl-btn" href={ctaHref}>{ctaLabel}</a></li>
+    </ul>
+  </div>
+</header>
+
+<style>
+  .bln {
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .bln__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6, 1.5rem);
+    min-height: 64px;
+  }
+
+  .bln__brand {
+    font: 800 1.8rem/1 var(--bl-font-display);
+    letter-spacing: -0.04em;
+    color: var(--bl-text);
+    text-decoration: none;
+  }
+
+  .bln__nav {
+    display: none;
+    margin-left: auto;
+  }
+
+  .bln__nav ul {
+    display: flex;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bln__nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    color: var(--bl-text-2);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .bln__nav a:hover {
+    color: var(--bl-text);
+    background: var(--bl-surface);
+  }
+
+  .bln__nav a[aria-current='page'] {
+    color: var(--bl-text);
+    background: var(--bl-surface-2);
+  }
+
+  .bln__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin-left: auto;
+  }
+
+  .bln__icon,
+  .bln__menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 999px;
+    background: none;
+    color: var(--bl-text);
+    font: 600 0.92rem var(--bl-font-body);
+    cursor: pointer;
+  }
+
+  .bln__icon {
+    padding: 0;
+  }
+
+  .bln__cta {
+    display: none;
+  }
+
+  .bln__pop {
+    position: fixed;
+    inset: 64px 0 auto 0;
+    width: 100%;
+    max-height: calc(100vh - 64px);
+    margin: 0;
+    padding: var(--sp-4, 1rem);
+    box-sizing: border-box;
+    border: 0;
+    border-bottom: 1px solid var(--bl-border-strong);
+    background: var(--bl-bg-raised);
+    color: var(--bl-text);
+    overflow: auto;
+  }
+
+  .bln__pop ul {
+    display: grid;
+    gap: var(--sp-1, 0.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .bln__pop a:not(.bl-btn) {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 var(--sp-2, 0.5rem);
+    border-bottom: 1px solid var(--bl-border);
+    color: var(--bl-text);
+    font: 700 1.2rem var(--bl-font-display);
+    text-decoration: none;
+  }
+
+  .bln__pop a[aria-current='page'] {
+    color: var(--bl-brand);
+  }
+
+  .bln__pop .bl-btn {
+    width: 100%;
+    margin-top: var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 900px) {
+    .bln__nav {
+      display: block;
+    }
+
+    .bln__actions {
+      margin-left: 0;
+    }
+
+    .bln__cta {
+      display: inline-flex;
+    }
+
+    .bln__menu,
+    .bln__pop {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const toggle = root.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    const sync = () => toggle?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
+    sync();
+    toggle?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('ack-theme', next); } catch (e) { /* storage unavailable */ }
+      sync();
+    });
+    root.querySelectorAll<HTMLAnchorElement>('.bln__pop a').forEach((a) => {
+      a.addEventListener('click', () => root.querySelector<HTMLElement>('.bln__pop')?.hidePopover?.());
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-bln]').forEach(init);
+</script>

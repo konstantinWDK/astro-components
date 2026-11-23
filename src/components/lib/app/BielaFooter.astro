@@ -1,0 +1,201 @@
+---
+/**
+ * BielaFooter — Footer for the custom bicycle workshop: address and contact, opening hours with a
+ * live "open now / closed" line computed in the visitor's browser, a few links and a closing line.
+ *
+ * @param {string} brand - Workshop name.
+ * @param {string} address - Street address.
+ * @param {string} phone - Phone number.
+ * @param {string} email - E-mail address.
+ * @param {string} hoursLabel - Opening hours written out.
+ * @param {Array<{days: number[], windows: string[][]}>} hours - Opening windows (0 = Sunday) for the live status.
+ * @param {Array<{label: string, href: string}>} links - Footer links.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: <footer> landmark; the live status is a polite role="status" line written in
+ * words; the phone and e-mail are real links.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import { bielaBrand } from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  brand?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  hoursLabel?: string;
+  hours?: Array<{ days: number[]; windows: string[][] }>;
+  links?: Array<{ label: string; href: string }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = bielaBrand.name,
+  address = bielaBrand.address,
+  phone = bielaBrand.phone,
+  email = bielaBrand.email,
+  hoursLabel = bielaBrand.hoursLabel,
+  hours = bielaBrand.hours,
+  links = [],
+  class: classAttr,
+  ...rest
+} = Astro.props;
+---
+
+<footer class:list={['bl-ui', 'blt', classAttr]} data-blt data-hours={JSON.stringify(hours)} {...rest}>
+  <div class="blt__grid">
+    <div class="blt__brand">
+      <p class="blt__mark">{brand}</p>
+      <p class="blt__line">Cuadros hechos a mano, uno cada vez.</p>
+    </div>
+
+    <div>
+      <h2>Taller</h2>
+      <address>
+        {address}<br />
+        <a class="bl-link" href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a><br />
+        <a class="bl-link" href={`mailto:${email}`}>{email}</a>
+      </address>
+    </div>
+
+    <div>
+      <h2>Horario</h2>
+      <p>{hoursLabel}</p>
+      <p class="blt__status" role="status" data-status>Comprobando si estamos abiertos…</p>
+    </div>
+
+    {links.length > 0 && (
+      <nav aria-label="Pie de página">
+        <h2>Navegar</h2>
+        <ul role="list">
+          {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        </ul>
+      </nav>
+    )}
+  </div>
+  <p class="blt__legal">© {new Date().getFullYear()} {brand}. Demostración de plantilla: los datos, los precios y las reservas no son reales.</p>
+</footer>
+
+<style>
+  .blt {
+    padding: var(--sp-10, 2.5rem) 0 var(--sp-6, 1.5rem);
+    border-top: 1px solid var(--bl-border-strong);
+    color: var(--bl-text-2);
+    font-family: var(--bl-font-body);
+  }
+
+  .blt__grid {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  .blt__mark {
+    margin: 0 0 0.4rem;
+    font: 800 2.6rem/1 var(--bl-font-display);
+    letter-spacing: -0.04em;
+    color: var(--bl-text);
+  }
+
+  .blt__line {
+    margin: 0;
+    max-width: 18rem;
+    line-height: 1.5;
+  }
+
+  .blt h2 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font: 500 0.76rem var(--bl-font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bl-accent);
+  }
+
+  .blt address {
+    font-style: normal;
+    line-height: 1.8;
+  }
+
+  .blt p {
+    margin: 0 0 0.5rem;
+    line-height: 1.6;
+  }
+
+  .blt__status {
+    font-weight: 700;
+    color: var(--bl-text);
+  }
+
+  .blt ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blt nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--bl-text);
+    text-decoration: none;
+  }
+
+  .blt nav a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--bl-accent);
+  }
+
+  .blt__legal {
+    margin: 0;
+    padding-top: var(--sp-4, 1rem);
+    border-top: 1px solid var(--bl-border);
+    font-size: 0.8rem;
+    color: var(--bl-text-3);
+  }
+
+  @media (min-width: 760px) {
+    .blt__grid {
+      grid-template-columns: 1.3fr 1.2fr 1.2fr 0.8fr;
+      gap: var(--sp-8, 2rem);
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const status = root.querySelector<HTMLElement>('[data-status]');
+    if (!status) return;
+    const hours: Array<{ days: number[]; windows: string[][] }> = JSON.parse(root.dataset.hours || '[]');
+    const minutes = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const now = new Date();
+    const today = now.getDay();
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const todays = hours.find((h) => h.days.includes(today));
+    const open = todays?.windows.find(([a, b]) => cur >= minutes(a) && cur < minutes(b));
+    if (open) {
+      status.textContent = `Abierto ahora, hasta las ${open[1]}.`;
+      return;
+    }
+    const later = todays?.windows.find(([a]) => cur < minutes(a));
+    if (later) {
+      status.textContent = `Cerrado ahora. Abrimos hoy a las ${later[0]}.`;
+      return;
+    }
+    const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    for (let i = 1; i <= 7; i++) {
+      const d = (today + i) % 7;
+      const h = hours.find((x) => x.days.includes(d));
+      if (h) {
+        status.textContent = `Cerrado ahora. Abrimos ${i === 1 ? 'mañana' : `el ${days[d]}`} a las ${h.windows[0][0]}.`;
+        return;
+      }
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-blt]').forEach(init);
+</script>

@@ -1,0 +1,127 @@
+---
+/**
+ * BielaProcess — How a bike is made, step by step: a numbered list where each stage opens to show
+ * the detail of what happens in the workshop and how many weeks it takes. Only one stage is open
+ * at a time (native exclusive <details>).
+ *
+ * @param {BielaStep[]} steps - Stages of the build.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: an ordered list; each stage is a native <details> (keyboard and screen-reader
+ * friendly); the number is also written in the heading so it never depends on the marker.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import { bielaSteps, type BielaStep } from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  steps?: BielaStep[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'ol'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { steps = bielaSteps, class: classAttr, ...rest } = Astro.props;
+const group = `blp-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<ol class:list={['bl-ui', 'blp', classAttr]} {...rest}>
+  {steps.map((s, i) => (
+    <li class="blp__item">
+      <details name={group} open={i === 0}>
+        <summary>
+          <span class="blp__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <span class="blp__head">
+            <strong>{s.title}</strong>
+            <small>{s.summary}</small>
+          </span>
+          <span class="blp__weeks">{s.weeks}</span>
+        </summary>
+        <p class="blp__detail">{s.detail}</p>
+      </details>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .blp {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--bl-border-strong);
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .blp__item {
+    border-bottom: 1px solid var(--bl-border-strong);
+  }
+
+  .blp summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    min-height: 44px;
+    padding: var(--sp-4, 1rem) 0;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .blp summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .blp__num {
+    font: 500 0.85rem var(--bl-font-mono);
+    padding-top: 0.45rem;
+    color: var(--bl-accent);
+  }
+
+  .blp__head {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .blp__head strong {
+    font: 800 clamp(1.3rem, 3vw, 1.8rem) / 1.15 var(--bl-font-display);
+    letter-spacing: -0.015em;
+  }
+
+  .blp__head small {
+    font-size: 0.98rem;
+    line-height: 1.5;
+    color: var(--bl-text-2);
+  }
+
+  .blp__weeks {
+    grid-column: 2;
+    font: 500 0.8rem var(--bl-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bl-text-3);
+  }
+
+  .blp summary:hover .blp__head strong {
+    color: var(--bl-brand);
+  }
+
+  .blp__detail {
+    max-width: 44rem;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    padding-left: calc(var(--sp-4, 1rem) + 1.6rem);
+    line-height: 1.65;
+    color: var(--bl-text-2);
+  }
+
+  @media (min-width: 720px) {
+    .blp summary {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .blp__weeks {
+      grid-column: 3;
+      padding-top: 0.5rem;
+    }
+  }
+</style>

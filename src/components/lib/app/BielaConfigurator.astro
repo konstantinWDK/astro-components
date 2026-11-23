@@ -1,0 +1,829 @@
+---
+/**
+ * BielaConfigurator — Live configurator for a custom bicycle (UI only): choose type, frame material,
+ * transmission, wheels, colour, extras and size while the drawing updates (geometry, colour,
+ * tube thickness, mudguards, rack, light, leather). The price and delivery time are recalculated
+ * and written in a live region; "Reserve a place" opens a native dialog and shows a demo build code.
+ * Nothing is sent anywhere. Reads `?base=<build>` or `?t=&m=&g=&w=&c=&e=&s=` to preset a build.
+ *
+ * @param {BielaTypeInfo[]} types - Bike types with base price.
+ * @param {BielaMaterialInfo[]} materials - Frame materials.
+ * @param {BielaGroupset[]} groupsets - Transmissions, each valid for some types.
+ * @param {BielaWheels[]} wheels - Wheel sets.
+ * @param {BielaColour[]} colours - Paint colours.
+ * @param {BielaExtra[]} extras - Optional extras.
+ * @param {BielaMonth[]} months - Build-queue months for the reservation dialog.
+ * @param {BielaBuild[]} builds - Finished builds (used by `?base=`).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: every group is a fieldset with a legend; options are native radios and checkboxes
+ * (arrow keys, space); selection never relies on colour alone (checked cards show a mark and colours
+ * have names); price changes are announced politely; the dialog traps focus and closes with Escape.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import BielaBike from './BielaBike.astro';
+import {
+  bielaTypes, bielaMaterials, bielaGroupsets, bielaWheelSets, bielaColours, bielaExtras, bielaMonths, bielaBuilds, bielaNum,
+  type BielaTypeInfo, type BielaMaterialInfo, type BielaGroupset, type BielaWheels, type BielaColour,
+  type BielaExtra, type BielaMonth, type BielaBuild,
+} from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  types?: BielaTypeInfo[];
+  materials?: BielaMaterialInfo[];
+  groupsets?: BielaGroupset[];
+  wheels?: BielaWheels[];
+  colours?: BielaColour[];
+  extras?: BielaExtra[];
+  months?: BielaMonth[];
+  builds?: BielaBuild[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  types = bielaTypes,
+  materials = bielaMaterials,
+  groupsets = bielaGroupsets,
+  wheels = bielaWheelSets,
+  colours = bielaColours,
+  extras = bielaExtras,
+  months = bielaMonths,
+  builds = bielaBuilds,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `blc-${Math.random().toString(36).slice(2, 8)}`;
+const first = { type: types[0], material: materials[0], colour: colours[0], wheels: wheels[0] };
+const firstGroupset = groupsets.find((g) => g.types.includes(first.type.id)) ?? groupsets[0];
+const sizes = [46, 48, 50, 52, 54, 56, 58, 60, 62];
+const presets = Object.fromEntries(builds.map((b) => [b.slug, { type: b.type, material: b.material, groupset: b.groupset, wheels: b.wheels, colour: b.colour, extras: b.extras }]));
+const groupsetTypes = Object.fromEntries(groupsets.map((g) => [g.id, g.types]));
+const openMonths = months.filter((m) => m.capacity - m.taken > 0);
+---
+
+<section class:list={['bl-ui', 'blc', classAttr]} aria-label="Configurador de bici" data-blc data-presets={JSON.stringify(presets)} data-groupset-types={JSON.stringify(groupsetTypes)} {...rest}>
+  <div class="blc__side">
+    <div class="blc__stage">
+      <div class="blc__bikes">
+        {types.map((t, i) => (
+          <div class="blc__bike" data-bike={t.id} hidden={i !== 0}>
+            <BielaBike type={t.id} frame={first.colour.hex} accent={first.colour.accent} material={first.material.id} dimensions label={`Dibujo de la bici de ${t.name.toLowerCase()} que estás configurando`} />
+          </div>
+        ))}
+      </div>
+      <p class="blc__caption" data-caption>{first.type.name} · cuadro de {first.material.name.toLowerCase()} · {first.colour.name}</p>
+    </div>
+    <aside class="blc__summary" aria-label="Resumen de tu bici">
+      <div class="blc__sumrow">
+        <div>
+          <p class="blc__label">Precio estimado</p>
+          <p class="blc__total"><span data-total>0 €</span></p>
+        </div>
+        <div>
+          <p class="blc__label">Entrega</p>
+          <p class="blc__weeks"><span data-weeks>0</span> semanas</p>
+        </div>
+        <button type="button" class="bl-btn" data-open-reserve>Reservar plaza</button>
+      </div>
+      <details class="blc__details">
+        <summary>Ver el resumen</summary>
+        <dl class="blc__list" data-list></dl>
+        <p class="blc__deposit">Para reservar plaza se paga una señal del 20 %: <strong data-deposit>0 €</strong>. Se descuenta del total y se devuelve si no te convence el plano.</p>
+        <button type="button" class="bl-btn bl-btn--ghost" data-copy>Copiar enlace de esta bici</button>
+      </details>
+      <p class="bl-sr" role="status" aria-live="polite" data-status></p>
+    </aside>
+  </div>
+
+  <form class="blc__form" novalidate data-form>
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">01</span> Tipo de bici</legend>
+      <div class="blc__opts blc__opts--2">
+        {types.map((t, i) => (
+          <label class="blc__opt">
+            <input type="radio" name="type" value={t.id} data-price={t.price} data-label={t.name} checked={i === 0} />
+            <span class="blc__card">
+              <strong>{t.name}</strong>
+              <em>{t.tagline}</em>
+              <small>{t.description}</small>
+              <small class="blc__note">{t.note}</small>
+              <span class="blc__price">desde {bielaNum(t.price)} €</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">02</span> Material del cuadro</legend>
+      <div class="blc__opts blc__opts--3">
+        {materials.map((m, i) => (
+          <label class="blc__opt">
+            <input type="radio" name="material" value={m.id} data-price={m.price} data-weeks={m.weeks} data-tube={m.tube} data-label={m.name} checked={i === 0} />
+            <span class="blc__card">
+              <strong>{m.name}</strong>
+              <em>{m.tagline}</em>
+              <small>{m.description}</small>
+              <span class="blc__spec">{m.weight.toLocaleString('es-ES')} kg · {m.weeks} semanas</span>
+              <span class="blc__price">{m.price === 0 ? 'incluido' : `+ ${bielaNum(m.price)} €`}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">03</span> Transmisión</legend>
+      <p class="blc__hint" data-groupset-hint>Solo ves las que encajan con el tipo de bici que has elegido.</p>
+      <div class="blc__opts blc__opts--2">
+        {groupsets.map((g) => (
+          <label class="blc__opt" hidden={!g.types.includes(first.type.id)}>
+            <input type="radio" name="groupset" value={g.id} data-price={g.price} data-label={g.name} checked={g.id === firstGroupset.id} disabled={!g.types.includes(first.type.id)} />
+            <span class="blc__card">
+              <strong>{g.name}</strong>
+              <small>{g.description}</small>
+              <span class="blc__price">+ {bielaNum(g.price)} €</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">04</span> Ruedas</legend>
+      <div class="blc__opts blc__opts--3">
+        {wheels.map((w, i) => (
+          <label class="blc__opt">
+            <input type="radio" name="wheels" value={w.id} data-price={w.price} data-label={w.name} checked={i === 0} />
+            <span class="blc__card">
+              <strong>{w.name}</strong>
+              <small>{w.description}</small>
+              <span class="blc__price">+ {bielaNum(w.price)} €</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">05</span> Color</legend>
+      <p class="blc__hint">Pintura a pistola con barniz. El nombre del color elegido aparece debajo de la bici.</p>
+      <div class="blc__sws">
+        {colours.map((c, i) => (
+          <label class="blc__sw">
+            <input type="radio" name="colour" value={c.id} data-hex={c.hex} data-accent={c.accent} data-label={c.name} checked={i === 0} />
+            <span class="blc__chip" style={`--chip:${c.hex}`} aria-hidden="true"></span>
+            <span class="blc__swname">{c.name}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">06</span> Extras</legend>
+      <div class="blc__opts blc__opts--2">
+        {extras.map((e) => (
+          <label class="blc__opt">
+            <input type="checkbox" name="extras" value={e.id} data-price={e.price} data-label={e.name} />
+            <span class="blc__card">
+              <strong>{e.name}</strong>
+              <small>{e.description}</small>
+              <span class="blc__price">+ {bielaNum(e.price)} €</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="blc__group">
+      <legend><span aria-hidden="true">07</span> Talla</legend>
+      <div class="bl-field blc__size">
+        <label for={`${uid}-size`}>Altura del tubo del sillín</label>
+        <select id={`${uid}-size`} class="bl-input" name="size" data-size>
+          <option value="">Aún no lo sé: la fijamos juntos en el ajuste</option>
+          {sizes.map((s) => <option value={s}>{s} cm</option>)}
+        </select>
+        <p class="blc__hint">¿Dudas? <a class="bl-link" href="#ajuste" data-fit-link>Calcula tu talla</a> con tus medidas.</p>
+      </div>
+    </fieldset>
+  </form>
+
+
+  <dialog class="blc__dialog" aria-labelledby={`${uid}-dt`} data-dialog>
+    <form method="dialog" class="blc__dform" data-reserve novalidate>
+      <h2 id={`${uid}-dt`}>Reserva tu plaza</h2>
+      <p class="blc__dsum" data-dsum></p>
+      <div class="bl-field">
+        <label for={`${uid}-n`}>Tu nombre</label>
+        <input id={`${uid}-n`} class="bl-input" name="name" autocomplete="name" required />
+      </div>
+      <div class="bl-field">
+        <label for={`${uid}-e`}>Correo electrónico</label>
+        <input id={`${uid}-e`} class="bl-input" type="email" name="email" autocomplete="email" required />
+      </div>
+      <div class="bl-field">
+        <label for={`${uid}-m`}>Mes de inicio del cuadro</label>
+        <select id={`${uid}-m`} class="bl-input" name="month">
+          {openMonths.map((m) => <option value={m.id}>{m.label} · {m.capacity - m.taken} {m.capacity - m.taken === 1 ? 'plaza' : 'plazas'}</option>)}
+        </select>
+      </div>
+      <p class="blc__error" role="alert" data-error hidden></p>
+      <div class="blc__dactions">
+        <button type="button" class="bl-btn bl-btn--ghost" data-close>Cancelar</button>
+        <button type="submit" class="bl-btn">Pedir plaza</button>
+      </div>
+      <p class="blc__fine">Es una demostración: no se envía nada ni se cobra la señal.</p>
+    </form>
+    <div class="blc__done" data-done hidden>
+      <h2>Plaza anotada</h2>
+      <p>Código de tu bici: <strong class="blc__code" data-code></strong></p>
+      <p data-donetext></p>
+      <button type="button" class="bl-btn" data-close>Cerrar</button>
+    </div>
+  </dialog>
+</section>
+
+<style>
+  .blc {
+    position: relative;
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .blc__side {
+    display: contents;
+  }
+
+  .blc__stage {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--bl-border);
+    border-radius: 18px;
+    background:
+      linear-gradient(var(--bl-grid) 1px, transparent 1px) 0 0 / 28px 28px,
+      linear-gradient(90deg, var(--bl-grid) 1px, transparent 1px) 0 0 / 28px 28px,
+      var(--bl-bg-raised);
+  }
+
+  .blc__bikes {
+    padding: var(--sp-4, 1rem) var(--sp-2, 0.5rem) var(--sp-2, 0.5rem);
+  }
+
+  .blc__bike[hidden] {
+    display: none;
+  }
+
+  .blc__caption {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    text-align: center;
+    font: 500 0.85rem var(--bl-font-mono);
+    letter-spacing: 0.03em;
+    color: var(--bl-text-2);
+  }
+
+  .blc__form {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    min-width: 0;
+  }
+
+  .blc__group {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .blc__group > legend {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    padding: 0;
+    font: 700 1.3rem/1.2 var(--bl-font-display);
+    letter-spacing: -0.01em;
+  }
+
+  .blc__group > legend span {
+    font: 500 0.8rem var(--bl-font-mono);
+    color: var(--bl-accent);
+  }
+
+  .blc__hint {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--bl-text-3);
+  }
+
+  .blc__opts {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    grid-template-columns: 1fr;
+  }
+
+  .blc__opt {
+    position: relative;
+    display: block;
+    min-width: 0;
+  }
+
+  .blc__opt[hidden] {
+    display: none;
+  }
+
+  .blc__opt input,
+  .blc__sw input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .blc__card {
+    display: grid;
+    gap: 0.35rem;
+    height: 100%;
+    box-sizing: border-box;
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 14px;
+    background: var(--bl-bg-raised);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .blc__card strong {
+    font: 700 1.05rem var(--bl-font-display);
+  }
+
+  .blc__card em {
+    font-style: normal;
+    font-size: 0.9rem;
+    color: var(--bl-accent);
+  }
+
+  .blc__card small {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: var(--bl-text-2);
+  }
+
+  .blc__note,
+  .blc__spec {
+    font: 500 0.78rem var(--bl-font-mono);
+    color: var(--bl-text-3);
+  }
+
+  .blc__price {
+    margin-top: auto;
+    padding-top: 0.3rem;
+    font: 500 0.84rem var(--bl-font-mono);
+    color: var(--bl-text);
+  }
+
+  .blc__opt:hover .blc__card {
+    border-color: var(--bl-text-3);
+  }
+
+  .blc__opt input:checked + .blc__card {
+    border-color: var(--bl-brand);
+    background: color-mix(in srgb, var(--bl-brand) 11%, var(--bl-bg-raised));
+    box-shadow: inset 0 0 0 1px var(--bl-brand);
+  }
+
+  .blc__opt input:checked + .blc__card strong::after {
+    content: ' · elegido';
+    font: 500 0.74rem var(--bl-font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bl-brand);
+  }
+
+  .blc__opt input:focus-visible + .blc__card,
+  .blc__sw input:focus-visible + .blc__chip {
+    outline: 2px solid var(--bl-accent);
+    outline-offset: 3px;
+  }
+
+  .blc__sws {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  }
+
+  .blc__sw {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.3rem 0;
+    text-align: center;
+  }
+
+  .blc__chip {
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--bl-border-strong);
+    border-radius: 50%;
+    background: var(--chip);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .blc__sw input:checked + .blc__chip {
+    box-shadow: 0 0 0 3px var(--bl-bg), 0 0 0 5px var(--bl-brand);
+    transform: scale(1.06);
+  }
+
+  .blc__swname {
+    font-size: 0.82rem;
+    color: var(--bl-text-2);
+  }
+
+  .blc__sw input:checked ~ .blc__swname {
+    color: var(--bl-text);
+    font-weight: 700;
+  }
+
+  .blc__size {
+    max-width: 28rem;
+  }
+
+  .blc__summary {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 16px;
+    background: var(--bl-bg-raised);
+  }
+
+  .blc__sumrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem);
+    justify-content: space-between;
+  }
+
+  .blc__label {
+    margin: 0;
+    font: 500 0.72rem var(--bl-font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bl-text-3);
+  }
+
+  .blc__total {
+    margin: 0;
+    font: 800 1.9rem/1.1 var(--bl-font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .blc__weeks {
+    margin: 0;
+    font: 600 1.05rem var(--bl-font-display);
+  }
+
+  .blc__details summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--bl-text-2);
+  }
+
+  .blc__list {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.9rem;
+  }
+
+  .blc__list :global(div) {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--bl-border);
+  }
+
+  .blc__list :global(dt) {
+    color: var(--bl-text-3);
+  }
+
+  .blc__list :global(dd) {
+    margin: 0;
+    text-align: right;
+  }
+
+  .blc__deposit {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.86rem;
+    color: var(--bl-text-2);
+  }
+
+  .blc__dialog {
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    margin: auto;
+    inset: 0;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 18px;
+    background: var(--bl-bg-raised);
+    color: var(--bl-text);
+    overflow: auto;
+  }
+
+  .blc__dialog::backdrop {
+    background: rgba(5, 10, 7, 0.7);
+  }
+
+  .blc__dform,
+  .blc__done {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+  }
+
+  .blc__dialog h2 {
+    margin: 0;
+    font: 800 1.6rem var(--bl-font-display);
+  }
+
+  .blc__dsum,
+  .blc__fine {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--bl-text-2);
+  }
+
+  .blc__fine {
+    font-size: 0.78rem;
+    color: var(--bl-text-3);
+  }
+
+  .blc__dactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+    justify-content: flex-end;
+  }
+
+  .blc__error {
+    margin: 0;
+    color: var(--bl-bad);
+    font-size: 0.9rem;
+  }
+
+  .blc__code {
+    font: 600 1.2rem var(--bl-font-mono);
+    letter-spacing: 0.06em;
+    color: var(--bl-brand);
+  }
+
+  @media (max-width: 899px) {
+    .blc__stage {
+      order: 1;
+    }
+
+    .blc__form {
+      order: 2;
+    }
+
+    .blc__summary {
+      order: 3;
+      position: sticky;
+      bottom: 0.5rem;
+      z-index: 10;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .blc__details {
+      display: none;
+    }
+
+    .blc__sumrow {
+      flex-wrap: nowrap;
+      gap: 0.75rem;
+    }
+
+    .blc__total {
+      font-size: 1.4rem;
+    }
+
+    .blc__weeks {
+      font-size: 0.95rem;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .blc__opts--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .blc__opts--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 900px) {
+    .blc {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      align-items: start;
+      gap: var(--sp-10, 2.5rem);
+    }
+
+    .blc__side {
+      display: grid;
+      gap: var(--sp-4, 1rem);
+      position: sticky;
+      top: 88px;
+    }
+  }
+</style>
+
+<script>
+  type Cfg = { type: string; material: string; groupset: string; wheels: string; colour: string; extras: string[] };
+
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const presets: Record<string, Cfg> = JSON.parse(root.dataset.presets || '{}');
+    const groupTypes: Record<string, string[]> = JSON.parse(root.dataset.groupsetTypes || '{}');
+    const money = (n: number) => `${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} €`;
+    const q = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const radios = (name: string) => Array.from(form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`));
+    const checked = (name: string) => radios(name).find((r) => r.checked);
+    const sizeEl = form.querySelector<HTMLSelectElement>('[data-size]')!;
+
+    function setValue(name: string, value: string) {
+      radios(name).forEach((r) => { r.checked = r.value === value; });
+    }
+
+    function sync(announce = true) {
+      const type = checked('type')!.value;
+      const material = checked('material')!;
+      const colour = checked('colour')!;
+
+      root.querySelectorAll<HTMLElement>('[data-bike]').forEach((el) => { el.hidden = el.dataset.bike !== type; });
+      root.querySelectorAll<SVGElement>('svg.bk').forEach((svg) => {
+        svg.style.setProperty('--bk-frame', colour.dataset.hex || '#1f5b3d');
+        svg.style.setProperty('--bk-accent', colour.dataset.accent || '#e8d9a8');
+        svg.style.setProperty('--bk-tube', `${material.dataset.tube}px`);
+        const on = (name: string) => form.querySelector<HTMLInputElement>(`input[name="extras"][value="${name}"]`)?.checked ?? false;
+        svg.classList.toggle('is-fenders', on('fenders'));
+        svg.classList.toggle('is-rack', on('rack'));
+        svg.classList.toggle('is-light', on('light'));
+        svg.classList.toggle('is-leather', on('leather'));
+      });
+
+      radios('groupset').forEach((r) => {
+        const ok = (groupTypes[r.value] || []).includes(type);
+        r.disabled = !ok;
+        const label = r.closest<HTMLElement>('.blc__opt');
+        if (label) label.hidden = !ok;
+      });
+      if (!checked('groupset') || checked('groupset')!.disabled) {
+        const next = radios('groupset').find((r) => !r.disabled);
+        if (next) next.checked = true;
+      }
+
+      const parts = [checked('type'), material, checked('groupset'), checked('wheels')] as HTMLInputElement[];
+      const extras = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="extras"]:checked'));
+      const total = [...parts, ...extras].reduce((s, el) => s + Number(el.dataset.price || 0), 0);
+      const weeks = Number(material.dataset.weeks || 10);
+      q<HTMLElement>('[data-total]').textContent = money(total);
+      q<HTMLElement>('[data-weeks]').textContent = String(weeks);
+      q<HTMLElement>('[data-deposit]').textContent = money(Math.round((total * 0.2) / 10) * 10);
+      q<HTMLElement>('[data-caption]').textContent = `${parts[0].dataset.label} · cuadro de ${material.dataset.label?.toLowerCase()} · ${colour.dataset.label}`;
+
+      const rows: Array<[string, string]> = [
+        ['Tipo', parts[0].dataset.label || ''],
+        ['Cuadro', material.dataset.label || ''],
+        ['Transmisión', parts[2].dataset.label || ''],
+        ['Ruedas', parts[3].dataset.label || ''],
+        ['Color', colour.dataset.label || ''],
+        ['Extras', extras.length ? extras.map((e) => e.dataset.label).join(', ') : 'Ninguno'],
+        ['Talla', sizeEl.value ? `${sizeEl.value} cm` : 'Por fijar en el ajuste'],
+      ];
+      const list = q<HTMLElement>('[data-list]');
+      list.replaceChildren(...rows.map(([k, v]) => {
+        const row = document.createElement('div');
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        dt.textContent = k;
+        dd.textContent = v;
+        row.append(dt, dd);
+        return row;
+      }));
+      if (announce) q<HTMLElement>('[data-status]').textContent = `Precio estimado ${money(total)}, entrega en ${weeks} semanas.`;
+    }
+
+    function readConfig(): Cfg {
+      return {
+        type: checked('type')!.value,
+        material: checked('material')!.value,
+        groupset: checked('groupset')!.value,
+        wheels: checked('wheels')!.value,
+        colour: checked('colour')!.value,
+        extras: Array.from(form.querySelectorAll<HTMLInputElement>('input[name="extras"]:checked')).map((e) => e.value),
+      };
+    }
+
+    function shareUrl() {
+      const c = readConfig();
+      const p = new URLSearchParams({ t: c.type, m: c.material, g: c.groupset, w: c.wheels, c: c.colour });
+      if (c.extras.length) p.set('e', c.extras.join(','));
+      if (sizeEl.value) p.set('s', sizeEl.value);
+      return `${location.origin}${location.pathname}?${p.toString()}`;
+    }
+
+    function apply(cfg: Partial<Cfg>, size?: string | null) {
+      if (cfg.type) setValue('type', cfg.type);
+      if (cfg.material) setValue('material', cfg.material);
+      if (cfg.wheels) setValue('wheels', cfg.wheels);
+      if (cfg.colour) setValue('colour', cfg.colour);
+      sync(false);
+      if (cfg.groupset) setValue('groupset', cfg.groupset);
+      if (cfg.extras) form.querySelectorAll<HTMLInputElement>('input[name="extras"]').forEach((e) => { e.checked = cfg.extras!.includes(e.value); });
+      if (size && Array.from(sizeEl.options).some((o) => o.value === size)) sizeEl.value = size;
+      sync(false);
+    }
+
+    form.addEventListener('change', () => {
+      sync();
+      history.replaceState(null, '', shareUrl());
+    });
+
+    const params = new URLSearchParams(location.search);
+    const base = params.get('base');
+    if (base && presets[base]) {
+      apply(presets[base]);
+    } else if (params.get('t')) {
+      apply({ type: params.get('t') || undefined, material: params.get('m') || undefined, groupset: params.get('g') || undefined, wheels: params.get('w') || undefined, colour: params.get('c') || undefined, extras: (params.get('e') || '').split(',').filter(Boolean) }, params.get('s'));
+    } else if (params.get('s')) {
+      apply({}, params.get('s'));
+    } else {
+      sync(false);
+    }
+    if (params.get('s') && !sizeEl.value) apply({}, params.get('s'));
+    const monthSel = root.querySelector<HTMLSelectElement>('[name="month"]');
+    const wanted = params.get('month');
+    if (monthSel && wanted && Array.from(monthSel.options).some((o) => o.value === wanted)) monthSel.value = wanted;
+
+    // Dialog
+    const dialog = q<HTMLDialogElement>('[data-dialog]');
+    const dform = q<HTMLFormElement>('[data-reserve]');
+    const done = q<HTMLElement>('[data-done]');
+    const error = q<HTMLElement>('[data-error]');
+    q<HTMLButtonElement>('[data-open-reserve]').addEventListener('click', () => {
+      dform.hidden = false;
+      done.hidden = true;
+      error.hidden = true;
+      q<HTMLElement>('[data-dsum]').textContent = `${q<HTMLElement>('[data-caption]').textContent}. Total estimado ${q<HTMLElement>('[data-total]').textContent}, señal ${q<HTMLElement>('[data-deposit]').textContent}.`;
+      dialog.showModal();
+    });
+    dialog.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dform.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(dform);
+      const name = String(data.get('name') || '').trim();
+      const email = String(data.get('email') || '').trim();
+      if (!name || !/^\S+@\S+\.\S+$/.test(email)) {
+        error.textContent = !name ? 'Escribe tu nombre para anotar la plaza.' : 'Escribe un correo válido para poder contestarte.';
+        error.hidden = false;
+        (dform.querySelector(!name ? '[name="name"]' : '[name="email"]') as HTMLElement | null)?.focus();
+        return;
+      }
+      const seed = JSON.stringify(readConfig()) + String(data.get('month'));
+      let h = 0;
+      for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+      const month = String(data.get('month') || '').replace('-', '').slice(2);
+      q<HTMLElement>('[data-code]').textContent = `BL-${month}-${h.toString(36).toUpperCase().slice(0, 4).padStart(4, '0')}`;
+      q<HTMLElement>('[data-donetext]').textContent = `Gracias, ${name.split(' ')[0]}. En un día te escribiríamos a ${email} para fijar la charla en el taller. Es una demostración y no se ha enviado nada.`;
+      dform.hidden = true;
+      done.hidden = false;
+      done.querySelector<HTMLElement>('button')?.focus();
+    });
+
+    q<HTMLButtonElement>('[data-copy]').addEventListener('click', async (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      try { await navigator.clipboard.writeText(shareUrl()); btn.textContent = 'Enlace copiado'; } catch { btn.textContent = 'No se pudo copiar'; }
+      setTimeout(() => { btn.textContent = 'Copiar enlace de esta bici'; }, 2000);
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-blc]').forEach(init);
+</script>

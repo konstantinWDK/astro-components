@@ -1,0 +1,328 @@
+---
+/**
+ * BielaBuilds — Gallery of finished custom bikes (UI only): each card shows the drawing, who it was
+ * built for, the spec as a definition list, the price and a link that opens the configurator with
+ * that build as the starting point. A filter by type and a sort order work on the page.
+ *
+ * @param {BielaBuild[]} builds - Finished builds.
+ * @param {number} limit - Show only the first N builds and hide the filter (home page). 0 = all.
+ * @param {string} configuratorHref - URL of the configurator ("?base=<slug>" is appended).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the type filter is a native radio group, the result count is announced in a
+ * role="status" region, cards are articles with a heading, and the specs are a real <dl>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import BielaBike from './BielaBike.astro';
+import {
+  bielaBuilds, bielaColours, bielaGroupsets, bielaWheelSets, bielaMaterials, bielaTypes, bielaPrice, bielaEuro,
+  type BielaBuild,
+} from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  builds?: BielaBuild[];
+  limit?: number;
+  configuratorHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const { builds = bielaBuilds, limit = 0, configuratorHref = '#configurador', class: classAttr, ...rest } = Astro.props;
+
+const uid = `blb-${Math.random().toString(36).slice(2, 8)}`;
+const list = limit > 0 ? builds.slice(0, limit) : builds;
+const filter = limit === 0;
+const typeName = (id: string) => bielaTypes.find((t) => t.id === id)?.name ?? id;
+const rows = list.map((b) => {
+  const colour = bielaColours.find((c) => c.id === b.colour) ?? bielaColours[0];
+  return {
+    b,
+    colour,
+    material: bielaMaterials.find((m) => m.id === b.material)?.name ?? b.material,
+    groupset: bielaGroupsets.find((g) => g.id === b.groupset)?.name ?? b.groupset,
+    wheels: bielaWheelSets.find((w) => w.id === b.wheels)?.name ?? b.wheels,
+    price: bielaPrice(b),
+  };
+});
+const sep = configuratorHref.includes('?') ? '&' : '?';
+---
+
+<section class:list={['bl-ui', 'bld', classAttr]} aria-label="Bicis construidas" data-bld {...rest}>
+  {filter && (
+    <div class="bld__bar">
+      <fieldset class="bld__filter">
+        <legend class="bl-sr">Filtrar por tipo de bici</legend>
+        <label><input type="radio" name={`${uid}-t`} value="all" checked /><span>Todas</span></label>
+        {bielaTypes.map((t) => <label><input type="radio" name={`${uid}-t`} value={t.id} /><span>{t.name}</span></label>)}
+      </fieldset>
+      <div class="bl-field bld__sort">
+        <label for={`${uid}-s`}>Ordenar por</label>
+        <select id={`${uid}-s`} class="bl-input" data-sort>
+          <option value="new">Más recientes</option>
+          <option value="asc">Precio, de menor a mayor</option>
+          <option value="desc">Precio, de mayor a menor</option>
+        </select>
+      </div>
+      <p class="bld__count"><strong data-count>{rows.length}</strong> <span data-count-label>bicis</span></p>
+    </div>
+  )}
+  <p class="bl-sr" role="status" data-status></p>
+
+  <ul class="bld__grid" role="list" data-grid>
+    {rows.map(({ b, colour, material, groupset, wheels, price }, i) => (
+      <li class="bld__item" data-type={b.type} data-price={price} data-year={b.year} data-order={b.year * 100 + (99 - i)}>
+        <article class="bld__card">
+          <div class="bld__art">
+            <BielaBike type={b.type} frame={colour.hex} accent={colour.accent} material={b.material} fenders={b.extras.includes('fenders')} rack={b.extras.includes('rack')} light={b.extras.includes('light')} leather={b.extras.includes('leather')} label={`${b.name}: bici de ${b.type}, ${colour.name.toLowerCase()}`} />
+          </div>
+          <div class="bld__body">
+            <p class="bld__meta">{typeName(b.type)} · {b.year}</p>
+            <h3>{b.name}</h3>
+            <p class="bld__rider">{b.rider}</p>
+            <p class="bld__story">{b.story}</p>
+            <dl class="bld__spec">
+              <div><dt>Cuadro</dt><dd>{material}, {colour.name.toLowerCase()}</dd></div>
+              <div><dt>Transmisión</dt><dd>{groupset}</dd></div>
+              <div><dt>Ruedas</dt><dd>{wheels}</dd></div>
+              <div><dt>En el taller</dt><dd>{b.hours} horas</dd></div>
+            </dl>
+            <div class="bld__foot">
+              <span class="bld__price">{bielaEuro(price)}</span>
+              <a class="bl-btn bl-btn--ghost" href={`${configuratorHref}${sep}base=${b.slug}`}>Partir de esta bici<span class="bl-sr">: {b.name}</span></a>
+            </div>
+          </div>
+        </article>
+      </li>
+    ))}
+  </ul>
+  <p class="bld__empty" data-empty hidden>No hay bicis de este tipo todavía. Puede ser la primera.</p>
+</section>
+
+<style>
+  .bld {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .bld__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--sp-4, 1rem) var(--sp-6, 1.5rem);
+    justify-content: space-between;
+  }
+
+  .bld__filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bld__filter label {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .bld__filter input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .bld__filter span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 999px;
+    font-weight: 600;
+    color: var(--bl-text-2);
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .bld__filter input:checked + span {
+    background: var(--bl-brand);
+    border-color: var(--bl-brand);
+    color: var(--bl-on-brand);
+  }
+
+  .bld__filter input:focus-visible + span {
+    outline: 2px solid var(--bl-accent);
+    outline-offset: 2px;
+  }
+
+  .bld__sort {
+    min-width: 14rem;
+  }
+
+  .bld__count {
+    margin: 0;
+    font: 500 0.85rem var(--bl-font-mono);
+    color: var(--bl-text-3);
+  }
+
+  .bld__grid {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  }
+
+  .bld__item[hidden] {
+    display: none;
+  }
+
+  .bld__card {
+    display: grid;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--bl-border);
+    border-radius: 18px;
+    background: var(--bl-bg-raised);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .bld__card:hover {
+    border-color: var(--bl-border-strong);
+    transform: translateY(-2px);
+  }
+
+  .bld__art {
+    padding: var(--sp-5, 1.25rem) var(--sp-4, 1rem) var(--sp-2, 0.5rem);
+    background:
+      linear-gradient(var(--bl-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--bl-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bl-surface);
+  }
+
+  .bld__body {
+    display: grid;
+    align-content: start;
+    gap: 0.35rem;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem) var(--sp-5, 1.25rem);
+  }
+
+  .bld__meta {
+    margin: 0;
+    font: 500 0.74rem var(--bl-font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bl-accent);
+  }
+
+  .bld__body h3 {
+    margin: 0;
+    font: 800 1.5rem/1.15 var(--bl-font-display);
+    letter-spacing: -0.015em;
+  }
+
+  .bld__rider {
+    margin: 0;
+    font-weight: 600;
+    color: var(--bl-text-2);
+  }
+
+  .bld__story {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    line-height: 1.5;
+    color: var(--bl-text-2);
+  }
+
+  .bld__spec {
+    display: grid;
+    gap: 0;
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 0.88rem;
+  }
+
+  .bld__spec > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-top: 1px solid var(--bl-border);
+  }
+
+  .bld__spec dt {
+    color: var(--bl-text-3);
+  }
+
+  .bld__spec dd {
+    margin: 0;
+    text-align: right;
+  }
+
+  .bld__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .bld__price {
+    font: 800 1.35rem var(--bl-font-display);
+  }
+
+  .bld__empty {
+    margin: 0;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px dashed var(--bl-border-strong);
+    border-radius: 14px;
+    color: var(--bl-text-2);
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const grid = root.querySelector<HTMLElement>('[data-grid]')!;
+    const items = Array.from(grid.querySelectorAll<HTMLElement>('.bld__item'));
+    const sort = root.querySelector<HTMLSelectElement>('[data-sort]');
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const label = root.querySelector<HTMLElement>('[data-count-label]');
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    if (!sort) return;
+
+    function update() {
+      const type = root.querySelector<HTMLInputElement>('.bld__filter input:checked')?.value || 'all';
+      const order = sort!.value;
+      const sorted = items.slice().sort((a, b) => {
+        if (order === 'asc') return Number(a.dataset.price) - Number(b.dataset.price);
+        if (order === 'desc') return Number(b.dataset.price) - Number(a.dataset.price);
+        return Number(b.dataset.order) - Number(a.dataset.order);
+      });
+      let shown = 0;
+      sorted.forEach((el) => {
+        const ok = type === 'all' || el.dataset.type === type;
+        el.hidden = !ok;
+        if (ok) shown += 1;
+        grid.appendChild(el);
+      });
+      if (count) count.textContent = String(shown);
+      if (label) label.textContent = shown === 1 ? 'bici' : 'bicis';
+      empty.hidden = shown !== 0;
+      status.textContent = shown === 0 ? 'No hay bicis de este tipo.' : `${shown} ${shown === 1 ? 'bici' : 'bicis'} mostradas.`;
+    }
+
+    root.querySelectorAll('.bld__filter input').forEach((i) => i.addEventListener('change', update));
+    sort.addEventListener('change', update);
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-bld]').forEach(init);
+</script>

@@ -64,6 +64,7 @@
     'fishing': isEs ? 'Corcho · Tienda de pesca' : isRu ? 'Corcho · Рыболовный магазин' : 'Corcho · Fishing Shop',
     'motocross': isEs ? 'Barro · Motos y equipo de cross' : isRu ? 'Barro · Кросс: мотоциклы и экипировка' : 'Barro · Motocross Shop',
     'ai-agents': isEs ? 'Nexo · Espacio de agentes de IA' : isRu ? 'Nexo · Пространство ИИ-агентов' : 'Nexo · AI Agents Workspace',
+    'bike-workshop': isEs ? 'Biela · Taller de bicis a medida' : isRu ? 'Biela · Мастерская велосипедов на заказ' : 'Biela · Custom Bicycle Workshop',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

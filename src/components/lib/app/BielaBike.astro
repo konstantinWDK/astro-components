@@ -1,0 +1,416 @@
+---
+/**
+ * BielaBike — A bicycle drawn in SVG from a real geometry (wheelbase, chainstay, seat and head
+ * angles) for four types: gravel, road, city and track. The frame takes its colour from a CSS
+ * variable, the tube thickness follows the material and fenders, rack, dynamo light and leather
+ * parts can be switched on. Optional blueprint dimension lines. The wheels turn with the page
+ * scroll when `spin` is set.
+ *
+ * @param {'gravel'|'ruta'|'ciudad'|'pista'} type - Bike type (changes the geometry).
+ * @param {string} frame - Frame colour (hex). Default racing green.
+ * @param {string} accent - Colour of the bar tape, decal and fork dip.
+ * @param {'acero'|'titanio'|'carbono'} material - Tube thickness.
+ * @param {boolean} fenders - Show mudguards.
+ * @param {boolean} rack - Show the rear rack.
+ * @param {boolean} light - Show the dynamo headlamp.
+ * @param {boolean} leather - Brown saddle and grips.
+ * @param {boolean} dimensions - Draw the wheelbase dimension line.
+ * @param {boolean} spin - Rotate the wheels with the scroll position.
+ * @param {string} label - Accessible description of the bike.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: role="img" with an accessible name; the drawing is never the only carrier of
+ * information (the specs are written next to it). The wheels only spin when the visitor has not
+ * asked for reduced motion.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import type { BielaType, BielaMaterial } from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  type?: BielaType;
+  frame?: string;
+  accent?: string;
+  material?: BielaMaterial;
+  fenders?: boolean;
+  rack?: boolean;
+  light?: boolean;
+  leather?: boolean;
+  dimensions?: boolean;
+  spin?: boolean;
+  label?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'svg'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  type = 'gravel',
+  frame = '#1f5b3d',
+  accent = '#e8d9a8',
+  material = 'acero',
+  fenders = false,
+  rack = false,
+  light = false,
+  leather = false,
+  dimensions = false,
+  spin = false,
+  label,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const GEO = {
+  ruta: { wb: 335, cs: 152, drop: 14, sa: 73.5, st: 172, ha: 73, ht: 22, fork: 98, rise: 14, tyre: 5, bars: 'drop' },
+  gravel: { wb: 350, cs: 158, drop: 20, sa: 72.5, st: 168, ha: 71, ht: 26, fork: 104, rise: 18, tyre: 9, bars: 'drop' },
+  ciudad: { wb: 355, cs: 162, drop: 8, sa: 71, st: 170, ha: 69, ht: 34, fork: 100, rise: 40, tyre: 8, bars: 'swept' },
+  pista: { wb: 322, cs: 148, drop: 4, sa: 74.5, st: 175, ha: 74, ht: 18, fork: 96, rise: 12, tyre: 5, bars: 'bull' },
+} as const;
+const TUBE = { acero: 6, titanio: 7.5, carbono: 10.5 } as const;
+
+const g = GEO[type] ?? GEO.gravel;
+const tube = TUBE[material] ?? 7;
+const rad = (d: number) => (d * Math.PI) / 180;
+const f = (n: number) => Math.round(n * 10) / 10;
+
+const R = 78;
+const ra = { x: 120, y: 232 };
+const fa = { x: ra.x + g.wb, y: 232 };
+const bb = { x: ra.x + g.cs, y: 232 + g.drop };
+const sa = rad(g.sa);
+const ha = rad(g.ha);
+const seatTop = { x: bb.x - g.st * Math.cos(sa), y: bb.y - g.st * Math.sin(sa) };
+const seatMid = { x: bb.x - (g.st - 16) * Math.cos(sa), y: bb.y - (g.st - 16) * Math.sin(sa) };
+const hb = { x: fa.x - g.fork * Math.cos(ha), y: fa.y - g.fork * Math.sin(ha) };
+const ht = { x: hb.x - g.ht * Math.cos(ha), y: hb.y - g.ht * Math.sin(ha) };
+const post = { x: seatTop.x - 20 * Math.cos(sa), y: seatTop.y - 20 * Math.sin(sa) };
+const stem = { x: ht.x - g.rise * Math.cos(ha), y: ht.y - g.rise * Math.sin(ha) };
+const bar = { x: stem.x + 30, y: stem.y + 3 };
+const mid = (a: { x: number; y: number }, b: { x: number; y: number }, t: number) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+const dtA = mid(bb, { x: hb.x - 4 * Math.cos(ha), y: hb.y - 4 * Math.sin(ha) }, 0.3);
+const dtB = mid(bb, { x: hb.x - 4 * Math.cos(ha), y: hb.y - 4 * Math.sin(ha) }, 0.62);
+const dipTop = mid(hb, fa, 0.68);
+
+const spokes = Array.from({ length: 20 }, (_, i) => {
+  const a = (i / 20) * Math.PI * 2;
+  return { c: Math.cos(a), s: Math.sin(a) };
+});
+const arc = (cx: number, cy: number, r: number, a0: number, a1: number) => {
+  const p0 = { x: cx + r * Math.cos(rad(a0)), y: cy + r * Math.sin(rad(a0)) };
+  const p1 = { x: cx + r * Math.cos(rad(a1)), y: cy + r * Math.sin(rad(a1)) };
+  return `M ${f(p0.x)} ${f(p0.y)} A ${r} ${r} 0 0 1 ${f(p1.x)} ${f(p1.y)}`;
+};
+
+const barPath =
+  g.bars === 'drop'
+    ? `M ${f(bar.x)} ${f(bar.y)} L ${f(bar.x + 18)} ${f(bar.y)} C ${f(bar.x + 40)} ${f(bar.y)} ${f(bar.x + 46)} ${f(bar.y + 20)} ${f(bar.x + 37)} ${f(bar.y + 35)} C ${f(bar.x + 31)} ${f(bar.y + 45)} ${f(bar.x + 16)} ${f(bar.y + 45)} ${f(bar.x + 8)} ${f(bar.y + 40)}`
+    : g.bars === 'swept'
+      ? `M ${f(bar.x - 6)} ${f(bar.y)} C ${f(bar.x + 14)} ${f(bar.y - 12)} ${f(bar.x + 30)} ${f(bar.y - 10)} ${f(bar.x + 42)} ${f(bar.y + 6)} L ${f(bar.x + 34)} ${f(bar.y + 14)}`
+      : `M ${f(bar.x)} ${f(bar.y)} L ${f(bar.x + 34)} ${f(bar.y + 3)} C ${f(bar.x + 46)} ${f(bar.y + 5)} ${f(bar.x + 44)} ${f(bar.y + 24)} ${f(bar.x + 34)} ${f(bar.y + 26)}`;
+const tapePath =
+  g.bars === 'drop'
+    ? `M ${f(bar.x + 40)} ${f(bar.y + 12)} C ${f(bar.x + 46)} ${f(bar.y + 22)} ${f(bar.x + 40)} ${f(bar.y + 32)} ${f(bar.x + 37)} ${f(bar.y + 35)} C ${f(bar.x + 31)} ${f(bar.y + 45)} ${f(bar.x + 16)} ${f(bar.y + 45)} ${f(bar.x + 8)} ${f(bar.y + 40)}`
+    : g.bars === 'swept'
+      ? `M ${f(bar.x + 30)} ${f(bar.y - 8)} C ${f(bar.x + 38)} ${f(bar.y - 3)} ${f(bar.x + 41)} ${f(bar.y + 2)} ${f(bar.x + 42)} ${f(bar.y + 6)} L ${f(bar.x + 34)} ${f(bar.y + 14)}`
+      : `M ${f(bar.x + 40)} ${f(bar.y + 8)} C ${f(bar.x + 46)} ${f(bar.y + 12)} ${f(bar.x + 44)} ${f(bar.y + 24)} ${f(bar.x + 34)} ${f(bar.y + 26)}`;
+
+const rackY = ra.y - R - g.tyre / 2 - 6;
+const wbMm = Math.round(g.wb * 3.1 + 10);
+const name = label ?? `Bici de ${type}, cuadro de ${material}`;
+---
+
+<svg
+  class:list={['bl-ui', 'bk', fenders && 'is-fenders', rack && 'is-rack', light && 'is-light', leather && 'is-leather', dimensions && 'has-dim', classAttr]}
+  viewBox="0 0 620 350"
+  role="img"
+  aria-label={name}
+  data-bike-type={type}
+  data-bk-spin={spin ? '' : undefined}
+  style={`--bk-frame:${frame};--bk-accent:${accent};--bk-tube:${tube}px;--bk-tyre-w:${g.tyre}px;`}
+  {...rest}
+>
+  <g class="bk__ground" aria-hidden="true">
+    <line x1="40" y1="321" x2="580" y2="321" />
+  </g>
+
+  <g class="bk__wheel" data-bk-wheel aria-hidden="true">
+    <g style={`transform-origin:${ra.x}px ${ra.y}px`} class="bk__spin">
+      <circle class="bk__tyre" cx={ra.x} cy={ra.y} r={R} />
+      <circle class="bk__rim" cx={ra.x} cy={ra.y} r={R - 4} />
+      {spokes.map((s) => <line class="bk__spoke" x1={f(ra.x + s.c * 8)} y1={f(ra.y + s.s * 8)} x2={f(ra.x + s.c * (R - 5))} y2={f(ra.y + s.s * (R - 5))} />)}
+    </g>
+    <circle class="bk__hub" cx={ra.x} cy={ra.y} r="6" />
+    <g style={`transform-origin:${fa.x}px ${fa.y}px`} class="bk__spin">
+      <circle class="bk__tyre" cx={fa.x} cy={fa.y} r={R} />
+      <circle class="bk__rim" cx={fa.x} cy={fa.y} r={R - 4} />
+      {spokes.map((s) => <line class="bk__spoke" x1={f(fa.x + s.c * 8)} y1={f(fa.y + s.s * 8)} x2={f(fa.x + s.c * (R - 5))} y2={f(fa.y + s.s * (R - 5))} />)}
+    </g>
+    <circle class="bk__hub" cx={fa.x} cy={fa.y} r="6" />
+  </g>
+
+  <g class="bk__x bk__x--fenders" aria-hidden="true">
+    <path d={arc(ra.x, ra.y, R + g.tyre / 2 + 5, 195, 335)} />
+    <path d={arc(fa.x, fa.y, R + g.tyre / 2 + 5, 200, 340)} />
+  </g>
+
+  <g class="bk__x bk__x--rack" aria-hidden="true">
+    <line x1={ra.x - 36} y1={rackY} x2={ra.x + 46} y2={rackY} />
+    <line x1={ra.x - 36} y1={rackY} x2={ra.x} y2={ra.y} />
+    <line x1={ra.x + 46} y1={rackY} x2={f(seatMid.x - 6)} y2={f(seatMid.y + 18)} />
+  </g>
+
+  <g class="bk__frame" aria-hidden="true">
+    <path class="bk__t bk__t--thin" d={`M ${f(bb.x)} ${f(bb.y)} L ${ra.x} ${ra.y}`} />
+    <path class="bk__t bk__t--thin" d={`M ${f(seatMid.x)} ${f(seatMid.y)} L ${ra.x} ${ra.y}`} />
+    <path class="bk__t" d={`M ${f(bb.x)} ${f(bb.y)} L ${f(seatTop.x)} ${f(seatTop.y)}`} />
+    <path class="bk__t" d={`M ${f(seatMid.x)} ${f(seatMid.y)} L ${f(ht.x + 4 * Math.cos(ha))} ${f(ht.y + 4 * Math.sin(ha))}`} />
+    <path class="bk__t bk__t--down" d={`M ${f(bb.x)} ${f(bb.y)} L ${f(hb.x - 2 * Math.cos(ha))} ${f(hb.y - 2 * Math.sin(ha))}`} />
+    <path class="bk__t bk__t--head" d={`M ${f(hb.x)} ${f(hb.y)} L ${f(ht.x)} ${f(ht.y)}`} />
+    <path class="bk__t bk__t--fork" d={`M ${f(hb.x)} ${f(hb.y)} Q ${f((hb.x + fa.x) / 2 + 7)} ${f((hb.y + fa.y) / 2 - 1)} ${fa.x} ${fa.y}`} />
+    <path class="bk__decal" d={`M ${f(dtA.x)} ${f(dtA.y)} L ${f(dtB.x)} ${f(dtB.y)}`} />
+    <path class="bk__dip" d={`M ${f(dipTop.x + 3)} ${f(dipTop.y - 1)} Q ${f((dipTop.x + fa.x) / 2 + 4)} ${f((dipTop.y + fa.y) / 2)} ${fa.x} ${fa.y}`} />
+  </g>
+
+  <g class="bk__drive" aria-hidden="true">
+    <line class="bk__chain" x1={bb.x} y1={bb.y - 19} x2={ra.x} y2={ra.y - 8} />
+    <line class="bk__chain" x1={bb.x} y1={bb.y + 19} x2={ra.x} y2={ra.y + 8} />
+    <circle class="bk__ring" cx={bb.x} cy={bb.y} r="19" />
+    <circle class="bk__ring" cx={ra.x} cy={ra.y} r="9" />
+    <line class="bk__crank" x1={bb.x} y1={bb.y} x2={f(bb.x + 11)} y2={f(bb.y + 34)} />
+    <line class="bk__pedal" x1={f(bb.x + 3)} y1={f(bb.y + 34)} x2={f(bb.x + 23)} y2={f(bb.y + 34)} />
+  </g>
+
+  <g class="bk__cockpit" aria-hidden="true">
+    <line class="bk__post" x1={f(seatTop.x)} y1={f(seatTop.y)} x2={f(post.x)} y2={f(post.y)} />
+    <path class="bk__saddle" d={`M ${f(post.x - 24)} ${f(post.y - 3)} Q ${f(post.x - 6)} ${f(post.y - 11)} ${f(post.x + 12)} ${f(post.y - 7)} L ${f(post.x + 31)} ${f(post.y - 3)} Q ${f(post.x + 36)} ${f(post.y + 1)} ${f(post.x + 29)} ${f(post.y + 4)} L ${f(post.x - 20)} ${f(post.y + 4)} Z`} />
+    <line class="bk__stem" x1={f(ht.x)} y1={f(ht.y)} x2={f(stem.x)} y2={f(stem.y)} />
+    <line class="bk__stem" x1={f(stem.x)} y1={f(stem.y)} x2={f(bar.x)} y2={f(bar.y)} />
+    <path class="bk__bar" d={barPath} />
+    <path class="bk__tape" d={tapePath} />
+  </g>
+
+  <g class="bk__x bk__x--light" aria-hidden="true">
+    <circle cx={f(ht.x + 20)} cy={f(ht.y + 18)} r="7" />
+    <path d={`M ${f(ht.x + 28)} ${f(ht.y + 15)} L ${f(ht.x + 58)} ${f(ht.y + 4)} M ${f(ht.x + 28)} ${f(ht.y + 21)} L ${f(ht.x + 58)} ${f(ht.y + 30)}`} />
+  </g>
+
+  <g class="bk__dim" aria-hidden="true">
+    <line x1={ra.x} y1="336" x2={fa.x} y2="336" />
+    <line x1={ra.x} y1="330" x2={ra.x} y2="342" />
+    <line x1={fa.x} y1="330" x2={fa.x} y2="342" />
+    <text x={f((ra.x + fa.x) / 2)} y="331" text-anchor="middle">{`distancia entre ejes ${wbMm} mm`}</text>
+  </g>
+</svg>
+
+<style>
+  .bk {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    --bk-tyre: var(--bl-surface-2, #20352b);
+    --bk-rim: var(--bl-text-2, #cfc9b7);
+    --bk-metal: var(--bl-text-2, #cfc9b7);
+  }
+
+  .bk__ground line {
+    stroke: var(--bl-border-strong, rgba(241, 234, 216, 0.3));
+    stroke-width: 1;
+    stroke-dasharray: 2 6;
+  }
+
+  .bk__tyre {
+    fill: none;
+    stroke: var(--bk-tyre);
+    stroke-width: var(--bk-tyre-w, 6px);
+  }
+
+  .bk__rim {
+    fill: none;
+    stroke: var(--bk-rim);
+    stroke-width: 2;
+  }
+
+  .bk__spoke {
+    stroke: var(--bk-rim);
+    stroke-width: 0.7;
+    opacity: 0.7;
+  }
+
+  .bk__hub {
+    fill: var(--bk-metal);
+  }
+
+  .bk__t {
+    fill: none;
+    stroke: var(--bk-frame);
+    stroke-width: var(--bk-tube);
+    stroke-linecap: round;
+    transition: stroke 0.35s ease, stroke-width 0.35s ease;
+  }
+
+  .bk__t--thin {
+    stroke-width: calc(var(--bk-tube) * 0.66);
+  }
+
+  .bk__t--down {
+    stroke-width: calc(var(--bk-tube) * 1.25);
+  }
+
+  .bk__t--head {
+    stroke-width: calc(var(--bk-tube) * 1.5);
+    stroke-linecap: butt;
+  }
+
+  .bk__t--fork {
+    stroke-width: calc(var(--bk-tube) * 0.9);
+  }
+
+  .bk__decal,
+  .bk__dip {
+    fill: none;
+    stroke: var(--bk-accent);
+    stroke-linecap: butt;
+    transition: stroke 0.35s ease;
+  }
+
+  .bk__decal {
+    stroke-width: calc(var(--bk-tube) * 0.45);
+  }
+
+  .bk__dip {
+    stroke-width: calc(var(--bk-tube) * 0.9);
+  }
+
+  .bk__chain,
+  .bk__crank,
+  .bk__pedal,
+  .bk__post,
+  .bk__stem {
+    stroke: var(--bk-metal);
+    stroke-linecap: round;
+  }
+
+  .bk__chain {
+    stroke-width: 1.3;
+    opacity: 0.8;
+  }
+
+  .bk__crank,
+  .bk__pedal {
+    stroke-width: 4;
+  }
+
+  .bk__post {
+    stroke-width: 5;
+  }
+
+  .bk__stem {
+    stroke-width: 6;
+  }
+
+  .bk__ring {
+    fill: none;
+    stroke: var(--bk-metal);
+    stroke-width: 2.5;
+  }
+
+  .bk__saddle {
+    fill: var(--bl-text, #f1ead8);
+    stroke: var(--bl-bg, #0c1511);
+    stroke-width: 1;
+    transition: fill 0.35s ease;
+  }
+
+  .bk__bar {
+    fill: none;
+    stroke: var(--bk-metal);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .bk__tape {
+    fill: none;
+    stroke: var(--bk-accent);
+    stroke-width: 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.35s ease;
+  }
+
+  .bk.is-leather .bk__saddle {
+    fill: #9a6a3a;
+  }
+
+  .bk.is-leather .bk__tape {
+    stroke: #9a6a3a;
+  }
+
+  .bk__x {
+    display: none;
+    fill: none;
+    stroke: var(--bl-brand, #f2c230);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .bk__x--light circle {
+    fill: var(--bl-brand, #f2c230);
+  }
+
+  .bk__x--light path {
+    stroke-width: 1.5;
+    stroke-dasharray: 3 4;
+    opacity: 0.8;
+  }
+
+  .bk.is-fenders .bk__x--fenders,
+  .bk.is-rack .bk__x--rack,
+  .bk.is-light .bk__x--light {
+    display: block;
+  }
+
+  .bk.is-rack .bk__x--rack {
+    stroke-width: 2.5;
+  }
+
+  .bk__dim {
+    display: none;
+    stroke: var(--bl-text-3, #9aa597);
+    stroke-width: 1;
+  }
+
+  .bk__dim text {
+    fill: var(--bl-text-3, #9aa597);
+    stroke: none;
+    font: 500 11px var(--bl-font-mono, monospace);
+    letter-spacing: 0.04em;
+  }
+
+  .bk.has-dim .bk__dim {
+    display: block;
+  }
+</style>
+
+<script>
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const bikes = Array.from(document.querySelectorAll<SVGElement>('svg[data-bk-spin]'));
+  if (bikes.length && !reduce.matches) {
+    let ticking = false;
+    const apply = () => {
+      ticking = false;
+      const angle = window.scrollY * 0.35;
+      bikes.forEach((bike) => {
+        bike.querySelectorAll<SVGGElement>('.bk__spin').forEach((g) => {
+          g.style.transform = `rotate(${angle}deg)`;
+        });
+      });
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    }, { passive: true });
+  }
+</script>

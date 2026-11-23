@@ -1,0 +1,246 @@
+---
+/**
+ * BielaHero — Home hero for the custom bicycle workshop: a large headline, a short promise, two
+ * calls to action, and a blueprint-style card with a big drawn bike (its wheels turn with the
+ * scroll) that you can repaint by picking a colour. Three facts sit under the text.
+ *
+ * @param {string} title - Headline (h1).
+ * @param {string} lead - Supporting paragraph.
+ * @param {string} primaryHref - Link of the main button (the configurator).
+ * @param {string} primaryLabel - Label of the main button.
+ * @param {string} secondaryHref - Link of the secondary button.
+ * @param {string} secondaryLabel - Label of the secondary button.
+ * @param {BielaColour[]} colours - Colours offered for the live repaint.
+ * @param {Array<{value: string, label: string}>} facts - Facts shown under the text.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; the colour chips are native radios with visible names; the drawn bike
+ * is role="img"; wheels only spin when reduced motion is not requested.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/bike-workshop/bl-theme.css';
+import BielaBike from './BielaBike.astro';
+import { bielaColours, type BielaColour } from '../templates/bike-workshop/data';
+
+interface OwnProps {
+  title?: string;
+  lead?: string;
+  primaryHref?: string;
+  primaryLabel?: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
+  colours?: BielaColour[];
+  facts?: Array<{ value: string; label: string }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Una bici hecha a tu medida, no a la media',
+  lead = 'Dibujamos, soldamos y pintamos cada cuadro en nuestro taller de València, a partir de tus medidas, de cómo montas y de por dónde.',
+  primaryHref = '#configurador',
+  primaryLabel = 'Diseña la tuya',
+  secondaryHref = '#bicis',
+  secondaryLabel = 'Ver bicis construidas',
+  colours = bielaColours.slice(0, 6),
+  facts = [
+    { value: 'Desde 1.300 €', label: 'cuadro, horquilla y montaje' },
+    { value: '8 a 12 semanas', label: 'del plano a la entrega' },
+    { value: 'A mano', label: 'soldadura, laminado y pintura' },
+  ],
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `blh-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['bl-ui', 'blh', classAttr]} data-blh {...rest}>
+  <div class="blh__copy">
+    <p class="bl-eyebrow">Taller de bicis a medida · València</p>
+    <h1>{title}</h1>
+    <p class="blh__lead">{lead}</p>
+    <div class="blh__actions">
+      <a class="bl-btn" href={primaryHref}>{primaryLabel}</a>
+      <a class="bl-btn bl-btn--ghost" href={secondaryHref}>{secondaryLabel}</a>
+    </div>
+    <dl class="blh__facts">
+      {facts.map((f) => <div><dt>{f.label}</dt><dd>{f.value}</dd></div>)}
+    </dl>
+  </div>
+
+  <figure class="blh__stage">
+    <div class="blh__bike">
+      <BielaBike type="gravel" frame={colours[0].hex} accent={colours[0].accent} material="acero" rack dimensions spin label="Dibujo de una bici gravel con cuadro de acero" />
+    </div>
+    <figcaption>
+      <div class="blh__chips" role="radiogroup" aria-labelledby={`${uid}-lg`}>
+        <span class="blh__legend" id={`${uid}-lg`}>Pinta el cuadro: <strong data-name>{colours[0].name}</strong></span>
+        {colours.map((c, i) => (
+          <label class="blh__chip">
+            <input type="radio" name={`${uid}-c`} value={c.id} data-hex={c.hex} data-accent={c.accent} data-label={c.name} checked={i === 0} />
+            <span style={`--chip:${c.hex}`}></span>
+            <b class="bl-sr">{c.name}</b>
+          </label>
+        ))}
+      </div>
+    </figcaption>
+  </figure>
+</section>
+
+<style>
+  .blh {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    align-items: center;
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .blh__copy h1 {
+    margin: 0 0 var(--sp-4, 1rem);
+    font: 800 clamp(2.5rem, 7vw, 4.6rem) / 1.02 var(--bl-font-display);
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
+  .blh__lead {
+    max-width: 34rem;
+    margin: 0 0 var(--sp-5, 1.25rem);
+    font-size: 1.12rem;
+    line-height: 1.6;
+    color: var(--bl-text-2);
+  }
+
+  .blh__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  .blh__facts {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    max-width: 34rem;
+  }
+
+  .blh__facts > div {
+    display: flex;
+    flex-direction: column-reverse;
+    padding-top: var(--sp-3, 0.75rem);
+    border-top: 1px solid var(--bl-border-strong);
+  }
+
+  .blh__facts dt {
+    font-size: 0.86rem;
+    color: var(--bl-text-3);
+  }
+
+  .blh__facts dd {
+    margin: 0;
+    font: 700 1.2rem var(--bl-font-display);
+  }
+
+  .blh__stage {
+    margin: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--bl-border-strong);
+    border-radius: 22px;
+    background:
+      linear-gradient(var(--bl-grid) 1px, transparent 1px) 0 0 / 32px 32px,
+      linear-gradient(90deg, var(--bl-grid) 1px, transparent 1px) 0 0 / 32px 32px,
+      var(--bl-bg-raised);
+  }
+
+  .blh__bike {
+    padding: var(--sp-6, 1.5rem) 0 var(--sp-2, 0.5rem);
+  }
+
+  .blh__chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+  }
+
+  .blh__legend {
+    flex: 0 0 100%;
+    font: 500 0.85rem var(--bl-font-mono);
+    color: var(--bl-text-2);
+  }
+
+  .blh__legend strong {
+    color: var(--bl-text);
+  }
+
+  .blh__chip {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  .blh__chip input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .blh__chip span {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--bl-border-strong);
+    border-radius: 50%;
+    background: var(--chip);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .blh__chip input:checked + span {
+    box-shadow: 0 0 0 3px var(--bl-bg-raised), 0 0 0 5px var(--bl-brand);
+    transform: scale(1.1);
+  }
+
+  .blh__chip input:focus-visible + span {
+    outline: 2px solid var(--bl-accent);
+    outline-offset: 5px;
+  }
+
+  @media (min-width: 640px) {
+    .blh__facts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 960px) {
+    .blh {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      gap: var(--sp-12, 3rem);
+    }
+  }
+</style>
+
+<script>
+  function init(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const name = root.querySelector<HTMLElement>('[data-name]');
+    root.querySelectorAll<HTMLInputElement>('.blh__chip input').forEach((input) => {
+      input.addEventListener('change', () => {
+        root.querySelectorAll<SVGElement>('svg.bk').forEach((svg) => {
+          svg.style.setProperty('--bk-frame', input.dataset.hex || '');
+          svg.style.setProperty('--bk-accent', input.dataset.accent || '');
+        });
+        if (name) name.textContent = input.dataset.label || '';
+      });
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('.blh').forEach(init);
+</script>

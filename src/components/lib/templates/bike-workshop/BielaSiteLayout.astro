@@ -1,0 +1,193 @@
+---
+/**
+ * BielaSiteLayout — Layout for the "Biela" custom bicycle workshop template: skip link, sticky
+ * BielaHeader with the primary navigation, the page content and the BielaFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (configurator | builds | workshop | fit | visit).
+ * @param {BielaRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link to #main-content, landmarks (<header>, <nav>, <main>, <footer>), the
+ * current page is marked with aria-current.
+ */
+import '../../../../styles/global.css';
+import './bl-theme.css';
+import BielaHeader from '../../app/BielaHeader.astro';
+import BielaFooter from '../../app/BielaFooter.astro';
+import { bielaRoutes, bielaBrand, type BielaRoutes } from './data';
+
+type Key = 'configurator' | 'builds' | 'workshop' | 'fit' | 'visit';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: BielaRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Biela · Taller de bicis a medida en València. Diseña tu bici con un configurador en vivo, calcula tu talla y reserva plaza.',
+  current,
+  routes = bielaRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const items = [
+  { label: 'Configurador', href: routes.configurator, key: 'configurator' },
+  { label: 'Bicis', href: routes.builds, key: 'builds' },
+  { label: 'El taller', href: routes.workshop, key: 'workshop' },
+  { label: 'Tu talla', href: routes.fit, key: 'fit' },
+  { label: 'Visítanos', href: routes.visit, key: 'visit' },
+];
+const currentHref = items.find((i) => i.key === current)?.href ?? '';
+const footerLinks = [{ label: 'Inicio', href: routes.home }, ...items.map(({ label, href }) => ({ label, href }))];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-biela" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="biela-body bl-ui">
+    <a href="#main-content" class="biela-skip">Saltar al contenido</a>
+
+    <div class="biela-head">
+      <div class="biela-wrap">
+        <BielaHeader items={items} currentHref={currentHref} brand={bielaBrand.name} homeHref={routes.home} ctaHref={routes.configurator} />
+      </div>
+    </div>
+
+    <main id="main-content" class="biela-wrap biela-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <div class="biela-wrap">
+      <BielaFooter links={footerLinks} />
+    </div>
+  </body>
+</html>
+
+<style>
+  .biela-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bl-bg);
+    color: var(--bl-text);
+    font-family: var(--bl-font-body);
+  }
+
+  .biela-skip {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: var(--bl-brand);
+    color: var(--bl-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .biela-skip:focus {
+    top: 1rem;
+  }
+
+  .biela-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--bl-bg) 90%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--bl-border);
+  }
+
+  .biela-wrap {
+    box-sizing: border-box;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .biela-main {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .biela-main:focus {
+    outline: none;
+  }
+
+  :global(.biela-section) {
+    margin-top: var(--sp-16, 4rem);
+  }
+
+  :global(.biela-section__head) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem) var(--sp-6, 1.5rem);
+    margin-bottom: var(--sp-6, 1.5rem);
+  }
+
+  :global(.biela-section h2),
+  :global(.biela-title) {
+    margin: 0;
+    font-family: var(--bl-font-display);
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+
+  :global(.biela-lead) {
+    max-width: 38rem;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--bl-text-2);
+  }
+
+  :global(.biela-pagehead) {
+    margin-bottom: var(--sp-8, 2rem);
+  }
+
+  @media (min-width: 760px) {
+    .biela-wrap {
+      padding: 0 2rem;
+    }
+
+    .biela-main {
+      padding-top: 3rem;
+      padding-bottom: 5rem;
+    }
+  }
+</style>

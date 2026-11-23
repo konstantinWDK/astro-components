@@ -1846,4 +1846,49 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida para el espacio de agentes de IA: una conversación de ejemplo dibujada a un lado y el formulario con botón de SSO, mostrar/ocultar contraseña y acceso de demostración al otro.',
     ru: 'Вход на двух панелях для пространства ИИ-агентов: нарисованная демо-беседа и форма с кнопкой SSO, показом пароля и демо-ссылкой.',
   },
+  // ── Custom bicycle workshop ("Biela") ────────────────────────
+  'biela-bike': {
+    es: 'Una bicicleta dibujada en SVG a partir de una geometría real (distancia entre ejes, vainas, ángulos del sillín y la dirección) para gravel, ruta, ciudad y pista. El color del cuadro es una variable CSS, el grosor de los tubos sigue el material, se activan guardabarros, portabultos, luz con dinamo y piezas de cuero, y las ruedas pueden girar con el scroll.',
+    ru: 'Велосипед, нарисованный в SVG по настоящей геометрии (колёсная база, перья, углы подседельной и рулевой трубы) для гревела, шоссе, города и трека. Цвет рамы — CSS-переменная, толщина труб зависит от материала, включаются крылья, багажник, динамо-фара и кожаные детали, а колёса могут вращаться при прокрутке.',
+  },
+  'biela-configurator': {
+    es: 'Configurador en vivo de una bici a medida (solo UI): tipo, material del cuadro, transmisión (filtrada por tipo), ruedas, color, extras y talla mientras se actualiza el dibujo. El precio y el plazo se recalculan en una región en vivo, un diálogo nativo reserva plaza con un código de demostración y la bici se comparte por la URL.',
+    ru: 'Конфигуратор велосипеда на заказ в реальном времени (только UI): тип, материал рамы, трансмиссия (по типу), колёса, цвет, опции и размер — рисунок обновляется сразу. Цена и срок пересчитываются в live-области, нативный диалог бронирует место с демо-кодом, а сборку можно передать ссылкой.',
+  },
+  'biela-builds': {
+    es: 'Galería de bicis a medida ya construidas (solo UI): cada tarjeta muestra el dibujo, para quién se hizo, la ficha como lista de definiciones, el precio y un enlace que abre el configurador con esa bici como punto de partida; filtro por tipo y orden por precio o fecha.',
+    ru: 'Галерея готовых велосипедов на заказ (только UI): карточка с рисунком, для кого сделан, спецификацией списком определений, ценой и ссылкой, открывающей конфигуратор с этой сборкой; фильтр по типу и сортировка по цене или дате.',
+  },
+  'biela-fit': {
+    es: 'Calculadora de talla y ajuste (solo UI): a partir de la altura, la entrepierna, la flexibilidad y el tipo de bici estima la talla del cuadro, la altura del sillín, la potencia, el ancho del manillar, las bielas y la caída, con deslizadores emparejados con campos numéricos, validación y un enlace al configurador con la talla ya puesta.',
+    ru: 'Калькулятор размера и посадки (только UI): по росту, длине ноги, гибкости и типу велосипеда оценивает размер рамы, высоту седла, вынос, ширину руля, шатуны и разницу высот; ползунки в паре с числовыми полями, проверка значений и ссылка в конфигуратор с готовым размером.',
+  },
+  'biela-slots': {
+    es: 'Cola de construcción del taller (solo UI): una tarjeta por mes con las plazas ocupadas dibujadas como cuadrados y escritas con palabras; al elegir un mes se ve su nota y un enlace al configurador o, si está completo, un pequeño formulario de lista de espera.',
+    ru: 'Очередь сборки мастерской (только UI): карточка на каждый месяц с занятыми местами в виде квадратов и словами; выбор месяца показывает заметку и ссылку в конфигуратор или, если мест нет, форму листа ожидания.',
+  },
+  'biela-visit': {
+    es: 'Reserva de visita al taller (solo UI): los próximos días abiertos (de martes a sábado) generados en el navegador, horas con algunas ya ocupadas y solo mañanas los sábados, el motivo de la visita, validación y una confirmación que se anuncia y recibe el foco.',
+    ru: 'Запись в мастерскую (только UI): ближайшие рабочие дни (со вторника по субботу) строятся в браузере, время с занятыми слотами и только утро по субботам, причина визита, проверка полей и подтверждение, которое озвучивается и получает фокус.',
+  },
+  'biela-hero': {
+    es: 'Hero de portada para un taller de bicis a medida: un titular grande, dos llamadas a la acción, tres datos y una tarjeta tipo plano con una bici dibujada grande cuyas ruedas giran con el scroll y que se puede repintar eligiendo un color.',
+    ru: 'Главный экран мастерской велосипедов на заказ: крупный заголовок, две кнопки, три факта и карточка в духе чертежа с большим рисунком велосипеда, колёса которого крутятся при прокрутке, а цвет можно менять.',
+  },
+  'biela-process': {
+    es: 'Cómo se hace una bici, paso a paso: una lista numerada donde cada etapa se abre para mostrar qué pasa en el taller y cuántas semanas lleva, con una sola etapa abierta a la vez (details exclusivo nativo).',
+    ru: 'Как делается велосипед шаг за шагом: нумерованный список, где каждый этап раскрывается и показывает, что происходит в мастерской и сколько недель это занимает; открыт только один этап (нативный эксклюзивный details).',
+  },
+  'biela-materials': {
+    es: 'Comparación de los materiales del cuadro como una tabla real: tacto, peso del cuadro, vida útil, reparación, suplemento y plazo; en móvil cada fila pasa a una tarjeta con etiquetas que conserva el nombre de cada columna.',
+    ru: 'Сравнение материалов рамы настоящей таблицей: ощущение, вес рамы, срок службы, ремонтопригодность, доплата и срок; на телефонах каждая строка становится карточкой с подписями, сохраняющей названия столбцов.',
+  },
+  'biela-header': {
+    es: 'Cabecera fija para un taller de bicis: nombre, navegación principal que en móvil pasa a un menú con popover nativo, cambio de tema y un botón de llamada a la acción.',
+    ru: 'Закреплённая шапка мастерской велосипедов: название, основная навигация, на телефонах превращающаяся в меню на нативном popover, смена темы и кнопка действия.',
+  },
+  'biela-footer': {
+    es: 'Pie de página para un taller de bicis: dirección y contacto, horario con una línea en vivo de «abierto ahora / cerrado» calculada en el navegador, algunos enlaces y una frase de cierre.',
+    ru: 'Подвал мастерской велосипедов: адрес и контакты, часы работы со строкой «открыто сейчас / закрыто», вычисляемой в браузере, несколько ссылок и завершающая фраза.',
+  },
 };
