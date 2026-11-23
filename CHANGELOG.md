@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-23
+
 ### Added
 - **Custom bicycle workshop template "Biela"** (`astro-component-kit/templates/bike-workshop`): six pages and no real functionality (demo data only). A live configurator with a bike drawn in SVG from a real geometry (gravel, road, city, track) that changes colour, tube thickness, mudguards, rack, light and leather, with type, frame material, transmission filtered by type, wheels, colour, extras and size, a live price and delivery time, a native reservation dialog and a shareable URL; a builds gallery with filter, sort and "start from this bike"; the workshop page with six exclusive-details stages, a materials table that turns into cards on phones and the build queue by month with a waiting list; a size and fit calculator; and a visit booking that generates the next open days in the browser. Light and dark themes.
 - App components: `BielaBike`, `BielaConfigurator`, `BielaBuilds`, `BielaFit`, `BielaSlots`, `BielaVisit`, `BielaHero`, `BielaProcess`, `BielaMaterials`, `BielaHeader` and `BielaFooter`.
