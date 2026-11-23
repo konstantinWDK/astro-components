@@ -60,7 +60,7 @@ const icons = {
 const getStarted = [
   { label: t('nav.install'), raw: '/install', icon: icons.install, match: (p: string) => p.startsWith('/install') },
   { label: t('nav.mcp'), raw: '/mcp', icon: icons.mcp, match: (p: string) => p.startsWith('/mcp'), isNew: true },
-  { label: t('nav.templates'), raw: '/templates', icon: icons.templates, match: (p: string) => p === '/templates', isNew: true },
+  { label: t('nav.templates'), raw: '/templates', icon: icons.templates, match: (p: string) => p.startsWith('/templates'), count: templates.length, isNew: true },
   { label: t('nav.notes'), raw: '/notes', icon: icons.notes, match: (p: string) => p.startsWith('/notes') || p.startsWith('/blog') },
 ];
 const searchLabel = t('sidebar.search').replace('{n}', String(componentTotal + sectionTotal));
@@ -88,6 +88,7 @@ const chevron = '<polyline points="6 9 12 15 18 9"></polyline>';
               <a href={getLocalizedPath(item.raw, lang)} class:list={['sb-quick__link', { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
                 <span class="sb-quick__icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={item.icon} /></svg></span>
                 <span class="sb-quick__text">{item.label}</span>
+                {item.count !== undefined && <span class="sidebar__group-count">{item.count}</span>}
                 {item.isNew && <span class="sb-new">{t('sidebar.new')}</span>}
               </a>
             </li>
@@ -142,31 +143,6 @@ const chevron = '<polyline points="6 9 12 15 18 9"></polyline>';
         })}
       </section>
     ))}
-
-    <!-- Templates -->
-    <section class="sb-section" data-sb-section>
-      <h2 class="sb-label">
-        <span>{t('nav.templates')}</span>
-        <span class="sb-label__count">{templates.length}</span>
-      </h2>
-      <ul class="sb-quick">
-        {templates.map((tpl) => {
-          const raw = `/templates/${tpl.slug}`;
-          const active = path === raw;
-          return (
-            <li class="sidebar__item" data-name={`${tpl.name[lang]} ${tpl.slug} template`.toLowerCase()}>
-              <a href={getLocalizedPath(raw, lang)} class:list={['sb-quick__link', 'sb-quick__link--tpl', { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
-                <span class="sb-quick__icon sb-quick__icon--tpl" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><Fragment set:html={icons.store} /></svg></span>
-                <span class="sb-quick__text">
-                  {tpl.name[lang]}
-                  <small>{tpl.pages.length} {t('sidebar.pages')}</small>
-                </span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
 
     <p class="sidebar__empty" id="sidebar-empty" data-prefix={t('sidebar.noResultsFor')} hidden></p>
   </nav>

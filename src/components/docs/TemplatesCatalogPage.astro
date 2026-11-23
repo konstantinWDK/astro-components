@@ -38,13 +38,13 @@ const upcoming = [
     </header>
 
     <div class="tpl-list">
-      {templates.map((tpl) => {
+      {templates.map((tpl, index) => {
         const href = getLocalizedPath(`/templates/${tpl.slug}`, lang);
         const components = tpl.newComponents.length + tpl.reusedComponents.length;
         return (
           <article class="tpl-card">
             <div class="tpl-card__frame">
-              <TemplateFrame src={tpl.previewBase} title={`${tpl.name[lang]} — ${t('templates.livePreview')}`} eager />
+              <TemplateFrame src={tpl.previewBase} title={`${tpl.name[lang]} — ${t('templates.livePreview')}`} eager={index < 2} height={820} />
             </div>
             <div class="tpl-card__body">
               <div class="tpl-card__chips">
@@ -54,7 +54,7 @@ const upcoming = [
               <h2 class="tpl-card__title"><a href={href}>{tpl.name[lang]}</a></h2>
               <p class="tpl-card__tagline">{tpl.tagline[lang]}</p>
               <ul class="tpl-card__list">
-                {tpl.highlights[lang].slice(0, 4).map((h) => <li>{h}</li>)}
+                {tpl.highlights[lang].slice(0, 3).map((h) => <li>{h}</li>)}
               </ul>
               <div class="tpl-card__actions">
                 <a class="tpl-btn tpl-btn--primary" href={href}>{t('templates.view')}</a>
@@ -96,16 +96,35 @@ const upcoming = [
   .tpl-header__title { margin: 0; font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 900; letter-spacing: -0.03em; color: var(--c-text-1); }
   .tpl-header__desc { margin: 0; max-width: 46rem; font-size: 1rem; line-height: 1.65; color: var(--c-text-2); }
 
-  .tpl-list { display: grid; gap: var(--sp-8); }
-  .tpl-card {
+  .tpl-list {
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    gap: var(--sp-8);
-    align-items: center;
-    padding: var(--sp-6);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-6);
+  }
+  .tpl-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-5);
     border-radius: var(--r-xl);
     border: 1px solid var(--c-border);
-    background: linear-gradient(160deg, rgba(212, 160, 23, 0.06), transparent 45%), rgba(255, 255, 255, 0.015);
+    background: linear-gradient(160deg, rgba(212, 160, 23, 0.05), transparent 45%), rgba(255, 255, 255, 0.015);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .tpl-card:hover {
+    border-color: rgba(212, 160, 23, 0.35);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+    transform: translateY(-2px);
+  }
+  .tpl-card__frame {
+    width: 100%;
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .tpl-card__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin-top: var(--sp-5);
   }
   .tpl-card__chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
   .tpl-card__chips span {
@@ -113,19 +132,58 @@ const upcoming = [
     font-size: 0.75rem; font-weight: 700; color: var(--c-text-2);
     background: rgba(255, 255, 255, 0.04); border: 1px solid var(--c-border);
   }
-  .tpl-card__title { margin: var(--sp-3) 0 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.03em; }
+  .tpl-card__title { margin: var(--sp-3) 0 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
   .tpl-card__title a { color: var(--c-text-1); }
   .tpl-card__title a:hover { color: var(--c-primary-light); }
-  .tpl-card__tagline { margin: var(--sp-2) 0 0; line-height: 1.6; color: var(--c-text-2); }
-  .tpl-card__list { display: grid; gap: var(--sp-2); margin: var(--sp-5) 0 0; padding: 0; list-style: none; }
-  .tpl-card__list li { position: relative; padding-left: 1.4rem; font-size: 0.9rem; color: var(--c-text-1); }
-  .tpl-card__list li::before { content: ''; position: absolute; left: 0; top: 0.45em; width: 8px; height: 8px; border-radius: 50%; background: var(--c-primary-light); box-shadow: 0 0 8px var(--c-primary-light); }
-  .tpl-card__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+  .tpl-card__tagline {
+    margin: var(--sp-2) 0 0;
+    line-height: 1.55;
+    font-size: 0.92rem;
+    color: var(--c-text-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .tpl-card__list {
+    display: grid;
+    gap: var(--sp-2);
+    margin: var(--sp-4) 0 0;
+    padding: 0;
+    list-style: none;
+    flex: 1;
+  }
+  .tpl-card__list li {
+    position: relative;
+    padding-left: 1.3rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--c-text-1);
+  }
+  .tpl-card__list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--c-primary-light);
+    box-shadow: 0 0 6px var(--c-primary-light);
+  }
+  .tpl-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
 
   .tpl-btn {
-    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 var(--sp-5);
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 40px; padding: 0 var(--sp-4);
     border-radius: var(--r-full); border: 1px solid rgba(255, 255, 255, 0.14);
-    font-size: 0.88rem; font-weight: 700; color: var(--c-text-1);
+    font-size: 0.84rem; font-weight: 700; color: var(--c-text-1);
     transition: background 0.2s ease, filter 0.2s ease;
   }
   .tpl-btn:hover { background: rgba(255, 255, 255, 0.05); color: var(--c-text-1); }
@@ -144,7 +202,8 @@ const upcoming = [
   .tpl-soon ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
   .tpl-soon li { padding: 0.35rem 0.85rem; border-radius: var(--r-full); background: rgba(255, 255, 255, 0.04); font-size: 0.82rem; color: var(--c-text-2); }
 
-  @media (max-width: 1100px) {
-    .tpl-card { grid-template-columns: 1fr; gap: var(--sp-5); padding: var(--sp-4); }
+  @media (max-width: 900px) {
+    .tpl-list { grid-template-columns: 1fr; gap: var(--sp-5); }
+    .tpl-card { padding: var(--sp-4); }
   }
 </style>
