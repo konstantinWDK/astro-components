@@ -1,0 +1,262 @@
+---
+/**
+ * PulseTracks — Section presenting the 4 core technology tracks of the summit.
+ * Each card includes a custom SVG track icon, gradient border accent, description,
+ * topic pills, and a link to the track schedule.
+ *
+ * @param {PulseTrack[]} tracks - List of tracks (defaults to pulseTracks).
+ * @param {string} scheduleHref - Link to the schedule page.
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseTracks, type PulseTrack } from '../templates/tech-event/data';
+
+interface OwnProps {
+  tracks?: PulseTrack[];
+  scheduleHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  tracks = pulseTracks,
+  scheduleHref = '/programa',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const trackIcons: Record<string, string> = {
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  layout: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+};
+---
+
+<section class:list={['pls-tracks-section', className]} {...rest} id="tracks">
+  <div class="pls-tracks__container">
+    <div class="pls-section-head">
+      <span class="pls-section-kicker">CUATRO EJES TEMÁTICOS</span>
+      <h2 class="pls-section-title">Contenido técnico de vanguardia</h2>
+      <p class="pls-section-subtitle">
+        Diseñado sin charlas patrocinadas encubiertas: cada track está curado por ingenieros para ofrecer soluciones reales a problemas complejos de escala.
+      </p>
+    </div>
+
+    <div class="pls-tracks-grid">
+      {tracks.map((track) => (
+        <article class="pls-track-card" style={`--track-color: ${track.color}; --track-accent: ${track.accent};`}>
+          <div class="pls-track-card__glow" aria-hidden="true"></div>
+          <div class="pls-track-card__header">
+            <div class="pls-track-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <Fragment set:html={trackIcons[track.icon] || trackIcons.cpu} />
+              </svg>
+            </div>
+            <span class="pls-track-card__short">{track.short}</span>
+          </div>
+
+          <h3 class="pls-track-card__title">{track.name}</h3>
+          <p class="pls-track-card__desc">{track.description}</p>
+
+          <div class="pls-track-card__topics">
+            <span class="pls-topics-label">Temas destacados:</span>
+            <ul class="pls-topics-list">
+              {track.topics.map((t) => (
+                <li class="pls-topic-pill">{t}</li>
+              ))}
+            </ul>
+          </div>
+
+          <a href={`${scheduleHref}?track=${track.id}`} class="pls-track-card__link">
+            <span>Ver ponencias de este track</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .pls-tracks-section {
+    padding: 5rem 1.5rem;
+    position: relative;
+    background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.4) 50%, transparent);
+  }
+
+  .pls-tracks__container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .pls-section-head {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .pls-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    font-family: var(--pls-font-mono);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-section-title {
+    margin: 0 0 1rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--pls-text-1);
+    line-height: 1.15;
+  }
+
+  .pls-section-subtitle {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+  }
+
+  .pls-tracks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem;
+  }
+
+  @media (max-width: 860px) {
+    .pls-tracks-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pls-track-card {
+    position: relative;
+    padding: 2.25rem;
+    border-radius: var(--pls-radius-lg);
+    border: 1px solid var(--pls-border);
+    background: var(--pls-surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s, box-shadow 0.22s;
+  }
+
+  .pls-track-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--track-color);
+    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.6), 0 0 20px var(--track-accent);
+  }
+
+  .pls-track-card__glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, var(--track-accent) 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .pls-track-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .pls-track-card__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--pls-radius-sm);
+    background: var(--track-accent);
+    color: var(--track-color);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--track-color);
+  }
+
+  .pls-track-card__short {
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--pls-font-mono);
+    color: var(--track-color);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--pls-radius-full);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--pls-border);
+  }
+
+  .pls-track-card__title {
+    margin: 0 0 0.85rem;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+    letter-spacing: -0.015em;
+  }
+
+  .pls-track-card__desc {
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+    flex: 1;
+  }
+
+  .pls-track-card__topics {
+    margin-bottom: 1.75rem;
+  }
+
+  .pls-topics-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--pls-text-3);
+    margin-bottom: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .pls-topics-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .pls-topic-pill {
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--pls-radius-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--pls-border);
+    font-size: 0.8rem;
+    color: var(--pls-text-1);
+  }
+
+  .pls-track-card__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--track-color);
+    text-decoration: none;
+    transition: gap 0.15s ease;
+  }
+
+  .pls-track-card__link:hover {
+    gap: 0.65rem;
+  }
+</style>
+

@@ -1,0 +1,102 @@
+---
+/**
+ * PulseSiteLayout — Base document layout for the Pulse Tech Summit template.
+ * Includes skip-to-content accessibility link, sticky PulseHeader, semantic <main>,
+ * and PulseFooter.
+ *
+ * @param {string} title - HTML document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active navigation key ('home' | 'schedule' | 'speakers' | 'tickets' | 'venue').
+ * @param {PulseRoutes} routes - Routing configuration object.
+ * @param {string} theme - Initial theme ('dark' | 'light'). Default 'dark'.
+ * @param {boolean} noindex - Whether to include robots noindex.
+ * @param {string} lang - Document language code. Default 'es'.
+ */
+import '../../../../styles/global.css';
+import './pls-theme.css';
+import PulseHeader from '../../app/PulseHeader.astro';
+import PulseFooter from '../../app/PulseFooter.astro';
+import { pulseRoutes, type PulseRoutes } from './data';
+
+type Key = 'home' | 'schedule' | 'speakers' | 'tickets' | 'venue';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: Key;
+  routes?: PulseRoutes;
+  theme?: 'dark' | 'light';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Pulse Tech Summit 2027 · Cumbre internacional de software, inteligencia artificial distribuida, computación en el edge y ciberseguridad.',
+  current = 'home',
+  routes = pulseRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const keyToHref: Record<Key, string> = {
+  home: routes.home,
+  schedule: routes.schedule,
+  speakers: routes.speakers,
+  tickets: routes.tickets,
+  venue: routes.venue,
+};
+
+const currentHref = keyToHref[current] || routes.home;
+---
+
+<!doctype html>
+<html lang={lang} class:list={['pls-root', `pls-theme--${theme}`]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300f0ff' stroke-width='2.2'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>" />
+  </head>
+  <body>
+    <!-- Accessibility skip link -->
+    <a href="#main-content" class="pls-skip-link">Saltar al contenido principal</a>
+
+    <PulseHeader routes={routes} currentHref={currentHref} />
+
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+
+    <PulseFooter routes={routes} />
+  </body>
+</html>
+
+<style is:global>
+  .pls-skip-link {
+    position: absolute;
+    top: -999px;
+    left: 1rem;
+    z-index: 9999;
+    padding: 0.75rem 1.25rem;
+    background: var(--pls-cyan);
+    color: #07090e;
+    font-weight: 800;
+    border-radius: var(--pls-radius-sm);
+    text-decoration: none;
+    transition: top 0.2s ease;
+  }
+
+  .pls-skip-link:focus {
+    top: 1rem;
+    outline: 2px solid #ffffff;
+  }
+
+  main:focus {
+    outline: none;
+  }
+</style>
+

@@ -66,6 +66,8 @@
     'ai-agents': isEs ? 'Nexo · Espacio de agentes de IA' : isRu ? 'Nexo · Пространство ИИ-агентов' : 'Nexo · AI Agents Workspace',
     'bike-workshop': isEs ? 'Biela · Taller de bicis a medida' : isRu ? 'Biela · Мастерская велосипедов на заказ' : 'Biela · Custom Bicycle Workshop',
     'festival': isEs ? 'Pulso · Festival de música' : isRu ? 'Pulso · Музыкальный фестиваль' : 'Pulso · Music Festival',
+    'tech-event': isEs ? 'Pulse · Cumbre Tecnológica & Hackathon' : isRu ? 'Pulse · Технологический саммит' : 'Pulse · Tech Summit & Hackathon',
+    'university': isEs ? 'Universidad Veritas · Campus & Grados' : isRu ? 'Universidad Veritas · Университет' : 'Veritas University · Higher Education',
     'dental': isEs ? 'Clínica Dental' : 'Dental Clinic SaaS',
     'moving': isEs ? 'Mudanzas & Flota' : 'Moving & Logistics',
     'saas-hotel': 'Hotel OS & Frontdesk',

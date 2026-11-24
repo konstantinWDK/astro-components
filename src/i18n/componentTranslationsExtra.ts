@@ -1936,4 +1936,78 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Pie de página para un taller de bicis: dirección y contacto, horario con una línea en vivo de «abierto ahora / cerrado» calculada en el navegador, algunos enlaces y una frase de cierre.',
     ru: 'Подвал мастерской велосипедов: адрес и контакты, часы работы со строкой «открыто сейчас / закрыто», вычисляемой в браузере, несколько ссылок и завершающая фраза.',
   },
+  // ── Tech Event & Conference ("Pulse") ───────────────────────
+  'pulse-header': {
+    es: 'Cabecera fija para conferencias tech con logo luminoso, navegación de 5 páginas con badge de ruta activa, cambio de tema claro/oscuro y menú móvil accesible.',
+    ru: 'Закреплённая шапка технологической конференции: светящийся логотип, 5 страниц с бейджем активного маршрута, смена темы и мобильное меню.',
+  },
+  'pulse-footer': {
+    es: 'Pie de página de congreso tecnológico con columnas temáticas de enlaces, formulario de suscripción a novedades con toast de confirmación, redes sociales y código de conducta.',
+    ru: 'Подвал технологической конференции: колонки тематических ссылок, форма подписки с тостом подтверждения, соцсети и кодекс поведения.',
+  },
+  'pulse-hero': {
+    es: 'Hero para cumbre tecnológica con cuenta atrás en vivo hacia el evento, estadísticas de asistentes y ponentes, y botones de llamada a la acción para comprar entradas o ver el programa.',
+    ru: 'Главный экран технологического саммита: живой таймер обратного отсчёта, статистика участников и спикеров, кнопки покупки билетов и расписания.',
+  },
+  'pulse-tracks': {
+    es: 'Cuadrícula de los 4 ejes temáticos de la conferencia (IA y Agentes, Cloud y Plataformas, DevEx y Web, Ciberseguridad) con iconos SVG y temas clave.',
+    ru: 'Сетка 4 тематических треков конференции (AI & Agents, Cloud & Platforms, DevEx & Web, Ciberseguridad) с SVG-иконками и ключевыми темами.',
+  },
+  'pulse-speakers': {
+    es: 'Directorio interactivo de ponentes y keynotes con filtro instantáneo por track temático, badges de sesión magistral y avatares generados.',
+    ru: 'Интерактивный каталог спикеров и ключевых докладчиков с мгновенным фильтром по трекам, бейджами keynote и аватарами.',
+  },
+  'pulse-schedule': {
+    es: 'Programa interactivo de 3 días con selector de fecha, filtro por track, buscador de ponencias en tiempo real y agenda personal persistida en localStorage.',
+    ru: 'Интерактивная 3-дневная программа: переключатель дней, фильтр по трекам, поиск докладов в реальном времени и личное расписание в localStorage.',
+  },
+  'pulse-tickets': {
+    es: 'Pase de entradas con selector de unidades, selector de pase (Virtual, Full Pass, VIP), validación de cupón de descuento, desglose de impuestos y modal de reserva accesible.',
+    ru: 'Покупка билетов: выбор количества и категорий (Virtual, Full Pass, VIP), промокод со скидкой, расчёт налогов и доступное модальное окно оформления.',
+  },
+  'pulse-venue': {
+    es: 'Plano interactivo SVG del palacio de congresos con selección visual de escenarios y salas, junto a información de transporte, metro y hoteles con descuento.',
+    ru: 'Интерактивная SVG-схема выставочного комплекса с выбором залов и сцен, а также маршрутами транспорта, метро и отелями со скидкой.',
+  },
+  'pulse-sponsors': {
+    es: 'Muro de patrocinadores por categorías (Platinum, Gold, Silver, Comunidades colaboradoras) y llamada a la acción para empresas interesadas en patrocinar.',
+    ru: 'Стена партнёров и спонсоров по уровням (Platinum, Gold, Silver, сообщества) с кнопкой для заявок на спонсорство.',
+  },
+  // ── University & Higher Education ("Veritas") ────────────────
+  'univ-header': {
+    es: 'Cabecera institucional universitaria con escudo oficial, barra de utilidades con próxima jornada de puertas abiertas, navegación de 5 páginas con badge de ruta activa, cambio de tema y menú móvil.',
+    ru: 'Институциональная шапка университета: официальный герб, верхняя информационная строка с датой дня открытых дверей, 5 страниц с активным маршрутом, смена темы и мобильное меню.',
+  },
+  'univ-footer': {
+    es: 'Pie de página universitario con sellos de acreditación oficial (ANECA, EQUIS, ABET), directorio de facultades, boletín académico, enlaces legales y de transparencia.',
+    ru: 'Университетский подвал: знаки официальной аккредитации (ANECA, EQUIS, ABET), каталог факультетов, академический бюллетень, юридическая информация и портал прозрачности.',
+  },
+  'univ-hero': {
+    es: 'Hero universitario de prestigio: distintivo Forbes #1 en empleabilidad, tipografía clásica, buscador interactivo de titulaciones por nivel y facultad, botones de acción y estadísticas del campus.',
+    ru: 'Главный экран университета: бейдж Forbes #1 по трудоустройству, классическая типографика, интерактивный поиск направлений по уровню и факультету, кнопки действий и показатели кампуса.',
+  },
+  'univ-programs': {
+    es: 'Catálogo de titulaciones oficiales con pestañas por nivel (Grados, Másters, Doctorado, Executive), chips de filtrado por facultad, buscador en tiempo real y fichas con créditos ECTS y salidas profesionales.',
+    ru: 'Каталог официальных направлений: вкладки уровней (бакалавриат, магистратура, аспирантура, executive), фильтр по факультетам, живой поиск и карточки с кредитами ECTS и профессиями.',
+  },
+  'univ-admissions': {
+    es: 'Ruta de admisión universitaria en 4 pasos con requisitos clave, junto a una tabla con el calendario oficial de convocatorias ordinarias y extraordinarias.',
+    ru: 'План поступления в университет в 4 шага с требованиями к кандидатам, а также таблица официального календаря приёмных волн.',
+  },
+  'univ-calculator': {
+    es: 'Calculadora interactiva de matrícula y becas al mérito académico con cálculo de cuotas en 10 mensualidades, extras de colegio mayor y polideportivo, y modal de solicitud.',
+    ru: 'Интерактивный калькулятор стоимости обучения и академических стипендий: расчёт рассрочки на 10 месяцев, общежитие, спорткомплекс и модальная заявка.',
+  },
+  'univ-research': {
+    es: 'Escaparate de institutos de investigación punteros (IA, Biomedicina, Transición Energética) con métricas de financiación de 54M €, publicaciones Nature/IEEE y banner de transferencia tecnológica a empresas.',
+    ru: 'Витрина институтов передовых исследований (ИИ, биомедицина, чистая энергия) с грантами на 54M €, статьями Nature/IEEE и блоком трансфера технологий для бизнеса.',
+  },
+  'univ-campus': {
+    es: 'Instalaciones y vida universitaria: biblioteca 24 horas, FabLab de prototipado, colegio mayor y polideportivo olímpico, más directorio de clubes estudiantiles y convenios internacionales Erasmus+.',
+    ru: 'Инфраструктура и студенческая жизнь: круглосуточная библиотека, FabLab, университетское общежитие и спорткомплекс, а также клубы и международный обмен Erasmus+.',
+  },
+  'univ-open-day': {
+    es: 'Módulo de jornadas de puertas abiertas con tarjetas de sesión presencial y online streaming, formulario interactivo de inscripción con selector de acompañantes y modal con código QR de acceso.',
+    ru: 'Блок дней открытых дверей: карточки очных и онлайн-сессий, интерактивная форма регистрации с выбором гостей и модальное окно с QR-пропуском на кампус.',
+  },
 };

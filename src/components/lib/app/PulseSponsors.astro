@@ -1,0 +1,292 @@
+---
+/**
+ * PulseSponsors — Multi-tier sponsor showcase and partnership banner for the Pulse Tech Summit.
+ * Features categorized sponsor tiers (Platinum, Gold, Silver, Community) with SVG tech mark logos
+ * and a Call for Sponsors contact card.
+ *
+ * @param {PulseSponsor[]} sponsors - Sponsor list (defaults to pulseSponsors).
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseSponsors, type PulseSponsor } from '../templates/tech-event/data';
+
+interface OwnProps {
+  sponsors?: PulseSponsor[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  sponsors = pulseSponsors,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const platinum = sponsors.filter((s) => s.tier === 'Platinum');
+const gold = sponsors.filter((s) => s.tier === 'Gold');
+const others = sponsors.filter((s) => s.tier === 'Silver' || s.tier === 'Community');
+---
+
+<section class:list={['pls-sponsors-section', className]} {...rest} id="sponsors">
+  <div class="pls-sponsors__container">
+    <div class="pls-section-head">
+      <span class="pls-section-kicker">ECOSISTEMA & ALIANZAS</span>
+      <h2 class="pls-section-title">Impulsado por los líderes de la industria</h2>
+      <p class="pls-section-subtitle">
+        Empresas que invierten en software abierto, infraestructura resiliente y desarrollo de talento tecnológico global.
+      </p>
+    </div>
+
+    <!-- Platinum -->
+    <div class="pls-tier-group">
+      <span class="pls-tier-label">Patrocinadores Platinum</span>
+      <div class="pls-sponsors-grid pls-sponsors-grid--platinum">
+        {platinum.map((sp) => (
+          <a href={sp.href} class="pls-sponsor-card pls-sponsor-card--platinum" target="_blank" rel="noopener noreferrer">
+            <div class="pls-sponsor-logo-mark" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="12 6 16 14 8 14"></polygon>
+              </svg>
+            </div>
+            <div class="pls-sponsor-info">
+              <h3 class="pls-sponsor-name">{sp.name}</h3>
+              <p class="pls-sponsor-tagline">{sp.tagline}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Gold -->
+    <div class="pls-tier-group">
+      <span class="pls-tier-label">Patrocinadores Gold</span>
+      <div class="pls-sponsors-grid pls-sponsors-grid--gold">
+        {gold.map((sp) => (
+          <a href={sp.href} class="pls-sponsor-card pls-sponsor-card--gold" target="_blank" rel="noopener noreferrer">
+            <div class="pls-sponsor-logo-mark" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="20" rx="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              </svg>
+            </div>
+            <div class="pls-sponsor-info">
+              <h3 class="pls-sponsor-name">{sp.name}</h3>
+              <p class="pls-sponsor-tagline">{sp.tagline}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Silver & Community -->
+    <div class="pls-tier-group">
+      <span class="pls-tier-label">Silver & Colaboradores de Comunidad</span>
+      <div class="pls-sponsors-grid pls-sponsors-grid--community">
+        {others.map((sp) => (
+          <a href={sp.href} class="pls-sponsor-card pls-sponsor-card--mini" target="_blank" rel="noopener noreferrer">
+            <span class="pls-sponsor-name">{sp.name}</span>
+            <span class="pls-sponsor-tagline">{sp.tagline}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Call for Sponsors -->
+    <div class="pls-cfs-box">
+      <div class="pls-cfs-content">
+        <h3>¿Quieres que tu empresa esté en el centro de la conversación?</h3>
+        <p>Disponemos de espacios para stands de producto, reclutamiento de ingeniería y hackathons patrocinados.</p>
+      </div>
+      <a href="mailto:sponsors@pulsetechsummit.dev" class="pls-btn pls-btn--secondary">
+        Descargar Dossier de Patrocinio
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pls-sponsors-section {
+    padding: 5rem 1.5rem;
+    position: relative;
+    border-top: 1px solid var(--pls-border);
+  }
+
+  .pls-sponsors__container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .pls-section-head {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .pls-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    font-family: var(--pls-font-mono);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-section-title {
+    margin: 0 0 1rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--pls-text-1);
+    line-height: 1.15;
+  }
+
+  .pls-section-subtitle {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+  }
+
+  .pls-tier-group {
+    margin-bottom: 2.75rem;
+  }
+
+  .pls-tier-label {
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--pls-font-mono);
+    color: var(--pls-text-3);
+    margin-bottom: 1.25rem;
+  }
+
+  .pls-sponsors-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .pls-sponsors-grid--platinum {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pls-sponsors-grid--gold {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pls-sponsors-grid--community {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 720px) {
+    .pls-sponsors-grid--platinum,
+    .pls-sponsors-grid--gold,
+    .pls-sponsors-grid--community {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pls-sponsor-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.5rem 1.75rem;
+    border-radius: var(--pls-radius-md);
+    background: var(--pls-surface);
+    border: 1px solid var(--pls-border);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .pls-sponsor-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--pls-border-focus);
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+  }
+
+  .pls-sponsor-card--platinum {
+    border-color: rgba(0, 240, 255, 0.25);
+  }
+
+  .pls-sponsor-card--platinum:hover {
+    border-color: var(--pls-cyan);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  }
+
+  .pls-sponsor-logo-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--pls-radius-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--pls-border);
+    display: grid;
+    place-items: center;
+    color: var(--pls-cyan);
+    flex-shrink: 0;
+  }
+
+  .pls-sponsor-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .pls-sponsor-name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-sponsor-tagline {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--pls-text-2);
+    line-height: 1.4;
+  }
+
+  .pls-sponsor-card--mini {
+    padding: 1rem 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .pls-sponsor-card--mini .pls-sponsor-name {
+    font-size: 1rem;
+  }
+
+  /* CFS */
+  .pls-cfs-box {
+    margin-top: 4rem;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(0, 240, 255, 0.08));
+    border: 1px solid var(--pls-border-glow);
+    border-radius: var(--pls-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .pls-cfs-content h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-cfs-content p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--pls-text-2);
+  }
+</style>
+

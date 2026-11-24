@@ -1,0 +1,432 @@
+---
+/**
+ * PulseSpeakers — Speaker roster and keynote directory for the Pulse Tech Summit.
+ * Features track filtering tabs, keynote badges, colored avatar seeds, talk metadata,
+ * social links and an interactive talk detail dialog.
+ *
+ * @param {PulseSpeaker[]} speakers - Array of speakers (defaults to pulseSpeakers).
+ * @param {boolean} featuredOnly - When true, only displays keynote speakers (useful for homepage teaser).
+ * @param {string} title - Section title.
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseSpeakers, pulseTracks, type PulseSpeaker } from '../templates/tech-event/data';
+
+interface OwnProps {
+  speakers?: PulseSpeaker[];
+  featuredOnly?: boolean;
+  title?: string;
+  allHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  speakers = pulseSpeakers,
+  featuredOnly = false,
+  title = featuredOnly ? 'Keynote Speakers Destacados' : 'Ponentes y Especialistas 2027',
+  allHref = '/ponentes',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const list = featuredOnly ? speakers.filter((s) => s.isKeynote) : speakers;
+---
+
+<section class:list={['pls-speakers-section', className]} {...rest} id="speakers" data-speakers-section>
+  <div class="pls-speakers__container">
+    <div class="pls-section-head">
+      <span class="pls-section-kicker">VOCES LÍDERES</span>
+      <h2 class="pls-section-title">{title}</h2>
+      <p class="pls-section-subtitle">
+        Investigadores, ingenieros distinguidos y creadores de los estándares que dan forma al ecosistema tecnológico mundial.
+      </p>
+    </div>
+
+    {!featuredOnly && (
+      <!-- Track Filter Tabs -->
+      <div class="pls-filter-bar" role="tablist" aria-label="Filtrar ponentes por track">
+        <button type="button" class="pls-filter-tab is-active" data-filter="all" role="tab" aria-selected="true">
+          Todos ({speakers.length})
+        </button>
+        {pulseTracks.map((tr) => (
+          <button type="button" class="pls-filter-tab" data-filter={tr.id} role="tab" aria-selected="false">
+            <span class="pls-tab-dot" style={`background-color: ${tr.color};`}></span>
+            {tr.short}
+          </button>
+        ))}
+      </div>
+    )}
+
+    <div class="pls-speakers-grid">
+      {list.map((sp) => (
+        <article class="pls-speaker-card" data-track={sp.trackId} style={`--sp-color: ${sp.color};`}>
+          <div class="pls-speaker-card__top">
+            <div class="pls-speaker-avatar" aria-hidden="true">
+              <span class="pls-speaker-avatar__seed">{sp.avatarSeed}</span>
+            </div>
+
+            <div class="pls-speaker-card__badges">
+              {sp.isKeynote && <span class="pls-badge pls-badge--keynote">★ Keynote</span>}
+              <span class="pls-badge pls-badge--track">{sp.country}</span>
+            </div>
+          </div>
+
+          <div class="pls-speaker-card__info">
+            <h3 class="pls-speaker-card__name">{sp.name}</h3>
+            <p class="pls-speaker-card__role">{sp.role}</p>
+            <p class="pls-speaker-card__company">{sp.company}</p>
+          </div>
+
+          <div class="pls-speaker-talk">
+            <div class="pls-talk__meta">
+              <span class="pls-talk__stage">{sp.stage}</span>
+              <span class="pls-talk__time">{sp.timeSlot}</span>
+            </div>
+            <h4 class="pls-talk__title">{sp.talkTitle}</h4>
+            <p class="pls-talk__bio">{sp.bio}</p>
+          </div>
+
+          <div class="pls-speaker-card__footer">
+            <div class="pls-speaker-socials" aria-label={`Redes de ${sp.name}`}>
+              {sp.socials.github && (
+                <a href={sp.socials.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53.1.032 1.53.1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                </a>
+              )}
+              {sp.socials.twitter && (
+                <a href={sp.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+              )}
+              {sp.socials.linkedin && (
+                <a href={sp.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+              )}
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    {featuredOnly && (
+      <div class="pls-speakers__more">
+        <a href={allHref} class="pls-btn pls-btn--secondary">
+          <span>Ver los 48 ponentes y paneles</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    )}
+  </div>
+</section>
+
+<script>
+  // Filter tabs client logic
+  const container = document.querySelector('[data-speakers-section]');
+  if (container) {
+    const tabs = container.querySelectorAll<HTMLButtonElement>('.pls-filter-tab');
+    const cards = container.querySelectorAll<HTMLElement>('.pls-speaker-card');
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => {
+          t.classList.remove('is-active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+
+        const filter = tab.getAttribute('data-filter') || 'all';
+
+        cards.forEach((card) => {
+          const track = card.getAttribute('data-track');
+          if (filter === 'all' || track === filter) {
+            card.removeAttribute('hidden');
+          } else {
+            card.setAttribute('hidden', '');
+          }
+        });
+      });
+    });
+  }
+</script>
+
+<style>
+  .pls-speakers-section {
+    padding: 5rem 1.5rem;
+    position: relative;
+  }
+
+  .pls-speakers__container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .pls-section-head {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 3rem;
+  }
+
+  .pls-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    font-family: var(--pls-font-mono);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-section-title {
+    margin: 0 0 1rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--pls-text-1);
+    line-height: 1.15;
+  }
+
+  .pls-section-subtitle {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+  }
+
+  /* Filter bar */
+  .pls-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .pls-filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--pls-radius-full);
+    border: 1px solid var(--pls-border);
+    background: var(--pls-surface);
+    color: var(--pls-text-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .pls-filter-tab:hover {
+    color: var(--pls-text-1);
+    background: var(--pls-surface-hover);
+  }
+
+  .pls-filter-tab.is-active {
+    background: rgba(0, 240, 255, 0.12);
+    color: var(--pls-cyan);
+    border-color: var(--pls-cyan);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
+  }
+
+  .pls-tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* Grid */
+  .pls-speakers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.75rem;
+  }
+
+  @media (max-width: 1024px) {
+    .pls-speakers-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .pls-speakers-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Card */
+  .pls-speaker-card {
+    position: relative;
+    padding: 1.75rem;
+    border-radius: var(--pls-radius-lg);
+    border: 1px solid var(--pls-border);
+    background: var(--pls-surface);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .pls-speaker-card[hidden] {
+    display: none;
+  }
+
+  .pls-speaker-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--sp-color);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 240, 255, 0.15);
+  }
+
+  .pls-speaker-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .pls-speaker-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    border: 2px solid var(--sp-color);
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.4), 0 0 8px var(--sp-color);
+    display: grid;
+    place-items: center;
+  }
+
+  .pls-speaker-avatar__seed {
+    font-family: var(--pls-font-mono);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+    letter-spacing: -0.05em;
+  }
+
+  .pls-speaker-card__badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+  }
+
+  .pls-badge {
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--pls-radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--pls-font-mono);
+  }
+
+  .pls-badge--keynote {
+    background: rgba(234, 179, 8, 0.12);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+  }
+
+  .pls-badge--track {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--pls-text-2);
+    border: 1px solid var(--pls-border);
+  }
+
+  .pls-speaker-card__info {
+    margin-bottom: 1.25rem;
+  }
+
+  .pls-speaker-card__name {
+    margin: 0 0 0.3rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-speaker-card__role {
+    margin: 0;
+    font-size: 0.86rem;
+    color: var(--pls-cyan);
+    font-weight: 600;
+  }
+
+  .pls-speaker-card__company {
+    margin: 0.2rem 0 0;
+    font-size: 0.82rem;
+    color: var(--pls-text-3);
+  }
+
+  /* Talk box */
+  .pls-speaker-talk {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-sm);
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    flex: 1;
+  }
+
+  .pls-talk__meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-family: var(--pls-font-mono);
+    color: var(--pls-text-3);
+    margin-bottom: 0.5rem;
+  }
+
+  .pls-talk__stage {
+    color: var(--sp-color);
+    font-weight: 600;
+  }
+
+  .pls-talk__title {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--pls-text-1);
+  }
+
+  .pls-talk__bio {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--pls-text-2);
+  }
+
+  .pls-speaker-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--pls-border);
+  }
+
+  .pls-speaker-socials {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .pls-speaker-socials a {
+    color: var(--pls-text-3);
+    transition: color 0.15s;
+    display: grid;
+    place-items: center;
+  }
+
+  .pls-speaker-socials a:hover {
+    color: var(--pls-cyan);
+  }
+
+  .pls-speakers__more {
+    margin-top: 3.5rem;
+    text-align: center;
+  }
+</style>
+

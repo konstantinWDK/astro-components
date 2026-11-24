@@ -1,0 +1,359 @@
+---
+/**
+ * PulseHero — High-impact landing hero for the Pulse Tech Summit.
+ * Features an event status badge, gradient headline, live countdown clock to the summit date,
+ * call-to-action buttons and key statistics.
+ *
+ * @param {string} title - Main headline.
+ * @param {string} lead - Subtitle/lead text.
+ * @param {string} primaryHref - Tickets CTA target link.
+ * @param {string} primaryLabel - Tickets CTA button label.
+ * @param {string} secondaryHref - Schedule CTA target link.
+ * @param {string} secondaryLabel - Schedule CTA button label.
+ * @param {string} targetDate - ISO date string for the live countdown (default: Oct 14, 2027).
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+
+interface OwnProps {
+  title?: string;
+  lead?: string;
+  primaryHref?: string;
+  primaryLabel?: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
+  targetDate?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  title = 'Donde la próxima década de tecnología toma forma',
+  lead = '3 días de inmersión en inteligencia artificial distribuida, computación en el edge, arquitecturas web de alto rendimiento y criptografía cuántica.',
+  primaryHref = '/entradas',
+  primaryLabel = 'Comprar Entradas',
+  secondaryHref = '/programa',
+  secondaryLabel = 'Ver Programa Completo',
+  targetDate = '2027-10-14T09:00:00Z',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const stats = [
+  { value: '3 Días', label: 'Inmersión técnica intensiva' },
+  { value: '48', label: 'Ponentes de clase mundial' },
+  { value: '4 Tracks', label: 'IA, Edge, Web y Ciberseguridad' },
+  { value: '2.500+', label: 'Líderes e ingenieros asistentes' },
+];
+---
+
+<section class:list={['pls-hero', className]} {...rest} data-pulse-hero>
+  <div class="pls-hero__glow" aria-hidden="true"></div>
+
+  <div class="pls-hero__container">
+    <div class="pls-hero__badge">
+      <span class="pls-hero__badge-pulse" aria-hidden="true"></span>
+      <span>14 - 16 OCTUBRE 2027 · MADRID TECH ARENA</span>
+    </div>
+
+    <h1 class="pls-hero__title">
+      Donde la próxima década de <span class="pls-text-gradient">tecnología</span> toma forma
+    </h1>
+
+    <p class="pls-hero__lead">
+      {lead}
+    </p>
+
+    <!-- Live Countdown Timer -->
+    <div class="pls-countdown" data-countdown-target={targetDate} aria-label="Cuenta atrás para el evento">
+      <div class="pls-countdown__item">
+        <span class="pls-countdown__value" id="pls-cd-days">182</span>
+        <span class="pls-countdown__label">Días</span>
+      </div>
+      <span class="pls-countdown__sep" aria-hidden="true">:</span>
+      <div class="pls-countdown__item">
+        <span class="pls-countdown__value" id="pls-cd-hours">14</span>
+        <span class="pls-countdown__label">Horas</span>
+      </div>
+      <span class="pls-countdown__sep" aria-hidden="true">:</span>
+      <div class="pls-countdown__item">
+        <span class="pls-countdown__value" id="pls-cd-mins">32</span>
+        <span class="pls-countdown__label">Minutos</span>
+      </div>
+      <span class="pls-countdown__sep" aria-hidden="true">:</span>
+      <div class="pls-countdown__item">
+        <span class="pls-countdown__value" id="pls-cd-secs">45</span>
+        <span class="pls-countdown__label">Segundos</span>
+      </div>
+    </div>
+
+    <!-- CTAs -->
+    <div class="pls-hero__actions">
+      <a href={primaryHref} class="pls-btn pls-btn--primary pls-btn--lg">
+        <span>{primaryLabel}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <a href={secondaryHref} class="pls-btn pls-btn--secondary pls-btn--lg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span>{secondaryLabel}</span>
+      </a>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="pls-hero__stats">
+      {stats.map((s) => (
+        <div class="pls-stat-card">
+          <span class="pls-stat-card__val">{s.value}</span>
+          <span class="pls-stat-card__lbl">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  // Countdown script with reduced motion consideration
+  const cdContainer = document.querySelector('[data-countdown-target]');
+  if (cdContainer) {
+    const targetStr = cdContainer.getAttribute('data-countdown-target') || '2027-10-14T09:00:00Z';
+    const target = new Date(targetStr).getTime();
+
+    const elDays = document.getElementById('pls-cd-days');
+    const elHours = document.getElementById('pls-cd-hours');
+    const elMins = document.getElementById('pls-cd-mins');
+    const elSecs = document.getElementById('pls-cd-secs');
+
+    function update() {
+      const now = new Date().getTime();
+      let diff = target - now;
+      if (diff <= 0) diff = 0;
+
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (elDays) elDays.textContent = String(d).padStart(2, '0');
+      if (elHours) elHours.textContent = String(h).padStart(2, '0');
+      if (elMins) elMins.textContent = String(m).padStart(2, '0');
+      if (elSecs) elSecs.textContent = String(s).padStart(2, '0');
+    }
+
+    update();
+    setInterval(update, 1000);
+  }
+</script>
+
+<style>
+  .pls-hero {
+    position: relative;
+    padding: 5rem 1.5rem 6rem;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .pls-hero__glow {
+    position: absolute;
+    top: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.16) 0%, rgba(139, 92, 246, 0.12) 45%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pls-hero__container {
+    position: relative;
+    z-index: 1;
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pls-hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: var(--pls-radius-full);
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    color: var(--pls-cyan);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-family: var(--pls-font-mono);
+    margin-bottom: 2rem;
+  }
+
+  .pls-hero__badge-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pls-cyan);
+    box-shadow: 0 0 10px var(--pls-cyan);
+    animation: pls-blink 2s infinite ease-in-out;
+  }
+
+  @keyframes pls-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .pls-hero__title {
+    margin: 0 0 1.5rem;
+    font-size: clamp(2.3rem, 5.5vw, 4.2rem);
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+    color: var(--pls-text-1);
+    max-width: 900px;
+  }
+
+  .pls-text-gradient {
+    background: linear-gradient(135deg, var(--pls-cyan) 0%, #38bdf8 40%, var(--pls-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .pls-hero__lead {
+    margin: 0 0 2.5rem;
+    font-size: clamp(1.05rem, 2vw, 1.25rem);
+    line-height: 1.65;
+    color: var(--pls-text-2);
+    max-width: 760px;
+  }
+
+  /* Countdown */
+  .pls-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 1.8rem;
+    background: var(--pls-surface);
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-lg);
+    box-shadow: var(--pls-shadow-md);
+    margin-bottom: 2.75rem;
+  }
+
+  @media (max-width: 520px) {
+    .pls-countdown {
+      padding: 0.75rem 1rem;
+      gap: 0.4rem;
+    }
+  }
+
+  .pls-countdown__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+  }
+
+  .pls-countdown__value {
+    font-family: var(--pls-font-mono);
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--pls-text-1);
+  }
+
+  .pls-countdown__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--pls-cyan);
+    margin-top: 0.35rem;
+  }
+
+  .pls-countdown__sep {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--pls-text-3);
+    padding-bottom: 0.8rem;
+  }
+
+  /* Actions */
+  .pls-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 4rem;
+  }
+
+  .pls-btn--lg {
+    padding: 0.85rem 1.85rem;
+    font-size: 1.02rem;
+    border-radius: var(--pls-radius-md);
+  }
+
+  .pls-btn--secondary {
+    background: var(--pls-surface);
+    border: 1px solid var(--pls-border);
+    color: var(--pls-text-1);
+  }
+
+  .pls-btn--secondary:hover {
+    background: var(--pls-surface-hover);
+    border-color: var(--pls-border-focus);
+    transform: translateY(-1px);
+  }
+
+  /* Stats grid */
+  .pls-hero__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 960px;
+    padding-top: 2rem;
+    border-top: 1px solid var(--pls-border);
+  }
+
+  @media (max-width: 800px) {
+    .pls-hero__stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+  }
+
+  .pls-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .pls-stat-card__val {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-weight: 900;
+    color: var(--pls-cyan);
+    font-family: var(--pls-font-mono);
+    line-height: 1.1;
+  }
+
+  .pls-stat-card__lbl {
+    font-size: 0.82rem;
+    color: var(--pls-text-2);
+    margin-top: 0.35rem;
+  }
+</style>
+

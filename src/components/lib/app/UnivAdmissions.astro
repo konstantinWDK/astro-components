@@ -1,0 +1,363 @@
+---
+/**
+ * UnivAdmissions — 4-step admission journey, key deadlines calendar and requirements by profile.
+ *
+ * @param {Record<string, string>} routes - Route map
+ * @param {string} className - Optional additional CSS class
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { admissionSteps, admissionDeadlines, univBrand, univRoutes } from '../templates/university/data';
+
+interface Props extends HTMLAttributes<'section'> {
+  routes?: typeof univRoutes;
+  className?: string;
+}
+
+const {
+  routes = univRoutes,
+  class: classProp,
+  className = '',
+  ...rest
+} = Astro.props;
+
+const classes = ['univ-admissions', classProp, className].filter(Boolean).join(' ');
+---
+
+<section class={classes} id="admisiones-proceso" {...rest}>
+  <div class="univ-admissions__container">
+    <!-- Header -->
+    <div class="univ-admissions__header">
+      <div class="univ-admissions__eyebrow">CONVOCATORIA ACADÉMICA 2027</div>
+      <h2 class="univ-admissions__title">Tu Camino Hacia la Excelencia Universitaria</h2>
+      <p class="univ-admissions__lead">
+        Un proceso de selección riguroso, personalizado y transparente diseñado para identificar tu potencial de liderazgo, vocación investigadora y capacidad analítica.
+      </p>
+    </div>
+
+    <!-- 4-Step Interactive Timeline -->
+    <div class="univ-admissions__steps-grid">
+      {admissionSteps.map((s) => (
+        <div class="univ-admissions__step-card">
+          <div class="univ-admissions__step-num-wrap">
+            <span class="univ-admissions__step-num">0{s.step}</span>
+            <span class="univ-admissions__step-duration">{s.duration}</span>
+          </div>
+
+          <h3 class="univ-admissions__step-title">{s.title}</h3>
+          <p class="univ-admissions__step-desc">{s.description}</p>
+
+          <div class="univ-admissions__step-deliverables">
+            <span class="univ-admissions__deliv-heading">Requisitos clave:</span>
+            <ul class="univ-admissions__deliv-list">
+              {s.deliverables.map((item) => (
+                <li>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="univ-admissions__check-icon" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Deadlines Calendar & Key Dates Table -->
+    <div class="univ-admissions__calendar-wrap">
+      <div class="univ-admissions__calendar-header">
+        <div>
+          <h3 class="univ-admissions__calendar-title">Calendario Oficial de Convocatorias 2027</h3>
+          <p class="univ-admissions__calendar-subtitle">Recomendamos presentar la candidatura en la Convocatoria Preferente para optar a las Becas de Excelencia</p>
+        </div>
+        <a href={`tel:${univBrand.admissionsPhone}`} class="univ-admissions__btn-call">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span>Asesoría Telefónica Directa</span>
+        </a>
+      </div>
+
+      <div class="univ-admissions__table-responsive">
+        <table class="univ-admissions__table">
+          <thead>
+            <tr>
+              <th scope="col">Convocatoria</th>
+              <th scope="col">Límite de Solicitud</th>
+              <th scope="col">Pruebas Competenciales</th>
+              <th scope="col">Dictamen Oficial</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {admissionDeadlines.map((row) => (
+              <tr>
+                <td><strong>{row.convocatoria}</strong></td>
+                <td>{row.deadline}</td>
+                <td>{row.examDate}</td>
+                <td>{row.resolutionDate}</td>
+                <td>
+                  <span class:list={['univ-admissions__status-tag', { 'univ-admissions__status-tag--open': row.status === 'Abierta' }]}>
+                    {row.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .univ-admissions {
+    padding: 5rem 0;
+    background: var(--univ-bg, #070c1a);
+  }
+
+  .univ-admissions__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .univ-admissions__header {
+    text-align: center;
+    max-width: 820px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .univ-admissions__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--univ-gold, #f59e0b);
+    margin-bottom: 0.75rem;
+  }
+
+  .univ-admissions__title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: clamp(2rem, 3.5vw, 2.75rem);
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    line-height: 1.2;
+    margin: 0 0 1rem;
+  }
+
+  .univ-admissions__lead {
+    font-size: 1.0625rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Steps Grid */
+  .univ-admissions__steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .univ-admissions__step-card {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius, 12px);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .univ-admissions__step-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-admissions__step-num-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .univ-admissions__step-num {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--univ-gold, #f59e0b);
+    line-height: 1;
+  }
+
+  .univ-admissions__step-duration {
+    font-size: 0.6875rem;
+    color: var(--univ-text-dim, #64748b);
+    background: var(--univ-bg-surface, #101b38);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .univ-admissions__step-title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    line-height: 1.3;
+    margin: 0 0 0.75rem;
+  }
+
+  .univ-admissions__step-desc {
+    font-size: 0.8125rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
+  }
+
+  .univ-admissions__step-deliverables {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--univ-border-subtle, #182548);
+  }
+
+  .univ-admissions__deliv-heading {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--univ-text-dim, #64748b);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .univ-admissions__deliv-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .univ-admissions__deliv-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.4;
+  }
+
+  .univ-admissions__check-icon {
+    color: var(--univ-gold, #f59e0b);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* Calendar Table */
+  .univ-admissions__calendar-wrap {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius, 12px);
+    padding: 2rem;
+    box-shadow: var(--univ-shadow, 0 10px 30px -10px rgba(0, 0, 0, 0.6));
+  }
+
+  .univ-admissions__calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .univ-admissions__calendar-title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    margin: 0 0 0.25rem;
+  }
+
+  .univ-admissions__calendar-subtitle {
+    font-size: 0.8125rem;
+    color: var(--univ-text-muted, #94a3b8);
+    margin: 0;
+  }
+
+  .univ-admissions__btn-call {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.125rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius-sm, 6px);
+    color: var(--univ-text, #f8fafc);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .univ-admissions__btn-call:hover {
+    background: var(--univ-gold-bg, rgba(245, 158, 11, 0.1));
+    border-color: var(--univ-gold, #f59e0b);
+    color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-admissions__table-responsive {
+    overflow-x: auto;
+  }
+
+  .univ-admissions__table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .univ-admissions__table th {
+    background: var(--univ-navy-deep, #0a0f1d);
+    color: var(--univ-gold, #f59e0b);
+    font-weight: 700;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--univ-border, #1e2f5d);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .univ-admissions__table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--univ-border-subtle, #182548);
+    color: var(--univ-text, #f8fafc);
+  }
+
+  .univ-admissions__status-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 4px;
+    background: var(--univ-bg-surface, #101b38);
+    color: var(--univ-text-dim, #64748b);
+  }
+
+  .univ-admissions__status-tag--open {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  @media (max-width: 1024px) {
+    .univ-admissions__steps-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .univ-admissions__steps-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+

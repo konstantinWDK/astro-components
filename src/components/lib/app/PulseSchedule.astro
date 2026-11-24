@@ -1,0 +1,747 @@
+---
+/**
+ * PulseSchedule — Interactive conference schedule for Pulse Tech Summit.
+ * Features multi-day tabs, track filtering, live search query, talk level badges,
+ * and a client-side "Personal Agenda" bookmarking system stored in localStorage with
+ * live count and a "Solo guardadas" toggle filter.
+ *
+ * @param {PulseSession[]} sessions - Array of conference sessions (defaults to pulseSessions).
+ * @param {PulseSpeaker[]} speakers - Array of speakers for cross-referencing.
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseSessions, pulseSpeakers, pulseTracks, type PulseSession, type PulseSpeaker } from '../templates/tech-event/data';
+
+interface OwnProps {
+  sessions?: PulseSession[];
+  speakers?: PulseSpeaker[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  sessions = pulseSessions,
+  speakers = pulseSpeakers,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const speakerMap = new Map(speakers.map((s) => [s.id, s]));
+const trackMap = new Map(pulseTracks.map((t) => [t.id, t]));
+---
+
+<section class:list={['pls-schedule-section', className]} {...rest} id="schedule" data-schedule-root>
+  <div class="pls-schedule__container">
+    <div class="pls-section-head">
+      <span class="pls-section-kicker">AGENDA TÉCNICA</span>
+      <h2 class="pls-section-title">Programa de Ponencias y Paneles</h2>
+      <p class="pls-section-subtitle">
+        3 días de ponencias sincronizadas en 5 salas temáticas. Personaliza tu recorrido técnico y guarda tus charlas favoritas.
+      </p>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="pls-schedule-controls">
+      <!-- Day Tabs -->
+      <div class="pls-day-tabs" role="tablist" aria-label="Seleccionar día de conferencia">
+        <button type="button" class="pls-day-tab is-active" data-day="1" role="tab" aria-selected="true">
+          <span class="pls-day-tab__num">Día 1</span>
+          <span class="pls-day-tab__date">Jueves 14 Oct</span>
+        </button>
+        <button type="button" class="pls-day-tab" data-day="2" role="tab" aria-selected="false">
+          <span class="pls-day-tab__num">Día 2</span>
+          <span class="pls-day-tab__date">Viernes 15 Oct</span>
+        </button>
+        <button type="button" class="pls-day-tab" data-day="3" role="tab" aria-selected="false">
+          <span class="pls-day-tab__num">Día 3</span>
+          <span class="pls-day-tab__date">Sábado 16 Oct</span>
+        </button>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="pls-schedule-filter-row">
+        <div class="pls-search-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+          <input
+            type="search"
+            id="pls-schedule-search"
+            placeholder="Buscar por tema, ponente o tecnología..."
+            aria-label="Buscar ponencias"
+            class="pls-search-input"
+          />
+        </div>
+
+        <!-- Saved Filter Toggle -->
+        <button type="button" class="pls-saved-toggle" id="pls-toggle-saved" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>Mi Agenda</span>
+          <span class="pls-saved-count" id="pls-saved-badge">0</span>
+        </button>
+      </div>
+
+      <!-- Track Pills -->
+      <div class="pls-track-pills" role="toolbar" aria-label="Filtrar por track">
+        <button type="button" class="pls-track-pill is-active" data-track-filter="all">Todos los tracks</button>
+        {pulseTracks.map((tr) => (
+          <button type="button" class="pls-track-pill" data-track-filter={tr.id}>
+            <span class="pls-pill-dot" style={`background-color: ${tr.color};`}></span>
+            {tr.short}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- Sessions List -->
+    <div class="pls-sessions-list" id="pls-sessions-list">
+      {sessions.map((sess) => {
+        const sp = speakerMap.get(sess.speakerId);
+        const tr = trackMap.get(sess.trackId);
+        return (
+          <article
+            class="pls-session-card"
+            data-session-id={sess.id}
+            data-day={sess.day}
+            data-track={sess.trackId}
+            data-search={`${sess.title} ${sp?.name || ''} ${sess.description} ${sess.tags.join(' ')}`.toLowerCase()}
+            style={`--sess-color: ${tr?.color || 'var(--pls-cyan)'};`}
+          >
+            <div class="pls-session-card__time">
+              <span class="pls-time-range">{sess.time}</span>
+              <span class="pls-time-room">{sess.stage}</span>
+            </div>
+
+            <div class="pls-session-card__main">
+              <div class="pls-session-card__tags">
+                <span class="pls-sess-badge pls-sess-badge--track" style={`border-color: ${tr?.color}; color: ${tr?.color};`}>
+                  {tr?.short || 'General'}
+                </span>
+                <span class="pls-sess-badge pls-sess-badge--level">{sess.level}</span>
+                {sess.tags.map((tg) => (
+                  <span class="pls-sess-badge pls-sess-badge--tag">#{tg}</span>
+                ))}
+              </div>
+
+              <h3 class="pls-session-card__title">{sess.title}</h3>
+              <p class="pls-session-card__desc">{sess.description}</p>
+
+              {sp && (
+                <div class="pls-session-speaker">
+                  <div class="pls-mini-avatar" aria-hidden="true" style={`border-color: ${tr?.color};`}>
+                    {sp.avatarSeed}
+                  </div>
+                  <div class="pls-mini-speaker-info">
+                    <span class="pls-mini-name">{sp.name}</span>
+                    <span class="pls-mini-role">{sp.role} · <strong>{sp.company}</strong></span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div class="pls-session-card__actions">
+              <button
+                type="button"
+                class="pls-bookmark-btn"
+                data-bookmark-id={sess.id}
+                aria-label={`Guardar ${sess.title} en mi agenda`}
+              >
+                <svg class="pls-icon-star" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span class="pls-bookmark-label">Añadir a mi agenda</span>
+              </button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+
+    <!-- Empty State -->
+    <div class="pls-schedule-empty" id="pls-schedule-empty" hidden>
+      <div class="pls-empty-icon" aria-hidden="true">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    </div>
+      <h3>No se encontraron ponencias</h3>
+      <p>Prueba con otros términos de búsqueda o desactiva los filtros activos.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Schedule interactivity & localStorage persistence
+  const root = document.querySelector('[data-schedule-root]');
+  if (root) {
+    const dayTabs = root.querySelectorAll<HTMLButtonElement>('.pls-day-tab');
+    const trackPills = root.querySelectorAll<HTMLButtonElement>('.pls-track-pill');
+    const searchInput = root.querySelector<HTMLInputElement>('#pls-schedule-search');
+    const toggleSavedBtn = root.querySelector<HTMLButtonElement>('#pls-toggle-saved');
+    const savedBadge = root.querySelector<HTMLElement>('#pls-saved-badge');
+    const sessionCards = root.querySelectorAll<HTMLElement>('.pls-session-card');
+    const emptyState = root.querySelector<HTMLElement>('#pls-schedule-empty');
+    const bookmarkBtns = root.querySelectorAll<HTMLButtonElement>('.pls-bookmark-btn');
+
+    let currentDay = '1';
+    let currentTrack = 'all';
+    let searchQuery = '';
+    let showSavedOnly = false;
+
+    // Load saved bookmarks from localStorage
+    const STORAGE_KEY = 'pls_saved_sessions_2027';
+    let savedSessions: string[] = [];
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) savedSessions = JSON.parse(data);
+    } catch {}
+
+    function updateSavedBadge() {
+      if (savedBadge) savedBadge.textContent = String(savedSessions.length);
+      bookmarkBtns.forEach((btn) => {
+        const id = btn.getAttribute('data-bookmark-id') || '';
+        const isSaved = savedSessions.includes(id);
+        const label = btn.querySelector('.pls-bookmark-label');
+        if (isSaved) {
+          btn.classList.add('is-saved');
+          if (label) label.textContent = 'En mi agenda ✓';
+          btn.setAttribute('aria-label', 'Eliminar de mi agenda');
+        } else {
+          btn.classList.remove('is-saved');
+          if (label) label.textContent = 'Añadir a mi agenda';
+          btn.setAttribute('aria-label', 'Añadir a mi agenda');
+        }
+      });
+    }
+
+    function filterSessions() {
+      let visibleCount = 0;
+      sessionCards.forEach((card) => {
+        const day = card.getAttribute('data-day');
+        const track = card.getAttribute('data-track');
+        const search = card.getAttribute('data-search') || '';
+        const id = card.getAttribute('data-session-id') || '';
+
+        const matchDay = day === currentDay;
+        const matchTrack = currentTrack === 'all' || track === currentTrack;
+        const matchSearch = !searchQuery || search.includes(searchQuery.toLowerCase());
+        const matchSaved = !showSavedOnly || savedSessions.includes(id);
+
+        if (matchDay && matchTrack && matchSearch && matchSaved) {
+          card.removeAttribute('hidden');
+          visibleCount++;
+        } else {
+          card.setAttribute('hidden', '');
+        }
+      });
+
+      if (emptyState) {
+        if (visibleCount === 0) {
+          emptyState.removeAttribute('hidden');
+        } else {
+          emptyState.setAttribute('hidden', '');
+        }
+      }
+    }
+
+    // Day tabs
+    dayTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        dayTabs.forEach((t) => {
+          t.classList.remove('is-active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('is-active');
+        tab.setAttribute('aria-selected', 'true');
+        currentDay = tab.getAttribute('data-day') || '1';
+        filterSessions();
+      });
+    });
+
+    // Track pills
+    trackPills.forEach((pill) => {
+      pill.addEventListener('click', () => {
+        trackPills.forEach((p) => p.classList.remove('is-active'));
+        pill.classList.add('is-active');
+        currentTrack = pill.getAttribute('data-track-filter') || 'all';
+        filterSessions();
+      });
+    });
+
+    // Search
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value.trim();
+        filterSessions();
+      });
+    }
+
+    // Toggle Saved Only
+    if (toggleSavedBtn) {
+      toggleSavedBtn.addEventListener('click', () => {
+        showSavedOnly = !showSavedOnly;
+        toggleSavedBtn.classList.toggle('is-active', showSavedOnly);
+        toggleSavedBtn.setAttribute('aria-pressed', String(showSavedOnly));
+        filterSessions();
+      });
+    }
+
+    // Bookmarking logic
+    bookmarkBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-bookmark-id');
+        if (!id) return;
+        const index = savedSessions.indexOf(id);
+        if (index > -1) {
+          savedSessions.splice(index, 1);
+        } else {
+          savedSessions.push(id);
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(savedSessions));
+        } catch {}
+        updateSavedBadge();
+        if (showSavedOnly) filterSessions();
+      });
+    });
+
+    // Check URL parameters (e.g. ?track=ai-cognitive)
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramTrack = urlParams.get('track');
+    if (paramTrack) {
+      const matchPill = root.querySelector<HTMLButtonElement>(`[data-track-filter="${paramTrack}"]`);
+      if (matchPill) {
+        trackPills.forEach((p) => p.classList.remove('is-active'));
+        matchPill.classList.add('is-active');
+        currentTrack = paramTrack;
+      }
+    }
+
+    updateSavedBadge();
+    filterSessions();
+  }
+</script>
+
+<style>
+  .pls-schedule-section {
+    padding: 5rem 1.5rem;
+    position: relative;
+  }
+
+  .pls-schedule__container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .pls-section-head {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 3rem;
+  }
+
+  .pls-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    font-family: var(--pls-font-mono);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-section-title {
+    margin: 0 0 1rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--pls-text-1);
+    line-height: 1.15;
+  }
+
+  .pls-section-subtitle {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+  }
+
+  /* Controls */
+  .pls-schedule-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    background: var(--pls-surface);
+    padding: 1.5rem;
+    border-radius: var(--pls-radius-lg);
+    border: 1px solid var(--pls-border);
+  }
+
+  /* Day Tabs */
+  .pls-day-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 640px) {
+    .pls-day-tabs {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pls-day-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    border-radius: var(--pls-radius-md);
+    border: 1px solid var(--pls-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--pls-text-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .pls-day-tab:hover {
+    background: var(--pls-surface-hover);
+    color: var(--pls-text-1);
+  }
+
+  .pls-day-tab.is-active {
+    background: rgba(0, 240, 255, 0.12);
+    border-color: var(--pls-cyan);
+    color: var(--pls-cyan);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.25);
+  }
+
+  .pls-day-tab__num {
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+
+  .pls-day-tab__date {
+    font-size: 0.78rem;
+    font-family: var(--pls-font-mono);
+    opacity: 0.85;
+    margin-top: 0.2rem;
+  }
+
+  /* Filter row */
+  .pls-schedule-filter-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .pls-search-wrap {
+    flex: 1;
+    min-width: 260px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .pls-search-wrap svg {
+    position: absolute;
+    left: 1rem;
+    color: var(--pls-text-3);
+    pointer-events: none;
+  }
+
+  .pls-search-input {
+    width: 100%;
+    padding: 0.65rem 1rem 0.65rem 2.5rem;
+    border-radius: var(--pls-radius-sm);
+    border: 1px solid var(--pls-border);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--pls-text-1);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.18s;
+  }
+
+  .pls-search-input:focus {
+    border-color: var(--pls-cyan);
+  }
+
+  /* Saved toggle */
+  .pls-saved-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.1rem;
+    border-radius: var(--pls-radius-sm);
+    border: 1px solid var(--pls-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--pls-text-2);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .pls-saved-toggle:hover {
+    color: var(--pls-text-1);
+    background: var(--pls-surface-hover);
+  }
+
+  .pls-saved-toggle.is-active {
+    background: rgba(234, 179, 8, 0.14);
+    color: #facc15;
+    border-color: #facc15;
+  }
+
+  .pls-saved-count {
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--pls-radius-full);
+    background: rgba(255, 255, 255, 0.1);
+    font-family: var(--pls-font-mono);
+    font-size: 0.72rem;
+  }
+
+  /* Track pills */
+  .pls-track-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .pls-track-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: var(--pls-radius-full);
+    border: 1px solid var(--pls-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--pls-text-2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .pls-track-pill:hover {
+    color: var(--pls-text-1);
+    background: var(--pls-surface-hover);
+  }
+
+  .pls-track-pill.is-active {
+    background: var(--pls-surface-hover);
+    color: var(--pls-text-1);
+    border-color: var(--pls-cyan);
+  }
+
+  .pls-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Sessions List */
+  .pls-sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .pls-session-card {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 2rem;
+    align-items: center;
+    padding: 1.75rem 2rem;
+    border-radius: var(--pls-radius-lg);
+    border: 1px solid var(--pls-border);
+    background: var(--pls-surface);
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .pls-session-card[hidden] {
+    display: none;
+  }
+
+  .pls-session-card:hover {
+    border-color: var(--sess-color);
+    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.4);
+  }
+
+  @media (max-width: 860px) {
+    .pls-session-card {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      padding: 1.5rem;
+    }
+  }
+
+  .pls-session-card__time {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .pls-time-range {
+    font-family: var(--pls-font-mono);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-time-room {
+    font-size: 0.82rem;
+    color: var(--sess-color);
+    font-weight: 700;
+  }
+
+  /* Main Info */
+  .pls-session-card__main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .pls-session-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .pls-sess-badge {
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--pls-radius-full);
+    font-size: 0.72rem;
+    font-family: var(--pls-font-mono);
+    font-weight: 700;
+  }
+
+  .pls-sess-badge--track {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid currentColor;
+  }
+
+  .pls-sess-badge--level {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--pls-text-2);
+  }
+
+  .pls-sess-badge--tag {
+    color: var(--pls-text-3);
+  }
+
+  .pls-session-card__title {
+    margin: 0;
+    font-size: 1.22rem;
+    font-weight: 800;
+    line-height: 1.35;
+    color: var(--pls-text-1);
+  }
+
+  .pls-session-card__desc {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--pls-text-2);
+  }
+
+  .pls-session-speaker {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .pls-mini-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid var(--sess-color);
+    display: grid;
+    place-items: center;
+    font-family: var(--pls-font-mono);
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-mini-speaker-info {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+
+  .pls-mini-name {
+    font-weight: 700;
+    color: var(--pls-text-1);
+  }
+
+  .pls-mini-role {
+    color: var(--pls-text-3);
+  }
+
+  /* Bookmark Button */
+  .pls-bookmark-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--pls-radius-sm);
+    border: 1px solid var(--pls-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--pls-text-2);
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .pls-bookmark-btn:hover {
+    background: var(--pls-surface-hover);
+    color: var(--pls-text-1);
+    border-color: var(--pls-border-focus);
+  }
+
+  .pls-bookmark-btn.is-saved {
+    background: rgba(234, 179, 8, 0.12);
+    color: #facc15;
+    border-color: rgba(234, 179, 8, 0.35);
+  }
+
+  .pls-bookmark-btn.is-saved .pls-icon-star {
+    fill: #facc15;
+  }
+
+  /* Empty */
+  .pls-schedule-empty {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background: var(--pls-surface);
+    border: 1px dashed var(--pls-border);
+    border-radius: var(--pls-radius-lg);
+  }
+
+  .pls-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .pls-schedule-empty h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.3rem;
+    color: var(--pls-text-1);
+  }
+
+  .pls-schedule-empty p {
+    margin: 0;
+    color: var(--pls-text-2);
+  }
+</style>
+

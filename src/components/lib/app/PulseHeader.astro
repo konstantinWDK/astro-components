@@ -1,0 +1,464 @@
+---
+/**
+ * PulseHeader — Sticky site header for the Pulse Tech Summit template.
+ * Features the event wordmark with an SVG circuit pulse mark, primary navigation
+ * links, an early-bird status badge, a dark/light theme switch, and an interactive
+ * mobile menu drawer.
+ *
+ * @param {PulseRoutes} routes - Routing configuration object.
+ * @param {string} currentHref - Active URL path to set aria-current="page".
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseRoutes, type PulseRoutes } from '../templates/tech-event/data';
+
+interface OwnProps {
+  routes?: PulseRoutes;
+  currentHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  routes = pulseRoutes,
+  currentHref = '/',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const navItems = [
+  { label: 'Inicio', href: routes.home },
+  { label: 'Programa', href: routes.schedule },
+  { label: 'Ponentes', href: routes.speakers },
+  { label: 'Entradas', href: routes.tickets },
+  { label: 'Sede', href: routes.venue },
+];
+---
+
+<header class:list={['pls-header', className]} {...rest} data-pulse-header>
+  <div class="pls-header__container">
+    <a href={routes.home} class="pls-header__logo" aria-label="Pulse Tech Summit 2027">
+      <div class="pls-logo__icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+      </div>
+      <div class="pls-logo__text">
+        <span class="pls-logo__title">PULSE</span>
+        <span class="pls-logo__sub">SUMMIT 2027</span>
+      </div>
+    </a>
+
+    <div class="pls-header__center">
+      <nav class="pls-header__nav" aria-label="Navegación principal">
+        <ul class="pls-nav__list">
+          {navItems.map((item) => {
+            const isActive = currentHref === item.href || (item.href !== '/' && currentHref.startsWith(item.href));
+            return (
+              <li>
+                <a
+                  href={item.href}
+                  class:list={['pls-nav__link', { 'is-active': isActive }]}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
+
+    <div class="pls-header__actions">
+      <div class="pls-header__badge" aria-label="Fechas del evento">
+        <span class="pls-badge__dot" aria-hidden="true"></span>
+        <span>14-16 OCT</span>
+      </div>
+
+      <!-- Theme toggle -->
+      <button
+        type="button"
+        class="pls-theme-btn"
+        id="pls-theme-toggle"
+        aria-label="Alternar modo claro y oscuro"
+      >
+        <svg class="pls-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="pls-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+
+      <a href={routes.tickets} class="pls-btn pls-btn--primary pls-btn--sm pls-header__cta">
+        <span>Conseguir Entrada</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+      <!-- Mobile Hamburger -->
+      <button
+        type="button"
+        class="pls-hamburger"
+        id="pls-mobile-toggle"
+        aria-label="Abrir menú de navegación"
+        aria-expanded="false"
+        aria-controls="pls-mobile-menu"
+      >
+        <span class="pls-hamburger__bar"></span>
+        <span class="pls-hamburger__bar"></span>
+        <span class="pls-hamburger__bar"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer -->
+  <div class="pls-mobile-drawer" id="pls-mobile-menu" hidden>
+    <div class="pls-mobile-drawer__inner">
+      <nav class="pls-mobile-nav" aria-label="Navegación móvil">
+        <ul>
+          {navItems.map((item) => (
+            <li>
+              <a href={item.href} class="pls-mobile-nav__link">
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <div class="pls-mobile-drawer__footer">
+        <a href={routes.tickets} class="pls-btn pls-btn--primary pls-btn--full">
+          Conseguir Entrada · Desde 99 €
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Mobile drawer logic
+  const toggleBtn = document.getElementById('pls-mobile-toggle');
+  const drawer = document.getElementById('pls-mobile-menu');
+
+  if (toggleBtn && drawer) {
+    toggleBtn.addEventListener('click', () => {
+      const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+      toggleBtn.setAttribute('aria-expanded', String(!isExpanded));
+      if (isExpanded) {
+        drawer.setAttribute('hidden', '');
+      } else {
+        drawer.removeAttribute('hidden');
+      }
+    });
+  }
+
+  // Theme switch logic
+  const themeBtn = document.getElementById('pls-theme-toggle');
+  const root = document.documentElement;
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const isLight = root.classList.contains('pls-theme--light');
+      if (isLight) {
+        root.classList.remove('pls-theme--light');
+        root.classList.add('pls-theme--dark');
+        try { localStorage.setItem('pls-theme', 'dark'); } catch {}
+      } else {
+        root.classList.remove('pls-theme--dark');
+        root.classList.add('pls-theme--light');
+        try { localStorage.setItem('pls-theme', 'light'); } catch {}
+      }
+    });
+
+    // Sync from local storage
+    try {
+      const saved = localStorage.getItem('pls-theme');
+      if (saved === 'light') {
+        root.classList.add('pls-theme--light');
+      }
+    } catch {}
+  }
+</script>
+
+<style>
+  .pls-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    background: rgba(7, 9, 14, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--pls-border);
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+
+  :global(.pls-theme--light) .pls-header {
+    background: rgba(248, 250, 252, 0.9);
+  }
+
+  .pls-header__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    height: 72px;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  /* Logo */
+  .pls-header__logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--pls-text-1);
+    flex-shrink: 0;
+  }
+
+  .pls-logo__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--pls-radius-sm);
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid var(--pls-cyan-glow);
+    color: var(--pls-cyan);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.25);
+  }
+
+  .pls-logo__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  .pls-logo__title {
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    color: var(--pls-text-1);
+  }
+
+  .pls-logo__sub {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--pls-cyan);
+    font-family: var(--pls-font-mono);
+  }
+
+  /* Center Nav */
+  .pls-nav__list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pls-nav__link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--pls-radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--pls-text-2);
+    text-decoration: none;
+    transition: color 0.18s ease, background 0.18s ease;
+  }
+
+  .pls-nav__link:hover {
+    color: var(--pls-text-1);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .pls-nav__link.is-active {
+    color: var(--pls-cyan);
+    background: rgba(0, 240, 255, 0.08);
+  }
+
+  /* Actions */
+  .pls-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .pls-header__badge {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: var(--pls-radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--pls-cyan);
+    font-family: var(--pls-font-mono);
+  }
+
+  @media (min-width: 1024px) {
+    .pls-header__badge {
+      display: inline-flex;
+    }
+  }
+
+  .pls-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--pls-cyan);
+    box-shadow: 0 0 8px var(--pls-cyan);
+    animation: pls-pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes pls-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* Theme Button */
+  .pls-theme-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--pls-radius-sm);
+    border: 1px solid var(--pls-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--pls-text-2);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+  }
+
+  .pls-theme-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--pls-text-1);
+    border-color: var(--pls-border-focus);
+  }
+
+  .pls-icon-sun { display: none; }
+  .pls-icon-moon { display: block; }
+
+  :global(.pls-theme--light) .pls-icon-sun { display: block; }
+  :global(.pls-theme--light) .pls-icon-moon { display: none; }
+
+  /* Button utilities */
+  .pls-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--pls-radius-sm);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .pls-btn--sm {
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    min-height: 38px;
+  }
+
+  .pls-btn--primary {
+    background: linear-gradient(135deg, var(--pls-cyan), #00b4d8);
+    color: #07090e;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+  }
+
+  .pls-btn--primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 28px rgba(0, 240, 255, 0.55);
+    transform: translateY(-1px);
+  }
+
+  .pls-btn--full { width: 100%; }
+
+  /* Hamburger */
+  .pls-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 38px;
+    height: 38px;
+    padding: 8px;
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-sm);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .pls-hamburger__bar {
+    width: 100%;
+    height: 2px;
+    background: var(--pls-text-1);
+    border-radius: 2px;
+  }
+
+  /* Mobile Drawer */
+  .pls-mobile-drawer {
+    border-top: 1px solid var(--pls-border);
+    background: var(--pls-bg-elevated);
+    padding: 1.5rem;
+  }
+
+  .pls-mobile-drawer[hidden] {
+    display: none;
+  }
+
+  .pls-mobile-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .pls-mobile-nav__link {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-radius: var(--pls-radius-sm);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--pls-text-1);
+    text-decoration: none;
+  }
+
+  .pls-mobile-nav__link:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--pls-cyan);
+  }
+
+  @media (max-width: 860px) {
+    .pls-header__center { display: none; }
+    .pls-header__cta { display: none; }
+    .pls-hamburger { display: flex; }
+  }
+</style>
+

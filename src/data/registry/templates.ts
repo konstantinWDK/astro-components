@@ -4053,6 +4053,279 @@ const routes = { ...bielaRoutes, configurator: '/disena-tu-bici', builds: '/bici
 
 <BielaConfiguratorPage data={data} routes={routes} />`,
   },
+  {
+    slug: 'tech-event',
+    name: { en: 'Pulse Tech Summit', es: 'Cumbre Tecnológica Pulse', ru: 'Технологический саммит Pulse' },
+    tagline: {
+      en: 'A complete tech conference & summit template: live countdown, 4 tracks, multi-day agenda with bookmarking, speakers directory, tiered tickets with real-time checkout and interactive SVG venue map.',
+      es: 'Plantilla completa para congresos y eventos tecnológicos: cuenta atrás en vivo, 4 tracks, agenda multi-día con guardado local, directorio de ponentes, entradas con checkout interactivo y mapa SVG interactivo de la sede.',
+      ru: 'Полноценный шаблон технологической конференции: обратный отсчёт, 4 трека, расписание на несколько дней с закладками, каталог спикеров, билеты с онлайн-расчётом и интерактивная SVG-карта площадки.',
+    },
+    description: {
+      en: 'Pulse is a production-ready technology conference and summit template for Astro. Five synchronized pages provide an experience tailored for developers, architects, and technical leaders: home landing with live countdown, 4 structured tracks (AI, Cloud, Frontend, Security), full interactive schedule with local bookmarking, keynote speaker roster, tiered ticket selector with discount codes, and an interactive SVG floor plan of stages.',
+      es: 'Pulse es una plantilla completa para eventos y cumbres tecnológicas en Astro. Cinco páginas sincronizadas ofrecen una experiencia pensada para ingenieros, arquitectos y directores técnicos: portada con cuenta atrás, 4 tracks temáticos (IA, Cloud, Frontend, Seguridad), programa interactivo con guardado en agenda personal, directorio de ponentes destacados, selector de entradas con códigos de descuento y plano interactivo en SVG de las salas.',
+      ru: 'Pulse — готовый к продакшену шаблон технологического саммита и конференции на Astro. Пять синхронизированных страниц для инженеров и лидеров: лендинг с живым таймером, 4 тематических трека (AI, Cloud, Frontend, Security), интерактивное расписание с сохранением в личную программу, каталог спикеров, выбор билетов со скидочными купонами и интерактивная SVG-схема залов.',
+    },
+    highlights: {
+      en: [
+        'Live countdown clock to summit date with zero dependencies',
+        'Interactive multi-day schedule with track filters and search',
+        'Personal agenda bookmarking saved in browser localStorage',
+        'Keynote & breakout speaker grid with bios and talk abstracts',
+        'Tiered ticket checkout calculator with promo code validation and modal dialog',
+        'Interactive SVG venue floor plan with clickable stage info',
+        'Dark and light mode support with fluid glassmorphism accents',
+      ],
+      es: [
+        'Reloj con cuenta atrás en vivo hacia la fecha de la cumbre sin dependencias',
+        'Programa multi-día interactivo con filtros por track y buscador',
+        'Guardado de ponencias en agenda personal mediante localStorage',
+        'Directorio de ponentes y keynotes con biografías y resúmenes de charlas',
+        'Calculadora interactiva de entradas con códigos de descuento y modal de confirmación',
+        'Plano interactivo en SVG del recinto con salas y escenarios clicables',
+        'Soporte de temas oscuro y claro con acentos fluidos en glassmorphism',
+      ],
+      ru: [
+        'Живой обратный отсчёт до даты открытия саммита без внешних библиотек',
+        'Интерактивная программа на несколько дней с фильтром по трекам и поиском',
+        'Сохранение докладов в персональное расписание через localStorage',
+        'Каталог ключевых и сессионных спикеров с тезисами докладов',
+        'Калькулятор билетов с промокодами и диалоговым окном оформления',
+        'Интерактивная SVG-схема площадки с кликабельными залами',
+        'Светлая и тёмная темы с плавным стеклянным оформлением',
+      ],
+    },
+    tags: ['event', 'conference', 'summit', 'tech', 'schedule', 'speakers', 'tickets', 'venue', 'agenda'],
+    previewBase: '/preview/tech-event/',
+    importPath: 'astro-component-kit/templates/tech-event',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: {
+          en: 'Summit landing with live countdown, 4 core tracks, keynote speakers, interactive venue teaser, tickets and sponsors.',
+          es: 'Portada de la cumbre con cuenta atrás, 4 tracks temáticos, ponentes keynote, avance de sede, entradas y patrocinadores.',
+          ru: 'Главная страница саммита с обратным отсчётом, 4 треками, спикерами, схемой площадки, билетами и партнёрами.',
+        },
+        file: 'src/pages/index.astro',
+        code: `---
+import { PulseHomePage } from 'astro-component-kit/templates/tech-event';
+---
+
+<PulseHomePage />`,
+      },
+      {
+        id: 'schedule', path: 'programa/',
+        name: { en: 'Schedule', es: 'Programa', ru: 'Программа' },
+        description: {
+          en: 'Full multi-day agenda with track pills, search, room info and localStorage personal agenda bookmarking.',
+          es: 'Agenda técnica completa de 3 días con selector de track, buscador y guardado en agenda personal.',
+          ru: 'Полное 3-дневное расписание с фильтрами по трекам, поиском и персональным сохранением докладов.',
+        },
+        file: 'src/pages/programa.astro',
+        code: `---
+import { PulseSchedulePage } from 'astro-component-kit/templates/tech-event';
+---
+
+<PulseSchedulePage />`,
+      },
+      {
+        id: 'speakers', path: 'ponentes/',
+        name: { en: 'Speakers', es: 'Ponentes', ru: 'Спикеры' },
+        description: {
+          en: 'Speaker roster with track tabs, keynote badges, colored avatar seeds, bios and talk topics.',
+          es: 'Directorio de ponentes con pestañas por track, insignias keynote, avatares con semilla de color y biografías.',
+          ru: 'Каталог спикеров с фильтром по трекам, отметками keynote, аватарами, биографиями и темами выступлений.',
+        },
+        file: 'src/pages/ponentes.astro',
+        code: `---
+import { PulseSpeakersPage } from 'astro-component-kit/templates/tech-event';
+---
+
+<PulseSpeakersPage />`,
+      },
+      {
+        id: 'tickets', path: 'entradas/',
+        name: { en: 'Tickets', es: 'Entradas', ru: 'Билеты' },
+        description: {
+          en: 'Tiered conference pass selection with quantity counters, coupon code validation, price totals and checkout dialog.',
+          es: 'Selección de pases con selector de cantidad, códigos promocionales, desglose de precio y modal de reserva.',
+          ru: 'Выбор билетов с выбором количества, промокодами, расчётом стоимости и модальным окном оформления.',
+        },
+        file: 'src/pages/entradas.astro',
+        code: `---
+import { PulseTicketsPage } from 'astro-component-kit/templates/tech-event';
+---
+
+<PulseTicketsPage />`,
+      },
+      {
+        id: 'venue', path: 'sede/',
+        name: { en: 'Venue', es: 'Sede', ru: 'Площадка' },
+        description: {
+          en: 'Interactive SVG floor map with clickable stages, transport routes, and partner hotels with discount codes.',
+          es: 'Plano interactivo en SVG con salas clicables, información de transporte y hoteles recomendados con código.',
+          ru: 'Интерактивная SVG-карта с залами, транспортная схема и рекомендуемые отели с промокодами.',
+        },
+        file: 'src/pages/sede.astro',
+        code: `---
+import { PulseVenuePage } from 'astro-component-kit/templates/tech-event';
+---
+
+<PulseVenuePage />`,
+      },
+    ],
+    newComponents: [
+      'pulse-hero', 'pulse-tracks', 'pulse-speakers', 'pulse-schedule', 'pulse-tickets', 'pulse-venue', 'pulse-sponsors', 'pulse-header', 'pulse-footer',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+import { PulseHomePage, pulseRoutes, pulseSpeakers } from 'astro-component-kit/templates/tech-event';
+
+// Customize routes or inject speakers from your event CMS
+const customRoutes = { ...pulseRoutes, tickets: '/registro-oficial' };
+---
+
+<PulseHomePage routes={customRoutes} />`,
+  },
+  {
+    slug: 'university',
+    name: { en: 'Veritas University & Higher Education', es: 'Universidad Veritas · Campus de Estudios Superiores', ru: 'Университет Veritas · Высшее образование' },
+    tagline: {
+      en: 'A comprehensive university and higher education campus template: degree finder, program catalog with faculty filters, 4-step admissions guide, interactive tuition & merit scholarship calculator, research institutes and campus life.',
+      es: 'Plantilla completa para universidades y campus de educación superior: buscador de titulaciones, catálogo de grados y másters con filtros, guía de admisión en 4 pasos, calculadora interactiva de matrícula y becas al mérito, institutos de I+D y vida en el campus.',
+      ru: 'Полноценный шаблон университета и высшего образования: поиск направлений, каталог бакалавриата и магистратуры с фильтрами, пошаговое поступление, калькулятор стоимости и академических стипендий, институты НИОКР и жизнь кампуса.',
+    },
+    description: {
+      en: 'Veritas University is a production-ready higher education and campus template for Astro. Five synchronized pages cover the full student journey: prestigious academic home with degree finder and campus KPIs, comprehensive official programs catalog (bachelors, masters, doctorates, executive education), admissions guide with deadlines and an interactive tuition & scholarship simulator, scientific research institutes with Nature/IEEE publication highlights, and campus facilities with residence and open day registration.',
+      es: 'Universidad Veritas es una plantilla completa para universidades, centros universitarios y campus de educación superior en Astro. Cinco páginas sincronizadas cubren toda la experiencia del estudiante: portada institucional con buscador de grados y KPIs de empleabilidad (#1 en Forbes), catálogo completo de titulaciones oficiales adaptadas al EEES y acreditadas por la ANECA, guía de admisiones con convocatorias y calculadora interactiva de becas y cuotas mensuales en 10 plazos, escaparate de institutos de investigación de impacto (IA, biomedicina, energía) y vida en el campus con colegio mayor y reserva de jornadas de puertas abiertas.',
+      ru: 'Университет Veritas — готовый шаблон высшего учебного заведения на Astro. Пять взаимосвязанных страниц: академический лендинг с поиском программ и показателями трудоустройства (#1 Forbes), каталог официальных программ (бакалавриат, магистратура, аспирантура, executive), календарь приёмной кампании с онлайн-калькулятором стоимости и стипендий за успеваемость, институты исследований и кампус с бронированием дней открытых дверей.',
+    },
+    highlights: {
+      en: [
+        'Interactive degree finder by academic level and knowledge faculty in the hero',
+        'Official program directory with level tabs, faculty chips and live search',
+        'Interactive tuition and merit scholarship calculator with 10-installment monthly payment plan',
+        '4-step admissions journey with requirements checklist and official deadlines calendar',
+        'Scientific research institutes showcase with funding metrics, publications and corporate R&D partnerships',
+        'Campus facilities guide (24/7 central library, FabLab, Olympic sports complex and student residence)',
+        'Open Days registration form with instant QR pass booking confirmation modal',
+        'Dark mode first with midnight blue and academic gold accents, plus clean light mode',
+      ],
+      es: [
+        'Buscador interactivo de titulaciones por nivel y facultad de conocimiento en el hero',
+        'Catálogo de titulaciones oficiales con pestañas por nivel, chips por facultad y buscador en vivo',
+        'Calculadora interactiva de matrícula y becas al mérito con plan de financiación en 10 mensualidades sin intereses',
+        'Itinerario de admisión en 4 pasos con requisitos clave y tabla oficial de convocatorias',
+        'Escaparate de institutos de investigación científica con métricas de financiación, papers y contratos I+D',
+        'Guía de instalaciones del campus (Biblioteca 24h, FabLab, polideportivo olímpico y colegio mayor)',
+        'Formulario de reserva de jornadas de puertas abiertas con modal de confirmación y pase QR de demostración',
+        'Diseño dark mode first con tonos azul medianoche y oro académico, con soporte para modo claro',
+      ],
+      ru: [
+        'Интерактивный подбор направлений по уровням образования и факультетам в главном экране',
+        'Каталог официальных программ с вкладками уровней, чипами факультетов и живым поиском',
+        'Интерактивный калькулятор стоимости обучения и стипендий с беспроцентной рассрочкой на 10 месяцев',
+        'Маршрут поступления в 4 этапа со списком документов и календарём приёмных волн',
+        'Витрина научно-исследовательских институтов с грантами, публикациями и контрактами с индустрией',
+        'Обзор инфраструктуры кампуса (библиотека 24/7, FabLab, спорткомплекс и университетское общежитие)',
+        'Запись на дни открытых дверей с модальным окном подтверждения и демонстрационным QR-пропуском',
+        'Тёмная тема с глубоким синим и золотым акцентами, а также чистый светлый режим',
+      ],
+    },
+    tags: ['university', 'education', 'campus', 'degrees', 'masters', 'admissions', 'scholarship', 'research', 'openday'],
+    previewBase: '/preview/university/',
+    importPath: 'astro-component-kit/templates/university',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: {
+          en: 'University portal home with prestige ranking badge, degree finder, campus KPIs, featured programs, research highlights and Open Days banner.',
+          es: 'Portada universitaria con distintivo Forbes #1 en empleabilidad, buscador de titulaciones, KPIs del campus, programas destacados, investigación y puertas abiertas.',
+          ru: 'Главная страница университета: бейдж рейтинга трудоустройства, поиск программ, статистика кампуса, направления, наука и дни открытых дверей.',
+        },
+        file: 'src/pages/index.astro',
+        code: `---
+import { UnivHomePage } from 'astro-component-kit/templates/university';
+---
+
+<UnivHomePage />`,
+      },
+      {
+        id: 'programs', path: 'programas/',
+        name: { en: 'Programs', es: 'Programas', ru: 'Программы' },
+        description: {
+          en: 'Complete catalog of official degrees, masters, doctorates and executive programs with filters and search.',
+          es: 'Catálogo oficial de grados, másters universitarios, programas de doctorado y formación ejecutiva con filtros.',
+          ru: 'Каталог официальных программ бакалавриата, магистратуры, аспирантуры и программ для руководителей.',
+        },
+        file: 'src/pages/programas.astro',
+        code: `---
+import { UnivProgramsPage } from 'astro-component-kit/templates/university';
+---
+
+<UnivProgramsPage />`,
+      },
+      {
+        id: 'admissions', path: 'admisiones/',
+        name: { en: 'Admissions & Scholarships', es: 'Admisiones & Becas', ru: 'Поступление & Стипендии' },
+        description: {
+          en: 'Step-by-step admissions guide, official deadlines calendar, and interactive tuition & merit scholarship calculator.',
+          es: 'Guía de admisión paso a paso, calendario de convocatorias y calculadora interactiva de matrícula y becas al mérito.',
+          ru: 'Пошаговый план поступления, календарь сроков приёма и онлайн-калькулятор стоимости и стипендий.',
+        },
+        file: 'src/pages/admisiones.astro',
+        code: `---
+import { UnivAdmissionsPage } from 'astro-component-kit/templates/university';
+---
+
+<UnivAdmissionsPage />`,
+      },
+      {
+        id: 'research', path: 'investigacion/',
+        name: { en: 'Research', es: 'Investigación', ru: 'Наука' },
+        description: {
+          en: 'Flagship scientific research institutes (AI, Biomedicine, Clean Energy), funding metrics, publications and corporate partnerships.',
+          es: 'Institutos de investigación punteros en IA, biomedicina y transición energética, financiación y convenios con empresas.',
+          ru: 'Институты передовых исследований (ИИ, биомедицина, чистая энергия), гранты, публикации и партнёрство с бизнесом.',
+        },
+        file: 'src/pages/investigacion.astro',
+        code: `---
+import { UnivResearchPage } from 'astro-component-kit/templates/university';
+---
+
+<UnivResearchPage />`,
+      },
+      {
+        id: 'campus', path: 'campus/',
+        name: { en: 'Campus Life', es: 'Vida en el Campus', ru: 'Жизнь кампуса' },
+        description: {
+          en: 'Campus facilities (24/7 library, FabLab, residence, sports), student clubs, international mobility and Open Days booking.',
+          es: 'Instalaciones del campus (biblioteca 24h, FabLab, colegio mayor, polideportivo), clubes y reserva de jornadas de puertas abiertas.',
+          ru: 'Инфраструктура кампуса (библиотека 24/7, FabLab, общежитие, спорткомплекс), студенческие клубы и запись на день открытых дверей.',
+        },
+        file: 'src/pages/campus.astro',
+        code: `---
+import { UnivCampusPage } from 'astro-component-kit/templates/university';
+---
+
+<UnivCampusPage />`,
+      },
+    ],
+    newComponents: [
+      'univ-header', 'univ-footer', 'univ-hero', 'univ-programs', 'univ-admissions', 'univ-calculator', 'univ-research', 'univ-campus', 'univ-open-day',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+import { UnivHomePage, univRoutes, univPrograms } from 'astro-component-kit/templates/university';
+
+// Customize routes or inject custom programs from your academic SIS/ERP
+const customRoutes = { ...univRoutes, admissions: '/solicitar-plaza' };
+---
+
+<UnivHomePage routes={customRoutes} />`,
+  },
 ];
 
 export function getTemplateBySlug(slug: string): TemplateDoc | undefined {

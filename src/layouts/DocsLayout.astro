@@ -14,12 +14,13 @@ interface Props {
   title: string;
   description?: string;
   lang?: Locale;
+  hasToc?: boolean;
 }
 
 const detectedLang = getLangFromUrl(Astro.url);
-const { title, description, lang = detectedLang } = Astro.props;
 const currentPath = Astro.url.pathname;
 const normalizedPath = cleanPath(currentPath).replace(/\/$/, '') || '/';
+const { title, description, lang = detectedLang, hasToc = !normalizedPath.startsWith('/templates') } = Astro.props;
 const t = useTranslations(lang);
 
 // Categories shown in the "Components" hover menu (sections have their own catalog).
@@ -98,7 +99,7 @@ const componentsActive = normalizedPath.startsWith('/docs') || normalizedPath.st
       </main>
 
       <!-- Right Sidebar: On this page (scrollspy) -->
-      <aside class="toc" id="toc" aria-label={t('sidebar.onThisPage')}>
+      <aside class="toc" id="toc" aria-label={t('sidebar.onThisPage')} hidden={!hasToc ? '' : undefined}>
         <span class="toc__title">{t('sidebar.onThisPage')}</span>
         <nav class="toc__nav" id="toc-nav"></nav>
       </aside>

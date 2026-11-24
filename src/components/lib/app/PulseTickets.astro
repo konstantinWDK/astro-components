@@ -1,0 +1,849 @@
+---
+/**
+ * PulseTickets — Tiered registration and ticket checkout for the Pulse Tech Summit.
+ * Features 3 pass tiers, live quantity adjustments, discount promo code validation
+ * (e.g. PULSE20 for 20% off), real-time pricing breakdown (subtotal, discount, VAT),
+ * interactive checkout modal dialog, and a comprehensive ticket FAQ accordion.
+ *
+ * @param {PulseTicket[]} tickets - Array of ticket tiers (defaults to pulseTickets).
+ * @param {PulseFaq[]} faqs - Array of ticket FAQs.
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseTickets, pulseFaqs, type PulseTicket, type PulseFaq } from '../templates/tech-event/data';
+
+interface OwnProps {
+  tickets?: PulseTicket[];
+  faqs?: PulseFaq[];
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  tickets = pulseTickets,
+  faqs = pulseFaqs,
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<section class:list={['pls-tickets-section', className]} {...rest} id="tickets" data-tickets-root>
+  <div class="pls-tickets__container">
+    <div class="pls-section-head">
+      <span class="pls-section-kicker">ACCESO Y REGISTRO</span>
+      <h2 class="pls-section-title">Elige tu experiencia en la cumbre</h2>
+      <p class="pls-section-subtitle">
+        Plazas limitadas por aforo del recinto. Descuento por compra anticipada Early Bird aplicado automáticamente.
+      </p>
+    </div>
+
+    <!-- Ticket Cards Grid -->
+    <div class="pls-tickets-grid">
+      {tickets.map((t) => (
+        <article class:list={['pls-ticket-card', { 'is-popular': t.isPopular }]} data-ticket-id={t.id} data-price={t.price}>
+          {t.isPopular && <div class="pls-ticket-popular-ribbon">Recomendado</div>}
+
+          <div class="pls-ticket-header">
+            <span class="pls-ticket-badge">{t.badge}</span>
+            <h3 class="pls-ticket-name">{t.name}</h3>
+            <p class="pls-ticket-desc">{t.description}</p>
+          </div>
+
+          <div class="pls-ticket-price-box">
+            <div class="pls-ticket-price">
+              <span class="pls-currency">{t.currency}</span>
+              <span class="pls-amount">{t.price}</span>
+              <span class="pls-period">/ {t.period}</span>
+            </div>
+            <span class="pls-ticket-remaining">Solo quedan {t.remaining} plazas</span>
+          </div>
+
+          <ul class="pls-ticket-features" aria-label={`Beneficios de ${t.name}`}>
+            {t.features.map((feat) => (
+              <li>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>{feat}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div class="pls-ticket-action">
+            <div class="pls-qty-selector" aria-label={`Cantidad para ${t.name}`}>
+              <button type="button" class="pls-qty-btn pls-qty-minus" aria-label="Reducir cantidad" data-id={t.id}>-</button>
+              <span class="pls-qty-val" data-qty-for={t.id}>0</span>
+              <button type="button" class="pls-qty-btn pls-qty-plus" aria-label="Aumentar cantidad" data-id={t.id}>+</button>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <!-- Order Summary Bar -->
+    <div class="pls-checkout-bar" id="pls-checkout-bar">
+      <div class="pls-checkout-bar__info">
+        <div class="pls-summary-line">
+          <span class="pls-summary-lbl">Entradas seleccionadas:</span>
+          <strong class="pls-summary-val" id="pls-total-qty">0</strong>
+        </div>
+        <div class="pls-summary-line">
+          <span class="pls-summary-lbl">Subtotal estimado:</span>
+          <span class="pls-summary-amount" id="pls-total-amount">0 €</span>
+        </div>
+      </div>
+
+      <!-- Promo Code -->
+      <div class="pls-promo-wrap">
+        <input
+          type="text"
+          placeholder="Código promo (ej: PULSE20)"
+          class="pls-promo-input"
+          id="pls-promo-code"
+          aria-label="Código de descuento"
+        />
+        <button type="button" class="pls-btn pls-btn--secondary pls-btn--sm" id="pls-promo-apply">
+          Aplicar
+        </button>
+      </div>
+
+      <button type="button" class="pls-btn pls-btn--primary pls-checkout-btn" id="pls-open-modal" disabled>
+        <span>Completar Reserva</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Registration Dialog (native) -->
+    <dialog class="pls-modal" id="pls-checkout-dialog" aria-labelledby="pls-dialog-title">
+      <div class="pls-modal__content">
+        <div class="pls-modal__header">
+          <h3 id="pls-dialog-title" class="pls-modal__title">Confirmar Reserva de Entradas</h3>
+          <button type="button" class="pls-modal__close" id="pls-modal-close" aria-label="Cerrar ventana">×</button>
+        </div>
+
+        <form class="pls-modal__form" id="pls-dialog-form" onsubmit="event.preventDefault(); document.getElementById('pls-modal-success')?.removeAttribute('hidden'); document.getElementById('pls-modal-body')?.setAttribute('hidden', '');">
+          <div id="pls-modal-body">
+            <div class="pls-modal__breakdown">
+              <div class="pls-modal__row">
+                <span>Total de entradas:</span>
+                <strong id="pls-modal-qty">0</strong>
+              </div>
+              <div class="pls-modal__row" id="pls-modal-discount-row" hidden>
+                <span>Descuento aplicado:</span>
+                <span class="pls-discount-val" id="pls-modal-discount">-0 €</span>
+              </div>
+              <div class="pls-modal__row pls-modal__row--total">
+                <span>Total a pagar (IVA incl.):</span>
+                <strong id="pls-modal-total">0 €</strong>
+              </div>
+            </div>
+
+            <div class="pls-form-fields">
+              <div class="pls-form-group">
+                <label for="pls-form-name">Nombre completo</label>
+                <input type="text" id="pls-form-name" required placeholder="Elena García" class="pls-input" />
+              </div>
+
+              <div class="pls-form-group">
+                <label for="pls-form-email">Correo corporativo</label>
+                <input type="email" id="pls-form-email" required placeholder="elena@empresa.com" class="pls-input" />
+              </div>
+
+              <div class="pls-form-group">
+                <label for="pls-form-company">Empresa / Organización</label>
+                <input type="text" id="pls-form-company" required placeholder="Tech Innovators S.L." class="pls-input" />
+              </div>
+            </div>
+
+            <button type="submit" class="pls-btn pls-btn--primary pls-btn--full">
+              Confirmar y Emitir Entradas Demo
+            </button>
+          </div>
+
+          <!-- Success Screen -->
+          <div class="pls-modal-success" id="pls-modal-success" hidden>
+            <div class="pls-success-icon" aria-hidden="true">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+            <h4>¡Registro Completado con Éxito!</h4>
+            <p>Se ha generado tu reserva de demostración para el <strong>Pulse Tech Summit 2027</strong>. En un entorno real recibirías los códigos QR de acceso en tu correo.</p>
+            <button type="button" class="pls-btn pls-btn--secondary pls-btn--full" id="pls-success-done">
+              Cerrar y Volver a la Web
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- FAQ Accordion -->
+    <div class="pls-faq-section" id="faq">
+      <h3 class="pls-faq-title">Preguntas Frecuentes sobre Entradas</h3>
+      <div class="pls-faq-list">
+        {faqs.map((f, i) => (
+          <details class="pls-faq-item" name="tickets-faq">
+            <summary class="pls-faq-summary">
+              <span>{f.question}</span>
+              <svg class="pls-faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </summary>
+            <div class="pls-faq-answer">
+              <p>{f.answer}</p>
+            </div>
+          </details>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Ticket checkout interactive calculation
+  const root = document.querySelector<HTMLElement>('[data-tickets-root]');
+  if (root) {
+    const container = root;
+    const plusBtns = container.querySelectorAll<HTMLButtonElement>('.pls-qty-plus');
+    const minusBtns = container.querySelectorAll<HTMLButtonElement>('.pls-qty-minus');
+    const totalQtyEl = container.querySelector('#pls-total-qty');
+    const totalAmountEl = container.querySelector('#pls-total-amount');
+    const openModalBtn = container.querySelector<HTMLButtonElement>('#pls-open-modal');
+    const promoInput = container.querySelector<HTMLInputElement>('#pls-promo-code');
+    const promoApplyBtn = container.querySelector<HTMLButtonElement>('#pls-promo-apply');
+
+    const dialog = container.querySelector<HTMLDialogElement>('#pls-checkout-dialog');
+    const modalClose = container.querySelector<HTMLButtonElement>('#pls-modal-close');
+    const modalSuccessDone = container.querySelector<HTMLButtonElement>('#pls-success-done');
+
+    const modalQtyEl = container.querySelector('#pls-modal-qty');
+    const modalTotalEl = container.querySelector('#pls-modal-total');
+    const modalDiscountRow = container.querySelector<HTMLElement>('#pls-modal-discount-row');
+    const modalDiscountEl = container.querySelector('#pls-modal-discount');
+
+    // Quantities map: id -> qty
+    const quantities: Record<string, number> = {
+      virtual: 0,
+      conference: 1, // Start with 1 presencial for best UX
+      'vip-pass': 0,
+    };
+
+    const prices: Record<string, number> = {
+      virtual: 99,
+      conference: 349,
+      'vip-pass': 699,
+    };
+
+    let discountPercent = 0;
+
+    function renderTotals() {
+      let totalQty = 0;
+      let rawTotal = 0;
+
+      for (const [id, qty] of Object.entries(quantities)) {
+        totalQty += qty;
+        rawTotal += qty * (prices[id] || 0);
+        const qtyDisplay = container.querySelector(`[data-qty-for="${id}"]`);
+        if (qtyDisplay) qtyDisplay.textContent = String(qty);
+      }
+
+      const discountAmount = rawTotal * (discountPercent / 100);
+      const finalTotal = Math.max(0, rawTotal - discountAmount);
+
+      if (totalQtyEl) totalQtyEl.textContent = String(totalQty);
+      if (totalAmountEl) totalAmountEl.textContent = `${finalTotal.toFixed(0)} €`;
+
+      if (openModalBtn) {
+        openModalBtn.disabled = totalQty === 0;
+      }
+
+      if (modalQtyEl) modalQtyEl.textContent = String(totalQty);
+      if (modalTotalEl) modalTotalEl.textContent = `${finalTotal.toFixed(0)} €`;
+
+      if (modalDiscountRow && modalDiscountEl) {
+        if (discountPercent > 0) {
+          modalDiscountRow.removeAttribute('hidden');
+          modalDiscountEl.textContent = `-${discountAmount.toFixed(0)} € (${discountPercent}%)`;
+        } else {
+          modalDiscountRow.setAttribute('hidden', '');
+        }
+      }
+    }
+
+    plusBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (id && quantities[id] !== undefined) {
+          quantities[id]++;
+          renderTotals();
+        }
+      });
+    });
+
+    minusBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        if (id && quantities[id] !== undefined && quantities[id] > 0) {
+          quantities[id]--;
+          renderTotals();
+        }
+      });
+    });
+
+    // Promo code apply
+    if (promoApplyBtn && promoInput) {
+      promoApplyBtn.addEventListener('click', () => {
+        const code = promoInput.value.trim().toUpperCase();
+        if (code === 'PULSE20' || code === 'EARLYBIRD') {
+          discountPercent = 20;
+          promoInput.style.borderColor = 'var(--pls-emerald)';
+          alert('¡Código PULSE20 aplicado con éxito! 20% de descuento.');
+        } else {
+          alert('Código inválido. Prueba con PULSE20.');
+        }
+        renderTotals();
+      });
+    }
+
+    // Modal controls
+    if (openModalBtn && dialog) {
+      openModalBtn.addEventListener('click', () => {
+        dialog.showModal();
+      });
+    }
+
+    if (modalClose && dialog) {
+      modalClose.addEventListener('click', () => {
+        dialog.close();
+      });
+    }
+
+    if (modalSuccessDone && dialog) {
+      modalSuccessDone.addEventListener('click', () => {
+        dialog.close();
+      });
+    }
+
+    renderTotals();
+  }
+</script>
+
+<style>
+  .pls-tickets-section {
+    padding: 5rem 1.5rem;
+    position: relative;
+  }
+
+  .pls-tickets__container {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .pls-section-head {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .pls-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    font-family: var(--pls-font-mono);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-section-title {
+    margin: 0 0 1rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--pls-text-1);
+    line-height: 1.15;
+  }
+
+  .pls-section-subtitle {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+  }
+
+  /* Grid */
+  .pls-tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    align-items: stretch;
+  }
+
+  @media (max-width: 980px) {
+    .pls-tickets-grid {
+      grid-template-columns: 1fr;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+  }
+
+  .pls-ticket-card {
+    position: relative;
+    padding: 2.5rem 2rem 2rem;
+    border-radius: var(--pls-radius-lg);
+    border: 1px solid var(--pls-border);
+    background: var(--pls-surface);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s;
+  }
+
+  .pls-ticket-card.is-popular {
+    border-color: var(--pls-cyan);
+    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 0 24px rgba(0, 240, 255, 0.2);
+    transform: scale(1.02);
+  }
+
+  @media (max-width: 980px) {
+    .pls-ticket-card.is-popular {
+      transform: none;
+    }
+  }
+
+  .pls-ticket-popular-ribbon {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--pls-cyan), #0284c7);
+    color: #07090e;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.9rem;
+    border-radius: var(--pls-radius-full);
+    box-shadow: 0 4px 12px rgba(0, 240, 255, 0.4);
+  }
+
+  .pls-ticket-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .pls-ticket-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--pls-radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--pls-font-mono);
+    color: var(--pls-cyan);
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    margin-bottom: 0.85rem;
+  }
+
+  .pls-ticket-name {
+    margin: 0 0 0.5rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-ticket-desc {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--pls-text-2);
+    min-height: 55px;
+  }
+
+  .pls-ticket-price-box {
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--pls-border);
+    border-bottom: 1px solid var(--pls-border);
+    margin-bottom: 1.5rem;
+  }
+
+  .pls-ticket-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+
+  .pls-currency {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-amount {
+    font-family: var(--pls-font-mono);
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--pls-text-1);
+    line-height: 1;
+  }
+
+  .pls-period {
+    font-size: 0.85rem;
+    color: var(--pls-text-3);
+    margin-left: 0.25rem;
+  }
+
+  .pls-ticket-remaining {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--pls-emerald);
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  .pls-ticket-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+  }
+
+  .pls-ticket-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--pls-text-2);
+  }
+
+  .pls-ticket-features svg {
+    color: var(--pls-cyan);
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  .pls-ticket-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pls-qty-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--pls-radius-full);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--pls-border);
+  }
+
+  .pls-qty-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--pls-border);
+    background: var(--pls-surface);
+    color: var(--pls-text-1);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .pls-qty-btn:hover {
+    background: var(--pls-cyan);
+    color: #07090e;
+    border-color: var(--pls-cyan);
+  }
+
+  .pls-qty-val {
+    min-width: 24px;
+    text-align: center;
+    font-family: var(--pls-font-mono);
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  /* Checkout summary bar */
+  .pls-checkout-bar {
+    position: sticky;
+    bottom: 1.5rem;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.25rem 2rem;
+    border-radius: var(--pls-radius-lg);
+    background: rgba(15, 19, 31, 0.95);
+    border: 1px solid var(--pls-border-glow);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(16px);
+    flex-wrap: wrap;
+  }
+
+  .pls-checkout-bar__info {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .pls-summary-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pls-summary-lbl {
+    font-size: 0.85rem;
+    color: var(--pls-text-2);
+  }
+
+  .pls-summary-val {
+    font-family: var(--pls-font-mono);
+    font-size: 1.1rem;
+    color: var(--pls-text-1);
+  }
+
+  .pls-summary-amount {
+    font-family: var(--pls-font-mono);
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--pls-cyan);
+  }
+
+  .pls-promo-wrap {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .pls-promo-input {
+    width: 200px;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--pls-radius-sm);
+    border: 1px solid var(--pls-border);
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--pls-text-1);
+    font-size: 0.82rem;
+    outline: none;
+  }
+
+  .pls-promo-input:focus {
+    border-color: var(--pls-cyan);
+  }
+
+  .pls-checkout-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: none;
+    box-shadow: none;
+  }
+
+  /* Modal */
+  .pls-modal {
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-lg);
+    background: var(--pls-bg-elevated);
+    color: var(--pls-text-1);
+    padding: 0;
+    max-width: 520px;
+    width: 90%;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  }
+
+  .pls-modal::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+  }
+
+  .pls-modal__content {
+    padding: 2rem;
+  }
+
+  .pls-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--pls-border);
+  }
+
+  .pls-modal__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .pls-modal__close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--pls-text-3);
+    cursor: pointer;
+  }
+
+  .pls-modal__breakdown {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: var(--pls-radius-sm);
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .pls-modal__row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--pls-text-2);
+  }
+
+  .pls-modal__row--total {
+    padding-top: 0.65rem;
+    border-top: 1px dashed var(--pls-border);
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--pls-cyan);
+  }
+
+  .pls-discount-val {
+    color: var(--pls-emerald);
+    font-weight: 700;
+  }
+
+  .pls-form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .pls-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    text-align: left;
+  }
+
+  .pls-form-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--pls-text-2);
+  }
+
+  .pls-input {
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--pls-radius-sm);
+    border: 1px solid var(--pls-border);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--pls-text-1);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .pls-input:focus {
+    border-color: var(--pls-cyan);
+  }
+
+  .pls-modal-success {
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .pls-success-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .pls-modal-success h4 {
+    margin: 0 0 0.75rem;
+    font-size: 1.4rem;
+    color: var(--pls-emerald);
+  }
+
+  .pls-modal-success p {
+    margin: 0 0 1.5rem;
+    color: var(--pls-text-2);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+
+  /* FAQ */
+  .pls-faq-section {
+    margin-top: 6rem;
+    padding-top: 4rem;
+    border-top: 1px solid var(--pls-border);
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pls-faq-title {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0 0 2.5rem;
+    color: var(--pls-text-1);
+  }
+
+  .pls-faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .pls-faq-item {
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-md);
+    background: var(--pls-surface);
+    overflow: hidden;
+  }
+
+  .pls-faq-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--pls-text-1);
+    list-style: none;
+  }
+
+  .pls-faq-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .pls-faq-chevron {
+    transition: transform 0.2s ease;
+    color: var(--pls-text-3);
+  }
+
+  .pls-faq-item[open] .pls-faq-chevron {
+    transform: rotate(180deg);
+    color: var(--pls-cyan);
+  }
+
+  .pls-faq-answer {
+    padding: 0 1.5rem 1.25rem;
+    color: var(--pls-text-2);
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+
+  .pls-faq-answer p {
+    margin: 0;
+  }
+</style>

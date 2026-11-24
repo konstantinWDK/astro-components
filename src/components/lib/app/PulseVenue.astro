@@ -1,0 +1,532 @@
+---
+/**
+ * PulseVenue — Venue map and travel logistics for the Pulse Tech Summit.
+ * Features an interactive SVG floor plan map with clickable conference stages,
+ * transport instructions, partner hotel discounts, and attendee guidelines.
+ *
+ * @param {PulseVenueInfo} venue - Venue data (defaults to pulseVenue).
+ * @param {string} class - Additional CSS classes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/tech-event/pls-theme.css';
+import { pulseVenue, type PulseVenueInfo } from '../templates/tech-event/data';
+
+interface OwnProps {
+  venue?: PulseVenueInfo;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  venue = pulseVenue,
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<section class:list={['pls-venue-section', className]} {...rest} id="venue" data-venue-root>
+  <div class="pls-venue__container">
+    <div class="pls-section-head">
+      <span class="pls-section-kicker">SEDE & LOGÍSTICA</span>
+      <h2 class="pls-section-title">{venue.name}</h2>
+      <p class="pls-section-subtitle">
+        {venue.address} · {venue.dates} · Aforo para {venue.capacity}
+      </p>
+    </div>
+
+    <!-- Interactive Floor Plan Blueprint -->
+    <div class="pls-venue-map-card">
+      <div class="pls-map-header">
+        <div>
+          <span class="pls-map-kicker">PLANO INTERACTIVO DEL RECINTO</span>
+          <h3 class="pls-map-title">Salas y Espacios de la Cumbre</h3>
+        </div>
+        <p class="pls-map-hint">Haz clic o pasa el cursor sobre cada sala para ver su capacidad y programación:</p>
+      </div>
+
+      <div class="pls-map-layout">
+        <div class="pls-map-canvas-wrap">
+          <svg class="pls-map-svg" viewBox="0 0 800 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plano de distribución del Palacio de Convenciones">
+            <!-- Grid Lines -->
+            <defs>
+              <pattern id="pls-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="800" height="480" fill="url(#pls-grid)" rx="16"/>
+
+            <!-- Outer perimeter -->
+            <rect x="20" y="20" width="760" height="440" rx="12" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2" stroke-dasharray="6 6"/>
+
+            <!-- Main Auditorium -->
+            <g class="pls-map-stage is-selected" data-stage-id="auditorio" tabindex="0" role="button" aria-label="Auditorio Principal - 1.600 plazas">
+              <rect x="50" y="50" width="700" height="170" rx="10" fill="rgba(0, 240, 255, 0.08)" stroke="#00f0ff" stroke-width="2"/>
+              <text x="400" y="125" text-anchor="middle" fill="#00f0ff" font-size="18" font-weight="800" font-family="monospace">AUDITORIO PRINCIPAL</text>
+              <text x="400" y="155" text-anchor="middle" fill="#94a3b8" font-size="13">Capacidad: 1.600 plazas · Keynotes & Plenarios</text>
+            </g>
+
+            <!-- Hallways / Networking Hub -->
+            <rect x="50" y="240" width="700" height="40" rx="6" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.08)"/>
+            <text x="400" y="265" text-anchor="middle" fill="#64748b" font-size="12" font-family="monospace" letter-spacing="2">PASILLO CENTRAL & ZONA DE STANDS / CATERING</text>
+
+            <!-- Track 1: AI (Sala Turing) -->
+            <g class="pls-map-stage" data-stage-id="sala-turing" tabindex="0" role="button" aria-label="Sala Turing AI - 450 plazas">
+              <rect x="50" y="300" width="160" height="140" rx="8" fill="rgba(0, 240, 255, 0.05)" stroke="rgba(0, 240, 255, 0.5)" stroke-width="1.5"/>
+              <text x="130" y="365" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="700">Sala Turing</text>
+              <text x="130" y="390" text-anchor="middle" fill="#00f0ff" font-size="11" font-family="monospace">Track AI · 450 p.</text>
+            </g>
+
+            <!-- Track 2: Cloud (Sala Lovelace) -->
+            <g class="pls-map-stage" data-stage-id="sala-lovelace" tabindex="0" role="button" aria-label="Sala Lovelace Cloud - 450 plazas">
+              <rect x="230" y="300" width="160" height="140" rx="8" fill="rgba(139, 92, 246, 0.05)" stroke="rgba(139, 92, 246, 0.5)" stroke-width="1.5"/>
+              <text x="310" y="365" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="700">Sala Lovelace</text>
+              <text x="310" y="390" text-anchor="middle" fill="#8b5cf6" font-size="11" font-family="monospace">Cloud & Edge · 450 p.</text>
+            </g>
+
+            <!-- Track 3: Web (Sala Hopper) -->
+            <g class="pls-map-stage" data-stage-id="sala-hopper" tabindex="0" role="button" aria-label="Sala Hopper Web - 350 plazas">
+              <rect x="410" y="300" width="160" height="140" rx="8" fill="rgba(236, 72, 153, 0.05)" stroke="rgba(236, 72, 153, 0.5)" stroke-width="1.5"/>
+              <text x="490" y="365" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="700">Sala Hopper</text>
+              <text x="490" y="390" text-anchor="middle" fill="#ec4899" font-size="11" font-family="monospace">Web Platform · 350 p.</text>
+            </g>
+
+            <!-- Track 4: Sec (Sala Shannon) -->
+            <g class="pls-map-stage" data-stage-id="sala-shannon" tabindex="0" role="button" aria-label="Sala Shannon Sec - 300 plazas">
+              <rect x="590" y="300" width="160" height="140" rx="8" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(16, 185, 129, 0.5)" stroke-width="1.5"/>
+              <text x="670" y="365" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="700">Sala Shannon</text>
+              <text x="670" y="390" text-anchor="middle" fill="#10b981" font-size="11" font-family="monospace">Cybersecurity · 300 p.</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Stage Info Sidebar -->
+        <div class="pls-stage-info-box" id="pls-stage-info">
+          <span class="pls-info-badge" id="pls-info-badge">Auditorio Principal</span>
+          <h4 class="pls-info-title" id="pls-info-title">Auditorio Principal</h4>
+          <p class="pls-info-cap">Capacidad: <strong id="pls-info-cap">1.600 asistentes</strong></p>
+          <p class="pls-info-desc" id="pls-info-desc">Keynotes matutinas, ceremonias de apertura, paneles plenarios y clausura de la cumbre.</p>
+          <div class="pls-info-perks">
+            <span>✓ Pantallas LED 8K duales</span>
+            <span>✓ Traducción simultánea (ES/EN)</span>
+            <span>✓ Asientos de butaca con enchufes USB-C</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transportation & Hotels Grid -->
+    <div class="pls-logistics-grid">
+      <!-- Transport -->
+      <div class="pls-logistics-card">
+        <h3 class="pls-logistics-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <path d="M7 17l5-5 5 5"></path>
+          </svg>
+          Cómo llegar al Recinto
+        </h3>
+        <div class="pls-transport-list">
+          {venue.transport.map((tr) => (
+            <div class="pls-transport-item">
+              <span class="pls-transport-type">{tr.type}</span>
+              <strong class="pls-transport-name">{tr.title}</strong>
+              <p class="pls-transport-desc">{tr.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Hotels -->
+      <div class="pls-logistics-card">
+        <h3 class="pls-logistics-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Hoteles Recomendados con Descuento
+        </h3>
+        <p class="pls-hotels-intro">Utiliza estos códigos al reservar en las webs oficiales de nuestros hoteles colaboradores:</p>
+        <div class="pls-hotels-list">
+          {venue.hotels.map((h) => (
+            <div class="pls-hotel-item">
+              <div class="pls-hotel-main">
+                <span class="pls-hotel-name">{h.name}</span>
+                <span class="pls-hotel-stars">{'★'.repeat(h.stars)} · {h.distance} del recinto</span>
+              </div>
+              <div class="pls-hotel-code">
+                <span class="pls-code-lbl">Código:</span>
+                <code>{h.discountCode}</code>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Interactive SVG stage selector
+  const venueRoot = document.querySelector('[data-venue-root]');
+  if (venueRoot) {
+    const stages = venueRoot.querySelectorAll<SVGGElement>('.pls-map-stage');
+    const badgeEl = venueRoot.querySelector('#pls-info-badge');
+    const titleEl = venueRoot.querySelector('#pls-info-title');
+    const capEl = venueRoot.querySelector('#pls-info-cap');
+    const descEl = venueRoot.querySelector('#pls-info-desc');
+
+    const stageData: Record<string, { title: string; cap: string; desc: string }> = {
+      auditorio: {
+        title: 'Auditorio Principal',
+        cap: '1.600 asistentes',
+        desc: 'Keynotes matutinas, ceremonias de apertura, paneles plenarios y clausura de la cumbre.',
+      },
+      'sala-turing': {
+        title: 'Sala Turing (AI & Cognitive)',
+        cap: '450 asistentes',
+        desc: 'Agentes autónomos, LLMs locales, optimización con WebGPU y robótica inteligente.',
+      },
+      'sala-lovelace': {
+        title: 'Sala Lovelace (Cloud & Edge)',
+        cap: '450 asistentes',
+        desc: 'WebAssembly, micro-frontends en el borde, Kubernetes sin proxies y alta disponibilidad multi-región.',
+      },
+      'sala-hopper': {
+        title: 'Sala Hopper (Web Platform)',
+        cap: '350 asistentes',
+        desc: 'Islas de Astro, View Transitions API, Core Web Vitals y diseño accesible de alta escala.',
+      },
+      'sala-shannon': {
+        title: 'Sala Shannon (Cybersecurity)',
+        cap: '300 asistentes',
+        desc: 'Criptografía post-cuántica, seguridad en pipelines CI/CD y despliegue masivo de Passkeys.',
+      },
+    };
+
+    stages.forEach((st) => {
+      st.addEventListener('click', () => {
+        stages.forEach((s) => s.classList.remove('is-selected'));
+        st.classList.add('is-selected');
+
+        const id = st.getAttribute('data-stage-id') || 'auditorio';
+        const d = stageData[id];
+        if (d && titleEl && capEl && descEl && badgeEl) {
+          badgeEl.textContent = d.title;
+          titleEl.textContent = d.title;
+          capEl.textContent = d.cap;
+          descEl.textContent = d.desc;
+        }
+      });
+    });
+  }
+</script>
+
+<style>
+  .pls-venue-section {
+    padding: 5rem 1.5rem;
+    position: relative;
+  }
+
+  .pls-venue__container {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  .pls-section-head {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .pls-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    font-family: var(--pls-font-mono);
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-section-title {
+    margin: 0 0 1rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--pls-text-1);
+    line-height: 1.15;
+  }
+
+  .pls-section-subtitle {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--pls-text-2);
+  }
+
+  /* Map card */
+  .pls-venue-map-card {
+    background: var(--pls-surface);
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-lg);
+    padding: 2.25rem;
+    margin-bottom: 3rem;
+  }
+
+  .pls-map-header {
+    margin-bottom: 1.75rem;
+  }
+
+  .pls-map-kicker {
+    font-family: var(--pls-font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--pls-cyan);
+    letter-spacing: 0.08em;
+  }
+
+  .pls-map-title {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-map-hint {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--pls-text-2);
+  }
+
+  .pls-map-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  @media (max-width: 960px) {
+    .pls-map-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pls-map-canvas-wrap {
+    width: 100%;
+    background: #04060a;
+    border-radius: var(--pls-radius-md);
+    border: 1px solid var(--pls-border);
+    padding: 0.75rem;
+  }
+
+  .pls-map-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .pls-map-stage {
+    cursor: pointer;
+    transition: filter 0.2s, opacity 0.2s;
+    outline: none;
+  }
+
+  .pls-map-stage:hover {
+    filter: brightness(1.25);
+  }
+
+  .pls-map-stage.is-selected rect {
+    stroke-width: 3;
+    filter: drop-shadow(0 0 12px var(--pls-cyan));
+  }
+
+  /* Info sidebar */
+  .pls-stage-info-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-md);
+    padding: 1.75rem;
+  }
+
+  .pls-info-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--pls-radius-full);
+    font-size: 0.72rem;
+    font-family: var(--pls-font-mono);
+    font-weight: 700;
+    color: var(--pls-cyan);
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    margin-bottom: 0.75rem;
+  }
+
+  .pls-info-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-info-cap {
+    margin: 0 0 0.85rem;
+    font-size: 0.9rem;
+    color: var(--pls-text-2);
+  }
+
+  .pls-info-cap strong {
+    color: var(--pls-cyan);
+    font-family: var(--pls-font-mono);
+  }
+
+  .pls-info-desc {
+    margin: 0 0 1.25rem;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--pls-text-2);
+  }
+
+  .pls-info-perks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--pls-border);
+    font-size: 0.82rem;
+    color: var(--pls-text-2);
+  }
+
+  /* Logistics Grid */
+  .pls-logistics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  @media (max-width: 860px) {
+    .pls-logistics-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pls-logistics-card {
+    background: var(--pls-surface);
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-lg);
+    padding: 2.25rem;
+  }
+
+  .pls-logistics-title {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 0 0 1.5rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--pls-text-1);
+  }
+
+  .pls-logistics-title svg {
+    color: var(--pls-cyan);
+  }
+
+  .pls-transport-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .pls-transport-item {
+    border-left: 2px solid var(--pls-border);
+    padding-left: 1rem;
+  }
+
+  .pls-transport-type {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-family: var(--pls-font-mono);
+    font-weight: 700;
+    color: var(--pls-cyan);
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+  }
+
+  .pls-transport-name {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--pls-text-1);
+    margin-bottom: 0.25rem;
+  }
+
+  .pls-transport-desc {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--pls-text-2);
+  }
+
+  .pls-hotels-intro {
+    margin: 0 0 1.25rem;
+    font-size: 0.88rem;
+    color: var(--pls-text-2);
+  }
+
+  .pls-hotels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .pls-hotel-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--pls-border);
+    border-radius: var(--pls-radius-sm);
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .pls-hotel-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .pls-hotel-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--pls-text-1);
+  }
+
+  .pls-hotel-stars {
+    font-size: 0.78rem;
+    color: #facc15;
+  }
+
+  .pls-hotel-code {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pls-code-lbl {
+    font-size: 0.78rem;
+    color: var(--pls-text-3);
+  }
+
+  .pls-hotel-code code {
+    padding: 0.25rem 0.6rem;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid var(--pls-cyan);
+    border-radius: 4px;
+    font-family: var(--pls-font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--pls-cyan);
+  }
+</style>
+

@@ -220,3 +220,25 @@ export { default as BielaProcess } from './BielaProcess.astro';
 export { default as BielaMaterials } from './BielaMaterials.astro';
 export { default as BielaHeader } from './BielaHeader.astro';
 export { default as BielaFooter } from './BielaFooter.astro';
+
+// Tech event & summit ("Pulse")
+export { default as PulseHeader } from './PulseHeader.astro';
+export { default as PulseFooter } from './PulseFooter.astro';
+export { default as PulseHero } from './PulseHero.astro';
+export { default as PulseTracks } from './PulseTracks.astro';
+export { default as PulseSpeakers } from './PulseSpeakers.astro';
+export { default as PulseSchedule } from './PulseSchedule.astro';
+export { default as PulseTickets } from './PulseTickets.astro';
+export { default as PulseVenue } from './PulseVenue.astro';
+export { default as PulseSponsors } from './PulseSponsors.astro';
+
+// University & Higher Education ("Veritas")
+export { default as UnivHeader } from './UnivHeader.astro';
+export { default as UnivFooter } from './UnivFooter.astro';
+export { default as UnivHero } from './UnivHero.astro';
+export { default as UnivPrograms } from './UnivPrograms.astro';
+export { default as UnivAdmissions } from './UnivAdmissions.astro';
+export { default as UnivCalculator } from './UnivCalculator.astro';
+export { default as UnivResearch } from './UnivResearch.astro';
+export { default as UnivCampus } from './UnivCampus.astro';
+export { default as UnivOpenDay } from './UnivOpenDay.astro';

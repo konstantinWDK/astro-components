@@ -1,0 +1,464 @@
+---
+/**
+ * UnivOpenDay — Open Days showcase and interactive registration form with instant confirmation dialog.
+ *
+ * @param {string} className - Optional additional CSS class
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { openDaySessions } from '../templates/university/data';
+
+interface Props extends HTMLAttributes<'section'> {
+  className?: string;
+}
+
+const {
+  class: classProp,
+  className = '',
+  ...rest
+} = Astro.props;
+
+const classes = ['univ-openday', classProp, className].filter(Boolean).join(' ');
+---
+
+<section class={classes} id="jornadas-puertas-abiertas" data-openday-root {...rest}>
+  <div class="univ-openday__container">
+    <div class="univ-openday__header">
+      <div class="univ-openday__eyebrow">DESCUBRE TU FUTURO CAMPUS</div>
+      <h2 class="univ-openday__title">Jornadas de Puertas Abiertas & Visitas Guiadas</h2>
+      <p class="univ-openday__lead">
+        Conoce a los decanos de tu carrera, conversa con estudiantes actuales, visita los laboratorios y el Colegio Mayor, y experimenta la vida universitaria en Veritas.
+      </p>
+    </div>
+
+    <div class="univ-openday__box">
+      <!-- Left: Session Cards -->
+      <div class="univ-openday__sessions">
+        <h3 class="univ-openday__sessions-title">Próximas Convocatorias Disponibles</h3>
+        <div class="univ-openday__sessions-list">
+          {openDaySessions.map((session, i) => (
+            <div class:list={['univ-openday__session-card', { 'univ-openday__session-card--active': i === 0 }]}>
+              <div class="univ-openday__session-header">
+                <span class="univ-openday__session-date">{session.date}</span>
+                <span class="univ-openday__session-badge">{session.modality}</span>
+              </div>
+              <div class="univ-openday__session-time">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>{session.time} · {session.spotsAvailable} plazas restantes</span>
+              </div>
+              <ul class="univ-openday__activities">
+                {session.activities.map((act) => (
+                  <li>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="univ-openday__check" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>{act}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Right: Interactive Registration Form -->
+      <div class="univ-openday__form-card">
+        <h3 class="univ-openday__form-title">Reserva Tu Plaza Gratuita</h3>
+        <p class="univ-openday__form-sub">Plazas limitadas por aforo en laboratorios. Puedes venir acompañado.</p>
+
+        <form
+          class="univ-openday__form"
+          id="openday-form"
+          onsubmit="event.preventDefault(); document.getElementById('openday-dialog')?.removeAttribute('hidden'); document.getElementById('openday-form-body')?.setAttribute('hidden', '');"
+        >
+          <div id="openday-form-body">
+            <div class="univ-openday__field">
+              <label for="od-session">Selecciona la Fecha *</label>
+              <select id="od-session" required class="univ-openday__select">
+                {openDaySessions.map((s) => (
+                  <option value={s.date}>{s.date} ({s.modality})</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="univ-openday__row">
+              <div class="univ-openday__field">
+                <label for="od-name">Nombre *</label>
+                <input type="text" id="od-name" required placeholder="Elena" class="univ-openday__input" />
+              </div>
+              <div class="univ-openday__field">
+                <label for="od-surname">Apellidos *</label>
+                <input type="text" id="od-surname" required placeholder="Martínez Ruiz" class="univ-openday__input" />
+              </div>
+            </div>
+
+            <div class="univ-openday__row">
+              <div class="univ-openday__field">
+                <label for="od-email">Correo Electrónico *</label>
+                <input type="email" id="od-email" required placeholder="elena@ejemplo.com" class="univ-openday__input" />
+              </div>
+              <div class="univ-openday__field">
+                <label for="od-phone">Teléfono Móvil *</label>
+                <input type="tel" id="od-phone" required placeholder="+34 600 000 000" class="univ-openday__input" />
+              </div>
+            </div>
+
+            <div class="univ-openday__field">
+              <label for="od-faculty">Titulación o Área de Interés *</label>
+              <select id="od-faculty" required class="univ-openday__select">
+                <option value="tech">Ingeniería de Inteligencia Artificial & Ciberseguridad</option>
+                <option value="health">Biotecnología & Ciencias Biomédicas</option>
+                <option value="business">ADE & Business Analytics / Finanzas</option>
+                <option value="humanities">Diseño Estratégico & UX</option>
+                <option value="phd">Doctorado e Investigación</option>
+              </select>
+            </div>
+
+            <div class="univ-openday__field">
+              <label for="od-guests">Número de Acompañantes</label>
+              <select id="od-guests" class="univ-openday__select">
+                <option value="0">Vendré solo/a</option>
+                <option value="1">1 acompañante (padres / tutores)</option>
+                <option value="2" selected>2 acompañantes</option>
+                <option value="3">3 o más acompañantes</option>
+              </select>
+            </div>
+
+            <button type="submit" class="univ-openday__btn-submit">
+              <span>Confirmar Inscripción Gratuita</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <p class="univ-openday__privacy">
+              Al enviar aceptas el tratamiento de tus datos para la gestión del evento y acceso al campus.
+            </p>
+          </div>
+
+          <div class="univ-openday__dialog" id="openday-dialog" hidden role="status">
+            <div class="univ-openday__success-icon">✓</div>
+            <h4 class="univ-openday__success-title">¡Plaza Confirmada con Éxito!</h4>
+            <p class="univ-openday__success-desc">
+              Te hemos enviado el código QR de acceso al campus y el programa detallado de la jornada a tu correo electrónico.
+            </p>
+            <div class="univ-openday__qr-mock" aria-hidden="true">
+              <div class="univ-openday__qr-box">
+                <span>QR ACCESO VERITAS CAMPUS</span>
+                <span class="univ-openday__qr-code">#OD-2026-7894</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="univ-openday__btn-reset"
+              onclick="document.getElementById('openday-dialog')?.setAttribute('hidden', ''); document.getElementById('openday-form-body')?.removeAttribute('hidden');"
+            >
+              Registrar Otra Inscripción
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .univ-openday {
+    padding: 5rem 0;
+    background: var(--univ-bg, #070c1a);
+  }
+
+  .univ-openday__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .univ-openday__header {
+    text-align: center;
+    max-width: 820px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .univ-openday__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--univ-gold, #f59e0b);
+    margin-bottom: 0.75rem;
+  }
+
+  .univ-openday__title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: clamp(2rem, 3.5vw, 2.75rem);
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    line-height: 1.2;
+    margin: 0 0 1rem;
+  }
+
+  .univ-openday__lead {
+    font-size: 1.0625rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .univ-openday__box {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 3rem;
+    align-items: flex-start;
+  }
+
+  /* Sessions Left */
+  .univ-openday__sessions-title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    margin: 0 0 1.25rem;
+  }
+
+  .univ-openday__sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .univ-openday__session-card {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius, 12px);
+    padding: 1.5rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .univ-openday__session-card--active {
+    border-color: var(--univ-gold, #f59e0b);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  }
+
+  .univ-openday__session-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .univ-openday__session-date {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+  }
+
+  .univ-openday__session-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--univ-gold, #f59e0b);
+    background: var(--univ-gold-bg, rgba(245, 158, 11, 0.1));
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .univ-openday__session-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--univ-text-dim, #64748b);
+    margin-bottom: 1rem;
+  }
+
+  .univ-openday__activities {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .univ-openday__activities li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.4;
+  }
+
+  .univ-openday__check {
+    color: var(--univ-gold, #f59e0b);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  /* Form Right */
+  .univ-openday__form-card {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius, 12px);
+    padding: 2rem;
+    box-shadow: var(--univ-shadow, 0 10px 30px -10px rgba(0, 0, 0, 0.6));
+  }
+
+  .univ-openday__form-title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    margin: 0 0 0.25rem;
+  }
+
+  .univ-openday__form-sub {
+    font-size: 0.8125rem;
+    color: var(--univ-text-muted, #94a3b8);
+    margin: 0 0 1.5rem;
+  }
+
+  .univ-openday__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .univ-openday__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .univ-openday__field label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--univ-text-muted, #94a3b8);
+  }
+
+  .univ-openday__input,
+  .univ-openday__select {
+    width: 100%;
+    padding: 0.6875rem 0.875rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius-sm, 6px);
+    color: var(--univ-text, #f8fafc);
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .univ-openday__input:focus,
+  .univ-openday__select:focus {
+    border-color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-openday__btn-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, var(--univ-gold, #f59e0b) 0%, #d97706 100%);
+    color: #070c1a;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--univ-radius-sm, 6px);
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    transition: transform 0.2s ease;
+    margin-top: 0.5rem;
+  }
+
+  .univ-openday__btn-submit:hover {
+    transform: translateY(-2px);
+  }
+
+  .univ-openday__privacy {
+    font-size: 0.6875rem;
+    color: var(--univ-text-dim, #64748b);
+    line-height: 1.4;
+    margin: 0.75rem 0 0;
+    text-align: center;
+  }
+
+  /* Success Dialog */
+  .univ-openday__dialog {
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .univ-openday__success-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 auto 1rem;
+  }
+
+  .univ-openday__success-title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    margin: 0 0 0.5rem;
+  }
+
+  .univ-openday__success-desc {
+    font-size: 0.875rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.6;
+    margin: 0 0 1.5rem;
+  }
+
+  .univ-openday__qr-mock {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .univ-openday__qr-box {
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px dashed var(--univ-gold, #f59e0b);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--univ-text-muted, #94a3b8);
+  }
+
+  .univ-openday__qr-code {
+    font-family: monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--univ-gold, #f59e0b);
+    letter-spacing: 0.1em;
+  }
+
+  .univ-openday__btn-reset {
+    padding: 0.625rem 1.25rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    color: var(--univ-text, #f8fafc);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 960px) {
+    .univ-openday__box {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .univ-openday__row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

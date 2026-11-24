@@ -1,0 +1,743 @@
+---
+/**
+ * UnivCalculator — Interactive tuition and merit scholarship calculator.
+ * Computes official tuition, merit discounts, optional campus residence and 10-installment monthly payment plan in real-time.
+ *
+ * @param {string} className - Optional additional CSS class
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { univPrograms } from '../templates/university/data';
+
+interface Props extends HTMLAttributes<'section'> {
+  className?: string;
+}
+
+const {
+  class: classProp,
+  className = '',
+  ...rest
+} = Astro.props;
+
+const classes = ['univ-calculator', classProp, className].filter(Boolean).join(' ');
+---
+
+<section class={classes} id="calculadora-becas" data-calculator-root {...rest}>
+  <div class="univ-calculator__container">
+    <div class="univ-calculator__header">
+      <div class="univ-calculator__eyebrow">SIMULADOR FINANCIERO Y AYUDAS</div>
+      <h2 class="univ-calculator__title">Calculadora de Matrícula y Becas al Mérito</h2>
+      <p class="univ-calculator__lead">
+        En Veritas creemos en la igualdad de oportunidades: el 42% de nuestros alumnos cuenta con beca parcial o total. Calcula tu cuota personalizada y plan de financiación sin intereses en 10 plazos.
+      </p>
+    </div>
+
+    <div class="univ-calculator__box">
+      <!-- Left Column: Form Controls -->
+      <div class="univ-calculator__controls">
+        <!-- 1. Program Selection -->
+        <div class="univ-calculator__group">
+          <label for="calc-program" class="univ-calculator__label">1. Selecciona la Titulación</label>
+          <select id="calc-program" class="univ-calculator__select">
+            {univPrograms.map((p) => (
+              <option value={p.id} data-price={p.tuitionYear} selected={p.id === 'grado-ingenieria-ia'}>
+                {p.title} ({p.tuitionYear.toLocaleString('es-ES')} €/año)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <!-- 2. Merit Grade Bracket -->
+        <div class="univ-calculator__group">
+          <label class="univ-calculator__label">2. Nota Media de tu Expediente Académico (Beca al Mérito)</label>
+          <div class="univ-calculator__radios" role="radiogroup" aria-label="Nota media académica">
+            <label class="univ-calculator__radio-card">
+              <input type="radio" name="calc-grade" value="0" />
+              <div class="univ-calculator__radio-content">
+                <span class="univ-calculator__radio-title">Menos de 8.0</span>
+                <span class="univ-calculator__radio-desc">Tarifa estándar</span>
+              </div>
+            </label>
+
+            <label class="univ-calculator__radio-card">
+              <input type="radio" name="calc-grade" value="15" />
+              <div class="univ-calculator__radio-content">
+                <span class="univ-calculator__radio-title">8.0 a 8.99</span>
+                <span class="univ-calculator__radio-badge">15% Beca</span>
+              </div>
+            </label>
+
+            <label class="univ-calculator__radio-card">
+              <input type="radio" name="calc-grade" value="30" checked />
+              <div class="univ-calculator__radio-content">
+                <span class="univ-calculator__radio-title">9.0 a 9.49</span>
+                <span class="univ-calculator__radio-badge">30% Beca</span>
+              </div>
+            </label>
+
+            <label class="univ-calculator__radio-card">
+              <input type="radio" name="calc-grade" value="50" />
+              <div class="univ-calculator__radio-content">
+                <span class="univ-calculator__radio-title">9.5 a 10.0</span>
+                <span class="univ-calculator__radio-badge">50% Beca Excelencia</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Add-on Services -->
+        <div class="univ-calculator__group">
+          <span class="univ-calculator__label">3. Servicios Adicionales del Campus</span>
+          <div class="univ-calculator__checks">
+            <label class="univ-calculator__check-card">
+              <input type="checkbox" id="calc-residence" data-addon="8500" />
+              <div>
+                <span class="univ-calculator__check-title">Colegio Mayor Veritas Hall (Habitación individual + Pensión)</span>
+                <span class="univ-calculator__check-sub">+850 € / mes (8.500 €/curso)</span>
+              </div>
+            </label>
+
+            <label class="univ-calculator__check-card">
+              <input type="checkbox" id="calc-sports" data-addon="350" />
+              <div>
+                <span class="univ-calculator__check-title">Pase Completo Polideportivo Olímpico y Wellness</span>
+                <span class="univ-calculator__check-sub">+350 € / curso</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Real-Time Breakdown & Summary -->
+      <div class="univ-calculator__summary">
+        <div class="univ-calculator__summary-card">
+          <h3 class="univ-calculator__summary-title">Resumen de Tu Estimación</h3>
+          <p class="univ-calculator__summary-sub">Plan de financiación 10 mensualidades (octubre a julio)</p>
+
+          <div class="univ-calculator__breakdown">
+            <div class="univ-calculator__row">
+              <span class="univ-calculator__row-label">Matrícula anual oficial</span>
+              <span class="univ-calculator__row-val" id="calc-base-val">11.800 €</span>
+            </div>
+
+            <div class="univ-calculator__row univ-calculator__row--discount" id="calc-discount-row">
+              <span class="univ-calculator__row-label">Beca al Mérito Académico (<span id="calc-discount-pct">30%</span>)</span>
+              <span class="univ-calculator__row-val" id="calc-discount-val">-3.540 €</span>
+            </div>
+
+            <div class="univ-calculator__row" id="calc-residence-row" hidden>
+              <span class="univ-calculator__row-label">Alojamiento Colegio Mayor</span>
+              <span class="univ-calculator__row-val" id="calc-residence-val">+8.500 €</span>
+            </div>
+
+            <div class="univ-calculator__row" id="calc-sports-row" hidden>
+              <span class="univ-calculator__row-label">Bono Deportivo Completo</span>
+              <span class="univ-calculator__row-val" id="calc-sports-val">+350 €</span>
+            </div>
+
+            <div class="univ-calculator__divider"></div>
+
+            <div class="univ-calculator__total-row">
+              <span class="univ-calculator__total-label">Total Neto Anual:</span>
+              <span class="univ-calculator__total-val" id="calc-total-val">8.260 €</span>
+            </div>
+
+            <!-- Installment Highlight -->
+            <div class="univ-calculator__monthly-box">
+              <span class="univ-calculator__monthly-label">Plan 10 cuotas mensuales sin intereses:</span>
+              <div class="univ-calculator__monthly-val" id="calc-monthly-val">826 € / mes</div>
+              <span class="univ-calculator__monthly-sub">Sin comisión de apertura ni aval bancario previo</span>
+            </div>
+          </div>
+
+          <div class="univ-calculator__cta-wrap">
+            <button
+              type="button"
+              class="univ-calculator__btn-apply"
+              id="calc-open-modal"
+            >
+              <span>Solicitar Beca Formalmente</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <p class="univ-calculator__legal-note">
+              * Simulación de carácter orientativo sujeta a validación del expediente por la Comisión de Becas de la Universidad Veritas.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accessible Confirmation Dialog Modal -->
+  <dialog class="univ-modal" id="calc-modal">
+    <div class="univ-modal__dialog">
+      <div class="univ-modal__header">
+        <h4 class="univ-modal__title">Solicitud de Beca y Estudio Económico</h4>
+        <button type="button" class="univ-modal__close" id="calc-modal-close" aria-label="Cerrar ventana">&times;</button>
+      </div>
+
+      <div class="univ-modal__body" id="calc-modal-body">
+        <p class="univ-modal__intro">
+          Te enviaremos la preasignación de tu beca y la documentación oficial para formalizar tu solicitud telemática.
+        </p>
+        <form class="univ-modal__form" id="calc-modal-form" onsubmit="event.preventDefault(); document.getElementById('calc-modal-success')?.removeAttribute('hidden'); document.getElementById('calc-modal-body')?.setAttribute('hidden', '');">
+          <div class="univ-modal__field">
+            <label for="calc-name">Nombre y Apellidos *</label>
+            <input type="text" id="calc-name" required placeholder="p.ej. Clara Navarro Gómez" />
+          </div>
+          <div class="univ-modal__field">
+            <label for="calc-email">Correo Electrónico *</label>
+            <input type="email" id="calc-email" required placeholder="clara.navarro@ejemplo.com" />
+          </div>
+          <div class="univ-modal__field">
+            <label for="calc-phone">Teléfono de Contacto *</label>
+            <input type="tel" id="calc-phone" required placeholder="+34 600 000 000" />
+          </div>
+          <button type="submit" class="univ-modal__submit-btn">Enviar Solicitud de Beca &rarr;</button>
+        </form>
+      </div>
+
+      <div class="univ-modal__success" id="calc-modal-success" hidden role="status">
+        <div class="univ-modal__success-icon">✓</div>
+        <h5>¡Solicitud de Beca Registrada!</h5>
+        <p>Hemos generado tu expediente provisional. En las próximas 24 horas un asesor del departamento de admisiones se pondrá en contacto contigo.</p>
+        <button type="button" class="univ-modal__done-btn" id="calc-modal-done">Cerrar</button>
+      </div>
+    </div>
+  </dialog>
+</section>
+
+<script>
+  // Real-time calculation logic
+  const root = document.querySelector<HTMLElement>('[data-calculator-root]');
+  if (root) {
+    const container = root;
+    const programSelect = container.querySelector<HTMLSelectElement>('#calc-program');
+    const gradeRadios = container.querySelectorAll<HTMLInputElement>('input[name="calc-grade"]');
+    const residenceCheck = container.querySelector<HTMLInputElement>('#calc-residence');
+    const sportsCheck = container.querySelector<HTMLInputElement>('#calc-sports');
+
+    const baseValEl = container.querySelector('#calc-base-val');
+    const discountRow = container.querySelector<HTMLElement>('#calc-discount-row');
+    const discountPctEl = container.querySelector('#calc-discount-pct');
+    const discountValEl = container.querySelector('#calc-discount-val');
+    const residenceRow = container.querySelector<HTMLElement>('#calc-residence-row');
+    const sportsRow = container.querySelector<HTMLElement>('#calc-sports-row');
+    const totalValEl = container.querySelector('#calc-total-val');
+    const monthlyValEl = container.querySelector('#calc-monthly-val');
+
+    const modal = container.querySelector<HTMLDialogElement>('#calc-modal');
+    const openModalBtn = container.querySelector<HTMLButtonElement>('#calc-open-modal');
+    const closeModalBtn = container.querySelector<HTMLButtonElement>('#calc-modal-close');
+    const modalDoneBtn = container.querySelector<HTMLButtonElement>('#calc-modal-done');
+
+    function calculate() {
+      if (!programSelect) return;
+      const selectedOption = programSelect.options[programSelect.selectedIndex];
+      const basePrice = Number(selectedOption.getAttribute('data-price')) || 11800;
+
+      let discountPct = 0;
+      gradeRadios.forEach((r) => {
+        if (r.checked) {
+          discountPct = Number(r.value) || 0;
+        }
+      });
+
+      const hasResidence = Boolean(residenceCheck?.checked);
+      const hasSports = Boolean(sportsCheck?.checked);
+
+      const discountAmount = basePrice * (discountPct / 100);
+      const residencePrice = hasResidence ? 8500 : 0;
+      const sportsPrice = hasSports ? 350 : 0;
+
+      const total = basePrice - discountAmount + residencePrice + sportsPrice;
+      const monthly = total / 10;
+
+      if (baseValEl) baseValEl.textContent = `${basePrice.toLocaleString('es-ES')} €`;
+
+      if (discountRow && discountPctEl && discountValEl) {
+        if (discountPct > 0) {
+          discountRow.removeAttribute('hidden');
+          discountPctEl.textContent = `${discountPct}%`;
+          discountValEl.textContent = `-${discountAmount.toLocaleString('es-ES')} €`;
+        } else {
+          discountRow.setAttribute('hidden', '');
+        }
+      }
+
+      if (residenceRow) {
+        if (hasResidence) residenceRow.removeAttribute('hidden');
+        else residenceRow.setAttribute('hidden', '');
+      }
+
+      if (sportsRow) {
+        if (hasSports) sportsRow.removeAttribute('hidden');
+        else sportsRow.setAttribute('hidden', '');
+      }
+
+      if (totalValEl) totalValEl.textContent = `${total.toLocaleString('es-ES')} €`;
+      if (monthlyValEl) monthlyValEl.textContent = `${Math.round(monthly).toLocaleString('es-ES')} € / mes`;
+    }
+
+    programSelect?.addEventListener('change', calculate);
+    gradeRadios.forEach((r) => r.addEventListener('change', calculate));
+    residenceCheck?.addEventListener('change', calculate);
+    sportsCheck?.addEventListener('change', calculate);
+
+    // Initial run
+    calculate();
+
+    // Modal
+    if (openModalBtn && modal) {
+      openModalBtn.addEventListener('click', () => {
+        modal.showModal();
+      });
+    }
+    if (closeModalBtn && modal) {
+      closeModalBtn.addEventListener('click', () => {
+        modal.close();
+      });
+    }
+    if (modalDoneBtn && modal) {
+      modalDoneBtn.addEventListener('click', () => {
+        modal.close();
+      });
+    }
+  }
+</script>
+
+<style>
+  .univ-calculator {
+    padding: 5rem 0;
+    background: var(--univ-navy-deep, #0a0f1d);
+    border-top: 1px solid var(--univ-border, #1e2f5d);
+    border-bottom: 1px solid var(--univ-border, #1e2f5d);
+  }
+
+  .univ-calculator__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .univ-calculator__header {
+    text-align: center;
+    max-width: 820px;
+    margin: 0 auto 3.5rem;
+  }
+
+  .univ-calculator__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--univ-gold, #f59e0b);
+    margin-bottom: 0.75rem;
+  }
+
+  .univ-calculator__title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: clamp(2rem, 3.5vw, 2.75rem);
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    line-height: 1.2;
+    margin: 0 0 1rem;
+  }
+
+  .univ-calculator__lead {
+    font-size: 1.0625rem;
+    color: var(--univ-text-muted, #94a3b8);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .univ-calculator__box {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 2.5rem;
+    align-items: flex-start;
+  }
+
+  .univ-calculator__controls {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .univ-calculator__group {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius, 12px);
+    padding: 1.5rem;
+  }
+
+  .univ-calculator__label {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    margin-bottom: 1rem;
+  }
+
+  .univ-calculator__select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius-sm, 6px);
+    color: var(--univ-text, #f8fafc);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .univ-calculator__select:focus {
+    border-color: var(--univ-gold, #f59e0b);
+  }
+
+  /* Radios */
+  .univ-calculator__radios {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .univ-calculator__radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border-subtle, #182548);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .univ-calculator__radio-card:hover {
+    border-color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-calculator__radio-card input {
+    margin-top: 3px;
+    accent-color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-calculator__radio-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .univ-calculator__radio-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--univ-text, #f8fafc);
+  }
+
+  .univ-calculator__radio-desc {
+    font-size: 0.75rem;
+    color: var(--univ-text-dim, #64748b);
+  }
+
+  .univ-calculator__radio-badge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--univ-gold, #f59e0b);
+  }
+
+  /* Checks */
+  .univ-calculator__checks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .univ-calculator__check-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border-subtle, #182548);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .univ-calculator__check-card input {
+    margin-top: 3px;
+    accent-color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-calculator__check-title {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--univ-text, #f8fafc);
+  }
+
+  .univ-calculator__check-sub {
+    font-size: 0.75rem;
+    color: var(--univ-gold, #f59e0b);
+    font-weight: 600;
+  }
+
+  /* Summary Right Card */
+  .univ-calculator__summary-card {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-gold, #f59e0b);
+    border-radius: var(--univ-radius, 12px);
+    padding: 2rem;
+    box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.2);
+    position: sticky;
+    top: 130px;
+  }
+
+  .univ-calculator__summary-title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--univ-text, #f8fafc);
+    margin: 0 0 0.25rem;
+  }
+
+  .univ-calculator__summary-sub {
+    font-size: 0.8125rem;
+    color: var(--univ-text-muted, #94a3b8);
+    margin: 0 0 1.5rem;
+  }
+
+  .univ-calculator__breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .univ-calculator__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+  }
+
+  .univ-calculator__row-label {
+    color: var(--univ-text-muted, #94a3b8);
+  }
+
+  .univ-calculator__row-val {
+    font-weight: 600;
+    color: var(--univ-text, #f8fafc);
+  }
+
+  .univ-calculator__row--discount .univ-calculator__row-val {
+    color: #10b981;
+  }
+
+  .univ-calculator__divider {
+    height: 1px;
+    background: var(--univ-border, #1e2f5d);
+    margin: 0.5rem 0;
+  }
+
+  .univ-calculator__total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .univ-calculator__total-val {
+    color: var(--univ-gold, #f59e0b);
+    font-size: 1.375rem;
+  }
+
+  /* Monthly Installment Box */
+  .univ-calculator__monthly-box {
+    margin-top: 1rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px dashed var(--univ-gold, #f59e0b);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .univ-calculator__monthly-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--univ-text-muted, #94a3b8);
+    margin-bottom: 0.25rem;
+  }
+
+  .univ-calculator__monthly-val {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-calculator__monthly-sub {
+    font-size: 0.6875rem;
+    color: var(--univ-text-dim, #64748b);
+  }
+
+  .univ-calculator__cta-wrap {
+    margin-top: 1.5rem;
+  }
+
+  .univ-calculator__btn-apply {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, var(--univ-gold, #f59e0b) 0%, #d97706 100%);
+    color: #070c1a;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--univ-radius-sm, 6px);
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    transition: transform 0.2s ease;
+  }
+
+  .univ-calculator__btn-apply:hover {
+    transform: translateY(-2px);
+  }
+
+  .univ-calculator__legal-note {
+    font-size: 0.6875rem;
+    color: var(--univ-text-dim, #64748b);
+    line-height: 1.4;
+    margin: 0.75rem 0 0;
+    text-align: center;
+  }
+
+  /* Modal */
+  .univ-modal {
+    border: none;
+    background: transparent;
+    padding: 0;
+    max-width: 480px;
+    width: 90%;
+  }
+
+  .univ-modal::backdrop {
+    background: rgba(7, 12, 26, 0.8);
+    backdrop-filter: blur(8px);
+  }
+
+  .univ-modal__dialog {
+    background: var(--univ-bg-card, #0d162d);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: var(--univ-radius, 12px);
+    padding: 2rem;
+    color: var(--univ-text, #f8fafc);
+  }
+
+  .univ-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .univ-modal__title {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .univ-modal__close {
+    background: transparent;
+    border: none;
+    color: var(--univ-text-dim, #64748b);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .univ-modal__intro {
+    font-size: 0.875rem;
+    color: var(--univ-text-muted, #94a3b8);
+    margin: 0 0 1.25rem;
+    line-height: 1.5;
+  }
+
+  .univ-modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .univ-modal__field input {
+    padding: 0.625rem 0.875rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: 6px;
+    color: var(--univ-text, #f8fafc);
+    outline: none;
+  }
+
+  .univ-modal__submit-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--univ-gold, #f59e0b);
+    color: #070c1a;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+
+  .univ-modal__success {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .univ-modal__success-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 auto 1rem;
+  }
+
+  .univ-modal__done-btn {
+    padding: 0.5rem 1.5rem;
+    background: var(--univ-bg-surface, #101b38);
+    border: 1px solid var(--univ-border, #1e2f5d);
+    color: var(--univ-text, #f8fafc);
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 960px) {
+    .univ-calculator__box {
+      grid-template-columns: 1fr;
+    }
+
+    .univ-calculator__summary-card {
+      position: static;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .univ-calculator__radios {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+

@@ -1,0 +1,555 @@
+---
+/**
+ * UnivHeader — Distinguished academic navigation bar for university campuses.
+ * Features university crest, responsive links, Open Day banner, theme switcher and accessible mobile drawer.
+ *
+ * @param {string} currentPath - Current page path for active link indicator
+ * @param {Record<string, string>} routes - Route map for navigation
+ * @param {string} className - Optional additional CSS class
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { univRoutes, univBrand } from '../templates/university/data';
+
+interface Props extends HTMLAttributes<'header'> {
+  currentPath?: string;
+  routes?: typeof univRoutes;
+  className?: string;
+}
+
+const {
+  currentPath = '/preview/university/',
+  routes = univRoutes,
+  class: classProp,
+  className = '',
+  ...rest
+} = Astro.props;
+
+const classes = ['univ-header', classProp, className].filter(Boolean).join(' ');
+
+const navLinks = [
+  { href: routes.home, label: 'Inicio' },
+  { href: routes.programs, label: 'Programas' },
+  { href: routes.admissions, label: 'Admisiones & Becas' },
+  { href: routes.research, label: 'Investigación' },
+  { href: routes.campus, label: 'Vida en el Campus' },
+];
+
+function isActive(path: string): boolean {
+  if (path === routes.home) return currentPath === routes.home;
+  return currentPath.startsWith(path);
+}
+---
+
+<header class={classes} {...rest}>
+  <!-- Top Utility Bar -->
+  <div class="univ-header__topbar">
+    <div class="univ-header__container univ-header__topbar-inner">
+      <div class="univ-header__notice">
+        <span class="univ-header__dot" aria-hidden="true"></span>
+        <span>Próxima Jornada de Puertas Abiertas: <strong>{univBrand.openDayDate}</strong></span>
+        <a href={routes.campus} class="univ-header__toplink">Inscribirse &rarr;</a>
+      </div>
+      <div class="univ-header__top-actions">
+        <span class="univ-header__phone">Admisiones: <a href={`tel:${univBrand.admissionsPhone}`}>{univBrand.admissionsPhone}</a></span>
+        <span class="univ-header__sep" aria-hidden="true">|</span>
+        <button type="button" class="univ-header__theme-toggle" id="univ-theme-toggle" aria-label="Cambiar tema claro u oscuro">
+          <svg class="univ-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="univ-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation Bar -->
+  <div class="univ-header__main">
+    <div class="univ-header__container univ-header__main-inner">
+      <!-- University Brand / Crest -->
+      <a href={routes.home} class="univ-header__brand" aria-label="Universidad Veritas — Inicio">
+        <div class="univ-header__crest" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#101b38" stroke="#f59e0b" stroke-width="1.5"/>
+            <path d="M20 7L31 13V22C31 28.5 26.2 33.5 20 35C13.8 33.5 9 28.5 9 22V13L20 7Z" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" stroke-width="1.5"/>
+            <path d="M20 12L25 18H15L20 12Z" fill="#f59e0b"/>
+            <path d="M16 20H24V26C24 28 22 29 20 29C18 29 16 28 16 26V20Z" fill="#3b82f6"/>
+            <circle cx="20" cy="24" r="1.5" fill="#f8fafc"/>
+          </svg>
+        </div>
+        <div class="univ-header__titles">
+          <span class="univ-header__name">VERITAS</span>
+          <span class="univ-header__subtitle">UNIVERSIDAD INTERNACIONAL</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="univ-header__nav" aria-label="Navegación principal">
+        <ul class="univ-header__nav-list">
+          {navLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <li>
+                <a
+                  href={link.href}
+                  class:list={['univ-header__link', { 'univ-header__link--active': active }]}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <!-- Header CTAs -->
+      <div class="univ-header__actions">
+        <a href={routes.admissions} class="univ-header__cta-btn">
+          <span>Solicitar Admisión</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+
+        <!-- Mobile Drawer Toggle -->
+        <button
+          type="button"
+          class="univ-header__burger"
+          id="univ-burger-btn"
+          aria-expanded="false"
+          aria-controls="univ-mobile-menu"
+          aria-label="Abrir menú de navegación"
+        >
+          <span class="univ-header__burger-line" aria-hidden="true"></span>
+          <span class="univ-header__burger-line" aria-hidden="true"></span>
+          <span class="univ-header__burger-line" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer Menu -->
+  <div class="univ-header__drawer" id="univ-mobile-menu" hidden>
+    <div class="univ-header__drawer-content">
+      <nav aria-label="Navegación móvil">
+        <ul class="univ-header__drawer-list">
+          {navLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <li>
+                <a
+                  href={link.href}
+                  class:list={['univ-header__drawer-link', { 'univ-header__drawer-link--active': active }]}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <div class="univ-header__drawer-cta">
+        <a href={routes.admissions} class="univ-header__drawer-btn">Solicitar Admisión</a>
+        <div class="univ-header__drawer-contact">
+          <p>Admisiones: <a href={`tel:${univBrand.admissionsPhone}`}>{univBrand.admissionsPhone}</a></p>
+          <p>{univBrand.location}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Theme toggle persistence
+  const themeToggle = document.getElementById('univ-theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const isLight = document.documentElement.classList.contains('univ-light') || document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        document.documentElement.classList.remove('univ-light');
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.add('univ-light');
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+      }
+    });
+  }
+
+  // Mobile drawer logic
+  const burger = document.getElementById('univ-burger-btn');
+  const drawer = document.getElementById('univ-mobile-menu');
+
+  if (burger && drawer) {
+    burger.addEventListener('click', () => {
+      const isOpen = burger.getAttribute('aria-expanded') === 'true';
+      burger.setAttribute('aria-expanded', String(!isOpen));
+      if (isOpen) {
+        drawer.setAttribute('hidden', '');
+        document.body.style.overflow = '';
+      } else {
+        drawer.removeAttribute('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+    });
+
+    // Close drawer when clicking a link
+    const drawerLinks = drawer.querySelectorAll('a');
+    drawerLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        burger.setAttribute('aria-expanded', 'false');
+        drawer.setAttribute('hidden', '');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+</script>
+
+<style>
+  .univ-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    background-color: var(--univ-bg, #070c1a);
+    border-bottom: 1px solid var(--univ-border-subtle, #182548);
+    backdrop-filter: blur(12px);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .univ-header__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* Top Utility Bar */
+  .univ-header__topbar {
+    background: var(--univ-navy-deep, #0a0f1d);
+    border-bottom: 1px solid var(--univ-border-subtle, #182548);
+    font-size: 0.8125rem;
+    color: var(--univ-text-muted, #94a3b8);
+  }
+
+  .univ-header__topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36px;
+    gap: 1rem;
+  }
+
+  .univ-header__notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .univ-header__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--univ-gold, #f59e0b);
+    box-shadow: 0 0 8px var(--univ-gold, #f59e0b);
+    display: inline-block;
+  }
+
+  .univ-header__toplink {
+    color: var(--univ-gold, #f59e0b);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 0.25rem;
+  }
+
+  .univ-header__toplink:hover {
+    text-decoration: underline;
+  }
+
+  .univ-header__top-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .univ-header__phone a {
+    color: var(--univ-text, #f8fafc);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .univ-header__phone a:hover {
+    color: var(--univ-gold, #f59e0b);
+  }
+
+  .univ-header__sep {
+    color: var(--univ-border, #1e2f5d);
+  }
+
+  .univ-header__theme-toggle {
+    background: transparent;
+    border: none;
+    color: var(--univ-text-muted, #94a3b8);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .univ-header__theme-toggle:hover {
+    color: var(--univ-gold, #f59e0b);
+  }
+
+  :global(.univ-light) .univ-icon-sun,
+  :global([data-theme='light']) .univ-icon-sun {
+    display: none;
+  }
+
+  :global(:not(.univ-light):not([data-theme='light'])) .univ-icon-moon {
+    display: none;
+  }
+
+  /* Main Navigation Bar */
+  .univ-header__main-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    gap: 1.5rem;
+  }
+
+  /* Brand / Crest */
+  .univ-header__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    text-decoration: none;
+  }
+
+  .univ-header__crest {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+  }
+
+  .univ-header__brand:hover .univ-header__crest {
+    transform: scale(1.05);
+  }
+
+  .univ-header__titles {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .univ-header__name {
+    font-family: var(--univ-font-serif, serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--univ-text, #f8fafc);
+    line-height: 1.1;
+  }
+
+  .univ-header__subtitle {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--univ-gold, #f59e0b);
+  }
+
+  /* Navigation Links */
+  .univ-header__nav-list {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .univ-header__link {
+    display: inline-block;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--univ-text-muted, #94a3b8);
+    text-decoration: none;
+    border-radius: var(--univ-radius-sm, 6px);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .univ-header__link:hover {
+    color: var(--univ-text, #f8fafc);
+    background-color: var(--univ-bg-card-hover, #142042);
+  }
+
+  .univ-header__link--active {
+    color: var(--univ-gold, #f59e0b);
+    background-color: var(--univ-gold-bg, rgba(245, 158, 11, 0.1));
+    font-weight: 600;
+  }
+
+  /* Actions */
+  .univ-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .univ-header__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5625rem 1.125rem;
+    background: linear-gradient(135deg, var(--univ-gold, #f59e0b) 0%, #d97706 100%);
+    color: #0a0f1d;
+    font-weight: 700;
+    font-size: 0.875rem;
+    border-radius: var(--univ-radius-sm, 6px);
+    text-decoration: none;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .univ-header__cta-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  }
+
+  /* Burger button */
+  .univ-header__burger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    background: transparent;
+    border: 1px solid var(--univ-border, #1e2f5d);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .univ-header__burger-line {
+    width: 100%;
+    height: 2px;
+    background-color: var(--univ-text, #f8fafc);
+    border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  /* Drawer for Mobile */
+  .univ-header__drawer {
+    position: fixed;
+    top: 108px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--univ-bg, #070c1a);
+    padding: 1.5rem;
+    overflow-y: auto;
+    z-index: 100;
+    border-top: 1px solid var(--univ-border, #1e2f5d);
+  }
+
+  .univ-header__drawer[hidden] {
+    display: none;
+  }
+
+  .univ-header__drawer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .univ-header__drawer-link {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--univ-text, #f8fafc);
+    text-decoration: none;
+    border-radius: 8px;
+    background: var(--univ-bg-card, #0d162d);
+  }
+
+  .univ-header__drawer-link--active {
+    color: var(--univ-gold, #f59e0b);
+    border-left: 3px solid var(--univ-gold, #f59e0b);
+    font-weight: 700;
+  }
+
+  .univ-header__drawer-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 0.875rem;
+    background: var(--univ-gold, #f59e0b);
+    color: #0a0f1d;
+    font-weight: 700;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+  }
+
+  .univ-header__drawer-contact {
+    font-size: 0.875rem;
+    color: var(--univ-text-muted, #94a3b8);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .univ-header__drawer-contact a {
+    color: var(--univ-gold, #f59e0b);
+    text-decoration: none;
+  }
+
+  @media (max-width: 960px) {
+    .univ-header__nav {
+      display: none;
+    }
+
+    .univ-header__burger {
+      display: flex;
+    }
+
+    .univ-header__cta-btn {
+      display: none;
+    }
+
+    .univ-header__notice span:nth-child(2) {
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .univ-header__topbar-inner {
+      font-size: 0.75rem;
+    }
+
+    .univ-header__phone {
+      display: none;
+    }
+
+    .univ-header__sep {
+      display: none;
+    }
+
+    .univ-header__drawer {
+      top: 108px;
+    }
+  }
+</style>
+

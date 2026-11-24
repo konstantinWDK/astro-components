@@ -1,0 +1,130 @@
+---
+/**
+ * UnivSiteLayout — Complete document layout for Veritas University pages.
+ * Includes DOCTYPE, head metadata, Google Fonts, theme bootstrap, accessibility
+ * skip-link, sticky UnivHeader, semantic <main>, and UnivFooter.
+ */
+import '../../../../styles/global.css';
+import './univ-theme.css';
+import UnivHeader from '../../app/UnivHeader.astro';
+import UnivFooter from '../../app/UnivFooter.astro';
+import { univRoutes, type UnivRouteMap } from './data';
+
+interface Props {
+  currentPath?: string;
+  routes?: UnivRouteMap;
+  title?: string;
+  description?: string;
+  theme?: 'dark' | 'light' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  currentPath = '/preview/university/',
+  routes = univRoutes,
+  title = 'Universidad Veritas · Campus Internacional de Estudios Superiores',
+  description = 'Universidad oficial con titulaciones adaptadas al EEES, investigación de impacto en IA y biomedicina y #1 en empleabilidad según Forbes.',
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang} class="univ-root" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('univ-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+        if (t === 'light') {
+          document.documentElement.classList.add('univ-light');
+        } else {
+          document.documentElement.classList.remove('univ-light');
+        }
+      })();
+    </script>
+  </head>
+  <body class="univ-body">
+    <a href="#main-content" class="univ-skip-link">Saltar al contenido principal</a>
+
+    <div class="univ-site-layout">
+      <UnivHeader currentPath={currentPath} routes={routes} />
+      <main id="main-content" class="univ-site-layout__main" tabindex="-1">
+        <slot />
+      </main>
+      <UnivFooter routes={routes} />
+    </div>
+  </body>
+</html>
+
+<style is:global>
+  .univ-root {
+    color-scheme: dark;
+  }
+  .univ-root.univ-light,
+  .univ-root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  .univ-body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background-color: var(--univ-bg, #070c1a);
+    color: var(--univ-text, #f8fafc);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  .univ-skip-link {
+    position: absolute;
+    top: -999px;
+    left: 1rem;
+    z-index: 9999;
+    padding: 0.75rem 1.25rem;
+    background: var(--univ-gold, #f59e0b);
+    color: #0a0f1d;
+    font-weight: 800;
+    border-radius: var(--univ-radius-sm, 6px);
+    text-decoration: none;
+    transition: top 0.2s ease;
+  }
+
+  .univ-skip-link:focus {
+    top: 1rem;
+    outline: 2px solid #ffffff;
+  }
+
+  .univ-site-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .univ-site-layout__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .univ-site-layout__main:focus {
+    outline: none;
+  }
+</style>
