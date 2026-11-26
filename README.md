@@ -9,6 +9,15 @@
 ![npm](https://img.shields.io/npm/v/astro-component-kit.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-34d399.svg)
 
+<div align="center">
+  <video src="https://astrocomponents.dev/videos/astro-components-showcase.mp4" poster="https://astrocomponents.dev/videos/astro-components-showcase-poster.jpg" controls muted playsinline width="100%">
+    <a href="https://astrocomponents.dev/videos/astro-components-showcase.mp4">
+      <img src="https://astrocomponents.dev/videos/astro-components-showcase-poster.jpg" alt="Astro Component Kit — Video Showcase" width="100%" />
+    </a>
+  </video>
+  <p><a href="https://astrocomponents.dev/videos/astro-components-showcase.mp4">▶️ Watch the Video Showcase (MP4)</a></p>
+</div>
+
 ---
 
 ## ✨ Features
