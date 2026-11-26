@@ -7,5 +7,5 @@ export const previewFestivalRoutes: FestivalRoutes = {
   schedule: '/preview/festival/horarios',
   tickets: '/preview/festival/entradas',
   info: '/preview/festival/info',
-  myFestival: '/preview/festival/mi-pulso',
+  myFestival: '/preview/festival/mi-sonora',
 };

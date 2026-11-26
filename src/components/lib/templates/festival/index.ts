@@ -1,5 +1,5 @@
 // src/components/lib/templates/festival/index.ts
-// Barrel export for "Pulso" · Music festival template with line-up, timetable, tickets and personal agenda
+// Barrel export for "Sonora" · Music festival template with line-up, timetable, tickets and personal agenda
 
 export { default as FestivalSiteLayout } from './FestivalSiteLayout.astro';
 export { default as FestivalHomePage } from './FestivalHomePage.astro';

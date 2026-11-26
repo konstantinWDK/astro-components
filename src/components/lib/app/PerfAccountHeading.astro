@@ -3,6 +3,8 @@
  * PerfAccountHeading — Page heading for the members area: kicker, large serif title, description,
  * optional back link and a slot for action buttons.
  *
+ * Thin wrapper over the shared `AccountHeading`: it only chooses this template's copy and typography.
+ *
  * @param {string} title - Page title (the page's <h1>).
  * @param {string} kicker - Small label above the title.
  * @param {string} description - Supporting text.
@@ -14,6 +16,7 @@
  */
 import type { HTMLAttributes } from 'astro/types';
 import '../templates/perfumery/perf-theme.css';
+import AccountHeading from './AccountHeading.astro';
 
 interface OwnProps {
   title: string;
@@ -25,70 +28,19 @@ interface OwnProps {
 
 type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
 
-const { title, kicker = '', description = '', backHref = '', backLabel = 'Volver', class: classAttr, ...rest } = Astro.props;
+const { title, kicker = '', description = '', backHref = '', backLabel = 'Volver', ...rest } = Astro.props;
 ---
 
-<header class:list={['perf-ui', 'perf-mh', classAttr]} {...rest}>
-  <div>
-    {backHref && <a class="perf-mh__back" href={backHref}>← {backLabel}</a>}
-    {kicker && <p class="pf-eyebrow">{kicker}</p>}
-    <h1 class="perf-mh__title">{title}</h1>
-    {description && <p class="perf-mh__desc">{description}</p>}
-  </div>
-  <div class="perf-mh__actions"><slot /></div>
-</header>
-
-<style>
-  .perf-mh {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--sp-4, 1rem);
-    margin-bottom: var(--sp-8, 2rem);
-    padding-bottom: var(--sp-5, 1.25rem);
-    border-bottom: 1px solid var(--pf-border-strong);
-    color: var(--pf-text);
-    font-family: var(--pf-font-body);
-  }
-
-  .perf-mh__back {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    margin-bottom: var(--sp-1, 0.25rem);
-    font-size: 0.9rem;
-    color: var(--pf-text-2);
-    text-decoration: none;
-  }
-
-  .perf-mh__back:hover {
-    color: var(--pf-brand);
-  }
-
-  .perf-mh__title {
-    margin: 0;
-    font-family: var(--pf-font-display);
-    font-weight: 300;
-    font-size: clamp(2.4rem, 6vw, 4rem);
-    line-height: 1;
-    letter-spacing: -0.025em;
-  }
-
-  .perf-mh__desc {
-    max-width: 52ch;
-    margin: var(--sp-3, 0.75rem) 0 0;
-    line-height: 1.6;
-    color: var(--pf-text-2);
-  }
-
-  .perf-mh__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2, 0.5rem);
-  }
-
-  .perf-mh__actions:empty {
-    display: none;
-  }
-</style>
+<AccountHeading
+  themeClass="perf-ui"
+  tokenPrefix="pf"
+  title={title}
+  kicker={kicker}
+  description={description}
+  backHref={backHref}
+  backLabel={backLabel}
+  titleWeight={300}
+  {...rest}
+>
+  <slot />
+</AccountHeading>

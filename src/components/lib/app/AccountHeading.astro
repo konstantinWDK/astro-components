@@ -1,0 +1,136 @@
+---
+/**
+ * AccountHeading — Shared page heading of a template's customer area: kicker, large title, description,
+ * optional back link and a slot for action buttons. The per-template wrappers (`FishAccountHeading`,
+ * `WineMemberHeading`, ...) only choose the title typography.
+ *
+ * Theming: pass the template's root class (`themeClass`) and token prefix (`tokenPrefix`); it reads
+ * `--{prefix}-border-strong`, `-text`, `-text-2`, `-text-3`, `-accent`, `-brand`, `-font-body` and
+ * `-font-display`, and the `{prefix}-eyebrow` class.
+ *
+ * @param {string} themeClass - Root class that defines the template tokens (e.g. `fish-ui`).
+ * @param {string} tokenPrefix - Token prefix of that theme (e.g. `fs`).
+ * @param {string} title - Page title (the page's <h1>).
+ * @param {string} kicker - Small label above the title.
+ * @param {string} description - Supporting text.
+ * @param {string} backHref - Optional "back" link.
+ * @param {string} backLabel - Text of the back link.
+ * @param {string} titleStyle - normal | italic.
+ * @param {number} titleWeight - Title font weight.
+ * @param {string} titleStretch - Title font-stretch (e.g. `75%`).
+ * @param {string} titleSpacing - Title word-spacing.
+ * @param {string} titleTransform - Title text-transform.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: renders the page <h1>; the back link has visible text and a 44px target.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
+  themeClass: string;
+  tokenPrefix: string;
+  title: string;
+  kicker?: string;
+  description?: string;
+  backHref?: string;
+  backLabel?: string;
+  titleStyle?: 'normal' | 'italic';
+  titleWeight?: number;
+  titleStretch?: string;
+  titleSpacing?: string;
+  titleTransform?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  themeClass,
+  tokenPrefix: p,
+  title,
+  kicker = '',
+  description = '',
+  backHref = '',
+  backLabel = 'Volver',
+  titleStyle = 'normal',
+  titleWeight = 400,
+  titleStretch = '100%',
+  titleSpacing = 'normal',
+  titleTransform = 'none',
+  class: classAttr,
+  style,
+  ...rest
+} = Astro.props;
+const tokens = ['accent', 'bg-raised', 'border', 'border-strong', 'brand', 'brand-rgb', 'font-body', 'font-display', 'on-brand', 'text', 'text-2', 'text-3']
+  .map((token) => `--ac-${token}: var(--${p}-${token})`)
+  .join('; ');
+const rootStyle = `${tokens}; --ac-title-style: ${titleStyle}; --ac-title-weight: ${titleWeight}; --ac-title-stretch: ${titleStretch}; --ac-title-spacing: ${titleSpacing}; --ac-title-transform: ${titleTransform}${typeof style === 'string' && style ? `; ${style}` : ''}`;
+---
+
+<header class:list={[themeClass, 'acct-mh', classAttr]} style={rootStyle} {...rest}>
+  <div>
+    {backHref && <a class="acct-mh__back" href={backHref}>← {backLabel}</a>}
+    {kicker && <p class={`${p}-eyebrow`}>{kicker}</p>}
+    <h1 class="acct-mh__title">{title}</h1>
+    {description && <p class="acct-mh__desc">{description}</p>}
+  </div>
+  <div class="acct-mh__actions"><slot /></div>
+</header>
+
+<style>
+  .acct-mh {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    margin-bottom: var(--sp-8, 2rem);
+    padding-bottom: var(--sp-5, 1.25rem);
+    border-bottom: 1px solid var(--ac-border-strong);
+    color: var(--ac-text);
+    font-family: var(--ac-font-body);
+  }
+
+  .acct-mh__back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: var(--sp-1, 0.25rem);
+    font-size: 0.9rem;
+    color: var(--ac-text-2);
+    text-decoration: none;
+  }
+
+  .acct-mh__back:hover {
+    color: var(--ac-brand);
+  }
+
+  .acct-mh__title {
+    margin: 0;
+    font-family: var(--ac-font-display);
+    font-style: var(--ac-title-style);
+    font-weight: var(--ac-title-weight);
+    font-stretch: var(--ac-title-stretch);
+    word-spacing: var(--ac-title-spacing);
+    text-transform: var(--ac-title-transform);
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+
+  .acct-mh__desc {
+    max-width: 52ch;
+    margin: var(--sp-3, 0.75rem) 0 0;
+    line-height: 1.6;
+    color: var(--ac-text-2);
+  }
+
+  .acct-mh__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .acct-mh__actions:empty {
+    display: none;
+  }
+</style>

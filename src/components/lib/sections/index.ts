@@ -193,7 +193,7 @@ export { default as AcademyReviews } from './AcademyReviews.astro';
 export { default as AcademyTeachForm } from './AcademyTeachForm.astro';
 export { default as AcademyFooter } from './AcademyFooter.astro';
 
-// Music festival ("Pulso")
+// Music festival ("Sonora")
 export { default as FestivalHero } from './FestivalHero.astro';
 export { default as FestivalLineup } from './FestivalLineup.astro';
 export { default as FestivalSchedule } from './FestivalSchedule.astro';

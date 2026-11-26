@@ -90,6 +90,28 @@ export const app: ComponentDoc[] = [
     description: 'Split-screen sign-in / sign-up with SSO buttons, show-password toggle, validation and a brand panel.',
     tags: ['auth', 'login', 'sign-in', 'form'],
     usage: `<AuthCard mode="signin" brand="Lobby" successHref="/app/" />` }),
+  item({ slug: 'account-sign-in', name: 'Account Sign In', file: 'AccountSignIn.astro',
+    description: 'Shared split sign-in layout for template customer areas: art panel with a slotted illustration and a customer quote beside a form with password show/hide, remember me and a demo quick-access link. Themed through a token prefix.',
+    tags: ['auth', 'sign-in', 'login', 'form', 'split', 'template'],
+    usage: `<AccountSignIn themeClass="fish-ui" tokenPrefix="fs" brand="Corcho" quote="Sigo el envío desde mi cuenta." author="Mario Lasa · socio desde 2023" eyebrow="Mis pedidos" heading="Bienvenido de nuevo" joinLabel="Ve a la tienda" dashboardHref="/cuenta" joinHref="/tienda">
+  <svg slot="art" aria-hidden="true" viewBox="0 0 100 100" />
+</AccountSignIn>` }),
+  item({ slug: 'account-nav', name: 'Account Nav', file: 'AccountNav.astro',
+    description: 'Shared customer-area navigation: wordmark plus text tabs on desktop and a fixed bottom tab bar on phones, with aria-current and badges. Themed through a token prefix.',
+    tags: ['navigation', 'tabs', 'account', 'template'],
+    usage: `<AccountNav themeClass="fish-ui" tokenPrefix="fs" brand="Corcho" currentHref="#"
+  items={[{ label: 'Resumen', href: '#' }, { label: 'Pedidos', href: '#pedidos', badge: 2 }]} />` }),
+  item({ slug: 'account-topbar', name: 'Account Topbar', file: 'AccountTopbar.astro',
+    description: 'Shared customer-area header actions: wordmark on phones, today\'s date, theme toggle, notifications and user menu in native popovers. Themed through a token prefix.',
+    tags: ['header', 'topbar', 'account', 'popover', 'template'],
+    usage: `<AccountTopbar themeClass="fish-ui" tokenPrefix="fs" brand="Corcho"
+  user={{ name: 'Mario Lasa', plan: 'Socio', id: 'COR-2207' }} links={[{ label: 'Mis datos', href: '#' }]} />` }),
+  item({ slug: 'account-heading', name: 'Account Heading', file: 'AccountHeading.astro',
+    description: 'Shared customer-area page heading: kicker, large title, description, optional back link and an actions slot. Themed through a token prefix.',
+    tags: ['heading', 'title', 'account', 'template'],
+    usage: `<AccountHeading themeClass="fish-ui" tokenPrefix="fs" kicker="Mi cuenta" title="Mis pedidos" description="Sigue cada envío.">
+  <a href="#">Nuevo pedido</a>
+</AccountHeading>` }),
 
   // Healthcare / clinic apps ("Pulso")
   item({ slug: 'med-agenda-timeline', name: 'Med Agenda Timeline', file: 'MedAgendaTimeline.astro', featured: true,
@@ -373,7 +395,7 @@ export const app: ComponentDoc[] = [
     description: 'Split sign-in with an illustrated lamp panel, learner / instructor switch, password show/hide and demo quick-access links.',
     tags: ['academy', 'education', 'auth', 'sign-in', 'login', 'form'],
     usage: `<AcademySignIn learnerHref="/aula" studioHref="/aula/estudio" signUpHref="/precios" />` }),
-  // Music festival app pieces ("Pulso")
+  // Music festival app pieces ("Sonora")
   item({ slug: 'festival-countdown', name: 'Festival Countdown', file: 'FestivalCountdown.astro', featured: true,
     description: 'Live countdown to the opening of the festival in days, hours, minutes and seconds, announced to screen readers once a minute.',
     tags: ['festival', 'music', 'countdown', 'timer', 'event'],

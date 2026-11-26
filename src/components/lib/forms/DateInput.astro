@@ -1,0 +1,148 @@
+---
+/**
+ * DateInput — Date field built on the native `<input type="date">` (or `datetime-local` / `month`),
+ * so the browser provides the picker, keyboard entry and localisation. Styled for dark UIs with a
+ * label, hint, error message and the usual variants and sizes.
+ *
+ * @param {string} label - Visible label of the field.
+ * @param {string} id - HTML ID of the input.
+ * @param {string} name - Form name.
+ * @param {string} value - Initial value in ISO format (YYYY-MM-DD).
+ * @param {string} min - Earliest allowed value.
+ * @param {string} max - Latest allowed value.
+ * @param {string} type - Native input type (date|datetime-local|month).
+ * @param {string} hint - Helper text under the field.
+ * @param {string} error - Error text; marks the field as invalid.
+ * @param {string} variant - Visual style (glass|solid|ghost).
+ * @param {string} size - Size (sm|md|lg).
+ * @param {boolean} disabled - Disables the field.
+ * @param {boolean} required - Marks the field as required.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <label for>; hint and error are linked with aria-describedby; aria-invalid on
+ * error; the native picker is keyboard operable; 44px minimum height; visible focus ring.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
+  label?: string;
+  id?: string;
+  name?: string;
+  value?: string;
+  min?: string;
+  max?: string;
+  type?: 'date' | 'datetime-local' | 'month';
+  hint?: string;
+  error?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  required?: boolean;
+}
+
+/** Own props plus any native <input> attribute (aria-*, data-*, step…), forwarded to the <input>. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const {
+  label = 'Date',
+  id = `date-${Math.random().toString(36).slice(2, 8)}`,
+  name,
+  value,
+  min,
+  max,
+  type = 'date',
+  hint = '',
+  error = '',
+  variant = 'glass',
+  size = 'md',
+  disabled = false,
+  required = false,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const hintId = error || hint ? `${id}-hint` : undefined;
+---
+
+<div class:list={['date-input', `date-input--${variant}`, `date-input--${size}`, { 'date-input--invalid': !!error, 'date-input--disabled': disabled }, classAttr]}>
+  <label for={id} class="date-input__label">{label}{required && <span aria-hidden="true"> *</span>}</label>
+  <input
+    {...rest}
+    id={id}
+    class="date-input__control"
+    type={type}
+    name={name}
+    value={value}
+    min={min}
+    max={max}
+    disabled={disabled}
+    required={required}
+    aria-invalid={error ? 'true' : undefined}
+    aria-describedby={hintId}
+  />
+  {(error || hint) && <p id={hintId} class:list={['date-input__hint', { 'date-input__hint--error': !!error }]}>{error || hint}</p>}
+</div>
+
+<style>
+  .date-input {
+    --di-pad-y: 0.7rem;
+    --di-font: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    color: var(--c-text-1, #fff);
+  }
+
+  .date-input--sm { --di-pad-y: 0.5rem; --di-font: 0.85rem; }
+  .date-input--lg { --di-pad-y: 0.95rem; --di-font: 1.05rem; }
+
+  .date-input__label {
+    margin-left: var(--sp-2, 0.5rem);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .date-input__control {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--di-pad-y) var(--sp-4, 1rem);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--r-md, 12px);
+    background: var(--c-surface, rgba(255, 255, 255, 0.04));
+    color: inherit;
+    font: inherit;
+    font-size: var(--di-font);
+    color-scheme: dark;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .date-input--solid .date-input__control { background: var(--c-bg-2, #1a1a2e); }
+  .date-input--ghost .date-input__control { background: transparent; border-color: transparent; border-bottom-color: var(--c-border, rgba(255, 255, 255, 0.2)); border-radius: 0; }
+
+  .date-input__control:focus-visible {
+    outline: 2px solid var(--c-primary, #6366f1);
+    outline-offset: 2px;
+    border-color: var(--c-primary, #6366f1);
+  }
+
+  .date-input--invalid .date-input__control { border-color: var(--c-danger, #ef4444); }
+  .date-input--disabled .date-input__control { opacity: 0.5; cursor: not-allowed; }
+
+  .date-input__hint {
+    margin: 0 0 0 var(--sp-2, 0.5rem);
+    font-size: 0.8rem;
+    color: var(--c-text-3, #64748b);
+  }
+
+  .date-input__hint--error { color: var(--c-danger, #ef4444); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .date-input__control { transition: none; }
+  }
+</style>

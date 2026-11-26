@@ -1148,7 +1148,7 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con panel ilustrado de la lámpara, selector alumno o instructor, mostrar contraseña y accesos de demostración.',
     ru: 'Вход на двух панелях с иллюстрацией лампы, переключателем ученик/преподаватель, показом пароля и демо-ссылками.',
   },
-  // ── Music festival ("Pulso") ────────────────────────
+  // ── Music festival ("Sonora") ────────────────────────
   'festival-hero': {
     es: 'Hero de festival con titular condensado enorme, fechas y recinto, cuenta atrás en vivo, cabezas de cartel, llamadas a la acción y ecualizador animado sobre un resplandor de atardecer.',
     ru: 'Главный экран фестиваля с огромным узким заголовком, датами и площадкой, обратным отсчётом, хедлайнерами, кнопками действий и анимированным эквалайзером на закатном свечении.',
@@ -2009,5 +2009,39 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
   'univ-open-day': {
     es: 'Módulo de jornadas de puertas abiertas con tarjetas de sesión presencial y online streaming, formulario interactivo de inscripción con selector de acompañantes y modal con código QR de acceso.',
     ru: 'Блок дней открытых дверей: карточки очных и онлайн-сессий, интерактивная форма регистрации с выбором гостей и модальное окно с QR-пропуском на кампус.',
+  },
+
+  // ── Shared account shells & base components ─────────────────
+  'combobox': {
+    es: "Selector con búsqueda según el patrón ARIA combobox: escribe para filtrar, flechas para moverte y Enter para elegir.",
+    ru: "Выпадающий список с поиском по шаблону ARIA combobox: ввод для фильтрации, стрелки и Enter для выбора.",
+  },
+  'glass-checkbox': {
+    es: "Casilla de verificación nativa para interfaces oscuras con descripción, estado indeterminado, variantes y tamaños.",
+    ru: "Нативный чекбокс для тёмных интерфейсов с описанием, неопределённым состоянием, вариантами и размерами.",
+  },
+  'date-input': {
+    es: "Campo de fecha sobre el selector nativo con etiqueta, ayuda, estado de error, variantes y tamaños.",
+    ru: "Поле даты на нативном выборе даты с подписью, подсказкой, ошибкой, вариантами и размерами.",
+  },
+  'sortable-table': {
+    es: "Tabla de datos con columnas ordenables al hacer clic, anunciadas con aria-sort y región de scroll enfocable en pantallas pequeñas.",
+    ru: "Таблица данных с сортировкой по клику, aria-sort и прокручиваемой областью с фокусом на маленьких экранах.",
+  },
+  'account-sign-in': {
+    es: "Acceso dividido compartido para las áreas de cliente de las plantillas: panel con ilustración y cita junto a un formulario.",
+    ru: "Общий разделённый экран входа для клиентских зон шаблонов: панель с иллюстрацией и цитатой рядом с формой.",
+  },
+  'account-nav': {
+    es: "Navegación compartida del área de cliente: pestañas de texto en escritorio y barra inferior fija en móvil.",
+    ru: "Общая навигация клиентской зоны: текстовые вкладки на десктопе и нижняя панель на телефонах.",
+  },
+  'account-topbar': {
+    es: "Acciones compartidas de la cabecera del área de cliente: fecha, tema, avisos y menú de usuario en popovers nativos.",
+    ru: "Общие действия шапки клиентской зоны: дата, тема, уведомления и меню пользователя в нативных поповерах.",
+  },
+  'account-heading': {
+    es: "Cabecera de página compartida del área de cliente: sobretítulo, título, descripción, enlace de vuelta y acciones.",
+    ru: "Общий заголовок страницы клиентской зоны: надзаголовок, заголовок, описание, ссылка назад и действия.",
   },
 };

@@ -3,6 +3,8 @@
  * WineMemberTopbar — Right side of the members header: wordmark on phones, today's date, a theme
  * toggle, notifications and the member menu (native popovers).
  *
+ * Thin wrapper over the shared `AccountTopbar`: it only chooses this template's copy and typography.
+ *
  * @param {{name: string, plan: string, id: string}} user - Signed-in member.
  * @param {Array<{title: string, text: string, time: string, unread?: boolean}>} notifications - Notification list.
  * @param {Array<{label: string, href: string}>} links - Entries of the member menu.
@@ -16,6 +18,7 @@
  */
 import type { HTMLAttributes } from 'astro/types';
 import '../templates/winery/wine-theme.css';
+import AccountTopbar from './AccountTopbar.astro';
 
 interface Note { title: string; text: string; time: string; unread?: boolean }
 
@@ -37,285 +40,19 @@ const {
   signOutHref = '#',
   brand = 'Solera',
   homeHref = '#',
-  class: classAttr,
   ...rest
 } = Astro.props;
-
-const uid = `wmt-${Math.random().toString(36).slice(2, 8)}`;
-const unread = notifications.filter((n) => n.unread).length;
-const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('');
 ---
 
-<div class:list={['wine-ui', 'wine-top', classAttr]} data-wine-top {...rest}>
-  <a href={homeHref} class="wine-top__brand">{brand}</a>
-  <time class="wine-top__date" data-today></time>
-
-  <div class="wine-top__actions">
-    <button type="button" class="wine-top__icon" aria-pressed="false" aria-label="Cambiar tema claro u oscuro" data-theme-toggle>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
-    </button>
-
-    <button type="button" class="wine-top__icon" popovertarget={`${uid}-notes`} aria-label={unread ? `Avisos, ${unread} sin leer` : 'Avisos'}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0" /></svg>
-      {unread > 0 && <span class="wine-top__dot" aria-hidden="true"></span>}
-    </button>
-    <div id={`${uid}-notes`} popover class="wine-pop" data-wine-pop>
-      <p class="wine-pop__title">Avisos</p>
-      {notifications.length ? (
-        <ul role="list">
-          {notifications.map((n) => (
-            <li class:list={[n.unread && 'is-unread']}>
-              <strong>{n.title}</strong>
-              <span>{n.text}</span>
-              <small>{n.time}</small>
-            </li>
-          ))}
-        </ul>
-      ) : <p class="wine-pop__empty">Todo al día.</p>}
-    </div>
-
-    <button type="button" class="wine-top__me" popovertarget={`${uid}-me`} aria-label={`Menú de ${user.name}`}>
-      <span class="wine-top__avatar" aria-hidden="true">{initials}</span>
-      <span class="wine-top__who"><strong>{user.name}</strong><small>{user.plan}</small></span>
-    </button>
-    <div id={`${uid}-me`} popover class="wine-pop" data-wine-pop>
-      <p class="wine-pop__title">{user.name}<small>Socia nº {user.id}</small></p>
-      <ul role="list" class="wine-pop__menu">
-        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
-        <li><a href={signOutHref}>Cerrar sesión</a></li>
-      </ul>
-    </div>
-  </div>
-</div>
-
-<style>
-  .wine-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-4, 1rem);
-    flex: 1;
-    min-width: 0;
-    color: var(--wn-text);
-    font-family: var(--wn-font-body);
-  }
-
-  .wine-top__brand {
-    font-family: var(--wn-font-display);
-    font-style: italic;
-    font-size: 1.6rem;
-    color: var(--wn-text);
-    text-decoration: none;
-  }
-
-  .wine-top__date {
-    display: none;
-    margin-left: auto;
-    font-size: 0.85rem;
-    text-transform: capitalize;
-    color: var(--wn-text-3);
-  }
-
-  .wine-top__actions {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-1, 0.25rem);
-  }
-
-  .wine-top__icon,
-  .wine-top__me {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-2, 0.5rem);
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 var(--sp-2, 0.5rem);
-    justify-content: center;
-    border: 0;
-    background: none;
-    color: var(--wn-text-2);
-    font: inherit;
-    cursor: pointer;
-    transition: color 0.2s ease;
-  }
-
-  .wine-top__icon:hover,
-  .wine-top__me:hover {
-    color: var(--wn-text);
-  }
-
-  .wine-top__dot {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--wn-accent);
-  }
-
-  .wine-top__avatar {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--wn-brand);
-    border-radius: 50%;
-    font-family: var(--wn-font-display);
-    font-size: 0.95rem;
-    color: var(--wn-brand);
-  }
-
-  .wine-top__who {
-    display: none;
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1.2;
-    text-align: left;
-  }
-
-  .wine-top__who strong {
-    font-size: 0.88rem;
-    color: var(--wn-text);
-  }
-
-  .wine-top__who small {
-    font-size: 0.74rem;
-    color: var(--wn-text-3);
-  }
-
-  .wine-pop {
-    position: fixed;
-    inset: auto;
-    margin: 0;
-    width: min(320px, calc(100vw - 16px));
-    max-height: 70vh;
-    overflow: auto;
-    padding: var(--sp-3, 0.75rem);
-    border: 1px solid var(--wn-border-strong);
-    border-radius: 2px;
-    background: var(--wn-bg-raised);
-    color: var(--wn-text);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
-  }
-
-  .wine-pop__title {
-    margin: 0 0 var(--sp-2, 0.5rem);
-    font-family: var(--wn-font-display);
-    font-size: 1.15rem;
-  }
-
-  .wine-pop__title small {
-    display: block;
-    font: 500 0.78rem var(--wn-font-body);
-    color: var(--wn-text-3);
-  }
-
-  .wine-pop ul {
-    display: grid;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .wine-pop li:not(:last-child) {
-    border-bottom: 1px solid var(--wn-border);
-  }
-
-  .wine-pop li > strong,
-  .wine-pop li > span,
-  .wine-pop li > small {
-    display: block;
-  }
-
-  .wine-pop li:not(.wine-pop__menu li) {
-    padding: var(--sp-2, 0.5rem) 0;
-  }
-
-  .wine-pop li.is-unread > strong::before {
-    content: '';
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    margin-right: 0.45rem;
-    border-radius: 50%;
-    background: var(--wn-accent);
-  }
-
-  .wine-pop li > span {
-    font-size: 0.88rem;
-    color: var(--wn-text-2);
-  }
-
-  .wine-pop li > small {
-    font-size: 0.76rem;
-    color: var(--wn-text-3);
-  }
-
-  .wine-pop__menu a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 var(--sp-2, 0.5rem);
-    color: var(--wn-text);
-    text-decoration: none;
-  }
-
-  .wine-pop__menu a:hover {
-    background: rgba(var(--wn-brand-rgb), 0.1);
-  }
-
-  .wine-pop__empty {
-    margin: 0;
-    color: var(--wn-text-3);
-  }
-
-  @media (min-width: 760px) {
-    .wine-top__brand {
-      display: none;
-    }
-
-    .wine-top__date {
-      display: block;
-    }
-
-    .wine-top__who {
-      display: flex;
-    }
-  }
-</style>
-
-<script>
-  function initTop(root: HTMLElement) {
-    if (root.dataset.bound) return;
-    root.dataset.bound = 'true';
-    const time = root.querySelector<HTMLTimeElement>('[data-today]');
-    if (time) {
-      const now = new Date();
-      time.dateTime = now.toISOString().slice(0, 10);
-      time.textContent = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
-    }
-    const toggle = root.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-    const sync = () => toggle?.setAttribute('aria-pressed', String(document.documentElement.dataset.theme === 'light'));
-    sync();
-    toggle?.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-      document.documentElement.dataset.theme = next;
-      try { localStorage.setItem('ack-theme', next); } catch (e) { /* storage unavailable */ }
-      sync();
-    });
-    root.querySelectorAll<HTMLElement>('[data-wine-pop]').forEach((pop) => {
-      pop.addEventListener('toggle', (e) => {
-        if ((e as Event & { newState?: string }).newState !== 'open') return;
-        const btn = root.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`);
-        if (!btn) return;
-        const r = btn.getBoundingClientRect();
-        pop.style.top = `${r.bottom + 8}px`;
-        pop.style.left = `${Math.max(8, Math.min(window.innerWidth - pop.offsetWidth - 8, r.right - pop.offsetWidth))}px`;
-      });
-    });
-  }
-
-  document.querySelectorAll<HTMLElement>('[data-wine-top]').forEach(initTop);
-</script>
+<AccountTopbar
+  themeClass="wine-ui"
+  tokenPrefix="wn"
+  user={user}
+  notifications={notifications}
+  links={links}
+  signOutHref={signOutHref}
+  brand={brand}
+  homeHref={homeHref}
+  brandStyle="italic"
+  {...rest}
+/>

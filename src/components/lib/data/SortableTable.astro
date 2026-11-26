@@ -1,0 +1,252 @@
+---
+/**
+ * SortableTable — Data table whose columns sort on click, with the sort state announced to assistive
+ * technology (`aria-sort`). Sorting runs in the browser on the rendered rows, so it needs no
+ * framework; numbers compare numerically and text compares with locale-aware natural ordering.
+ * The table scrolls horizontally inside a focusable region on narrow screens.
+ *
+ * @param {Array<{key: string, label: string, sortable?: boolean, align?: 'start'|'end'|'center'}>} columns - Column definitions.
+ * @param {Array<Record<string, string | number>>} rows - Row data keyed by column key.
+ * @param {string} caption - Accessible caption of the table (visually hidden unless `showCaption`).
+ * @param {boolean} showCaption - Shows the caption above the table.
+ * @param {string} sortKey - Column key sorted on first render.
+ * @param {string} sortDir - Initial direction (asc|desc).
+ * @param {string} variant - Visual style (glass|striped|ghost).
+ * @param {string} size - Row density (sm|md|lg).
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: real <table> with <caption>, <th scope="col"> and aria-sort on the sorted column;
+ * each sortable header is a <button> (Enter/Space); a polite live region announces the new order;
+ * the scroll region is focusable and labelled; sort buttons are 44px high.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Column { key: string; label: string; sortable?: boolean; align?: 'start' | 'end' | 'center' }
+
+interface OwnProps {
+  columns?: Column[];
+  rows?: Array<Record<string, string | number>>;
+  caption?: string;
+  showCaption?: boolean;
+  sortKey?: string;
+  sortDir?: 'asc' | 'desc';
+  variant?: 'glass' | 'striped' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+}
+
+/** Own props plus any native <div> attribute (aria-*, data-*…), forwarded to the root. */
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const {
+  columns = [
+    { key: 'name', label: 'Project', sortable: true },
+    { key: 'owner', label: 'Owner', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'budget', label: 'Budget (€)', sortable: true, align: 'end' },
+  ],
+  rows = [
+    { name: 'Atlas redesign', owner: 'Lucía Ferrer', status: 'In progress', budget: 18400 },
+    { name: 'Billing migration', owner: 'Mario Lasa', status: 'Review', budget: 9200 },
+    { name: 'Mobile app v2', owner: 'Clara Domínguez', status: 'Planned', budget: 41000 },
+    { name: 'Docs portal', owner: 'Dani Ferrer', status: 'Done', budget: 5600 },
+    { name: 'Analytics pipeline', owner: 'Álex Beltrán', status: 'In progress', budget: 27350 },
+  ],
+  caption = 'Projects',
+  showCaption = false,
+  sortKey = '',
+  sortDir = 'asc',
+  variant = 'glass',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `st-${Math.random().toString(36).slice(2, 8)}`;
+const compare = (a: string | number, b: string | number) =>
+  typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+const sorted = sortKey ? [...rows].sort((a, b) => (sortDir === 'desc' ? -1 : 1) * compare(a[sortKey], b[sortKey])) : rows;
+const ariaSort = (key: string) => (key === sortKey ? (sortDir === 'desc' ? 'descending' : 'ascending') : undefined);
+---
+
+<div class:list={['sortable-table', `sortable-table--${variant}`, `sortable-table--${size}`, classAttr]} data-sortable-table {...rest}>
+  <div class="sortable-table__scroll" role="region" aria-labelledby={`${uid}-cap`} tabindex="0">
+    <table class="sortable-table__table">
+      <caption id={`${uid}-cap`} class:list={['sortable-table__caption', { 'sortable-table__caption--hidden': !showCaption }]}>{caption}</caption>
+      <thead>
+        <tr>
+          {columns.map((col) => (
+            <th scope="col" class={`sortable-table__th sortable-table__th--${col.align ?? 'start'}`} aria-sort={col.sortable ? (ariaSort(col.key) ?? 'none') : undefined} data-key={col.key}>
+              {col.sortable ? (
+                <button type="button" class="sortable-table__sort" data-sort>
+                  <span>{col.label}</span>
+                  <svg class="sortable-table__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5-5 5 5M7 14l5 5 5-5" /></svg>
+                </button>
+              ) : col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {sorted.map((row) => (
+          <tr>
+            {columns.map((col) => (
+              <td class={`sortable-table__td sortable-table__td--${col.align ?? 'start'}`} data-value={String(row[col.key] ?? '')} data-numeric={typeof row[col.key] === 'number' ? 'true' : undefined}>
+                {typeof row[col.key] === 'number' ? (row[col.key] as number).toLocaleString('en-US') : row[col.key]}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="sortable-table__live" role="status" aria-live="polite" data-live></p>
+</div>
+
+<style>
+  .sortable-table {
+    --st-pad-y: 0.85rem;
+    --st-font: 0.92rem;
+    width: 100%;
+    color: var(--c-text-1, #fff);
+  }
+
+  .sortable-table--sm { --st-pad-y: 0.5rem; --st-font: 0.85rem; }
+  .sortable-table--lg { --st-pad-y: 1.15rem; --st-font: 1rem; }
+
+  .sortable-table__scroll {
+    overflow-x: auto;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--r-lg, 16px);
+    background: var(--c-surface, rgba(255, 255, 255, 0.04));
+  }
+
+  .sortable-table--ghost .sortable-table__scroll { border-color: transparent; background: transparent; border-radius: 0; }
+
+  .sortable-table__scroll:focus-visible {
+    outline: 2px solid var(--c-primary, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .sortable-table__table {
+    width: 100%;
+    min-width: 32rem;
+    border-collapse: collapse;
+    font-size: var(--st-font);
+  }
+
+  .sortable-table__caption {
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    text-align: left;
+    font-weight: 600;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .sortable-table__caption--hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .sortable-table__th,
+  .sortable-table__td {
+    padding: var(--st-pad-y) var(--sp-4, 1rem);
+    text-align: start;
+    border-bottom: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+  }
+
+  .sortable-table__th { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-text-3, #64748b); white-space: nowrap; }
+  .sortable-table__th--end,
+  .sortable-table__td--end { text-align: end; font-variant-numeric: tabular-nums; }
+  .sortable-table__th--center,
+  .sortable-table__td--center { text-align: center; }
+  .sortable-table__td { color: var(--c-text-2, #cbd5e1); }
+
+  .sortable-table tbody tr:last-child .sortable-table__td { border-bottom: 0; }
+  .sortable-table tbody tr { transition: background 0.2s ease; }
+  .sortable-table tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+  .sortable-table--striped tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.025); }
+
+  .sortable-table__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    margin: calc(var(--st-pad-y) * -1) 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .sortable-table__th--end .sortable-table__sort { flex-direction: row-reverse; }
+  .sortable-table__sort:hover { color: var(--c-text-1, #fff); }
+  .sortable-table__sort:focus-visible { outline: 2px solid var(--c-primary, #6366f1); outline-offset: 2px; border-radius: var(--r-sm, 6px); }
+
+  .sortable-table__icon { opacity: 0.45; transition: opacity 0.2s ease, transform 0.2s ease; }
+  .sortable-table__th[aria-sort='ascending'] .sortable-table__icon,
+  .sortable-table__th[aria-sort='descending'] .sortable-table__icon { opacity: 1; color: var(--c-primary-light, #818cf8); }
+  .sortable-table__th[aria-sort='descending'] .sortable-table__icon { transform: scaleY(-1); }
+  .sortable-table__th[aria-sort='ascending'],
+  .sortable-table__th[aria-sort='descending'] { color: var(--c-text-1, #fff); }
+
+  .sortable-table__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sortable-table tbody tr,
+    .sortable-table__icon { transition: none; }
+  }
+</style>
+
+<script>
+  function initSortable(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const body = root.querySelector('tbody')!;
+    const heads = Array.from(root.querySelectorAll<HTMLElement>('th[aria-sort]'));
+    const live = root.querySelector<HTMLElement>('[data-live]');
+
+    const valueOf = (row: HTMLTableRowElement, index: number) => {
+      const cell = row.cells[index];
+      const raw = cell.dataset.value ?? cell.textContent ?? '';
+      return cell.dataset.numeric === 'true' ? Number(raw) : raw;
+    };
+
+    heads.forEach((th) => {
+      th.querySelector<HTMLButtonElement>('[data-sort]')?.addEventListener('click', () => {
+        const dir = th.getAttribute('aria-sort') === 'ascending' ? 'descending' : 'ascending';
+        heads.forEach((h) => h.setAttribute('aria-sort', 'none'));
+        th.setAttribute('aria-sort', dir);
+        const index = (th as HTMLTableCellElement).cellIndex;
+        const sign = dir === 'ascending' ? 1 : -1;
+        const rows = Array.from(body.rows).sort((a, b) => {
+          const x = valueOf(a, index);
+          const y = valueOf(b, index);
+          if (typeof x === 'number' && typeof y === 'number') return sign * (x - y);
+          return sign * String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: 'base' });
+        });
+        rows.forEach((r) => body.appendChild(r));
+        const name = th.querySelector('button span')?.textContent?.trim() ?? '';
+        if (live) live.textContent = `Sorted by ${name}, ${dir}`;
+      });
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-sortable-table]').forEach(initSortable);
+</script>

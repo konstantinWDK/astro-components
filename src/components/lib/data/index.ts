@@ -24,3 +24,4 @@ export { default as VerticalTimeline } from './VerticalTimeline.astro';
 export { default as MetricComparisonRow } from './MetricComparisonRow.astro';
 export { default as ActivityHeatmapGrid } from './ActivityHeatmapGrid.astro';
 export { default as StatusTimelineFeed } from './StatusTimelineFeed.astro';
+export { default as SortableTable } from './SortableTable.astro';

@@ -1,0 +1,342 @@
+---
+/**
+ * AccountSignIn — Shared split sign-in for the template customer areas: an art panel (brand, a slotted
+ * illustration and a customer quote) beside a form (email, password with show/hide, remember me), plus a
+ * demo quick-access link and a link to join. The per-template wrappers (`FishSignIn`, `WineSignIn`, ...)
+ * only choose the illustration, the copy and the typography.
+ *
+ * Theming: pass the template's root class (`themeClass`, e.g. `fish-ui`) and its token prefix
+ * (`tokenPrefix`, e.g. `fs`). The component reads `--{prefix}-bg`, `-surface`, `-bg-raised`, `-border`,
+ * `-border-strong`, `-text`, `-text-2`, `-text-3`, `-accent`, `-accent-rgb`, `-brand`, `-bad`,
+ * `-font-body` and `-font-display`, and the `{prefix}-eyebrow`, `{prefix}-btn` and `{prefix}-link` classes.
+ *
+ * @param {string} themeClass - Root class that defines the template tokens (e.g. `fish-ui`).
+ * @param {string} tokenPrefix - Token prefix of that theme (e.g. `fs`).
+ * @param {string} brand - Wordmark shown over the art panel.
+ * @param {string} quote - Customer quote shown under the illustration.
+ * @param {string} author - Quote attribution.
+ * @param {string} eyebrow - Small label above the title.
+ * @param {string} heading - Form heading (h1).
+ * @param {string} joinPrompt - Text before the join link.
+ * @param {string} joinLabel - Text of the join link.
+ * @param {string} dashboardHref - Where a successful sign-in goes.
+ * @param {string} joinHref - Link to the join/booking page.
+ * @param {string} homeHref - Link of the wordmark.
+ * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
+ * @param {string} brandStretch - Wordmark font-stretch (e.g. `75%`).
+ * @param {string} brandTransform - Wordmark text-transform.
+ * @param {string} class - Extra class for the root.
+ * @slot art - Decorative illustration of the art panel (mark it `decorative`).
+ *
+ * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
+ * visible focus rings and 48px controls; the illustration is decorative.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface OwnProps {
+  themeClass: string;
+  tokenPrefix: string;
+  brand: string;
+  quote: string;
+  author: string;
+  eyebrow: string;
+  heading: string;
+  joinPrompt?: string;
+  joinLabel: string;
+  dashboardHref?: string;
+  joinHref?: string;
+  homeHref?: string;
+  action?: string;
+  brandStyle?: 'normal' | 'italic';
+  brandWeight?: number;
+  brandStretch?: string;
+  brandTransform?: string;
+  quoteStyle?: 'normal' | 'italic';
+  quoteWeight?: number;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  themeClass,
+  tokenPrefix: p,
+  brand,
+  quote,
+  author,
+  eyebrow,
+  heading,
+  joinPrompt = '¿Primera vez?',
+  joinLabel,
+  dashboardHref = '/cuenta',
+  joinHref = '/',
+  homeHref = '/',
+  action = '',
+  brandStyle = 'normal',
+  brandWeight = 400,
+  brandStretch = '100%',
+  brandTransform = 'none',
+  quoteStyle = 'normal',
+  quoteWeight = 400,
+  class: classAttr,
+  style,
+  ...rest
+} = Astro.props;
+
+const uid = `asi-${Math.random().toString(36).slice(2, 8)}`;
+const tokens = [
+  'bg', 'surface', 'bg-raised', 'border', 'border-strong', 'text', 'text-2', 'text-3',
+  'accent', 'accent-rgb', 'brand', 'bad', 'font-body', 'font-display',
+]
+  .map((token) => `--si-${token}: var(--${p}-${token})`)
+  .join('; ');
+const rootStyle = `${tokens}; --si-brand-style: ${brandStyle}; --si-brand-weight: ${brandWeight}; --si-brand-stretch: ${brandStretch}; --si-brand-transform: ${brandTransform}; --si-quote-style: ${quoteStyle}; --si-quote-weight: ${quoteWeight}${typeof style === 'string' && style ? `; ${style}` : ''}`;
+---
+
+<section class:list={[themeClass, 'acct-si', classAttr]} style={rootStyle} aria-labelledby={`${uid}-title`} data-acct-si data-dashboard={dashboardHref} {...rest}>
+  <div class="acct-si__art">
+    <a href={homeHref} class="acct-si__brand">{brand}</a>
+    <div class="acct-si__label"><slot name="art" /></div>
+    <blockquote>
+      <p>{quote}</p>
+      <footer>{author}</footer>
+    </blockquote>
+  </div>
+
+  <div class="acct-si__panel">
+    <form class="acct-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-acct-si-form>
+      <p class={`${p}-eyebrow`}>{eyebrow}</p>
+      <h1 id={`${uid}-title`}>{heading}</h1>
+
+      <div class="acct-si__field">
+        <label for={`${uid}-email`}>Correo electrónico</label>
+        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
+      </div>
+
+      <div class="acct-si__field">
+        <label for={`${uid}-pass`}>Contraseña</label>
+        <div class="acct-si__pass">
+          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
+          <button type="button" aria-pressed="false" data-acct-si-toggle>Mostrar</button>
+        </div>
+      </div>
+
+      <label class="acct-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
+
+      <p class="acct-si__error" role="alert" data-acct-si-error></p>
+
+      <button type="submit" class={`${p}-btn`}>Entrar</button>
+      <a class={`acct-si__demo ${p}-link`} href={dashboardHref}>Entrar con la cuenta de demostración</a>
+
+      <p class="acct-si__join">{joinPrompt} <a class={`${p}-link`} href={joinHref}>{joinLabel}</a></p>
+    </form>
+  </div>
+</section>
+
+<style>
+  .acct-si {
+    display: grid;
+    min-height: 100vh;
+    background: var(--si-bg);
+    color: var(--si-text);
+    font-family: var(--si-font-body);
+  }
+
+  .acct-si__art {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--sp-8, 2rem);
+    padding: var(--sp-10, 2.5rem);
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--si-accent-rgb), 0.22), transparent 70%), var(--si-surface);
+    border-right: 1px solid var(--si-border);
+  }
+
+  .acct-si__brand {
+    font-family: var(--si-font-display);
+    font-style: var(--si-brand-style);
+    font-weight: var(--si-brand-weight);
+    font-stretch: var(--si-brand-stretch);
+    text-transform: var(--si-brand-transform);
+    font-size: 2rem;
+    color: var(--si-text);
+    text-decoration: none;
+  }
+
+  .acct-si__label {
+    width: min(380px, 82%);
+    margin: 0 auto;
+    filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
+  }
+
+  .acct-si__label > :global(*) {
+    max-width: none;
+  }
+
+  .acct-si__art blockquote {
+    max-width: 38ch;
+    margin: 0;
+  }
+
+  .acct-si__art blockquote p {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--si-font-display);
+    font-style: var(--si-quote-style);
+    font-weight: var(--si-quote-weight);
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .acct-si__art footer {
+    font-size: 0.85rem;
+    color: var(--si-text-3);
+  }
+
+  .acct-si__panel {
+    display: grid;
+    place-items: center;
+    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
+  }
+
+  .acct-si__form {
+    display: grid;
+    gap: var(--sp-4, 1rem);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .acct-si__form h1 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--si-font-display);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    line-height: 1;
+  }
+
+  .acct-si__field label {
+    display: block;
+    margin-bottom: var(--sp-2, 0.5rem);
+    font: 600 0.74rem/1.2 var(--si-font-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--si-accent);
+  }
+
+  .acct-si__field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 var(--sp-3, 0.75rem);
+    box-sizing: border-box;
+    border: 1px solid var(--si-border-strong);
+    border-radius: 2px;
+    background: var(--si-bg-raised);
+    color: var(--si-text);
+    font: 1rem var(--si-font-body);
+  }
+
+  .acct-si__pass {
+    position: relative;
+  }
+
+  .acct-si__pass input {
+    padding-right: 5.5rem;
+  }
+
+  .acct-si__pass button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 5rem;
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--si-text-2);
+    font: 600 0.8rem var(--si-font-body);
+    cursor: pointer;
+  }
+
+  .acct-si__pass button:hover {
+    color: var(--si-brand);
+  }
+
+  .acct-si__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    font-size: 0.92rem;
+    color: var(--si-text-2);
+    cursor: pointer;
+  }
+
+  .acct-si__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--si-brand);
+  }
+
+  .acct-si__error {
+    min-height: 1.4em;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--si-bad);
+  }
+
+  .acct-si__demo,
+  .acct-si__join {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--si-text-2);
+  }
+
+  .acct-si__demo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  @media (min-width: 900px) {
+    .acct-si {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .acct-si__art {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-acct-si]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-acct-si-form]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-acct-si-toggle]');
+    const error = root.querySelector<HTMLElement>('[data-acct-si-error]');
+    if (!form) return;
+    toggle?.addEventListener('click', () => {
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      const show = pass.type === 'password';
+      pass.type = show ? 'text' : 'password';
+      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+      toggle.setAttribute('aria-pressed', String(show));
+    });
+    form.addEventListener('submit', (e) => {
+      if (form.getAttribute('action')) return;
+      e.preventDefault();
+      const email = form.elements.namedItem('email') as HTMLInputElement;
+      const pass = form.elements.namedItem('password') as HTMLInputElement;
+      if (!email.value || !email.validity.valid) {
+        if (error) error.textContent = 'Escribe un correo electrónico válido.';
+        email.focus();
+        return;
+      }
+      if (pass.value.length < 4) {
+        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+        pass.focus();
+        return;
+      }
+      if (error) error.textContent = '';
+      window.location.href = root.dataset.dashboard ?? '/';
+    });
+  });
+</script>

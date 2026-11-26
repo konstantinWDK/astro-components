@@ -14,6 +14,10 @@ export { default as SwitchRow } from './SwitchRow.astro';
 export { default as TeamMembers } from './TeamMembers.astro';
 export { default as PlanUsageCard } from './PlanUsageCard.astro';
 export { default as AuthCard } from './AuthCard.astro';
+export { default as AccountSignIn } from './AccountSignIn.astro';
+export { default as AccountNav } from './AccountNav.astro';
+export { default as AccountTopbar } from './AccountTopbar.astro';
+export { default as AccountHeading } from './AccountHeading.astro';
 // Healthcare / clinic apps
 export { default as MedAgendaTimeline } from './MedAgendaTimeline.astro';
 export { default as MedWaitingRoom } from './MedWaitingRoom.astro';
@@ -90,7 +94,7 @@ export { default as AcademyAreaTopbar } from './AcademyAreaTopbar.astro';
 export { default as AcademyAreaHeading } from './AcademyAreaHeading.astro';
 export { default as AcademySignIn } from './AcademySignIn.astro';
 
-// Music festival app pieces ("Pulso")
+// Music festival app pieces ("Sonora")
 export { default as FestivalCountdown } from './FestivalCountdown.astro';
 export { default as FestivalAgendaPlanner } from './FestivalAgendaPlanner.astro';
 export { default as FestivalTicketWallet } from './FestivalTicketWallet.astro';

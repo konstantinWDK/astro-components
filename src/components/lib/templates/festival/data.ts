@@ -1,5 +1,5 @@
 // src/components/lib/templates/festival/data.ts
-// Demo data for "Pulso" · Music festival with line-up, timetable, tickets and a personal agenda.
+// Demo data for "Sonora" · Music festival with line-up, timetable, tickets and a personal agenda.
 // Replace with your own CMS / ticketing data; every page and component takes these shapes as props.
 
 export type FestivalDayId = 'fri' | 'sat' | 'sun';
@@ -78,7 +78,7 @@ export const festivalRoutes: FestivalRoutes = {
   schedule: '/horarios',
   tickets: '/entradas',
   info: '/info',
-  myFestival: '/mi-pulso',
+  myFestival: '/mi-sonora',
 };
 
 export const festivalDays: FestivalDay[] = [
@@ -138,11 +138,11 @@ export const festivalSponsors: string[] = ['Cervezas Altamar', 'Nova Mobile', 'R
 
 export const festivalData = {
   brand: {
-    name: 'Pulso',
-    legalName: 'Pulso Festival S.L.',
+    name: 'Sonora',
+    legalName: 'Sonora Festival S.L.',
     tagline: 'Tres días de música junto al lago',
     phone: '+34 960 330 210',
-    email: 'hola@pulso.example',
+    email: 'hola@sonora.example',
     address: 'Parque del Lago · Camino de la Albufera s/n, 46012 Valencia',
     hours: 'Atención L–V 10:00–18:00',
   },

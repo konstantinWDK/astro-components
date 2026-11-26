@@ -7,11 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-11-26
+
 ### Added
-- **Music festival template "Pulso"** (`astro-component-kit/templates/festival`): site for a festival or live event with a home (hero with live countdown, line-up by day, stages, tickets, sponsors), a line-up page, a timetable with stage filters and add-to-agenda toggles, ticket tiers with quantity steppers, add-ons and a live order total, practical info with a site map and FAQ, and "My Pulso" with a digital pass and the saved agenda. 6 page types, hot coral and electric lime on deep violet with a condensed display face and light/dark variants.
+- **Tech summit template "Pulse"** (`astro-component-kit/templates/tech-event`): site for a technology conference with a home (live countdown, four tracks, keynote speakers, venue teaser, tickets, sponsors), a multi-day schedule with track filters, search and a personal agenda saved in `localStorage`, a speakers directory, tiered tickets with promo-code validation and a confirmation dialog, and an interactive SVG venue map. 5 page types with light/dark variants.
+- App components: `PulseHeader`, `PulseHero`, `PulseTracks`, `PulseSchedule`, `PulseSpeakers`, `PulseTickets`, `PulseVenue`, `PulseSponsors` and `PulseFooter`.
+- **University template "Veritas"** (`astro-component-kit/templates/university`): site for a university with a home (degree finder, campus KPIs), a programs catalog with faculty filters, an admissions guide in four steps with deadlines, an interactive tuition and merit-scholarship calculator, research institutes and campus life. 5 page types with light/dark variants.
+- App components: `UnivHeader`, `UnivHero`, `UnivPrograms`, `UnivAdmissions`, `UnivCalculator`, `UnivOpenDay`, `UnivResearch`, `UnivCampus` and `UnivFooter`.
+- Both are listed by the MCP server (`get_template` slugs `tech-event` and `university`) with live previews at `/preview/tech-event/` and `/preview/university/`.
+- **Forms and data:** `Combobox` (ARIA 1.2 searchable select with a hidden input for native forms), `GlassCheckbox` (native checkbox with description, indeterminate state, variants and sizes), `DateInput` (native date, datetime-local and month pickers with hint and error states) and `SortableTable` (click-to-sort columns with `aria-sort`, natural ordering and a focusable scroll region).
+- **Music festival template "Sonora"** (`astro-component-kit/templates/festival`, renamed from "Pulso" to avoid clashing with the clinic template): site for a festival or live event with a home (hero with live countdown, line-up by day, stages, tickets, sponsors), a line-up page, a timetable with stage filters and add-to-agenda toggles, ticket tiers with quantity steppers, add-ons and a live order total, practical info with a site map and FAQ, and "My Sonora" with a digital pass and the saved agenda. 6 page types, hot coral and electric lime on deep violet with a condensed display face and light/dark variants.
 - Sections: `FestivalHero`, `FestivalLineup`, `FestivalSchedule`, `FestivalStages`, `FestivalTickets`, `FestivalVenueInfo`, `FestivalSponsors`, `FestivalFooter` (new "Music Festival" section category).
 - App components: `FestivalCountdown`, `FestivalAgendaPlanner`, `FestivalTicketWallet`.
 - Built only from its own components (`reusedComponents: []`); the MCP server lists it (`get_template` slug `festival`) and the live preview is at `/preview/festival/`.
+
+### Changed
+- New shared customer-area shell (`astro-component-kit/app`): `AccountSignIn`, `AccountNav`, `AccountTopbar` and `AccountHeading` hold the layout, styles and scripts in one place and are themed through a token prefix. The sign-in, nav, topbar and heading components of Fish, Thea, Wine, Moto, Rest, Perf and Arch (28 files, about 5,000 fewer lines) are now thin wrappers over them with the same rendered markup, copy and behaviour.
+- The component audit (`npm run audit`) reads `AUDIT_BASE_URL`, `AUDIT_SAMPLE`, `AUDIT_TIMEOUT` and `AUDIT_CONCURRENCY`, skips images and fonts, and exits with an error when a page or preview fails.
+- CI now builds the site, serves it and runs the audit on a sample of the component pages.
 
 ## [0.8.2] - 2026-11-23
 

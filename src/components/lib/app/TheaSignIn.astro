@@ -1,8 +1,9 @@
 ---
 /**
- * TheaSignIn — Split sign-in for the customer area: a large generated show poster with a customer quote
- * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
- * quick-access link and a link to join the club.
+ * TheaSignIn — Split sign-in for the customer area: a large generated show poster with a customer quote on one side, the form (email, password with show/hide, remember me) on the other, plus a demo quick-access link and a link to join the club.
+ *
+ * Thin wrapper over the shared `AccountSignIn` split layout: it only picks this template's
+ * illustration, copy and typography.
  *
  * @param {string} dashboardHref - Where a successful sign-in goes.
  * @param {string} joinHref - Link to the club page.
@@ -10,13 +11,14 @@
  * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
  * @param {string} class - Extra class for the root.
  *
- * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
- * visible focus rings and 48px controls; the label illustration is decorative.
+ * Accessibility: see `AccountSignIn` (labelled fields, password toggle with aria-pressed, errors in
+ * role="alert", visible focus rings and 48px controls; the illustration is decorative).
  */
 import type { HTMLAttributes } from 'astro/types';
 import '../templates/theater/thea-theme.css';
 import TheaPoster from './TheaPoster.astro';
 import { theaShows } from '../templates/theater/data';
+import AccountSignIn from './AccountSignIn.astro';
 
 interface OwnProps {
   dashboardHref?: string;
@@ -27,254 +29,28 @@ interface OwnProps {
 
 type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
 
-const { dashboardHref = '/cuenta', joinHref = '/cartelera', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const { dashboardHref = '/cuenta', joinHref = '/cartelera', homeHref = '/', action = '', ...rest } = Astro.props;
 const show = theaShows[0];
-const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
-<section class:list={['thea-ui', 'thea-si', classAttr]} aria-labelledby={`${uid}-title`} data-thea-si data-dashboard={dashboardHref} {...rest}>
-  <div class="thea-si__art">
-    <a href={homeHref} class="thea-si__brand">Telón</a>
-    <div class="thea-si__label"><TheaPoster show={show} decorative /></div>
-    <blockquote>
-      <p>Elijo mi butaca en el plano, pago y la entrada ya está en el móvil. La última vez entré con el QR sin sacar la cartera.</p>
-      <footer>Clara Domínguez · abonada desde 2023</footer>
-    </blockquote>
-  </div>
-
-  <div class="thea-si__panel">
-    <form class="thea-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-thea-si-form>
-      <p class="th-eyebrow">Mis entradas</p>
-      <h1 id={`${uid}-title`}>Bienvenida de nuevo</h1>
-
-      <div class="thea-si__field">
-        <label for={`${uid}-email`}>Correo electrónico</label>
-        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
-      </div>
-
-      <div class="thea-si__field">
-        <label for={`${uid}-pass`}>Contraseña</label>
-        <div class="thea-si__pass">
-          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
-          <button type="button" aria-pressed="false" data-thea-si-toggle>Mostrar</button>
-        </div>
-      </div>
-
-      <label class="thea-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
-
-      <p class="thea-si__error" role="alert" data-thea-si-error></p>
-
-      <button type="submit" class="th-btn">Entrar</button>
-      <a class="thea-si__demo th-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
-
-      <p class="thea-si__join">¿Primera vez? <a class="th-link" href={joinHref}>Mira la cartelera</a></p>
-    </form>
-  </div>
-</section>
-
-<style>
-  .thea-si {
-    display: grid;
-    min-height: 100vh;
-    background: var(--th-bg);
-    color: var(--th-text);
-    font-family: var(--th-font-body);
-  }
-
-  .thea-si__art {
-    position: relative;
-    display: none;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: var(--sp-8, 2rem);
-    padding: var(--sp-10, 2.5rem);
-    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--th-accent-rgb), 0.22), transparent 70%), var(--th-surface);
-    border-right: 1px solid var(--th-border);
-  }
-
-  .thea-si__brand {
-    font-family: var(--th-font-display);
-    font-style: italic;
-    font-weight: 700;
-    font-size: 2rem;
-    color: var(--th-text);
-    text-decoration: none;
-  }
-
-  .thea-si__label {
-    width: min(380px, 82%);
-    margin: 0 auto;
-        filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
-  }
-
-  .thea-si__label :global(.thea-poster) {
-    max-width: none;
-  }
-
-  .thea-si__art blockquote {
-    max-width: 38ch;
-    margin: 0;
-  }
-
-  .thea-si__art blockquote p {
-    margin: 0 0 var(--sp-3, 0.75rem);
-    font-family: var(--th-font-display);
-    font-style: normal;
-    font-weight: 600;
-    font-size: 1.4rem;
-    line-height: 1.35;
-  }
-
-  .thea-si__art footer {
-    font-size: 0.85rem;
-    color: var(--th-text-3);
-  }
-
-  .thea-si__panel {
-    display: grid;
-    place-items: center;
-    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
-  }
-
-  .thea-si__form {
-    display: grid;
-    gap: var(--sp-4, 1rem);
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .thea-si__form h1 {
-    margin: 0 0 var(--sp-2, 0.5rem);
-    font-family: var(--th-font-display);
-    font-weight: 300;
-    font-size: clamp(2.2rem, 6vw, 3.2rem);
-    line-height: 1;
-  }
-
-  .thea-si__field label {
-    display: block;
-    margin-bottom: var(--sp-2, 0.5rem);
-    font: 600 0.74rem/1.2 var(--th-font-body);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--th-accent);
-  }
-
-  .thea-si__field input {
-    width: 100%;
-    min-height: 48px;
-    padding: 0 var(--sp-3, 0.75rem);
-    box-sizing: border-box;
-    border: 1px solid var(--th-border-strong);
-    border-radius: 2px;
-    background: var(--th-bg-raised);
-    color: var(--th-text);
-    font: 1rem var(--th-font-body);
-  }
-
-  .thea-si__pass {
-    position: relative;
-  }
-
-  .thea-si__pass input {
-    padding-right: 5.5rem;
-  }
-
-  .thea-si__pass button {
-    position: absolute;
-    top: 0;
-    right: 0;
-    min-width: 5rem;
-    min-height: 48px;
-    border: 0;
-    background: none;
-    color: var(--th-text-2);
-    font: 600 0.8rem var(--th-font-body);
-    cursor: pointer;
-  }
-
-  .thea-si__pass button:hover {
-    color: var(--th-brand);
-  }
-
-  .thea-si__check {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2, 0.5rem);
-    min-height: 44px;
-    font-size: 0.92rem;
-    color: var(--th-text-2);
-    cursor: pointer;
-  }
-
-  .thea-si__check input {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--th-brand);
-  }
-
-  .thea-si__error {
-    min-height: 1.4em;
-    margin: 0;
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: var(--th-bad);
-  }
-
-  .thea-si__demo,
-  .thea-si__join {
-    margin: 0;
-    font-size: 0.92rem;
-    color: var(--th-text-2);
-  }
-
-  .thea-si__demo {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-
-  @media (min-width: 900px) {
-    .thea-si {
-      grid-template-columns: 1.05fr 1fr;
-    }
-
-    .thea-si__art {
-      display: flex;
-    }
-  }
-</style>
-
-<script>
-  document.querySelectorAll<HTMLElement>('[data-thea-si]').forEach((root) => {
-    const form = root.querySelector<HTMLFormElement>('[data-thea-si-form]');
-    const toggle = root.querySelector<HTMLButtonElement>('[data-thea-si-toggle]');
-    const error = root.querySelector<HTMLElement>('[data-thea-si-error]');
-    if (!form) return;
-    toggle?.addEventListener('click', () => {
-      const pass = form.elements.namedItem('password') as HTMLInputElement;
-      const show = pass.type === 'password';
-      pass.type = show ? 'text' : 'password';
-      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
-      toggle.setAttribute('aria-pressed', String(show));
-    });
-    form.addEventListener('submit', (e) => {
-      if (form.getAttribute('action')) return;
-      e.preventDefault();
-      const email = form.elements.namedItem('email') as HTMLInputElement;
-      const pass = form.elements.namedItem('password') as HTMLInputElement;
-      if (!email.value || !email.validity.valid) {
-        if (error) error.textContent = 'Escribe un correo electrónico válido.';
-        email.focus();
-        return;
-      }
-      if (pass.value.length < 4) {
-        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
-        pass.focus();
-        return;
-      }
-      if (error) error.textContent = '';
-      window.location.href = root.dataset.dashboard ?? '/';
-    });
-  });
-</script>
+<AccountSignIn
+  themeClass="thea-ui"
+  tokenPrefix="th"
+  brand="Telón"
+  quote="Elijo mi butaca en el plano, pago y la entrada ya está en el móvil. La última vez entré con el QR sin sacar la cartera."
+  author="Clara Domínguez · abonada desde 2023"
+  eyebrow="Mis entradas"
+  heading="Bienvenida de nuevo"
+  joinPrompt="¿Primera vez?"
+  joinLabel="Mira la cartelera"
+  homeHref={homeHref}
+  dashboardHref={dashboardHref}
+  joinHref={joinHref}
+  action={action}
+  brandStyle="italic"
+  brandWeight={700}
+  quoteWeight={600}
+  {...rest}
+>
+  <Fragment slot="art"><TheaPoster show={show} decorative /></Fragment>
+</AccountSignIn>

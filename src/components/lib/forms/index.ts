@@ -25,4 +25,6 @@ export { default as GlassInlineToggleGroup } from './GlassInlineToggleGroup.astr
 export { default as PasswordStrengthInput } from './PasswordStrengthInput.astro';
 export { default as PhoneCountryInput } from './PhoneCountryInput.astro';
 export { default as TagsAutocompleteInput } from './TagsAutocompleteInput.astro';
-
+export { default as Combobox } from './Combobox.astro';
+export { default as GlassCheckbox } from './GlassCheckbox.astro';
+export { default as DateInput } from './DateInput.astro';

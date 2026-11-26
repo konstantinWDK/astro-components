@@ -3,6 +3,8 @@
  * ArchAccountHeading — Page heading for the members area: kicker, large serif title, description,
  * optional back link and a slot for action buttons.
  *
+ * Thin wrapper over the shared `AccountHeading`: it only chooses this template's copy and typography.
+ *
  * @param {string} title - Page title (the page's <h1>).
  * @param {string} kicker - Small label above the title.
  * @param {string} description - Supporting text.
@@ -14,6 +16,7 @@
  */
 import type { HTMLAttributes } from 'astro/types';
 import '../templates/architecture/arch-theme.css';
+import AccountHeading from './AccountHeading.astro';
 
 interface OwnProps {
   title: string;
@@ -25,73 +28,22 @@ interface OwnProps {
 
 type Props = OwnProps & Omit<HTMLAttributes<'header'>, keyof OwnProps | 'class'> & { class?: string };
 
-const { title, kicker = '', description = '', backHref = '', backLabel = 'Volver', class: classAttr, ...rest } = Astro.props;
+const { title, kicker = '', description = '', backHref = '', backLabel = 'Volver', ...rest } = Astro.props;
 ---
 
-<header class:list={['arch-ui', 'arch-mh', classAttr]} {...rest}>
-  <div>
-    {backHref && <a class="arch-mh__back" href={backHref}>← {backLabel}</a>}
-    {kicker && <p class="ar-eyebrow">{kicker}</p>}
-    <h1 class="arch-mh__title">{title}</h1>
-    {description && <p class="arch-mh__desc">{description}</p>}
-  </div>
-  <div class="arch-mh__actions"><slot /></div>
-</header>
-
-<style>
-  .arch-mh {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--sp-4, 1rem);
-    margin-bottom: var(--sp-8, 2rem);
-    padding-bottom: var(--sp-5, 1.25rem);
-    border-bottom: 1px solid var(--ar-border-strong);
-    color: var(--ar-text);
-    font-family: var(--ar-font-body);
-  }
-
-  .arch-mh__back {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    margin-bottom: var(--sp-1, 0.25rem);
-    font-size: 0.9rem;
-    color: var(--ar-text-2);
-    text-decoration: none;
-  }
-
-  .arch-mh__back:hover {
-    color: var(--ar-brand);
-  }
-
-  .arch-mh__title {
-    margin: 0;
-    font-family: var(--ar-font-display);
-    font-weight: 900;
-    font-stretch: 75%;
-    word-spacing: 0.12em;
-    text-transform: uppercase;
-    font-size: clamp(2.4rem, 6vw, 4rem);
-    line-height: 1;
-    letter-spacing: -0.025em;
-  }
-
-  .arch-mh__desc {
-    max-width: 52ch;
-    margin: var(--sp-3, 0.75rem) 0 0;
-    line-height: 1.6;
-    color: var(--ar-text-2);
-  }
-
-  .arch-mh__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2, 0.5rem);
-  }
-
-  .arch-mh__actions:empty {
-    display: none;
-  }
-</style>
+<AccountHeading
+  themeClass="arch-ui"
+  tokenPrefix="ar"
+  title={title}
+  kicker={kicker}
+  description={description}
+  backHref={backHref}
+  backLabel={backLabel}
+  titleWeight={900}
+  titleStretch="75%"
+  titleSpacing="0.12em"
+  titleTransform="uppercase"
+  {...rest}
+>
+  <slot />
+</AccountHeading>

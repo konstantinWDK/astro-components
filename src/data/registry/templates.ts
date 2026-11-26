@@ -2366,30 +2366,30 @@ const routes = { ...academyRoutes, courses: '/catalog', pricing: '/plans' };
   },
   {
     slug: 'festival',
-    name: { en: 'Pulso · Music Festival & Tickets', es: 'Pulso · Festival de música & Entradas', ru: 'Pulso · Музыкальный фестиваль & Билеты' },
+    name: { en: 'Sonora · Music Festival & Tickets', es: 'Sonora · Festival de música & Entradas', ru: 'Sonora · Музыкальный фестиваль & Билеты' },
     tagline: { en: 'Music festival site with a countdown, line-up by day, stage timetable with a personal agenda, ticket tiers with a live order total and a digital pass.', es: 'Web de festival de música con cuenta atrás, cartel por días, horarios por escenario con agenda personal, entradas con total en vivo y pase digital.', ru: 'Сайт музыкального фестиваля с обратным отсчётом, афишей по дням, расписанием по сценам с личной программой, билетами с живым итогом и цифровым пропуском.' },
-    description: { en: 'Complete template for a music festival or live event. 6 page types: home with hero, countdown, line-up, stages, tickets and sponsors; line-up; timetable with stage filters and add-to-agenda; ticket tiers with add-ons and a live total; practical info with site map and FAQ; and a "My Pulso" page with a digital pass and the saved agenda. Hot coral and electric lime on deep violet with a condensed display face, dark and light variants, built only from its own components.', es: 'Plantilla completa para un festival de música o evento en directo. 6 tipos de página: inicio con hero, cuenta atrás, cartel, escenarios, entradas y patrocinadores; cartel; horarios con filtros por escenario y agenda; entradas con extras y total en vivo; información práctica con plano y preguntas frecuentes; y «Mi Pulso» con pase digital y la agenda guardada. Coral y lima eléctrico sobre violeta profundo con tipografía condensada, variantes oscura y clara, construida solo con sus propios componentes.', ru: 'Полный шаблон музыкального фестиваля или живого события. 6 типов страниц: главная с героем, отсчётом, афишей, сценами, билетами и спонсорами; афиша; расписание с фильтрами сцен и добавлением в программу; билеты с дополнениями и живым итогом; практическая информация с планом и FAQ; «Мой Pulso» с цифровым пропуском и сохранённой программой. Коралловый и лаймовый на глубоком фиолетовом с узким дисплейным шрифтом, тёмная и светлая версии, только собственные компоненты.' },
+    description: { en: 'Complete template for a music festival or live event. 6 page types: home with hero, countdown, line-up, stages, tickets and sponsors; line-up; timetable with stage filters and add-to-agenda; ticket tiers with add-ons and a live total; practical info with site map and FAQ; and a "My Sonora" page with a digital pass and the saved agenda. Hot coral and electric lime on deep violet with a condensed display face, dark and light variants, built only from its own components.', es: 'Plantilla completa para un festival de música o evento en directo. 6 tipos de página: inicio con hero, cuenta atrás, cartel, escenarios, entradas y patrocinadores; cartel; horarios con filtros por escenario y agenda; entradas con extras y total en vivo; información práctica con plano y preguntas frecuentes; y «Mi Sonora» con pase digital y la agenda guardada. Coral y lima eléctrico sobre violeta profundo con tipografía condensada, variantes oscura y clara, construida solo con sus propios componentes.', ru: 'Полный шаблон музыкального фестиваля или живого события. 6 типов страниц: главная с героем, отсчётом, афишей, сценами, билетами и спонсорами; афиша; расписание с фильтрами сцен и добавлением в программу; билеты с дополнениями и живым итогом; практическая информация с планом и FAQ; «Мой Sonora» с цифровым пропуском и сохранённой программой. Коралловый и лаймовый на глубоком фиолетовом с узким дисплейным шрифтом, тёмная и светлая версии, только собственные компоненты.' },
     highlights: {
       en: [
         'Live countdown, line-up with day tabs and wide headliner cards generated without any image files',
         'Timetable with stage filters and an add-to-agenda toggle that flags overlapping sets',
         'Ticket tiers with quantity steppers, add-ons and an order total that updates as you choose',
         'Digital pass with a generated QR-style code, scan mode and print',
-        'Personal agenda stored in the browser and shared between the timetable and "My Pulso"',
+        'Personal agenda stored in the browser and shared between the timetable and "My Sonora"',
       ],
       es: [
         'Cuenta atrás en vivo, cartel con pestañas por día y tarjetas anchas de cabezas de cartel sin archivos de imagen',
         'Horarios con filtros por escenario y botón de agenda que avisa de los conciertos que coinciden',
         'Entradas con selector de cantidad, extras y un total que se actualiza al elegir',
         'Pase digital con código tipo QR generado, modo escaneo e impresión',
-        'Agenda personal guardada en el navegador y compartida entre horarios y «Mi Pulso»',
+        'Agenda personal guardada en el navegador y compartida entre horarios y «Mi Sonora»',
       ],
       ru: [
         'Живой отсчёт, афиша с вкладками по дням и широкие карточки хедлайнеров без файлов изображений',
         'Расписание с фильтрами сцен и кнопкой добавления, отмечающей пересекающиеся выступления',
         'Билеты с выбором количества, дополнениями и итогом, который обновляется при выборе',
         'Цифровой пропуск со сгенерированным QR-кодом, режимом сканирования и печатью',
-        'Личная программа в браузере, общая для расписания и «Мой Pulso»',
+        'Личная программа в браузере, общая для расписания и «Мой Sonora»',
       ],
     },
     tags: ['festival', 'music', 'events', 'tickets', 'lineup', 'schedule', 'countdown', 'pass'],
@@ -2452,10 +2452,10 @@ import { FestivalInfoPage } from 'astro-component-kit/templates/festival';
 <FestivalInfoPage />`,
       },
       {
-        id: 'my-festival', path: 'mi-pulso/',
-        name: { en: 'My Pulso', es: 'Mi Pulso', ru: 'Мой Pulso' },
+        id: 'my-festival', path: 'mi-sonora/',
+        name: { en: 'My Sonora', es: 'Mi Sonora', ru: 'Мой Sonora' },
         description: { en: 'Digital pass with a QR-style code and the personal agenda saved from the timetable.', es: 'Pase digital con código tipo QR y la agenda personal guardada desde los horarios.', ru: 'Цифровой пропуск с QR-кодом и личная программа из расписания.' },
-        file: 'src/pages/mi-pulso.astro',
+        file: 'src/pages/mi-sonora.astro',
         code: `---
 import { FestivalMyFestivalPage } from 'astro-component-kit/templates/festival';
 ---

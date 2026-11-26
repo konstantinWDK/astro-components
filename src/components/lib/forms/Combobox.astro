@@ -1,0 +1,334 @@
+---
+/**
+ * Combobox — Searchable select following the WAI-ARIA 1.2 combobox pattern: type to filter a listbox,
+ * move with the arrow keys, choose with Enter or a click, close with Escape. The chosen value is
+ * submitted through a hidden input, so it works inside any native form.
+ *
+ * @param {string} label - Visible label of the field.
+ * @param {string} id - HTML ID of the text input (the listbox id is derived from it).
+ * @param {string} name - Name of the submitted (hidden) value.
+ * @param {Array<{label: string, value: string, disabled?: boolean}>} options - Options of the list.
+ * @param {string} value - Initially selected value.
+ * @param {string} placeholder - Placeholder of the text input.
+ * @param {string} hint - Helper text under the field.
+ * @param {string} error - Error text; marks the field as invalid.
+ * @param {string} variant - Visual style (glass|solid|ghost).
+ * @param {string} size - Size (sm|md|lg).
+ * @param {boolean} disabled - Disables the field.
+ * @param {boolean} required - Marks the field as required.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: role="combobox" with aria-expanded, aria-controls, aria-activedescendant and
+ * aria-autocomplete="list"; options are role="option" with aria-selected; keyboard: ArrowUp/Down,
+ * Home/End, Enter, Escape; visible focus ring; the "no results" message is announced politely.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Option { label: string; value: string; disabled?: boolean }
+
+interface OwnProps {
+  label?: string;
+  id?: string;
+  name?: string;
+  options?: Option[];
+  value?: string;
+  placeholder?: string;
+  hint?: string;
+  error?: string;
+  variant?: 'glass' | 'solid' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  required?: boolean;
+}
+
+/** Own props plus any native <input> attribute (aria-*, data-*, autocomplete…), forwarded to the text input. */
+type Props = OwnProps & Omit<HTMLAttributes<'input'>, keyof OwnProps | 'class'> & {
+  /** Extra classes merged onto the root element. */
+  class?: string;
+};
+
+const {
+  label = 'Country',
+  id = `combobox-${Math.random().toString(36).slice(2, 8)}`,
+  name,
+  options = [
+    { label: 'Argentina', value: 'ar' },
+    { label: 'Chile', value: 'cl' },
+    { label: 'Colombia', value: 'co' },
+    { label: 'Spain', value: 'es' },
+    { label: 'Mexico', value: 'mx' },
+    { label: 'Peru', value: 'pe' },
+    { label: 'Uruguay', value: 'uy', disabled: true },
+  ],
+  value = '',
+  placeholder = 'Search…',
+  hint = '',
+  error = '',
+  variant = 'glass',
+  size = 'md',
+  disabled = false,
+  required = false,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const listId = `${id}-list`;
+const hintId = `${id}-hint`;
+const selected = options.find((o) => o.value === value);
+const describedBy = error || hint ? hintId : undefined;
+---
+
+<div class:list={['combobox', `combobox--${variant}`, `combobox--${size}`, { 'combobox--invalid': !!error, 'combobox--disabled': disabled }, classAttr]} data-combobox>
+  <label for={id} class="combobox__label">{label}{required && <span aria-hidden="true"> *</span>}</label>
+  <div class="combobox__field">
+    <input
+      {...rest}
+      id={id}
+      class="combobox__input"
+      type="text"
+      role="combobox"
+      autocomplete="off"
+      aria-expanded="false"
+      aria-controls={listId}
+      aria-autocomplete="list"
+      aria-invalid={error ? 'true' : undefined}
+      aria-describedby={describedBy}
+      aria-required={required ? 'true' : undefined}
+      placeholder={placeholder}
+      value={selected?.label ?? ''}
+      disabled={disabled}
+      data-combobox-input
+    />
+    <input type="hidden" name={name} value={selected?.value ?? ''} disabled={disabled} data-combobox-value />
+    <span class="combobox__chevron" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+    </span>
+    <ul id={listId} class="combobox__list" role="listbox" aria-label={label} hidden data-combobox-list>
+      {options.map((opt, i) => (
+        <li
+          id={`${id}-opt-${i}`}
+          class="combobox__option"
+          role="option"
+          data-value={opt.value}
+          aria-selected={opt.value === value ? 'true' : 'false'}
+          aria-disabled={opt.disabled ? 'true' : undefined}
+        >
+          {opt.label}
+        </li>
+      ))}
+    </ul>
+  </div>
+  <p class="combobox__status" role="status" aria-live="polite" hidden data-combobox-empty>No results</p>
+  {(error || hint) && <p id={hintId} class:list={['combobox__hint', { 'combobox__hint--error': !!error }]}>{error || hint}</p>}
+</div>
+
+<style>
+  .combobox {
+    --cb-pad-y: 0.7rem;
+    --cb-font: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2, 0.5rem);
+    width: 100%;
+    color: var(--c-text-1, #fff);
+  }
+
+  .combobox--sm { --cb-pad-y: 0.5rem; --cb-font: 0.85rem; }
+  .combobox--lg { --cb-pad-y: 0.95rem; --cb-font: 1.05rem; }
+
+  .combobox__label {
+    margin-left: var(--sp-2, 0.5rem);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-text-2, #94a3b8);
+  }
+
+  .combobox__field {
+    position: relative;
+  }
+
+  .combobox__input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--cb-pad-y) 2.5rem var(--cb-pad-y) var(--sp-4, 1rem);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--r-md, 12px);
+    background: var(--c-surface, rgba(255, 255, 255, 0.04));
+    color: inherit;
+    font: inherit;
+    font-size: var(--cb-font);
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .combobox--solid .combobox__input { background: var(--c-bg-2, #1a1a2e); }
+  .combobox--ghost .combobox__input { background: transparent; border-color: transparent; border-bottom-color: var(--c-border, rgba(255, 255, 255, 0.2)); border-radius: 0; }
+
+  .combobox__input::placeholder { color: var(--c-text-3, #64748b); }
+
+  .combobox__input:focus-visible {
+    outline: 2px solid var(--c-primary, #6366f1);
+    outline-offset: 2px;
+    border-color: var(--c-primary, #6366f1);
+  }
+
+  .combobox--invalid .combobox__input { border-color: var(--c-danger, #ef4444); }
+  .combobox--disabled .combobox__input { opacity: 0.5; cursor: not-allowed; }
+
+  .combobox__chevron {
+    position: absolute;
+    top: 50%;
+    right: var(--sp-4, 1rem);
+    transform: translateY(-50%);
+    display: flex;
+    color: var(--c-text-3, #64748b);
+    pointer-events: none;
+    transition: transform 0.2s ease;
+  }
+
+  .combobox__input[aria-expanded='true'] ~ .combobox__chevron { transform: translateY(-50%) rotate(180deg); }
+
+  .combobox__list {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + var(--sp-2, 0.5rem));
+    left: 0;
+    right: 0;
+    max-height: 15rem;
+    margin: 0;
+    padding: var(--sp-1, 0.25rem);
+    overflow-y: auto;
+    list-style: none;
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12));
+    border-radius: var(--r-md, 12px);
+    background: var(--c-bg-1, #12121f);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .combobox__list[hidden] { display: none; }
+
+  .combobox__option {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border-radius: var(--r-sm, 8px);
+    font-size: var(--cb-font);
+    color: var(--c-text-2, #cbd5e1);
+    cursor: pointer;
+  }
+
+  .combobox__option[data-active='true'] { background: rgba(99, 102, 241, 0.18); color: var(--c-text-1, #fff); }
+  .combobox__option[aria-selected='true'] { color: var(--c-primary-light, #818cf8); font-weight: 600; }
+  .combobox__option[aria-disabled='true'] { opacity: 0.4; cursor: not-allowed; }
+  .combobox__option[hidden] { display: none; }
+
+  .combobox__status,
+  .combobox__hint {
+    margin: 0;
+    margin-left: var(--sp-2, 0.5rem);
+    font-size: 0.8rem;
+    color: var(--c-text-3, #64748b);
+  }
+
+  .combobox__hint--error { color: var(--c-danger, #ef4444); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .combobox__input,
+    .combobox__chevron { transition: none; }
+  }
+</style>
+
+<script>
+  function initCombobox(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+    const input = root.querySelector<HTMLInputElement>('[data-combobox-input]')!;
+    const hidden = root.querySelector<HTMLInputElement>('[data-combobox-value]')!;
+    const list = root.querySelector<HTMLElement>('[data-combobox-list]')!;
+    const empty = root.querySelector<HTMLElement>('[data-combobox-empty]')!;
+    const options = Array.from(list.querySelectorAll<HTMLElement>('[role="option"]'));
+    let active = -1;
+
+    const visible = () => options.filter((o) => !o.hidden && o.getAttribute('aria-disabled') !== 'true');
+    const setActive = (opt: HTMLElement | null) => {
+      options.forEach((o) => o.removeAttribute('data-active'));
+      active = opt ? options.indexOf(opt) : -1;
+      if (opt) {
+        opt.setAttribute('data-active', 'true');
+        input.setAttribute('aria-activedescendant', opt.id);
+        opt.scrollIntoView({ block: 'nearest' });
+      } else {
+        input.removeAttribute('aria-activedescendant');
+      }
+    };
+    const open = () => {
+      if (input.disabled) return;
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    };
+    const close = () => {
+      list.hidden = true;
+      empty.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      setActive(null);
+    };
+    const filter = () => {
+      const q = input.value.trim().toLowerCase();
+      options.forEach((o) => { o.hidden = q !== '' && !(o.textContent ?? '').toLowerCase().includes(q); });
+      const shown = visible();
+      empty.hidden = shown.length > 0 || list.hidden;
+      setActive(shown[0] ?? null);
+    };
+    const choose = (opt: HTMLElement) => {
+      if (opt.getAttribute('aria-disabled') === 'true') return;
+      options.forEach((o) => o.setAttribute('aria-selected', String(o === opt)));
+      input.value = opt.textContent?.trim() ?? '';
+      hidden.value = opt.dataset.value ?? '';
+      hidden.dispatchEvent(new Event('change', { bubbles: true }));
+      close();
+    };
+    const restore = () => {
+      const current = options.find((o) => o.getAttribute('aria-selected') === 'true');
+      input.value = current?.textContent?.trim() ?? '';
+      if (!current) hidden.value = '';
+      options.forEach((o) => { o.hidden = false; });
+    };
+
+    input.addEventListener('focus', () => { open(); filter(); });
+    input.addEventListener('click', () => { open(); filter(); });
+    input.addEventListener('input', () => { open(); filter(); });
+    input.addEventListener('keydown', (e) => {
+      const shown = visible();
+      const idx = shown.indexOf(options[active]);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (list.hidden) { open(); filter(); return; }
+        setActive(shown[Math.min(idx + 1, shown.length - 1)] ?? null);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActive(shown[Math.max(idx - 1, 0)] ?? null);
+      } else if (e.key === 'Home' && !list.hidden) {
+        e.preventDefault();
+        setActive(shown[0] ?? null);
+      } else if (e.key === 'End' && !list.hidden) {
+        e.preventDefault();
+        setActive(shown[shown.length - 1] ?? null);
+      } else if (e.key === 'Enter') {
+        if (!list.hidden && options[active]) { e.preventDefault(); choose(options[active]); }
+      } else if (e.key === 'Escape') {
+        if (!list.hidden) { e.preventDefault(); close(); restore(); }
+      }
+    });
+    list.addEventListener('mousedown', (e) => e.preventDefault());
+    list.addEventListener('click', (e) => {
+      const opt = (e.target as HTMLElement).closest<HTMLElement>('[role="option"]');
+      if (opt) choose(opt);
+    });
+    root.addEventListener('focusout', (e) => {
+      if (!root.contains(e.relatedTarget as Node | null)) { close(); restore(); }
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-combobox]').forEach(initCombobox);
+</script>

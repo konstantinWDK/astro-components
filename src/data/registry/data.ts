@@ -214,4 +214,14 @@ export const data: ComponentDoc[] = [
     code: source('data/StatusTimelineFeed.astro'),
     usage: `<StatusTimelineFeed events={[{ title: 'Deployment Success', timestamp: '10m ago', status: 'success', description: 'Production bundle compiled with 0 errors.' }]} />`,
   },
+  {
+    slug: 'sortable-table',
+    name: 'Sortable Table',
+    description: 'Data table with click-to-sort columns announced through aria-sort, natural ordering for text and numbers, and a focusable scroll region on small screens.',
+    category: 'data',
+    tags: ["data","table","sort","a11y"],
+    featured: true,
+    code: source('data/SortableTable.astro'),
+    usage: `<SortableTable caption="Projects" sortKey="budget" sortDir="desc" columns={[{ key: 'name', label: 'Project', sortable: true }, { key: 'budget', label: 'Budget', sortable: true, align: 'end' }]} rows={[{ name: 'Atlas', budget: 18400 }, { name: 'Docs', budget: 5600 }]} />`,
+  },
 ];

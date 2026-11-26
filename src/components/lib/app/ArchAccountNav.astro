@@ -3,6 +3,8 @@
  * ArchAccountNav — Navigation of the members area: wordmark plus text tabs in a header row on
  * desktop, and a fixed bottom tab bar on phones. Text only (no icons), no JavaScript.
  *
+ * Thin wrapper over the shared `AccountNav`: it only chooses this template's copy and typography.
+ *
  * @param {Array<{label: string, href: string, badge?: string|number}>} items - Links (keep 3–5).
  * @param {string} currentHref - Marks the matching link with aria-current="page".
  * @param {string} brand - Architecture name (desktop only; phones show it in the top bar).
@@ -14,6 +16,7 @@
  */
 import type { HTMLAttributes } from 'astro/types';
 import '../templates/architecture/arch-theme.css';
+import AccountNav from './AccountNav.astro';
 
 interface Item { label: string; href: string; badge?: string | number }
 
@@ -35,156 +38,19 @@ const {
   currentHref = '#',
   brand = 'Cota',
   homeHref = '#',
-  class: classAttr,
   ...rest
 } = Astro.props;
-
-const isCurrent = (href: string) => href.replace(/\/$/, '') === currentHref.replace(/\/$/, '');
 ---
 
-<nav class:list={['arch-ui', 'arch-nav', classAttr]} aria-label="Área de cliente" {...rest}>
-  <a href={homeHref} class="arch-nav__brand">{brand}<small>Club</small></a>
-  <ul class="arch-nav__list" role="list">
-    {items.map((it) => (
-      <li>
-        <a href={it.href} class="arch-nav__link" aria-current={isCurrent(it.href) ? 'page' : undefined}>
-          {it.label}
-          {it.badge !== undefined && it.badge !== 0 && <span class="arch-nav__badge">{it.badge}<span class="ar-sr"> pendientes</span></span>}
-        </a>
-      </li>
-    ))}
-  </ul>
-</nav>
-
-<style>
-  .arch-nav {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-8, 2rem);
-    color: var(--ar-text);
-    font-family: var(--ar-font-body);
-  }
-
-  .arch-nav__brand {
-    display: none;
-    align-items: baseline;
-    gap: 0.5rem;
-    font-family: var(--ar-font-display);
-    font-style: normal;
-    font-weight: 900;
-    font-stretch: 75%;
-    text-transform: uppercase;
-    font-weight: 400;
-    font-size: 1.7rem;
-    color: var(--ar-text);
-    text-decoration: none;
-  }
-
-  .arch-nav__brand small {
-    font: 600 0.65rem/1 var(--ar-font-body);
-    font-style: normal;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--ar-accent);
-  }
-
-  .arch-nav__list {
-    display: flex;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .arch-nav__link {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    color: var(--ar-text-3);
-    font: 600 0.78rem/1 var(--ar-font-body);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-
-  .arch-nav__link:hover {
-    color: var(--ar-text);
-  }
-
-  .arch-nav__link[aria-current='page'] {
-    color: var(--ar-text);
-  }
-
-  .arch-nav__link:focus-visible,
-  .arch-nav__brand:focus-visible {
-    outline: 2px solid var(--ar-brand);
-    outline-offset: 2px;
-  }
-
-  .arch-nav__badge {
-    min-width: 18px;
-    padding: 0 5px;
-    background: var(--ar-brand);
-    color: var(--ar-on-brand);
-    font-size: 0.68rem;
-    line-height: 18px;
-    letter-spacing: 0;
-    text-align: center;
-  }
-
-  /* Phones: fixed bottom tab bar */
-  @media (max-width: 759px) {
-    .arch-nav {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 40;
-      background: var(--ar-bg-raised);
-      border-top: 1px solid var(--ar-border-strong);
-      padding-bottom: env(safe-area-inset-bottom, 0);
-    }
-
-    .arch-nav__list {
-      flex: 1;
-    }
-
-    .arch-nav__list li {
-      flex: 1;
-    }
-
-    .arch-nav__link {
-      min-height: 60px;
-      padding: 0 var(--sp-2, 0.5rem);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      border-top: 3px solid transparent;
-    }
-
-    .arch-nav__link[aria-current='page'] {
-      border-top-color: var(--ar-brand);
-      color: var(--ar-brand);
-    }
-  }
-
-  @media (min-width: 760px) {
-    .arch-nav__brand {
-      display: inline-flex;
-    }
-
-    .arch-nav__list {
-      gap: var(--sp-6, 1.5rem);
-    }
-
-    .arch-nav__link {
-      min-height: 48px;
-      border-bottom: 2px solid transparent;
-    }
-
-    .arch-nav__link[aria-current='page'] {
-      border-bottom-color: var(--ar-brand);
-    }
-  }
-</style>
+<AccountNav
+  themeClass="arch-ui"
+  tokenPrefix="ar"
+  ariaLabel="Área de cliente"
+  items={items}
+  currentHref={currentHref}
+  brand={brand}
+  homeHref={homeHref}
+  brandStretch="75%"
+  brandTransform="uppercase"
+  {...rest}
+/>

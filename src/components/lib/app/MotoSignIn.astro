@@ -1,8 +1,9 @@
 ---
 /**
- * MotoSignIn — Split sign-in for the customer area: a large generated rod illustration with a customer quote
- * on one side, the form (email, password with show/hide, remember me) on the other, plus a demo
- * quick-access link and a link to join the club.
+ * MotoSignIn — Split sign-in for the customer area: a large generated rod illustration with a customer quote on one side, the form (email, password with show/hide, remember me) on the other, plus a demo quick-access link and a link to join the club.
+ *
+ * Thin wrapper over the shared `AccountSignIn` split layout: it only picks this template's
+ * illustration, copy and typography.
  *
  * @param {string} dashboardHref - Where a successful sign-in goes.
  * @param {string} joinHref - Link to the club page.
@@ -10,13 +11,14 @@
  * @param {string} action - Backend endpoint. Empty runs a demo sign-in that redirects.
  * @param {string} class - Extra class for the root.
  *
- * Accessibility: labelled fields, a password toggle with aria-pressed, errors in role="alert",
- * visible focus rings and 48px controls; the label illustration is decorative.
+ * Accessibility: see `AccountSignIn` (labelled fields, password toggle with aria-pressed, errors in
+ * role="alert", visible focus rings and 48px controls; the illustration is decorative).
  */
 import type { HTMLAttributes } from 'astro/types';
 import '../templates/motocross/moto-theme.css';
 import MotoArt from './MotoArt.astro';
 import { motoProducts } from '../templates/motocross/data';
+import AccountSignIn from './AccountSignIn.astro';
 
 interface OwnProps {
   dashboardHref?: string;
@@ -27,254 +29,27 @@ interface OwnProps {
 
 type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
 
-const { dashboardHref = '/cuenta', joinHref = '/tienda', homeHref = '/', action = '', class: classAttr, ...rest } = Astro.props;
+const { dashboardHref = '/cuenta', joinHref = '/tienda', homeHref = '/', action = '', ...rest } = Astro.props;
 const item = motoProducts[1];
-const uid = `wsi-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
-<section class:list={['moto-ui', 'moto-si', classAttr]} aria-labelledby={`${uid}-title`} data-moto-si data-dashboard={dashboardHref} {...rest}>
-  <div class="moto-si__art">
-    <a href={homeHref} class="moto-si__brand">Barro</a>
-    <div class="moto-si__label"><MotoArt item={item} decorative /></div>
-    <blockquote>
-      <p>Pido el miércoles y el domingo ya estoy en la pista. Desde mi garaje sé cuándo toca cambiar el aceite sin acordarme yo.</p>
-      <footer>Dani Ferrer · piloto de club desde 2022</footer>
-    </blockquote>
-  </div>
-
-  <div class="moto-si__panel">
-    <form class="moto-si__form" action={action || undefined} method={action ? 'post' : undefined} novalidate data-moto-si-form>
-      <p class="mt-eyebrow">Mi garaje</p>
-      <h1 id={`${uid}-title`}>Bienvenido de nuevo</h1>
-
-      <div class="moto-si__field">
-        <label for={`${uid}-email`}>Correo electrónico</label>
-        <input id={`${uid}-email`} type="email" name="email" autocomplete="email" required />
-      </div>
-
-      <div class="moto-si__field">
-        <label for={`${uid}-pass`}>Contraseña</label>
-        <div class="moto-si__pass">
-          <input id={`${uid}-pass`} type="password" name="password" autocomplete="current-password" required />
-          <button type="button" aria-pressed="false" data-moto-si-toggle>Mostrar</button>
-        </div>
-      </div>
-
-      <label class="moto-si__check"><input type="checkbox" name="remember" /> Mantener la sesión en este dispositivo</label>
-
-      <p class="moto-si__error" role="alert" data-moto-si-error></p>
-
-      <button type="submit" class="mt-btn">Entrar</button>
-      <a class="moto-si__demo mt-link" href={dashboardHref}>Entrar con la cuenta de demostración</a>
-
-      <p class="moto-si__join">¿Primera vez? <a class="mt-link" href={joinHref}>Ve a la tienda</a></p>
-    </form>
-  </div>
-</section>
-
-<style>
-  .moto-si {
-    display: grid;
-    min-height: 100vh;
-    background: var(--mt-bg);
-    color: var(--mt-text);
-    font-family: var(--mt-font-body);
-  }
-
-  .moto-si__art {
-    position: relative;
-    display: none;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: var(--sp-8, 2rem);
-    padding: var(--sp-10, 2.5rem);
-    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--mt-accent-rgb), 0.22), transparent 70%), var(--mt-surface);
-    border-right: 1px solid var(--mt-border);
-  }
-
-  .moto-si__brand {
-    font-family: var(--mt-font-display);
-    font-style: normal;
-    font-weight: 700;
-    font-size: 2rem;
-    color: var(--mt-text);
-    text-decoration: none;
-  }
-
-  .moto-si__label {
-    width: min(380px, 82%);
-    margin: 0 auto;
-        filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.4));
-  }
-
-  .moto-si__label :global(.moto-art) {
-    max-width: none;
-  }
-
-  .moto-si__art blockquote {
-    max-width: 38ch;
-    margin: 0;
-  }
-
-  .moto-si__art blockquote p {
-    margin: 0 0 var(--sp-3, 0.75rem);
-    font-family: var(--mt-font-display);
-    font-style: normal;
-    font-weight: 600;
-    font-size: 1.4rem;
-    line-height: 1.35;
-  }
-
-  .moto-si__art footer {
-    font-size: 0.85rem;
-    color: var(--mt-text-3);
-  }
-
-  .moto-si__panel {
-    display: grid;
-    place-items: center;
-    padding: var(--sp-10, 2.5rem) var(--sp-4, 1rem);
-  }
-
-  .moto-si__form {
-    display: grid;
-    gap: var(--sp-4, 1rem);
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .moto-si__form h1 {
-    margin: 0 0 var(--sp-2, 0.5rem);
-    font-family: var(--mt-font-display);
-    font-weight: 300;
-    font-size: clamp(2.2rem, 6vw, 3.2rem);
-    line-height: 1;
-  }
-
-  .moto-si__field label {
-    display: block;
-    margin-bottom: var(--sp-2, 0.5rem);
-    font: 600 0.74rem/1.2 var(--mt-font-body);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--mt-accent);
-  }
-
-  .moto-si__field input {
-    width: 100%;
-    min-height: 48px;
-    padding: 0 var(--sp-3, 0.75rem);
-    box-sizing: border-box;
-    border: 1px solid var(--mt-border-strong);
-    border-radius: 2px;
-    background: var(--mt-bg-raised);
-    color: var(--mt-text);
-    font: 1rem var(--mt-font-body);
-  }
-
-  .moto-si__pass {
-    position: relative;
-  }
-
-  .moto-si__pass input {
-    padding-right: 5.5rem;
-  }
-
-  .moto-si__pass button {
-    position: absolute;
-    top: 0;
-    right: 0;
-    min-width: 5rem;
-    min-height: 48px;
-    border: 0;
-    background: none;
-    color: var(--mt-text-2);
-    font: 600 0.8rem var(--mt-font-body);
-    cursor: pointer;
-  }
-
-  .moto-si__pass button:hover {
-    color: var(--mt-brand);
-  }
-
-  .moto-si__check {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2, 0.5rem);
-    min-height: 44px;
-    font-size: 0.92rem;
-    color: var(--mt-text-2);
-    cursor: pointer;
-  }
-
-  .moto-si__check input {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--mt-brand);
-  }
-
-  .moto-si__error {
-    min-height: 1.4em;
-    margin: 0;
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: var(--mt-bad);
-  }
-
-  .moto-si__demo,
-  .moto-si__join {
-    margin: 0;
-    font-size: 0.92rem;
-    color: var(--mt-text-2);
-  }
-
-  .moto-si__demo {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
-
-  @media (min-width: 900px) {
-    .moto-si {
-      grid-template-columns: 1.05fr 1fr;
-    }
-
-    .moto-si__art {
-      display: flex;
-    }
-  }
-</style>
-
-<script>
-  document.querySelectorAll<HTMLElement>('[data-moto-si]').forEach((root) => {
-    const form = root.querySelector<HTMLFormElement>('[data-moto-si-form]');
-    const toggle = root.querySelector<HTMLButtonElement>('[data-moto-si-toggle]');
-    const error = root.querySelector<HTMLElement>('[data-moto-si-error]');
-    if (!form) return;
-    toggle?.addEventListener('click', () => {
-      const pass = form.elements.namedItem('password') as HTMLInputElement;
-      const show = pass.type === 'password';
-      pass.type = show ? 'text' : 'password';
-      toggle.textContent = show ? 'Ocultar' : 'Mostrar';
-      toggle.setAttribute('aria-pressed', String(show));
-    });
-    form.addEventListener('submit', (e) => {
-      if (form.getAttribute('action')) return;
-      e.preventDefault();
-      const email = form.elements.namedItem('email') as HTMLInputElement;
-      const pass = form.elements.namedItem('password') as HTMLInputElement;
-      if (!email.value || !email.validity.valid) {
-        if (error) error.textContent = 'Escribe un correo electrónico válido.';
-        email.focus();
-        return;
-      }
-      if (pass.value.length < 4) {
-        if (error) error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
-        pass.focus();
-        return;
-      }
-      if (error) error.textContent = '';
-      window.location.href = root.dataset.dashboard ?? '/';
-    });
-  });
-</script>
+<AccountSignIn
+  themeClass="moto-ui"
+  tokenPrefix="mt"
+  brand="Barro"
+  quote="Pido el miércoles y el domingo ya estoy en la pista. Desde mi garaje sé cuándo toca cambiar el aceite sin acordarme yo."
+  author="Dani Ferrer · piloto de club desde 2022"
+  eyebrow="Mi garaje"
+  heading="Bienvenido de nuevo"
+  joinPrompt="¿Primera vez?"
+  joinLabel="Ve a la tienda"
+  homeHref={homeHref}
+  dashboardHref={dashboardHref}
+  joinHref={joinHref}
+  action={action}
+  brandWeight={700}
+  quoteWeight={600}
+  {...rest}
+>
+  <Fragment slot="art"><MotoArt item={item} decorative /></Fragment>
+</AccountSignIn>

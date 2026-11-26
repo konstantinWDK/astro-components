@@ -1081,7 +1081,7 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['academy', 'education', 'footer', 'cta', 'contact'],
     usage: `<AcademyFooter cta={{ title: 'Tu primera clase es gratis', href: '/acceso', label: 'Empezar a aprender' }} />`,
   }),
-  // === MUSIC FESTIVAL ("Pulso") ===
+  // === MUSIC FESTIVAL ("Sonora") ===
   section({
     slug: 'festival-hero', name: 'Festival Hero', file: 'FestivalHero.astro', sectionCategory: 'festival',
     description: 'Music festival hero with a huge condensed title, dates and venue, live countdown, headliner chips, ticket calls to action and an animated equalizer over a sunset glow.',
@@ -1098,7 +1098,7 @@ export const sectionsExtra: ComponentDoc[] = [
     slug: 'festival-schedule', name: 'Festival Schedule', file: 'FestivalSchedule.astro', sectionCategory: 'festival',
     description: 'Timetable with day tabs, stage filter chips and an add-to-my-agenda toggle per set; saved sets that overlap are flagged. The agenda is kept in the browser.',
     tags: ['festival', 'music', 'schedule', 'timetable', 'filter', 'tabs'], featured: true,
-    usage: `<FestivalSchedule artists={festivalArtists} days={festivalDays} stages={festivalStages} agendaHref="/mi-pulso" />`,
+    usage: `<FestivalSchedule artists={festivalArtists} days={festivalDays} stages={festivalStages} agendaHref="/mi-sonora" />`,
   }),
   section({
     slug: 'festival-stages', name: 'Festival Stages', file: 'FestivalStages.astro', sectionCategory: 'festival',
