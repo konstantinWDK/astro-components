@@ -10,12 +10,13 @@
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-34d399.svg)
 
 <div align="center">
-  <video src="https://astrocomponents.dev/videos/astro-components-showcase.mp4" poster="https://astrocomponents.dev/videos/astro-components-showcase-poster.jpg" controls muted playsinline width="100%">
-    <a href="https://astrocomponents.dev/videos/astro-components-showcase.mp4">
-      <img src="https://astrocomponents.dev/videos/astro-components-showcase-poster.jpg" alt="Astro Component Kit — Video Showcase" width="100%" />
-    </a>
-  </video>
-  <p><a href="https://astrocomponents.dev/videos/astro-components-showcase.mp4">▶️ Watch the Video Showcase (MP4)</a></p>
+  <a href="https://astrocomponents.dev">
+    <img src="public/videos/astro-components-showcase.gif" alt="Astro Component Kit — Showcase Demo" width="100%" />
+  </a>
+  <p>
+    <a href="https://astrocomponents.dev">🌐 <strong>Explore Components on astrocomponents.dev</strong></a> · 
+    <a href="https://astrocomponents.dev/videos/astro-components-showcase.mp4">▶️ Watch full-resolution MP4 (60fps)</a>
+  </p>
 </div>
 
 ---
