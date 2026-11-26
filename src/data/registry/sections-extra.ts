@@ -1081,6 +1081,55 @@ export const sectionsExtra: ComponentDoc[] = [
     tags: ['academy', 'education', 'footer', 'cta', 'contact'],
     usage: `<AcademyFooter cta={{ title: 'Tu primera clase es gratis', href: '/acceso', label: 'Empezar a aprender' }} />`,
   }),
+  // === MUSIC FESTIVAL ("Pulso") ===
+  section({
+    slug: 'festival-hero', name: 'Festival Hero', file: 'FestivalHero.astro', sectionCategory: 'festival',
+    description: 'Music festival hero with a huge condensed title, dates and venue, live countdown, headliner chips, ticket calls to action and an animated equalizer over a sunset glow.',
+    tags: ['festival', 'music', 'hero', 'countdown', 'tickets'], featured: true,
+    usage: `<FestivalHero ticketsHref="/entradas" lineupHref="/cartel" />`,
+  }),
+  section({
+    slug: 'festival-lineup', name: 'Festival Lineup', file: 'FestivalLineup.astro', sectionCategory: 'festival',
+    description: 'Line-up poster with day tabs and a card per artist with generated cover art, genre, country, stage and time; headliners get a wide card.',
+    tags: ['festival', 'music', 'lineup', 'artists', 'tabs'], featured: true,
+    usage: `<FestivalLineup artists={festivalArtists} days={festivalDays} scheduleHref="/horarios" />`,
+  }),
+  section({
+    slug: 'festival-schedule', name: 'Festival Schedule', file: 'FestivalSchedule.astro', sectionCategory: 'festival',
+    description: 'Timetable with day tabs, stage filter chips and an add-to-my-agenda toggle per set; saved sets that overlap are flagged. The agenda is kept in the browser.',
+    tags: ['festival', 'music', 'schedule', 'timetable', 'filter', 'tabs'], featured: true,
+    usage: `<FestivalSchedule artists={festivalArtists} days={festivalDays} stages={festivalStages} agendaHref="/mi-pulso" />`,
+  }),
+  section({
+    slug: 'festival-stages', name: 'Festival Stages', file: 'FestivalStages.astro', sectionCategory: 'festival',
+    description: 'One card per stage with a coloured glow, description, capacity, number of sets and the featured act.',
+    tags: ['festival', 'music', 'stages', 'cards'],
+    usage: `<FestivalStages stages={festivalStages} artists={festivalArtists} />`,
+  }),
+  section({
+    slug: 'festival-tickets', name: 'Festival Tickets', file: 'FestivalTickets.astro', sectionCategory: 'festival',
+    description: 'Ticket tiers with quantity steppers, optional add-ons and a live order summary with the total; sold-out tiers are disabled and say so in text.',
+    tags: ['festival', 'music', 'tickets', 'pricing', 'checkout', 'form'], featured: true,
+    usage: `<FestivalTickets tickets={festivalTickets} addons={festivalAddons} action="/api/order" />`,
+  }),
+  section({
+    slug: 'festival-venue-info', name: 'Festival Venue Info', file: 'FestivalVenueInfo.astro', sectionCategory: 'festival',
+    description: 'Practical information cards beside a stylised site map plus a FAQ built with native disclosure elements.',
+    tags: ['festival', 'music', 'venue', 'map', 'faq', 'info'],
+    usage: `<FestivalVenueInfo venue="Parque del Lago, Valencia" faq={festivalFaq} />`,
+  }),
+  section({
+    slug: 'festival-sponsors', name: 'Festival Sponsors', file: 'FestivalSponsors.astro', sectionCategory: 'festival',
+    description: 'Partner wall with wordmark tiles in a responsive grid and a call to become a sponsor.',
+    tags: ['festival', 'music', 'sponsors', 'partners', 'logos'],
+    usage: `<FestivalSponsors sponsors={festivalSponsors} ctaHref="mailto:partners@example.com" />`,
+  }),
+  section({
+    slug: 'festival-footer', name: 'Festival Footer', file: 'FestivalFooter.astro', sectionCategory: 'festival',
+    description: 'Festival footer with a ticket call-to-action band, newsletter sign-up, link columns, contact details and a legal row.',
+    tags: ['festival', 'music', 'footer', 'newsletter', 'cta'],
+    usage: `<FestivalFooter cta={{ title: 'Quedan 312 abonos', href: '/entradas', label: 'Conseguir mi abono' }} />`,
+  }),
   // === FINTECH NEOBANK ("Cobre") ===
   section({
     slug: 'bank-hero', name: 'Bank Hero', file: 'BankHero.astro', sectionCategory: 'fintech',

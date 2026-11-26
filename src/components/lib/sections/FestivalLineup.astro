@@ -1,0 +1,322 @@
+---
+/**
+ * FestivalLineup — Line-up poster: day tabs and a card per artist with generated cover art,
+ * genre, country, stage and time. Headliners are larger.
+ *
+ * @param {FestivalArtist[]} artists - Artists to list.
+ * @param {FestivalDay[]} days - Days used for the tabs.
+ * @param {FestivalStage[]} stages - Used to name each artist's stage.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} scheduleHref - Link to the timetable.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: WAI-ARIA tabs (roving tabindex, Arrow/Home/End keys); without JavaScript every day is shown.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalArtists, festivalDays, festivalStages, festivalByTime, getFestivalStage, type FestivalArtist, type FestivalDay, type FestivalStage } from '../templates/festival/data';
+
+interface OwnProps {
+  artists?: FestivalArtist[];
+  days?: FestivalDay[];
+  stages?: FestivalStage[];
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+  scheduleHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  artists = festivalArtists,
+  days = festivalDays,
+  stages = festivalStages,
+  title = 'El cartel',
+  subtitle = 'Tres noches, tres escenarios y más de sesenta artistas. Elige tu día.',
+  headingLevel = 'h2',
+  scheduleHref = '/horarios',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fl-${Math.random().toString(36).slice(2, 8)}`;
+const byDay = days.map((d) => ({
+  day: d,
+  list: [...festivalByTime(artists.filter((a) => a.dayId === d.id))].sort((a, b) => Number(!!b.headliner) - Number(!!a.headliner)),
+}));
+const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+---
+
+<section class:list={['festival-ui', 'fs-lineup', classAttr]} aria-labelledby={`${uid}-title`} data-fs-tabs {...rest}>
+  <div class="fs-lineup__inner">
+    <header class="fs-lineup__head">
+      <Heading id={`${uid}-title`} class="fs-lineup__title">{title}</Heading>
+      {subtitle && <p class="fs-lineup__subtitle">{subtitle}</p>}
+    </header>
+
+    <div class="fs-lineup__tabs" role="tablist" aria-label="Días del festival">
+      {byDay.map(({ day }, i) => (
+        <button type="button" role="tab" class="fs-lineup__tab" id={`${uid}-tab-${day.id}`} aria-controls={`${uid}-panel-${day.id}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>
+          <span class="fs-lineup__tab-day">{day.label}</span>
+          <span class="fs-lineup__tab-date">{day.display}</span>
+        </button>
+      ))}
+    </div>
+
+    {byDay.map(({ day, list }) => (
+      <div class="fs-lineup__panel" role="tabpanel" id={`${uid}-panel-${day.id}`} aria-labelledby={`${uid}-tab-${day.id}`} tabindex="0">
+        <ul class="fs-lineup__grid">
+          {list.map((a) => {
+            const stage = getFestivalStage(a.stageId, stages);
+            return (
+              <li class:list={['fs-artist', { 'fs-artist--headliner': a.headliner }]} style={`--hue:${a.hue}`}>
+                <div class="fs-artist__art" aria-hidden="true"><span>{initials(a.name)}</span></div>
+                <div class="fs-artist__body">
+                  {a.headliner && <p class="fs-artist__badge">Cabeza de cartel</p>}
+                  <h3 class="fs-artist__name">{a.name}</h3>
+                  <p class="fs-artist__meta">{a.genre} · {a.country}</p>
+                  <p class="fs-artist__when">{a.start}–{a.end} <span aria-hidden="true">·</span> {stage?.name}</p>
+                  {a.headliner && <p class="fs-artist__bio">{a.bio}</p>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))}
+
+    <p class="fs-lineup__more"><a href={scheduleHref}>Ver horarios completos por escenario →</a></p>
+  </div>
+</section>
+
+<script>
+  function initFestivalTabs() {
+    document.querySelectorAll<HTMLElement>('[data-fs-tabs]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      root.classList.add('is-js');
+      const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+      const select = (idx: number, focus = false) => {
+        tabs.forEach((t, i) => {
+          t.setAttribute('aria-selected', String(i === idx));
+          t.tabIndex = i === idx ? 0 : -1;
+        });
+        panels.forEach((p, i) => { p.hidden = i !== idx; });
+        if (focus) tabs[idx].focus();
+      };
+      select(0);
+      tabs.forEach((t, i) => {
+        t.addEventListener('click', () => select(i));
+        t.addEventListener('keydown', (e) => {
+          const last = tabs.length - 1;
+          if (e.key === 'ArrowRight') { e.preventDefault(); select(i === last ? 0 : i + 1, true); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); select(i === 0 ? last : i - 1, true); }
+          if (e.key === 'Home') { e.preventDefault(); select(0, true); }
+          if (e.key === 'End') { e.preventDefault(); select(last, true); }
+        });
+      });
+    });
+  }
+  initFestivalTabs();
+  document.addEventListener('astro:page-load', initFestivalTabs);
+</script>
+
+<style>
+  .fs-lineup {
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-lineup__inner {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--sp-4, 1rem);
+  }
+
+  .fs-lineup__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .fs-lineup__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    max-width: 38rem;
+    color: var(--fs-text-2);
+  }
+
+  .fs-lineup__tabs {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .fs-lineup__tab {
+    display: grid;
+    gap: 2px;
+    min-width: 7.5rem;
+    min-height: 56px;
+    padding: var(--sp-2, 0.5rem) var(--sp-5, 1.25rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--fs-text-2);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .fs-lineup__tab-day {
+    font-weight: 700;
+  }
+
+  .fs-lineup__tab-date {
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+
+  .fs-lineup__tab[aria-selected='true'] {
+    border-color: var(--fs-brand);
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+  }
+
+  .fs-lineup__tab:focus-visible,
+  .fs-lineup__panel:focus-visible,
+  .fs-lineup__more a:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 3px;
+  }
+
+  /* Without JS every day is visible; tabs only make sense with JS. */
+  .fs-lineup:not(.is-js) .fs-lineup__tabs {
+    display: none;
+  }
+
+  .fs-lineup:not(.is-js) .fs-lineup__panel + .fs-lineup__panel {
+    margin-top: var(--sp-6, 1.5rem);
+  }
+
+  .fs-lineup__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-artist {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--fs-border);
+    border-radius: var(--r-lg, 16px);
+    background: var(--fs-bg-raised);
+  }
+
+  .fs-artist--headliner {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-color: var(--fs-border-strong);
+  }
+
+  .fs-artist__art {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 10;
+    background:
+      radial-gradient(circle at 30% 20%, hsl(var(--hue) 90% 62% / 0.9), transparent 60%),
+      linear-gradient(135deg, hsl(var(--hue) 70% 28%), hsl(calc(var(--hue) + 60) 70% 18%));
+  }
+
+  .fs-artist--headliner .fs-artist__art {
+    flex: 1 1 18rem;
+    aspect-ratio: auto;
+    min-height: 12rem;
+  }
+
+  .fs-artist__art span {
+    font-family: var(--fs-font-display);
+    font-size: 3.4rem;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .fs-artist__body {
+    display: grid;
+    gap: 4px;
+    padding: var(--sp-4, 1rem);
+  }
+
+  .fs-artist--headliner .fs-artist__body {
+    flex: 2 1 22rem;
+    align-content: center;
+    padding: var(--sp-6, 1.5rem);
+  }
+
+  .fs-artist__badge {
+    margin: 0;
+    color: var(--fs-lime);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .fs-artist__name {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .fs-artist--headliner .fs-artist__name {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+  }
+
+  .fs-artist__meta,
+  .fs-artist__when,
+  .fs-artist__bio {
+    margin: 0;
+    color: var(--fs-text-2);
+    font-size: 0.92rem;
+  }
+
+  .fs-artist__when {
+    color: var(--fs-text);
+    font-weight: 600;
+  }
+
+  .fs-lineup__more {
+    margin: 0;
+  }
+
+  .fs-lineup__more a {
+    color: var(--fs-lime);
+    font-weight: 700;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fs-lineup__tab {
+      transition: none;
+    }
+  }
+</style>

@@ -1,0 +1,249 @@
+---
+/**
+ * FestivalTicketWallet — Digital festival pass: holder, tier, days, gate and a generated
+ * QR-style code, with a "scan mode" that boosts brightness and contrast and a print button.
+ *
+ * @param {string} holder - Name printed on the pass.
+ * @param {string} tier - Ticket tier name.
+ * @param {FestivalDay[]} days - Days covered.
+ * @param {string} code - Order / wristband code; the pattern is derived from it.
+ * @param {string} gate - Entry gate.
+ * @param {string} addons - Extras included, e.g. "Camping".
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the pattern is decorative (aria-hidden) and the code is also printed as text,
+ * scan mode is an aria-pressed toggle.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalDays, type FestivalDay } from '../templates/festival/data';
+
+interface OwnProps {
+  holder?: string;
+  tier?: string;
+  days?: FestivalDay[];
+  code?: string;
+  gate?: string;
+  addons?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'article'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  holder = 'Lucía Fernández',
+  tier = 'Abono 3 días',
+  days = festivalDays,
+  code = 'PLS-27-48213-A',
+  gate = 'Puerta Norte · Carril 2',
+  addons = 'Camping · Vaso reutilizable',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const SIZE = 21;
+let seed = 0;
+for (const ch of code) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+const finder = (x: number, y: number) => (x < 7 && y < 7) || (x >= SIZE - 7 && y < 7) || (x < 7 && y >= SIZE - 7);
+const cells: Array<{ x: number; y: number }> = [];
+for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) if (!finder(x, y) && rand() > 0.5) cells.push({ x, y });
+const finders = [[0, 0], [SIZE - 7, 0], [0, SIZE - 7]];
+---
+
+<article class:list={['festival-ui', 'fs-pass', classAttr]} aria-label={`Pase de ${holder}`} data-fs-pass {...rest}>
+  <div class="fs-pass__main">
+    <p class="fs-pass__brand">Pulso <span>2027</span></p>
+    <p class="fs-pass__tier">{tier}</p>
+    <dl class="fs-pass__facts">
+      <div><dt>Titular</dt><dd>{holder}</dd></div>
+      <div><dt>Días</dt><dd>{days.map((d) => d.short).join(' · ')}</dd></div>
+      <div><dt>Acceso</dt><dd>{gate}</dd></div>
+      {addons && <div><dt>Incluye</dt><dd>{addons}</dd></div>}
+    </dl>
+  </div>
+
+  <div class="fs-pass__code">
+    <div class="fs-pass__qr">
+      <svg viewBox={`-1 -1 ${SIZE + 2} ${SIZE + 2}`} aria-hidden="true" shape-rendering="crispEdges">
+        <rect x="-1" y="-1" width={SIZE + 2} height={SIZE + 2} fill="#fff" />
+        {finders.map(([fx, fy]) => (
+          <g>
+            <rect x={fx} y={fy} width="7" height="7" fill="#111" />
+            <rect x={fx + 1} y={fy + 1} width="5" height="5" fill="#fff" />
+            <rect x={fx + 2} y={fy + 2} width="3" height="3" fill="#111" />
+          </g>
+        ))}
+        {cells.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill="#111" />)}
+      </svg>
+    </div>
+    <p class="fs-pass__text">{code}</p>
+    <div class="fs-pass__actions">
+      <button type="button" class="fs-pass__btn" aria-pressed="false" data-fs-scan>Modo escaneo</button>
+      <button type="button" class="fs-pass__btn" data-fs-print>Imprimir</button>
+    </div>
+  </div>
+</article>
+
+<script>
+  function initFestivalPass() {
+    document.querySelectorAll<HTMLElement>('[data-fs-pass]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const scan = root.querySelector<HTMLButtonElement>('[data-fs-scan]')!;
+      scan.addEventListener('click', () => {
+        const on = scan.getAttribute('aria-pressed') !== 'true';
+        scan.setAttribute('aria-pressed', String(on));
+        root.classList.toggle('is-scan', on);
+      });
+      root.querySelector<HTMLButtonElement>('[data-fs-print]')!.addEventListener('click', () => window.print());
+    });
+  }
+  initFestivalPass();
+  document.addEventListener('astro:page-load', initFestivalPass);
+</script>
+
+<style>
+  .fs-pass {
+    display: grid;
+    overflow: hidden;
+    max-width: 44rem;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-xl, 24px);
+    background: linear-gradient(140deg, var(--fs-surface-2), var(--fs-surface));
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-pass__main {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-6, 1.5rem);
+  }
+
+  .fs-pass__brand {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: 2.2rem;
+    text-transform: uppercase;
+  }
+
+  .fs-pass__brand span {
+    color: var(--fs-brand);
+  }
+
+  .fs-pass__tier {
+    margin: 0;
+    color: var(--fs-lime);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .fs-pass__facts {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    margin: var(--sp-2, 0.5rem) 0 0;
+  }
+
+  .fs-pass__facts dt {
+    color: var(--fs-text-3);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .fs-pass__facts dd {
+    margin: 2px 0 0;
+    font-weight: 700;
+  }
+
+  .fs-pass__code {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-6, 1.5rem);
+    border-top: 2px dashed var(--fs-border-strong);
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  .fs-pass__qr {
+    width: 9.5rem;
+    padding: 6px;
+    border-radius: var(--r-md, 12px);
+    background: #fff;
+    transition: width 0.25s ease, filter 0.25s ease;
+  }
+
+  .fs-pass__qr svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .fs-pass.is-scan .fs-pass__qr {
+    width: min(100%, 15rem);
+    filter: contrast(1.15) brightness(1.1);
+    box-shadow: 0 0 0 12px #fff;
+  }
+
+  .fs-pass__text {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+
+  .fs-pass__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .fs-pass__btn {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--fs-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .fs-pass__btn[aria-pressed='true'] {
+    border-color: var(--fs-lime);
+    background: var(--fs-lime);
+    color: var(--fs-on-lime);
+  }
+
+  .fs-pass__btn:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 640px) {
+    .fs-pass {
+      grid-template-columns: 1fr auto;
+    }
+
+    .fs-pass__code {
+      border-top: 0;
+      border-left: 2px dashed var(--fs-border-strong);
+    }
+  }
+
+  @media print {
+    .fs-pass__actions {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fs-pass__qr {
+      transition: none;
+    }
+  }
+</style>

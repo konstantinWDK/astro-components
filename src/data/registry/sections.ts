@@ -149,6 +149,12 @@ export const sectionCategories: SectionCategory[] = [
     icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z"/></svg>`,
   },
   {
+    id: 'festival',
+    name: 'Music Festival',
+    description: 'Sections for music festivals and live events: hero with countdown, line-up poster with day tabs, timetable with stage filters and a personal agenda, stage cards, ticket tiers with a live order summary, venue info with site map and FAQ, sponsors and footer with newsletter.',
+    icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg>`,
+  },
+  {
     id: 'fintech',
     name: 'Fintech & Banking',
     description: 'Sections for neobanks and fintech products: hero with product mock, bento benefits, card picker, plans, fee comparison, savings calculator, security and trust, account-opening wizard, FAQ and footer.',

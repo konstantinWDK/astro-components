@@ -2365,6 +2365,126 @@ const routes = { ...academyRoutes, courses: '/catalog', pricing: '/plans' };
 <AcademyHomePage data={data} routes={routes} />`,
   },
   {
+    slug: 'festival',
+    name: { en: 'Pulso · Music Festival & Tickets', es: 'Pulso · Festival de música & Entradas', ru: 'Pulso · Музыкальный фестиваль & Билеты' },
+    tagline: { en: 'Music festival site with a countdown, line-up by day, stage timetable with a personal agenda, ticket tiers with a live order total and a digital pass.', es: 'Web de festival de música con cuenta atrás, cartel por días, horarios por escenario con agenda personal, entradas con total en vivo y pase digital.', ru: 'Сайт музыкального фестиваля с обратным отсчётом, афишей по дням, расписанием по сценам с личной программой, билетами с живым итогом и цифровым пропуском.' },
+    description: { en: 'Complete template for a music festival or live event. 6 page types: home with hero, countdown, line-up, stages, tickets and sponsors; line-up; timetable with stage filters and add-to-agenda; ticket tiers with add-ons and a live total; practical info with site map and FAQ; and a "My Pulso" page with a digital pass and the saved agenda. Hot coral and electric lime on deep violet with a condensed display face, dark and light variants, built only from its own components.', es: 'Plantilla completa para un festival de música o evento en directo. 6 tipos de página: inicio con hero, cuenta atrás, cartel, escenarios, entradas y patrocinadores; cartel; horarios con filtros por escenario y agenda; entradas con extras y total en vivo; información práctica con plano y preguntas frecuentes; y «Mi Pulso» con pase digital y la agenda guardada. Coral y lima eléctrico sobre violeta profundo con tipografía condensada, variantes oscura y clara, construida solo con sus propios componentes.', ru: 'Полный шаблон музыкального фестиваля или живого события. 6 типов страниц: главная с героем, отсчётом, афишей, сценами, билетами и спонсорами; афиша; расписание с фильтрами сцен и добавлением в программу; билеты с дополнениями и живым итогом; практическая информация с планом и FAQ; «Мой Pulso» с цифровым пропуском и сохранённой программой. Коралловый и лаймовый на глубоком фиолетовом с узким дисплейным шрифтом, тёмная и светлая версии, только собственные компоненты.' },
+    highlights: {
+      en: [
+        'Live countdown, line-up with day tabs and wide headliner cards generated without any image files',
+        'Timetable with stage filters and an add-to-agenda toggle that flags overlapping sets',
+        'Ticket tiers with quantity steppers, add-ons and an order total that updates as you choose',
+        'Digital pass with a generated QR-style code, scan mode and print',
+        'Personal agenda stored in the browser and shared between the timetable and "My Pulso"',
+      ],
+      es: [
+        'Cuenta atrás en vivo, cartel con pestañas por día y tarjetas anchas de cabezas de cartel sin archivos de imagen',
+        'Horarios con filtros por escenario y botón de agenda que avisa de los conciertos que coinciden',
+        'Entradas con selector de cantidad, extras y un total que se actualiza al elegir',
+        'Pase digital con código tipo QR generado, modo escaneo e impresión',
+        'Agenda personal guardada en el navegador y compartida entre horarios y «Mi Pulso»',
+      ],
+      ru: [
+        'Живой отсчёт, афиша с вкладками по дням и широкие карточки хедлайнеров без файлов изображений',
+        'Расписание с фильтрами сцен и кнопкой добавления, отмечающей пересекающиеся выступления',
+        'Билеты с выбором количества, дополнениями и итогом, который обновляется при выборе',
+        'Цифровой пропуск со сгенерированным QR-кодом, режимом сканирования и печатью',
+        'Личная программа в браузере, общая для расписания и «Мой Pulso»',
+      ],
+    },
+    tags: ['festival', 'music', 'events', 'tickets', 'lineup', 'schedule', 'countdown', 'pass'],
+    previewBase: '/preview/festival/',
+    importPath: 'astro-component-kit/templates/festival',
+    pages: [
+      {
+        id: 'home', path: '',
+        name: { en: 'Home', es: 'Inicio', ru: 'Главная' },
+        description: { en: 'Hero with countdown, line-up by day, stages, tickets and sponsors.', es: 'Hero con cuenta atrás, cartel por días, escenarios, entradas y patrocinadores.', ru: 'Главный экран с отсчётом, афишей по дням, сценами, билетами и спонсорами.' },
+        file: 'src/pages/index.astro',
+        code: `---
+import { FestivalHomePage } from 'astro-component-kit/templates/festival';
+---
+
+<FestivalHomePage />`,
+      },
+      {
+        id: 'lineup', path: 'cartel/',
+        name: { en: 'Line-up', es: 'Cartel', ru: 'Афиша' },
+        description: { en: 'Line-up poster with day tabs, headliners and the three stages.', es: 'Cartel con pestañas por día, cabezas de cartel y los tres escenarios.', ru: 'Афиша с вкладками по дням, хедлайнерами и тремя сценами.' },
+        file: 'src/pages/cartel.astro',
+        code: `---
+import { FestivalLineupPage } from 'astro-component-kit/templates/festival';
+---
+
+<FestivalLineupPage />`,
+      },
+      {
+        id: 'schedule', path: 'horarios/',
+        name: { en: 'Timetable', es: 'Horarios', ru: 'Расписание' },
+        description: { en: 'Timetable by day with stage filters and an add-to-agenda toggle per set.', es: 'Horarios por día con filtros de escenario y botón de agenda en cada concierto.', ru: 'Расписание по дням с фильтрами сцен и кнопкой добавления в программу.' },
+        file: 'src/pages/horarios.astro',
+        code: `---
+import { FestivalSchedulePage } from 'astro-component-kit/templates/festival';
+---
+
+<FestivalSchedulePage />`,
+      },
+      {
+        id: 'tickets', path: 'entradas/',
+        name: { en: 'Tickets', es: 'Entradas', ru: 'Билеты' },
+        description: { en: 'Ticket tiers with quantities, add-ons, live total and FAQ.', es: 'Entradas con cantidades, extras, total en vivo y preguntas frecuentes.', ru: 'Билеты с количеством, дополнениями, живым итогом и FAQ.' },
+        file: 'src/pages/entradas.astro',
+        code: `---
+import { FestivalTicketsPage } from 'astro-component-kit/templates/festival';
+---
+
+<FestivalTicketsPage />`,
+      },
+      {
+        id: 'info', path: 'info/',
+        name: { en: 'Info', es: 'Información', ru: 'Информация' },
+        description: { en: 'Site map, getting there, gates, camping, accessibility and FAQ.', es: 'Plano, cómo llegar, puertas, camping, accesibilidad y preguntas frecuentes.', ru: 'План, как добраться, входы, кемпинг, доступность и FAQ.' },
+        file: 'src/pages/info.astro',
+        code: `---
+import { FestivalInfoPage } from 'astro-component-kit/templates/festival';
+---
+
+<FestivalInfoPage />`,
+      },
+      {
+        id: 'my-festival', path: 'mi-pulso/',
+        name: { en: 'My Pulso', es: 'Mi Pulso', ru: 'Мой Pulso' },
+        description: { en: 'Digital pass with a QR-style code and the personal agenda saved from the timetable.', es: 'Pase digital con código tipo QR y la agenda personal guardada desde los horarios.', ru: 'Цифровой пропуск с QR-кодом и личная программа из расписания.' },
+        file: 'src/pages/mi-pulso.astro',
+        code: `---
+import { FestivalMyFestivalPage } from 'astro-component-kit/templates/festival';
+---
+
+<FestivalMyFestivalPage />`,
+      },
+    ],
+    newComponents: [
+      'festival-hero', 'festival-lineup', 'festival-schedule', 'festival-stages', 'festival-tickets', 'festival-venue-info', 'festival-sponsors', 'festival-footer',
+      'festival-countdown', 'festival-agenda-planner', 'festival-ticket-wallet',
+    ],
+    reusedComponents: [],
+    storeConfigExample: `---
+// Pass your own data and routes to every page (e.g. from your CMS or ticketing API)
+import { FestivalHomePage, festivalData, festivalRoutes } from 'astro-component-kit/templates/festival';
+
+const data = {
+  ...festivalData,
+  brand: { ...festivalData.brand, name: 'Marea Viva', email: 'hola@mareaviva.example' },
+  startsAt: '2028-06-23T16:00:00+02:00',
+  artists: await fetch('https://api.example.com/artists').then((r) => r.json()),
+};
+
+const routes = { ...festivalRoutes, lineup: '/line-up', tickets: '/tickets' };
+---
+
+<FestivalHomePage data={data} routes={routes} />`,
+  },
+  {
     slug: 'fintech',
     name: { en: 'Cobre · Neobank & Account Area', es: 'Cobre · Neobanco & Área de cliente', ru: 'Cobre · Необанк & Кабинет клиента' },
     tagline: { en: 'Neobank for freelancers and small businesses with plans, a card picker, savings calculator and account opening, plus an account area with balances, cash flow, movements, cards and transfers.', es: 'Neobanco para autónomos y pymes con planes, selector de tarjetas, calculadora de ahorro y apertura de cuenta, más un área de cliente con saldos, flujo de caja, movimientos, tarjetas y transferencias.', ru: 'Необанк для самозанятых и малого бизнеса с тарифами, выбором карты, калькулятором накоплений и открытием счёта, плюс кабинет клиента с балансами, денежным потоком, операциями, картами и переводами.' },

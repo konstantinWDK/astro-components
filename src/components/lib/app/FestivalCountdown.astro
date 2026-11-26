@@ -1,0 +1,142 @@
+---
+/**
+ * FestivalCountdown — Live countdown to the opening of the festival (days, hours, minutes, seconds).
+ *
+ * @param {string} startsAt - ISO date-time of the opening. Default: Pulso 2027 opening.
+ * @param {string} label - Heading above the numbers.
+ * @param {string} doneLabel - Text shown once the date has passed.
+ * @param {string} size - 'md' | 'lg'. Default 'md'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the numbers are hidden from screen readers and replaced by one sentence that is
+ * refreshed once a minute (not every second); reduced-motion safe (no animation).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalData } from '../templates/festival/data';
+
+interface OwnProps {
+  startsAt?: string;
+  label?: string;
+  doneLabel?: string;
+  size?: 'md' | 'lg';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'div'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  startsAt = festivalData.startsAt,
+  label = 'Faltan para abrir puertas',
+  doneLabel = '¡Ya estamos en marcha!',
+  size = 'md',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const units = [
+  { key: 'd', label: 'días' },
+  { key: 'h', label: 'horas' },
+  { key: 'm', label: 'min' },
+  { key: 's', label: 'seg' },
+];
+---
+
+<div class:list={['festival-ui', 'fs-countdown', `fs-countdown--${size}`, classAttr]} data-fs-countdown data-starts={startsAt} data-done={doneLabel} {...rest}>
+  <p class="fs-countdown__label">{label}</p>
+  <div class="fs-countdown__grid" aria-hidden="true">
+    {units.map((u) => (
+      <div class="fs-countdown__unit">
+        <span class="fs-countdown__num" data-fs-unit={u.key}>--</span>
+        <span class="fs-countdown__unit-label">{u.label}</span>
+      </div>
+    ))}
+  </div>
+  <p class="fs-sr" data-fs-sr></p>
+</div>
+
+<script>
+  function initFestivalCountdowns() {
+    document.querySelectorAll<HTMLElement>('[data-fs-countdown]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const target = new Date(root.dataset.starts ?? '').getTime();
+      const sr = root.querySelector<HTMLElement>('[data-fs-sr]');
+      const num = (k: string) => root.querySelector<HTMLElement>(`[data-fs-unit="${k}"]`);
+      let lastMinute = -1;
+      const tick = () => {
+        const diff = Math.max(0, target - Date.now());
+        if (Number.isNaN(target)) return;
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        const set = (k: string, v: number) => { const el = num(k); if (el) el.textContent = String(v).padStart(2, '0'); };
+        set('d', d); set('h', h); set('m', m); set('s', s);
+        if (sr && m !== lastMinute) {
+          lastMinute = m;
+          sr.textContent = diff === 0 ? (root.dataset.done ?? '') : `${d} días, ${h} horas y ${m} minutos`;
+        }
+        if (diff === 0) clearInterval(timer);
+      };
+      const timer = setInterval(tick, 1000);
+      tick();
+    });
+  }
+  initFestivalCountdowns();
+  document.addEventListener('astro:page-load', initFestivalCountdowns);
+</script>
+
+<style>
+  .fs-countdown {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-countdown__label {
+    margin: 0;
+    color: var(--fs-text-2);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .fs-countdown__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--sp-2, 0.5rem);
+    max-width: 28rem;
+  }
+
+  .fs-countdown__unit {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: var(--sp-3, 0.75rem) var(--sp-2, 0.5rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: rgba(var(--fs-brand-rgb), 0.1);
+  }
+
+  .fs-countdown__num {
+    font-family: var(--fs-font-display);
+    font-size: 2rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--fs-text);
+  }
+
+  .fs-countdown--lg .fs-countdown__num {
+    font-size: clamp(2.2rem, 7vw, 3.4rem);
+  }
+
+  .fs-countdown__unit-label {
+    color: var(--fs-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+</style>

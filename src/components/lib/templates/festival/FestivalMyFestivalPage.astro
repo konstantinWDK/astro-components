@@ -1,0 +1,66 @@
+---
+/**
+ * FestivalMyFestivalPage — "My Pulso": the visitor's digital pass and personal agenda.
+ *
+ * @param {FestivalRoutes} routes - Template route URLs.
+ * @param {typeof festivalData} data - Festival days, stages and artists.
+ */
+import FestivalSiteLayout from './FestivalSiteLayout.astro';
+import FestivalAgendaPlanner from '../../app/FestivalAgendaPlanner.astro';
+import FestivalTicketWallet from '../../app/FestivalTicketWallet.astro';
+import { festivalRoutes, festivalData, type FestivalRoutes } from './data';
+
+interface Props {
+  routes?: FestivalRoutes;
+  data?: typeof festivalData;
+}
+
+const { routes = festivalRoutes, data = festivalData } = Astro.props;
+---
+
+<FestivalSiteLayout
+  title={`Mi Pulso · ${data.brand.name}`}
+  description="Tu pase digital y tu agenda personal de Pulso 2027."
+  current="myFestival"
+  routes={routes}
+  noindex
+>
+  <div class="my">
+    <h1 class="my__title">Mi Pulso</h1>
+    <div class="my__grid">
+      <FestivalTicketWallet days={data.days} />
+      <FestivalAgendaPlanner artists={data.artists} days={data.days} stages={data.stages} scheduleHref={routes.schedule} />
+    </div>
+  </div>
+</FestivalSiteLayout>
+
+<style>
+  .my {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) var(--sp-4, 1rem);
+  }
+
+  .my__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .my__grid {
+    display: grid;
+    gap: var(--sp-8, 2rem);
+    align-items: start;
+  }
+
+  @media (min-width: 1000px) {
+    .my__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    }
+  }
+</style>

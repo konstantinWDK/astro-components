@@ -1,0 +1,397 @@
+---
+/**
+ * FestivalSchedule — Timetable by day with stage filter chips. Every set has a "Add to my
+ * agenda" toggle that stores the choice in the browser (`localStorage["pulso-agenda"]`), shared
+ * with `FestivalAgendaPlanner`. Sets that overlap with one you already saved are flagged.
+ *
+ * @param {FestivalArtist[]} artists - Sets to list.
+ * @param {FestivalDay[]} days - Days used for the tabs.
+ * @param {FestivalStage[]} stages - Stage filter chips.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} agendaHref - Link to the personal agenda page.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: tabs with roving tabindex; filter chips are toggle buttons (aria-pressed); the add
+ * buttons are aria-pressed toggles named after the artist; the result count is announced politely.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalArtists, festivalDays, festivalStages, festivalByTime, getFestivalStage, type FestivalArtist, type FestivalDay, type FestivalStage } from '../templates/festival/data';
+
+interface OwnProps {
+  artists?: FestivalArtist[];
+  days?: FestivalDay[];
+  stages?: FestivalStage[];
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+  agendaHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  artists = festivalArtists,
+  days = festivalDays,
+  stages = festivalStages,
+  title = 'Horarios',
+  subtitle = 'Filtra por escenario y marca tus conciertos para armar tu agenda.',
+  headingLevel = 'h2',
+  agendaHref = '/mi-pulso',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fsc-${Math.random().toString(36).slice(2, 8)}`;
+const byDay = days.map((d) => ({ day: d, list: festivalByTime(artists.filter((a) => a.dayId === d.id)) }));
+---
+
+<section class:list={['festival-ui', 'fs-sched', classAttr]} aria-labelledby={`${uid}-title`} data-fs-sched {...rest}>
+  <div class="fs-sched__inner">
+    <header class="fs-sched__head">
+      <Heading id={`${uid}-title`} class="fs-sched__title">{title}</Heading>
+      {subtitle && <p class="fs-sched__subtitle">{subtitle}</p>}
+      <p class="fs-sched__agenda"><a href={agendaHref}>Mi agenda (<span data-fs-count>0</span>) →</a></p>
+    </header>
+
+    <div class="fs-sched__controls">
+      <div class="fs-sched__tabs" role="tablist" aria-label="Días del festival">
+        {byDay.map(({ day }, i) => (
+          <button type="button" role="tab" class="fs-sched__tab" id={`${uid}-tab-${day.id}`} aria-controls={`${uid}-panel-${day.id}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>{day.short} {day.display}</button>
+        ))}
+      </div>
+      <div class="fs-sched__chips" role="group" aria-label="Filtrar por escenario">
+        {stages.map((s) => (
+          <button type="button" class="fs-sched__chip" data-stage={s.id} aria-pressed="true" style={`--hue:${s.hue}`}>{s.name}</button>
+        ))}
+      </div>
+    </div>
+
+    <p class="fs-sr" role="status" aria-live="polite" data-fs-status></p>
+
+    {byDay.map(({ day, list }) => (
+      <div class="fs-sched__panel" role="tabpanel" id={`${uid}-panel-${day.id}`} aria-labelledby={`${uid}-tab-${day.id}`} tabindex="0">
+        <ol class="fs-sched__list">
+          {list.map((a) => {
+            const stage = getFestivalStage(a.stageId, stages);
+            return (
+              <li class="fs-set" data-stage={a.stageId} data-id={a.id} data-day={a.dayId} data-start={a.start} data-end={a.end} style={`--hue:${stage?.hue ?? 0}`}>
+                <p class="fs-set__time"><time>{a.start}</time><span aria-hidden="true"> – </span><span class="fs-sr"> a </span><time>{a.end}</time></p>
+                <div class="fs-set__main">
+                  <h3 class="fs-set__name">{a.name}</h3>
+                  <p class="fs-set__meta"><span class="fs-set__stage">{stage?.name}</span> · {a.genre}</p>
+                  <p class="fs-set__clash" hidden data-clash>Coincide con otro concierto de tu agenda</p>
+                </div>
+                <button type="button" class="fs-set__add" aria-pressed="false" data-add={a.id} aria-label={`Añadir ${a.name} a mi agenda`}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="fs-set__plus" d="M12 5v14M5 12h14" /><path class="fs-set__check" d="m5 12 5 5 9-10" /></svg>
+                  <span class="fs-set__add-text">Añadir</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    ))}
+  </div>
+</section>
+
+<script>
+  const KEY = 'pulso-agenda';
+  const read = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
+  const write = (v: string[]) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* storage unavailable */ } };
+  const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); const x = h * 60 + m; return x < 720 ? x + 1440 : x; };
+
+  function initFestivalSchedule() {
+    document.querySelectorAll<HTMLElement>('[data-fs-sched]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      root.classList.add('is-js');
+      const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+      const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('.fs-sched__chip'));
+      const sets = Array.from(root.querySelectorAll<HTMLElement>('.fs-set'));
+      const status = root.querySelector<HTMLElement>('[data-fs-status]');
+      const counter = root.querySelector<HTMLElement>('[data-fs-count]');
+      let current = 0;
+
+      const refreshAgenda = () => {
+        const saved = new Set(read());
+        if (counter) counter.textContent = String(saved.size);
+        const picked = sets.filter((s) => saved.has(s.dataset.id ?? ''));
+        sets.forEach((s) => {
+          const on = saved.has(s.dataset.id ?? '');
+          const btn = s.querySelector<HTMLButtonElement>('[data-add]')!;
+          btn.setAttribute('aria-pressed', String(on));
+          const txt = btn.querySelector('.fs-set__add-text');
+          if (txt) txt.textContent = on ? 'En mi agenda' : 'Añadir';
+          s.classList.toggle('is-saved', on);
+          const a = toMin(s.dataset.start ?? '0:0'), b = toMin(s.dataset.end ?? '0:0');
+          const clash = on && picked.some((o) => o !== s && o.dataset.day === s.dataset.day && toMin(o.dataset.start ?? '0:0') < b && toMin(o.dataset.end ?? '0:0') > a);
+          s.querySelector<HTMLElement>('[data-clash]')!.hidden = !clash;
+        });
+      };
+
+      const applyFilters = () => {
+        const active = new Set(chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.stage));
+        let shown = 0;
+        sets.forEach((s) => {
+          const visible = active.has(s.dataset.stage);
+          s.hidden = !visible;
+          if (visible && panels[current]?.contains(s)) shown++;
+        });
+        if (status) status.textContent = `${shown} conciertos`;
+      };
+
+      const select = (idx: number, focus = false) => {
+        current = idx;
+        tabs.forEach((t, i) => { t.setAttribute('aria-selected', String(i === idx)); t.tabIndex = i === idx ? 0 : -1; });
+        panels.forEach((p, i) => { p.hidden = i !== idx; });
+        if (focus) tabs[idx].focus();
+        applyFilters();
+      };
+
+      tabs.forEach((t, i) => {
+        t.addEventListener('click', () => select(i));
+        t.addEventListener('keydown', (e) => {
+          const last = tabs.length - 1;
+          if (e.key === 'ArrowRight') { e.preventDefault(); select(i === last ? 0 : i + 1, true); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); select(i === 0 ? last : i - 1, true); }
+          if (e.key === 'Home') { e.preventDefault(); select(0, true); }
+          if (e.key === 'End') { e.preventDefault(); select(last, true); }
+        });
+      });
+      chips.forEach((c) => c.addEventListener('click', () => {
+        c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
+        applyFilters();
+      }));
+      root.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-add]');
+        if (!btn) return;
+        const id = btn.dataset.add!;
+        const saved = new Set(read());
+        saved.has(id) ? saved.delete(id) : saved.add(id);
+        write([...saved]);
+        refreshAgenda();
+      });
+      window.addEventListener('storage', refreshAgenda);
+
+      select(0);
+      refreshAgenda();
+    });
+  }
+  initFestivalSchedule();
+  document.addEventListener('astro:page-load', initFestivalSchedule);
+</script>
+
+<style>
+  .fs-sched {
+    background: var(--fs-bg-raised);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-sched__inner {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--sp-4, 1rem);
+  }
+
+  .fs-sched__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .fs-sched__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-sched__agenda {
+    margin: var(--sp-3, 0.75rem) 0 0;
+  }
+
+  .fs-sched__agenda a {
+    color: var(--fs-lime);
+    font-weight: 700;
+  }
+
+  .fs-sched__controls {
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fs-sched__tabs,
+  .fs-sched__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .fs-sched__tab,
+  .fs-sched__chip {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--fs-text-2);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .fs-sched__tab[aria-selected='true'] {
+    border-color: var(--fs-brand);
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+  }
+
+  .fs-sched__chip {
+    border-color: hsl(var(--hue) 70% 60% / 0.5);
+  }
+
+  .fs-sched__chip[aria-pressed='true'] {
+    background: hsl(var(--hue) 70% 50% / 0.25);
+    color: var(--fs-text);
+  }
+
+  .fs-sched__tab:focus-visible,
+  .fs-sched__chip:focus-visible,
+  .fs-sched__panel:focus-visible,
+  .fs-sched__agenda a:focus-visible,
+  .fs-set__add:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+  }
+
+  .fs-sched:not(.is-js) .fs-sched__controls {
+    display: none;
+  }
+
+  .fs-sched:not(.is-js) .fs-set__add {
+    display: none;
+  }
+
+  .fs-sched__list {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-set {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border);
+    border-left: 4px solid hsl(var(--hue) 75% 60%);
+    border-radius: var(--r-md, 12px);
+    background: var(--fs-surface);
+  }
+
+  .fs-set[hidden] {
+    display: none;
+  }
+
+  .fs-set.is-saved {
+    background: color-mix(in srgb, var(--fs-surface) 80%, hsl(var(--hue) 75% 50%));
+  }
+
+  .fs-set__time {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+
+  .fs-set__name {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .fs-set__meta {
+    margin: 2px 0 0;
+    color: var(--fs-text-2);
+    font-size: 0.88rem;
+  }
+
+  .fs-set__stage {
+    color: hsl(var(--hue) 80% 72%);
+    font-weight: 700;
+  }
+
+  [data-theme='light'] .fs-set__stage {
+    color: hsl(var(--hue) 70% 28%);
+  }
+
+  .fs-set__clash {
+    margin: 4px 0 0;
+    color: var(--fs-warn);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .fs-set__add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--fs-text);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .fs-set__add[aria-pressed='true'] {
+    border-color: var(--fs-lime);
+    background: var(--fs-lime);
+    color: var(--fs-on-lime);
+  }
+
+  .fs-set__check,
+  .fs-set__add[aria-pressed='true'] .fs-set__plus {
+    display: none;
+  }
+
+  .fs-set__add[aria-pressed='true'] .fs-set__check {
+    display: inline;
+  }
+
+  @media (max-width: 560px) {
+    .fs-set {
+      grid-template-columns: 1fr auto;
+    }
+
+    .fs-set__time {
+      grid-column: 1 / -1;
+    }
+
+    .fs-set__add-text {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fs-sched__tab,
+    .fs-sched__chip {
+      transition: none;
+    }
+  }
+</style>

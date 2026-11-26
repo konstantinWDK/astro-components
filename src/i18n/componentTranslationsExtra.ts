@@ -1148,6 +1148,51 @@ export const componentTranslationsExtra: Record<string, ComponentTranslation> = 
     es: 'Acceso a pantalla partida con panel ilustrado de la lámpara, selector alumno o instructor, mostrar contraseña y accesos de demostración.',
     ru: 'Вход на двух панелях с иллюстрацией лампы, переключателем ученик/преподаватель, показом пароля и демо-ссылками.',
   },
+  // ── Music festival ("Pulso") ────────────────────────
+  'festival-hero': {
+    es: 'Hero de festival con titular condensado enorme, fechas y recinto, cuenta atrás en vivo, cabezas de cartel, llamadas a la acción y ecualizador animado sobre un resplandor de atardecer.',
+    ru: 'Главный экран фестиваля с огромным узким заголовком, датами и площадкой, обратным отсчётом, хедлайнерами, кнопками действий и анимированным эквалайзером на закатном свечении.',
+  },
+  'festival-lineup': {
+    es: 'Cartel con pestañas por día y una tarjeta por artista con portada generada, género, país, escenario y hora; los cabezas de cartel tienen tarjeta ancha.',
+    ru: 'Афиша с вкладками по дням и карточкой артиста со сгенерированной обложкой, жанром, страной, сценой и временем; у хедлайнеров широкая карточка.',
+  },
+  'festival-schedule': {
+    es: 'Horarios con pestañas por día, filtros por escenario y botón para añadir cada concierto a tu agenda; se avisa de los que coinciden. La agenda se guarda en el navegador.',
+    ru: 'Расписание с вкладками по дням, фильтрами по сценам и кнопкой добавления в личную программу; пересекающиеся выступления отмечаются. Программа хранится в браузере.',
+  },
+  'festival-stages': {
+    es: 'Una tarjeta por escenario con resplandor de color, descripción, aforo, número de conciertos y artista destacado.',
+    ru: 'Карточка для каждой сцены с цветным свечением, описанием, вместимостью, числом выступлений и главным артистом.',
+  },
+  'festival-tickets': {
+    es: 'Tipos de entrada con selector de cantidad, extras opcionales y resumen de pedido con el total en vivo; las agotadas se desactivan y lo dicen con texto.',
+    ru: 'Типы билетов с выбором количества, дополнениями и живой сводкой заказа с итогом; распроданные отключены и помечены текстом.',
+  },
+  'festival-venue-info': {
+    es: 'Tarjetas de información práctica junto a un plano estilizado del recinto y preguntas frecuentes con elementos nativos desplegables.',
+    ru: 'Карточки с практической информацией рядом со схематичным планом площадки и FAQ на нативных раскрывающихся элементах.',
+  },
+  'festival-sponsors': {
+    es: 'Muro de patrocinadores con teselas de texto en una cuadrícula adaptable y llamada para patrocinar.',
+    ru: 'Стена спонсоров с текстовыми плитками в адаптивной сетке и призывом стать партнёром.',
+  },
+  'festival-footer': {
+    es: 'Pie de festival con banda de entradas, alta en la newsletter, columnas de enlaces, contacto y fila legal.',
+    ru: 'Подвал фестиваля с билетной полосой, подпиской на рассылку, колонками ссылок, контактами и юридической строкой.',
+  },
+  'festival-countdown': {
+    es: 'Cuenta atrás en vivo hasta la apertura del festival en días, horas, minutos y segundos, anunciada a lectores de pantalla una vez por minuto.',
+    ru: 'Живой обратный отсчёт до открытия фестиваля в днях, часах, минутах и секундах; для скринридеров обновляется раз в минуту.',
+  },
+  'festival-agenda-planner': {
+    es: 'Agenda personal con los conciertos guardados en los horarios: agrupados por día, ordenados por hora, con coincidencias avisadas, quitar uno o vaciar todo. Se guarda en el navegador.',
+    ru: 'Личная программа из сохранённых в расписании выступлений: по дням, по времени, с отметкой пересечений, удаление одного или всех. Хранится в браузере.',
+  },
+  'festival-ticket-wallet': {
+    es: 'Pase digital con titular, entrada, días, acceso y un código tipo QR generado; el modo escaneo sube brillo y contraste y hay botón de imprimir.',
+    ru: 'Цифровой пропуск с владельцем, типом билета, днями, входом и сгенерированным QR-кодом; режим сканирования повышает яркость, есть печать.',
+  },
   // ── Fintech neobank ("Cobre") ────────────────────────
   'bank-hero': {
     es: 'Hero de neobanco con titular grotesco, llamadas a abrir cuenta y ver precios, cifras clave y un mock del producto con tarjeta metálica cobre, panel de saldo e insignia de reserva de impuestos.',

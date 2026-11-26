@@ -1,0 +1,110 @@
+---
+/**
+ * FestivalSponsors — Partner wall: wordmark tiles grouped in a responsive grid with a call to
+ * become a sponsor.
+ *
+ * @param {string[]} sponsors - Sponsor names.
+ * @param {string} title - Section heading.
+ * @param {string} ctaLabel - Label of the sponsor link.
+ * @param {string} ctaHref - Sponsor contact link.
+ * @param {string} headingLevel - 'h2' | 'h3'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalSponsors } from '../templates/festival/data';
+
+interface OwnProps {
+  sponsors?: string[];
+  title?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  headingLevel?: 'h2' | 'h3';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  sponsors = festivalSponsors,
+  title = 'Con el apoyo de',
+  ctaLabel = '¿Quieres patrocinar el festival?',
+  ctaHref = 'mailto:partners@pulso.example',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fsp-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['festival-ui', 'fs-spons', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="fs-spons__inner">
+    <Heading id={`${uid}-title`} class="fs-spons__title">{title}</Heading>
+    <ul class="fs-spons__grid">
+      {sponsors.map((s) => <li class="fs-spons__tile">{s}</li>)}
+    </ul>
+    <a class="fs-spons__cta" href={ctaHref}>{ctaLabel}</a>
+  </div>
+</section>
+
+<style>
+  .fs-spons {
+    border-block: 1px solid var(--fs-border);
+    background: var(--fs-bg-raised);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-spons__inner {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-5, 1.25rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 3.5rem) var(--sp-4, 1rem);
+    text-align: center;
+  }
+
+  .fs-spons__title {
+    margin: 0;
+    color: var(--fs-text-3);
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .fs-spons__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-spons__tile {
+    display: grid;
+    place-items: center;
+    min-height: 64px;
+    padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+    border: 1px solid var(--fs-border);
+    border-radius: var(--r-md, 12px);
+    color: var(--fs-text-2);
+    font-family: var(--fs-font-display);
+    font-size: 1.15rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .fs-spons__cta {
+    color: var(--fs-lime);
+    font-weight: 700;
+  }
+
+  .fs-spons__cta:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 3px;
+  }
+</style>

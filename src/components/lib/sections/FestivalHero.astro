@@ -1,0 +1,264 @@
+---
+/**
+ * FestivalHero — Music festival hero: huge condensed title, dates and venue, live countdown,
+ * headliner chips, ticket and line-up calls to action and key figures over a sunset gradient.
+ *
+ * @param {string} name - Festival name (the h1).
+ * @param {string} tagline - One line under the title.
+ * @param {string} dateRange - Display dates, e.g. "16–18 julio 2027".
+ * @param {string} venue - Venue and city.
+ * @param {string} startsAt - ISO opening date-time for the countdown.
+ * @param {FestivalArtist[]} headliners - Artists shown as chips.
+ * @param {string} ticketsHref - Tickets URL.
+ * @param {string} lineupHref - Line-up URL.
+ * @param {{value:string,label:string}[]} stats - Figures row.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: single h1; the sun and equalizer art is aria-hidden; the countdown speaks once a minute.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import FestivalCountdown from '../app/FestivalCountdown.astro';
+import { festivalData, festivalArtists, type FestivalArtist } from '../templates/festival/data';
+
+interface OwnProps {
+  name?: string;
+  tagline?: string;
+  dateRange?: string;
+  venue?: string;
+  startsAt?: string;
+  headliners?: FestivalArtist[];
+  ticketsHref?: string;
+  lineupHref?: string;
+  stats?: Array<{ value: string; label: string }>;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  name = festivalData.brand.name,
+  tagline = festivalData.brand.tagline,
+  dateRange = festivalData.dateRange,
+  venue = festivalData.venue,
+  startsAt = festivalData.startsAt,
+  headliners = festivalArtists.filter((a) => a.headliner),
+  ticketsHref = '/entradas',
+  lineupHref = '/cartel',
+  stats = festivalData.stats,
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `fh-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['festival-ui', 'fs-hero', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="fs-hero__sun" aria-hidden="true"></div>
+  <div class="fs-hero__bars" aria-hidden="true">
+    {Array.from({ length: 28 }).map((_, i) => <span style={`--i:${i};--h:${28 + ((i * 37) % 62)}%`}></span>)}
+  </div>
+
+  <div class="fs-hero__inner">
+    <p class="fs-hero__kicker">{dateRange} · {venue}</p>
+    <h1 id={`${uid}-title`} class="fs-hero__title">{name}</h1>
+    <p class="fs-hero__tagline">{tagline}</p>
+
+    <div class="fs-hero__actions">
+      <a class="fs-hero__btn fs-hero__btn--primary" href={ticketsHref}>Comprar entradas</a>
+      <a class="fs-hero__btn" href={lineupHref}>Ver cartel</a>
+    </div>
+
+    <FestivalCountdown startsAt={startsAt} size="lg" />
+
+    <ul class="fs-hero__headliners" aria-label="Cabezas de cartel">
+      {headliners.map((a) => <li class="fs-hero__chip">{a.name}</li>)}
+    </ul>
+
+    <dl class="fs-hero__stats">
+      {stats.map((s) => (
+        <div class="fs-hero__stat">
+          <dt>{s.label}</dt>
+          <dd>{s.value}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>
+
+<style>
+  .fs-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: radial-gradient(120% 90% at 80% 0%, rgba(var(--fs-brand-rgb), 0.28), transparent 60%), var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-hero__sun {
+    position: absolute;
+    right: -12%;
+    top: -18%;
+    z-index: -1;
+    width: min(70vw, 640px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--fs-brand) 0%, rgba(var(--fs-brand-rgb), 0.55) 45%, transparent 70%);
+    opacity: 0.55;
+    filter: blur(6px);
+  }
+
+  .fs-hero__bars {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: -1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 38%;
+    padding: 0 var(--sp-2, 0.5rem);
+    opacity: 0.22;
+  }
+
+  .fs-hero__bars span {
+    flex: 1;
+    margin: 0 2px;
+    height: var(--h);
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--fs-lime), transparent);
+    transform-origin: bottom;
+    animation: fs-eq 2.4s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.17s);
+  }
+
+  @keyframes fs-eq {
+    0%, 100% { transform: scaleY(0.55); }
+    50% { transform: scaleY(1); }
+  }
+
+  .fs-hero__inner {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 7vw, 6rem) var(--sp-4, 1rem) clamp(3rem, 8vw, 6rem);
+  }
+
+  .fs-hero__kicker {
+    margin: 0;
+    color: var(--fs-lime);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .fs-hero__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(4.5rem, 20vw, 13rem);
+    font-weight: 400;
+    line-height: 0.88;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  .fs-hero__tagline {
+    margin: 0;
+    max-width: 34rem;
+    color: var(--fs-text-2);
+    font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  }
+
+  .fs-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3, 0.75rem);
+  }
+
+  .fs-hero__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border: 2px solid var(--fs-border-strong);
+    border-radius: var(--r-full, 999px);
+    color: var(--fs-text);
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .fs-hero__btn:hover {
+    border-color: var(--fs-text);
+    transform: translateY(-2px);
+  }
+
+  .fs-hero__btn--primary {
+    border-color: var(--fs-brand);
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+  }
+
+  .fs-hero__btn--primary:hover {
+    background: var(--fs-brand-hover);
+    border-color: var(--fs-brand-hover);
+  }
+
+  .fs-hero__btn:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 3px;
+  }
+
+  .fs-hero__headliners {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-hero__chip {
+    padding: 6px 14px;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+  }
+
+  .fs-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-6, 1.5rem) var(--sp-8, 2rem);
+    margin: var(--sp-4, 1rem) 0 0;
+  }
+
+  .fs-hero__stat {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .fs-hero__stat dt {
+    color: var(--fs-text-3);
+    font-size: 0.82rem;
+  }
+
+  .fs-hero__stat dd {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fs-hero__bars span {
+      animation: none;
+    }
+
+    .fs-hero__btn {
+      transition: none;
+    }
+  }
+</style>

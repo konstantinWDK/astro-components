@@ -90,6 +90,11 @@ export { default as AcademyAreaTopbar } from './AcademyAreaTopbar.astro';
 export { default as AcademyAreaHeading } from './AcademyAreaHeading.astro';
 export { default as AcademySignIn } from './AcademySignIn.astro';
 
+// Music festival app pieces ("Pulso")
+export { default as FestivalCountdown } from './FestivalCountdown.astro';
+export { default as FestivalAgendaPlanner } from './FestivalAgendaPlanner.astro';
+export { default as FestivalTicketWallet } from './FestivalTicketWallet.astro';
+
 // Neobank account area ("Cobre")
 export { default as BankBalanceCard } from './BankBalanceCard.astro';
 export { default as BankCashflowChart } from './BankCashflowChart.astro';

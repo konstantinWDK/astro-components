@@ -1,0 +1,292 @@
+---
+/**
+ * FestivalAgendaPlanner — "My Pulso" personal agenda. Shows the sets the visitor saved from the
+ * timetable (`localStorage["pulso-agenda"]`), grouped by day and sorted by time, flags overlaps
+ * and lets them remove a set or clear everything.
+ *
+ * @param {FestivalArtist[]} artists - All sets (only saved ones are revealed).
+ * @param {FestivalDay[]} days - Days used for grouping.
+ * @param {FestivalStage[]} stages - Used to name each set's stage.
+ * @param {string} scheduleHref - Link to the timetable, shown in the empty state.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: saved list is a labelled region, counts and changes are announced politely,
+ * remove buttons name the artist, empty state links to the timetable. Without JavaScript it explains that
+ * the agenda needs it.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalArtists, festivalDays, festivalStages, festivalByTime, getFestivalStage, type FestivalArtist, type FestivalDay, type FestivalStage } from '../templates/festival/data';
+
+interface OwnProps {
+  artists?: FestivalArtist[];
+  days?: FestivalDay[];
+  stages?: FestivalStage[];
+  scheduleHref?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  artists = festivalArtists,
+  days = festivalDays,
+  stages = festivalStages,
+  scheduleHref = '/horarios',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `fa-${Math.random().toString(36).slice(2, 8)}`;
+const byDay = days.map((d) => ({ day: d, list: festivalByTime(artists.filter((a) => a.dayId === d.id)) }));
+---
+
+<section class:list={['festival-ui', 'fs-plan', classAttr]} aria-labelledby={`${uid}-title`} data-fs-plan {...rest}>
+  <header class="fs-plan__head">
+    <h2 id={`${uid}-title`} class="fs-plan__title">Mi agenda</h2>
+    <p class="fs-plan__count"><strong data-fs-plan-count>0</strong> conciertos guardados</p>
+    <button type="button" class="fs-plan__clear" data-fs-plan-clear hidden>Vaciar agenda</button>
+  </header>
+
+  <p class="fs-sr" role="status" aria-live="polite" data-fs-plan-status></p>
+
+  <noscript><p class="fs-plan__empty">Tu agenda se guarda en este navegador y necesita JavaScript.</p></noscript>
+
+  <p class="fs-plan__empty" data-fs-plan-empty>
+    Aún no has guardado ningún concierto. <a href={scheduleHref}>Ir a los horarios →</a>
+  </p>
+
+  {byDay.map(({ day, list }) => (
+    <div class="fs-plan__day" data-fs-plan-day hidden>
+      <h3 class="fs-plan__day-title">{day.label} <span>{day.display}</span></h3>
+      <ol class="fs-plan__list">
+        {list.map((a) => {
+          const stage = getFestivalStage(a.stageId, stages);
+          return (
+            <li class="fs-plan__item" data-id={a.id} data-start={a.start} data-end={a.end} data-name={a.name} hidden style={`--hue:${stage?.hue ?? 0}`}>
+              <p class="fs-plan__time"><time>{a.start}</time> – <time>{a.end}</time></p>
+              <div class="fs-plan__main">
+                <p class="fs-plan__name">{a.name}</p>
+                <p class="fs-plan__meta">{stage?.name} · {a.genre}</p>
+                <p class="fs-plan__clash" data-clash hidden>Coincide con otro concierto de tu agenda</p>
+              </div>
+              <button type="button" class="fs-plan__remove" data-remove={a.id} aria-label={`Quitar ${a.name} de mi agenda`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  ))}
+</section>
+
+<script>
+  const KEY = 'pulso-agenda';
+  const read = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
+  const write = (v: string[]) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* storage unavailable */ } };
+  const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); const x = h * 60 + m; return x < 720 ? x + 1440 : x; };
+
+  function initFestivalPlanner() {
+    document.querySelectorAll<HTMLElement>('[data-fs-plan]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const items = Array.from(root.querySelectorAll<HTMLElement>('.fs-plan__item'));
+      const dayBlocks = Array.from(root.querySelectorAll<HTMLElement>('[data-fs-plan-day]'));
+      const empty = root.querySelector<HTMLElement>('[data-fs-plan-empty]')!;
+      const count = root.querySelector<HTMLElement>('[data-fs-plan-count]')!;
+      const clear = root.querySelector<HTMLButtonElement>('[data-fs-plan-clear]')!;
+      const status = root.querySelector<HTMLElement>('[data-fs-plan-status]')!;
+
+      const render = () => {
+        const saved = new Set(read());
+        const shown = items.filter((it) => saved.has(it.dataset.id ?? ''));
+        items.forEach((it) => { it.hidden = !saved.has(it.dataset.id ?? ''); });
+        dayBlocks.forEach((b) => { b.hidden = !b.querySelector('.fs-plan__item:not([hidden])'); });
+        shown.forEach((it) => {
+          const a = toMin(it.dataset.start ?? '0:0'), z = toMin(it.dataset.end ?? '0:0');
+          const clash = shown.some((o) => o !== it && o.closest('[data-fs-plan-day]') === it.closest('[data-fs-plan-day]') && toMin(o.dataset.start ?? '0:0') < z && toMin(o.dataset.end ?? '0:0') > a);
+          it.querySelector<HTMLElement>('[data-clash]')!.hidden = !clash;
+        });
+        count.textContent = String(shown.length);
+        empty.hidden = shown.length > 0;
+        clear.hidden = shown.length === 0;
+      };
+
+      root.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-remove]');
+        if (!btn) return;
+        const next = read().filter((id) => id !== btn.dataset.remove);
+        write(next);
+        status.textContent = `${btn.closest<HTMLElement>('.fs-plan__item')?.dataset.name ?? 'Concierto'} quitado de tu agenda`;
+        render();
+        root.querySelector<HTMLElement>('.fs-plan__item:not([hidden]) .fs-plan__remove, .fs-plan__empty a')?.focus();
+      });
+      clear.addEventListener('click', () => {
+        write([]);
+        status.textContent = 'Agenda vaciada';
+        render();
+        root.querySelector<HTMLElement>('.fs-plan__empty a')?.focus();
+      });
+      window.addEventListener('storage', render);
+      render();
+    });
+  }
+  initFestivalPlanner();
+  document.addEventListener('astro:page-load', initFestivalPlanner);
+</script>
+
+<style>
+  .fs-plan {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-plan__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-3, 0.75rem) var(--sp-5, 1.25rem);
+  }
+
+  .fs-plan__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+
+  .fs-plan__count {
+    flex: 1;
+    margin: 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-plan__clear {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-full, 999px);
+    background: transparent;
+    color: var(--fs-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .fs-plan__clear:hover {
+    border-color: var(--fs-bad);
+    color: var(--fs-bad);
+  }
+
+  .fs-plan__empty {
+    margin: 0;
+    padding: var(--sp-6, 1.5rem);
+    border: 1px dashed var(--fs-border-strong);
+    border-radius: var(--r-lg, 16px);
+    color: var(--fs-text-2);
+  }
+
+  .fs-plan__empty a {
+    color: var(--fs-lime);
+    font-weight: 700;
+  }
+
+  .fs-plan__day-title {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-size: 1.1rem;
+  }
+
+  .fs-plan__day-title span {
+    color: var(--fs-text-3);
+    font-weight: 500;
+  }
+
+  .fs-plan__list {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-plan__item {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr auto;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-3, 0.75rem) var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border);
+    border-left: 4px solid hsl(var(--hue) 75% 60%);
+    border-radius: var(--r-md, 12px);
+    background: var(--fs-surface);
+  }
+
+  .fs-plan__item[hidden],
+  .fs-plan__day[hidden],
+  .fs-plan__empty[hidden],
+  .fs-plan__clear[hidden] {
+    display: none;
+  }
+
+  .fs-plan__time {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+
+  .fs-plan__name {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .fs-plan__meta {
+    margin: 2px 0 0;
+    color: var(--fs-text-2);
+    font-size: 0.88rem;
+  }
+
+  .fs-plan__clash {
+    margin: 4px 0 0;
+    color: var(--fs-warn);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .fs-plan__remove {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fs-text);
+    cursor: pointer;
+  }
+
+  .fs-plan__remove:hover {
+    border-color: var(--fs-bad);
+    color: var(--fs-bad);
+  }
+
+  .fs-plan__clear:focus-visible,
+  .fs-plan__remove:focus-visible,
+  .fs-plan__empty a:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 560px) {
+    .fs-plan__item {
+      grid-template-columns: 1fr auto;
+    }
+
+    .fs-plan__time {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

@@ -1,0 +1,235 @@
+---
+/**
+ * FestivalVenueInfo — Practical information: how to get there, gates, camping and rules as
+ * cards beside a stylised site map, followed by a FAQ built with native `<details>`.
+ *
+ * @param {string} venue - Venue name and city.
+ * @param {string} address - Full address.
+ * @param {{title:string,text:string}[]} cards - Info cards.
+ * @param {FestivalFaq[]} faq - Questions and answers.
+ * @param {string} title - Section heading.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: the map is an SVG with a title and description; the FAQ uses native disclosure.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalData, festivalFaq, type FestivalFaq } from '../templates/festival/data';
+
+interface OwnProps {
+  venue?: string;
+  address?: string;
+  cards?: Array<{ title: string; text: string }>;
+  faq?: FestivalFaq[];
+  title?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  venue = festivalData.venue,
+  address = festivalData.brand.address,
+  cards = [
+    { title: 'Cómo llegar', text: 'Lanzadera desde las estaciones cada 20 min (18 €). En coche, 35 min desde el centro con parking disuasorio.' },
+    { title: 'Puertas', text: 'Viernes a las 16:00, sábado y domingo a las 14:00. Música hasta las 03:30; el Bosque cierra con la sesión de amanecer.' },
+    { title: 'Camping', text: 'Abre el jueves a las 12:00. Duchas, carga de móviles y vigilancia 24 horas.' },
+    { title: 'Accesibilidad', text: 'Plataformas elevadas, pasarelas, baños adaptados y acompañante gratis.' },
+  ],
+  faq = festivalFaq,
+  title = 'Antes de venir',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fv-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['festival-ui', 'fs-venue', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="fs-venue__inner">
+    <header>
+      <Heading id={`${uid}-title`} class="fs-venue__title">{title}</Heading>
+      <p class="fs-venue__place">{venue} · {address}</p>
+    </header>
+
+    <div class="fs-venue__layout">
+      <ul class="fs-venue__cards">
+        {cards.map((c) => (
+          <li class="fs-venue__card">
+            <h3>{c.title}</h3>
+            <p>{c.text}</p>
+          </li>
+        ))}
+      </ul>
+
+      <figure class="fs-venue__map">
+        <svg viewBox="0 0 360 280" role="img" aria-labelledby={`${uid}-map-t ${uid}-map-d`}>
+          <title id={`${uid}-map-t`}>Plano del recinto</title>
+          <desc id={`${uid}-map-d`}>El lago al norte; el Escenario Sol junto al lago, la carpa Luna al este, el Bosque al oeste, el camping al sur y las puertas de entrada en el extremo sur.</desc>
+          <rect x="0" y="0" width="360" height="280" rx="18" class="map-bg" />
+          <path d="M20 20h320v54c-40 20-80-12-120 4s-80 18-120-4-50 4-80-10Z" class="map-lake" />
+          <text x="180" y="48" class="map-label" text-anchor="middle">LAGO</text>
+          <circle cx="180" cy="116" r="40" class="map-sol" />
+          <text x="180" y="120" class="map-label map-label--on" text-anchor="middle">SOL</text>
+          <rect x="262" y="104" width="64" height="56" rx="14" class="map-luna" />
+          <text x="294" y="136" class="map-label map-label--on" text-anchor="middle">LUNA</text>
+          <path d="M34 106c16-18 40-18 56 0s10 54-14 58-52-8-42-58Z" class="map-forest" />
+          <text x="62" y="140" class="map-label map-label--on" text-anchor="middle">BOSQUE</text>
+          <rect x="120" y="196" width="120" height="48" rx="12" class="map-camp" />
+          <text x="180" y="225" class="map-label" text-anchor="middle">CAMPING</text>
+          <path d="M180 164v32M180 244v22" class="map-path" />
+          <rect x="150" y="262" width="60" height="10" rx="5" class="map-gate" />
+          <text x="180" y="256" class="map-label" text-anchor="middle">PUERTAS</text>
+        </svg>
+      </figure>
+    </div>
+
+    <div class="fs-venue__faq">
+      <h3 class="fs-venue__faq-title">Preguntas frecuentes</h3>
+      {faq.map((f) => (
+        <details class="fs-faq">
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .fs-venue {
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-venue__inner {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--sp-4, 1rem);
+  }
+
+  .fs-venue__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .fs-venue__place {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-venue__layout {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .fs-venue__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--sp-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-venue__card {
+    padding: var(--sp-4, 1rem);
+    border: 1px solid var(--fs-border);
+    border-radius: var(--r-lg, 16px);
+    background: var(--fs-bg-raised);
+  }
+
+  .fs-venue__card h3 {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--fs-lime);
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .fs-venue__card p {
+    margin: 0;
+    color: var(--fs-text-2);
+    font-size: 0.95rem;
+  }
+
+  .fs-venue__map {
+    margin: 0;
+  }
+
+  .fs-venue__map svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 26rem;
+  }
+
+  .map-bg { fill: var(--fs-surface); }
+  .map-lake { fill: rgba(80, 160, 255, 0.35); }
+  .map-sol { fill: rgba(var(--fs-brand-rgb), 0.85); }
+  .map-luna { fill: #7a5cff; }
+  .map-forest { fill: #2c7a4b; }
+  .map-camp { fill: var(--fs-surface-2); stroke: var(--fs-border-strong); stroke-dasharray: 5 4; }
+  .map-gate { fill: var(--fs-lime); }
+  .map-path { stroke: var(--fs-text-3); stroke-width: 3; stroke-dasharray: 2 6; stroke-linecap: round; fill: none; }
+  .map-label { fill: var(--fs-text); font: 700 11px var(--fs-font-body); letter-spacing: 0.12em; }
+  .map-label--on { fill: #fff; }
+
+  .fs-venue__faq {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    max-width: 52rem;
+  }
+
+  .fs-venue__faq-title {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--fs-font-display);
+    font-size: 1.8rem;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+
+  .fs-faq {
+    border: 1px solid var(--fs-border);
+    border-radius: var(--r-md, 12px);
+    background: var(--fs-bg-raised);
+  }
+
+  .fs-faq summary {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-4, 1rem);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .fs-faq summary:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+    border-radius: var(--r-md, 12px);
+  }
+
+  .fs-faq p {
+    margin: 0;
+    padding: 0 var(--sp-4, 1rem) var(--sp-4, 1rem);
+    color: var(--fs-text-2);
+  }
+
+  @media (min-width: 960px) {
+    .fs-venue__layout {
+      grid-template-columns: 1.2fr 1fr;
+      align-items: start;
+    }
+  }
+</style>

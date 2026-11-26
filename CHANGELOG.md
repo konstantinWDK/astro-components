@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Music festival template "Pulso"** (`astro-component-kit/templates/festival`): site for a festival or live event with a home (hero with live countdown, line-up by day, stages, tickets, sponsors), a line-up page, a timetable with stage filters and add-to-agenda toggles, ticket tiers with quantity steppers, add-ons and a live order total, practical info with a site map and FAQ, and "My Pulso" with a digital pass and the saved agenda. 6 page types, hot coral and electric lime on deep violet with a condensed display face and light/dark variants.
+- Sections: `FestivalHero`, `FestivalLineup`, `FestivalSchedule`, `FestivalStages`, `FestivalTickets`, `FestivalVenueInfo`, `FestivalSponsors`, `FestivalFooter` (new "Music Festival" section category).
+- App components: `FestivalCountdown`, `FestivalAgendaPlanner`, `FestivalTicketWallet`.
+- Built only from its own components (`reusedComponents: []`); the MCP server lists it (`get_template` slug `festival`) and the live preview is at `/preview/festival/`.
+
 ## [0.8.2] - 2026-11-23
 
 ### Added

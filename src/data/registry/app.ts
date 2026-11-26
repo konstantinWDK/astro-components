@@ -373,6 +373,19 @@ export const app: ComponentDoc[] = [
     description: 'Split sign-in with an illustrated lamp panel, learner / instructor switch, password show/hide and demo quick-access links.',
     tags: ['academy', 'education', 'auth', 'sign-in', 'login', 'form'],
     usage: `<AcademySignIn learnerHref="/aula" studioHref="/aula/estudio" signUpHref="/precios" />` }),
+  // Music festival app pieces ("Pulso")
+  item({ slug: 'festival-countdown', name: 'Festival Countdown', file: 'FestivalCountdown.astro', featured: true,
+    description: 'Live countdown to the opening of the festival in days, hours, minutes and seconds, announced to screen readers once a minute.',
+    tags: ['festival', 'music', 'countdown', 'timer', 'event'],
+    usage: `<FestivalCountdown startsAt="2027-07-16T16:00:00+02:00" size="lg" />` }),
+  item({ slug: 'festival-agenda-planner', name: 'Festival Agenda Planner', file: 'FestivalAgendaPlanner.astro', featured: true,
+    description: 'Personal agenda built from the sets saved in the timetable: grouped by day, sorted by time, overlaps flagged, remove one or clear all. Stored in the browser.',
+    tags: ['festival', 'music', 'agenda', 'planner', 'schedule', 'localstorage'],
+    usage: `<FestivalAgendaPlanner artists={festivalArtists} days={festivalDays} stages={festivalStages} scheduleHref="/horarios" />` }),
+  item({ slug: 'festival-ticket-wallet', name: 'Festival Ticket Wallet', file: 'FestivalTicketWallet.astro', featured: true,
+    description: 'Digital festival pass with holder, tier, days, gate and a generated QR-style code; scan mode boosts brightness and a print button.',
+    tags: ['festival', 'music', 'ticket', 'pass', 'qr', 'wallet'],
+    usage: `<FestivalTicketWallet holder="Lucía Fernández" tier="Abono 3 días" code="PLS-27-48213-A" gate="Puerta Norte · Carril 2" />` }),
 
   // Neobank account area ("Cobre")
   item({ slug: 'bank-balance-card', name: 'Bank Balance Card', file: 'BankBalanceCard.astro', featured: true,

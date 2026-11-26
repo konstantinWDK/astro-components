@@ -1,0 +1,333 @@
+---
+/**
+ * FestivalSiteLayout — Layout of the "Pulso" festival template: skip link, sticky header with
+ * primary nav (disclosure menu on mobile), "My Pulso" link, tickets CTA and the FestivalFooter.
+ *
+ * @param {string} title - Document title.
+ * @param {string} description - Meta description.
+ * @param {string} current - Active nav key (lineup | schedule | tickets | info).
+ * @param {FestivalRoutes} routes - Template route URLs.
+ * @param {string} theme - Initial theme ('light' | 'dark' | 'auto'). Default 'dark'.
+ * @param {boolean} noindex - Adds a robots noindex meta.
+ * @param {string} lang - Document language. Default 'es'.
+ *
+ * Accessibility: skip link, aria-current on the active link, menu button with aria-expanded /
+ * aria-controls that closes on Escape.
+ */
+import '../../../../styles/global.css';
+import './festival-theme.css';
+import FestivalFooter from '../../sections/FestivalFooter.astro';
+import { festivalRoutes, festivalData, type FestivalRoutes } from './data';
+
+type NavKey = 'lineup' | 'schedule' | 'tickets' | 'info' | 'myFestival';
+
+interface Props {
+  title: string;
+  description?: string;
+  current?: NavKey;
+  routes?: FestivalRoutes;
+  theme?: 'light' | 'dark' | 'auto';
+  noindex?: boolean;
+  lang?: string;
+}
+
+const {
+  title,
+  description = 'Pulso · Tres días de música junto al lago. Cartel, horarios, entradas y tu agenda personal.',
+  current,
+  routes = festivalRoutes,
+  theme = 'dark',
+  noindex = false,
+  lang = 'es',
+} = Astro.props;
+
+const { brand } = festivalData;
+const navLinks: Array<{ key: NavKey; label: string; href: string }> = [
+  { key: 'lineup', label: 'Cartel', href: routes.lineup },
+  { key: 'schedule', label: 'Horarios', href: routes.schedule },
+  { key: 'info', label: 'Info', href: routes.info },
+  { key: 'myFestival', label: 'Mi Pulso', href: routes.myFestival },
+];
+const footerColumns = [
+  { title: 'Festival', links: [{ label: 'Cartel', href: routes.lineup }, { label: 'Horarios', href: routes.schedule }, { label: 'Entradas', href: routes.tickets }] },
+  { title: 'Ayuda', links: [{ label: 'Cómo llegar', href: routes.info }, { label: 'Preguntas frecuentes', href: routes.info }, { label: 'Mi Pulso', href: routes.myFestival }] },
+];
+---
+
+<!doctype html>
+<html lang={lang} class="theme-festival" data-theme={theme === 'auto' ? 'dark' : theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script is:inline define:vars={{ initial: theme }}>
+      (function () {
+        var t = initial;
+        try { t = localStorage.getItem('ack-theme') || t; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+  </head>
+  <body class="festival-body">
+    <a href="#main-content" class="festival-skip">Saltar al contenido</a>
+
+    <header class="festival-header">
+      <div class="festival-header__inner">
+        <a href={routes.home} class="festival-logo" aria-label={`${brand.name} inicio`}>
+          <span class="festival-logo__mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 4 16 3-8h6" /></svg>
+          </span>
+          <span class="festival-logo__name">{brand.name}</span>
+        </a>
+
+        <button type="button" class="festival-menu-btn" aria-expanded="false" aria-controls="festival-nav" data-festival-menu>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <span class="festival-sr">Menú</span>
+        </button>
+
+        <nav id="festival-nav" class="festival-nav" aria-label="Navegación principal">
+          <ul class="festival-nav__list">
+            {navLinks.map((l) => (
+              <li><a href={l.href} class="festival-nav__link" aria-current={current === l.key ? 'page' : undefined}>{l.label}</a></li>
+            ))}
+          </ul>
+          <a href={routes.tickets} class="festival-nav__cta" aria-current={current === 'tickets' ? 'page' : undefined}>Entradas</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" class="festival-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <FestivalFooter
+      brand={brand.name}
+      cta={{ title: 'Quedan 312 abonos de 3 días', text: 'Después de esta fase el precio sube.', href: routes.tickets, label: 'Conseguir mi abono' }}
+      columns={footerColumns}
+      contact={brand}
+    />
+
+    <script>
+      function initFestivalMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-festival-menu]');
+        const nav = document.getElementById('festival-nav');
+        if (!btn || !nav || btn.dataset.bound) return;
+        btn.dataset.bound = 'true';
+        const setOpen = (open: boolean) => {
+          btn.setAttribute('aria-expanded', String(open));
+          nav.classList.toggle('is-open', open);
+        };
+        btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+            setOpen(false);
+            btn.focus();
+          }
+        });
+      }
+      initFestivalMenu();
+      document.addEventListener('astro:page-load', initFestivalMenu);
+    </script>
+  </body>
+</html>
+
+<style>
+  .festival-body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .festival-main {
+    flex: 1;
+  }
+
+  .festival-main:focus {
+    outline: none;
+  }
+
+  .festival-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .festival-skip {
+    position: absolute;
+    left: var(--sp-4, 1rem);
+    top: -100px;
+    z-index: 100;
+    padding: var(--sp-2, 0.5rem) var(--sp-4, 1rem);
+    border-radius: var(--r-sm, 8px);
+    background: var(--fs-lime);
+    color: var(--fs-on-lime);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .festival-skip:focus {
+    top: var(--sp-4, 1rem);
+  }
+
+  .festival-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    border-bottom: 1px solid var(--fs-border);
+    background: color-mix(in srgb, var(--fs-bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .festival-header__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    max-width: 1280px;
+    min-height: 68px;
+    margin: 0 auto;
+    padding: 0 var(--sp-4, 1rem);
+  }
+
+  .festival-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    min-height: 44px;
+    color: var(--fs-text);
+    text-decoration: none;
+  }
+
+  .festival-logo__mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+  }
+
+  .festival-logo__name {
+    font-family: var(--fs-font-display);
+    font-size: 1.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .festival-menu-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: transparent;
+    color: var(--fs-text);
+    cursor: pointer;
+  }
+
+  .festival-nav {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    flex-direction: column;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-4, 1rem);
+    border-bottom: 1px solid var(--fs-border);
+    background: var(--fs-bg-raised);
+  }
+
+  .festival-nav.is-open {
+    display: flex;
+  }
+
+  .festival-nav__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .festival-nav__link {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    color: var(--fs-text-2);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .festival-nav__link:hover,
+  .festival-nav__link[aria-current='page'] {
+    color: var(--fs-lime);
+  }
+
+  .festival-nav__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 var(--sp-5, 1.25rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .festival-nav__cta:hover {
+    background: var(--fs-brand-hover);
+  }
+
+  .festival-logo:focus-visible,
+  .festival-menu-btn:focus-visible,
+  .festival-nav a:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 900px) {
+    .festival-header__inner {
+      padding: 0 var(--sp-8, 2rem);
+    }
+
+    .festival-menu-btn {
+      display: none;
+    }
+
+    .festival-nav {
+      position: static;
+      display: flex;
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0 0 var(--sp-8, 2rem);
+      border: 0;
+      background: transparent;
+    }
+
+    .festival-nav__list {
+      display: flex;
+      gap: var(--sp-6, 1.5rem);
+    }
+  }
+</style>

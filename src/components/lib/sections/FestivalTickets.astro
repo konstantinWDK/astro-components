@@ -1,0 +1,438 @@
+---
+/**
+ * FestivalTickets — Ticket tiers with quantity steppers, optional add-ons (camping, shuttle) and a
+ * live order summary with the total. Posts to `action`, or shows an on-page confirmation when
+ * no action is set. Sold-out tiers are disabled and say so in text.
+ *
+ * @param {FestivalTicket[]} tickets - Tiers.
+ * @param {FestivalAddon[]} addons - Optional extras priced once per order.
+ * @param {string} action - Form endpoint. Empty = demo confirmation.
+ * @param {number} maxPerTier - Maximum tickets per tier. Default 6.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: steppers are real buttons with names, quantity inputs are labelled, the total is
+ * an aria-live status, the confirmation receives focus.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalTickets, festivalAddons, type FestivalTicket, type FestivalAddon } from '../templates/festival/data';
+
+interface OwnProps {
+  tickets?: FestivalTicket[];
+  addons?: FestivalAddon[];
+  action?: string;
+  maxPerTier?: number;
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  tickets = festivalTickets,
+  addons = festivalAddons,
+  action = '',
+  maxPerTier = 6,
+  title = 'Entradas',
+  subtitle = 'Abonos con pulsera sin contacto. Devolución gratuita hasta 30 días antes.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `ft-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['festival-ui', 'fs-tix', classAttr]} aria-labelledby={`${uid}-title`} data-fs-tix {...rest}>
+  <div class="fs-tix__inner">
+    <header>
+      <Heading id={`${uid}-title`} class="fs-tix__title">{title}</Heading>
+      {subtitle && <p class="fs-tix__subtitle">{subtitle}</p>}
+    </header>
+
+    <form class="fs-tix__form" method="post" action={action || undefined} data-demo={action ? undefined : 'true'}>
+      <div class="fs-tix__tiers">
+        {tickets.map((t) => (
+          <fieldset class:list={['fs-tier', { 'fs-tier--hl': t.highlighted, 'fs-tier--out': t.left === 0 }]} disabled={t.left === 0}>
+            <legend class="fs-tier__name">{t.name}</legend>
+            {t.highlighted && t.left > 0 && <p class="fs-tier__flag">Más elegido</p>}
+            <p class="fs-tier__tagline">{t.tagline}</p>
+            <p class="fs-tier__price"><span>{t.price}</span> €<span class="fs-tier__per"> / persona</span></p>
+            <ul class="fs-tier__perks">
+              {t.perks.map((p) => <li>{p}</li>)}
+            </ul>
+            {t.left === 0 ? (
+              <p class="fs-tier__out">Agotado · <a href="#lista-espera">Lista de espera</a></p>
+            ) : (
+              <div class="fs-tier__qty" role="group" aria-label={`Cantidad de ${t.name}`}>
+                <button type="button" class="fs-step" data-step="-1" aria-label={`Quitar una entrada ${t.name}`}>−</button>
+                <input class="fs-qty" type="number" name={`qty-${t.id}`} value="0" min="0" max={maxPerTier} inputmode="numeric" aria-label={`Entradas ${t.name}`} data-price={t.price} data-name={t.name} />
+                <button type="button" class="fs-step" data-step="1" aria-label={`Añadir una entrada ${t.name}`}>+</button>
+                {t.left < 400 && <span class="fs-tier__left">Quedan {t.left}</span>}
+              </div>
+            )}
+          </fieldset>
+        ))}
+      </div>
+
+      <fieldset class="fs-addons">
+        <legend class="fs-addons__legend">Extras</legend>
+        {addons.map((a) => (
+          <label class="fs-addon">
+            <input type="checkbox" name={`addon-${a.id}`} value={a.id} data-price={a.price} data-name={a.name} />
+            <span class="fs-addon__name">{a.name}</span>
+            <span class="fs-addon__price">+{a.price} €</span>
+          </label>
+        ))}
+      </fieldset>
+
+      <div class="fs-summary">
+        <p class="fs-summary__line" role="status" aria-live="polite">
+          <span data-fs-summary>Selecciona tus entradas</span>
+        </p>
+        <p class="fs-summary__total">Total <strong><span data-fs-total>0</span> €</strong></p>
+        <button class="fs-summary__btn" type="submit" disabled data-fs-submit>Continuar al pago</button>
+      </div>
+
+      <div class="fs-done" hidden tabindex="-1" data-fs-done>
+        <h3 class="fs-done__title">¡Nos vemos en el lago!</h3>
+        <p data-fs-done-text></p>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  function initFestivalTickets() {
+    document.querySelectorAll<HTMLElement>('[data-fs-tix]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const form = root.querySelector<HTMLFormElement>('form')!;
+      const qtys = Array.from(root.querySelectorAll<HTMLInputElement>('.fs-qty'));
+      const addons = Array.from(root.querySelectorAll<HTMLInputElement>('.fs-addon input'));
+      const out = root.querySelector<HTMLElement>('[data-fs-total]')!;
+      const line = root.querySelector<HTMLElement>('[data-fs-summary]')!;
+      const submit = root.querySelector<HTMLButtonElement>('[data-fs-submit]')!;
+      const done = root.querySelector<HTMLElement>('[data-fs-done]')!;
+
+      const clamp = (el: HTMLInputElement) => {
+        const max = Number(el.max) || 6;
+        el.value = String(Math.min(max, Math.max(0, Math.floor(Number(el.value) || 0))));
+      };
+      const update = () => {
+        let count = 0;
+        let total = 0;
+        const parts: string[] = [];
+        qtys.forEach((q) => {
+          clamp(q);
+          const n = Number(q.value);
+          if (n > 0) { count += n; total += n * Number(q.dataset.price); parts.push(`${n} × ${q.dataset.name}`); }
+        });
+        if (count > 0) {
+          addons.forEach((a) => { if (a.checked) { total += Number(a.dataset.price); parts.push(a.dataset.name ?? ''); } });
+        }
+        out.textContent = String(total);
+        line.textContent = parts.length ? parts.join(' · ') : 'Selecciona tus entradas';
+        submit.disabled = count === 0;
+      };
+
+      root.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.fs-step');
+        if (!b) return;
+        const input = b.parentElement?.querySelector<HTMLInputElement>('.fs-qty');
+        if (!input) return;
+        input.value = String(Number(input.value) + Number(b.dataset.step));
+        update();
+      });
+      form.addEventListener('input', update);
+      form.addEventListener('submit', (e) => {
+        if (form.dataset.demo !== 'true') return;
+        e.preventDefault();
+        const text = root.querySelector<HTMLElement>('[data-fs-done-text]')!;
+        text.textContent = `Pedido de ${line.textContent} por ${out.textContent} €. Te enviaremos las entradas al email.`;
+        done.hidden = false;
+        done.focus();
+      });
+      update();
+    });
+  }
+  initFestivalTickets();
+  document.addEventListener('astro:page-load', initFestivalTickets);
+</script>
+
+<style>
+  .fs-tix {
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-tix__inner {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--sp-4, 1rem);
+  }
+
+  .fs-tix__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .fs-tix__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-tix__form {
+    display: grid;
+    gap: var(--sp-5, 1.25rem);
+  }
+
+  .fs-tix__tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--sp-4, 1rem);
+  }
+
+  .fs-tier {
+    display: grid;
+    align-content: start;
+    gap: var(--sp-3, 0.75rem);
+    min-width: 0;
+    margin: 0;
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-lg, 16px);
+    background: var(--fs-bg-raised);
+  }
+
+  .fs-tier--hl {
+    border-color: var(--fs-brand);
+    box-shadow: 0 0 0 1px var(--fs-brand), 0 20px 50px rgba(var(--fs-brand-rgb), 0.18);
+  }
+
+  .fs-tier--out {
+    opacity: 0.7;
+  }
+
+  .fs-tier__name {
+    padding: 0;
+    font-family: var(--fs-font-display);
+    font-size: 1.7rem;
+    text-transform: uppercase;
+  }
+
+  .fs-tier__flag {
+    margin: 0;
+    color: var(--fs-lime);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .fs-tier__tagline {
+    margin: 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-tier__price {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .fs-tier__price span:first-child {
+    font-family: var(--fs-font-display);
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  .fs-tier__per {
+    color: var(--fs-text-3);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .fs-tier__perks {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    color: var(--fs-text-2);
+    font-size: 0.92rem;
+  }
+
+  .fs-tier__qty {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2, 0.5rem);
+    margin-top: var(--sp-2, 0.5rem);
+  }
+
+  .fs-step {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fs-text);
+    font-size: 1.3rem;
+    cursor: pointer;
+  }
+
+  .fs-step:hover {
+    border-color: var(--fs-brand);
+  }
+
+  .fs-qty {
+    width: 4rem;
+    min-height: 44px;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--fs-surface);
+    color: var(--fs-text);
+    font: inherit;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .fs-tier__left {
+    margin-left: auto;
+    color: var(--fs-warn);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .fs-tier__out {
+    margin: 0;
+    color: var(--fs-bad);
+    font-weight: 700;
+  }
+
+  .fs-tier__out a {
+    color: var(--fs-text);
+  }
+
+  .fs-addons {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: 0;
+    padding: var(--sp-4, 1rem) var(--sp-5, 1.25rem);
+    border: 1px solid var(--fs-border);
+    border-radius: var(--r-lg, 16px);
+  }
+
+  .fs-addons__legend {
+    padding: 0 var(--sp-2, 0.5rem);
+    font-weight: 700;
+  }
+
+  .fs-addon {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem);
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .fs-addon input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--fs-brand);
+  }
+
+  .fs-addon__name {
+    flex: 1;
+  }
+
+  .fs-addon__price {
+    color: var(--fs-text-2);
+    font-weight: 700;
+  }
+
+  .fs-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3, 0.75rem) var(--sp-6, 1.5rem);
+    padding: var(--sp-5, 1.25rem);
+    border-radius: var(--r-lg, 16px);
+    background: var(--fs-surface);
+  }
+
+  .fs-summary__line {
+    flex: 1 1 14rem;
+    margin: 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-summary__total {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .fs-summary__total strong {
+    font-family: var(--fs-font-display);
+    font-size: 2.2rem;
+    font-weight: 400;
+  }
+
+  .fs-summary__btn {
+    min-height: 52px;
+    padding: 0 var(--sp-8, 2rem);
+    border: 0;
+    border-radius: var(--r-full, 999px);
+    background: var(--fs-brand);
+    color: var(--fs-on-brand);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .fs-summary__btn:disabled {
+    background: var(--fs-surface-2);
+    color: var(--fs-text-3);
+    cursor: not-allowed;
+  }
+
+  .fs-done {
+    padding: var(--sp-5, 1.25rem);
+    border: 1px solid var(--fs-lime);
+    border-radius: var(--r-lg, 16px);
+  }
+
+  .fs-done__title {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    font-family: var(--fs-font-display);
+    font-size: 1.8rem;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+
+  .fs-done p {
+    margin: 0;
+  }
+
+  .fs-step:focus-visible,
+  .fs-qty:focus-visible,
+  .fs-addon input:focus-visible,
+  .fs-summary__btn:focus-visible,
+  .fs-done:focus-visible,
+  .fs-tier__out a:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+  }
+</style>

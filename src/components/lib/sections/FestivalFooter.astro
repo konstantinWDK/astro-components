@@ -1,0 +1,276 @@
+---
+/**
+ * FestivalFooter — Festival footer: ticket call-to-action band, newsletter sign-up, link columns,
+ * contact details and legal row.
+ *
+ * @param {string} brand - Festival name.
+ * @param {{title:string,text?:string,href:string,label:string}} cta - Call-to-action band.
+ * @param {{title:string,links:{label:string,href:string}[]}[]} columns - Link columns.
+ * @param {{email?:string,phone?:string,address?:string,hours?:string}} contact - Contact details.
+ * @param {string} newsletterAction - Newsletter endpoint. Empty = demo confirmation.
+ * @param {string} class - Extra class for the root.
+ *
+ * Accessibility: footer landmark, labelled newsletter field, confirmation announced politely.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalData } from '../templates/festival/data';
+
+interface OwnProps {
+  brand?: string;
+  cta?: { title: string; text?: string; href: string; label: string };
+  columns?: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  contact?: { email?: string; phone?: string; address?: string; hours?: string };
+  newsletterAction?: string;
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'footer'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  brand = festivalData.brand.name,
+  cta,
+  columns = [],
+  contact = festivalData.brand,
+  newsletterAction = '',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const uid = `ff-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<footer class:list={['festival-ui', 'fs-foot', classAttr]} {...rest}>
+  {cta && (
+    <div class="fs-foot__cta">
+      <div class="fs-foot__cta-inner">
+        <div>
+          <p class="fs-foot__cta-title">{cta.title}</p>
+          {cta.text && <p class="fs-foot__cta-text">{cta.text}</p>}
+        </div>
+        <a class="fs-foot__cta-btn" href={cta.href}>{cta.label}</a>
+      </div>
+    </div>
+  )}
+
+  <div class="fs-foot__inner">
+    <div class="fs-foot__brand">
+      <p class="fs-foot__name">{brand}</p>
+      <form class="fs-foot__news" method="post" action={newsletterAction || undefined} data-fs-news data-demo={newsletterAction ? undefined : 'true'}>
+        <label for={`${uid}-mail`}>Avisos de nuevas fases de entradas</label>
+        <div class="fs-foot__news-row">
+          <input id={`${uid}-mail`} type="email" name="email" required autocomplete="email" placeholder="tu@email.com" />
+          <button type="submit">Apuntarme</button>
+        </div>
+        <p class="fs-foot__news-ok" role="status" data-fs-news-ok hidden>¡Hecho! Te avisaremos.</p>
+      </form>
+    </div>
+
+    {columns.map((c) => (
+      <nav class="fs-foot__col" aria-label={c.title}>
+        <p class="fs-foot__col-title">{c.title}</p>
+        <ul>
+          {c.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        </ul>
+      </nav>
+    ))}
+
+    <address class="fs-foot__contact">
+      <p class="fs-foot__col-title">Contacto</p>
+      {contact.email && <a href={`mailto:${contact.email}`}>{contact.email}</a>}
+      {contact.phone && <a href={`tel:${contact.phone.replace(/\s/g, '')}`}>{contact.phone}</a>}
+      {contact.address && <span>{contact.address}</span>}
+      {contact.hours && <span>{contact.hours}</span>}
+    </address>
+  </div>
+
+  <p class="fs-foot__legal">© {new Date().getFullYear()} {brand}. Consume con responsabilidad. <a href="#">Privacidad</a> · <a href="#">Condiciones de compra</a></p>
+</footer>
+
+<script>
+  function initFestivalNews() {
+    document.querySelectorAll<HTMLFormElement>('[data-fs-news]').forEach((form) => {
+      if (form.dataset.bound || form.dataset.demo !== 'true') return;
+      form.dataset.bound = 'true';
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        form.querySelector<HTMLElement>('[data-fs-news-ok]')!.hidden = false;
+        form.reset();
+      });
+    });
+  }
+  initFestivalNews();
+  document.addEventListener('astro:page-load', initFestivalNews);
+</script>
+
+<style>
+  .fs-foot {
+    background: var(--fs-bg-raised);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-foot a {
+    color: var(--fs-text-2);
+    text-decoration: none;
+  }
+
+  .fs-foot a:hover {
+    color: var(--fs-text);
+    text-decoration: underline;
+  }
+
+  .fs-foot a:focus-visible,
+  .fs-foot button:focus-visible,
+  .fs-foot input:focus-visible {
+    outline: 3px solid var(--fs-lime);
+    outline-offset: 2px;
+  }
+
+  .fs-foot__cta {
+    background: linear-gradient(100deg, var(--fs-brand), #ff9a3d);
+    color: var(--fs-on-brand);
+  }
+
+  .fs-foot__cta-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4, 1rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+  }
+
+  .fs-foot__cta-title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .fs-foot__cta-text {
+    margin: var(--sp-2, 0.5rem) 0 0;
+  }
+
+  .fs-foot .fs-foot__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 var(--sp-6, 1.5rem);
+    border-radius: var(--r-full, 999px);
+    background: var(--fs-bg);
+    color: var(--fs-text);
+    font-weight: 700;
+  }
+
+  .fs-foot__inner {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--sp-8, 2rem) var(--sp-4, 1rem);
+  }
+
+  .fs-foot__name {
+    margin: 0 0 var(--sp-3, 0.75rem);
+    font-family: var(--fs-font-display);
+    font-size: 2.4rem;
+    text-transform: uppercase;
+  }
+
+  .fs-foot__news {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    max-width: 24rem;
+  }
+
+  .fs-foot__news label {
+    color: var(--fs-text-2);
+    font-size: 0.9rem;
+  }
+
+  .fs-foot__news-row {
+    display: flex;
+    gap: var(--sp-2, 0.5rem);
+  }
+
+  .fs-foot__news input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 var(--sp-3, 0.75rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-md, 12px);
+    background: var(--fs-surface);
+    color: var(--fs-text);
+    font: inherit;
+  }
+
+  .fs-foot__news button {
+    min-height: 44px;
+    padding: 0 var(--sp-4, 1rem);
+    border: 0;
+    border-radius: var(--r-md, 12px);
+    background: var(--fs-lime);
+    color: var(--fs-on-lime);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .fs-foot__news-ok {
+    margin: 0;
+    color: var(--fs-ok);
+    font-weight: 600;
+  }
+
+  .fs-foot__col ul {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-foot__col li a,
+  .fs-foot__contact a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+  }
+
+  .fs-foot__col-title {
+    margin: 0 0 var(--sp-2, 0.5rem);
+    color: var(--fs-text-3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .fs-foot__contact {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    color: var(--fs-text-2);
+    font-style: normal;
+    font-size: 0.92rem;
+  }
+
+  .fs-foot__legal {
+    margin: 0;
+    padding: var(--sp-4, 1rem);
+    border-top: 1px solid var(--fs-border);
+    color: var(--fs-text-3);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  @media (min-width: 900px) {
+    .fs-foot__inner {
+      grid-template-columns: 1.6fr repeat(2, 1fr) 1.2fr;
+    }
+  }
+</style>

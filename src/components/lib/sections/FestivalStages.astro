@@ -1,0 +1,167 @@
+---
+/**
+ * FestivalStages — One card per stage with a coloured glow, capacity, description and the number
+ * of sets plus the headliner playing there.
+ *
+ * @param {FestivalStage[]} stages - Stages to show.
+ * @param {FestivalArtist[]} artists - Used to count sets and find the headliner of each stage.
+ * @param {string} title - Section heading.
+ * @param {string} subtitle - Supporting text.
+ * @param {string} headingLevel - 'h1' | 'h2'. Default 'h2'.
+ * @param {string} class - Extra class for the root.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import '../templates/festival/festival-theme.css';
+import { festivalStages, festivalArtists, type FestivalStage, type FestivalArtist } from '../templates/festival/data';
+
+interface OwnProps {
+  stages?: FestivalStage[];
+  artists?: FestivalArtist[];
+  title?: string;
+  subtitle?: string;
+  headingLevel?: 'h1' | 'h2';
+}
+
+type Props = OwnProps & Omit<HTMLAttributes<'section'>, keyof OwnProps | 'class'> & { class?: string };
+
+const {
+  stages = festivalStages,
+  artists = festivalArtists,
+  title = 'Tres escenarios',
+  subtitle = 'Cada uno con su sonido, su público y su manera de vivir la noche.',
+  headingLevel = 'h2',
+  class: classAttr,
+  ...rest
+} = Astro.props;
+
+const Heading = headingLevel;
+const uid = `fst-${Math.random().toString(36).slice(2, 8)}`;
+const info = (id: string) => {
+  const list = artists.filter((a) => a.stageId === id);
+  return { count: list.length, head: list.find((a) => a.headliner) ?? list[0] };
+};
+---
+
+<section class:list={['festival-ui', 'fs-stages', classAttr]} aria-labelledby={`${uid}-title`} {...rest}>
+  <div class="fs-stages__inner">
+    <header>
+      <Heading id={`${uid}-title`} class="fs-stages__title">{title}</Heading>
+      {subtitle && <p class="fs-stages__subtitle">{subtitle}</p>}
+    </header>
+    <ul class="fs-stages__grid">
+      {stages.map((s) => {
+        const { count, head } = info(s.id);
+        return (
+          <li class="fs-stage" style={`--hue:${s.hue}`}>
+            <div class="fs-stage__glow" aria-hidden="true"></div>
+            <h3 class="fs-stage__name">{s.name}</h3>
+            <p class="fs-stage__desc">{s.description}</p>
+            <dl class="fs-stage__facts">
+              <div><dt>Aforo</dt><dd>{s.capacity.toLocaleString('es-ES')}</dd></div>
+              <div><dt>Conciertos</dt><dd>{count}</dd></div>
+              {head && <div><dt>Destacado</dt><dd>{head.name}</dd></div>}
+            </dl>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .fs-stages {
+    background: var(--fs-bg-raised);
+    color: var(--fs-text);
+    font-family: var(--fs-font-body);
+  }
+
+  .fs-stages__inner {
+    display: grid;
+    gap: var(--sp-6, 1.5rem);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--sp-4, 1rem);
+  }
+
+  .fs-stages__title {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 400;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .fs-stages__subtitle {
+    margin: var(--sp-2, 0.5rem) 0 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-stages__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--sp-4, 1rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .fs-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    gap: var(--sp-3, 0.75rem);
+    padding: var(--sp-6, 1.5rem);
+    border: 1px solid var(--fs-border-strong);
+    border-radius: var(--r-lg, 16px);
+    background: var(--fs-surface);
+  }
+
+  .fs-stage__glow {
+    position: absolute;
+    inset: -40% -20% auto auto;
+    z-index: -1;
+    width: 16rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--hue) 85% 58% / 0.55), transparent 70%);
+  }
+
+  .fs-stage__name {
+    margin: 0;
+    font-family: var(--fs-font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+
+  .fs-stage__desc {
+    margin: 0;
+    color: var(--fs-text-2);
+  }
+
+  .fs-stage__facts {
+    display: grid;
+    gap: var(--sp-2, 0.5rem);
+    margin: var(--sp-2, 0.5rem) 0 0;
+  }
+
+  .fs-stage__facts div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3, 0.75rem);
+    padding-top: var(--sp-2, 0.5rem);
+    border-top: 1px solid var(--fs-border);
+  }
+
+  .fs-stage__facts dt {
+    color: var(--fs-text-3);
+  }
+
+  .fs-stage__facts dd {
+    margin: 0;
+    font-weight: 700;
+    text-align: right;
+  }
+</style>

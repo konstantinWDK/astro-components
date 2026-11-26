@@ -193,6 +193,16 @@ export { default as AcademyReviews } from './AcademyReviews.astro';
 export { default as AcademyTeachForm } from './AcademyTeachForm.astro';
 export { default as AcademyFooter } from './AcademyFooter.astro';
 
+// Music festival ("Pulso")
+export { default as FestivalHero } from './FestivalHero.astro';
+export { default as FestivalLineup } from './FestivalLineup.astro';
+export { default as FestivalSchedule } from './FestivalSchedule.astro';
+export { default as FestivalStages } from './FestivalStages.astro';
+export { default as FestivalTickets } from './FestivalTickets.astro';
+export { default as FestivalVenueInfo } from './FestivalVenueInfo.astro';
+export { default as FestivalSponsors } from './FestivalSponsors.astro';
+export { default as FestivalFooter } from './FestivalFooter.astro';
+
 // Neobank ("Cobre")
 export { default as BankHero } from './BankHero.astro';
 export { default as BankFeatures } from './BankFeatures.astro';
