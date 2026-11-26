@@ -30,3 +30,23 @@ jobs:
         run: npm run build
       - name: Package contents
         run: npm pack --dry-run
+
+  audit:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build docs site
+        run: npm run build
+      - name: Serve production build
+        run: npm run preview -- --host 127.0.0.1 --port 4321 &
+      - name: Wait for server
+        run: npx --yes wait-on@8 http://127.0.0.1:4321/ --timeout 60000
+      - name: Audit a sample of component pages (run `npm run audit` locally for all)
+        run: AUDIT_BASE_URL=http://127.0.0.1:4321 AUDIT_SAMPLE=6 npm run audit

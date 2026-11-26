@@ -1,13 +1,19 @@
 // scripts/audit-components-playwright.mjs
 import { chromium } from 'playwright';
 
+const BASE_URL = (process.env.AUDIT_BASE_URL || 'http://localhost:4321').replace(/\/$/, '');
+const NAV_TIMEOUT = Number(process.env.AUDIT_TIMEOUT || 45000);
+const CONCURRENCY = Number(process.env.AUDIT_CONCURRENCY || 4);
+// AUDIT_SAMPLE=N audits every Nth page (CI uses a sample; run without it for the full audit).
+const SAMPLE = Math.max(1, Number(process.env.AUDIT_SAMPLE || 1));
+
 async function audit() {
-  console.log('Connecting to dev server at http://localhost:4321/ ...');
+  console.log(`Connecting to ${BASE_URL}/ ...`);
   const browser = await chromium.launch({ headless: true });
   
   // 1. Visit docs index to collect all component URLs from the sidebar
   const initPage = await browser.newPage();
-  await initPage.goto('http://localhost:4321/docs/glass-button', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await initPage.goto(`${BASE_URL}/docs/glass-button`, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
 
   const componentLinks = await initPage.$$eval('.sidebar-nav a, a[href^="/docs/"], a[href^="/sections/"]', (links) => {
     const urls = new Set();
@@ -22,10 +28,19 @@ async function audit() {
   
   // Add core routes
   componentLinks.push('/', '/sections');
+  if (SAMPLE > 1) {
+    const sampled = componentLinks.filter((_, i) => i % SAMPLE === 0);
+    componentLinks.length = 0;
+    componentLinks.push(...sampled);
+  }
 
   await initPage.close();
 
   console.log(`Found ${componentLinks.length} total pages to audit.\n`);
+
+  // Images, fonts and media do not affect these checks and make the pages slow to load.
+  const skipHeavy = (route) =>
+    ['image', 'font', 'media'].includes(route.request().resourceType()) ? route.abort() : route.continue();
 
   const results = {
     passed: [],
@@ -35,21 +50,22 @@ async function audit() {
     consoleErrors: []
   };
 
-  const CONCURRENCY = 4;
   let index = 0;
 
   async function worker(workerId) {
     const page = await browser.newPage();
+    await page.route('**/*', skipHeavy);
 
     while (index < componentLinks.length) {
       const currentIndex = index++;
       const link = componentLinks[currentIndex];
       const slug = link.replace('/docs/', '').replace('/sections/', '').trim() || 'home';
-      const url = `http://localhost:4321${link}`;
+      const url = `${BASE_URL}${link}`;
       const pageConsoleErrors = [];
 
       const onConsole = (msg) => {
-        if (msg.type() === 'error') {
+        // Blocked images/fonts surface as failed resource loads; they are not page errors.
+        if (msg.type() === 'error' && !msg.text().startsWith('Failed to load resource')) {
           pageConsoleErrors.push(msg.text());
         }
       };
@@ -57,7 +73,7 @@ async function audit() {
       page.on('console', onConsole);
 
       try {
-        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
         const status = response ? response.status() : 500;
 
         if (status !== 200) {
@@ -155,6 +171,16 @@ async function audit() {
     console.log('\n--- Pages with Console Errors: ---');
     results.consoleErrors.forEach(item => console.log(`- ${item.slug}: ${item.errors.join(' | ')}`));
   }
+
+  // Console errors are reported but do not fail the run; broken pages and previews do.
+  return results.previewError.length + results.emptyPreview.length + results.pageError.length;
 }
 
-audit().catch(console.error);
+audit()
+  .then((failed) => {
+    if (failed > 0) process.exitCode = 1;
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
